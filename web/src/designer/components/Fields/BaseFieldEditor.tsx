@@ -116,6 +116,7 @@ export const BaseFieldEditor = ({
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
+  const hasAutoSyncedOnFirstLabelEdit = useRef(false);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
 
   const debouncedRename = useCallback(
@@ -139,12 +140,26 @@ export const BaseFieldEditor = ({
     debouncedRename(e.target.value);
   };
 
-  const syncFieldID = () => {
-    const desired = slugify(state.label || '');
+  const syncFieldIDToLabel = (label: string) => {
+    const desired = slugify(label || '');
     const viewId = getViewIDForField(uiSpec, fieldName);
     if (viewId && desired && desired !== fieldName) {
       setLocalFieldName(desired);
       dispatch(fieldRenamed({viewId, fieldName, newFieldName: desired}));
+    }
+  };
+
+  const syncFieldID = () => {
+    syncFieldIDToLabel(state.label || '');
+  };
+
+  const handleLabelChange = (newLabel: string) => {
+    updateProperty('label', newLabel);
+
+    // Automatically sync Field ID only on the first label edit for this field.
+    if (!hasAutoSyncedOnFirstLabelEdit.current) {
+      hasAutoSyncedOnFirstLabelEdit.current = true;
+      syncFieldIDToLabel(newLabel);
     }
   };
 
@@ -154,6 +169,7 @@ export const BaseFieldEditor = ({
     } else {
       isMounted.current = true;
     }
+    hasAutoSyncedOnFirstLabelEdit.current = false;
     setLocalFieldName(fieldName);
   }, [fieldName]);
 
@@ -272,7 +288,7 @@ export const BaseFieldEditor = ({
                   fullWidth
                   label="Label"
                   value={state.label}
-                  onChange={e => updateProperty('label', e.target.value)}
+                  onChange={e => handleLabelChange(e.target.value)}
                   inputProps={{'data-field-label-input': 'true'}}
                 />
                 <TextField
