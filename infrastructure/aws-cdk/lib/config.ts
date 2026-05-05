@@ -149,6 +149,12 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .describe(
       'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
     ),
+  skipRequestCompression: z
+    .boolean()
+    .optional()
+    .describe(
+      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
+    ),
   // If you want the metadata document signed using your PK
   signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
