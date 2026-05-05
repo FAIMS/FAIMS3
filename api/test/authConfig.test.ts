@@ -208,6 +208,23 @@ describe('readAuthProviderConfigFromEnv', () => {
       'https://conductor.example/auth/vg/sso-error'
     );
     expect(vg.ssoErrorPageReturnURL).to.equal('https://web.example/');
+    expect(vg.authnRequestBinding).to.equal('HTTP-Redirect');
+  });
+
+  it('parses SAML authnRequestBinding HTTP-POST from env', () => {
+    process.env.AUTH_VG_TYPE = 'saml';
+    process.env.AUTH_VG_DISPLAY_NAME = 'Vanguard';
+    process.env.AUTH_VG_SCOPE = 'profile,email';
+    process.env.AUTH_VG_ENTRY_POINT = 'https://idp.example/sso';
+    process.env.AUTH_VG_ISSUER = 'https://sp.example/';
+    process.env.AUTH_VG_IDP_PUBLIC_KEY = 'MIIB';
+    process.env.AUTH_VG_AUTHN_REQUEST_BINDING = 'HTTP-POST';
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).to.not.be.null;
+    const vg = result?.vg as SAMLAuthProviderConfig;
+    expect(vg.authnRequestBinding).to.equal('HTTP-POST');
   });
 
   it('should return null and log errors when validation fails', () => {

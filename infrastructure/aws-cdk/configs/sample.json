@@ -142,6 +142,7 @@
         "scope": "profile email",
         "entryPoint": "https://idp.example.com/saml2/sso",
         "issuer": "https://faims.example.com",
+        "authnRequestBinding": "HTTP-POST",
         "callbackURL": "https://faims.example.com/auth/saml/callback",
         "signatureAlgorithm": "sha256",
         "wantAssertionsSigned": true
