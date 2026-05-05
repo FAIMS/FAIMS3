@@ -51,6 +51,7 @@ import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {
   getSpeechSettings,
   updateSpeechSettings,
@@ -169,7 +170,10 @@ export const BaseFieldEditor = ({
     } else {
       isMounted.current = true;
     }
-    hasAutoSyncedOnFirstLabelEdit.current = false;
+    const expectedIdFromCurrentLabel = slugify(state.label || '');
+    hasAutoSyncedOnFirstLabelEdit.current =
+      expectedIdFromCurrentLabel.length > 0 &&
+      fieldName === expectedIdFromCurrentLabel;
     setLocalFieldName(fieldName);
   }, [fieldName]);
 
@@ -275,60 +279,135 @@ export const BaseFieldEditor = ({
     : 'No conditions';
 
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
+  const isChoiceField =
+    field['component-name'] === 'Select' || field['component-name'] === 'MultiSelect';
 
   return (
     <Grid container spacing={2}>
       {/* ── Top card: Label / Field ID / Helper Text / type-specific children ── */}
       <Grid item xs={12}>
-        <Card variant="outlined" sx={{p: 2}}>
+        <Card
+          variant="outlined"
+          sx={
+            isChoiceField
+              ? {
+                  p: 2,
+                  borderColor: 'divider',
+                  boxShadow: theme =>
+                    `0 2px 8px ${alpha(theme.palette.common.black, 0.08)}, inset 0 1px 0 ${alpha(
+                      theme.palette.common.white,
+                      0.7
+                    )}`,
+                }
+              : {p: 2}
+          }
+        >
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
               <Box display="flex" flexDirection="column" gap={2}>
-                <DebouncedTextField
-                  fullWidth
-                  label="Label"
-                  value={state.label}
-                  onChange={e => handleLabelChange(e.target.value)}
-                  inputProps={{'data-field-label-input': 'true'}}
-                />
-                <TextField
-                  fullWidth
-                  label="Field ID"
-                  value={localFieldName}
-                  onChange={handleIdChange}
-                  inputRef={idInputRef}
-                  InputProps={{
-                    endAdornment:
-                      state.label && slugify(state.label) !== localFieldName ? (
-                        <InputAdornment position="end">
-                          <Tooltip title="Sync with field name">
-                            <IconButton
-                              size="small"
-                              onClick={syncFieldID}
-                              edge="end"
-                            >
-                              <SyncIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </InputAdornment>
-                      ) : undefined,
-                  }}
-                />
+                {isChoiceField ? (
+                  <>
+                    <SimpleFieldWrapper heading="Label">
+                      <DebouncedTextField
+                        fullWidth
+                        label=""
+                        placeholder="Enter field label"
+                        value={state.label}
+                        onChange={e => handleLabelChange(e.target.value)}
+                        inputProps={{'data-field-label-input': 'true'}}
+                      />
+                    </SimpleFieldWrapper>
+                    <SimpleFieldWrapper heading="Field ID">
+                      <TextField
+                        fullWidth
+                        label=""
+                        placeholder="Enter field ID"
+                        value={localFieldName}
+                        onChange={handleIdChange}
+                        inputRef={idInputRef}
+                        InputProps={{
+                          endAdornment:
+                            state.label && slugify(state.label) !== localFieldName ? (
+                              <InputAdornment position="end">
+                                <Tooltip title="Sync with field name">
+                                  <IconButton
+                                    size="small"
+                                    onClick={syncFieldID}
+                                    edge="end"
+                                  >
+                                    <SyncIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </InputAdornment>
+                            ) : undefined,
+                        }}
+                      />
+                    </SimpleFieldWrapper>
+                  </>
+                ) : (
+                  <>
+                    <DebouncedTextField
+                      fullWidth
+                      label="Label"
+                      value={state.label}
+                      onChange={e => handleLabelChange(e.target.value)}
+                      inputProps={{'data-field-label-input': 'true'}}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Field ID"
+                      value={localFieldName}
+                      onChange={handleIdChange}
+                      inputRef={idInputRef}
+                      InputProps={{
+                        endAdornment:
+                          state.label && slugify(state.label) !== localFieldName ? (
+                            <InputAdornment position="end">
+                              <Tooltip title="Sync with field name">
+                                <IconButton
+                                  size="small"
+                                  onClick={syncFieldID}
+                                  edge="end"
+                                >
+                                  <SyncIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ) : undefined,
+                      }}
+                    />
+                  </>
+                )}
               </Box>
             </Grid>
             {showHelperText && (
               <Grid item xs={12} md={8}>
-                <DebouncedTextField
-                  fullWidth
-                  label="Helper Text"
-                  value={state.helperText}
-                  multiline
-                  rows={2}
-                  onChange={e => updateProperty('helperText', e.target.value)}
-                />
+                <Box display="flex" flexDirection="column" gap={2}>
+                  {isChoiceField ? (
+                    <SimpleFieldWrapper heading="Helper Text">
+                      <DebouncedTextField
+                        fullWidth
+                        label=""
+                        placeholder="Enter helper text"
+                        value={state.helperText}
+                        multiline
+                        rows={2}
+                        onChange={e => updateProperty('helperText', e.target.value)}
+                      />
+                    </SimpleFieldWrapper>
+                  ) : (
+                    <DebouncedTextField
+                      fullWidth
+                      label="Helper Text"
+                      value={state.helperText}
+                      multiline
+                      rows={2}
+                      onChange={e => updateProperty('helperText', e.target.value)}
+                    />
+                  )}
                 {hasAdvancedSupport && (
                   <>
-                    <Box mt={2}>
+                    <Box>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -342,7 +421,25 @@ export const BaseFieldEditor = ({
                     </Box>
 
                     {showAdvanced && (
-                      <Card variant="outlined" sx={{mt: 2, p: 2}}>
+                      <Card
+                        variant="outlined"
+                        sx={
+                          isChoiceField
+                            ? {
+                                p: 2,
+                                borderColor: 'divider',
+                                boxShadow: theme =>
+                                  `0 1px 6px ${alpha(
+                                    theme.palette.common.black,
+                                    0.08
+                                  )}, inset 0 1px 2px ${alpha(
+                                    theme.palette.common.black,
+                                    0.04
+                                  )}`,
+                              }
+                            : {mt: 2, p: 2}
+                        }
+                      >
                         <Box
                           display="flex"
                           alignItems="center"
@@ -383,6 +480,7 @@ export const BaseFieldEditor = ({
                     )}
                   </>
                 )}
+                </Box>
               </Grid>
             )}
 
