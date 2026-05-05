@@ -86,8 +86,8 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     path: z.string().optional(),
     /**
      * How the SP sends the AuthnRequest to the IdP (passport-saml `authnRequestBinding`).
-     * `HTTP-Redirect` (default): 302 to IdP with SAMLRequest query param.
-     * `HTTP-POST`: HTML form auto-post to IdP (POST binding for outbound auth request).
+     * `HTTP-POST` (default): HTML form auto-post to IdP (POST binding for outbound auth request).
+     * `HTTP-Redirect`: 302 to IdP with SAMLRequest query param.
      */
     authnRequestBinding: z
       .enum(['HTTP-Redirect', 'HTTP-POST'])
