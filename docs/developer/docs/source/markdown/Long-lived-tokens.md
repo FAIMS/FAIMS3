@@ -4,11 +4,19 @@
 
 Long-lived API tokens provide a secure way to authenticate with the system APIs programmatically. Unlike user sessions, these tokens can be configured with custom expiry dates and are designed for automated scripts, CI/CD pipelines, and other programmatic access scenarios.
 
-## Why can't I use the token directly?
+## Why can't I use the token directly on `/api`?
 
-The token cannot be immediately used to authenticate to the system APIs. Instead, you need to exchange it for a short-lived access token.
+For the **REST API** under `/api`, the long-lived secret cannot be used as the `Authorization: Bearer` value. You must exchange it for a short-lived access token first.
 
-The reason for this extra step is that long-lived tokens are a serious security risk. This is particularly so if they are routinely used in regular API calls. If the token is used directly, a single compromised API call could result in an attacker gaining long-term access to your account. By ensuring the token is exchanged for an access token, if a regular API token is leaked, it will only last for 5 minutes.
+The reason for this extra step is that long-lived tokens are a serious security risk when they appear on every request. If a short-lived access token is leaked from a single call, it typically expires within minutes.
+
+### Exception: OGC API Features (`/ogc`)
+
+GIS clients (for example QGIS) often cannot run an exchange step. For **OGC API Features** routes only (`/ogc/...`), the server also accepts the raw long-lived token in the header:
+
+`Authorization: Bearer <long-lived-token>`
+
+The same revocation, expiry, and account-disable rules apply as for exchange. **Do not** put the token in a URL query string (only in the `Authorization` header). Programmatic REST clients should still prefer exchanging for a JWT and sending that to `/api`.
 
 ## Responsibility and Security
 

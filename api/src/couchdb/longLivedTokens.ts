@@ -23,14 +23,36 @@ import {
   ItemNotFoundException,
   InvalidRequestException,
 } from '../exceptions';
-import {generateVerificationCode, hashChallengeCode} from '../utils';
+import {
+  generateVerificationCode,
+  hashChallengeCode,
+  VERIFICATION_CODE_CHARSET,
+} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Convert days to milliseconds
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 // We want this pretty long as these tokens are used for long-term access - need
 // higher security to avoid brute forcing
-const LONG_LIVED_TOKEN_LENGTH = 64;
+export const LONG_LIVED_TOKEN_LENGTH = 64;
+
+const VERIFICATION_CHARSET_SET = new Set(VERIFICATION_CODE_CHARSET);
+
+/**
+ * True if the string matches the shape of a raw long-lived API token (opaque),
+ * so callers can route to long-lived validation without attempting JWT verify.
+ */
+export function isOpaqueLongLivedTokenShape(token: string): boolean {
+  if (token.length !== LONG_LIVED_TOKEN_LENGTH) {
+    return false;
+  }
+  for (let i = 0; i < token.length; i++) {
+    if (!VERIFICATION_CHARSET_SET.has(token[i]!)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /**
  * Validates if the provided expiry date is allowed based on configuration

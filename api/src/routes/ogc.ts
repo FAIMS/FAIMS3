@@ -1,11 +1,14 @@
 /*
- * OGC API — Features (Part 1 Core) prototype for FAIMS survey data.
+ * OGC API — Features (Part 1 Core) for FAIMS survey data.
  *
- * All `/ogc` routes are intentionally public (no authentication) for local GIS
- * testing; add auth before any production exposure.
+ * Requires Bearer auth (`Authorization: Bearer <token>`): either a short-lived
+ * JWT or a raw long-lived API token (OGC-only; REST /api still requires JWT).
+ * Discovery endpoints need ACCESS_OGC_ENDPOINT_LANDING_PAGE; collection/items
+ * need ACCESS_OGC_ENDPOINT_DATA on that notebook.
  */
 
 import {
+  Action,
   HydratedDataRecord,
   RecordRevisionIndexDocument,
   Revision,
@@ -13,6 +16,7 @@ import {
 } from '@faims3/data-model';
 import express, {NextFunction, Request, Response} from 'express';
 import {OGC_BASE_URL} from '../buildconfig';
+import * as Exceptions from '../exceptions';
 import {getDataDb} from '../couchdb';
 import {
   collectNotebookGeoJsonFeaturesForOgc,
@@ -24,6 +28,11 @@ import {
   getNotebookMetadata,
   getProjectUIModel,
 } from '../couchdb/notebooks';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationOgc,
+  userCanDo,
+} from '../middleware';
 
 const AUSTRALIA_BBOX: [[number, number, number, number]] = [
   [112, -44, 154, -10],
@@ -373,7 +382,20 @@ ogcRouter.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-ogcRouter.get('/', (_req: Request, res: Response) => {
+ogcRouter.use(requireAuthenticationOgc);
+
+const requireOgcLanding = isAllowedToMiddleware({
+  action: Action.ACCESS_OGC_ENDPOINT_LANDING_PAGE,
+});
+
+const requireOgcDataForNotebook = isAllowedToMiddleware({
+  action: Action.ACCESS_OGC_ENDPOINT_DATA,
+  getResourceId(req) {
+    return req.params.notebookId;
+  },
+});
+
+ogcRouter.get('/', requireOgcLanding, (_req: Request, res: Response) => {
   setOgcJsonHeaders(res);
   res.json({
     title: 'FAIMS Survey Data',
@@ -407,7 +429,7 @@ ogcRouter.get('/', (_req: Request, res: Response) => {
   });
 });
 
-ogcRouter.get('/conformance', (_req: Request, res: Response) => {
+ogcRouter.get('/conformance', requireOgcLanding, (_req: Request, res: Response) => {
   setOgcJsonHeaders(res);
   res.json({
     conformsTo: [
@@ -423,18 +445,28 @@ const openApiHandler = (_req: Request, res: Response) => {
   res.json(buildOpenApiDocument());
 };
 
-ogcRouter.get('/api', openApiHandler);
-ogcRouter.get('/api/', openApiHandler);
+ogcRouter.get('/api', requireOgcLanding, openApiHandler);
+ogcRouter.get('/api/', requireOgcLanding, openApiHandler);
 
 ogcRouter.get(
   '/collections',
-  async (_req: Request, res: Response, next: NextFunction) => {
+  requireOgcLanding,
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // TODO(production): replace with an ACL-filtered listing; this exposes every
-      // project document in CouchDB while `/ogc` is intentionally unauthenticated.
+      const user = req.user;
+      if (!user) {
+        throw new Exceptions.UnauthorizedException();
+      }
       const projects = await getAllProjectsDirectory();
+      const visibleProjects = projects.filter(p =>
+        userCanDo({
+          user,
+          action: Action.ACCESS_OGC_ENDPOINT_DATA,
+          resourceId: p._id,
+        })
+      );
       const collections = await Promise.all(
-        projects.map(async p => {
+        visibleProjects.map(async p => {
           const meta = await getNotebookMetadata(p._id);
           const description =
             meta && typeof meta.description === 'string'
@@ -466,6 +498,7 @@ ogcRouter.get(
 
 ogcRouter.get(
   '/collections/:notebookId',
+  requireOgcDataForNotebook,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {notebookId} = req.params;
@@ -494,6 +527,7 @@ ogcRouter.get(
 
 ogcRouter.get(
   '/collections/:notebookId/items',
+  requireOgcDataForNotebook,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {notebookId} = req.params;
@@ -576,6 +610,7 @@ ogcRouter.get(
 
 ogcRouter.get(
   '/collections/:notebookId/items/:featureId',
+  requireOgcDataForNotebook,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {notebookId, featureId} = req.params;

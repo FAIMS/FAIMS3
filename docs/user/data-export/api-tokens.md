@@ -10,6 +10,8 @@ You can do this via the {{dashboard}} as follows:
 4. Set an expiry date (or none if your deployment allows it)
 5. **Important**: Copy and securely store the token immediately - it won't be shown again - you can create another token if needed
 
+For most API use you exchange this token for a short-lived access token. If you connect a **map or GIS client** to the deployment’s OGC Features endpoint (`/ogc`), that client may use the long-lived token directly in `Authorization: Bearer` for those URLs only—not for general `/api` calls. Never put the token in a query string.
+
 ## Responsibility and Security
 
 It is the responsibility of the **user** to ensure their token is managed securely, this means:

@@ -75,6 +75,16 @@ export enum Action {
   // Data export
   EXPORT_PROJECT_DATA = 'EXPORT_PROJECT_DATA',
 
+  /**
+   * OGC API Features: landing page, conformance, and OpenAPI (no per-notebook data).
+   */
+  ACCESS_OGC_ENDPOINT_LANDING_PAGE = 'ACCESS_OGC_ENDPOINT_LANDING_PAGE',
+
+  /**
+   * OGC API Features: list/describe a collection and read GeoJSON items for that notebook.
+   */
+  ACCESS_OGC_ENDPOINT_DATA = 'ACCESS_OGC_ENDPOINT_DATA',
+
   GENERATE_RANDOM_PROJECT_RECORDS = 'GENERATE_RANDOM_PROJECT_RECORDS',
 
   // Invitations and sharing - note there is create, edit and delete for each
@@ -382,6 +392,20 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.EXPORT_PROJECT_DATA]: {
     name: 'Export Project Data',
     description: 'Download or export all data associated with a project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.ACCESS_OGC_ENDPOINT_LANDING_PAGE]: {
+    name: 'Access OGC API landing endpoints',
+    description:
+      'Use OGC API Features landing page, conformance declaration, and OpenAPI document',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.ACCESS_OGC_ENDPOINT_DATA]: {
+    name: 'Access OGC API feature data',
+    description:
+      'List a notebook as an OGC collection and read its features (GeoJSON) via OGC API Features',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -1084,6 +1108,7 @@ export const roleActions: Record<
       Action.READ_ALL_PROJECT_RECORDS,
       Action.EDIT_ALL_PROJECT_RECORDS,
       Action.DELETE_ALL_PROJECT_RECORDS,
+      Action.ACCESS_OGC_ENDPOINT_DATA,
     ],
     inheritedRoles: [Role.PROJECT_GUEST],
   },
@@ -1149,6 +1174,7 @@ export const roleActions: Record<
       Action.LIST_PROJECTS,
       Action.LIST_TEMPLATES,
       Action.VERIFY_EMAIL,
+      Action.ACCESS_OGC_ENDPOINT_LANDING_PAGE,
 
       // Long-lived token actions for own tokens (CRUD)
       Action.CREATE_LONG_LIVED_TOKEN,

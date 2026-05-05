@@ -21,8 +21,14 @@
 
 import {Action, isAuthorized} from '@faims3/data-model';
 import Express from 'express';
+import {upgradeCouchUserToExpressUser} from './auth/keySigning/create';
 import {validateToken} from './auth/keySigning/read';
+import {
+  isOpaqueLongLivedTokenShape,
+  validateLongLivedToken,
+} from './couchdb/longLivedTokens';
 import * as Exceptions from './exceptions';
+import {hashChallengeCode} from './utils';
 
 /**
  * Middleware helper which maps the express user object -> the isAuthorised
@@ -87,6 +93,13 @@ export async function requireAuthenticationAPI(
     return;
   }
 
+  // Long-lived tokens are accepted only on /ogc (see requireAuthenticationOgc).
+  // Reject them here without calling jwtVerify to avoid invalid-JWT log noise.
+  if (isOpaqueLongLivedTokenShape(token)) {
+    res.status(401).json({error: 'authentication required'});
+    return;
+  }
+
   const user = await validateToken(token);
 
   if (!user) {
@@ -95,6 +108,54 @@ export async function requireAuthenticationAPI(
   }
 
   // insert user into the request
+  req.user = user;
+  next();
+}
+
+function isJwtShapedBearer(token: string): boolean {
+  return token.split('.').length === 3;
+}
+
+/**
+ * Authentication for OGC routes only: accepts a normal short-lived JWT, or a
+ * raw long-lived API token (opaque), matching the identity produced by
+ * POST /api/auth/exchange-long-lived-token. Long-lived validation does not
+ * update lastUsedTimestampMs to avoid Couch write load on map clients.
+ */
+export async function requireAuthenticationOgc(
+  req: Express.Request,
+  res: Express.Response,
+  next: Express.NextFunction
+) {
+  const token = extractBearerToken(req);
+
+  if (!token) {
+    res.status(401).json({error: 'authentication required'});
+    return;
+  }
+
+  let user: globalThis.Express.User | undefined;
+
+  if (isJwtShapedBearer(token)) {
+    user = await validateToken(token);
+  } else if (isOpaqueLongLivedTokenShape(token)) {
+    const tokenHash = hashChallengeCode(token);
+    const {valid, user: dbUser} = await validateLongLivedToken(
+      tokenHash,
+      false
+    );
+    if (valid && dbUser) {
+      user = await upgradeCouchUserToExpressUser({dbUser: dbUser});
+    }
+  } else {
+    user = await validateToken(token);
+  }
+
+  if (!user) {
+    res.status(401).json({error: 'authentication required'});
+    return;
+  }
+
   req.user = user;
   next();
 }
