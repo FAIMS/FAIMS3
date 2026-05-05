@@ -456,6 +456,22 @@ export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
 export const WEBAPP_PUBLIC_URL = app_url();
+
+/**
+ * Public base URL for OGC API Features routes (no trailing slash).
+ * Used in JSON `links[].href` values so GIS clients resolve collections correctly.
+ */
+function ogc_base_url(): string {
+  const url = process.env.OGC_BASE_URL;
+  if (url === '' || url === undefined) {
+    return 'http://localhost:3000/ogc';
+  }
+  return url.replace(/\/$/, '');
+}
+
+/** Canonical `/ogc` root for link generation (prototype; see ogc routes). */
+export const OGC_BASE_URL = ogc_base_url();
+
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
 export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();

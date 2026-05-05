@@ -74,6 +74,7 @@ import {api as templatesApi} from './api/templates';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
+import {ogcRouter} from './routes/ogc';
 import {
   COOKIE_SECRET,
   RATE_LIMITER_ENABLED,
@@ -203,6 +204,8 @@ app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.use(express.static('public'));
 app.use('/api/notebooks', notebookApi);
+// OGC API Features prototype: no auth on `/ogc` (intentional for QGIS/ArcGIS local testing).
+app.use('/ogc', ogcRouter);
 app.use('/api/templates', templatesApi);
 app.use('/api/teams', teamsApi);
 app.use('/api/users', usersApi);

@@ -787,6 +787,96 @@ export const appendBothSpatialFormatsToArchive = async ({
  * @param res - Writable stream for output
  * @throws Error if no spatial fields exist in the project
  */
+/**
+ * GeoJSON Feature with stable `id` for OGC API Features items.
+ * Built with the same property pipeline as streamed GeoJSON export.
+ */
+export interface OgcGeoJsonFeature {
+  type: 'Feature';
+  id: string;
+  geometry: Record<string, unknown>;
+  properties: Record<string, unknown>;
+}
+
+function hydratedRecordToOgcFeatures(
+  record: HydratedDataRecord,
+  geometries: ExtractedGeometry[],
+  baseProperties: Record<string, any>
+): OgcGeoJsonFeature[] {
+  const out: OgcGeoJsonFeature[] = [];
+  for (const geom of geometries) {
+    const properties = buildFeatureProperties(
+      baseProperties,
+      geom.geometrySource
+    );
+    out.push({
+      type: 'Feature',
+      id: record.record_id,
+      geometry: geom.geometry,
+      properties,
+    });
+  }
+  return out;
+}
+
+/**
+ * Loads every notebook record and returns GeoJSON features in memory (OGC prototype).
+ * Returns an empty array when the notebook has no spatial fields.
+ */
+export async function collectNotebookGeoJsonFeaturesForOgc(
+  projectId: ProjectID
+): Promise<OgcGeoJsonFeature[]> {
+  const context = await initSpatialExportContext(projectId);
+  if (!context.hasSpatialFields) {
+    return [];
+  }
+  const filenames: string[] = [];
+  const features: OgcGeoJsonFeature[] = [];
+  const iterator = await createRecordIterator(projectId, context);
+  let {record, done} = await iterator.next();
+
+  while (!done) {
+    if (record) {
+      const {baseProperties, geometries} = await processRecordForSpatial(
+        record,
+        context.viewFieldsMap,
+        filenames,
+        context.dataDb,
+        context.uiSpecification
+      );
+      features.push(
+        ...hydratedRecordToOgcFeatures(record, geometries, baseProperties)
+      );
+    }
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+  return features;
+}
+
+/**
+ * Spatial features for one hydrated record (same mapping as export GeoJSON).
+ */
+export async function collectOgcGeoJsonFeaturesForHydratedRecord(
+  projectId: ProjectID,
+  record: HydratedDataRecord
+): Promise<OgcGeoJsonFeature[]> {
+  const context = await initSpatialExportContext(projectId);
+  if (!context.hasSpatialFields) {
+    return [];
+  }
+  const filenames: string[] = [];
+  const {baseProperties, geometries} = await processRecordForSpatial(
+    record,
+    context.viewFieldsMap,
+    filenames,
+    context.dataDb,
+    context.uiSpecification
+  );
+  return hydratedRecordToOgcFeatures(record, geometries, baseProperties);
+}
+
 export const streamNotebookRecordsAsGeoJSON = async (
   projectId: ProjectID,
   res: NodeJS.WritableStream
