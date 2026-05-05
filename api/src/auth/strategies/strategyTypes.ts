@@ -93,6 +93,11 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
       .enum(['HTTP-Redirect', 'HTTP-POST'])
       .optional()
       .default('HTTP-POST'),
+    /**
+     * When true, passport-saml does not DEFLATE-compress outbound SAMLRequest /
+     * LogoutRequest before base64 (required by some IdPs e.g. VANguard FAS).
+     */
+    skipRequestCompression: z.boolean().optional(),
     /** Sign the metadata document with PK? */
     signMetadata: z
       .string()

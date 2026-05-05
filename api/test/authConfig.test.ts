@@ -228,6 +228,22 @@ describe('readAuthProviderConfigFromEnv', () => {
     expect(vg.authnRequestBinding).to.equal('HTTP-POST');
   });
 
+  it('parses SAML skipRequestCompression from env', () => {
+    process.env.AUTH_VG_TYPE = 'saml';
+    process.env.AUTH_VG_DISPLAY_NAME = 'Vanguard';
+    process.env.AUTH_VG_SCOPE = 'profile,email';
+    process.env.AUTH_VG_ENTRY_POINT = 'https://idp.example/sso';
+    process.env.AUTH_VG_ISSUER = 'https://sp.example/';
+    process.env.AUTH_VG_IDP_PUBLIC_KEY = 'MIIB';
+    process.env.AUTH_VG_SKIP_REQUEST_COMPRESSION = 'true';
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).to.not.be.null;
+    const vg = result?.vg as SAMLAuthProviderConfig;
+    expect(vg.skipRequestCompression).to.equal(true);
+  });
+
   it('should return null and log errors when validation fails', () => {
     // Missing required fields
     process.env.AUTH_TEST_TYPE = 'unknown-type'; // invalid type
