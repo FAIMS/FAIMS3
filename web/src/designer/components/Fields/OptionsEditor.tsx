@@ -62,6 +62,7 @@ import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
 import {
   designerCancelButtonSx,
@@ -431,6 +432,13 @@ export const OptionsEditor = ({
   const [editValue, setEditValue] = useState('');
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
   const addOptionHasError = Boolean(errorMessage) && !editingOption;
+  const optionGuidance = (
+    <>
+      You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
+      <code>**Bold**</code> or <code>*italic*</code>). Add and remove options as
+      needed. Drag items or use arrows to reorder them.
+    </>
+  );
 
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
@@ -829,155 +837,144 @@ export const OptionsEditor = ({
     <BaseFieldEditor fieldName={fieldName}>
       <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
         <Grid container spacing={2}>
-          {/* Info alert */}
-          <Grid item xs={12}>
-            <Alert
-              severity="info"
-              sx={{
-                mb: 2,
-                backgroundColor: 'rgb(229, 246, 253)',
-                '& .MuiAlert-icon': {
-                  color: 'rgb(1, 67, 97)',
-                },
-              }}
-            >
-              You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
-              <code>**Bold**</code> or <code>*italic*</code>).
-              <br />
-              Add and remove options as needed. Drag items or use arrows to reorder
-              them.
-            </Alert>
-          </Grid>
-
           {/* Options table */}
           <Grid item xs={12}>
-            <TableContainer
-              component={Paper}
-              variant="outlined"
-              sx={{
-                border: '1px solid rgba(0, 0, 0, 0.12)',
-                boxShadow: 'none',
-                borderRadius: 1,
-                maxHeight: '1000px',
-                overflow: 'auto',
-              }}
+            <SimpleFieldWrapper
+              heading={
+                isMultiSelectField ? 'Select multiple options' : 'Select one options'
+              }
+              helperText={optionGuidance}
             >
-              <Table size="small" stickyHeader sx={{tableLayout: 'fixed', width: '100%'}}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        width: {xs: 32, sm: 40},
-                        backgroundColor: '#fafafa',
-                        fontWeight: 500,
-                        py: 1.5,
-                      }}
-                    />
-                    <TableCell
-                      sx={{
-                        backgroundColor: '#fafafa',
-                        fontWeight: 700,
-                        py: 1.5,
-                      }}
-                    >
-                      Option Text
-                    </TableCell>
-                    {showExclusiveOptions && (
+              <TableContainer
+                component={Paper}
+                variant="outlined"
+                sx={{
+                  border: '1px solid rgba(0, 0, 0, 0.12)',
+                  boxShadow: 'none',
+                  borderRadius: 1,
+                  maxHeight: '1000px',
+                  overflow: 'auto',
+                }}
+              >
+                <Table
+                  size="small"
+                  stickyHeader
+                  sx={{tableLayout: 'fixed', width: '100%'}}
+                >
+                  <TableHead>
+                    <TableRow>
                       <TableCell
-                        align="center"
                         sx={{
-                          width: {xs: 96, sm: 140},
+                          width: {xs: 32, sm: 40},
+                          backgroundColor: '#fafafa',
+                          fontWeight: 500,
+                          py: 1.5,
+                        }}
+                      />
+                      <TableCell
+                        sx={{
                           backgroundColor: '#fafafa',
                           fontWeight: 700,
                           py: 1.5,
                         }}
                       >
-                        <Box
+                        Option Text
+                      </TableCell>
+                      {showExclusiveOptions && (
+                        <TableCell
+                          align="center"
                           sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 0.5,
+                            width: {xs: 96, sm: 140},
+                            backgroundColor: '#fafafa',
+                            fontWeight: 700,
+                            py: 1.5,
                           }}
                         >
-                          Exclusive
-                          <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
-                            <InfoIcon
-                              sx={{
-                                ...(designerInfoIconSx as Record<string, unknown>),
-                              }}
-                            />
-                          </Tooltip>
-                        </Box>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 0.5,
+                            }}
+                          >
+                            Exclusive
+                            <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
+                              <InfoIcon
+                                sx={{
+                                  ...(designerInfoIconSx as Record<string, unknown>),
+                                }}
+                              />
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      )}
+                      <TableCell
+                        align="right"
+                        sx={{
+                          width: {xs: 120, sm: 180},
+                          backgroundColor: '#fafafa',
+                          fontWeight: 700,
+                          py: 1.5,
+                        }}
+                      >
+                        Actions
                       </TableCell>
-                    )}
-                    <TableCell
-                      align="right"
-                      sx={{
-                        width: {xs: 120, sm: 180},
-                        backgroundColor: '#fafafa',
-                        fontWeight: 700,
-                        py: 1.5,
-                      }}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
                     >
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    {/* SortableContext now includes "Other" id when enabled */}
-                    <SortableContext
-                      items={combinedRows.map(r => r.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {combinedRows.map(row => {
-                        if (row.type === 'other') {
+                      {/* SortableContext now includes "Other" id when enabled */}
+                      <SortableContext
+                        items={combinedRows.map(r => r.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {combinedRows.map(row => {
+                          if (row.type === 'other') {
+                            return (
+                              <SortableOtherOptionRow
+                                key={OTHER_OPTION_ID}
+                                id={OTHER_OPTION_ID}
+                                showExclusiveOptions={showExclusiveOptions}
+                                otherOptionPosition={otherOptionPosition}
+                                totalOptions={options.length}
+                                onMoveUp={() => moveOtherOption('up')}
+                                onMoveDown={() => moveOtherOption('down')}
+                                onRemove={toggleEnableOtherOption}
+                              />
+                            );
+                          }
+
+                          const optionIndex = options.findIndex(
+                            o => o.value === row.option.value
+                          );
+
                           return (
-                            <SortableOtherOptionRow
-                              key={OTHER_OPTION_ID}
-                              id={OTHER_OPTION_ID}
+                            <SortableItem
+                              key={row.option.value}
+                              id={row.option.value}
+                              option={row.option}
+                              index={optionIndex}
                               showExclusiveOptions={showExclusiveOptions}
-                              otherOptionPosition={otherOptionPosition}
-                              totalOptions={options.length}
-                              onMoveUp={() => moveOtherOption('up')}
-                              onMoveDown={() => moveOtherOption('down')}
-                              onRemove={toggleEnableOtherOption}
+                              exclusiveOptions={exclusiveOptions}
+                              onExclusiveToggle={handleExclusiveToggle}
+                              onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
+                              onRemove={removeOption}
+                              onMove={moveOption}
+                              totalItems={options.length}
                             />
                           );
-                        }
-
-                        const optionIndex = options.findIndex(
-                          o => o.value === row.option.value
-                        );
-
-                        return (
-                          <SortableItem
-                            key={row.option.value}
-                            id={row.option.value}
-                            option={row.option}
-                            index={optionIndex}
-                            showExclusiveOptions={showExclusiveOptions}
-                            exclusiveOptions={exclusiveOptions}
-                            onExclusiveToggle={handleExclusiveToggle}
-                            onEdit={(val, idx) =>
-                              handleOpenEditDialog(val, idx)
-                            }
-                            onRemove={removeOption}
-                            onMove={moveOption}
-                            totalItems={options.length}
-                          />
-                        );
-                      })}
-                    </SortableContext>
-                  </DndContext>
-                </TableBody>
-              </Table>
-            </TableContainer>
+                        })}
+                      </SortableContext>
+                    </DndContext>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </SimpleFieldWrapper>
           </Grid>
 
           {/* Controls under table */}
@@ -987,32 +984,40 @@ export const OptionsEditor = ({
                 <Stack
                   direction={{xs: 'column', sm: 'row'}}
                   spacing={1}
-                  alignItems={{xs: 'stretch', sm: 'center'}}
+                  alignItems={{xs: 'stretch', sm: 'flex-end'}}
                   sx={{mb: 1.5}}
                 >
-                  <TextField
-                    size="small"
-                    placeholder="Add Option"
-                    value={newOption}
-                    onChange={e => setNewOption(e.target.value)}
-                    error={addOptionHasError}
-                    focused={addOptionHasError}
-                    sx={{
-                      width: {xs: '100%', sm: '52%', md: '48%'},
-                      '& .MuiOutlinedInput-root': {
-                        ...(addOptionHasError && {
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'error.main',
-                            borderWidth: 2,
+                  <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
+                    <SimpleFieldWrapper
+                      heading="Option Text"
+                      helperText="Enter an option label, then click Add."
+                    >
+                      <TextField
+                        size="small"
+                        placeholder="Add option"
+                        value={newOption}
+                        onChange={e => setNewOption(e.target.value)}
+                        error={addOptionHasError}
+                        focused={addOptionHasError}
+                        fullWidth
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...(addOptionHasError && {
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'error.main',
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline':
+                                {
+                                  borderColor: 'error.main',
+                                  borderWidth: 2,
+                                },
+                            }),
                           },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'error.main',
-                            borderWidth: 2,
-                          },
-                        }),
-                      },
-                    }}
-                  />
+                        }}
+                      />
+                    </SimpleFieldWrapper>
+                  </Box>
                   <Button
                     color="primary"
                     variant="outlined"
