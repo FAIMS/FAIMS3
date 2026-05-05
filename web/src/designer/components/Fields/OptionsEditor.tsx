@@ -421,6 +421,7 @@ export const OptionsEditor = ({
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const fieldComponent = field['component-name'];
   const isMultiSelectField = fieldComponent === 'MultiSelect';
+  const isDeprecatedComponent = fieldComponent === 'Select';
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
@@ -841,9 +842,11 @@ export const OptionsEditor = ({
           ml: 2,
           mt: 2,
           p: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
+          border: isDeprecatedComponent ? undefined : '1px solid',
+          borderColor: isDeprecatedComponent ? undefined : 'divider',
+          boxShadow: isDeprecatedComponent
+            ? undefined
+            : '0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
         }}
       >
         <Grid container spacing={2}>
@@ -860,8 +863,9 @@ export const OptionsEditor = ({
                 variant="outlined"
                 sx={{
                   border: '1px solid rgba(0, 0, 0, 0.12)',
-                  boxShadow: theme =>
-                    `0 1px 6px rgba(0,0,0,0.08), inset 0 1px 2px rgba(0,0,0,0.04)`,
+                  boxShadow: isDeprecatedComponent
+                    ? 'none'
+                    : '0 1px 6px rgba(0,0,0,0.08), inset 0 1px 2px rgba(0,0,0,0.04)',
                   borderRadius: 1,
                   maxHeight: '1000px',
                   overflow: 'auto',
