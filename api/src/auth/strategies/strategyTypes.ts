@@ -84,6 +84,15 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     callbackURL: z.string().optional(),
     /** Callback path if callbackURL not specified (default: /saml/callback) */
     path: z.string().optional(),
+    /**
+     * How the SP sends the AuthnRequest to the IdP (passport-saml `authnRequestBinding`).
+     * `HTTP-POST` (default): HTML form auto-post to IdP (POST binding for outbound auth request).
+     * `HTTP-Redirect`: 302 to IdP with SAMLRequest query param.
+     */
+    authnRequestBinding: z
+      .enum(['HTTP-Redirect', 'HTTP-POST'])
+      .optional()
+      .default('HTTP-POST'),
     /** Sign the metadata document with PK? */
     signMetadata: z
       .string()

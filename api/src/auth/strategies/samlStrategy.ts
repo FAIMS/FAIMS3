@@ -154,6 +154,7 @@ export const samlStrategyGenerator = (
         options.callbackURL ||
         CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
       path: options.path,
+      authnRequestBinding: options.authnRequestBinding,
       // SP signing/decryption keys
       privateKey: options.privateKey,
       decryptionPvk: options.enableDecryptionPvk

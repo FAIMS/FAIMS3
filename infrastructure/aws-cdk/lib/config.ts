@@ -142,6 +142,13 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .optional()
     .default('/saml/callback')
     .describe('Callback path if callbackURL not specified'),
+  authnRequestBinding: z
+    .enum(['HTTP-Redirect', 'HTTP-POST'])
+    .optional()
+    .default('HTTP-POST')
+    .describe(
+      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
+    ),
   // If you want the metadata document signed using your PK
   signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
