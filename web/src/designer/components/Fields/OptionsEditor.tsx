@@ -856,7 +856,7 @@ export const OptionsEditor = ({
           <Grid item xs={12}>
             <SimpleFieldWrapper
               heading={
-                isMultiSelectField ? 'Select multiple options' : 'Select one options'
+                isMultiSelectField ? 'Select multiple options' : 'Select one option'
               }
               helperText={undefined}
             >
