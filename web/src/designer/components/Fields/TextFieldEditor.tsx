@@ -25,6 +25,7 @@ import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 /** Inspector for single-line text fields (initial value, HTML input type, wraps {@link BaseFieldEditor}). */
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -103,15 +104,19 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
         <Grid item sm={6} xs={12}>
           <Card variant="outlined" sx={{display: 'flex'}}>
             <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-              <DebouncedTextField
-                name="rows"
-                variant="outlined"
-                label="Rows to display"
-                type="number"
-                value={rows}
+              <SimpleFieldWrapper
+                heading="Rows to display"
                 helperText="Number of rows in the text field."
-                onChange={e => updateRows(parseInt(e.target.value))}
-              />
+              >
+                <DebouncedTextField
+                  name="rows"
+                  variant="outlined"
+                  label=""
+                  type="number"
+                  value={rows}
+                  onChange={e => updateRows(parseInt(e.target.value))}
+                />
+              </SimpleFieldWrapper>
             </Grid>
           </Card>
         </Grid>
@@ -120,16 +125,20 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
       <Grid item xs={12} sm={6}>
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-            <DebouncedTextField
-              name="pre-populated"
-              variant="outlined"
-              label="Default Text"
-              value={initVal}
+            <SimpleFieldWrapper
+              heading="Default Text"
               helperText="Choose this field's default text."
-              onChange={e => {
-                updateDefault(e.target.value);
-              }}
-            />
+            >
+              <DebouncedTextField
+                name="pre-populated"
+                variant="outlined"
+                label=""
+                value={initVal}
+                onChange={e => {
+                  updateDefault(e.target.value);
+                }}
+              />
+            </SimpleFieldWrapper>
           </Grid>
         </Card>
       </Grid>
