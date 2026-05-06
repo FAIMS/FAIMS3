@@ -13,6 +13,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 /** Integer vs floating `numberType` and HTML input binding for `NumberField`. */
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -118,27 +119,31 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
             Number limits
           </Typography>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <TextField
-              label="Minimum"
-              type="number"
-              value={min ?? ''}
-              onChange={handleMinChange}
-              variant="outlined"
-              size="small"
-              fullWidth
-            />
+            <SimpleFieldWrapper heading="Minimum">
+              <TextField
+                label=""
+                type="number"
+                value={min ?? ''}
+                onChange={handleMinChange}
+                variant="outlined"
+                size="small"
+                fullWidth
+              />
+            </SimpleFieldWrapper>
             <FormHelperText sx={{mt: -1}}>
               Set minimum and/or maximum allowed values. Leave empty for no limit.
             </FormHelperText>
-            <TextField
-              label="Maximum"
-              type="number"
-              value={max ?? ''}
-              onChange={handleMaxChange}
-              variant="outlined"
-              size="small"
-              fullWidth
-            />
+            <SimpleFieldWrapper heading="Maximum">
+              <TextField
+                label=""
+                type="number"
+                value={max ?? ''}
+                onChange={handleMaxChange}
+                variant="outlined"
+                size="small"
+                fullWidth
+              />
+            </SimpleFieldWrapper>
           </Box>
         </Box>
       </Box>
