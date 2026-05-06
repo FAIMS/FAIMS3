@@ -430,6 +430,7 @@ const FieldEditorComponent = ({
                   ? 'Drag field to reorder'
                   : 'Collapse field first to drag and reorder'
               }
+              disabled={!canDragField}
               dragAttributes={canDragField ? attributes : undefined}
               dragListeners={canDragField ? listeners : undefined}
               onPointerDown={event => event.stopPropagation()}
