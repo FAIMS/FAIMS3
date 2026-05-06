@@ -72,6 +72,39 @@ export const designerIconControlButtonSx: SxProps<Theme> = {
   p: 0.5,
 };
 
+export const designerInlineEditFocusOverlaySx: SxProps<Theme> = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 1200,
+  backgroundColor: 'rgba(8, 18, 29, 0.16)',
+  backdropFilter: 'blur(3px)',
+};
+
+export const designerInlineEditPanelSx: SxProps<Theme> = {
+  position: 'relative',
+  zIndex: 1201,
+  backgroundColor: 'background.paper',
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 1.25,
+  boxShadow: '0 12px 30px rgba(0, 0, 0, 0.16)',
+  px: 1.2,
+  py: 0.75,
+  mb: 1,
+};
+
+export const designerInlineEditActionIconSx: SxProps<Theme> = {
+  color: 'text.secondary',
+  borderRadius: 1,
+  '& .MuiSvgIcon-root': {
+    fontSize: '1.52rem',
+    fontWeight: 800,
+  },
+  '&:hover': {
+    backgroundColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
+  },
+};
+
 export const designerPrimaryActionButtonSx: SxProps<Theme> = {
   textTransform: 'none',
   fontWeight: 700,

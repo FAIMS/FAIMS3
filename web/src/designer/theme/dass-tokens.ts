@@ -24,7 +24,7 @@ export const dassTokens: DesignerThemeTokens = {
   appBarColor: '#000000',
   // ── Form tabs ────────────────────────────────────────────────────────────
   formTabBorderColor: '#C40000',
-  formTabSelectedBg: '#4C1F24', // ranisa todo 
+  formTabSelectedBg: '#4C1F24',
   formTabSelectedText: '#FFFFFF',
   formTabIndicatorVisible: true,
   formTabIndicatorColor: '#C40000',

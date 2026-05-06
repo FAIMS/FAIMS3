@@ -30,7 +30,6 @@ import {CSS} from '@dnd-kit/utilities';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import {
@@ -69,6 +68,7 @@ import {
   designerCheckboxSx,
   designerInfoIconSx,
 } from '../designer-style';
+import {DragHandle} from '../drag-handle';
 import {
   findOptionReferences,
   updateConditionReferences,
@@ -167,14 +167,12 @@ const SortableOtherOptionRow = ({
     >
       {/* EDITED: Drag handle is ENABLED for Other */}
       <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
-        <IconButton
-          size="small"
-          sx={{cursor: 'grab', p: 0.5}}
-          {...attributes}
-          {...listeners}
-        >
-          <DragIndicatorIcon />
-        </IconButton>
+        <DragHandle
+          compact
+          label="Drag option to reorder"
+          dragAttributes={attributes}
+          dragListeners={listeners}
+        />
       </TableCell>
 
       <TableCell sx={{py: 1, minWidth: 0}}>
@@ -294,15 +292,12 @@ const SortableItem = ({
     >
       {/* Drag handle column */}
       <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
-        <IconButton
-          size="small"
-          sx={{cursor: 'grab', p: 0.5}}
-          // attach all the use draggable stuff
-          {...attributes}
-          {...listeners}
-        >
-          <DragIndicatorIcon />
-        </IconButton>
+        <DragHandle
+          compact
+          label="Drag option to reorder"
+          dragAttributes={attributes}
+          dragListeners={listeners}
+        />
       </TableCell>
 
       {/* Option text column with tooltip */}
@@ -359,20 +354,24 @@ const SortableItem = ({
             </IconButton>
           </span>
         </Tooltip>
-        <IconButton
-          size="small"
-          onClick={() => onEdit(option.label, index)}
-          sx={{p: {xs: 0.25, sm: 0.5}, color: 'success.main'}}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={() => onRemove(option)}
-          sx={{p: {xs: 0.25, sm: 0.5}, color: 'error.main'}}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title="Edit option">
+          <IconButton
+            size="small"
+            onClick={() => onEdit(option.label, index)}
+            sx={{p: {xs: 0.25, sm: 0.5}, color: 'success.main'}}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Delete option">
+          <IconButton
+            size="small"
+            onClick={() => onRemove(option)}
+            sx={{p: {xs: 0.25, sm: 0.5}, color: 'error.main'}}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </TableCell>
     </TableRow>
   );
@@ -854,12 +853,7 @@ export const OptionsEditor = ({
         <Grid container spacing={2}>
           {/* Options table */}
           <Grid item xs={12}>
-            <SimpleFieldWrapper
-              heading={
-                isMultiSelectField ? 'Select multiple options' : 'Select one option'
-              }
-              helperText={undefined}
-            >
+            <SimpleFieldWrapper heading="Options list" helperText={undefined}>
               <TableContainer
                 component={Paper}
                 variant="outlined"
