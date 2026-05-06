@@ -37,6 +37,10 @@ export function CreateTemplateForm({
     action: Action.CREATE_TEMPLATE,
   });
 
+  const canCreatePublicTemplate = useIsAuthorisedTo({
+    action: Action.CREATE_PUBLIC_TEMPLATE,
+  });
+
   // get the teams that we have permission to create
   // templates in
   const teamsAvailable =
@@ -76,6 +80,30 @@ export function CreateTemplateForm({
     },
   ];
 
+  if (canCreatePublicTemplate) {
+    fields.push({
+      name: 'visibility',
+      label: 'Template visibility',
+      description:
+        'Public templates are available for all signed-in users who can browse templates.',
+      options: [
+        {
+          label: 'Private',
+          value: 'private',
+          description:
+            'Only people with access (for example your team) can view this template.',
+        },
+        {
+          label: 'Public',
+          value: 'public',
+          description:
+            'This template will be available to view and use for all users. Public permissions are read only.',
+        },
+      ],
+      schema: z.enum(['private', 'public']),
+    });
+  }
+
   if (!justOneTeam) {
     fields.push({
       name: 'team',
@@ -92,10 +120,13 @@ export function CreateTemplateForm({
     name: string;
     file?: File;
     team?: string;
+    visibility?: 'private' | 'public';
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, file, team} = values;
+    const {name, file, team, visibility} = values;
+    const isPublic =
+      canCreatePublicTemplate && visibility === 'public';
     let jsonPayload: Record<string, any> = {};
 
     if (file) {
@@ -136,6 +167,7 @@ export function CreateTemplateForm({
           body: JSON.stringify({
             teamId: chosenTeamId,
             name,
+            isPublic,
             ...jsonPayload,
           }),
         }
@@ -178,7 +210,10 @@ export function CreateTemplateForm({
           fields={fields}
           onSubmit={onSubmit}
           submitButtonText="Create Template"
-          defaultValues={{team: defaultValues?.teamId}}
+          defaultValues={{
+            team: defaultValues?.teamId,
+            ...(canCreatePublicTemplate ? {visibility: 'private' as const} : {}),
+          }}
         />
       </>
     );

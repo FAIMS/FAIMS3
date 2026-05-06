@@ -52,6 +52,7 @@ import {
   Role,
   slugify,
   isPeopleUserAccountDisabled,
+  userCanReadTemplateDocument,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
@@ -475,6 +476,20 @@ api.post(
     if (isFromTemplate(req.body)) {
       // Now we use the template to get details needed to instantiate a new notebook
       const template = await getTemplate(req.body.template_id);
+
+      if (
+        !userCanReadTemplateDocument({
+          decodedToken: {
+            globalRoles: req.user.globalRoles,
+            resourceRoles: req.user.resourceRoles,
+          },
+          template,
+        })
+      ) {
+        throw new Exceptions.UnauthorizedException(
+          'You are not authorized to use this template.'
+        );
+      }
 
       if (template.archived === true) {
         throw new Exceptions.InvalidRequestException(

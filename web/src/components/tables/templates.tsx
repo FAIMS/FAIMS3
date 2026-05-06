@@ -12,78 +12,118 @@ import {
 
 export type Column = any;
 
-export const columns: ColumnDef<Column>[] = [
-  {
-    accessorKey: 'name',
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Name" />
-    ),
-  },
-  {
-    id: 'team',
-    accessorKey: 'ownedByTeamId',
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Team" />
-    ),
-    cell: ({
-      row: {
-        original: {ownedByTeamId},
-      },
-    }) => {
-      return ownedByTeamId ? (
-        <TeamCellComponent teamId={ownedByTeamId} />
-      ) : null;
+const nameColumn: ColumnDef<Column> = {
+  accessorKey: 'name',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Name" />
+  ),
+};
+
+const teamColumn: ColumnDef<Column> = {
+  id: 'team',
+  accessorKey: 'ownedByTeamId',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Team" />
+  ),
+  cell: ({
+    row: {
+      original: {ownedByTeamId, ownedByTeamDisplayName},
     },
-  },
-  {
-    id: 'status',
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    accessorFn: (row: Column & {archived?: boolean}) =>
-      row.archived === true ? 'Archived' : 'Active',
-    cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
-      const label = row.original.archived === true ? 'Archived' : 'Active';
-      return <RoleCard>{label}</RoleCard>;
-    },
-  },
-  {
-    accessorKey: 'metadata.project_lead',
-    header: ({column}) => (
-      <DataTableColumnHeader
-        column={column}
-        title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
+  }) => {
+    return ownedByTeamId ? (
+      <TeamCellComponent
+        teamId={ownedByTeamId}
+        teamDisplayName={ownedByTeamDisplayName}
       />
-    ),
+    ) : null;
   },
-  {
-    accessorKey: 'metadata.pre_description',
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Description" />
-    ),
-    cell: ({getValue}) => {
-      const description = getValue<string>();
-      if (!description) return null;
-      const maxLength = 100;
-      const isTruncated = description.length > maxLength;
-      const displayText = isTruncated
-        ? description.slice(0, maxLength) + '…'
-        : description;
+};
 
-      if (!isTruncated) return <span>{displayText}</span>;
-
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="cursor-help">{displayText}</span>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-sm">
-              <p>{description}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    },
+const statusColumn: ColumnDef<Column> = {
+  id: 'status',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Status" />
+  ),
+  accessorFn: (row: Column & {archived?: boolean}) =>
+    row.archived === true ? 'Archived' : 'Active',
+  cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
+    const label = row.original.archived === true ? 'Archived' : 'Active';
+    return <RoleCard>{label}</RoleCard>;
   },
-];
+};
+
+const visibilityColumn: ColumnDef<Column> = {
+  id: 'visibility',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Visibility" />
+  ),
+  accessorFn: (row: Column & {isPublic?: boolean}) =>
+    row.isPublic === true ? 'Public' : 'Private',
+  cell: ({row}: {row: {original: Column & {isPublic?: boolean}}}) => {
+    const label = row.original.isPublic === true ? 'Public' : 'Private';
+    return <RoleCard>{label}</RoleCard>;
+  },
+};
+
+const projectLeadColumn: ColumnDef<Column> = {
+  accessorKey: 'metadata.project_lead',
+  header: ({column}) => (
+    <DataTableColumnHeader
+      column={column}
+      title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
+    />
+  ),
+};
+
+const descriptionColumn: ColumnDef<Column> = {
+  accessorKey: 'metadata.pre_description',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Description" />
+  ),
+  cell: ({getValue}) => {
+    const description = getValue<string>();
+    if (!description) return null;
+    const maxLength = 100;
+    const isTruncated = description.length > maxLength;
+    const displayText = isTruncated
+      ? description.slice(0, maxLength) + '…'
+      : description;
+
+    if (!isTruncated) return <span>{displayText}</span>;
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-help">{displayText}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm">
+            <p>{description}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  },
+};
+
+/**
+ * Columns for the templates overview table. Visibility is omitted unless the
+ * user has global permission to change catalogue visibility (ops/system admin).
+ */
+export function getTemplatesTableColumns(options: {
+  includeVisibility: boolean;
+  /** When true, omit the team column (e.g. team tab where team is fixed). */
+  hideTeamColumn?: boolean;
+}): ColumnDef<Column>[] {
+  const {includeVisibility, hideTeamColumn} = options;
+  const team = hideTeamColumn ? [] : [teamColumn];
+  const visibility = includeVisibility ? [visibilityColumn] : [];
+  return [
+    nameColumn,
+    ...team,
+    statusColumn,
+    ...visibility,
+    projectLeadColumn,
+    descriptionColumn,
+  ];
+}

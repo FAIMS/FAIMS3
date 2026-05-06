@@ -1128,7 +1128,7 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Lists template summaries (metadata only; no `ui-specification` form payload). Use GET `/api/templates/{id}` for full detail. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team.",
+        "description": "Lists template summaries (no `ui-specification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -1176,7 +1176,7 @@
       },
       "post": {
         "summary": "Create a new template",
-        "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
+        "description": "Creates a new template. The payload is validated before processing. Requires `CREATE_TEMPLATE` or `CREATE_TEMPLATE_IN_TEAM` as appropriate. Setting `isPublic` to true additionally requires `CREATE_PUBLIC_TEMPLATE` (operations or system administrators), same grant as `CHANGE_TEMPLATE_VISIBILITY`.",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -1215,7 +1215,7 @@
     "/templates/{id}": {
       "get": {
         "summary": "Get a specific template",
-        "description": "Gets a specific template by ID from the templates DB.",
+        "description": "Gets a specific template by ID from the templates DB. The response may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team (same behaviour as the list endpoint).",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -1295,6 +1295,59 @@
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/visibility": {
+      "put": {
+        "summary": "Set template public catalogue visibility",
+        "description": "Sets whether the template is listed in the public catalogue (`isPublic`). Does not change other template fields. Requires `CHANGE_TEMPLATE_VISIBILITY` (operations or system administrators). Returns the updated template document.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Public visibility flag",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutTemplateSetVisibilityInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
           }
         }
       }
@@ -1992,7 +2045,7 @@
       "required": ["count"]
     },
     "PostRestoreTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
+      "$ref": "#/definitions/TemplateStoredDocument"
     },
     "Notebook": {
       "type": "object",
@@ -2338,11 +2391,19 @@
     },
     "GetListTemplatesResponse": {
       "type": "object",
+      "description": "Template list items are lean summaries (no `ui-specification`) plus optional `ownedByTeamDisplayName` from the server.",
       "properties": {
         "templates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TemplateListItem"
+            "allOf": [
+              {
+                "$ref": "#/definitions/TemplateListItem"
+              },
+              {
+                "$ref": "#/definitions/TemplateApiResponseExtensions"
+              }
+            ]
           }
         }
       }
@@ -2356,6 +2417,7 @@
         "name": {"type": "string"},
         "version": {"type": "number"},
         "archived": {"type": "boolean"},
+        "isPublic": {"type": "boolean"},
         "ownedByTeamId": {"type": "string"},
         "metadata": {
           "type": "object",
@@ -2392,7 +2454,7 @@
       "required": ["name", "metadata", "ui_specification"]
     },
     "PostCreateTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
+      "$ref": "#/definitions/TemplateStoredDocument"
     },
     "PutUpdateTemplateInput": {
       "type": "object",
@@ -2414,15 +2476,47 @@
       "required": []
     },
     "PutUpdateTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
+      "$ref": "#/definitions/TemplateStoredDocument"
     },
-    "TemplateDocument": {
+    "PutTemplateSetVisibilityInput": {
+      "type": "object",
+      "properties": {
+        "isPublic": {
+          "type": "boolean",
+          "description": "When true, the template is included in the public catalogue for users with permission to read public template details."
+        }
+      },
+      "required": ["isPublic"]
+    },
+    "TemplateApiResponseExtensions": {
+      "type": "object",
+      "description": "Optional fields returned only by GET /templates and GET /templates/{id}. Not persisted on the template document and not returned by POST/PUT restore responses.",
+      "properties": {
+        "ownedByTeamDisplayName": {
+          "type": "string",
+          "description": "Display name of the owning team (`name` from the teams DB), injected when `ownedByTeamId` is set and the team record exists."
+        }
+      }
+    },
+    "TemplateStoredDocument": {
+      "description": "Template as stored in CouchDB (create/update/restore responses).",
       "allOf": [
         {
           "$ref": "#/definitions/TemplateDetails"
         },
         {
           "$ref": "#/definitions/CouchDocumentFields"
+        }
+      ]
+    },
+    "TemplateDocument": {
+      "description": "Stored template plus optional GET-only fields (e.g. team display name).",
+      "allOf": [
+        {
+          "$ref": "#/definitions/TemplateStoredDocument"
+        },
+        {
+          "$ref": "#/definitions/TemplateApiResponseExtensions"
         }
       ]
     },

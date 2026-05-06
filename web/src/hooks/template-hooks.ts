@@ -128,3 +128,34 @@ export const updateTemplateRequest = async ({
     }
   );
 };
+
+/**
+ * PUT /api/templates/:templateId/visibility — public visibility only.
+ */
+export const putTemplateSetVisibility = async ({
+  user,
+  templateId,
+  isPublic,
+}: {
+  user: User;
+  templateId: string;
+  isPublic: boolean;
+}): Promise<void> => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/visibility`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({isPublic}),
+    }
+  );
+  const json: unknown = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    throw new Error(
+      errorMessageFromTemplateJsonBody(json, response.statusText)
+    );
+  }
+};
