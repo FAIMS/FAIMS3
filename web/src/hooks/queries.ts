@@ -1,5 +1,6 @@
 import {buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
+import {sortNotebookListNewestFirst} from '@/lib/utils';
 import type {
   GetCurrentUserResponse,
   GetListAllUsersResponse,
@@ -139,6 +140,7 @@ export const useGetProjects = ({
           : '/api/notebooks/',
         user
       ),
+    select: sortNotebookListNewestFirst,
     enabled: !!user && enabled,
   });
 
@@ -202,6 +204,7 @@ export const useGetProjectsForTeam = ({
     queryKey: ['projectsbyteam', user?.token, teamId],
     queryFn: () =>
       get<GetNotebookListResponse>(`/api/notebooks?teamId=${teamId}`, user),
+    select: sortNotebookListNewestFirst,
   });
 
 /**
