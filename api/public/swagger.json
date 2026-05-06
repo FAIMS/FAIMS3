@@ -1176,7 +1176,7 @@
       },
       "post": {
         "summary": "Create a new template",
-        "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
+        "description": "Creates a new template. The payload is validated before processing. Requires `CREATE_TEMPLATE` or `CREATE_TEMPLATE_IN_TEAM` as appropriate. Setting `isPublic` to true additionally requires `CREATE_PUBLIC_TEMPLATE` (operations or system administrators), same grant as `CHANGE_TEMPLATE_VISIBILITY`.",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [

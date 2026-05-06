@@ -136,6 +136,12 @@ export enum Action {
   /** Set whether a template appears in the public list */
   CHANGE_TEMPLATE_VISIBILITY = 'CHANGE_TEMPLATE_VISIBILITY',
 
+  /**
+   * Create a new template that is initially visible to all users
+   * (`isPublic`). Granted alongside CHANGE_TEMPLATE_VISIBILITY.
+   */
+  CREATE_PUBLIC_TEMPLATE = 'CREATE_PUBLIC_TEMPLATE',
+
   /** Permanently remove a template document (API requires it to be archived first). */
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
 
@@ -728,6 +734,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
+  [Action.CREATE_PUBLIC_TEMPLATE]: {
+    name: 'Create Public Template',
+    description:
+      'Create a new template that is visible to all users (operations or system administrators only)',
+    resourceSpecific: false,
+    resource: Resource.TEMPLATE,
+  },
   [Action.DELETE_TEMPLATE]: {
     name: 'Delete Template',
     description:
@@ -1239,8 +1252,9 @@ export const roleActions: Record<
       Action.EDIT_ANY_LONG_LIVED_TOKEN,
       Action.REVOKE_ANY_LONG_LIVED_TOKEN,
 
-      // Catalogue: only ops/system admins may publish templates to all users
+      // only ops/system admins may make templates visible to all users
       Action.CHANGE_TEMPLATE_VISIBILITY,
+      Action.CREATE_PUBLIC_TEMPLATE,
     ],
     inheritedRoles: [],
   },

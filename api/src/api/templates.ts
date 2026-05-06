@@ -24,6 +24,7 @@ import {
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
   GetTemplateSurveyReferencesResponse,
+  isAuthorized,
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
@@ -214,9 +215,25 @@ api.post(
       throw new Exceptions.UnauthorizedException();
     }
 
+    const body = req.body as PostCreateTemplateInput;
+    if (
+      body.isPublic === true &&
+      !isAuthorized({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        action: Action.CREATE_PUBLIC_TEMPLATE,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to create a public template.'
+      );
+    }
+
     // Now we can create the new template and return it
     const newTemplate = await createTemplate({
-      payload: req.body,
+      payload: body,
     });
 
     // Make the creator the admin

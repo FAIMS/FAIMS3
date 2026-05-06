@@ -1068,6 +1068,39 @@ describe('template API tests', () => {
     );
   });
 
+  it('POST create rejects isPublic true without CREATE_PUBLIC_TEMPLATE', async () => {
+    const nb = getSampleNotebook();
+    await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...nb,
+          name: 'no-public-without-ops',
+          isPublic: true,
+        } satisfies PostCreateTemplateInput),
+      notebookUserToken
+    )
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+
+  it('POST create allows omitting isPublic for general creator (private)', async () => {
+    const nb = getSampleNotebook();
+    const res = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...nb,
+          name: 'creator-private-template',
+        } satisfies PostCreateTemplateInput),
+      notebookUserToken
+    )
+      .set('Content-Type', 'application/json')
+      .expect(200);
+    const template = PostCreateTemplateResponseSchema.parse(res.body);
+    expect(template.isPublic !== true).to.equal(true);
+  });
+
   it('general user cannot read private template by id', async () => {
     const {template} = await createSampleTemplate(app, {
       name: 'private-only',
