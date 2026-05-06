@@ -605,6 +605,7 @@ export const DesignPanel = () => {
             }}
             sx={designerCancelButtonSx}
             fullWidth={addFormDialogFullScreen}
+            size="large"
           >
             Cancel
           </Button>
@@ -613,6 +614,7 @@ export const DesignPanel = () => {
             startIcon={<AddRoundedIcon />}
             fullWidth={addFormDialogFullScreen}
             disabled={!newFormName.trim()}
+            size="large"
             onClick={() => {
               if (addNewForm()) {
                 setAddFormDialogOpen(false);
