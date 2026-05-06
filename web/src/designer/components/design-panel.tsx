@@ -17,7 +17,6 @@
  */
 
 import {
-  Alert,
   Box,
   Button,
   Divider,
@@ -43,6 +42,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
   designerCancelButtonSx,
+  designerDialogContentSx,
   designerDividerSx,
   designerSubheadingSx,
 } from './designer-style';
@@ -59,6 +59,7 @@ import {
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
 import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
+import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
 
 /** Main designer surface for form tabs and routed `FormEditor` instances. */
 export const DesignPanel = () => {
@@ -250,7 +251,8 @@ export const DesignPanel = () => {
         return false;
       }
       dispatch(viewSetAdded({formName}));
-      setIndexAndNavigate(`${visibleTypes.length}`);
+      // Route directly to the new form and prompt section creation immediately.
+      setIndexAndNavigate(`${visibleTypes.length}`, '?createSection=1');
       setAlertMessage('');
       return true;
     } catch (error: unknown) {
@@ -275,9 +277,9 @@ export const DesignPanel = () => {
     }
   };
 
-  const setIndexAndNavigate = (index: string) => {
+  const setIndexAndNavigate = (index: string, search = '') => {
     setTabIndex(index);
-    navigate(`${basePath}/${index}`);
+    navigate(`${basePath}/${index}${search}`);
   };
 
   const handleSectionMove = (targetViewSetId: string) => {
@@ -534,17 +536,21 @@ export const DesignPanel = () => {
             borderRadius: {xs: 0, sm: 2},
             boxShadow: {xs: 'none', sm: theme.shadows[12]},
             overflow: 'hidden',
+            minHeight: {xs: 300, sm: 340},
           },
         }}
       >
         <DialogTitle
           sx={{
-            py: 2,
-            px: {xs: 2, sm: 3},
+            py: 2.25,
+            px: {xs: 2.25, sm: 3.25},
             borderBottom: '1px solid',
             borderColor: 'divider',
             backgroundColor: theme =>
-              alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08),
+              alpha(
+                theme.palette.primary.main,
+                theme.palette.mode === 'dark' ? 0.2 : 0.08
+              ),
           }}
         >
           <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -557,25 +563,30 @@ export const DesignPanel = () => {
             Create a clear form name so editors can find it quickly.
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
-          <DebouncedTextField
-            fullWidth
-            required
-            label="Form Name"
-            helperText="Use a short descriptive name, for example: Household Details."
-            name="formNameDialog"
-            data-testid="formNameDialog"
-            value={newFormName}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setNewFormName(event.target.value);
-            }}
-            sx={{mt: 1}}
-          />
-          {alertMessage && (
-            <Alert severity="error" sx={{mt: 2}}>
-              {alertMessage}
-            </Alert>
-          )}
+        <DialogContent sx={designerDialogContentSx}>
+          <SimpleFieldWrapper
+            heading="Form Name"
+            helperText={
+              alertMessage ||
+              'Use a short descriptive name, for example: Household Details.'
+            }
+          >
+            <DebouncedTextField
+              fullWidth
+              required
+              label=""
+              placeholder="Enter form name"
+              name="formNameDialog"
+              data-testid="formNameDialog"
+              value={newFormName}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                if (alertMessage) setAlertMessage('');
+                setNewFormName(event.target.value);
+              }}
+              error={Boolean(alertMessage)}
+              sx={{mt: 1}}
+            />
+          </SimpleFieldWrapper>
         </DialogContent>
         <DialogActions
           sx={{
