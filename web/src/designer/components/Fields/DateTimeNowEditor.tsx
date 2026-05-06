@@ -38,7 +38,7 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const isDateTimePicker = fieldComponent === 'DateTimePicker';
   const isDatePicker = fieldComponent === 'DatePicker';
   const isMonthPicker = fieldComponent === 'MonthPicker';
-  const supportsAutoPick = fieldComponent !== 'DatePicker';
+  const supportsAutoPick = isDateTimePicker;
   const supportsNowButton = isDateTimePicker || isDatePicker || isMonthPicker;
 
   const updateFieldProp = (key: 'is_auto_pick' | 'show_now_button', value: boolean) => {

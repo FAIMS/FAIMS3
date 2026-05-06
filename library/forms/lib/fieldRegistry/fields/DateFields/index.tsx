@@ -237,7 +237,7 @@ const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => {
               whiteSpace: 'nowrap',
             }}
           >
-            Now
+            Select date and time right now
           </Button>
         )}
       </Stack>
@@ -325,7 +325,7 @@ const DatePickerField: React.FC<DateTimeFieldFullProps> = props => {
               whiteSpace: 'nowrap',
             }}
           >
-            Today
+            Select today's date
           </Button>
         )}
       </Stack>
@@ -413,7 +413,7 @@ const MonthPickerField: React.FC<DateTimeFieldFullProps> = props => {
               whiteSpace: 'nowrap',
             }}
           >
-            This month
+            Select current month
           </Button>
         )}
       </Stack>

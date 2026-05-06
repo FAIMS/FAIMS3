@@ -135,8 +135,7 @@ export const Select = (props: FieldProps) => {
   const theme = useTheme();
   const value = (props.state.value?.data as string) ?? '';
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition =
-    props.ElementProps.otherOptionPosition ?? props.ElementProps.options.length;
+  const otherOptionPosition = props.ElementProps.options.length;
   const predefinedValues = props.ElementProps.options.map(opt => opt.value);
 
   const {hasOtherSelected, otherText, handleOtherTextChange} = useOtherOption({
