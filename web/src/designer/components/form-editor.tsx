@@ -79,6 +79,9 @@ import {
   designerDialogContentSx,
   designerDialogTitleSx,
   designerDividerSx,
+  designerInlineEditActionIconSx,
+  designerInlineEditFocusOverlaySx,
+  designerInlineEditPanelSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
@@ -202,6 +205,7 @@ export const FormEditor = ({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [addSectionDialogOpen, setAddSectionDialogOpen] = useState(false);
   const prevViewSetIdRef = useRef<string>(viewSetId);
+  const formEditInputRef = useRef<HTMLInputElement | null>(null);
 
   // needed for the form preview
   const queryClient = useQueryClient();
@@ -485,6 +489,15 @@ export const FormEditor = ({
     return () => window.clearTimeout(tid);
   }, [viewSetId, previewForm]);
 
+  useEffect(() => {
+    if (!editMode) return;
+    const raf = window.requestAnimationFrame(() => {
+      formEditInputRef.current?.focus();
+      formEditInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [editMode]);
+
   return (
     <Stack
       direction={{xs: 'column', xl: 'row'}}
@@ -667,44 +680,60 @@ export const FormEditor = ({
             </Stack>
 
             {editMode && (
-              <form
-                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                  e.preventDefault();
-                  setEditMode(false);
-                }}
-              >
-                <DebouncedTextField
-                  size="small"
-                  margin="dense"
-                  label="Form Name"
-                  name="label"
-                  data-testid="label"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Done">
-                          <IconButton size="small" type="submit">
-                            <DoneRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Close">
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditMode(false)}
-                          >
-                            <CloseRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  }}
-                  value={viewSet.label}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    updateFormLabel(event.target.value);
-                  }}
-                  sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+              <>
+                <Box
+                  onClick={() => setEditMode(false)}
+                  sx={designerInlineEditFocusOverlaySx}
                 />
-              </form>
+                <Box sx={designerInlineEditPanelSx}>
+                  <form
+                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                      e.preventDefault();
+                      setEditMode(false);
+                    }}
+                  >
+                    <SimpleFieldWrapper heading="Form Name">
+                      <DebouncedTextField
+                        size="small"
+                        margin="dense"
+                        label="Form Name"
+                        name="label"
+                        data-testid="label"
+                        inputRef={formEditInputRef}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Tooltip title="Save form name">
+                                <IconButton
+                                  size="small"
+                                  type="submit"
+                                  sx={designerInlineEditActionIconSx}
+                                >
+                                  <DoneRoundedIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Cancel name edit">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => setEditMode(false)}
+                                  sx={designerInlineEditActionIconSx}
+                                >
+                                  <CloseRoundedIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ),
+                        }}
+                        value={viewSet.label}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          updateFormLabel(event.target.value);
+                        }}
+                        sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+                      />
+                    </SimpleFieldWrapper>
+                  </form>
+                </Box>
+              </>
             )}
 
             {alertMessage && <Alert severity="error">{alertMessage}</Alert>}

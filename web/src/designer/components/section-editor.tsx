@@ -44,7 +44,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {sectionDuplicated} from '../store/slices/uiSpec';
 import {sectionConditionChanged, sectionRenamed} from '../store/slices/uiSpec';
@@ -56,6 +56,7 @@ import {ConditionType} from '../types/condition';
 
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
+import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
 import {
   designerCancelButtonSx,
   designerControlActionRowSx,
@@ -68,6 +69,9 @@ import {
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
+  designerInlineEditActionIconSx,
+  designerInlineEditFocusOverlaySx,
+  designerInlineEditPanelSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
@@ -142,12 +146,22 @@ export const SectionEditor = ({
   );
   const [duplicateTargetViewSetId, setDuplicateTargetViewSetId] = useState('');
   const [duplicateAlertMessage, setDuplicateAlertMessage] = useState('');
+  const sectionEditInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (fView) {
       setDuplicateSectionName(fView.label + ' copy');
     }
   }, [fView]);
+
+  useEffect(() => {
+    if (!editMode) return;
+    const raf = window.requestAnimationFrame(() => {
+      sectionEditInputRef.current?.focus();
+      sectionEditInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [editMode]);
 
   const duplicateFormOptions = useMemo(
     () =>
@@ -411,41 +425,60 @@ export const SectionEditor = ({
         </Stack>
       </Stack>
       {editMode && (
-        <form
-          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault();
-            setEditMode(false);
-          }}
-        >
-          <DebouncedTextField
-            size="small"
-            margin="dense"
-            label="Section Name"
-            name="label"
-            data-testid="label"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip title="Done">
-                    <IconButton size="small" type="submit">
-                      <DoneRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Close">
-                    <IconButton size="small" onClick={() => setEditMode(false)}>
-                      <CloseRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
-            value={fView.label}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              updateSectionLabel(event.target.value);
-            }}
-            sx={{'& .MuiInputBase-root': {paddingRight: 0}, mb: 1}}
+        <>
+          <Grid
+            onClick={() => setEditMode(false)}
+            sx={designerInlineEditFocusOverlaySx}
           />
-        </form>
+          <Grid sx={designerInlineEditPanelSx}>
+            <form
+              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                e.preventDefault();
+                setEditMode(false);
+              }}
+            >
+              <SimpleFieldWrapper heading="Section Name">
+                <DebouncedTextField
+                  size="small"
+                  margin="dense"
+                  label="Section Name"
+                  name="label"
+                  data-testid="label"
+                  inputRef={sectionEditInputRef}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title="Save section name">
+                          <IconButton
+                            size="small"
+                            type="submit"
+                            sx={designerInlineEditActionIconSx}
+                          >
+                            <DoneRoundedIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Cancel name edit">
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditMode(false)}
+                            sx={designerInlineEditActionIconSx}
+                          >
+                            <CloseRoundedIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  }}
+                  value={fView.label}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    updateSectionLabel(event.target.value);
+                  }}
+                  sx={{'& .MuiInputBase-root': {paddingRight: 0}, mb: 0.2}}
+                />
+              </SimpleFieldWrapper>
+            </form>
+          </Grid>
+        </>
       )}
       <Divider sx={{...designerDividerSx, mb: 2}} />
 

@@ -368,6 +368,7 @@ const FieldEditorComponent = ({
   );
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id: fieldName});
+  const canDragField = !expanded;
 
   useEffect(() => {
     if (!expanded || !autoFocusLabel) return;
@@ -397,13 +398,20 @@ const FieldEditorComponent = ({
       elevation={0}
       sx={{
         transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.82 : 1,
+        transition:
+          transition ?? 'transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)',
+        opacity: isDragging ? 0.86 : 1,
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: theme =>
+          isDragging
+            ? alpha(theme.palette.primary.main, 0.45)
+            : alpha(theme.palette.text.primary, 0.16),
         borderRadius: 1.25,
         overflow: 'hidden',
         mb: 0.9,
+        boxShadow: isDragging
+          ? '0 10px 24px rgba(0, 0, 0, 0.12)'
+          : '0 2px 9px rgba(0, 0, 0, 0.06)',
         '&:not(:nth-of-type(2))': {
           borderTop: '1px solid',
         },
@@ -417,9 +425,13 @@ const FieldEditorComponent = ({
           <Box sx={{display: 'inline-flex', alignItems: 'center', gap: 0.25}}>
             <DragHandle
               compact
-              label="Drag field to reorder"
-              dragAttributes={attributes}
-              dragListeners={listeners}
+              label={
+                canDragField
+                  ? 'Drag field to reorder'
+                  : 'Collapse field first to drag and reorder'
+              }
+              dragAttributes={canDragField ? attributes : undefined}
+              dragListeners={canDragField ? listeners : undefined}
               onPointerDown={event => event.stopPropagation()}
               onClick={event => event.stopPropagation()}
             />
