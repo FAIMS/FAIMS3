@@ -124,6 +124,9 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
   const hasAutoSyncedOnFirstLabelEdit = useRef(false);
+  const firstLabelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const [localFieldName, setLocalFieldName] = useState(fieldName);
 
   const debouncedRename = useCallback(
@@ -163,14 +166,24 @@ export const BaseFieldEditor = ({
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
 
-    // Automatically sync Field ID only on the first label edit for this field.
+    // Automatically sync Field ID on the first label edit, but wait briefly so
+    // users can type naturally before the initial sync occurs.
     if (!hasAutoSyncedOnFirstLabelEdit.current) {
-      hasAutoSyncedOnFirstLabelEdit.current = true;
-      syncFieldIDToLabel(newLabel);
+      if (firstLabelSyncTimerRef.current) {
+        clearTimeout(firstLabelSyncTimerRef.current);
+      }
+      firstLabelSyncTimerRef.current = setTimeout(() => {
+        hasAutoSyncedOnFirstLabelEdit.current = true;
+        syncFieldIDToLabel(newLabel);
+      }, 900);
     }
   };
 
   useEffect(() => {
+    if (firstLabelSyncTimerRef.current) {
+      clearTimeout(firstLabelSyncTimerRef.current);
+      firstLabelSyncTimerRef.current = null;
+    }
     if (isMounted.current) {
       idInputRef.current?.focus();
     } else {
@@ -182,6 +195,14 @@ export const BaseFieldEditor = ({
       fieldName === expectedIdFromCurrentLabel;
     setLocalFieldName(fieldName);
   }, [fieldName]);
+
+  useEffect(() => {
+    return () => {
+      if (firstLabelSyncTimerRef.current) {
+        clearTimeout(firstLabelSyncTimerRef.current);
+      }
+    };
+  }, []);
 
   const getFieldLabel = () => {
     return (
