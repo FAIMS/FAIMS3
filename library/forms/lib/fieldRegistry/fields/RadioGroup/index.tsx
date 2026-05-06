@@ -103,8 +103,7 @@ export const RadioGroup = (props: FieldProps) => {
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition =
-    ElementProps.otherOptionPosition ?? ElementProps.options.length;
+  const otherOptionPosition = ElementProps.options.length;
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
   const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
