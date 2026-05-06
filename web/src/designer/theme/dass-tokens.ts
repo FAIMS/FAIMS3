@@ -9,7 +9,7 @@ export const dassTokens: DesignerThemeTokens = {
   // ── Backgrounds ─────────────────────────────────────────────────────────
   backgroundDefault: '#FAFAFB',
 
-  // ── dass  palette ────────────────────────────────────────────────────────
+  // ── dass  palette ───────────────────────────────────────────────────────
   primaryMain: '#000000',
   primaryLight: '#4A4A4A',
   primaryDark: '#000000',
@@ -19,16 +19,16 @@ export const dassTokens: DesignerThemeTokens = {
   // ── Text ────────────────────────────────────────────────────────────────
   helperTextColor: colors.grey[600],
 
-  // ── App bar ──────────────────────────────────────────────────────────────
+  // ── App bar ─────────────────────────────────────────────────────────────
   appBarBackground: '#FFFFFF',
   appBarColor: '#000000',
-  // ── Form tabs ────────────────────────────────────────────────────────────
+  // ── Form tabs ───────────────────────────────────────────────────────────
   formTabBorderColor: '#C40000',
   formTabSelectedBg: '#4C1F24',
   formTabSelectedText: '#FFFFFF',
   formTabIndicatorVisible: true,
   formTabIndicatorColor: '#C40000',
-  // ── Semantic actions ────────────────────────────────────────────────────
+  // ── Semantic actions ───────────────────────────────────────────────────
   errorMain: '#C40000',
   deleteButtonColor: '#C40000',
   successMain: '#2E7D32',
