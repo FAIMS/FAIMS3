@@ -131,4 +131,8 @@ export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
     namespace: 'faims-custom',
     name: 'BasicAutoIncrementer',
   },
+  {
+    namespace: 'faims-custom',
+    name: 'Checkbox',
+  },
 ];

@@ -28,7 +28,7 @@ import {cloneField} from '../../../domain/notebook/fieldFactory';
 
 /** Field-level RTK reducers merged into `uiSpecificationReducer`. */
 export const fieldReducers = {
-  /** Replace an existing field spec; throws if `fieldName` is not in `state.fields`. */
+  /** Replace an existing field spec; ignores stale updates when field was renamed/deleted. */
   fieldUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{fieldName: string; newField: FieldType}>
@@ -38,9 +38,9 @@ export const fieldReducers = {
     if (fieldName in fields) {
       fields[fieldName] = newField;
     } else {
-      throw new Error(
-        `Cannot update unknown field ${fieldName} via fieldUpdated action`
-      );
+      // Can happen during quick typing + debounced updates after a field rename.
+      // Ignore stale action to keep the editor responsive and non-fatal.
+      return;
     }
   },
   /** Set `component-parameters.protection`; un-hides field when switching to `protected`. */

@@ -31,7 +31,15 @@
  * - disabled: Whether the field is disabled.
  */
 
-import {FormControlLabel, TextField} from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  TextField,
+} from '@mui/material';
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
@@ -47,6 +55,7 @@ import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {useState} from 'react';
 
 // ============================================================================
 // Types & Schema
@@ -105,6 +114,7 @@ export const RadioGroup = (props: FieldProps) => {
       predefinedValues,
       setFieldData,
     });
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
@@ -129,6 +139,17 @@ export const RadioGroup = (props: FieldProps) => {
       const newValue = displayValue === selectedValue ? '' : selectedValue;
       setFieldData(newValue);
     }
+  };
+
+  const handleClearRequest = () => {
+    if (!rawValue) return;
+    setConfirmClearOpen(true);
+  };
+
+  const handleConfirmClear = () => {
+    setOtherSelected(false);
+    setFieldData('');
+    setConfirmClearOpen(false);
   };
 
   return (
@@ -271,7 +292,44 @@ export const RadioGroup = (props: FieldProps) => {
             return items;
           })()}
         </MuiRadioGroup>
+        <Button
+          variant="text"
+          color="warning"
+          size="small"
+          onClick={handleClearRequest}
+          disabled={disabled || !rawValue}
+          sx={{mt: 0.25, textTransform: 'none', fontWeight: 700, width: 'fit-content'}}
+        >
+          Clear selection
+        </Button>
       </FormControl>
+      <Dialog
+        open={confirmClearOpen}
+        onClose={() => setConfirmClearOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Clear selected option?</DialogTitle>
+        <DialogContent>
+          Are you sure you want to clear this selected option?
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setConfirmClearOpen(false)}
+            sx={{textTransform: 'none'}}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="warning"
+            variant="contained"
+            onClick={handleConfirmClear}
+            sx={{textTransform: 'none'}}
+          >
+            Clear
+          </Button>
+        </DialogActions>
+      </Dialog>
     </FieldWrapper>
   );
 };

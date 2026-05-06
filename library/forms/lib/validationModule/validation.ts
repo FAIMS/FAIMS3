@@ -11,7 +11,7 @@ import {
   ValidationError,
   ValidationSettings,
 } from './types';
-import {getFieldInfo} from '../fieldRegistry';
+import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry';
 import {logWarn} from '../logging';
 
 /**
@@ -339,6 +339,15 @@ export const FormValidation = {
       logWarn(`Field ${fieldId} not found in UI specification`);
       return undefined;
     }
+    const ignoredAtRuntime = FORCE_IGNORED_FIELDS.some(
+      ignored =>
+        ignored.name === details['component-name'] &&
+        ignored.namespace === details['component-namespace']
+    );
+    if (ignoredAtRuntime) {
+      return z.unknown().optional().nullable();
+    }
+
     const required =
       (details['component-parameters']?.['required'] as Boolean | undefined) ??
       false;
@@ -492,6 +501,15 @@ export const FormValidation = {
     const details = uiSpec.fields[fieldId];
     if (!details) {
       logWarn(`Field "${fieldId}" not found in UI specification`);
+      return {valid: true};
+    }
+
+    const ignoredAtRuntime = FORCE_IGNORED_FIELDS.some(
+      ignored =>
+        ignored.name === details['component-name'] &&
+        ignored.namespace === details['component-namespace']
+    );
+    if (ignoredAtRuntime) {
       return {valid: true};
     }
 

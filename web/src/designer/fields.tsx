@@ -200,7 +200,7 @@ const fields: {[key: string]: FieldType} = {
     deprecated: true,
     deprecationMessage:
       'Deprecated: use “Select one” for new forms. Existing Checkbox fields continue to work.',
-    showInChooser: true,
+    showInChooser: false,
     order: 11,
   },
 
@@ -261,8 +261,8 @@ const fields: {[key: string]: FieldType} = {
         multiple: true,
       },
       ElementProps: {
-        // Default to compact dropdown mode; users can opt into expanded checklist.
-        expandedChecklist: false,
+        // Default to expanded checklist mode; users can opt into compact dropdown.
+        expandedChecklist: true,
         enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
@@ -273,7 +273,7 @@ const fields: {[key: string]: FieldType} = {
     initialValue: [],
     humanReadableName: 'Select Multiple',
     humanReadableDescription:
-      'Pick several options from a list (dropdown by default, optional expanded checklist)',
+      'Pick several options from a list (expanded checklist by default, optional dropdown)',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 14,
