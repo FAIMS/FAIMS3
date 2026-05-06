@@ -71,13 +71,6 @@ const checkSpeechEnabled = (field: FieldType) => {
     `${field['component-namespace']}::${field['component-name']}`
   );
 };
-const DEPRECATED_COMPONENTS = new Set([
-  'FAIMSTextField',
-  'DateTimeNow',
-  'Checkbox',
-  'Select',
-]);
-
 type Props = {
   fieldName: string;
   showExtraConfig?: boolean;
@@ -311,10 +304,9 @@ export const BaseFieldEditor = ({
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
   const isChoiceField =
     field['component-name'] === 'Select' || field['component-name'] === 'MultiSelect';
-  const isDeprecatedComponent = DEPRECATED_COMPONENTS.has(
-    field['component-name']
-  );
-  const useUnifiedFieldWrapper = !isDeprecatedComponent;
+  // Always use the unified wrapper pattern so labels are rendered as headings
+  // above inputs (no floating labels), even for legacy/deprecated field types.
+  const useUnifiedFieldWrapper = true;
 
   return (
     <Grid container spacing={2}>

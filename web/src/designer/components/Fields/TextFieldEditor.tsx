@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import {
+  Box,
   Card,
   FormControl,
   FormControlLabel,
@@ -75,9 +76,9 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12} sm={8}>
-        <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+      <Grid item xs={12} md={8}>
+        <Card variant="outlined">
+          <Box sx={{px: 2, py: 2}}>
             <FormControl>
               <RadioGroup
                 row
@@ -96,14 +97,14 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
                 />
               </RadioGroup>
             </FormControl>
-          </Grid>
+          </Box>
         </Card>
       </Grid>
 
       {isLongAnswer && (
-        <Grid item sm={6} xs={12}>
-          <Card variant="outlined" sx={{display: 'flex'}}>
-            <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+        <Grid item xs={12} md={6}>
+          <Card variant="outlined">
+            <Box sx={{px: 2, py: 2}}>
               <SimpleFieldWrapper
                 heading="Rows to display"
                 helperText="Number of rows in the text field."
@@ -117,14 +118,14 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
                   onChange={e => updateRows(parseInt(e.target.value))}
                 />
               </SimpleFieldWrapper>
-            </Grid>
+            </Box>
           </Card>
         </Grid>
       )}
 
-      <Grid item xs={12} sm={6}>
-        <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+      <Grid item xs={12} md={isLongAnswer ? 6 : 12}>
+        <Card variant="outlined">
+          <Box sx={{px: 2, py: 2}}>
             <SimpleFieldWrapper
               heading="Default Text"
               helperText="Choose this field's default text."
@@ -139,7 +140,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
                 }}
               />
             </SimpleFieldWrapper>
-          </Grid>
+          </Box>
         </Card>
       </Grid>
     </BaseFieldEditor>

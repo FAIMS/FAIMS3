@@ -67,7 +67,7 @@ const fields: {[key: string]: FieldType} = {
     deprecated: true,
     deprecationMessage:
       'Deprecated: use “Text field” for new additions. Existing notebooks continue to work.',
-    showInChooser: true,
+    showInChooser: false,
     order: 2,
   },
 
@@ -133,29 +133,6 @@ const fields: {[key: string]: FieldType} = {
     category: CategoryKey.DATETIME,
     showInChooser: true,
     order: 4,
-  },
-
-  DateTimeNow: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'DateTimeNow',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Date and Time with Now button',
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-      is_auto_pick: false,
-    },
-    initialValue: '',
-    humanReadableName: 'Date and Time with Now button',
-    humanReadableDescription: 'Date-time input with “Now” quick-fill',
-    category: CategoryKey.DATETIME,
-    deprecated: true,
-    deprecationMessage:
-      'Deprecated in chooser: use “Date and time picker” with the “Now” display option.',
-    showInChooser: true,
-    order: 5,
   },
 
   BasicAutoIncrementer: {
@@ -608,7 +585,7 @@ const fields: {[key: string]: FieldType} = {
     humanReadableName: 'Multi-line Text Field (Deprecated)',
     humanReadableDescription: 'Deprecated multiline text area (use Text field instead)',
     category: CategoryKey.TEXT,
-    showInChooser: true,
+    showInChooser: false,
     deprecated: true,
     deprecationMessage:
       'Deprecated: use “Text field” and switch to “Long answer” in the editor. Existing notebooks continue to work.',
