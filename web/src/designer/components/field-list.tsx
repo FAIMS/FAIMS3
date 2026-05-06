@@ -130,7 +130,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const [showCollapseButton, setShowCollapseButton] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {distance: 6},
+      activationConstraint: {distance: 2},
     })
   );
 

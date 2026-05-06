@@ -6,6 +6,7 @@ import type {DraggableAttributes} from '@dnd-kit/core';
 type DragHandleProps = {
   label?: string;
   compact?: boolean;
+  disabled?: boolean;
   onPointerDown?: PointerEventHandler<HTMLElement>;
   onClick?: MouseEventHandler<HTMLElement>;
   dragAttributes?: DraggableAttributes;
@@ -21,6 +22,7 @@ type DragHandleProps = {
 export const DragHandle = ({
   label = 'Drag to reorder',
   compact = false,
+  disabled = false,
   onPointerDown,
   onClick,
   dragAttributes,
@@ -37,16 +39,17 @@ export const DragHandle = ({
         }}
       >
         <IconButton
+          disabled={disabled}
           size={compact ? 'small' : 'medium'}
           sx={{
-            cursor: 'grab',
+            cursor: disabled ? 'not-allowed' : 'grab',
             color: 'text.primary',
-            '&:active': {cursor: 'grabbing'},
+            '&:active': {cursor: disabled ? 'not-allowed' : 'grabbing'},
           }}
           onPointerDown={onPointerDown}
           onClick={onClick}
-          {...dragAttributes}
-          {...(dragListeners as object)}
+          {...(!disabled ? dragAttributes : undefined)}
+          {...(!disabled ? (dragListeners as object) : undefined)}
         >
           <DragIndicatorIcon
             sx={{fontSize: compact ? '1.45rem' : '1.65rem', fontWeight: 700}}
