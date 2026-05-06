@@ -121,6 +121,9 @@ export enum Action {
   // Read the high details of a template (e.g. description, title etc)
   READ_TEMPLATE_DETAILS = 'READ_TEMPLATE_DETAILS',
 
+  /** View templates marked public in the list (all general users) */
+  READ_PUBLIC_TEMPLATE_DETAILS = 'READ_PUBLIC_TEMPLATE_DETAILS',
+
   // Update the template high level details (e.g. description, title etc)
   UPDATE_TEMPLATE_DETAILS = 'UPDATE_TEMPLATE_DETAILS',
 
@@ -129,6 +132,9 @@ export enum Action {
 
   /** Archive or restore template */
   CHANGE_TEMPLATE_STATUS = 'CHANGE_TEMPLATE_STATUS',
+
+  /** Set whether a template appears in the public list */
+  CHANGE_TEMPLATE_VISIBILITY = 'CHANGE_TEMPLATE_VISIBILITY',
 
   /** Permanently remove a template document (API requires it to be archived first). */
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
@@ -690,6 +696,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
+  [Action.READ_PUBLIC_TEMPLATE_DETAILS]: {
+    name: 'View public template',
+    description:
+      'View details of templates marked public in the list (available to all users)',
+    resourceSpecific: false,
+    resource: Resource.TEMPLATE,
+  },
   [Action.UPDATE_TEMPLATE_UISPEC]: {
     name: 'Update Template UI Specification',
     description: 'Modify the content/specification of a template',
@@ -705,6 +718,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.CHANGE_TEMPLATE_STATUS]: {
     name: 'Change Template Status',
     description: 'Archive or restore a template',
+    resourceSpecific: true,
+    resource: Resource.TEMPLATE,
+  },
+  [Action.CHANGE_TEMPLATE_VISIBILITY]: {
+    name: 'Change Template Visibility',
+    description:
+      'Set whether a template is listed in the public catalogue (operations or system administrators only)',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
@@ -1148,6 +1168,7 @@ export const roleActions: Record<
     actions: [
       Action.LIST_PROJECTS,
       Action.LIST_TEMPLATES,
+      Action.READ_PUBLIC_TEMPLATE_DETAILS,
       Action.VERIFY_EMAIL,
 
       // Long-lived token actions for own tokens (CRUD)
@@ -1217,6 +1238,9 @@ export const roleActions: Record<
       Action.READ_ANY_LONG_LIVED_TOKENS,
       Action.EDIT_ANY_LONG_LIVED_TOKEN,
       Action.REVOKE_ANY_LONG_LIVED_TOKEN,
+
+      // Catalogue: only ops/system admins may publish templates to all users
+      Action.CHANGE_TEMPLATE_VISIBILITY,
     ],
     inheritedRoles: [],
   },

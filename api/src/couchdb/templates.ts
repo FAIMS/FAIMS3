@@ -14,6 +14,7 @@ import {
   TemplateDocument,
   TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
+import type {TemplateApiDocument} from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
 import {generateRandomString} from '../utils';
@@ -109,6 +110,63 @@ export const getTemplate = async (id: string) => {
   }
 };
 
+async function teamDisplayNameForId(teamId: string): Promise<string | undefined> {
+  try {
+    const team = await getTeamById(teamId);
+    return team.name;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Adds {@link TemplateApiDocument.ownedByTeamDisplayName} for API responses so
+ * clients can show the team name without calling the teams API.
+ */
+export const withOwnedByTeamDisplayName = async (
+  template: ExistingTemplateDocument
+): Promise<TemplateApiDocument> => {
+  if (!template.ownedByTeamId) {
+    return template;
+  }
+  const ownedByTeamDisplayName = await teamDisplayNameForId(
+    template.ownedByTeamId
+  );
+  return ownedByTeamDisplayName !== undefined
+    ? {...template, ownedByTeamDisplayName}
+    : template;
+};
+
+export const withOwnedByTeamDisplayNames = async (
+  templates: ExistingTemplateDocument[]
+): Promise<TemplateApiDocument[]> => {
+  const ids = [
+    ...new Set(
+      templates
+        .map(t => t.ownedByTeamId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    ),
+  ];
+  const nameById = new Map<string, string>();
+  await Promise.all(
+    ids.map(async id => {
+      const name = await teamDisplayNameForId(id);
+      if (name !== undefined) {
+        nameById.set(id, name);
+      }
+    })
+  );
+  return templates.map(t => {
+    if (!t.ownedByTeamId) {
+      return t;
+    }
+    const ownedByTeamDisplayName = nameById.get(t.ownedByTeamId);
+    return ownedByTeamDisplayName !== undefined
+      ? {...t, ownedByTeamDisplayName}
+      : t;
+  });
+};
+
 /**
  * Generate a good project identifier for a new project
  *
@@ -163,6 +221,7 @@ export const createTemplate = async ({
     _id: templateId,
     version: 1,
     archived: false,
+    isPublic: payload.isPublic ?? false,
     'ui-specification': payload['ui-specification'],
     metadata: payload.metadata,
     ownedByTeamId: payload.teamId,
@@ -241,11 +300,13 @@ export const updateExistingTemplate = async (
   metadata.template_id = templateId;
 
   const archived = existingTemplate.archived ?? false;
+  const isPublic = existingTemplate.isPublic ?? false;
 
   const newDocument = {
     metadata: metadata,
     'ui-specification': uiSpecification,
     archived,
+    isPublic,
     // explicitly retain these details!
     _id: templateId,
     _rev: existingTemplate._rev,
@@ -261,6 +322,47 @@ export const updateExistingTemplate = async (
       'An unexpected error occurred while trying to update an existing template.'
     );
   }
+  try {
+    return await templateDb.get(templateId);
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the updated template.'
+    );
+  }
+};
+
+/**
+ * Sets public visibility only (does not change name, ui-spec, etc.).
+ */
+export const setTemplateVisibility = async (
+  templateId: string,
+  isPublic: boolean
+): Promise<ExistingTemplateDocument> => {
+  let existingTemplate;
+  try {
+    existingTemplate = await getTemplate(templateId);
+  } catch (e) {
+    throw new Exceptions.ItemNotFoundException(
+      'An error occurred while trying to fetch an existing template. Are you sure the ID is correct?'
+    );
+  }
+
+  const templateDb = getTemplatesDb();
+  const newDocument = {
+    ...existingTemplate,
+    _id: templateId,
+    _rev: existingTemplate._rev,
+    isPublic,
+  } satisfies TemplateDocument;
+
+  try {
+    await safeWriteDocument({db: templateDb, data: newDocument});
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to update template visibility.'
+    );
+  }
+
   try {
     return await templateDb.get(templateId);
   } catch (e) {

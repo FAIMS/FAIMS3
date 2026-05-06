@@ -31,6 +31,7 @@ import {
   TemplateV1Fields,
   TemplateV2Fields,
   TemplateV3Fields,
+  TemplateV4Fields,
 } from '../templatesDB/types';
 import {
   DBTargetVersions,
@@ -450,6 +451,28 @@ export const templatesV2toV3Migration: MigrationFunc = doc => {
 };
 
 /**
+ * Adds `isPublic` for visibility (default private for existing docs).
+ */
+export const templatesV3toV4Migration: MigrationFunc = doc => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV3Fields>;
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV4Fields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name: inputDoc.name,
+    version: inputDoc.version,
+    metadata: inputDoc.metadata ?? {},
+    'ui-specification': inputDoc['ui-specification'],
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    archived: inputDoc.archived ?? false,
+    isPublic: false,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
  * Adds the exchange token (fatuous) to mimic new format
  */
 export const authV1toV2Migration: MigrationFunc = doc => {
@@ -506,7 +529,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
   // projects v3 (ARCHIVED status; v2→v3 model tracking migration)
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 3},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 3},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
@@ -588,6 +611,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds top-level archived flag; removes metadata.project_status (any value)',
     migrationFunction: templatesV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 3,
+    to: 4,
+    description:
+      'Adds isPublic flag for template visibility (existing templates default to private)',
+    migrationFunction: templatesV3toV4Migration,
   },
   {
     dbType: DatabaseType.AUTH,

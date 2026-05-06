@@ -176,11 +176,14 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     ),
     cell: ({
       row: {
-        original: {ownedByTeamId},
+        original: {ownedByTeamId, ownedByTeamDisplayName},
       },
     }) => {
       return ownedByTeamId ? (
-        <TeamCellComponent teamId={ownedByTeamId} />
+        <TeamCellComponent
+          teamId={ownedByTeamId}
+          teamDisplayName={ownedByTeamDisplayName}
+        />
       ) : null;
     },
   },

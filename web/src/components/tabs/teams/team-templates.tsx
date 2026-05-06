@@ -1,11 +1,12 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
-import {columns} from '@/components/tables/templates';
+import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTemplatesForTeam} from '@/hooks/queries';
-import {Action} from '@faims3/data-model';
+import {Action, globalRolesGrantAction} from '@faims3/data-model';
 import {useNavigate} from '@tanstack/react-router';
+import {useMemo} from 'react';
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
@@ -20,9 +21,24 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
 
   const navigate = useNavigate();
 
+  const columns = useMemo(
+    () =>
+      getTemplatesTableColumns({
+        hideTeamColumn: true,
+        includeVisibility: globalRolesGrantAction(
+          user?.decodedToken ?? {
+            globalRoles: [],
+            resourceRoles: [],
+          },
+          Action.CHANGE_TEMPLATE_VISIBILITY
+        ),
+      }),
+    [user?.decodedToken]
+  );
+
   return (
     <DataTable
-      columns={columns.filter(c => c.id !== 'team')}
+      columns={columns}
       data={data?.templates || []}
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}

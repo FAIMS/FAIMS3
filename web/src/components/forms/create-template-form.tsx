@@ -74,6 +74,27 @@ export function CreateTemplateForm({
         })
         .optional(),
     },
+    {
+      name: 'visibility',
+      label: 'Template visibility',
+      description:
+        'Public templates are available for all signed-in users who can browse templates.',
+      options: [
+        {
+          label: 'Private',
+          value: 'private',
+          description:
+            'Only people with access (for example your team) can view this template.',
+        },
+        {
+          label: 'Public',
+          value: 'public',
+          description:
+            'this template will be available to view and use for all users. Public permissions are read only.',
+        },
+      ],
+      schema: z.enum(['private', 'public']),
+    },
   ];
 
   if (!justOneTeam) {
@@ -92,10 +113,11 @@ export function CreateTemplateForm({
     name: string;
     file?: File;
     team?: string;
+    visibility: 'private' | 'public';
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, file, team} = values;
+    const {name, file, team, visibility} = values;
     let jsonPayload: Record<string, any> = {};
 
     if (file) {
@@ -136,6 +158,7 @@ export function CreateTemplateForm({
           body: JSON.stringify({
             teamId: chosenTeamId,
             name,
+            isPublic: visibility === 'public',
             ...jsonPayload,
           }),
         }
@@ -178,7 +201,10 @@ export function CreateTemplateForm({
           fields={fields}
           onSubmit={onSubmit}
           submitButtonText="Create Template"
-          defaultValues={{team: defaultValues?.teamId}}
+          defaultValues={{
+            team: defaultValues?.teamId,
+            visibility: 'private',
+          }}
         />
       </>
     );

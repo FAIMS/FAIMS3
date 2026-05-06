@@ -1,5 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
+import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
@@ -72,6 +73,11 @@ const TemplateActions = () => {
     resourceId: templateId,
   });
 
+  const canChangeTemplateVisibility = useIsAuthorisedTo({
+    action: Action.CHANGE_TEMPLATE_VISIBILITY,
+    resourceId: templateId,
+  });
+
   const canCreateProject = useIsAuthorisedTo({
     action: Action.CREATE_PROJECT,
   });
@@ -82,15 +88,10 @@ const TemplateActions = () => {
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 
-  // per-team and global permissions for adding templates to a team
-  const canAddTemplateToTeam =
-    getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
-      action: Action.CREATE_TEMPLATE_IN_TEAM,
-    }).length > 0;
-
-  const globalCanAddTemplateToTeam = useIsAuthorisedTo({
-    action: Action.CREATE_TEMPLATE,
+  /** Reassigning team is a template update (PUT /api/templates/:id), not create-template. */
+  const canAssignTemplateToTeam = useIsAuthorisedTo({
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    resourceId: templateId,
   });
 
   const archived = data?.archived === true;
@@ -138,13 +139,13 @@ const TemplateActions = () => {
           </Card>
         )}
 
-        {(canAddTemplateToTeam || globalCanAddTemplateToTeam) && (
+        {canAssignTemplateToTeam && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
-                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListLabel>Assign Template to Team</ListLabel>
                 <ListDescription>
-                  Assign this {NOTEBOOK_NAME} to a team.
+                  Assign this template to a team so its members can use it.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -210,6 +211,11 @@ const TemplateActions = () => {
                 <ProjectFromTemplateDialog />
               </ListItem>
             </List>
+          </Card>
+        )}
+        {canChangeTemplateVisibility && (
+          <Card className="flex-1">
+            <TemplateVisibilityDialog templateId={templateId} />
           </Card>
         )}
         {canChangeTemplateArchiveStatus ? (

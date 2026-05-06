@@ -33,9 +33,16 @@ export const TemplateV3Schema = TemplateV2Schema.extend({
 export type TemplateV3Fields = z.infer<typeof TemplateV3Schema>;
 export type TemplateV3Document = PouchDB.Core.Document<TemplateV3Fields>;
 
-// Current (V3)
+// V4 — template visibility for all general users when true
+export const TemplateV4Schema = TemplateV3Schema.extend({
+  isPublic: z.boolean().default(false),
+});
+export type TemplateV4Fields = z.infer<typeof TemplateV4Schema>;
+export type TemplateV4Document = PouchDB.Core.Document<TemplateV4Fields>;
+
+// Current (V4)
 // Fields
-export const TemplateDBFieldsSchema = TemplateV3Schema;
+export const TemplateDBFieldsSchema = TemplateV4Schema;
 export type TemplateDBFields = z.infer<typeof TemplateDBFieldsSchema>;
 
 // Document

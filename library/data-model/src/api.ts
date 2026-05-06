@@ -425,6 +425,8 @@ export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
 }).extend({
   // prefer to use a nicer team ID input field
   teamId: z.string().trim().min(1).optional(),
+  /** When true, template is visible in the public list for all users */
+  isPublic: z.boolean().optional(),
 });
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
@@ -458,16 +460,34 @@ export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
+/** PUT /api/templates/:id/set-visibility */
+export const PutTemplateSetVisibilityInputSchema = z.object({
+  isPublic: z.boolean(),
+});
+export type PutTemplateSetVisibilityInput = z.infer<
+  typeof PutTemplateSetVisibilityInputSchema
+>;
+
+/**
+ * Template document as returned by GET /templates and GET /templates/:id.
+ * Extends the stored document with optional server-injected fields (not persisted in CouchDB).
+ */
+export const TemplateApiDocumentSchema = ExistingTemplateDocumentSchema.extend({
+  /** Owning team's display name, looked up by the API when ownedByTeamId is set. */
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiDocument = z.infer<typeof TemplateApiDocumentSchema>;
+
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(ExistingTemplateDocumentSchema),
+  templates: z.array(TemplateApiDocumentSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
 
 // GET a specific template by _id response
-export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
+export const GetTemplateByIdResponseSchema = TemplateApiDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;

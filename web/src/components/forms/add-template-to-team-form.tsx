@@ -13,10 +13,11 @@ interface AddTemplateToTeamFormProps {
 }
 
 /**
- * A form component that allows assigning a project to a team.
+ * A form component that allows assigning a template to a team (updates
+ * {@link ownedByTeamId} via PUT /api/templates/:id).
  *
  * @param setDialogOpen - A function to control the dialog's open state.
- * @param projectId - The ID of the project to be assigned to a team.
+ * @param templateId - The ID of the template to assign to a team.
  */
 export function AddTemplateToTeamForm({
   setDialogOpen,
@@ -69,7 +70,7 @@ export function AddTemplateToTeamForm({
     if (!response.ok)
       return {
         type: 'submit',
-        message: 'Error adding project to team: ' + response.statusText,
+        message: 'Error assigning template to team: ' + response.statusText,
       };
 
     QueryClient.invalidateQueries({
