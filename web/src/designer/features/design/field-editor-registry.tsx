@@ -62,7 +62,6 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   MultipleTextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
   TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   TextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
-  DateTimeNow: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   DateTimePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   DatePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   MonthPicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,

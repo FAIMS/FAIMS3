@@ -164,7 +164,7 @@ const FieldEditorComponent = ({
   const fieldComponent = field['component-name'];
   const fieldComponentLabelMap: Record<string, string> = {
     FAIMSTextField: 'Text field',
-    MultipleTextField: 'Multi-line text field',
+    MultipleTextField: 'Text field',
     NumberField: 'Number field',
     ControlledNumber: 'Controlled number',
     DateTimePicker: 'Date and time picker',
@@ -492,7 +492,32 @@ const FieldEditorComponent = ({
                 {label}
               </Typography>
 
-              {/* Chips Below Title (Tighter Spacing) */}
+              {field['component-parameters'].helperText && (
+                <Typography
+                  variant="body2"
+                  fontSize={13}
+                  fontWeight={450}
+                  fontStyle="italic"
+                  sx={{
+                    mt: 0.65,
+                    px: 1.1,
+                    py: 0.6,
+                    color: 'text.secondary',
+                    borderLeft: '2px solid',
+                    borderColor: theme => alpha(theme.palette.text.secondary, 0.35),
+                    backgroundColor: theme => alpha(theme.palette.text.primary, 0.02),
+                    borderRadius: 0.75,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {field['component-parameters'].helperText}
+                </Typography>
+              )}
+              {/* Chips below question + helper text */}
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
                   label={fieldComponentDisplayName}
@@ -533,31 +558,6 @@ const FieldEditorComponent = ({
                   />
                 )}
               </Stack>
-              {field['component-parameters'].helperText && (
-                <Typography
-                  variant="body2"
-                  fontSize={13}
-                  fontWeight={450}
-                  fontStyle="italic"
-                  sx={{
-                    mt: 0.65,
-                    px: 1.1,
-                    py: 0.6,
-                    color: 'text.secondary',
-                    borderLeft: '2px solid',
-                    borderColor: theme => alpha(theme.palette.text.secondary, 0.35),
-                    backgroundColor: theme => alpha(theme.palette.text.primary, 0.02),
-                    borderRadius: 0.75,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {field['component-parameters'].helperText}
-                </Typography>
-              )}
             </Stack>
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -577,9 +577,9 @@ const FieldEditorComponent = ({
                   aria-label="delete"
                   size="small"
                   sx={{
-                    color: 'error.main',
+                    color: theme => alpha(theme.palette.error.main, 0.68),
                     '&:hover': {
-                      backgroundColor: theme => alpha(theme.palette.error.main, 0.1),
+                      backgroundColor: theme => alpha(theme.palette.error.main, 0.11),
                     },
                   }}
                 >
@@ -592,10 +592,10 @@ const FieldEditorComponent = ({
                   aria-label="move"
                   size="small"
                   sx={{
-                    color: 'warning.dark',
+                    color: theme => alpha(theme.palette.warning.main, 0.72),
                     '&:hover': {
                       backgroundColor: theme =>
-                        alpha(theme.palette.warning.main, 0.13),
+                        alpha(theme.palette.warning.main, 0.12),
                     },
                   }}
                 >
@@ -608,7 +608,7 @@ const FieldEditorComponent = ({
                   aria-label="add field"
                   size="small"
                   sx={{
-                    color: 'primary.main',
+                    color: theme => alpha(theme.palette.primary.main, 0.72),
                     '&:hover': {
                       backgroundColor: theme =>
                         alpha(theme.palette.primary.main, 0.1),
@@ -624,9 +624,10 @@ const FieldEditorComponent = ({
                   aria-label="duplicate"
                   size="small"
                   sx={{
-                    color: 'info.dark',
+                    color: theme => alpha(theme.palette.common.black, 0.62),
                     '&:hover': {
-                      backgroundColor: theme => alpha(theme.palette.info.main, 0.12),
+                      backgroundColor: theme =>
+                        alpha(theme.palette.common.black, 0.08),
                     },
                   }}
                 >
@@ -652,10 +653,10 @@ const FieldEditorComponent = ({
                           protection === 'protected' || requiredBlocksHiding
                         }
                         sx={{
-                          color: 'success.dark',
+                          color: theme => alpha(theme.palette.success.dark, 0.76),
                           '&:hover': {
                             backgroundColor: theme =>
-                              alpha(theme.palette.success.main, 0.12),
+                              alpha(theme.palette.success.main, 0.09),
                           },
                         }}
                       >
@@ -683,10 +684,10 @@ const FieldEditorComponent = ({
                           protection === 'protected' || requiredBlocksHiding
                         }
                         sx={{
-                          color: 'text.secondary',
+                          color: theme => alpha(theme.palette.info.main, 0.66),
                           '&:hover': {
                             backgroundColor: theme =>
-                              alpha(theme.palette.text.secondary, 0.12),
+                              alpha(theme.palette.info.main, 0.1),
                           },
                         }}
                       >
@@ -703,10 +704,16 @@ const FieldEditorComponent = ({
                   size="small"
                   onAnimationEnd={() => setShakingUp(false)}
                   sx={{
-                    color: isFirstField ? 'text.disabled' : 'text.primary',
+                    color: isFirstField
+                      ? 'text.disabled'
+                      : 'text.primary',
                     animation: shakingUp
                       ? `${shakeAnim} 0.35s ease`
                       : undefined,
+                    '&:hover': {
+                      backgroundColor: theme =>
+                        alpha(theme.palette.secondary.main, 0.1),
+                    },
                     '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
                   }}
                 >
@@ -720,10 +727,16 @@ const FieldEditorComponent = ({
                   size="small"
                   onAnimationEnd={() => setShakingDown(false)}
                   sx={{
-                    color: isLastField ? 'text.disabled' : 'text.primary',
+                    color: isLastField
+                      ? 'text.disabled'
+                      : 'text.primary',
                     animation: shakingDown
                       ? `${shakeAnim} 0.35s ease`
                       : undefined,
+                    '&:hover': {
+                      backgroundColor: theme =>
+                        alpha(theme.palette.secondary.main, 0.1),
+                    },
                     '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
                   }}
                 >
