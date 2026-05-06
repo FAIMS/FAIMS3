@@ -401,8 +401,11 @@ const FieldEditorComponent = ({
         opacity: isDragging ? 0.82 : 1,
         border: '1px solid',
         borderColor: 'divider',
+        borderRadius: 1.25,
+        overflow: 'hidden',
+        mb: 0.9,
         '&:not(:nth-of-type(2))': {
-          borderTop: 0,
+          borderTop: '1px solid',
         },
         '&:before': {
           display: 'none',
@@ -427,8 +430,15 @@ const FieldEditorComponent = ({
           </Box>
         }
         sx={{
-          backgroundColor: theme => alpha(theme.palette.text.primary, 0.05),
+          backgroundColor: theme => alpha(theme.palette.text.primary, 0.035),
           flexDirection: 'row-reverse',
+          px: {xs: 1.2, sm: 1.6},
+          py: 0.2,
+          minHeight: 84,
+          transition: 'background-color 160ms ease',
+          '&:hover': {
+            backgroundColor: theme => alpha(theme.palette.text.primary, 0.055),
+          },
           '& .MuiAccordionSummary-expandIconWrapper': {
             transform: 'none !important',
           },
@@ -444,6 +454,7 @@ const FieldEditorComponent = ({
           },
           '& .MuiAccordionSummary-content': {
             marginLeft: '10px',
+            my: 1.2,
           },
         }}
       >
@@ -454,8 +465,9 @@ const FieldEditorComponent = ({
                 variant="subtitle2"
                 sx={{
                   color: theme => theme.palette.grey[800],
-                  fontWeight: 750,
-                  fontSize: '1.06rem',
+                  fontWeight: 700,
+                  fontSize: '1.02rem',
+                  lineHeight: 1.28,
                   letterSpacing: '0.005em',
                   width: '100%',
                   minWidth: 0,
@@ -474,6 +486,12 @@ const FieldEditorComponent = ({
                   size="small"
                   variant="outlined"
                   sx={{
+                    height: 23,
+                    '& .MuiChip-label': {
+                      px: 1,
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                    },
                     '&.MuiChip-outlined': {
                       background: theme =>
                         alpha(theme.palette.text.primary, 0.02),
@@ -488,9 +506,12 @@ const FieldEditorComponent = ({
                     size="small"
                     variant="outlined"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 650,
                       fontSize: '0.68rem',
-                      height: 24,
+                      height: 23,
+                      '& .MuiChip-label': {
+                        px: 1,
+                      },
                       borderColor: theme => alpha(theme.palette.error.main, 0.82),
                       color: 'error.main',
                       backgroundColor: theme =>
@@ -503,16 +524,16 @@ const FieldEditorComponent = ({
                 <Typography
                   variant="body2"
                   fontSize={13}
-                  fontWeight={400}
+                  fontWeight={450}
                   fontStyle="italic"
                   sx={{
-                    mt: 1.25,
-                    px: 1,
-                    py: 0.5,
-                    color: 'text.disabled',
+                    mt: 0.65,
+                    px: 1.1,
+                    py: 0.6,
+                    color: 'text.secondary',
                     borderLeft: '2px solid',
                     borderColor: theme => alpha(theme.palette.text.secondary, 0.35),
-                    backgroundColor: theme => alpha(theme.palette.text.primary, 0.03),
+                    backgroundColor: theme => alpha(theme.palette.text.primary, 0.02),
                     borderRadius: 0.75,
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
@@ -527,7 +548,16 @@ const FieldEditorComponent = ({
             </Stack>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
+            <Stack
+              direction="row"
+              justifyContent={{sm: 'right', xs: 'left'}}
+              spacing={0.25}
+              sx={{
+                p: 0.35,
+                borderRadius: 1,
+                backgroundColor: theme => alpha(theme.palette.common.black, 0.02),
+              }}
+            >
               <Tooltip title="Delete Field">
                 <IconButton
                   onClick={deleteField}
