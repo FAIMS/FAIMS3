@@ -57,7 +57,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -450,6 +450,24 @@ export const OptionsEditor = ({
     field['component-parameters'].ElementProps?.otherOptionPosition ??
     options.length;
 
+  // Keep legacy specs normalized so "Other" always renders at bottom.
+  useEffect(() => {
+    if (!enableOther || otherOptionPosition === options.length) return;
+    const normalizedField = JSON.parse(JSON.stringify(field)) as FieldType;
+    normalizedField['component-parameters'].ElementProps = {
+      ...(normalizedField['component-parameters'].ElementProps ?? {}),
+      otherOptionPosition: options.length,
+    };
+    dispatch(fieldUpdated({fieldName, newField: normalizedField}));
+  }, [
+    dispatch,
+    enableOther,
+    field,
+    fieldName,
+    options.length,
+    otherOptionPosition,
+  ]);
+
   /**
    * made a combined list (options + other) in visual order.
    * This combined list is thee source of truth for sortable order.
@@ -531,9 +549,11 @@ export const OptionsEditor = ({
         return o;
       }),
       exclusiveOptions: updatedExclusiveOptions,
-      ...(enableOther && updatedOtherOptionPosition !== undefined
-        ? {otherOptionPosition: updatedOtherOptionPosition}
-        : {}),
+      ...(enableOther
+        ? {otherOptionPosition: updatedOptions.length}
+        : updatedOtherOptionPosition !== undefined
+          ? {otherOptionPosition: updatedOtherOptionPosition}
+          : {}),
     };
 
     dispatch(fieldUpdated({fieldName, newField}));
@@ -609,11 +629,6 @@ export const OptionsEditor = ({
 
     const newCombined = arrayMove(combinedRows, oldIndex, newIndex);
 
-    // If Other is enabled, compute its new position (index in combined list)
-    const newOtherPos = enableOther
-      ? newCombined.findIndex(r => r.id === OTHER_OPTION_ID)
-      : undefined;
-
     // Rebuild options array from the combined order (excluding Other)
     const optionMap = new Map(options.map(o => [o.value, o]));
     const newOptions = newCombined
@@ -624,7 +639,7 @@ export const OptionsEditor = ({
     // Safety: if mapping failed, do nothing
     if (newOptions.length !== options.length) return;
 
-    updateField(newOptions, exclusiveOptions, newOtherPos);
+    updateField(newOptions, exclusiveOptions);
   };
 
   /**
@@ -807,11 +822,11 @@ export const OptionsEditor = ({
   /**
    * Updates the position of the "Other" option
    */
-  const updateOtherPosition = (newPosition: number) => {
+  const updateOtherPosition = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
-      otherOptionPosition: newPosition,
+      otherOptionPosition: options.length,
     };
     dispatch(fieldUpdated({fieldName, newField}));
   };
@@ -820,11 +835,8 @@ export const OptionsEditor = ({
    * Moves the "Other" option up or down
    */
   const moveOtherOption = (direction: 'up' | 'down') => {
-    const currentPos = otherOptionPosition;
-    const newPos = direction === 'up' ? currentPos - 1 : currentPos + 1;
-    if (newPos >= 0 && newPos <= options.length) {
-      updateOtherPosition(newPos);
-    }
+    void direction;
+    updateOtherPosition();
   };
 
   return (

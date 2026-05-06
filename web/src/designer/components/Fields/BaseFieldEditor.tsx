@@ -123,8 +123,8 @@ export const BaseFieldEditor = ({
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  const hasAutoSyncedOnFirstLabelEdit = useRef(false);
-  const firstLabelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+  const autoSyncFieldIdEnabled = useRef(true);
+  const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
   const [localFieldName, setLocalFieldName] = useState(fieldName);
@@ -146,6 +146,8 @@ export const BaseFieldEditor = ({
   );
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // User is explicitly controlling Field ID, so pause auto-sync from label.
+    autoSyncFieldIdEnabled.current = false;
     setLocalFieldName(e.target.value);
     debouncedRename(e.target.value);
   };
@@ -160,29 +162,30 @@ export const BaseFieldEditor = ({
   };
 
   const syncFieldID = () => {
+    // User requested sync explicitly, re-enable auto-sync behaviour.
+    autoSyncFieldIdEnabled.current = true;
     syncFieldIDToLabel(state.label || '');
   };
 
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
 
-    // Automatically sync Field ID on the first label edit, but wait briefly so
-    // users can type naturally before the initial sync occurs.
-    if (!hasAutoSyncedOnFirstLabelEdit.current) {
-      if (firstLabelSyncTimerRef.current) {
-        clearTimeout(firstLabelSyncTimerRef.current);
+    // Keep Field ID in sync with Label while users type, but only after they
+    // briefly pause typing and only while auto-sync mode remains enabled.
+    if (autoSyncFieldIdEnabled.current) {
+      if (labelSyncTimerRef.current) {
+        clearTimeout(labelSyncTimerRef.current);
       }
-      firstLabelSyncTimerRef.current = setTimeout(() => {
-        hasAutoSyncedOnFirstLabelEdit.current = true;
+      labelSyncTimerRef.current = setTimeout(() => {
         syncFieldIDToLabel(newLabel);
-      }, 900);
+      }, 950);
     }
   };
 
   useEffect(() => {
-    if (firstLabelSyncTimerRef.current) {
-      clearTimeout(firstLabelSyncTimerRef.current);
-      firstLabelSyncTimerRef.current = null;
+    if (labelSyncTimerRef.current) {
+      clearTimeout(labelSyncTimerRef.current);
+      labelSyncTimerRef.current = null;
     }
     if (isMounted.current) {
       idInputRef.current?.focus();
@@ -190,7 +193,7 @@ export const BaseFieldEditor = ({
       isMounted.current = true;
     }
     const expectedIdFromCurrentLabel = slugify(state.label || '');
-    hasAutoSyncedOnFirstLabelEdit.current =
+    autoSyncFieldIdEnabled.current =
       expectedIdFromCurrentLabel.length > 0 &&
       fieldName === expectedIdFromCurrentLabel;
     setLocalFieldName(fieldName);
@@ -198,8 +201,8 @@ export const BaseFieldEditor = ({
 
   useEffect(() => {
     return () => {
-      if (firstLabelSyncTimerRef.current) {
-        clearTimeout(firstLabelSyncTimerRef.current);
+      if (labelSyncTimerRef.current) {
+        clearTimeout(labelSyncTimerRef.current);
       }
     };
   }, []);

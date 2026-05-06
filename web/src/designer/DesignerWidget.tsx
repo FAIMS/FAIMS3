@@ -88,6 +88,7 @@ export function DesignerWidget({
   animationScale = 0.95,
 }: DesignerWidgetProps) {
   const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
+  const notebookIdentity = notebook?.metadata?.project_id ?? '__none__';
 
   // 1. Migrate + inject designerIdentifiers + reset undo history on each new notebook
   const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
@@ -122,11 +123,14 @@ export function DesignerWidget({
     };
   }, [notebook]);
 
-  // 2. Create a fresh Redux store whenever processedNotebook or debug flag changes
-  const store = useMemo(
-    () => createDesignerStore(processedNotebook, debug),
-    [processedNotebook, debug]
+  // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
+  const [store, setStore] = useState(() =>
+    createDesignerStore(processedNotebook, debug)
   );
+
+  useEffect(() => {
+    setStore(createDesignerStore(processedNotebook, debug));
+  }, [notebookIdentity, debug]);
 
   // Local UI state
   const [loading, setLoading] = useState(true);
@@ -210,7 +214,7 @@ export function DesignerWidget({
   // 4. Recreate router on notebook change to wipe any internal routing state
   const memoryRouterInstance = useMemo(
     () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
-    [notebook, routes]
+    [notebookIdentity, routes]
   );
 
   if (loading) {
