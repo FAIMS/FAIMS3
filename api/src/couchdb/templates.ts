@@ -12,9 +12,15 @@ import {
   slugify,
   TemplateDBFields,
   TemplateDocument,
+  TemplateListItem,
   TEMPLATES_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEMPLATE_ID,
 } from '@faims3/data-model';
-import type {TemplateApiDocument} from '@faims3/data-model';
+import type {
+  TemplateApiDocument,
+  TemplateApiListItem,
+} from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
 import {generateRandomString} from '../utils';
@@ -23,38 +29,34 @@ import {getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
 
 /**
- * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
- * validate with Zod.
- * @returns an array of template objects
+ * Lists templates using CouchDB views whose map `value` is the template doc
+ * without `ui-specification`. Uses `include_docs: false` on purpose: with
+ * `include_docs: true`, CouchDB would also attach the full stored document for
+ * each row (including `ui-specification`), which would defeat the lean list.
+ *
+ * @returns an array of template list items (from each row's `value`)
  */
 export const getTemplates = async ({
   teamId,
 }: {
   teamId?: string;
-}): Promise<ExistingTemplateDocument[]> => {
+}): Promise<TemplateListItem[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    let resultList;
-    if (teamId) {
-      resultList = await templatesDb.query<TemplateDBFields>(
-        TEMPLATES_BY_TEAM_ID,
-        {
+    const resultList = teamId
+      ? await templatesDb.query<TemplateListItem>(TEMPLATES_LISTING_BY_TEAM_ID, {
           key: teamId,
-          include_docs: true,
-        }
-      );
-    } else {
-      resultList = await templatesDb.allDocs({
-        include_docs: true,
-      });
-    }
+          include_docs: false,
+        })
+      : await templatesDb.query<TemplateListItem>(
+          TEMPLATES_LISTING_BY_TEMPLATE_ID,
+          {
+            include_docs: false,
+          }
+        );
     return resultList.rows
-      .filter(document => {
-        return !!document.doc && !document.id.startsWith('_');
-      })
-      .map(document => {
-        return document.doc!;
-      });
+      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
+      .map(row => row.value!);
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
@@ -99,7 +101,9 @@ export const getTemplateIdsByTeamId = async ({
  * @param id The ID of the template to retrieve
  * @returns The document if available
  */
-export const getTemplate = async (id: string) => {
+export const getTemplate = async (
+  id: string
+): Promise<ExistingTemplateDocument> => {
   const templatesDb = getTemplatesDb();
   try {
     return await templatesDb.get(id);
@@ -123,9 +127,15 @@ async function teamDisplayNameForId(teamId: string): Promise<string | undefined>
  * Adds {@link TemplateApiDocument.ownedByTeamDisplayName} for API responses so
  * clients can show the team name without calling the teams API.
  */
-export const withOwnedByTeamDisplayName = async (
+export async function withOwnedByTeamDisplayName(
   template: ExistingTemplateDocument
-): Promise<TemplateApiDocument> => {
+): Promise<TemplateApiDocument>;
+export async function withOwnedByTeamDisplayName(
+  template: TemplateListItem
+): Promise<TemplateApiListItem>;
+export async function withOwnedByTeamDisplayName(
+  template: TemplateListItem | ExistingTemplateDocument
+): Promise<TemplateApiListItem | TemplateApiDocument> {
   if (!template.ownedByTeamId) {
     return template;
   }
@@ -135,11 +145,11 @@ export const withOwnedByTeamDisplayName = async (
   return ownedByTeamDisplayName !== undefined
     ? {...template, ownedByTeamDisplayName}
     : template;
-};
+}
 
-export const withOwnedByTeamDisplayNames = async (
-  templates: ExistingTemplateDocument[]
-): Promise<TemplateApiDocument[]> => {
+export async function withOwnedByTeamDisplayNames(
+  templates: TemplateListItem[] | ExistingTemplateDocument[]
+): Promise<TemplateApiListItem[] | TemplateApiDocument[]> {
   const ids = [
     ...new Set(
       templates
@@ -165,7 +175,7 @@ export const withOwnedByTeamDisplayNames = async (
       ? {...t, ownedByTeamDisplayName}
       : t;
   });
-};
+}
 
 /**
  * Generate a good project identifier for a new project

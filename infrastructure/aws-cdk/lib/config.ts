@@ -175,7 +175,13 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .enum(['sha1', 'sha256', 'sha512'])
     .optional()
     .default('sha256'),
-  digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+  digestAlgorithm: z
+    .enum(['sha1', 'sha256', 'sha512'])
+    .optional()
+    .default('sha256')
+    .describe(
+      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
+    ),
   wantAssertionsSigned: z.boolean().optional().default(true),
   // SAML behavior options
   identifierFormat: z

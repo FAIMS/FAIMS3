@@ -10,6 +10,7 @@ import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
+  TemplateListItemSchema,
 } from './data_storage/templatesDB/types';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
@@ -460,7 +461,7 @@ export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
-/** PUT /api/templates/:id/set-visibility */
+/** PUT /api/templates/:id/visibility */
 export const PutTemplateSetVisibilityInputSchema = z.object({
   isPublic: z.boolean(),
 });
@@ -469,7 +470,7 @@ export type PutTemplateSetVisibilityInput = z.infer<
 >;
 
 /**
- * Template document as returned by GET /templates and GET /templates/:id.
+ * Full template document as returned by GET /templates/:id.
  * Extends the stored document with optional server-injected fields (not persisted in CouchDB).
  */
 export const TemplateApiDocumentSchema = ExistingTemplateDocumentSchema.extend({
@@ -478,9 +479,18 @@ export const TemplateApiDocumentSchema = ExistingTemplateDocumentSchema.extend({
 });
 export type TemplateApiDocument = z.infer<typeof TemplateApiDocumentSchema>;
 
+/**
+ * Template list row from GET /templates (summaries only; no ui-specification).
+ * Includes the same optional {@link TemplateApiDocument.ownedByTeamDisplayName} injection as the detail GET.
+ */
+export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
+
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateApiDocumentSchema),
+  templates: z.array(TemplateApiListItemSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema

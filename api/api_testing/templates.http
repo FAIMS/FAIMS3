@@ -2,11 +2,11 @@
 @notebooksBaseUrl = {{$dotenv BASE_URL}}/api/notebooks
 @token = {{$dotenv API_TOKEN}}
 
-### List templates
+### List templates (summaries only — no ui-specification; use Get by ID for full JSON)
 GET {{templateBaseUrl}}
 Authorization: Bearer {{token}}
 
-### Get by ID
+### Get by ID (full template including ui-specification)
 # @prompt templateId
 
 GET {{templateBaseUrl}}/{{templateId}}

@@ -130,7 +130,7 @@ export const updateTemplateRequest = async ({
 };
 
 /**
- * PUT /api/templates/:templateId/set-visibility — public visibility only.
+ * PUT /api/templates/:templateId/visibility — public visibility only.
  */
 export const putTemplateSetVisibility = async ({
   user,
@@ -142,7 +142,7 @@ export const putTemplateSetVisibility = async ({
   isPublic: boolean;
 }): Promise<void> => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/set-visibility`,
+    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/visibility`,
     {
       method: 'PUT',
       headers: {

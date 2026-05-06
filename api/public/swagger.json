@@ -1128,7 +1128,7 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Lists templates the caller may see. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
+        "description": "Lists template summaries (no `ui-specification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -1299,7 +1299,7 @@
         }
       }
     },
-    "/templates/{id}/set-visibility": {
+    "/templates/{id}/visibility": {
       "put": {
         "summary": "Set template public catalogue visibility",
         "description": "Sets whether the template is listed in the public catalogue (`isPublic`). Does not change other template fields. Requires `CHANGE_TEMPLATE_VISIBILITY` (operations or system administrators). Returns the updated template document.",
@@ -2391,15 +2391,44 @@
     },
     "GetListTemplatesResponse": {
       "type": "object",
-      "description": "Template list items match the stored document plus optional `ownedByTeamDisplayName` from the server.",
+      "description": "Template list items are lean summaries (no `ui-specification`) plus optional `ownedByTeamDisplayName` from the server.",
       "properties": {
         "templates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TemplateDocument"
+            "allOf": [
+              {
+                "$ref": "#/definitions/TemplateListItem"
+              },
+              {
+                "$ref": "#/definitions/TemplateApiResponseExtensions"
+              }
+            ]
           }
         }
       }
+    },
+    "TemplateListItem": {
+      "type": "object",
+      "description": "Template summary for GET /api/templates (excludes ui-specification).",
+      "properties": {
+        "_id": {"type": "string"},
+        "_rev": {"type": "string"},
+        "name": {"type": "string"},
+        "version": {"type": "number"},
+        "archived": {"type": "boolean"},
+        "isPublic": {"type": "boolean"},
+        "ownedByTeamId": {"type": "string"},
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "project_lead": {},
+            "pre_description": {"type": "string"},
+            "template_id": {"type": "string"}
+          }
+        }
+      },
+      "required": ["_id", "_rev", "name", "version", "archived"]
     },
     "GetTemplateByIdResponse": {
       "$ref": "#/definitions/TemplateDocument"

@@ -118,8 +118,11 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     // Signature configuration
     /** Signature algorithm: 'sha1', 'sha256', or 'sha512' (default: sha256) */
     signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
-    /** Digest algorithm: 'sha1', 'sha256', or 'sha512' */
-    digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+    /** Digest for signed request references; passport-saml defaults to sha1 if omitted here */
+    digestAlgorithm: z
+      .enum(['sha1', 'sha256', 'sha512'])
+      .optional()
+      .default('sha256'),
     /** Request signed assertions from IdP (default: true) */
     wantAssertionsSigned: z.boolean().optional(),
     // SAML behavior options

@@ -145,6 +145,7 @@
         "authnRequestBinding": "HTTP-POST",
         "callbackURL": "https://faims.example.com/auth/saml/callback",
         "signatureAlgorithm": "sha256",
+        "digestAlgorithm": "sha256",
         "wantAssertionsSigned": true
       }
     }

@@ -65,10 +65,10 @@ patch();
 export const api: express.Router = express.Router();
 
 /**
- * GET list templates Gets a list of templates from the templates DB.
+ * GET list templates — lightweight summaries from a CouchDB view (no
+ * ui-specification). Use GET /api/templates/:id for full detail.
  *
- * Can filter by team if desired -  uses an efficient index to do so.
- *
+ * Can filter by team; uses an index that omits the form payload.
  */
 api.get(
   '/',
@@ -235,7 +235,7 @@ api.post(
  * PUT set public/private visibility only.
  */
 api.put(
-  '/:id/set-visibility',
+  '/:id/visibility',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.CHANGE_TEMPLATE_VISIBILITY,
