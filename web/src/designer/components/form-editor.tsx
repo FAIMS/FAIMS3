@@ -1067,22 +1067,26 @@ export const FormEditor = ({
                         spacing={1.25}
                         alignItems={{xs: 'stretch', sm: 'flex-end'}}
                       >
-                        <DebouncedTextField
-                          required
-                          label="Section Name"
-                          name="sectionName"
-                          data-testid="sectionName"
-                          value={newSectionName}
-                          onChange={(
-                            event: React.ChangeEvent<HTMLInputElement>
-                          ) => {
-                            setNewSectionName(event.target.value);
-                          }}
-                          sx={{
-                            width: {xs: '100%', sm: 360},
-                            '& .MuiInputBase-root': {paddingRight: 1},
-                          }}
-                        />
+                        <Box sx={{width: {xs: '100%', sm: 360}}}>
+                          <SimpleFieldWrapper heading="Section Name">
+                            <DebouncedTextField
+                              required
+                              label=""
+                              placeholder="Enter section name"
+                              name="sectionName"
+                              data-testid="sectionName"
+                              value={newSectionName}
+                              onChange={(
+                                event: React.ChangeEvent<HTMLInputElement>
+                              ) => {
+                                setNewSectionName(event.target.value);
+                              }}
+                              sx={{
+                                '& .MuiInputBase-root': {paddingRight: 1},
+                              }}
+                            />
+                          </SimpleFieldWrapper>
+                        </Box>
                         <Button
                           variant="contained"
                           startIcon={<AddRoundedIcon />}
