@@ -29,6 +29,7 @@ import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {designerInfoIconSx} from '../designer-style';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 type FieldState = {
   featureType: string;
@@ -93,16 +94,18 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid container p={2} rowGap={2}>
             <Grid item sm={6} xs={12}>
-              <DebouncedTextField
-                variant="outlined"
-                label="Zoom Level"
-                type="number"
-                value={initZoom}
-                inputProps={{min: 0}}
-                onChange={e =>
-                  updateProperty('zoom', parseFloat(e.target.value))
-                }
-              />
+              <SimpleFieldWrapper heading="Zoom Level">
+                <DebouncedTextField
+                  variant="outlined"
+                  label=""
+                  type="number"
+                  value={initZoom}
+                  inputProps={{min: 0}}
+                  onChange={e =>
+                    updateProperty('zoom', parseFloat(e.target.value))
+                  }
+                />
+              </SimpleFieldWrapper>
             </Grid>
             <Grid item sm={6} xs={12}>
               <FormControl sx={{minWidth: 150}}>
@@ -123,16 +126,20 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               </FormControl>
             </Grid>
             <Grid item sm={6} xs={12}>
-              <DebouncedTextField
-                variant="outlined"
-                label="Button Label Text"
-                value={initButtonLabelText}
-                placeholder="Leave empty to use the field label"
-                onChange={e =>
-                  updateProperty('buttonLabelText', e.target.value)
-                }
+              <SimpleFieldWrapper
+                heading="Button Label Text"
                 helperText="Custom text for the location button. If empty, the field label will be used."
-              />
+              >
+                <DebouncedTextField
+                  variant="outlined"
+                  label=""
+                  value={initButtonLabelText}
+                  placeholder="Leave empty to use the field label"
+                  onChange={e =>
+                    updateProperty('buttonLabelText', e.target.value)
+                  }
+                />
+              </SimpleFieldWrapper>
             </Grid>
             {initFeatureType === 'Point' && (
               <Grid item xs={12}>
