@@ -433,13 +433,7 @@ export const OptionsEditor = ({
   const [editValue, setEditValue] = useState('');
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
   const addOptionHasError = Boolean(errorMessage) && !editingOption;
-  const optionGuidance = (
-    <>
-      You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
-      <code>**Bold**</code> or <code>*italic*</code>). Add and remove options as
-      needed. Drag items or use arrows to reorder them.
-    </>
-  );
+  const optionGuidance = 'Enter an option label, then click Add.';
 
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
@@ -847,6 +841,14 @@ export const OptionsEditor = ({
           boxShadow: isDeprecatedComponent
             ? undefined
             : '0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
+          transition: 'box-shadow 160ms ease, border-color 160ms ease',
+          '&:hover': isDeprecatedComponent
+            ? undefined
+            : {
+                boxShadow:
+                  '0 4px 14px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.75)',
+                borderColor: 'rgba(0,0,0,0.18)',
+              },
         }}
       >
         <Grid container spacing={2}>
@@ -856,7 +858,7 @@ export const OptionsEditor = ({
               heading={
                 isMultiSelectField ? 'Select multiple options' : 'Select one options'
               }
-              helperText={optionGuidance}
+              helperText={undefined}
             >
               <TableContainer
                 component={Paper}
@@ -1004,8 +1006,12 @@ export const OptionsEditor = ({
                 >
                   <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
                     <SimpleFieldWrapper
-                      heading="Option Text"
-                      helperText="Enter an option label, then click Add."
+                      heading={
+                        isMultiSelectField
+                          ? 'Select multiple options'
+                          : 'Select one option'
+                      }
+                      helperText={optionGuidance}
                     >
                       <TextField
                         size="small"
