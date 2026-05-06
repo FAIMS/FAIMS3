@@ -97,7 +97,7 @@ export function CreateTemplateForm({
           label: 'Public',
           value: 'public',
           description:
-            'this template will be available to view and use for all users. Public permissions are read only.',
+            'This template will be available to view and use for all users. Public permissions are read only.',
         },
       ],
       schema: z.enum(['private', 'public']),
