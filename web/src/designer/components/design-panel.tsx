@@ -27,6 +27,7 @@ import {
   Tab,
   Tabs,
   Theme,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -34,7 +35,7 @@ import {
 import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import InfoIcon from '@mui/icons-material/Info';
 
 import {TabContext} from '@mui/lab';
 import {useState, useEffect, useRef} from 'react';
@@ -42,8 +43,11 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
   designerCancelButtonSx,
+  designerDialogActionsSx,
   designerDialogContentSx,
+  designerDialogTitleSx,
   designerDividerSx,
+  designerInfoIconSx,
   designerSubheadingSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
@@ -540,81 +544,56 @@ export const DesignPanel = () => {
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            py: 2.25,
-            px: {xs: 2.25, sm: 3.25},
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            backgroundColor: theme =>
-              alpha(
-                theme.palette.primary.main,
-                theme.palette.mode === 'dark' ? 0.2 : 0.08
-              ),
-          }}
-        >
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-            <AddRoundedIcon color="primary" />
+        <DialogTitle sx={designerDialogTitleSx}>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
             <Typography variant="h6" sx={{fontWeight: 800}}>
               Add New Form
             </Typography>
+            <Tooltip title="Create a clear form name so editors can find it quickly.">
+              <InfoIcon sx={designerInfoIconSx} />
+            </Tooltip>
           </Box>
-          <Typography variant="body2" sx={{mt: 0.5, color: 'text.secondary'}}>
-            Create a clear form name so editors can find it quickly.
-          </Typography>
         </DialogTitle>
-        <DialogContent sx={designerDialogContentSx}>
-          <SimpleFieldWrapper
-            heading="Form Name"
-            helperText={
-              alertMessage ||
-              'Use a short descriptive name, for example: Household Details.'
-            }
-          >
-            <DebouncedTextField
-              fullWidth
-              required
-              label=""
-              placeholder="Enter form name"
-              name="formNameDialog"
-              data-testid="formNameDialog"
-              value={newFormName}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                if (alertMessage) setAlertMessage('');
-                setNewFormName(event.target.value);
-              }}
-              error={Boolean(alertMessage)}
-              sx={{mt: 1}}
-            />
-          </SimpleFieldWrapper>
+        <DialogContent sx={{...designerDialogContentSx, pt: 3.25}}>
+          <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
+            <SimpleFieldWrapper
+              heading="Form Name"
+              helperText={
+                alertMessage ||
+                'Use a short descriptive name, for example: Household Details.'
+              }
+            >
+              <DebouncedTextField
+                fullWidth
+                required
+                label=""
+                placeholder="Enter form name"
+                name="formNameDialog"
+                data-testid="formNameDialog"
+                value={newFormName}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  if (alertMessage) setAlertMessage('');
+                  setNewFormName(event.target.value);
+                }}
+                error={Boolean(alertMessage)}
+                sx={{mt: 0.85}}
+              />
+            </SimpleFieldWrapper>
+          </Box>
         </DialogContent>
-        <DialogActions
-          sx={{
-            px: {xs: 2, sm: 3},
-            pb: {xs: 2, sm: 2.5},
-            pt: 1.5,
-            gap: 1,
-            flexDirection: {xs: 'column-reverse', sm: 'row'},
-            alignItems: 'stretch',
-          }}
-        >
+        <DialogActions sx={designerDialogActionsSx}>
           <Button
             onClick={() => {
               setAddFormDialogOpen(false);
               setAlertMessage('');
             }}
             sx={designerCancelButtonSx}
-            fullWidth={addFormDialogFullScreen}
-            size="large"
           >
             Cancel
           </Button>
           <Button
             variant="contained"
-            startIcon={<AddRoundedIcon />}
-            fullWidth={addFormDialogFullScreen}
             disabled={!newFormName.trim()}
-            size="large"
             onClick={() => {
               if (addNewForm()) {
                 setAddFormDialogOpen(false);

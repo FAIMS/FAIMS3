@@ -38,9 +38,14 @@ import {
   Tooltip,
   Chip,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import {
+  designerDialogActionsSx,
+  designerDialogTitleSx,
+} from './designer-style';
 
 import {getFieldNames, getFieldSpec} from '../fields';
 import {
@@ -156,7 +161,7 @@ export default function FieldChooserDialog({
         },
       }}
     >
-      <DialogTitle>Add a field</DialogTitle>
+      <DialogTitle sx={designerDialogTitleSx}>Add a field</DialogTitle>
 
       <DialogContent
         dividers
@@ -168,6 +173,7 @@ export default function FieldChooserDialog({
           pb: 0,
         }}
       >
+        <Box sx={{maxWidth: 1120, width: '100%', mx: 'auto'}}>
         <Tabs
           ref={tabsRef}
           value={category}
@@ -213,7 +219,7 @@ export default function FieldChooserDialog({
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{display: 'block', mb: 1}}
+            sx={{display: 'block', mb: 1.2}}
           >
             Scroll left/right to view all field categories.
           </Typography>
@@ -228,7 +234,12 @@ export default function FieldChooserDialog({
             startAdornment: (
               <InputAdornment position="start">
                 <SearchRoundedIcon
-                  sx={{color: 'text.disabled', fontSize: '1.1rem'}}
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '1.35rem',
+                    strokeWidth: 1.8,
+                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))',
+                  }}
                 />
               </InputAdornment>
             ),
@@ -239,6 +250,23 @@ export default function FieldChooserDialog({
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
               bgcolor: theme.palette.common.white,
+              boxShadow:
+                '0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
+              transition: theme.transitions.create(
+                ['box-shadow', 'border-color', 'background-color'],
+                {duration: theme.transitions.duration.shorter}
+              ),
+              '&:hover': {
+                boxShadow:
+                  '0 4px 12px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255,255,255,0.85)',
+              },
+              '&.Mui-focused': {
+                boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 6px 14px rgba(15, 23, 42, 0.12)`,
+              },
+            },
+            '& .MuiOutlinedInput-input::placeholder': {
+              color: 'text.secondary',
+              opacity: 0.82,
             },
           }}
           value={search}
@@ -246,13 +274,14 @@ export default function FieldChooserDialog({
         />
 
         <Typography
-          variant="caption"
+          variant="body2"
           color="text.secondary"
-          sx={{mb: 1.5, display: 'block'}}
+          sx={{...theme.typography.body2, mb: 1.75, display: 'block'}}
         >
           Click any field card to add it instantly, then name it in the field
           editor.
         </Typography>
+        </Box>
 
         <Box
           sx={{
@@ -393,7 +422,7 @@ export default function FieldChooserDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions>
+      <DialogActions sx={designerDialogActionsSx}>
         <Button
           onClick={onClose}
           variant="contained"

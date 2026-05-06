@@ -64,6 +64,7 @@ import {
   designerControlHeadingSx,
   designerDialogActionsSx,
   designerDialogBodyTextSx,
+  designerDialogContentSx,
   designerDialogFieldLabelSx,
   designerDialogTitleSx,
   designerDividerSx,
@@ -440,10 +441,10 @@ export const SectionEditor = ({
               <SimpleFieldWrapper heading="Section Name">
                 <DebouncedTextField
                   size="small"
-                  margin="dense"
-                  label="Section Name"
+                  margin="none"
                   name="label"
                   data-testid="label"
+                  placeholder="Section Name"
                   inputRef={sectionEditInputRef}
                   InputProps={{
                     endAdornment: (
@@ -452,7 +453,10 @@ export const SectionEditor = ({
                           <IconButton
                             size="small"
                             type="submit"
-                            sx={designerInlineEditActionIconSx}
+                            sx={{
+                              ...designerInlineEditActionIconSx,
+                              color: 'success.main',
+                            }}
                           >
                             <DoneRoundedIcon />
                           </IconButton>
@@ -461,7 +465,10 @@ export const SectionEditor = ({
                           <IconButton
                             size="small"
                             onClick={() => setEditMode(false)}
-                            sx={designerInlineEditActionIconSx}
+                            sx={{
+                              ...designerInlineEditActionIconSx,
+                              color: 'error.main',
+                            }}
                           >
                             <CloseRoundedIcon />
                           </IconButton>
@@ -492,7 +499,7 @@ export const SectionEditor = ({
         <DialogTitle id="alert-move-dialog-title" sx={designerDialogTitleSx}>
           Move Section to Another Form
         </DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
           <Typography variant="body2" sx={{mb: 1.5, color: 'text.secondary'}}>
             Choose the destination form for this section.
           </Typography>
@@ -537,7 +544,7 @@ export const SectionEditor = ({
         <DialogTitle id="alert-delete-dialog-title" sx={designerDialogTitleSx}>
           Delete Section
         </DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
           <Typography variant="body2" sx={designerDialogBodyTextSx}>
             Are you sure you want to delete this section? All fields inside it
             will also be removed.
@@ -571,26 +578,37 @@ export const SectionEditor = ({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle sx={designerDialogTitleSx}>Add New Section</DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
-          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
-            Section Name *
-          </Typography>
-          <DebouncedTextField
-            fullWidth
-            size="small"
-            name="sectionName"
-            data-testid="sectionName"
-            value={newSectionName}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setNewSectionName(event.target.value);
-            }}
-          />
-          {addAlertMessage && (
-            <Alert severity="error" sx={{mt: 1.5}}>
-              {addAlertMessage}
-            </Alert>
-          )}
+        <DialogTitle sx={designerDialogTitleSx}>
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <Typography variant="h6" sx={{fontWeight: 800}}>
+              Add New Section
+            </Typography>
+            <Tooltip title="Create a clear section name so editors can find it quickly.">
+              <InfoIcon sx={designerInfoIconSx} />
+            </Tooltip>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{...designerDialogContentSx, pt: 3.25}}>
+          <Grid sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
+            <SimpleFieldWrapper
+              heading="Section Name"
+              helperText={
+                addAlertMessage || 'Name the section users will fill in first.'
+              }
+            >
+              <DebouncedTextField
+                fullWidth
+                size="small"
+                name="sectionName"
+                data-testid="sectionName"
+                value={newSectionName}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setNewSectionName(event.target.value);
+                }}
+                error={Boolean(addAlertMessage)}
+              />
+            </SimpleFieldWrapper>
+          </Grid>
         </DialogContent>
         <DialogActions sx={designerDialogActionsSx}>
           <Button
@@ -642,7 +660,7 @@ export const SectionEditor = ({
         >
           Duplicate Section
         </DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
           <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             New Section Name
           </Typography>

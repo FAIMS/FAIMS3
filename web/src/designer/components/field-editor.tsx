@@ -745,7 +745,7 @@ const FieldEditorComponent = ({
           }}
         >
           <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
-          <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
             <Alert severity="warning">
               This field is referenced in the following conditions:
               <ul>
@@ -780,7 +780,7 @@ const FieldEditorComponent = ({
         <DialogTitle id="move-dialog-title" sx={designerDialogTitleSx}>
           Move Field
         </DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
           {conflictError && (
             <Alert severity="error" sx={{mb: 2}}>
               <Typography variant="body2" sx={{mb: 1}}>
@@ -861,7 +861,7 @@ const FieldEditorComponent = ({
         <DialogTitle id="duplicate-dialog-title" sx={designerDialogTitleSx}>
           Duplicate Field
         </DialogTitle>
-        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
           <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             Field Title
           </Typography>

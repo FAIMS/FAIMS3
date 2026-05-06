@@ -695,10 +695,10 @@ export const FormEditor = ({
                     <SimpleFieldWrapper heading="Form Name">
                       <DebouncedTextField
                         size="small"
-                        margin="dense"
-                        label="Form Name"
+                        margin="none"
                         name="label"
                         data-testid="label"
+                        placeholder="Form Name"
                         inputRef={formEditInputRef}
                         InputProps={{
                           endAdornment: (
@@ -707,7 +707,10 @@ export const FormEditor = ({
                                 <IconButton
                                   size="small"
                                   type="submit"
-                                  sx={designerInlineEditActionIconSx}
+                                  sx={{
+                                    ...designerInlineEditActionIconSx,
+                                    color: 'success.main',
+                                  }}
                                 >
                                   <DoneRoundedIcon />
                                 </IconButton>
@@ -716,7 +719,10 @@ export const FormEditor = ({
                                 <IconButton
                                   size="small"
                                   onClick={() => setEditMode(false)}
-                                  sx={designerInlineEditActionIconSx}
+                                  sx={{
+                                    ...designerInlineEditActionIconSx,
+                                    color: 'error.main',
+                                  }}
                                 >
                                   <CloseRoundedIcon />
                                 </IconButton>
@@ -830,30 +836,41 @@ export const FormEditor = ({
               },
             }}
           >
-            <DialogTitle sx={designerDialogTitleSx}>Create New Section</DialogTitle>
-            <DialogContent sx={designerDialogContentSx}>
-              <SimpleFieldWrapper
-                heading="Section Name"
-                helperText={
-                  addAlertMessage || 'Name the section users will fill in first.'
-                }
-              >
-                <DebouncedTextField
-                  autoFocus
-                  fullWidth
-                  required
-                  label=""
-                  placeholder="Enter section name"
-                  name="sectionNameDialog"
-                  data-testid="sectionNameDialog"
-                  value={newSectionName}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    if (addAlertMessage) setAddAlertMessage('');
-                    setNewSectionName(event.target.value);
-                  }}
-                  error={Boolean(addAlertMessage)}
-                />
-              </SimpleFieldWrapper>
+            <DialogTitle sx={designerDialogTitleSx}>
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
+                <Typography variant="h6" sx={{fontWeight: 800}}>
+                  Add New Section
+                </Typography>
+                <Tooltip title="Create a clear section name so editors can find it quickly.">
+                  <InfoIcon sx={designerInfoIconSx} />
+                </Tooltip>
+              </Box>
+            </DialogTitle>
+            <DialogContent sx={{...designerDialogContentSx, pt: 3.25}}>
+              <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
+                <SimpleFieldWrapper
+                  heading="Section Name"
+                  helperText={
+                    addAlertMessage || 'Name the section users will fill in first.'
+                  }
+                >
+                  <DebouncedTextField
+                    autoFocus
+                    fullWidth
+                    required
+                    label=""
+                    placeholder="Enter section name"
+                    name="sectionNameDialog"
+                    data-testid="sectionNameDialog"
+                    value={newSectionName}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      if (addAlertMessage) setAddAlertMessage('');
+                      setNewSectionName(event.target.value);
+                    }}
+                    error={Boolean(addAlertMessage)}
+                  />
+                </SimpleFieldWrapper>
+              </Box>
             </DialogContent>
             <DialogActions sx={designerDialogActionsSx}>
               <Button
@@ -867,7 +884,6 @@ export const FormEditor = ({
               </Button>
               <Button
                 variant="contained"
-                startIcon={<AddRoundedIcon />}
                 disabled={!newSectionName.trim()}
                 onClick={submitNewSection}
               >

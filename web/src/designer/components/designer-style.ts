@@ -96,9 +96,10 @@ export const designerInlineEditPanelSx: SxProps<Theme> = {
 export const designerInlineEditActionIconSx: SxProps<Theme> = {
   color: 'text.secondary',
   borderRadius: 1,
+  p: 0.5,
   '& .MuiSvgIcon-root': {
-    fontSize: '1.52rem',
-    fontWeight: 800,
+    fontSize: '1.95rem',
+    fontWeight: 900,
   },
   '&:hover': {
     backgroundColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
@@ -209,7 +210,7 @@ export const designerDialogBodyTextSx: SxProps<Theme> = {
 };
 
 export const designerDialogContentSx: SxProps<Theme> = {
-  pt: 2.75,
+  pt: 3.25,
   px: {xs: 2.25, sm: 3.25},
   pb: 2.25,
 };
