@@ -117,6 +117,7 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
   const autoSyncFieldIdEnabled = useRef(true);
+  const initialAutoSyncDone = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -141,6 +142,7 @@ export const BaseFieldEditor = ({
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // User is explicitly controlling Field ID, so pause auto-sync from label.
     autoSyncFieldIdEnabled.current = false;
+    initialAutoSyncDone.current = true;
     setLocalFieldName(e.target.value);
     debouncedRename(e.target.value);
   };
@@ -155,8 +157,9 @@ export const BaseFieldEditor = ({
   };
 
   const syncFieldID = () => {
-    // User requested sync explicitly, re-enable auto-sync behaviour.
-    autoSyncFieldIdEnabled.current = true;
+    // Manual sync is one-shot and should not re-enable continuous auto-sync.
+    autoSyncFieldIdEnabled.current = false;
+    initialAutoSyncDone.current = true;
     syncFieldIDToLabel(state.label || '');
   };
 
@@ -165,12 +168,14 @@ export const BaseFieldEditor = ({
 
     // Keep Field ID in sync with Label while users type, but only after they
     // briefly pause typing and only while auto-sync mode remains enabled.
-    if (autoSyncFieldIdEnabled.current) {
+    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
       if (labelSyncTimerRef.current) {
         clearTimeout(labelSyncTimerRef.current);
       }
       labelSyncTimerRef.current = setTimeout(() => {
         syncFieldIDToLabel(newLabel);
+        initialAutoSyncDone.current = true;
+        autoSyncFieldIdEnabled.current = false;
       }, 950);
     }
   };
@@ -187,6 +192,7 @@ export const BaseFieldEditor = ({
     }
     const expectedIdFromCurrentLabel = slugify(state.label || '');
     autoSyncFieldIdEnabled.current =
+      !initialAutoSyncDone.current &&
       expectedIdFromCurrentLabel.length > 0 &&
       fieldName === expectedIdFromCurrentLabel;
     setLocalFieldName(fieldName);
