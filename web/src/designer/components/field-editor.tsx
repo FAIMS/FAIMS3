@@ -608,10 +608,10 @@ const FieldEditorComponent = ({
                   aria-label="add field"
                   size="small"
                   sx={{
-                    color: theme => alpha(theme.palette.primary.main, 0.72),
+                    color: theme => alpha(theme.palette.success.dark, 0.75),
                     '&:hover': {
                       backgroundColor: theme =>
-                        alpha(theme.palette.primary.main, 0.1),
+                        alpha(theme.palette.success.main, 0.12),
                     },
                   }}
                 >
@@ -624,10 +624,10 @@ const FieldEditorComponent = ({
                   aria-label="duplicate"
                   size="small"
                   sx={{
-                    color: theme => alpha(theme.palette.common.black, 0.62),
+                    color: theme => alpha(theme.palette.info.dark, 0.78),
                     '&:hover': {
                       backgroundColor: theme =>
-                        alpha(theme.palette.common.black, 0.08),
+                        alpha(theme.palette.info.main, 0.1),
                     },
                   }}
                 >
