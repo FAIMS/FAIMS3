@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-05-07
+
+### Changes
+
+- feat: improved handling of digest algorithms ([#2071](https://github.com/FAIMS/FAIMS3/pull/2071))
+- feat: public templates and visibility controls ([#2070](https://github.com/FAIMS/FAIMS3/pull/2070))
+- fix: offset version mismatch banner warning to safe area ([#2069](https://github.com/FAIMS/FAIMS3/pull/2069))
+- fix: missing build vars ([#2067](https://github.com/FAIMS/FAIMS3/pull/2067))
+- feat: add deflation option to SAML ([#2065](https://github.com/FAIMS/FAIMS3/pull/2065))
+- feat: avoid sending full template payload in list endpoints ([#2064](https://github.com/FAIMS/FAIMS3/pull/2064))
+- fix: incorrect test default ([#2063](https://github.com/FAIMS/FAIMS3/pull/2063))
+- feat: configurable AuthnRequest binding ([#2062](https://github.com/FAIMS/FAIMS3/pull/2062))
+- Release v1.5.1 ([#2061](https://github.com/FAIMS/FAIMS3/pull/2061))
+- chore: wire FORCE_REMOTE_DELETION and DELETE_ON_DEACTIVATION in app builds ([#2060](https://github.com/FAIMS/FAIMS3/pull/2060))
+
 ## [1.5.1] - 2026-05-05
 
 ### Changes
