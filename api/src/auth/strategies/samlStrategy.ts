@@ -18,7 +18,7 @@
  *   (e.g., myGovID/FAS, ADFS, etc.)
  */
 
-import {Profile, Strategy, VerifyWithRequest} from 'passport-saml';
+import {Profile, Strategy, SamlConfig, VerifyWithRequest} from 'passport-saml';
 import {SignedXml} from 'xml-crypto';
 import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
@@ -142,6 +142,14 @@ const generateSamlVerifyFunction = ({
 export const samlStrategyGenerator = (
   options: SAMLAuthProviderConfig
 ): Strategy => {
+  const vanguardAuthnRequestProfile = options.vanguardAuthnRequestProfile === true;
+  const identifierFormatForStrategy = vanguardAuthnRequestProfile
+    ? null
+    : options.identifierFormat;
+  const disableRequestedAuthnContextForStrategy = vanguardAuthnRequestProfile
+    ? true
+    : options.disableRequestedAuthnContext;
+
   const strategy = new Strategy(
     {
       // Required
@@ -158,6 +166,8 @@ export const samlStrategyGenerator = (
       skipRequestCompression: options.skipRequestCompression,
       // SP signing/decryption keys
       privateKey: options.privateKey,
+      /** PEM SP cert for AuthnRequest KeyInfo (VANguard FAS); used by patchPassportSamlSignXmlKeyInfo */
+      publicKey: options.publicKey,
       decryptionPvk: options.enableDecryptionPvk
         ? options.privateKey
         : undefined,
@@ -166,13 +176,13 @@ export const samlStrategyGenerator = (
       digestAlgorithm: options.digestAlgorithm,
       wantAssertionsSigned: options.wantAssertionsSigned,
       // SAML behavior
-      identifierFormat: options.identifierFormat,
+      identifierFormat: identifierFormatForStrategy,
       authnContext: options.authnContext
         ? Array.isArray(options.authnContext)
           ? options.authnContext
           : [options.authnContext]
         : undefined,
-      disableRequestedAuthnContext: options.disableRequestedAuthnContext,
+      disableRequestedAuthnContext: disableRequestedAuthnContextForStrategy,
       forceAuthn: options.forceAuthn,
       // Validation
       acceptedClockSkewMs: options.acceptedClockSkewMs,
@@ -187,7 +197,7 @@ export const samlStrategyGenerator = (
       audience: options.audience,
       // Pass request to callback for session access
       passReqToCallback: true,
-    },
+    } as SamlConfig & {publicKey?: string},
     generateSamlVerifyFunction({
       strategyId: options.id,
       displayName: options.displayName,

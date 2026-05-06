@@ -132,6 +132,12 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     authnContext: z.union([z.string(), z.array(z.string())]).optional(),
     /** Set true for ADFS compatibility */
     disableRequestedAuthnContext: z.boolean().optional(),
+    /**
+     * When true, AuthnRequest matches VANguard Web SSO §3.3.1: omit NameIDPolicy and
+     * RequestedAuthnContext (passport-saml adds both by default; the service definition marks them "Not used").
+     * Sets identifierFormat to null and disableRequestedAuthnContext to true for the SAML strategy.
+     */
+    vanguardAuthnRequestProfile: z.boolean().optional(),
     /** Force re-authentication even with valid session */
     forceAuthn: z.boolean().optional(),
     // Validation options

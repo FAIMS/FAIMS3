@@ -19,6 +19,7 @@
  *   which server to use and whether to include test data
  */
 
+import './auth/strategies/patchPassportSamlSignXmlKeyInfo';
 import cookieSession from 'cookie-session';
 import cors from 'cors';
 import express, {

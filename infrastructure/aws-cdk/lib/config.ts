@@ -196,6 +196,12 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .boolean()
     .optional()
     .describe('Set true for ADFS compatibility'),
+  vanguardAuthnRequestProfile: z
+    .boolean()
+    .optional()
+    .describe(
+      'Omit NameIDPolicy and RequestedAuthnContext on AuthnRequest (VANguard Web SSO §3.3.1 "Not used" elements)'
+    ),
   forceAuthn: z
     .boolean()
     .optional()

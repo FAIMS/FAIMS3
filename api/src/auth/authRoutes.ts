@@ -35,6 +35,7 @@ import {
 } from '@faims3/data-model';
 import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
+import './strategies/patchPassportSamlSignXmlKeyInfo';
 import {Strategy as SamlStrategy} from 'passport-saml';
 import {processRequest} from 'zod-express-middleware';
 import {LOCAL_LOGIN_ENABLED, WEBAPP_PUBLIC_URL} from '../buildconfig';
