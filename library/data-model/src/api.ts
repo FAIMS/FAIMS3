@@ -10,6 +10,7 @@ import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
+  TemplateListItemSchema,
 } from './data_storage/templatesDB/types';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
@@ -458,9 +459,9 @@ export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
-// GET list all templates response
+// GET list all templates response (summaries only; no ui-specification)
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(ExistingTemplateDocumentSchema),
+  templates: z.array(TemplateListItemSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema

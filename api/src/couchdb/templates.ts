@@ -12,7 +12,10 @@ import {
   slugify,
   TemplateDBFields,
   TemplateDocument,
+  TemplateListItem,
   TEMPLATES_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEMPLATE_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
@@ -22,38 +25,34 @@ import {getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
 
 /**
- * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
- * validate with Zod.
- * @returns an array of template objects
+ * Lists templates using CouchDB views whose map `value` is the template doc
+ * without `ui-specification`. Uses `include_docs: false` on purpose: with
+ * `include_docs: true`, CouchDB would also attach the full stored document for
+ * each row (including `ui-specification`), which would defeat the lean list.
+ *
+ * @returns an array of template list items (from each row's `value`)
  */
 export const getTemplates = async ({
   teamId,
 }: {
   teamId?: string;
-}): Promise<ExistingTemplateDocument[]> => {
+}): Promise<TemplateListItem[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    let resultList;
-    if (teamId) {
-      resultList = await templatesDb.query<TemplateDBFields>(
-        TEMPLATES_BY_TEAM_ID,
-        {
+    const resultList = teamId
+      ? await templatesDb.query<TemplateListItem>(TEMPLATES_LISTING_BY_TEAM_ID, {
           key: teamId,
-          include_docs: true,
-        }
-      );
-    } else {
-      resultList = await templatesDb.allDocs({
-        include_docs: true,
-      });
-    }
+          include_docs: false,
+        })
+      : await templatesDb.query<TemplateListItem>(
+          TEMPLATES_LISTING_BY_TEMPLATE_ID,
+          {
+            include_docs: false,
+          }
+        );
     return resultList.rows
-      .filter(document => {
-        return !!document.doc && !document.id.startsWith('_');
-      })
-      .map(document => {
-        return document.doc!;
-      });
+      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
+      .map(row => row.value!);
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'

@@ -248,6 +248,27 @@ describe('template API tests', () => {
   //======= TEMPLATES ===========
   //=============================
 
+  it('GET list returns summaries without ui-specification; GET by id includes full payload', async () => {
+    const {template, notebook: nb} = await createSampleTemplate(app, {
+      name: 'list-vs-detail',
+    });
+    // List: each row is a template summary (no ui-specification in the JSON body)
+    const listed = await listTemplates(app);
+    const summary = listed.templates.find(t => t._id === template._id);
+    expect(summary).to.be.ok;
+    expect(summary!).to.not.have.property('ui-specification');
+
+    // Detail: single-template GET must still return the full document for edit/create flows
+    const detail = await getATemplate(app, template._id);
+    expect(detail['ui-specification']).to.be.ok;
+    expect(JSON.stringify(detail['ui-specification'])).to.equal(
+      JSON.stringify(nb['ui-specification'])
+    );
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+  });
+
   it('excludes archived templates by default; includeArchived lists archived only', async () => {
     const {template: activeTpl} = await createSampleTemplate(app, {
       name: 'active-template',
@@ -337,12 +358,15 @@ describe('template API tests', () => {
       // Check that the list exists and has one entry
       expect(templateList.templates.length).to.equal(1);
 
-      // Get the first entry and check ID matches as well as spec etc
+      // Get the first entry and check ID matches as well as summary fields
       const entry = templateList.templates[0];
 
       // Check all properties match
       expect(entry._id).to.equal(templateId1);
       expect(entry.name).to.equal(name);
+
+      // List endpoint returns summaries only (no ui-specification field).
+      expect(entry).to.not.have.property('ui-specification');
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
       // expect(JSON.stringify(entry['ui-specification'])).to.equal(
@@ -354,11 +378,7 @@ describe('template API tests', () => {
 
       // Instead - let's remove the template_id from the result and then check equality
       // TODO BSS-343
-      delete entry.metadata.template_id;
-
-      expect(JSON.stringify(entry['ui-specification'])).to.equal(
-        JSON.stringify(nb['ui-specification'])
-      );
+      // delete entry.metadata.template_id;
 
       // should be version 1
       expect(entry.version).to.equal(1);
@@ -392,9 +412,8 @@ describe('template API tests', () => {
       // Check all properties match
       expect(entry?._id).to.equal(templateId2);
       if (entry) {
-        expect(JSON.stringify(entry['ui-specification'])).to.equal(
-          JSON.stringify(nb['ui-specification'])
-        );
+        // Same as above: list entries are summaries without ui-specification
+        expect(entry).to.not.have.property('ui-specification');
       }
 
       // should be version 1

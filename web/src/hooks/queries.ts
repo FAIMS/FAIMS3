@@ -314,7 +314,7 @@ export const useGetTemplates = ({
     queryFn: async () => {
       const qs = includeArchived ? '?includeArchived=true' : '';
       const data = await get<GetListTemplatesResponse>(
-        `/api/templates/${qs}`,
+        `/api/templates${qs}`,
         user
       );
       return data.templates;

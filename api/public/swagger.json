@@ -1128,7 +1128,7 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Lists templates the caller may see. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team.",
+        "description": "Lists template summaries (metadata only; no `ui-specification` form payload). Use GET `/api/templates/{id}` for full detail. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team.",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -2342,10 +2342,31 @@
         "templates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TemplateDocument"
+            "$ref": "#/definitions/TemplateListItem"
           }
         }
       }
+    },
+    "TemplateListItem": {
+      "type": "object",
+      "description": "Template summary for GET /api/templates (excludes ui-specification).",
+      "properties": {
+        "_id": {"type": "string"},
+        "_rev": {"type": "string"},
+        "name": {"type": "string"},
+        "version": {"type": "number"},
+        "archived": {"type": "boolean"},
+        "ownedByTeamId": {"type": "string"},
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "project_lead": {},
+            "pre_description": {"type": "string"},
+            "template_id": {"type": "string"}
+          }
+        }
+      },
+      "required": ["_id", "_rev", "name", "version", "archived"]
     },
     "GetTemplateByIdResponse": {
       "$ref": "#/definitions/TemplateDocument"
