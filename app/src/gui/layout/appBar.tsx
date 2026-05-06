@@ -34,6 +34,7 @@ import {
   IconButton,
   ListItemButton,
   AppBar as MuiAppBar,
+  styled,
   Toolbar,
 } from '@mui/material';
 import Collapse from '@mui/material/Collapse';
@@ -46,24 +47,21 @@ import ListItemText from '@mui/material/ListItemText';
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
   OFFLINE_MAPS,
 } from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {
-  selectActiveServerId,
-  selectIsAuthenticated,
-} from '../../context/slices/authSlice';
+import {selectIsAuthenticated} from '../../context/slices/authSlice';
 import {
   Project,
-  selectProjectsByServerId,
+  selectActiveServerProjects,
 } from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
-import SyncStatus from '../components/sync';
+import SyncStatus from '../../sync/sync-state';
 
 const drawerWidth = 240;
 
@@ -100,6 +98,10 @@ type MenuItemProps = {
 function getNestedProjects(pouchProjectList: Project[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
+    // Only show activated projects in the side bar
+    if (!project_info.isActivated) {
+      return;
+    }
     projectListItems.push({
       title: project_info.name ?? project_info.metadata.name,
       icon: <DescriptionIcon />,
@@ -112,7 +114,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
     });
   });
   return {
-    title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+    title: `${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.NOTEBOOK_LIST_ROUTE,
@@ -127,10 +129,8 @@ function getNestedProjects(pouchProjectList: Project[]) {
  */
 export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const activeServerId = useAppSelector(selectActiveServerId);
-  const projectList = useAppSelector(state =>
-    activeServerId ? selectProjectsByServerId(state, activeServerId) : []
-  );
+  //const activeServerId = useAppSelector(selectActiveServerId);
+  const projectList = useAppSelector(selectActiveServerProjects);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggle = () => setIsOpen(!isOpen);
@@ -144,7 +144,7 @@ export default function MainAppBar() {
     },
     projectList === null
       ? {
-          title: `Loading ${NOTEBOOK_NAME}s...`,
+          title: `Loading ${NOTEBOOK_NAME_PLURAL}...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
@@ -152,7 +152,7 @@ export default function MainAppBar() {
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+            title: `Active ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
             icon: <AccountTree />,
             to: '/',
             disabled: true,
@@ -194,14 +194,20 @@ export default function MainAppBar() {
     [key: string]: boolean;
   }>({Projects: false});
 
+  // A div that has the same height as the AppBar to offset content below it
+  const Offset = styled('div')(({theme}) => theme.mixins.toolbar);
+
   return (
     <React.Fragment>
       <div style={{display: 'flex', boxShadow: 'none'}}>
         <CssBaseline />
         <MuiAppBar
-          position="relative"
+          id="app-bar" // ID used for calculating scroll offset in TabbedSections.tsx
+          position="fixed"
           sx={{
             boxShadow: 'none',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingLeft: 'env(safe-area-inset-left)',
           }}
         >
           <Toolbar>
@@ -213,7 +219,7 @@ export default function MainAppBar() {
               sx={{
                 mr: 0,
                 paddingLeft: 1,
-                paddingRight: 0,
+                paddingRight: 1,
                 display: isOpen ? 'hidden' : 'flex',
               }}
             >
@@ -233,6 +239,7 @@ export default function MainAppBar() {
             </div>
           </Toolbar>
         </MuiAppBar>
+        <Offset />
         <Drawer
           sx={{
             width: drawerWidth,
@@ -292,13 +299,15 @@ export default function MainAppBar() {
                     >
                       {item.title}{' '}
                     </ListItemText>
-                    {item.nested.length === 0 ? (
+                    {item.nested === null || item.nested === undefined ? (
                       <CircularProgress size={12} thickness={4} />
-                    ) : nestedMenuOpen[item.title] ? (
-                      <ExpandLess />
-                    ) : (
-                      <ExpandMore />
-                    )}
+                    ) : item.nested.length > 0 ? (
+                      nestedMenuOpen[item.title] ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )
+                    ) : null}
                   </ListItemButton>
                   <Collapse
                     in={nestedMenuOpen[item.title]}

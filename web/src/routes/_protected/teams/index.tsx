@@ -6,8 +6,8 @@ import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
 
 import {CreateTeamDialog} from '@/components/dialogs/teams/create-team-dialog';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action} from '@faims3/data-model';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {Action} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/teams/')({
@@ -48,17 +48,20 @@ function RouteComponent() {
   // Can the user create a new team?
   const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
 
-  const {isPending, data} = useGetTeams(user);
+  const {isPending, data} = useGetTeams({user});
 
   const navigate = useNavigate();
 
   return (
-    <DataTable
-      columns={columns}
-      data={data ? data?.teams : []}
-      loading={isPending}
-      onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
-      button={canCreateTeam && <CreateTeamDialog />}
-    />
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Teams</h1>
+      <DataTable
+        columns={columns}
+        data={data ? data?.teams : []}
+        loading={isPending}
+        onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
+        button={canCreateTeam && <CreateTeamDialog />}
+      />
+    </div>
   );
 }

@@ -1,0 +1,64 @@
+import {
+  FormControl,
+  FormControlLabel,
+  FormHelperText,
+  FormLabel,
+  Radio,
+  RadioGroup,
+} from '@mui/material';
+import {useAppDispatch, useAppSelector} from '../../state/hooks';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../store/slices/uiSpec';
+import {BaseFieldEditor} from './BaseFieldEditor';
+
+/** Integer vs floating `numberType` and HTML input binding for `NumberField`. */
+export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
+  const field = useAppSelector(
+    state => state.notebook['ui-specification'].present.fields[fieldName]
+  );
+  const dispatch = useAppDispatch();
+
+  const numberType =
+    (field['component-parameters'].numberType as 'integer' | 'floating') ||
+    'integer';
+
+  const handleNumberTypeChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newField = withUpdatedField(field, nextField => {
+      nextField['component-parameters'].numberType = event.target.value as
+        | 'integer'
+        | 'floating';
+    });
+    dispatch(fieldUpdated({fieldName, newField}));
+  };
+
+  return (
+    <BaseFieldEditor fieldName={fieldName}>
+      <FormControl component="fieldset">
+        <FormLabel component="legend">Number Type</FormLabel>
+        <RadioGroup
+          row
+          value={numberType}
+          onChange={handleNumberTypeChange}
+          name="number-type-radio-group"
+        >
+          <FormControlLabel
+            value="integer"
+            control={<Radio />}
+            label="Integer"
+          />
+          <FormControlLabel
+            value="floating"
+            control={<Radio />}
+            label="Decimal"
+          />
+        </RadioGroup>
+        <FormHelperText>
+          Integer shows stepper controls and accepts whole numbers only. Decimal
+          allows fractional values.
+        </FormHelperText>
+      </FormControl>
+    </BaseFieldEditor>
+  );
+};

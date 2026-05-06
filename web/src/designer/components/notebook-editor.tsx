@@ -13,10 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Top-level designer chrome: Design vs Info routing tabs.
+ */
+
 import {TabContext, TabList} from '@mui/lab';
-import {Box, Tab} from '@mui/material';
+import {Box, Stack, Tab} from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 
+/** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
 export const NotebookEditor = () => {
   const {pathname} = useLocation();
 
@@ -26,7 +31,7 @@ export const NotebookEditor = () => {
 
   return (
     <>
-      <Box p={3}>
+      <Stack direction="row" spacing={2}>
         <Box pt={0}>
           <TabContext value={pathname}>
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -45,7 +50,7 @@ export const NotebookEditor = () => {
             </Box>
           </TabContext>
         </Box>
-      </Box>
+      </Stack>
     </>
   );
 };

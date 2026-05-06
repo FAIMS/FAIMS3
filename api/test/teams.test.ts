@@ -56,7 +56,7 @@ const TEAMS_API_BASE = '/api/teams';
  * @param token Auth token to use (defaults to admin)
  * @returns The created team document
  */
-const createSampleTeam = async (
+export const createSampleTeam = async (
   app: Express,
   options: {
     teamName?: string;

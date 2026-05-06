@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Per-field accordion in the section list: actions, conflicts, and type-specific editor.
+ */
+
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
@@ -44,34 +48,34 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import React, {useMemo, useState} from 'react';
+import React, {memo, useCallback, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
-  findFieldCondtionUsage,
+  findFieldConditionUsage,
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
-import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
-import {BaseFieldEditor} from './Fields/BaseFieldEditor';
-import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
-import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
-import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
-import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
-import {OptionsEditor} from './Fields/OptionsEditor';
-import {RandomStyleEditor} from './Fields/RandomStyleEditor';
-import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
-import {RichTextEditor} from './Fields/RichTextEditor';
-import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
-import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
-import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {renderFieldEditor} from '../features/design/field-editor-registry';
+import {
+  fieldDeleted,
+  fieldDuplicated,
+  fieldMoved,
+  fieldMovedToSection,
+  toggleFieldHidden,
+} from '../store/slices/uiSpec';
 
+/**
+ * Accordion row for one field: summary chips, move/duplicate/delete, visibility toggle,
+ * and the type-specific editor from `field-editor-registry`.
+ */
 type FieldEditorProps = {
+  designerIdentifier: string;
   fieldName: string;
   viewSetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
-  handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
+  onExpandedChange: (designerIdentifier: string, expanded: boolean) => void;
   moveFieldCallback: (targetViewId: string) => void;
 };
 
@@ -81,13 +85,15 @@ type ConflictError = {
   conflicts: string[];
 };
 
-export const FieldEditor = ({
+/** Accordion UI for one field: move, duplicate, delete guards, type-specific inspector. */
+const FieldEditorComponent = ({
+  designerIdentifier,
   fieldName,
   viewId,
   viewSetId,
   expanded,
   addFieldCallback,
-  handleExpandChange,
+  onExpandedChange,
   moveFieldCallback,
 }: FieldEditorProps) => {
   const field = useAppSelector(
@@ -105,13 +111,14 @@ export const FieldEditor = ({
   );
 
   const invalidRefs = useMemo(() => {
+    if (!expanded) return [];
     return findInvalidConditionReferences(
       fieldName,
       field,
       allFields,
       allFviews
     );
-  }, [fieldName, field, allFields, allFviews]);
+  }, [expanded, fieldName, field, allFields, allFviews]);
 
   const dispatch = useAppDispatch();
 
@@ -133,16 +140,13 @@ export const FieldEditor = ({
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
 
-    const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+    const usage = findFieldConditionUsage(fieldName, allFields, allFviews);
 
     if (usage.length > 0) {
       setConditionsAffected(usage);
       setDeleteWarningOpen(true);
     } else {
-      dispatch({
-        type: 'ui-specification/fieldDeleted',
-        payload: {fieldName, viewId},
-      });
+      dispatch(fieldDeleted({fieldName, viewId}));
     }
   };
   const protection =
@@ -175,18 +179,12 @@ export const FieldEditor = ({
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldMoved',
-      payload: {fieldName, viewId, direction: 'down'},
-    });
+    dispatch(fieldMoved({fieldName, viewId, direction: 'down'}));
   };
 
   const moveFieldUp = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldMoved',
-      payload: {fieldName, viewId, direction: 'up'},
-    });
+    dispatch(fieldMoved({fieldName, viewId, direction: 'up'}));
   };
 
   const addFieldBelow = (event: React.SyntheticEvent) => {
@@ -208,14 +206,13 @@ export const FieldEditor = ({
 
   const duplicateField = () => {
     if (duplicateTitle.trim()) {
-      dispatch({
-        type: 'ui-specification/fieldDuplicated',
-        payload: {
+      dispatch(
+        fieldDuplicated({
           originalFieldName: fieldName,
           newFieldName: duplicateTitle.trim(),
           viewId,
-        },
-      });
+        })
+      );
       handleCloseDuplicateDialog();
     }
   };
@@ -237,7 +234,7 @@ export const FieldEditor = ({
 
   const moveFieldToSection = () => {
     if (targetViewId) {
-      const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+      const usage = findFieldConditionUsage(fieldName, allFields, allFviews);
       const targetSectionLabel = allFviews[targetViewId]?.label || '';
       const conflicts = usage.filter(u =>
         u.includes(`Section: ${targetSectionLabel}`)
@@ -253,14 +250,13 @@ export const FieldEditor = ({
         return;
       }
 
-      dispatch({
-        type: 'ui-specification/fieldMovedToSection',
-        payload: {
+      dispatch(
+        fieldMovedToSection({
           fieldName,
           sourceViewId: viewId,
           targetViewId,
-        },
-      });
+        })
+      );
       moveFieldCallback(targetViewId);
       handleCloseMoveDialog();
     }
@@ -308,22 +304,28 @@ export const FieldEditor = ({
     [selectedFormId, viewsets, viewId, allFviews]
   );
 
+  /** Toggles `component-parameters.hidden` without expanding the accordion. */
   const toggleHiddenState = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/toggleFieldHidden',
-      payload: {fieldName, hidden: !isHidden},
-    });
+    dispatch(toggleFieldHidden({fieldName, hidden: !isHidden}));
   };
 
   const requiredBlocksHiding =
     isRequired && fieldComponent !== 'TemplatedStringField';
 
+  const handleAccordionChange = useCallback(
+    (_event: React.SyntheticEvent, nextExpanded: boolean) => {
+      onExpandedChange(designerIdentifier, nextExpanded);
+    },
+    [designerIdentifier, onExpandedChange]
+  );
+
   return (
     <Accordion
       key={fieldName}
       expanded={expanded}
-      onChange={handleExpandChange}
+      onChange={handleAccordionChange}
+      TransitionProps={{unmountOnExit: true}}
       disableGutters
       square
       elevation={0}
@@ -664,109 +666,66 @@ export const FieldEditor = ({
         </DialogActions>
       </Dialog>
 
-      <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
-        {(protection === 'protected' || protection === 'allow-hiding') && (
-          <Stack
-            direction="column"
-            alignItems="center"
-            justifyContent="center"
-            spacing={1}
-            sx={{
-              width: '100%',
-              padding: 2,
-              marginBottom: 2,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: 1,
-              border: '1px solid #546e7a',
-              boxSizing: 'border-box',
-              textAlign: 'center',
+      {expanded && (
+        <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
+          {(protection === 'protected' || protection === 'allow-hiding') && (
+            <Stack
+              direction="column"
+              alignItems="center"
+              justifyContent="center"
+              spacing={1}
+              sx={{
+                width: '100%',
+                padding: 2,
+                marginBottom: 2,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                borderRadius: 1,
+                border: '1px solid #546e7a',
+                boxSizing: 'border-box',
+                textAlign: 'center',
+              }}
+            >
+              <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
+              <Typography
+                variant="body2"
+                sx={{fontWeight: 500, color: '#546e7a'}}
+              >
+                {protectionMessage}
+              </Typography>
+            </Stack>
+          )}
+          <div
+            style={{
+              pointerEvents: disableEditing ? 'none' : 'auto',
+              opacity: disableEditing ? 0.5 : 1,
             }}
           >
-            <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
-            <Typography
-              variant="body2"
-              sx={{fontWeight: 500, color: '#546e7a'}}
-            >
-              {protectionMessage}
-            </Typography>
-          </Stack>
-        )}
-        <div
-          style={{
-            pointerEvents: disableEditing ? 'none' : 'auto',
-            opacity: disableEditing ? 0.5 : 1,
-          }}
-        >
-          {invalidRefs.length > 0 && (
-            <Grid item xs={12} sx={{marginBottom: 3.5}}>
-              <Alert severity="warning">
-                The following fields/sections have visibility conditions that
-                depend on this field having a specific option available:
-                <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
-                  {invalidRefs.map((msg, idx) => (
-                    <li key={idx}>{msg}</li>
-                  ))}
-                </ul>
-                Please update this field, or remove/modify affected conditions.
-              </Alert>
-            </Grid>
-          )}
+            {invalidRefs.length > 0 && (
+              <Grid item xs={12} sx={{marginBottom: 3.5}}>
+                <Alert severity="warning">
+                  The following fields/sections have visibility conditions that
+                  depend on this field having a specific option available:
+                  <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
+                    {invalidRefs.map((msg, idx) => (
+                      <li key={idx}>{msg}</li>
+                    ))}
+                  </ul>
+                  Please update this field, or remove/modify affected
+                  conditions.
+                </Alert>
+              </Grid>
+            )}
 
-          {(fieldComponent === 'MultipleTextField' && (
-            <MultipleTextFieldEditor fieldName={fieldName} />
-          )) ||
-            (fieldComponent === 'TakePhoto' && (
-              <TakePhotoFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'TextField' && (
-              <TextFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'DateTimeNow' && (
-              <DateTimeNowEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'Select' && (
-              <OptionsEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'MultiSelect' && (
-              <OptionsEditor
-                fieldName={fieldName}
-                showExpandedChecklist={true}
-                showExclusiveOptions={true}
-              />
-            )) ||
-            (fieldComponent === 'AdvancedSelect' && (
-              <AdvancedSelectEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RadioGroup' && (
-              <OptionsEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'MapFormField' && (
-              <MapFormFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RandomStyle' && (
-              <RandomStyleEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RichText' && (
-              <RichTextEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RelatedRecordSelector' && (
-              <RelatedRecordEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'BasicAutoIncrementer' && (
-              <BasicAutoIncrementerEditor
-                fieldName={fieldName}
-                viewId={viewId}
-              />
-            )) ||
-            (fieldComponent === 'TemplatedStringField' && (
-              <TemplatedStringFieldEditor
-                fieldName={fieldName}
-                viewId={viewId}
-                viewsetId={viewSetId}
-              />
-            )) || <BaseFieldEditor fieldName={fieldName} />}
-        </div>
-      </AccordionDetails>
+            {renderFieldEditor({
+              fieldComponent,
+              context: {fieldName, viewId, viewSetId},
+            })}
+          </div>
+        </AccordionDetails>
+      )}
     </Accordion>
   );
 };
+
+/** Memoised {@link FieldEditorComponent} for stable props from parent lists. */
+export const FieldEditor = memo(FieldEditorComponent);

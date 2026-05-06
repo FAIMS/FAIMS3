@@ -13,6 +13,7 @@ import {
 } from '../ui/tooltip';
 import {Plus} from 'lucide-react';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
+import {Role, roleDetails} from '@faims3/data-model';
 
 /**
  */
@@ -21,7 +22,7 @@ export const AddTeamRolePopover = ({
   userId,
   teamId,
 }: {
-  roles: string[];
+  roles: Role[];
   userId: string;
   teamId: string;
 }) => {
@@ -38,10 +39,12 @@ export const AddTeamRolePopover = ({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger>
-            <Button variant="outline" className="font-normal h-7" disabled>
-              <Plus />
-            </Button>
+          <TooltipTrigger asChild>
+            <span>
+              <Button variant="outline" className="font-normal h-7" disabled>
+                <Plus />
+              </Button>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>No more roles available to add</p>
@@ -58,40 +61,46 @@ export const AddTeamRolePopover = ({
           <Plus />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
-        {roles.map(role => (
-          <RoleCard
-            key={role}
-            onClick={async () => {
-              try {
-                const response = await modifyMemberForTeam({
-                  action: 'ADD_ROLE',
-                  email: userId,
-                  role: role,
-                  teamId,
-                  user,
-                });
-
-                if (!response.ok) throw new Error(response.statusText);
-
-                queryClient.invalidateQueries({
-                  queryKey: ['teamusers', teamId],
-                });
-
-                setOpen(false);
-              } catch (error) {
-                toast.error('Failed to add role', {
-                  description:
-                    error instanceof Error
-                      ? error.message
-                      : 'Unknown error occurred',
-                });
-              }
-            }}
-          >
-            {role}
-          </RoleCard>
-        ))}
+      <PopoverContent className="flex flex-col gap-1 p-2 w-80 text-sm" align="start">
+        {roles.map(role => {
+          const detail = roleDetails[role];
+          return (
+            <RoleCard
+              key={role}
+              className="w-full"
+              onClick={async () => {
+                try {
+                  const response = await modifyMemberForTeam({
+                    action: 'ADD_ROLE',
+                    email: userId,
+                    role: role,
+                    teamId,
+                    user,
+                  });
+                  if (!response.ok) throw new Error(response.statusText);
+                  queryClient.invalidateQueries({
+                    queryKey: ['teamusers', teamId],
+                  });
+                  setOpen(false);
+                } catch (error) {
+                  toast.error('Failed to add role', {
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : 'Unknown error occurred',
+                  });
+                }
+              }}
+            >
+              <div className="font-medium">{detail?.name || role}</div>
+              {detail?.description && (
+                <div className="text-xs text-muted-foreground/70 mt-0.5">
+                  {detail.description}
+                </div>
+              )}
+            </RoleCard>
+          );
+        })}
       </PopoverContent>
     </Popover>
   );

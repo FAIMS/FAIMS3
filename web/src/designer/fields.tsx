@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {FieldType} from './state/initial';
+/**
+ * @file Canonical default {@link FieldType} templates keyed by internal type name (`component-name`).
+ * Used by the field chooser and `fieldAdded` reducer via {@link getFieldSpec}.
+ */
+
 import {CategoryKey} from './field-categories';
+import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
   FAIMSTextField: {
@@ -21,14 +26,16 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'FAIMSTextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'FAIMS Text Field',
+      label: 'Text Field',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
+      // Default speech settings
+      speechAppendMode: false,
+      enableSpeech: true,
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'FAIMS Text Field',
     humanReadableDescription: 'Single-line text input for free-form entries',
@@ -49,7 +56,6 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Date time picker',
     humanReadableDescription: 'Select a calendar date and precise time',
@@ -70,7 +76,6 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Date picker',
     humanReadableDescription: 'Choose a calendar date (no time)',
@@ -91,7 +96,6 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Month picker',
     humanReadableDescription: 'Pick a month and year only',
@@ -112,88 +116,12 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       is_auto_pick: false,
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Date and Time with Now button',
     humanReadableDescription: 'Date-time input with “Now” quick-fill',
     category: CategoryKey.DATETIME,
     showInChooser: true,
     order: 5,
-  },
-
-  Email: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Email',
-    'component-parameters': {
-      label: 'Email',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        type: 'email',
-      },
-    },
-    validationSchema: [['yup.string'], ['yup.email', 'Enter a valid email']],
-    initialValue: '',
-    humanReadableName: 'Email',
-    humanReadableDescription: 'Validates and captures an e-mail address',
-    category: CategoryKey.TEXT,
-    showInChooser: true,
-    order: 6,
-  },
-
-  Number: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Integer',
-    'component-parameters': {
-      label: 'Number field',
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        type: 'number',
-      },
-    },
-    validationSchema: [['yup.number']],
-    initialValue: '',
-    humanReadableName: 'Number field',
-    humanReadableDescription: 'Plain numeric input without limits',
-    category: CategoryKey.NUMBERS,
-    showInChooser: true,
-    order: 7,
-  },
-
-  ControlledNumber: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Integer',
-    'component-parameters': {
-      label: 'Controlled number',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        type: 'number',
-      },
-    },
-    validationSchema: [
-      ['yup.number'],
-      ['yup.min', 10, 'Must be 10 or more'],
-      ['yup.max', 20, 'Must be 20 or less'],
-    ],
-    initialValue: '',
-    humanReadableName: 'Controlled number',
-    humanReadableDescription: 'Numeric input with min/max validation',
-    category: CategoryKey.NUMBERS,
-    showInChooser: true,
-    order: 8,
   },
 
   BasicAutoIncrementer: {
@@ -209,39 +137,12 @@ const fields: {[key: string]: FieldType} = {
       form_id: 'default',
       label: 'Auto Incrementing Field',
     },
-    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
     humanReadableName: 'Auto Incrementing Field',
     humanReadableDescription: 'Generates sequential IDs automatically',
     category: CategoryKey.NUMBERS,
     showInChooser: true,
     order: 9,
-  },
-
-  MultipleTextField: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'MultipleTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Text Field',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      multiline: true,
-      InputProps: {
-        type: 'text',
-        rows: 4,
-      },
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
-    humanReadableName: 'Text Field',
-    humanReadableDescription: 'Multi-line text area for longer notes',
-    category: CategoryKey.TEXT,
-    showInChooser: true,
-    order: 10,
   },
 
   Checkbox: {
@@ -257,7 +158,6 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
     },
-    validationSchema: [['yup.bool']],
     initialValue: false,
     humanReadableName: 'Checkbox',
     humanReadableDescription: 'Boolean yes/no toggle box',
@@ -276,7 +176,6 @@ const fields: {[key: string]: FieldType} = {
       id: 'file-upload-field',
       helperText: '',
     },
-    validationSchema: [['yup.mixed']],
     initialValue: null,
     humanReadableName: 'Upload a File',
     humanReadableDescription: 'Attach one or more files to the record',
@@ -299,7 +198,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Map Field',
       geoTiff: '',
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Map Field',
     humanReadableDescription:
@@ -325,14 +223,14 @@ const fields: {[key: string]: FieldType} = {
         multiple: true,
       },
       ElementProps: {
-        expandedChecklist: false,
+        expandedChecklist: true,
+        enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
           {value: 'Default2', label: 'Default2'},
         ],
       },
     },
-    validationSchema: [['yup.array']],
     initialValue: [],
     humanReadableName: 'Select Multiple',
     humanReadableDescription: 'Pick several options from a list',
@@ -353,40 +251,19 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
       ElementProps: {
+        enableOtherOption: false,
         options: [
           {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
         ],
       },
       helperText: '',
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Select one option',
     humanReadableDescription: 'Single-choice radio button set',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 15,
-  },
-
-  RandomStyle: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'RandomStyle',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      label: 'Title',
-      variant_style: 'h5',
-      html_tag: '',
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
-    humanReadableName: 'Title',
-    humanReadableDescription: 'Stylised heading or HTML content',
-    category: CategoryKey.DISPLAY,
-    showInChooser: false,
-    order: 1000,
   },
 
   RichText: {
@@ -418,8 +295,8 @@ const fields: {[key: string]: FieldType} = {
       relation_type: 'faims-core::Child',
       multiple: false,
       allowLinkToExisting: true,
+      hideCreateAnotherButton: false,
     },
-    validationSchema: [['yup.string']],
     humanReadableName: 'Add Related Record',
     humanReadableDescription: 'Add a child or other linked record',
     category: CategoryKey.RELATIONSHIP,
@@ -437,9 +314,11 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       required: false,
-      ElementProps: {options: []},
+      ElementProps: {
+        enableOtherOption: false,
+        options: [],
+      },
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Select Field',
     humanReadableDescription: 'Dropdown list allowing one selection',
@@ -462,7 +341,6 @@ const fields: {[key: string]: FieldType} = {
       },
       valuetype: 'full',
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Select Field (Hierarchical)',
     humanReadableDescription: 'Hierarchical dropdown supporting nested options',
@@ -481,11 +359,6 @@ const fields: {[key: string]: FieldType} = {
       advancedHelperText: '',
       label: 'Take Photo',
     },
-    validationSchema: [
-      ['yup.array'],
-      ['yup.of', [['yup.object'], ['yup.nullable']]],
-      ['yup.nullable'],
-    ],
     initialValue: null,
     humanReadableName: 'Take Photo',
     humanReadableDescription: 'Capture and attach an image via camera',
@@ -503,7 +376,6 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       label: 'Take point',
     },
-    validationSchema: [['yup.object'], ['yup.nullable']],
     initialValue: null,
     humanReadableName: 'Take point',
     humanReadableDescription: 'Record GPS location coordinates',
@@ -525,7 +397,6 @@ const fields: {[key: string]: FieldType} = {
       template: ' {{}}',
       hidden: true,
     },
-    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
     humanReadableName: 'Templated String Field',
     humanReadableDescription: 'Auto-generates text from a template',
@@ -544,7 +415,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Scan QR Code',
       helperText: '',
     },
-    validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Scan QR Code',
     humanReadableDescription: 'Scan and store a QR-code value',
@@ -562,8 +432,10 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       name: 'Address',
       label: 'Address',
+      // Optional config, defaults handled in forms for backwards compatibility
+      enableAutoSuggestion: true,
+      allowFullAddressManualEntry: false,
     },
-    validationSchema: [['yup.object'], ['yup.nullable']],
     humanReadableName: 'Address',
     humanReadableDescription: 'Structured street address input',
     category: CategoryKey.TEXT,
@@ -581,25 +453,100 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       required: false,
+      // Defaults to integer (can be floating)
+      numberType: 'integer',
       InputProps: {
         type: 'number',
       },
     },
-    validationSchema: [['yup.number'], ['yup.nullable']],
     initialValue: null,
     humanReadableName: 'Number Input',
-    humanReadableDescription: 'Floating-point number entry field',
+    humanReadableDescription: 'Floating-point or integer number entry field',
     category: CategoryKey.NUMBERS,
     showInChooser: true,
     order: 26,
   },
+
+  EmailField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'Email',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Email',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+    },
+    initialValue: '',
+    humanReadableName: 'Email',
+    humanReadableDescription: 'Validates and captures an e-mail address',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 6,
+  },
+
+  ControlledNumberField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'ControlledNumber',
+    'type-returned': 'faims-core::Integer',
+    'component-parameters': {
+      label: 'Controlled Number',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+      min: 0,
+      max: 100,
+    },
+    initialValue: null,
+    humanReadableName: 'Controlled Number',
+    humanReadableDescription: 'Numeric input with min/max validation',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 8,
+  },
+
+  MultipleTextField: {
+    'component-namespace': 'formik-material-ui',
+    'component-name': 'MultipleTextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Multi-line Text Field',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+      InputProps: {
+        rows: 4,
+      },
+      // Default speech settings
+      speechAppendMode: false,
+      enableSpeech: true,
+    },
+    initialValue: '',
+    humanReadableName: 'Multi-line Text Field',
+    humanReadableDescription: 'Multi-line text area for longer notes',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 10,
+  },
 };
 
+/** All registered field type keys (chooser + factory). */
 export const getFieldNames = () => {
   return Object.keys(fields);
 };
 
-// Return a copy of the spec for this field type
+/**
+ * Deep-clone the default {@link FieldType} for a template key.
+ *
+ * @param fieldType - Key in the `fields` map (e.g. `FAIMSTextField`).
+ * @returns Clone of the template; invalid keys produce a clone of `undefined` (callers should validate).
+ */
 export const getFieldSpec = (fieldType: string) => {
   return JSON.parse(JSON.stringify(fields[fieldType])) as FieldType;
 };

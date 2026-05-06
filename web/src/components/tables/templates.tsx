@@ -3,6 +3,12 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {TeamCellComponent} from './cells/team-cell';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 export type Column = any;
 
@@ -30,17 +36,16 @@ export const columns: ColumnDef<Column>[] = [
     },
   },
   {
-    accessorKey: 'metadata.project_status',
+    id: 'status',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
-    cell: ({
-      row: {
-        original: {
-          metadata: {project_status},
-        },
-      },
-    }: any) => <RoleCard>{project_status}</RoleCard>,
+    accessorFn: (row: Column & {archived?: boolean}) =>
+      row.archived === true ? 'Archived' : 'Active',
+    cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
+      const label = row.original.archived === true ? 'Archived' : 'Active';
+      return <RoleCard>{label}</RoleCard>;
+    },
   },
   {
     accessorKey: 'metadata.project_lead',
@@ -56,5 +61,29 @@ export const columns: ColumnDef<Column>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Description" />
     ),
+    cell: ({getValue}) => {
+      const description = getValue<string>();
+      if (!description) return null;
+      const maxLength = 100;
+      const isTruncated = description.length > maxLength;
+      const displayText = isTruncated
+        ? description.slice(0, maxLength) + '…'
+        : description;
+
+      if (!isTruncated) return <span>{displayText}</span>;
+
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-help">{displayText}</span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-sm">
+              <p>{description}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
   },
 ];

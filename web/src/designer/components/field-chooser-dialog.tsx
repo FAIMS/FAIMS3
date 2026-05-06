@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Categorized grid of field templates for the add-field flow.
+ */
+
 import {useEffect, useMemo, useState} from 'react';
 import {
   Dialog,
@@ -58,6 +62,7 @@ type FieldOption = {
 
 const CARD_HEIGHT = 80;
 
+/** Modal to pick a field template type and display name before adding a field to a section. */
 export default function FieldChooserDialog({
   open,
   onClose,

@@ -1,0 +1,8 @@
+#root {
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.card {
+  min-width: 80vw;
+}

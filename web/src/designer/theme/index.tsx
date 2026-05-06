@@ -124,4 +124,5 @@ const theme = createTheme({
   },
 });
 
+/** MUI theme for the embedded designer (palette aligned with main FAIMS chrome). */
 export default theme;

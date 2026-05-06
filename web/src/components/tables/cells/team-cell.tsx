@@ -18,7 +18,7 @@ export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
     return <p>Unauthenticated</p>;
   }
 
-  const {data: team, isLoading, isError} = useGetTeam(user, teamId);
+  const {data: team, isLoading, isError} = useGetTeam({user, teamId});
 
   return isLoading ? (
     <Skeleton className="h-5 w-24" />

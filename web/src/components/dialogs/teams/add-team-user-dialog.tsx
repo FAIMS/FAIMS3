@@ -28,7 +28,7 @@ export const AddTeamUserDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"

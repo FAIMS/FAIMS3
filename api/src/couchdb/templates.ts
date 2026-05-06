@@ -8,47 +8,51 @@ import {
   PostCreateTemplateInput,
   ProjectID,
   PutUpdateTemplateInput,
+  safeWriteDocument,
+  slugify,
   TemplateDBFields,
   TemplateDocument,
+  TemplateListItem,
   TEMPLATES_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEAM_ID,
+  TEMPLATES_LISTING_BY_TEMPLATE_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
-import {generateRandomString, slugify} from '../utils';
+import {generateRandomString} from '../utils';
+import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
+import {getTeamById} from './teams';
+import {stripTemplateRolesForTemplateId} from './users';
 
 /**
- * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
- * validate with Zod.
- * @returns an array of template objects
+ * Lists templates using CouchDB views whose map `value` is the template doc
+ * without `ui-specification`. Uses `include_docs: false` on purpose: with
+ * `include_docs: true`, CouchDB would also attach the full stored document for
+ * each row (including `ui-specification`), which would defeat the lean list.
+ *
+ * @returns an array of template list items (from each row's `value`)
  */
 export const getTemplates = async ({
   teamId,
 }: {
   teamId?: string;
-}): Promise<ExistingTemplateDocument[]> => {
+}): Promise<TemplateListItem[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    let resultList;
-    if (teamId) {
-      resultList = await templatesDb.query<TemplateDBFields>(
-        TEMPLATES_BY_TEAM_ID,
-        {
+    const resultList = teamId
+      ? await templatesDb.query<TemplateListItem>(TEMPLATES_LISTING_BY_TEAM_ID, {
           key: teamId,
-          include_docs: true,
-        }
-      );
-    } else {
-      resultList = await templatesDb.allDocs({
-        include_docs: true,
-      });
-    }
+          include_docs: false,
+        })
+      : await templatesDb.query<TemplateListItem>(
+          TEMPLATES_LISTING_BY_TEMPLATE_ID,
+          {
+            include_docs: false,
+          }
+        );
     return resultList.rows
-      .filter(document => {
-        return !!document.doc && !document.id.startsWith('_');
-      })
-      .map(document => {
-        return document.doc!;
-      });
+      .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
+      .map(row => row.value!);
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
@@ -142,15 +146,24 @@ export const createTemplate = async ({
   // TODO see BSS-343
   payload.metadata.template_id = templateId;
 
+  // if there is a team id provided, it must be an actual team
+  if (payload.teamId) {
+    try {
+      await getTeamById(payload.teamId);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'The specified team ID does not exist.'
+      );
+    }
+  }
+
   // Setup the document with id included
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
+    archived: false,
     'ui-specification': payload['ui-specification'],
-    metadata: {
-      ...payload.metadata,
-      project_status: 'active',
-    },
+    metadata: payload.metadata,
     ownedByTeamId: payload.teamId,
     name: payload.name,
   };
@@ -198,27 +211,50 @@ export const updateExistingTemplate = async (
     );
   }
 
+  // team might be overridden in the payload
+  // check that it is a valid team
+  if (payload.teamId) {
+    try {
+      await getTeamById(payload.teamId);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'The specified team ID does not exist.'
+      );
+    }
+  }
+  const teamId = payload.teamId || existingTemplate.ownedByTeamId;
+
+  // ditto for the template name
+  const name = payload.name || existingTemplate.name;
+  const metadata = (payload.metadata ||
+    existingTemplate.metadata) as TemplateDocument['metadata'];
+  const uiSpecification =
+    payload['ui-specification'] || existingTemplate['ui-specification'];
+
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
 
   // inject templateId into the metadata - we have to do this here because a
   // user could potentially change the metadata
   // TODO see BSS-343
-  payload.metadata.template_id = templateId;
+  metadata.template_id = templateId;
+
+  const archived = existingTemplate.archived ?? false;
 
   const newDocument = {
-    ...payload,
-
+    metadata: metadata,
+    'ui-specification': uiSpecification,
+    archived,
     // explicitly retain these details!
     _id: templateId,
     _rev: existingTemplate._rev,
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
-    ownedByTeamId: existingTemplate.ownedByTeamId,
-    name: existingTemplate.name,
+    ownedByTeamId: teamId,
+    name: name,
   } satisfies TemplateDocument;
   try {
-    await templateDb.put(newDocument);
+    await safeWriteDocument({db: templateDb, data: newDocument});
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to update an existing template.'
@@ -252,6 +288,15 @@ export const deleteExistingTemplate = async (templateId: string) => {
     );
   }
 
+  if (existingTemplate.archived !== true) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived templates can be permanently deleted. Archive the template first, then delete it from the Archive view.'
+    );
+  }
+
+  await clearTemplateIdFromProjectsReferencingTemplate(templateId);
+  await stripTemplateRolesForTemplateId(templateId);
+
   try {
     await templatesDb.remove(existingTemplate);
   } catch (e) {
@@ -262,7 +307,7 @@ export const deleteExistingTemplate = async (templateId: string) => {
 };
 
 /**
- * Archives a template by incrementing the version and setting the project_status to archived.
+ * Archives or un-archives a template (top-level `archived` flag).
  * @param id The ID of the template to archive.
  * @returns The updated template document.
  */
@@ -274,10 +319,7 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
     await put({
       ...template,
       version: template.version + 1,
-      metadata: {
-        ...template.metadata,
-        project_status: archive ? 'archived' : 'active',
-      },
+      archived: archive,
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
@@ -293,4 +335,17 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
       'An unexpected error occurred while trying to fetch the updated template.'
     );
   }
+};
+
+/**
+ * Restores an archived template (sets archived to false). Rejected if not archived.
+ */
+export const restoreTemplateFromArchive = async (id: string) => {
+  const template = await getTemplate(id);
+  if (template.archived !== true) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived templates can be restored.'
+    );
+  }
+  return archiveTemplate(id, false);
 };

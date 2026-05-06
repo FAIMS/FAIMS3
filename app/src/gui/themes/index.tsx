@@ -1,11 +1,10 @@
-import defaultTheme from './default';
-import bubbleTheme from './bubble';
-import defaultAppBarStyling from './default/appBar';
-import bubbleAppBarStyling from './bubble/appBar';
-import defaultProjectListLayout from './default/noteBook';
-import bubbleProjectListLayout from './bubble/noteBook';
+import faimsTheme from './default';
+import fieldmarkTheme from './fieldmark';
+import faimsAppBarStyling from './default/appBar';
+import fieldmarkAppBarStyling from './fieldmark/appBar';
+import faimsProjectListLayout from './default/noteBook';
+import fieldmarkProjectListLayout from './fieldmark/noteBook';
 import bssTheme from './bssTheme';
-
 export interface StepperColors {
   current: string;
   visited: string;
@@ -13,86 +12,60 @@ export interface StepperColors {
   notVisited: string;
 }
 
-/**
- * Exports the theme based on the environment variable VITE_THEME.
- *
- * @returns {object} The theme object. Returns `bubbleTheme` if VITE_THEME is 'bubble', otherwise returns `defaultTheme`.
- */
 const exportTheme = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bssTheme':
       return bssTheme;
-    case 'bubble':
-      return bubbleTheme;
+    case 'fieldmark':
+      return fieldmarkTheme;
     default:
-      return defaultTheme;
+      return faimsTheme;
   }
 };
 
-/**
- * Exports the AppBar styling based on the environment variable VITE_THEME.
- *
- * @returns {object} The AppBar styling object. Returns `bubbleAppBarStyling` if VITE_THEME is 'bubble', otherwise returns `defaultAppBarStyling`.
- */
 const exportAppBarStyling = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bssTheme':
-      return defaultAppBarStyling;
-    case 'bubble':
-      return bubbleAppBarStyling;
+      return faimsAppBarStyling;
+    case 'fieldmark':
+      return fieldmarkAppBarStyling;
     default:
-      return defaultAppBarStyling;
+      return faimsAppBarStyling;
   }
 };
 
-/**
- * Exports the project list layout based on the environment variable VITE_THEME.
- *
- * @returns {object} The project list layout object. Returns `bubbleProjectListLayout` if VITE_THEME is 'bubble', otherwise returns `defaultProjectListLayout`.
- */
 const exportProjectListLayout = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bssTheme':
-      return defaultProjectListLayout;
-    case 'bubble':
-      return bubbleProjectListLayout;
+      return faimsProjectListLayout;
+    case 'fieldmark':
+      return fieldmarkProjectListLayout;
     default:
-      return defaultProjectListLayout;
+      return faimsProjectListLayout;
   }
 };
 
-/**
- * Exports whether the project list should be verbose based on the environment variable VITE_THEME.
- *
- * @returns {boolean} `false` if VITE_THEME is 'bubble', otherwise `true`.
- */
 const exportProjectListVerbose = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bssTheme':
       return true;
-    case 'bubble':
-      return false;
+    case 'fieldmark':
+      return true;
     default:
       return true;
   }
 };
 
-/**
- * Exports the AppBar heading based on the environment variable VITE_THEME.
- *
- * @returns {string} The AppBar heading. Returns 'bubble' if VITE_THEME is 'bubble', otherwise returns 'default'.
- */
 const exportAppBarHeading = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bssTheme':
       return 'bssTheme';
-    case 'bubble':
-      return 'bubble';
+    case 'fieldmark':
+      return 'fieldmark';
     default:
       return 'default';
   }
 };
-
 export const theme = exportTheme();
 export const appBarStyling = exportAppBarStyling();
 export const projectListLayout = exportProjectListLayout();

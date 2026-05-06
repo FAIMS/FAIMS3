@@ -18,55 +18,73 @@
  *   TODO
  */
 
-import {RefreshOutlined} from '@mui/icons-material';
-import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
+import {ProjectStatus} from '@faims3/data-model';
+import {AddOutlined, RefreshOutlined} from '@mui/icons-material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
 import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
 import {
+  CAPACITOR_PLATFORM,
   NOTEBOOK_LIST_TYPE,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../../buildconfig';
-import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {
   initialiseProjects,
   Project,
   selectProjectsByServerId,
+  selectServers,
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
+import {
+  QRCodeButtonOnly,
+  ShortCodeOnlyComponent,
+} from '../authentication/shortCodeOnly';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {ProjectStatus} from '@faims3/data-model';
 
-// Survey status naming conventions
+// Notebook status naming conventions (labels are fixed English; surrounding UI uses NOTEBOOK_NAME* from build config).
 
-// E.g. "This survey is not active"
+// E.g. "This notebook is not active"
 export const NOT_ACTIVATED_LABEL = 'Not Active';
 
-// E.g. "This survey is active"
+// E.g. "This notebook is active"
 export const ACTIVATED_LABEL = 'Active';
 
-// E.g. "This survey has been activated"
+// E.g. "This notebook has been activated"
 export const ACTIVATED_VERB_PAST = 'Activated';
 
-// E.g. "Please activate this survey"
+// E.g. "Please activate this notebook"
 export const ACTIVATE_VERB_LABEL = 'Activate';
 
-// E.g. "This survey is currently activating" or "Before activating, consider ..."
+// E.g. "This notebook is currently activating" or "Before activating, consider ..."
 export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 
-// E.g. "You cannot currently de-activate a survey"
+// E.g. "You cannot currently de-activate a notebook"
 export const DE_ACTIVATE_VERB = 'De-activate';
+export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
 export default function NoteBooks() {
   // get the active user - this will allow us to check roles against it
@@ -85,7 +103,7 @@ export default function NoteBooks() {
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
-    // don't show de-activated closed surveys
+    // don't show de-activated closed notebooks
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
@@ -96,11 +114,13 @@ export default function NoteBooks() {
       await dispatch(initialiseProjects({serverId: activeServerId}));
     },
     onSuccess: () => {
-      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`);
     },
     onError: err => {
       console.log(err);
-      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`);
+      notify.showError(
+        `Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`
+      );
     },
   });
   const showRefreshButton = isOnline.isOnline;
@@ -108,8 +128,7 @@ export default function NoteBooks() {
   const activatedProjects = projects.filter(nb => nb.isActivated);
 
   const [tabID, setTabID] = useState('1');
-
-  const history = useNavigate();
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
@@ -158,7 +177,6 @@ export default function NoteBooks() {
       ),
     },
   ]);
-  const showCreateNewNotebookButton = false;
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
@@ -183,9 +201,10 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activatedProjects.length}{' '}
+      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME}{' '}
+      currently {ACTIVATED_LABEL} on this device.{' '}
+      {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -209,73 +228,232 @@ export default function NoteBooks() {
   // use notification service
   const notify = useNotification();
 
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const servers = useAppSelector(selectServers);
+  const platform = CAPACITOR_PLATFORM;
+  const allowQr = platform === 'ios' || platform === 'android';
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
   return (
-    <Box>
-      <Box component={Paper} elevation={0} p={2}>
-        <Typography variant={'body1'} gutterBottom>
-          {notActivatedAdvice}
-        </Typography>
-        <div
-          style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
-        >
-          {showCreateNewNotebookButton ? (
-            <Button
-              disabled={!isOnline.isOnline}
-              variant="contained"
-              onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-              sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
-              startIcon={<AddCircleSharpIcon />}
-            >
-              Create New {NOTEBOOK_NAME}
-            </Button>
-          ) : (
-            <div />
-          )}
+    <Box component={Paper} elevation={0} p={2}>
+      <Stack
+        direction={isMobile ? 'column' : 'row'}
+        alignItems={isMobile ? 'stretch' : 'center'}
+        justifyContent={isMobile ? 'space-evenly' : 'space-between'}
+        spacing={2}
+        sx={{mt: 1, mb: 2}}
+      >
+        <Stack direction="row" spacing={1} alignItems="center" sx={{flex: 1}}>
           <Button
             variant="contained"
             disabled={!showRefreshButton || doRefresh.isPending}
-            sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+            sx={{backgroundColor: theme.palette.primary.main, flex: 1}}
             startIcon={<RefreshOutlined />}
             onClick={() => {
               doRefresh.mutate();
             }}
           >
-            Refresh {NOTEBOOK_NAME}s
+            Refresh
           </Button>
-        </div>
-        {NOTEBOOK_LIST_TYPE === 'tabs' ? (
-          <Tabs
-            projects={projects}
-            tabID={tabID}
-            handleChange={setTabID}
-            activatedColumns={activatedColumns}
-            notActivatedColumns={notActivatedColumns}
-          />
-        ) : (
-          <HeadingProjectGrid
-            projects={projects}
-            serverId={activeServerId}
-            activatedColumns={activatedColumns}
-            notActivatedColumns={notActivatedColumns}
-          />
-        )}
-        <Alert severity="info">
-          <AlertTitle>
-            What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
-          </AlertTitle>
-          When a {NOTEBOOK_NAME} is “{ACTIVATED_LABEL}” you are safe to work
-          offline at any point because all the data you collect will be saved to
-          your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
-          the downloading of existing {NOTEBOOK_NAME} records onto your device.
-          We recommend you complete this procedure while you have a stable
-          internet connection. Currently, you cannot{' '}
-          {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}, this is something
-          we will be adding soon. If you need to make space on your device you
-          can clear the application storage or delete the application. If a{' '}
-          {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to start
-          using it.
-        </Alert>
+          <Button
+            variant="contained"
+            sx={{backgroundColor: theme.palette.primary.main, flex: 1}}
+            startIcon={<AddOutlined />}
+            onClick={() => {
+              setAddDialogOpen(true);
+            }}
+          >
+            Add {NOTEBOOK_NAME}
+          </Button>
+          {doRefresh.isPending && <CircularProgress size={24} />}
+        </Stack>
+        <Button
+          variant="outlined"
+          size="small"
+          fullWidth={isMobile}
+          startIcon={<InfoOutlinedIcon fontSize="small" />}
+          onClick={() => setInfoDialogOpen(true)}
+          sx={{
+            textTransform: 'none',
+            fontSize: 'body2.fontSize',
+          }}
+        >
+          Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
+          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME_PLURAL}
+        </Button>
+      </Stack>
+      {NOTEBOOK_LIST_TYPE === 'tabs' ? (
+        <Tabs
+          projects={projects}
+          tabID={tabID}
+          handleChange={setTabID}
+          activatedColumns={activatedColumns}
+          notActivatedColumns={notActivatedColumns}
+        />
+      ) : (
+        <HeadingProjectGrid
+          projects={projects}
+          serverId={activeServerId}
+          activatedColumns={activatedColumns}
+          notActivatedColumns={notActivatedColumns}
+        />
+      )}
+
+      {activatedProjects.length === 0 && (
+        <Typography variant={'body1'} gutterBottom>
+          {notActivatedAdvice}
+        </Typography>
+      )}
+
+      {/* Custom floating overlay for "Add notebook" - not Material Dialog, so it doesn't conflict with QR scanner's overlay */}
+      <Box
+        sx={{
+          display: addDialogOpen ? 'flex' : 'none',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: theme.zIndex.modal,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          p: 2,
+        }}
+        onClick={() => setAddDialogOpen(false)}
+        role="presentation"
+      >
+        <Paper
+          elevation={8}
+          sx={{
+            maxWidth: 'sm',
+            width: '100%',
+            overflow: 'hidden',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <Box sx={{p: 2.5, pb: 0}}>
+            <Typography variant="h4" gutterBottom>
+              Add a new {NOTEBOOK_NAME_CAPITALIZED}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{mb: 2}}>
+              {allowQr
+                ? `Enter an access code or scan a QR code to get access to a ${NOTEBOOK_NAME}.`
+                : `Enter an access code to get access to a ${NOTEBOOK_NAME}.`}
+            </Typography>
+          </Box>
+          <Box sx={{px: 2.5, py: 2, borderTop: 1, borderColor: 'divider'}}>
+            {servers.length > 0 && (
+              <Stack spacing={3} sx={{mt: 1}}>
+                <Box>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{fontWeight: 'bold', mb: 1.5}}
+                  >
+                    Enter code
+                  </Typography>
+                  <ShortCodeOnlyComponent servers={servers} />
+                </Box>
+                {allowQr && (
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{fontWeight: 'bold', mb: 1.5}}
+                    >
+                      Scan QR code
+                    </Typography>
+                    <QRCodeButtonOnly
+                      servers={servers}
+                      onScanStart={() => setAddDialogOpen(false)}
+                    />
+                  </Box>
+                )}
+              </Stack>
+            )}
+          </Box>
+          <Box
+            sx={{
+              px: 2.5,
+              py: 1.5,
+              borderTop: 1,
+              borderColor: 'divider',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Button onClick={() => setAddDialogOpen(false)}>Close</Button>
+          </Box>
+        </Paper>
       </Box>
+
+      <Dialog
+        open={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h4">
+            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography paragraph>
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
+            ensures that you are safe to work offline at any point by
+            downloading any existing records onto your device. Please do this
+            with a stable internet connection.
+          </Typography>
+          <Typography paragraph>
+            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
+            offloads records from your device, to{' '}
+            {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
+          </Typography>
+          <Typography component="div">
+            <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
+              <li>
+                Select the {NOTEBOOK_NAME} you want to{' '}
+                {DE_ACTIVATE_VERB.toLowerCase()}
+              </li>
+              <li>
+                Ensure you are online, and all data in the {NOTEBOOK_NAME} has
+                been synced to the cloud
+              </li>
+              <li>
+                Click <strong>"Settings"</strong> tab (next to Map and Details
+                tabs)
+              </li>
+              <li>
+                Select the red{' '}
+                <strong>
+                  "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
+                </strong>{' '}
+                at the bottom that looks like the following:
+                <Box sx={{mt: 1, mb: 0.5}}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    disableRipple
+                    sx={{
+                      pointerEvents: 'none',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                      py: 0.5,
+                      px: 1,
+                    }}
+                  >
+                    {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                  </Button>
+                </Box>
+              </li>
+            </ol>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInfoDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

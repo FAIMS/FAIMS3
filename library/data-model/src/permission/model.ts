@@ -60,10 +60,16 @@ export enum Action {
   // Change open/closed status
   CHANGE_PROJECT_STATUS = 'CHANGE_PROJECT_STATUS',
 
+  /** Archive a survey or restore from archive (returns to closed). */
+  CHANGE_PROJECT_ARCHIVE_STATUS = 'CHANGE_PROJECT_ARCHIVE_STATUS',
+
   // Change team of a project
   CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
 
-  // Delete the project
+  /**
+   * Permanently destroy survey data on the server (requires archive first).
+   * Granted to survey administrators (PROJECT_ADMIN) for that survey and to operations staff.
+   */
   DELETE_PROJECT = 'DELETE_PROJECT',
 
   // Data export
@@ -121,10 +127,10 @@ export enum Action {
   // Update the UI specification
   UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
 
-  // Change open/closed status
+  /** Archive or restore template */
   CHANGE_TEMPLATE_STATUS = 'CHANGE_TEMPLATE_STATUS',
 
-  // Delete the project
+  /** Permanently remove a template document (API requires it to be archived first). */
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
 
   // ============================================================
@@ -141,6 +147,7 @@ export enum Action {
   UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
   VIEW_TEAM_MEMBERS = 'VIEW_TEAM_MEMBERS',
+  CHANGE_OWN_ROLE_IN_TEAM = 'CHANGE_OWN_ROLE_IN_TEAM',
 
   // Direct management
   ADD_ADMIN_TO_TEAM = 'ADD_ADMIN_TO_TEAM',
@@ -179,6 +186,10 @@ export enum Action {
   RESET_USER_PASSWORD = 'RESET_USER_PASSWORD',
   // Delete a user
   DELETE_USER = 'DELETE_USER',
+  // Disable a user account (soft-off; preserves history)
+  DISABLE_USER_ACCOUNT = 'DISABLE_USER_ACCOUNT',
+  // Re-enable a previously disabled user account
+  ENABLE_USER_ACCOUNT = 'ENABLE_USER_ACCOUNT',
 
   // ============================================================
   // LONG LIVED TOKEN ACTIONS
@@ -204,6 +215,15 @@ export enum Action {
 
   // Revoke any long-lived token in the system (admin)
   REVOKE_ANY_LONG_LIVED_TOKEN = 'REVOKE_ANY_LONG_LIVED_TOKEN',
+
+  // ============================================================
+  // GLOBAL ACTIONS
+  // ============================================================
+
+  CREATE_GLOBAL_INVITE = 'CREATE_GLOBAL_INVITE',
+  EDIT_GLOBAL_INVITE = 'EDIT_GLOBAL_INVITE',
+  DELETE_GLOBAL_INVITE = 'DELETE_GLOBAL_INVITE',
+  VIEW_GLOBAL_INVITES = 'VIEW_GLOBAL_INVITES',
 
   // ============================================================
   // SYSTEM ACTIONS
@@ -339,6 +359,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
+  [Action.CHANGE_PROJECT_ARCHIVE_STATUS]: {
+    name: 'Archive or Restore Project',
+    description:
+      'Archive a survey (hide from default lists) or restore an archived survey to closed state',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
   [Action.CHANGE_PROJECT_TEAM]: {
     name: 'Change Project Team',
     description: 'Change the team associated with a project',
@@ -346,8 +373,9 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resource: Resource.PROJECT,
   },
   [Action.DELETE_PROJECT]: {
-    name: 'Delete Project',
-    description: 'Permanently remove a project from the system',
+    name: 'Permanently Destroy Project Data',
+    description:
+      'Irreversibly delete all server-side survey data (requires archive first). Survey administrators may delete their own surveys.',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -529,7 +557,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.TEAM,
   },
-
+  [Action.CHANGE_OWN_ROLE_IN_TEAM]: {
+    name: 'Change own role in team',
+    description: 'Change your own role within a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
   [Action.ADD_ADMIN_TO_TEAM]: {
     name: 'Add Admin to Team',
     description: 'Grant a user administrator privileges for a specific team',
@@ -671,13 +704,14 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
   [Action.CHANGE_TEMPLATE_STATUS]: {
     name: 'Change Template Status',
-    description: 'Modify the status of a template (draft, published, etc.)',
+    description: 'Archive or restore a template',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
   [Action.DELETE_TEMPLATE]: {
     name: 'Delete Template',
-    description: 'Permanently remove a template from the system',
+    description:
+      'Permanently remove an archived template from the system (hard delete)',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
@@ -708,6 +742,50 @@ export const actionDetails: Record<Action, ActionDetails> = {
     description: 'Permanently remove a user from the system',
     resourceSpecific: true,
     resource: Resource.USER,
+  },
+  [Action.DISABLE_USER_ACCOUNT]: {
+    name: 'Disable user account',
+    description:
+      'Disable a user account so they cannot authenticate; data and history are kept',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
+  [Action.ENABLE_USER_ACCOUNT]: {
+    name: 'Enable user account',
+    description: 'Re-enable a previously disabled user account',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
+
+  // ============================================================
+  // GLOBAL ACTIONS
+  // ============================================================
+  [Action.CREATE_GLOBAL_INVITE]: {
+    name: 'Create Global Invite',
+    description: 'Create a new global invitation to the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  [Action.EDIT_GLOBAL_INVITE]: {
+    name: 'Edit Global Invite',
+    description: 'Edit an existing global invitation in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  [Action.DELETE_GLOBAL_INVITE]: {
+    name: 'Delete Global Invite',
+    description: 'Delete an existing global invitation in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  [Action.VIEW_GLOBAL_INVITES]: {
+    name: 'View Global Invites',
+    description: 'View existing global invitations in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
   },
 
   // ============================================================
@@ -820,6 +898,7 @@ export enum Role {
   GENERAL_USER = 'GENERAL_USER',
   GENERAL_ADMIN = 'GENERAL_ADMIN',
   GENERAL_CREATOR = 'GENERAL_CREATOR',
+  OPERATIONS_ADMIN = 'OPERATIONS_ADMIN',
 
   // PROJECT ROLES
   // ================
@@ -836,6 +915,7 @@ export enum Role {
   // TEAM ROLES
   // ================
   TEAM_MEMBER = 'TEAM_MEMBER',
+  TEAM_MEMBER_CREATOR = 'TEAM_MEMBER_CREATOR',
   TEAM_MANAGER = 'TEAM_MANAGER',
   TEAM_ADMIN = 'TEAM_ADMIN',
 }
@@ -867,7 +947,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
     scope: RoleScope.GLOBAL,
   },
   [Role.GENERAL_ADMIN]: {
-    name: 'System Administrator',
+    name: 'Super User',
     description:
       'Full access to all system resources and management capabilities',
     scope: RoleScope.GLOBAL,
@@ -878,30 +958,36 @@ export const roleDetails: Record<Role, RoleDetails> = {
       'Ability to create and manage templates and surveys across the system',
     scope: RoleScope.GLOBAL,
   },
+  [Role.OPERATIONS_ADMIN]: {
+    name: 'Operations Administrator',
+    description:
+      'Manage system operations such as user management and system settings',
+    scope: RoleScope.GLOBAL,
+  },
 
   // Project roles
   [Role.PROJECT_ADMIN]: {
-    name: 'Project Administrator',
+    name: 'Administrator',
     description:
       'Full control over a specific project, including deletion and admin user management',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_MANAGER]: {
-    name: 'Project Manager',
+    name: 'Manager',
     description:
       'Can manage project settings, invitations and all data within a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
-    name: 'Project Contributor',
+    name: 'Contributor',
     description: 'Can view all data within a project and contribute their own',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_GUEST]: {
-    name: 'Project Guest',
+    name: 'Guest',
     description: 'Can view only their own contributions to a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
@@ -937,8 +1023,14 @@ export const roleDetails: Record<Role, RoleDetails> = {
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
-    name: 'Team Member',
-    description: 'Basic membership in a team with standard access privileges',
+    name: 'Team Member (Contributor)',
+    description: 'Can contribute data to all projects within a team',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MEMBER_CREATOR]: {
+    name: 'Team Member (Creator)',
+    description: 'Can create new projects within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
@@ -1028,10 +1120,11 @@ export const roleActions: Record<
       Action.CREATE_ADMIN_PROJECT_INVITE,
       Action.EDIT_ADMIN_PROJECT_INVITE,
       Action.DELETE_ADMIN_PROJECT_INVITE,
-      Action.DELETE_PROJECT,
+      Action.CHANGE_PROJECT_ARCHIVE_STATUS,
       Action.ADD_ADMIN_TO_PROJECT,
       Action.REMOVE_ADMIN_FROM_PROJECT,
       Action.GENERATE_RANDOM_PROJECT_RECORDS,
+      Action.DELETE_PROJECT,
     ],
     inheritedRoles: [Role.PROJECT_MANAGER],
   },
@@ -1067,17 +1160,42 @@ export const roleActions: Record<
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
   },
-  [Role.GENERAL_ADMIN]: {
+  [Role.OPERATIONS_ADMIN]: {
     actions: [
+      Action.VERIFY_EMAIL,
+
+      // Manage users
       Action.VIEW_USER_LIST,
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
       Action.RESET_USER_PASSWORD,
       Action.DELETE_USER,
+      Action.DISABLE_USER_ACCOUNT,
+      Action.ENABLE_USER_ACCOUNT,
+
+      // Irreversible survey destruction (also on PROJECT_ADMIN for owned surveys)
+      Action.DELETE_PROJECT,
+
+      // System operations
       Action.INITIALISE_SYSTEM_API,
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
-      Action.CREATE_TEAM,
       Action.SEND_TEST_EMAIL,
+
+      // Teams
+      Action.CREATE_TEAM,
+      Action.DELETE_TEAM,
+      Action.UPDATE_TEAM_DETAILS,
+      Action.VIEW_TEAM_DETAILS,
+      Action.VIEW_TEAM_INVITES,
+      Action.VIEW_TEAM_MEMBERS,
+      Action.ADD_MANAGER_TO_TEAM,
+      Action.REMOVE_MANAGER_FROM_TEAM,
+      Action.ADD_MEMBER_TO_TEAM,
+      Action.REMOVE_MEMBER_FROM_TEAM,
+      // Only operations admin can change their own role
+      // to allow for bootstrapping of teams when there are no team admins
+      // eg. create a team, add yourself as admin
+      Action.CHANGE_OWN_ROLE_IN_TEAM,
 
       // These are special permissions!
       Action.ADD_ADMIN_TO_TEAM,
@@ -1088,13 +1206,28 @@ export const roleActions: Record<
       Action.EDIT_ADMIN_TEAM_INVITE,
       Action.DELETE_ADMIN_TEAM_INVITE,
 
+      // Global Invites
+      Action.CREATE_GLOBAL_INVITE,
+      Action.EDIT_GLOBAL_INVITE,
+      Action.DELETE_GLOBAL_INVITE,
+      Action.VIEW_GLOBAL_INVITES,
+
       // Long-lived token admin actions
+      Action.CREATE_LONG_LIVED_TOKEN,
       Action.READ_ANY_LONG_LIVED_TOKENS,
       Action.EDIT_ANY_LONG_LIVED_TOKEN,
       Action.REVOKE_ANY_LONG_LIVED_TOKEN,
     ],
+    inheritedRoles: [],
+  },
+
+  // Super User Admin role can see all user data - to be used sparingly
+  [Role.GENERAL_ADMIN]: {
+    actions: [],
     inheritedRoles: [
       // God role
+      Role.GENERAL_USER,
+      Role.OPERATIONS_ADMIN,
       Role.GENERAL_CREATOR,
       Role.PROJECT_ADMIN,
       Role.TEAM_ADMIN,
@@ -1108,6 +1241,20 @@ export const roleActions: Record<
     virtualRoles: new Map([
       // Projects owned by team -> contributor
       [Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]],
+      // Template owned by team -> guest
+      [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+    ]),
+  },
+
+  // Modified team member to allow project creation but not
+  // access to all projects in the team
+  [Role.TEAM_MEMBER_CREATOR]: {
+    actions: [
+      Action.VIEW_TEAM_DETAILS,
+      Action.VIEW_TEAM_MEMBERS,
+      Action.CREATE_PROJECT_IN_TEAM,
+    ],
+    virtualRoles: new Map([
       // Template owned by team -> guest
       [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
     ]),

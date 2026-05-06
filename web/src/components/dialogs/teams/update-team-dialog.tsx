@@ -25,7 +25,7 @@ export const UpdateTeamDialog = ({
   if (!user) {
     return <p>Not authenticated...</p>;
   }
-  const {data, isLoading, isError} = useGetTeam(user, teamId);
+  const {data, isLoading, isError} = useGetTeam({user, teamId});
   const [open, setOpen] = useState(false);
 
   return (

@@ -25,7 +25,7 @@ import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
 
 /**
  * POST /verify

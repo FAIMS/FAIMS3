@@ -25,8 +25,11 @@ import {
   PeopleDBDocument,
   Resource,
   Role,
+  RoleScope,
+  addGlobalRole,
   addProjectRole,
   addTeamRole,
+  safeWriteDocument,
   writeNewDocument,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
@@ -50,7 +53,7 @@ export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
  * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
  * @returns {Promise<ExistingInvitesDBDocument>} The invite document
  */
-export async function createInvite({
+export async function createResourceInvite({
   resourceType,
   resourceId,
   role,
@@ -71,6 +74,47 @@ export async function createInvite({
   const invite: InvitesDBFields = {
     resourceType,
     resourceId,
+    inviteType: RoleScope.RESOURCE_SPECIFIC,
+    role,
+    name,
+    createdBy,
+    createdAt: Date.now(),
+    expiry,
+    usesOriginal,
+    usesConsumed: 0,
+    uses: [],
+  };
+  return await writeNewInvite(invite);
+}
+
+/**
+ * Create an invite for a resource and role if one doesn't already exist.
+ * If it already exists, return the existing invite.
+ *
+ * @param {Object} params - The parameters for creating the invite
+ * @param {Role} params.role - Role to grant
+ * @param {string} params.name - Name/purpose of the invite
+ * @param {string} params.createdBy - User ID of the creator
+ * @param {number} [params.expiry] - Timestamp when invite expires
+ * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
+ * @returns {Promise<ExistingInvitesDBDocument>} The invite document
+ */
+export async function createGlobalInvite({
+  role,
+  name,
+  createdBy,
+  expiry = Date.now() + DEFAULT_INVITE_EXPIRY,
+  usesOriginal,
+}: {
+  role: Role;
+  name: string;
+  createdBy: string;
+  expiry?: number;
+  usesOriginal?: number;
+}): Promise<ExistingInvitesDBDocument> {
+  // Create a new invite
+  const invite: InvitesDBFields = {
+    inviteType: RoleScope.GLOBAL,
     role,
     name,
     createdBy,
@@ -186,17 +230,18 @@ export async function getInvite({
 }
 
 /**
- * Record usage of an invite by a user.
+ * Record usage of an invite by a user and update the user's roles accordingly.
  *
  * Also checks for validity (though you should do this prior to calling this
  * function)
  *
  * NOTE: DOES NOT save the user - that is the responsibility of the caller - so as to
- * enable efficiently managing this save point/transaction
+ * enable efficiently managing this save point/transaction.  User object is updated
+ * in place but is not saved.
  *
  * @param {Object} params - The parameters for recording invite usage
  * @param {ExistingInvitesDBDocument} params.invite - The invite document
- * @param {string} params.userId - ID of the user using the invite
+ * @param {PeopleDBDocument} params.user - The user using the invite, object is updated in place with the new role but not saved
  * @returns {Promise<ExistingInvitesDBDocument>} The updated invite document
  * @throws {Error} If the invite has expired or exceeded usage limits
  */
@@ -231,12 +276,17 @@ export async function consumeInvite({
 
   // Save the updated invite
   const inviteDb = getInvitesDB();
-  const result = await inviteDb.put(updatedInvite);
+  const result = await safeWriteDocument({
+    db: inviteDb,
+    data: updatedInvite,
+  });
 
   // Now grant the associated role
-  if (invite.resourceType === Resource.TEAM) {
+  if (invite.inviteType === RoleScope.GLOBAL) {
+    addGlobalRole({user, role: invite.role});
+  } else if (invite.resourceId && invite.resourceType === Resource.TEAM) {
     addTeamRole({user, role: invite.role, teamId: invite.resourceId});
-  } else if (invite.resourceType === Resource.PROJECT) {
+  } else if (invite.resourceId && invite.resourceType === Resource.PROJECT) {
     addProjectRole({user, role: invite.role, projectId: invite.resourceId});
   } else {
     throw new Exceptions.InternalSystemError(
@@ -246,7 +296,8 @@ export async function consumeInvite({
 
   return {
     ...updatedInvite,
-    _rev: result.rev,
+    // This will be defined when writeOnClash = true (as default)
+    _rev: result!.rev,
   };
 }
 
@@ -272,6 +323,41 @@ export async function getInvitesForResource({
       selector: {
         resourceType: {$eq: resourceType},
         resourceId: {$eq: resourceId},
+      },
+    });
+    return result.docs as ExistingInvitesDBDocument[];
+  } else {
+    throw Error('Unable to connect to invites database');
+  }
+}
+
+/**
+ * Deletes every invite document targeting a project (survey).
+ */
+export async function deleteAllInvitesForProject(
+  projectId: string
+): Promise<void> {
+  const invites = await getInvitesForResource({
+    resourceType: Resource.PROJECT,
+    resourceId: projectId,
+  });
+  for (const invite of invites) {
+    await deleteInvite({invite});
+  }
+}
+
+/**
+ * Get all global invites
+ *
+ * @returns {Promise<ExistingInvitesDBDocument[]>} Array of invite documents
+ * @throws {Error} If unable to connect to the invites database
+ */
+export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (inviteDb) {
+    const result = await inviteDb.find({
+      selector: {
+        inviteType: {$eq: RoleScope.GLOBAL},
       },
     });
     return result.docs as ExistingInvitesDBDocument[];

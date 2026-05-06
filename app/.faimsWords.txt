@@ -355,8 +355,6 @@ metaadd
 metadb
 Metadb
 Microbundle
-minifauxton
-MINIFAUXTON
 mrview
 mrviews
 multirows

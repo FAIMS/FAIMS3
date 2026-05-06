@@ -58,11 +58,11 @@
         <a href="/forgot-password{{#if localLoginPostPayload.redirect}}?redirect={{localLoginPostPayload.redirect}}{{/if}}" class="auth-link" data-testid="forgot-password-link">Forgot password?</a>
       </div>
     </div>
-    <button type='submit' class='auth-button' data-testid="login-submit-button">Sign in</button>
-    {{#if messages.error.loginError}}
-      <div class='alert alert-danger' data-testid="login-error">{{messages.error.loginError.msg}}</div>
-    {{/if}}
+    <button type='submit' class='auth-button'>Sign in</button>
   </form>
+{{/if}}
+{{#if messages.error.loginError}}
+  <div class='alert alert-danger'>{{messages.error.loginError.msg}}</div>
 {{/if}}
 {{#if (and localAuth providers)}}
   <div class='divider' data-testid="divider">
@@ -77,6 +77,14 @@
         Continue with
         {{this.name}}
       </a>
+      {{#if this.helperText}}
+      <p class="auth-helper-text">{{this.helperText}}</p>
+      {{/if}}
     {{/each}}
   </div>
 {{/if}}
+
+<hr>
+<p class="auth-helper-text">You must have an existing account to sign in to this server. If not,
+  please contact your adminstrator to ask about registration.
+</p>

@@ -58,7 +58,7 @@ export default function Notebook() {
   return (
     <Stack spacing={2}>
       <Stack direction="row" alignItems={'center'} spacing={2}>
-        <BackButton link={backLink} confirm={false} />
+        <BackButton link={backLink} />
 
         <Typography
           variant={largerThanMedium ? 'h3' : 'h4'}

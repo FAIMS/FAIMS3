@@ -1,10 +1,11 @@
-import {AutoIncrementReference, ProjectUIModel} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import {Box, Button, Grid, Paper, Typography} from '@mui/material';
 import {useEffect, useState} from 'react';
 import {Project} from '../../../../context/slices/projectSlice';
 import {getAutoincrementReferencesForProject} from '../../../../local-data/autoincrement';
 import {logError} from '../../../../logging';
 import {AutoIncrementEditForm} from '../../autoincrement/edit-form';
+import {AutoIncrementReference} from '../../../../local-data/autoincrementTypes';
 
 interface AutoIncrementerSettingsListProps {
   project: Project;

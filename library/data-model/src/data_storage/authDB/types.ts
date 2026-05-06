@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
+import {DatabaseInterface} from '../../types';
 
 // =============
 // V1 Definition
@@ -545,4 +546,4 @@ export type GetRefreshTokenIndex = 'id' | 'token';
 export type GetEmailCodeIndex = 'id' | 'code';
 export type GetVerificationChallengeIndex = 'id' | 'code';
 export type GetLongLivedTokenIndex = 'id' | 'tokenHash';
-export type AuthDatabase = PouchDB.Database<AuthRecordFields>;
+export type AuthDatabase = DatabaseInterface<AuthRecordFields>;

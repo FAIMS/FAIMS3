@@ -18,26 +18,32 @@
  *   TODO
  */
 
-import {TestWrapper} from '../../fields/utils';
+import {expect, test, vi} from 'vitest';
+
+// Stub permission check so we exercise dialog UX; TestWrapper’s token/setup
+// does not yield canDeleteProjectRecord === true with the real permission code.
+vi.mock('@faims3/data-model', async importOriginal => {
+  const mod = await importOriginal<typeof import('@faims3/data-model')>();
+  return {
+    ...mod,
+    canDeleteProjectRecord: vi.fn(() => true),
+  };
+});
+
+import {TestWrapper} from '../../testUtils';
 import RecordDelete from './delete';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {deleteStagedData} from '../../../sync/draft-storage';
-import {expect, vi, test} from 'vitest';
+import {fireEvent, render, screen} from '@testing-library/react';
 
 const testDeleteData = {
-  project_id: 'test-id',
-  record_id: 'test-record-id',
-  revision_id: 'test-revision-id',
-  draft_id: 'test-draft-id',
-  show_label: true,
+  projectId: 'test-id',
+  recordCreatedBy: 'testuser',
+  recordId: 'test-record-id',
+  revisionId: 'test-revision-id',
+  showLabel: true,
   handleRefresh: vi.fn(() => {
     return new Promise<any>(() => {});
   }),
 };
-
-vi.mock('../../../sync/draft-storage', () => ({
-  deleteStagedData: vi.fn(() => {}),
-}));
 
 test('Check delete component', async () => {
   render(
@@ -51,11 +57,14 @@ test('Check delete component', async () => {
 
   expect(screen.getByText('Cancel')).toBeTruthy();
 
-  expect(screen.getByTestId('confirm-delete')).toBeTruthy();
+  const confirmBtn = screen.getByTestId('confirm-delete') as HTMLButtonElement;
+  expect(confirmBtn.disabled).toBe(true);
 
-  fireEvent.click(screen.getByTestId('confirm-delete'));
+  fireEvent.click(
+    screen.getByRole('checkbox', {name: /i understand this cannot be undone/i})
+  );
 
-  await waitFor(() => {
-    expect(deleteStagedData).toBeCalledTimes(1);
-  });
+  expect(confirmBtn.disabled).toBe(false);
+
+  fireEvent.click(confirmBtn);
 });

@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {
-  GetListAllUsersResponse,
+  GetListAllUsersItem,
   Role,
   roleDetails,
   RoleScope,
@@ -10,16 +10,23 @@ import {ColumnDef} from '@tanstack/react-table';
 import {KeyRound} from 'lucide-react';
 import {toast} from 'sonner';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {RemoveUserDialog} from '../dialogs/remove-user';
+import {DisableUserDialog} from '../dialogs/disable-user';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
-export const getColumns = ({
+/** Columns for the admin user list (GET /api/users); each row is a {@link GetListAllUsersItem}. */
+export const useUsersColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
-}): ColumnDef<GetListAllUsersResponse[number]>[] => {
+}): ColumnDef<GetListAllUsersItem>[] => {
   const {user} = useAuth();
   const queryClient = useQueryClient();
 
@@ -54,7 +61,7 @@ export const getColumns = ({
             <AddRolePopover
               roles={Object.entries(roleDetails)
                 .filter(([, {scope}]) => scope === RoleScope.GLOBAL)
-                .map(([value]) => value)}
+                .map(([id, roleDetail]) => ({id, ...roleDetail}))}
               userId={userId}
             />
           )}
@@ -100,39 +107,64 @@ export const getColumns = ({
     },
     {
       id: 'reset',
-      cell: ({row}: any) => (
-        <div className="flex justify-center items-center -my-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              onReset(row.original._id);
-            }}
-          >
-            <KeyRound className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({row}: any) => {
+        if (row.original.profiles.local) {
+          return (
+            <div className="flex justify-center items-center -my-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        onReset(row.original._id);
+                      }}
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset password for local user</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          );
+        } else {
+          return (
+            <div className="flex justify-center items-center -my-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button variant="outline" size="icon" disabled>
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>SSO only user, can't reset password</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          );
+        }
+      },
       header: () => (
         <div className="flex justify-center items-center">Reset Password</div>
       ),
     },
     {
-      id: 'remove',
-      cell: ({
-        row: {
-          original: {_id, _id: userId},
-        },
-      }: any) => (
+      id: 'disable',
+      cell: ({row: {original}}) => (
         <div className="flex justify-center items-center -my-2">
-          <RemoveUserDialog
-            userId={_id}
-            disabled={!_id || userId === user?.user.id}
-          />
+          <DisableUserDialog rowUser={original} />
         </div>
       ),
       header: () => (
-        <div className="flex justify-center items-center">Remove</div>
+        <div className="flex justify-center items-center">Disable</div>
       ),
     },
   ];

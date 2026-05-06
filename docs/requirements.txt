@@ -5,3 +5,4 @@ sphinx
 sphinx-autobuild
 sphinx-book-theme
 sphinxcontrib-mermaid
+sphinx-wagtail-theme

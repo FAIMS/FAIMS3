@@ -1,8 +1,8 @@
-echo "npm version"
-npm --version
+echo "pnpm version"
+pnpm --version
 
 echo "Installing deps"
-npm i
+pnpm i
 
-echo "Building website with vite and npm"
-npm run build
+echo "Building website with vite and pnpm"
+pnpm run build

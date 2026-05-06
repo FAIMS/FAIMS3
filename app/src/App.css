@@ -5,52 +5,92 @@
 
 /* add safe area padding default 20px to allow for camera notch on some phones */
 body {
-    padding: var(--safe-area-inset-top) var(--safe-area-inset-right)
-      var(--safe-area-inset-bottom) var(--safe-area-inset-left);
-  }
- 
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
 .recordstepper::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
-.support-link{
-    color:black;
-    text-decoration:none;
+.support-link {
+  color: black;
+  text-decoration: none;
 }
-.bg-primary-gradient{
-    background: linear-gradient(#5C5A5A, #EDEEEB);
+.bg-primary-gradient {
+  background: linear-gradient(#5c5a5a, #edeeeb);
 }
 
 /* class for conflict warnings */
-.bg-warning{
-    background-color: #FDF4E7;
+.bg-warning {
+  background-color: #fdf4e7;
 }
 
 /* MUI datagrid pagination: bold for total row count emphasis */
-.MuiTablePagination-displayedRows {font-weight: 600}
+.MuiTablePagination-displayedRows {
+  font-weight: 600;
+}
 
 /* Record links table header*/
-.faims-record-link--header{
-    background-color: #e0e0e0;
-    font-weight:700
+.faims-record-link--header {
+  background-color: #e0e0e0;
+  font-weight: 700;
 }
 
-.ol-center-button {
-    padding: 1px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgb(23 23 23);
-    border-radius: 6px;
+/* Shared control box styles */
+.ol-custom-control {
+  position: absolute;
+  right: 12px;
+  background-color: white;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
 }
-  
+
+/* Shared control button styles */
+.ol-custom-control-button {
+  padding: 1px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgb(23 23 23);
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s;
+}
+
+.ol-custom-control-button:hover:not(:disabled) {
+  background-color: rgb(50 50 50);
+}
+
+.ol-custom-control-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Position-specific styles */
 .ol-center-box {
-    position: absolute;
-    right: 12px;
-    bottom: 128px;
-    background-color: white;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+  bottom: 128px;
+}
+
+.ol-compass-box {
+  right: 76px;
+  bottom: 10px;
+}
+
+.ol-layer-toggle-box {
+  bottom: 195px;
+}
+
+.ol-current-location-box {
+  top: 50px;
+}
+
+/* Active state for layer toggle */
+.ol-layer-toggle-button.active {
+  background-color: #1a73e8;
 }

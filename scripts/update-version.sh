@@ -6,7 +6,7 @@
 # get the new version from the first argument
 NEW_VERSION=$1
 
-FILES=("api/package.json" "app/package.json" "web/package.json" "library/data-model/package.json")
+FILES=("package.json" "api/package.json" "app/package.json" "web/package.json" "library/data-model/package.json" "library/forms/package.json")
 
 for FILE in "${FILES[@]}"; do
   if [ -f "$FILE" ]; then
@@ -18,3 +18,7 @@ for FILE in "${FILES[@]}"; do
     echo "File $FILE does not exist."
   fi
 done
+
+# Update version in the user docs conf.py
+sed -e "s/release = \".*\"/release = \"$NEW_VERSION\"/" docs/user/conf.py > tmp.$$.py && mv tmp.$$.py docs/user/conf.py
+echo "Updated docs/user/conf.py to version $NEW_VERSION"

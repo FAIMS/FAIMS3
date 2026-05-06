@@ -19,11 +19,17 @@ import {
   MenuItem,
   Select,
   Typography,
+  SelectChangeEvent,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
+import {
+  viewSetHridUpdated,
+  viewSetLayoutUpdated,
+  viewSetSummaryFieldsUpdated,
+} from '../store/slices/uiSpec';
 
 type ViewSetType = {
   views: string[];
@@ -31,7 +37,6 @@ type ViewSetType = {
   summary_fields?: string[];
   layout?: 'inline' | 'tabs';
   hridField?: string;
-  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 };
 
 /**
@@ -85,32 +90,6 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   );
   const [expanded, setExpanded] = React.useState(false);
 
-  const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
-    React.useState('always');
-
-  // Ensure selected value persists and is updated in the Redux store
-  React.useEffect(() => {
-    if (viewSet?.publishButtonBehaviour) {
-      setSelectedPublishBehaviour(viewSet.publishButtonBehaviour);
-    }
-  }, [viewSet?.publishButtonBehaviour]);
-
-  /**
-   * Updates the Finish Button Behavior setting in Redux and persists it
-   */
-  const handlePublishButtonBehaviourChange = (event: any) => {
-    const newValue = event.target.value;
-    setSelectedPublishBehaviour(newValue);
-
-    dispatch({
-      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
-      payload: {
-        viewSetId,
-        publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
-      },
-    });
-  };
-
   /**
    * Collects all fields that belong to any view in the current viewset
    */
@@ -159,26 +138,25 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
    * Updates the selected summary fields
    */
   const handleSummaryFieldsChange = (
-    _: any,
+    _event: React.SyntheticEvent,
     newValue: Array<{label: string; value: string}>
   ) => {
-    dispatch({
-      type: 'ui-specification/viewSetSummaryFieldsUpdated',
-      payload: {viewSetId, fields: newValue.map(v => v.value)},
-    });
+    dispatch(
+      viewSetSummaryFieldsUpdated({
+        viewSetId,
+        fields: newValue.map(v => v.value),
+      })
+    );
   };
 
   /**
    * Updates or clears the HRID field selection
    */
   const handleHridFieldChange = (
-    _: any,
+    _event: React.SyntheticEvent,
     newValue: {label: string; value: string} | null
   ) => {
-    dispatch({
-      type: 'ui-specification/viewSetHridUpdated',
-      payload: {viewSetId, hridField: newValue?.value},
-    });
+    dispatch(viewSetHridUpdated({viewSetId, hridField: newValue?.value}));
   };
 
   const selectedFields = (viewSet.summary_fields || [])
@@ -226,26 +204,6 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
 
       <Collapse in={expanded}>
         <CardContent>
-          {/* Finish Button Behavior*/}
-          <SettingSection
-            title="Finish Button Behavior"
-            description="Configure when the Finish and Close buttons should be shown."
-          >
-            <Select
-              fullWidth
-              value={selectedPublishBehaviour}
-              onChange={handlePublishButtonBehaviourChange}
-            >
-              <MenuItem value="always">Always Show</MenuItem>
-              <MenuItem value="visited">
-                Show Once All Sections Visited
-              </MenuItem>
-              <MenuItem value="noErrors">
-                Show Only When No Errors Exist
-              </MenuItem>
-            </Select>
-          </SettingSection>
-
           {/* Layout Style section  */}
           <SettingSection
             title="Layout Style"
@@ -255,13 +213,12 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               fullWidth
               value={viewSet.layout || 'tabs'}
               onChange={event =>
-                dispatch({
-                  type: 'ui-specification/viewSetLayoutUpdated',
-                  payload: {
+                dispatch(
+                  viewSetLayoutUpdated({
                     viewSetId,
                     layout: event.target.value as 'inline' | 'tabs' | undefined,
-                  },
-                })
+                  })
+                )
               }
             >
               <MenuItem value="tabs">Tabs</MenuItem>
@@ -324,4 +281,5 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   );
 };
 
+/** Default export of {@link FormSettingsPanel}. */
 export default FormSettingsPanel;

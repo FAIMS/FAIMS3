@@ -5,3 +5,4 @@ build
 out
 app/public/manifest.json
 .env
+.pnpm-store

@@ -35,7 +35,7 @@ import {
 import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../buildconfig';
 import {z} from 'zod';
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
 
 /**
  * POST /

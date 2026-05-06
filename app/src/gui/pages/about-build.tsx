@@ -46,17 +46,21 @@ import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistra
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
   RUNNING_UNDER_TEST,
-  COMMIT_VERSION,
-  SHOW_MINIFAUXTON,
+  SHOW_POUCHDB_BROWSER,
   SHOW_WIPE,
-  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_PLURAL,
   CONDUCTOR_URLS,
+  APP_VERSION,
+  COMMIT_HASH,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
+import {logError} from '../../logging';
+import {databaseService} from '../../context/slices/helpers/databaseService';
+import {Link} from 'react-router-dom';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -138,8 +142,12 @@ export default function AboutBuild() {
                 <td>{CONDUCTOR_URLS.join(', ')}</td>
               </tr>
               <tr>
+                <td>Release version:</td>
+                <td>{APP_VERSION}</td>
+              </tr>
+              <tr>
                 <td>Version:</td>
-                <td>{COMMIT_VERSION}</td>
+                <td>{COMMIT_HASH ?? 'Not provided.'}</td>
               </tr>
               <tr>
                 <td>{RUNNING_UNDER_TEST ? 'Running under test' : ''}</td>
@@ -178,7 +186,7 @@ export default function AboutBuild() {
               size={'small'}
               disableElevation
               onClick={() => {
-                console.log('User refreshed page');
+                logError('User refreshed page');
                 unregisterServiceWorker();
                 window.location.reload();
               }}
@@ -187,6 +195,29 @@ export default function AboutBuild() {
               Refresh the app
             </Button>
           </Grid>
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'body2'}>
+              Refresh local database connections. Use this if you see errors
+              indicating that that the app can't read or write data. No data
+              will be lost by doing this.
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Button
+              variant="contained"
+              color={'warning'}
+              size={'small'}
+              disableElevation
+              onClick={() => {
+                logError('User reset local databases');
+                databaseService.validateLocalDatabases();
+              }}
+              startIcon={<RefreshIcon />}
+            >
+              Refresh local database connections
+            </Button>
+          </Grid>
+
           <Grid item xs={12}>
             <Divider />
           </Grid>
@@ -196,31 +227,13 @@ export default function AboutBuild() {
             </Typography>
 
             <Typography variant={'body2'}>
-              Share or save a file containing all {NOTEBOOK_NAME}s and records
-              stored on this device. Data download functionality is not
+              Share or save a file containing all {NOTEBOOK_NAME_PLURAL} and
+              records stored on this device. Data download functionality is not
               well-supported by all device+browser combinations.
             </Typography>
           </Grid>
           <Grid item md={8} sm={6} xs={12}>
             <Grid container spacing={2} alignItems={'center'}>
-              {/* <Grid item>
-                <Button
-                  disableElevation
-                  variant={'contained'}
-                  size={'small'}
-                  color={'info'}
-                  onClick={async () => {
-                    await doDumpDownload();
-                  }}
-                  startIcon={<DownloadIcon />}
-                >
-                  Download local database contents
-                </Button>
-              </Grid>
-              <Grid item sm={'auto'}>
-                <Typography variant={'body2'}>Browsers only</Typography>
-              </Grid> */}
-
               <Grid item>
                 <Button
                   disableElevation
@@ -235,8 +248,31 @@ export default function AboutBuild() {
               </Grid>
             </Grid>
           </Grid>
-
-          {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+          {/* For debugging only - testing database damage handling this will close all databases */}
+          {false && (
+            <>
+              <Grid item md={4} sm={6} xs={12}>
+                <Typography variant={'h5'} gutterBottom>
+                  Do Damage!
+                </Typography>
+              </Grid>
+              <Grid item md={8} sm={6} xs={12}>
+                <Button
+                  variant="contained"
+                  color={'error'}
+                  size={'small'}
+                  disableElevation
+                  onClick={() => {
+                    databaseService.damage();
+                  }}
+                  startIcon={<RefreshIcon />}
+                >
+                  Damage local databases
+                </Button>
+              </Grid>
+            </>
+          )}
+          {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>
               <Grid item xs={12}>
                 <Divider />
@@ -310,17 +346,17 @@ export default function AboutBuild() {
                       </Dialog>
                     </Grid>
                   )}
-                  {SHOW_MINIFAUXTON && (
+                  {SHOW_POUCHDB_BROWSER && (
                     <>
                       <Grid item>
                         <Button
+                          size={'small'}
                           variant="contained"
                           disableElevation
                           color={'warning'}
-                          onClick={() => {
-                            window.location.pathname = '/minifauxton.html';
-                          }}
                           startIcon={<StorageIcon />}
+                          component={Link}
+                          to={ROUTES.POUCH_EXPLORER}
                         >
                           Open Raw Database Interface
                         </Button>

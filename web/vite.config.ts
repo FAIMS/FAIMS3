@@ -1,11 +1,17 @@
 import path from 'path';
-import react from '@vitejs/plugin-react';
-import {defineConfig, PluginOption} from 'vite';
-import {TanStackRouterVite} from '@tanstack/router-plugin/vite';
+import react from '@vitejs/plugin-react-swc';
+import {defineConfig} from 'vite';
+import {tanstackRouter} from '@tanstack/router-plugin/vite';
 
 export default defineConfig({
   // Just a hack to get this to typecheck - works fine??
-  plugins: [TanStackRouterVite() as PluginOption, react() as PluginOption],
+  plugins: [
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+    }),
+    react(),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -16,9 +22,20 @@ export default defineConfig({
     host: true,
     fs: {allow: ['..']},
   },
-  optimizeDeps: {include: ['designer']},
+  optimizeDeps: {
+    include: [
+      '@mui/material',
+      '@mui/icons-material',
+      '@emotion/react',
+      '@emotion/styled',
+      '@emotion/react/jsx-runtime',
+    ],
+    exclude: [],
+  },
   // Polyfill global in case of weird importing going on!
   define: {
     global: 'globalThis',
+    // Replace __APP_VERSION__ with package.json version at build time
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
 });

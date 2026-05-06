@@ -20,19 +20,24 @@
 
 import {
   Action,
+  ProjectStatus,
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
+  GetExportNotebookResponse,
+  getIdsByFieldName,
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getNotebookFieldTypes,
   getRecordListAudit,
   getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
+  PostDestroyNotebookInputSchema,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
   PostRecordStatusInputSchema,
@@ -45,34 +50,55 @@ import {
   PutUpdateNotebookResponse,
   removeProjectRole,
   Role,
+  slugify,
+  isPeopleUserAccountDisabled,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
+import {
+  CONDUCTOR_PUBLIC_URL,
+  DEVELOPER_MODE,
+  KEY_SERVICE,
+} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
-  changeNotebookStatus,
+  generateFilenameForAttachment,
+  streamNotebookFilesAsZip,
+} from '../couchdb/export/attachmentExport';
+import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
+import {
+  generateFullExportFilename,
+  streamFullExport,
+} from '../couchdb/export/fullExport';
+import {
+  streamNotebookRecordsAsGeoJSON,
+  streamNotebookRecordsAsKML,
+} from '../couchdb/export/geospatialExport';
+import {FullExportConfigSchema} from '../couchdb/export/types';
+import {deleteAllInvitesForProject} from '../couchdb/invites';
+import {
+  applyNotebookLifecycleStatus,
   changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
-  generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
   getProjectById,
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  streamNotebookFilesAsZip,
-  streamNotebookRecordsAsCSV,
   updateNotebook,
 } from '../couchdb/notebooks';
+import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
   getUsers,
@@ -85,13 +111,265 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {recordsRouter} from './records';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
 patch();
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
+
+function permissionRequiredForNotebookStatusChange(
+  current: ProjectStatus,
+  target: ProjectStatus
+): Action {
+  if (target === ProjectStatus.OPEN && current === ProjectStatus.ARCHIVED) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
+    );
+  }
+
+  if (current === target) {
+    return current === ProjectStatus.ARCHIVED
+      ? Action.CHANGE_PROJECT_ARCHIVE_STATUS
+      : Action.CHANGE_PROJECT_STATUS;
+  }
+
+  if (target === ProjectStatus.ARCHIVED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
+  }
+
+  if (current === ProjectStatus.ARCHIVED && target === ProjectStatus.CLOSED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
+  }
+
+  return Action.CHANGE_PROJECT_STATUS;
+}
+
+// =============================================================================
+// Types for download format and token payloads (must be before records router)
+// =============================================================================
+
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
+type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
+
+const DownloadTokenPayloadSchema = z.object({
+  projectID: z.string(),
+  format: DownloadFormatSchema,
+  viewID: z.string().optional(),
+  userID: z.string(),
+  // Full export config (only present when format === 'full')
+  fullConfig: FullExportConfigSchema.optional(),
+});
+type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+
+// Formats requiring a view ID
+const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
+
+// Download tokens last this long
+const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
+
+const generateDownloadToken = async ({
+  user,
+  payload,
+}: {
+  user: Express.User;
+  payload: DownloadTokenPayload;
+}) => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({
+      alg: signingKey.alg,
+      kid: signingKey.kid,
+    })
+    .setSubject(user.user_id)
+    .setIssuedAt()
+    .setIssuer(signingKey.instanceName)
+    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .sign(signingKey.privateKey);
+  return token;
+};
+
+const validateDownloadToken = async ({
+  token,
+}: {
+  token: string;
+}): Promise<DownloadTokenPayload | null> => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  try {
+    const result = await jwtVerify(token, signingKey.publicKey, {
+      algorithms: [signingKey.alg],
+      issuer: signingKey.instanceName,
+    });
+    return DownloadTokenPayloadSchema.parse(result.payload);
+  } catch {
+    console.log('invalid token');
+    return null;
+  }
+};
+
+// =============================================================================
+// Export Routes
+// =============================================================================
+
+/**
+ * Export record data.
+ *
+ * This route redirects to a new URL containing a signed JWT with download
+ * details. The JWT is then validated by the /download/:downloadToken route.
+ *
+ * Supported formats:
+ * - csv: Requires viewID, exports tabular data for a single view
+ * - zip: Optional viewID, exports attachments (all views if no viewID)
+ * - geojson: Exports all spatial data as GeoJSON
+ * - kml: Exports all spatial data as KML
+ * - full: Exports everything into a single ZIP archive
+ *
+ * For full exports, additional query parameters control what's included:
+ * - includeTabular (default: true)
+ * - includeAttachments (default: true)
+ * - includeGeoJSON (default: true)
+ * - includeKML (default: true)
+ * - includeMetadata (default: true)
+ */
+api.get(
+  '/:id/records/export',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    query: z.object({
+      viewID: z.string().optional(),
+      format: DownloadFormatSchema,
+      // Full export options
+      includeTabular: z.string().optional().default('true'),
+      includeAttachments: z.string().optional().default('true'),
+      includeGeoJSON: z.string().optional().default('true'),
+      includeKML: z.string().optional().default('true'),
+      includeMetadata: z.string().optional().default('true'),
+    }),
+    params: z.object({
+      id: z.string(),
+    }),
+  }),
+  async (req, res: Response<GetExportNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    const payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.query.format,
+      userID: req.user.user_id,
+    };
+
+    // Handle full export
+    if (req.query.format === 'full') {
+      // Build full config from query params (defaults to true if not specified)
+      payload.fullConfig = {
+        includeTabular: req.query.includeTabular === 'true',
+        includeAttachments: req.query.includeAttachments === 'true',
+        includeGeoJSON: req.query.includeGeoJSON === 'true',
+        includeKML: req.query.includeKML === 'true',
+        includeMetadata: req.query.includeMetadata === 'true',
+      };
+    } else if (
+      REQUIRES_VIEW_ID.includes(req.query.format) ||
+      req.query.viewID
+    ) {
+      // Existing viewID handling for CSV
+      if (!req.query.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          `The specified format ${req.query.format} requires a viewID to be included.`
+        );
+      }
+
+      // Validate the viewID exists
+      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+      if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${req.query.viewID} not found in notebook`
+        );
+      }
+
+      payload.viewID = req.query.viewID;
+    }
+
+    // Build the download token
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+
+    // Return the url explicitly - rather than a redirect. Hard to carefully
+    // handle the auto redirect while triggering export only once
+    return res.json({
+      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
+    });
+  }
+);
+
+/**
+ * Export record data (old route for CSV/ZIP with ViewID and Format in the param)
+ * @deprecated - use the new /export style route above - this is here for backwards compat
+ */
+api.get(
+  '/:id/records/:viewID.:format',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({
+      id: z.string(),
+      viewID: z.string(),
+      // don't allow geoJSON or full here - must use new route
+      // @deprecated
+      format: z.enum(['csv', 'zip']),
+    }),
+  }),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    // get the label for this form for the filename header
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+    // check the view ID is valid
+    if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.params.viewID} not found in notebook`
+      );
+    }
+
+    const payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.params.format,
+      userID: req.user.user_id,
+      viewID: req.params.viewID,
+    };
+
+    // Build the download token payload
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+    return res.redirect(`/api/notebooks/download/${jwt}`);
+  }
+);
+
+// Stateless CRUD API for record data (mount so :id = projectId)
+api.use('/:id/records', recordsRouter);
 
 /**
  * Gets a list of notebooks
@@ -99,13 +377,23 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetNotebookListResponse>) => {
-    // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
+    const includeArchived = req.query.includeArchived === 'true';
+    const notebooks = await getUserProjectsDetailed(
+      req.user,
+      req.query.teamId,
+      includeArchived
+    );
     res.json(notebooks);
   }
 );
@@ -187,6 +475,12 @@ api.post(
     if (isFromTemplate(req.body)) {
       // Now we use the template to get details needed to instantiate a new notebook
       const template = await getTemplate(req.body.template_id);
+
+      if (template.archived === true) {
+        throw new Exceptions.InvalidRequestException(
+          'Cannot create a notebook from an archived template.'
+        );
+      }
 
       // Pull out values needed to create a new notebook
       metadata = template.metadata;
@@ -303,24 +597,40 @@ api.put(
   }
 );
 
-// PUT change project status
+// PUT set notebook lifecycle status (open / closed / archived)
 api.put(
-  '/:projectId/status',
+  '/:id/status',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_STATUS,
-    getResourceId(req) {
-      return req.params.projectId;
-    },
-  }),
   processRequest({
-    params: z.object({projectId: z.string()}),
+    params: z.object({id: z.string()}),
     body: PutChangeNotebookStatusInputSchema,
   }),
-  async ({body: {status}, params: {projectId}}, res) => {
-    await changeNotebookStatus({projectId, status});
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {id} = req.params;
+    const {status: targetStatus} = req.body;
+    const project = await getProjectById(id);
+    const requiredAction = permissionRequiredForNotebookStatusChange(
+      project.status,
+      targetStatus
+    );
+
+    if (
+      !userCanDo({
+        user: req.user,
+        action: requiredAction,
+        resourceId: id,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+
+    await applyNotebookLifecycleStatus(project, targetStatus);
     res.sendStatus(200);
-    return;
   }
 );
 
@@ -418,20 +728,81 @@ api.get(
     });
     if (records) {
       const filenames: string[] = [];
+      const viewIdsNeedingFieldTypes = new Set(
+        records.filter(r => r.data && r.type).map(r => r.type)
+      );
+
+      const fieldTypesByViewId: Partial<
+        Record<string, ReturnType<typeof getNotebookFieldTypes>>
+      > = {};
+      for (const viewID of viewIdsNeedingFieldTypes) {
+        try {
+          fieldTypesByViewId[viewID] = getNotebookFieldTypes({
+            uiSpecification,
+            viewID,
+          });
+        } catch (e) {
+          console.error(
+            'Failed to get notebook field types for export',
+            viewID,
+            e
+          );
+        }
+      }
       // Process any file fields to give the file name in the zip download
-      records.forEach((record: any) => {
+      for (const record of records) {
+        if (record.data) {
+          const fields = fieldTypesByViewId[record.type];
+          if (fields) {
+            try {
+              const dataCopy = {...record.data};
+              await stripDeletedRelatedRefsFromRecordData({
+                fields,
+                data: dataCopy,
+                dataDb,
+                uiSpecification,
+              });
+              record.data = dataCopy;
+            } catch (e) {
+              console.error(
+                'Failed to strip deleted related record refs for export',
+                e
+              );
+            }
+          }
+        }
+        const exportData = record.data;
+        if (!exportData) {
+          continue;
+        }
         const hrid = record.hrid || record.record_id;
-        for (const fieldName in record.data) {
-          const values = record.data[fieldName];
+        for (const fieldName in exportData) {
+          const values = exportData[fieldName];
           if (values instanceof Array) {
             const names = values.map((v: any) => {
               if (v instanceof File) {
-                const filename = generateFilenameForAttachment(
-                  v,
-                  fieldName,
+                let viewID = record.type;
+                try {
+                  const viewsetId = getIdsByFieldName({
+                    fieldName,
+                    uiSpecification,
+                  }).viewSetId;
+                  viewID = viewsetId;
+                } catch (e) {
+                  console.error(
+                    'missing viewset for field',
+                    fieldName,
+                    'falling back to type'
+                  );
+                }
+                const filename = generateFilenameForAttachment({
+                  file: v,
+                  fieldId: fieldName,
                   hrid,
-                  filenames
-                );
+                  // The view ID is the viewset ID - which is the 'type'
+                  viewID,
+                  filenames,
+                });
                 filenames.push(filename);
                 return filename;
               } else {
@@ -439,11 +810,11 @@ api.get(
               }
             });
             if (names.length > 0) {
-              record.data[fieldName] = names;
+              exportData[fieldName] = names;
             }
           }
         }
-      });
+      }
       res.json({records});
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
@@ -451,139 +822,97 @@ api.get(
   }
 );
 
-// Types for download format and token payloads
-const DownloadFormatSchema = z.enum(['csv', 'zip']);
-const DownloadTokenPayloadSchema = z.object({
-  projectID: z.string(),
-  format: DownloadFormatSchema,
-  viewID: z.string(),
-  userID: z.string(),
-});
-type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
-
-// download tokens last this long
-const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
-
-const generateDownloadToken = async ({
-  user,
-  payload,
-}: {
-  user: Express.User;
-  payload: DownloadTokenPayload;
-}) => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({
-      alg: signingKey.alg,
-      kid: signingKey.kid,
-    })
-    .setSubject(user.user_id)
-    .setIssuedAt()
-    .setIssuer(signingKey.instanceName)
-    // Expiry in minutes
-    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
-    .sign(signingKey.privateKey);
-  return token;
-};
-
-const validateDownloadToken = async ({
-  token,
-}: {
-  token: string;
-}): Promise<DownloadTokenPayload | null> => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
-  try {
-    const result = await jwtVerify(token, signingKey.publicKey, {
-      algorithms: [signingKey.alg],
-      // verify issuer
-      issuer: signingKey.instanceName,
-    });
-    return DownloadTokenPayloadSchema.parse(result.payload);
-  } catch {
-    console.log('invalid token');
-    return null;
-  }
-};
-
-// Export record data.
-//
-// Export route redirects to a new URL containing a signed JWT containing
-// details of the download, that route is handled below to do the actual
-// download.
-api.get(
-  '/:id/records/:viewID.:format',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({
-      id: z.string(),
-      viewID: z.string(),
-      format: DownloadFormatSchema,
-    }),
-  }),
-  async (req, res) => {
-    if (req.user) {
-      // get the label for this form for the filename header
-      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-      if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-        const payload: DownloadTokenPayload = {
-          projectID: req.params.id,
-          format: req.params.format,
-          viewID: req.params.viewID,
-          userID: req.user.user_id,
-        };
-        const jwt = await generateDownloadToken({
-          user: req.user,
-          payload: payload,
-        });
-        return res.redirect(`/api/notebooks/download/${jwt}`);
-      } else {
-        throw new Exceptions.ItemNotFoundException(
-          `Form with id ${req.params.viewID} not found in notebook`
-        );
-      }
-    }
-  }
-);
-
+/**
+ * Download route - validates JWT and streams the appropriate export format.
+ *
+ * This route handles the actual file streaming for all export formats.
+ * The JWT contains all necessary information about what to export.
+ */
 api.get(
   '/download/:downloadToken',
   processRequest({params: z.object({downloadToken: z.string()})}),
   async (req, res) => {
+    // Validate payload
     const payload = await validateDownloadToken({
       token: req.params.downloadToken,
     });
-    if (payload) {
+
+    // If invalid/issue - throw
+    if (!payload) {
+      throw new Exceptions.InvalidRequestException(
+        'Cannot download without a valid downloadToken.'
+      );
+    }
+
+    // Depending on the format type - handle differently
+    let exportLabel = '';
+    if (REQUIRES_VIEW_ID.includes(payload.format) || payload.viewID) {
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
-      if (uiSpec && payload.viewID in uiSpec.viewsets) {
-        const label = uiSpec.viewsets[payload.viewID].label;
-        switch (payload.format) {
-          case 'csv':
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.csv"`
-            );
-            streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
-            break;
-          case 'zip':
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.zip"`
-            );
-            res.setHeader('Content-Type', 'application/zip');
-            streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
-        }
-      } else {
+      if (!payload.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          'Must provide viewID for this export format.'
+        );
+      }
+
+      if (!(uiSpec && payload.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
           `Form with id ${payload.viewID} not found in notebook`
         );
       }
+      exportLabel = uiSpec.viewsets[payload.viewID].label ?? payload.viewID;
+    } else {
+      exportLabel = slugify(payload.projectID);
+    }
+
+    if (payload.format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${exportLabel}-export.csv"`
+      );
+      streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
+    } else if (payload.format === 'zip') {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${exportLabel}-photos.zip"`
+      );
+      res.setHeader('Content-Type', 'application/zip');
+      streamNotebookFilesAsZip({
+        projectId: payload.projectID,
+        targetViewID: payload.viewID,
+        res,
+      });
+    } else if (payload.format === 'geojson') {
+      res.setHeader('Content-Type', 'application/geo+json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+      );
+      streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+    } else if (payload.format === 'kml') {
+      res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+      );
+      streamNotebookRecordsAsKML(payload.projectID, res);
+    } else if (payload.format === 'full') {
+      const fullFilename = generateFullExportFilename(payload.projectID);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fullFilename}"`
+      );
+      await streamFullExport({
+        projectId: payload.projectID,
+        userId: payload.userID,
+        config: payload.fullConfig,
+        res,
+      });
+    } else {
+      throw new Exceptions.InvalidRequestException(
+        `Unknown export format: ${payload.format}`
+      );
     }
   }
 );
@@ -599,7 +928,7 @@ api.get(
   }),
   processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
-    const users = await getUsers();
+    const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
     res.json({
       roles: allRoles,
@@ -667,6 +996,12 @@ api.post(
       );
     }
 
+    if (addRole && isPeopleUserAccountDisabled(user)) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot assign project roles to a disabled user account.'
+      );
+    }
+
     // Get the notebook metadata to modify
     const notebookMetadata = await getNotebookMetadata(req.params.id);
 
@@ -694,7 +1029,10 @@ api.post(
   }
 );
 
-/** Deletes a given notebook by ID */
+/**
+ * Permanently destroys survey server data (invites, people roles, Couch DBs).
+ * Requires archive first. Allowed for survey administrators (or operations staff).
+ */
 api.post(
   '/:notebookId/delete',
   requireAuthenticationAPI,
@@ -704,12 +1042,22 @@ api.post(
       return req.params.notebookId;
     },
   }),
-  processRequest({params: z.object({notebookId: z.string()})}),
+  processRequest({
+    params: z.object({notebookId: z.string()}),
+    body: PostDestroyNotebookInputSchema,
+  }),
   async (req, res) => {
-    // Delete the notebook
-    await deleteNotebook(req.params.notebookId);
-
-    // 200 OK indicating successful deletion
+    const {notebookId} = req.params;
+    const {confirmName} = req.body;
+    const project = await getProjectById(notebookId);
+    if (project.name.trim() !== confirmName.trim()) {
+      throw new Exceptions.InvalidRequestException(
+        'Confirmation name must match the survey name exactly.'
+      );
+    }
+    await deleteAllInvitesForProject(notebookId);
+    await stripProjectRolesForProjectId(notebookId);
+    await deleteNotebook(notebookId);
     res.status(200).end();
   }
 );

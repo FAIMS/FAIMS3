@@ -28,9 +28,9 @@ import {Plus} from 'lucide-react';
 export const ProjectFromTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplate(user, templateId);
+  const {data} = useGetTemplate({user, templateId});
   const [open, setOpen] = useState(false);
-  const archived = data?.metadata.project_status === 'archived';
+  const archived = data?.archived === true;
 
   return archived ? (
     <TooltipProvider>

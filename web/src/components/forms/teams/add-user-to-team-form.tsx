@@ -37,6 +37,7 @@ export function AddUserToTeamForm({
   const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {
     rolesAvailable.push(Role.TEAM_MEMBER);
+    rolesAvailable.push(Role.TEAM_MEMBER_CREATOR);
   }
   if (canAddManagerToTeam) {
     rolesAvailable.push(Role.TEAM_MANAGER);
@@ -57,8 +58,14 @@ export function AddUserToTeamForm({
       options: rolesAvailable.map(r => ({
         label: roleDetails[r].name,
         value: r,
+        description: roleDetails[r].description,
       })),
-      schema: z.enum(['TEAM_MEMBER', 'TEAM_MANAGER', 'TEAM_ADMIN']),
+      schema: z.enum([
+        Role.TEAM_MEMBER,
+        Role.TEAM_MEMBER_CREATOR,
+        Role.TEAM_MANAGER,
+        Role.TEAM_ADMIN,
+      ]),
     },
   ];
 
@@ -81,12 +88,14 @@ export function AddUserToTeamForm({
       user,
     });
 
-    if (!response.ok)
+    if (!response.ok) {
+      const responseBody = await response.json();
+      const message = responseBody.error.message || 'Error adding user to team';
       return {
         type: 'submit',
-        message:
-          'Error adding user to team! Are you sure the email is correct?',
+        message,
       };
+    }
 
     QueryClient.invalidateQueries({queryKey: ['teamusers', teamId]});
 

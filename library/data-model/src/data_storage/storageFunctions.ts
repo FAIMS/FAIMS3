@@ -15,6 +15,8 @@ import {getDataDB, shouldDisplayRecord} from '../callbacks';
 import {TokenContents} from '../permission/types';
 import {logError} from '../logging';
 import {
+  Annotations,
+  DatabaseInterface,
   DataDbType,
   FAIMSTypeName,
   ProjectDataObject,
@@ -26,7 +28,9 @@ import {
   RecordMetadata,
   RecordReference,
   RecordRevisionListing,
+  Relationship,
   Revision,
+  RevisionDbType,
   RevisionID,
   UnhydratedRecord,
 } from '../types';
@@ -218,12 +222,12 @@ export async function listFAIMSRecordRevisions({
 export async function listFAIMSProjectRevisions({
   dataDb,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
 }): Promise<ProjectRevisionListing> {
   try {
     // get all revision
     const result = await queryCouch<Revision>({
-      db: dataDb,
+      db: dataDb as RevisionDbType,
       index: REVISIONS_INDEX,
     });
     const revisionMap: ProjectRevisionListing = {};
@@ -784,17 +788,37 @@ export async function getMinimalRecordData({
   }
 }
 
+export interface HydratedDataRecord {
+  project_id: ProjectID;
+  record_id: string;
+  revision_id: string;
+  created_by: string;
+  updated: Date;
+  updated_by: string;
+  deleted: boolean;
+  hrid: string | null;
+  relationship: Relationship | undefined;
+  data: {[k: string]: any};
+  annotations: {[k: string]: Annotations};
+  types: {[k: string]: string};
+  created: Date;
+  conflicts: boolean;
+  type: string;
+}
+
 export const hydrateRecord = async ({
   projectId,
   dataDb,
   record,
   uiSpecification,
+  includeAttachments = true,
 }: {
   projectId: string;
   dataDb: DataDbType;
   record: RecordRevisionIndexDocument;
   uiSpecification: ProjectUIModel;
-}) => {
+  includeAttachments?: boolean;
+}): Promise<HydratedDataRecord> => {
   try {
     const hrid = await getHRID({
       dataDb,
@@ -804,6 +828,7 @@ export const hydrateRecord = async ({
     const formData: FormData = await getFormDataFromRevision({
       dataDb,
       revision: record.revision,
+      includeAttachments,
     });
     const result = {
       project_id: projectId,
@@ -846,7 +871,7 @@ export async function getSomeRecords(
   bookmark: string | null = null,
   filter_deleted = true
 ): Promise<RecordRevisionIndexDocument[]> {
-  const dataDB: PouchDB.Database<ProjectDataObject> | undefined =
+  const dataDB: DatabaseInterface<ProjectDataObject> | undefined =
     await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
@@ -896,12 +921,17 @@ export const notebookRecordIterator = async ({
   viewID,
   filterDeleted = true,
   uiSpecification,
+  includeAttachments = true,
   dataDb,
 }: {
   projectId: string;
   dataDb: DataDbType;
-  viewID: string;
+  viewID?: string;
   filterDeleted?: boolean;
+  // Do not recommend including attachments since this incurs a lot of memory
+  // overhead - these are buffered as File like objects straight into the
+  // response. Use the nano couchdb node client to use attachment.getAsStream
+  includeAttachments?: boolean;
   uiSpecification: ProjectUIModel;
 }) => {
   const batchSize = 20;
@@ -913,9 +943,11 @@ export const notebookRecordIterator = async ({
       filterDeleted
     );
     // select just those in this view
-    const result = records.filter((record: any) => {
-      return record.type === viewID;
-    });
+    const result = viewID
+      ? records.filter((record: any) => {
+          return record.type === viewID;
+        })
+      : records;
     if (records.length > 0 && result.length === 0) {
       // skip to next batch since none of these match our view
       const newBookmark = records[records.length - 1].record_id;
@@ -959,6 +991,7 @@ export const notebookRecordIterator = async ({
             record,
             uiSpecification,
             dataDb,
+            includeAttachments,
           });
           // clear the record to help GC
           record = null;

@@ -12,4 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/** Vite client types (`import.meta.env`, asset imports) for the designer package. */
 /// <reference types="vite/client" />

@@ -2,12 +2,20 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {z} from 'zod';
 
+/** Monitoring configuration */
+const BugMonitoringConfigurationSchema = z.object({
+  /** To enable BugSnag - include API key here */
+  bugsnagKey: z.string().min(1).optional(),
+});
+
 /** Configuration for the maps/offline maps */
 const OfflineMapsConfigSchema = z.object({
   /** Map source provider ('osm', 'maptiler', or empty string) */
   mapSource: z.enum(['osm', 'maptiler']).default('maptiler'),
   /** API key for the map tile service (e.g., maptiler) */
   mapSourceKey: z.string().optional(),
+  /** The source of satellite layers (if enabled) */
+  satelliteSource: z.enum(['esri', 'maptiler']).optional(),
   /** Enable offline map downloads. Note that some services, notably OSM, don't
    * allow map tile downloads */
   offlineMaps: z.boolean(),
@@ -18,13 +26,251 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
-const SocialProvidersConfigSchema = z.object({
-  google: z
-    .object({
-      secretArn: z.string(),
-    })
-    .optional(),
+/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
+ * require the corresponding API key. */
+const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
+
+/** Configuration for address autosuggest in the app (KEY_SOURCE-style
+ * dispatch). */
+const AddressAutosuggestConfigSchema = z
+  .object({
+    /** Source for address autosuggest. NONE disables; MAPBOX requires
+     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
+     * mapSource is maptiler). */
+    source: AddressAutosuggestSourceSchema.default('NONE'),
+    /** Mapbox access token (required when source is MAPBOX). */
+    mapboxKey: z.string().min(1).optional(),
+    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
+    mapboxAddressCountry: z.string().optional(),
+    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
+     * mapSource is maptiler and mapSourceKey is set—then that key is used.
+     * Provide this when you want a separate key for autosuggest than for map
+     * tiles. */
+    maptilerKey: z.string().min(1).optional(),
+    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
+    maptilerAddressCountry: z.string().optional(),
+  })
+  .refine(
+    data => {
+      if (data.source === 'MAPBOX') return !!data.mapboxKey;
+      return true;
+    },
+    {
+      message: 'When source is MAPBOX, mapboxKey is required.',
+    }
+  );
+
+// For each provider we should have these secrets in the secrets manager
+// const AuthProviderSecretSchema = z.object({
+//   clientID: z.string(),
+//   clientSecret: z.string(),
+// });
+
+const BaseAuthProviderConfigSchema = z.object({
+  index: z.number().optional(), // order for display in UI
+  type: z.string(),
+  displayName: z.string(),
+  helperText: z.string().optional(),
+  scope: z.string(),
+  /** HTTP methods accepted for the auth callback. Default: ['GET'] */
+  callbackMethods: z
+    .array(z.enum(['GET', 'POST']))
+    .optional()
+    .default(['GET'])
+    .describe('HTTP methods accepted for the auth return callback'),
 });
+
+const GoogleAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
+  type: z.literal('google'),
+});
+
+const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
+  type: z.literal('oidc'),
+  issuer: z.string(),
+  authorizationURL: z.string(),
+  tokenURL: z.string(),
+  userInfoURL: z.string(),
+});
+
+/**
+ * This is in-depth configuration for SAML
+ *
+ * Note these will be passed through almost 1:1 to the passport-saml
+ * configuration.
+ *
+ * NOTE:
+ *
+ * This excludes your SP keypair (Service Provider signing keys).
+ *
+ * privateKey: include this in your secrets as provider-privateKey
+ * publicKey: include this in your secrets as provider-publicKey
+ *
+ * The idpPublicKey (Identity Provider's certificate) can be included here
+ * or in secrets as provider-idpPublicKey.
+ *
+ * See https://www.passportjs.org/packages/passport-saml/ for details.
+ */
+const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
+  // Discrimination field
+  type: z.literal('saml'),
+  // Override default callback method to just POST
+  callbackMethods: z
+    .array(z.enum(['GET', 'POST']))
+    .optional()
+    .default(['POST'])
+    .describe('HTTP methods accepted for the auth return callback'),
+  // Required fields
+  entryPoint: z
+    .string()
+    .describe('IdP SSO URL - where to send authentication requests'),
+  issuer: z
+    .string()
+    .describe(
+      'Service Provider entity ID - identifies your application to the IdP'
+    ),
+  // Callback configuration (at least one needed)
+  callbackURL: z
+    .string()
+    .optional()
+    .describe(
+      'Full callback URL (overrides path/protocol/host if provided) - RECOMMEND using the default callback generated by the auth routes. This allows overriding it.'
+    ),
+  path: z
+    .string()
+    .optional()
+    .default('/saml/callback')
+    .describe('Callback path if callbackURL not specified'),
+  authnRequestBinding: z
+    .enum(['HTTP-Redirect', 'HTTP-POST'])
+    .optional()
+    .default('HTTP-POST')
+    .describe(
+      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
+    ),
+  skipRequestCompression: z
+    .boolean()
+    .optional()
+    .describe(
+      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
+    ),
+  // If you want the metadata document signed using your PK
+  signMetadata: z.boolean().optional().default(false),
+  // IdP certificate for verifying signatures (can also be in secrets)
+  idpPublicKey: z
+    .string()
+    .optional()
+    .describe('IdP public certificate for verifying signatures (PEM format)'),
+  // SP signing/decryption behavior
+  enableDecryptionPvk: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      'Use the SP private key to decrypt IdP assertions. Default True.'
+    ),
+  // Signature configuration
+  signatureAlgorithm: z
+    .enum(['sha1', 'sha256', 'sha512'])
+    .optional()
+    .default('sha256'),
+  digestAlgorithm: z
+    .enum(['sha1', 'sha256', 'sha512'])
+    .optional()
+    .default('sha256')
+    .describe(
+      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
+    ),
+  wantAssertionsSigned: z.boolean().optional().default(true),
+  // SAML behavior options
+  identifierFormat: z
+    .string()
+    .optional()
+    .describe('NameID format to request from IdP'),
+  authnContext: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .describe('Authentication context class(es) to request'),
+  disableRequestedAuthnContext: z
+    .boolean()
+    .optional()
+    .describe('Set true for ADFS compatibility'),
+  forceAuthn: z
+    .boolean()
+    .optional()
+    .describe('Force re-authentication even with valid session'),
+  // Validation options
+  acceptedClockSkewMs: z
+    .number()
+    .optional()
+    .default(0)
+    .describe(
+      'Allowed clock skew in ms for NotBefore/NotOnOrAfter (-1 to disable)'
+    ),
+  maxAssertionAgeMs: z
+    .number()
+    .optional()
+    .describe('Max age of assertions in ms'),
+  validateInResponseTo: z
+    .boolean()
+    .optional()
+    .describe('Validate InResponseTo to prevent replay attacks'),
+  requestIdExpirationPeriodMs: z
+    .number()
+    .optional()
+    .default(28800000)
+    .describe('How long request IDs are valid (default 8 hours)'),
+  // Logout
+  logoutURL: z
+    .string()
+    .optional()
+    .describe('IdP logout URL (defaults to entryPoint)'),
+  logoutCallbackURL: z.string().optional().describe('SP logout callback URL'),
+  // IdP validation
+  idpIssuer: z
+    .string()
+    .optional()
+    .describe('Expected IdP issuer for logout validation'),
+  audience: z.string().optional().describe('Expected SAML response Audience'),
+  metadataErrorURL: z
+    .string()
+    .optional()
+    .describe(
+      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
+    ),
+  ssoErrorPageTitle: z.string().optional(),
+  ssoErrorPageHeading: z.string().optional(),
+  ssoErrorPageLead: z.string().optional(),
+  ssoErrorPageDetailMarkdown: z.string().optional(),
+  ssoErrorPageReturnURL: z.string().optional(),
+  ssoErrorPageReturnLabel: z.string().optional(),
+});
+
+const AuthProvidersConfigSchema = z
+  .object({
+    disableLocalLogin: z.boolean().optional().default(false),
+    providers: z.array(z.string()),
+    secretArn: z.string(),
+    config: z.record(
+      z.discriminatedUnion('type', [
+        GoogleAuthProviderConfigSchema,
+        OIDCAuthProviderConfigSchema,
+        SAMLAuthProviderConfigSchema,
+      ])
+    ),
+  })
+  .refine(
+    data => {
+      // Ensure all providers listed in 'providers' have a corresponding config
+      return data.providers.every(provider => provider in data.config);
+    },
+    {
+      message: 'All providers must have a corresponding configuration entry',
+    }
+  );
+
+export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
 
 const SMTPConfigSchema = z.object({
   /** Email service type (SMTP or MOCK) */
@@ -144,11 +390,15 @@ const DomainsConfigSchema = z.object({
   faims: z.string().default('faims'),
   /** New conductor/web deployment subdomain */
   web: z.string().default('web'),
+  /** The subdomain prefix for the documentation site (user docs, built with Sphinx) */
+  docs: z.string().default('docs'),
 });
 
 const ConductorConfigSchema = z.object({
   /** The title for this conductor instance, shown on listings page */
   name: z.string(),
+  /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
+  enhancedObservability: z.boolean().optional(),
   /** The description shown underneath as a sub heading */
   description: z.string(),
   /** Conductor docker image e.g. org/faims3-api */
@@ -157,12 +407,18 @@ const ConductorConfigSchema = z.object({
   conductorDockerImageTag: z.string().default('latest'),
   /** The prefix to use for the short codes in the app */
   shortCodePrefix: z.string().default('FAIMS'),
+  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+  provisionSSOUsersPolicy: z
+    .enum(['own-team', 'general-user', 'reject'])
+    .default('reject'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
   memory: z.number().int().positive(),
   /** Auto scaling configuration for the Conductor service */
   autoScaling: z.object({
+    /** The desired number of tasks to run (general stable target) */
+    desiredCapacity: z.number().int().positive(),
     /** The minimum number of tasks to run */
     minCapacity: z.number().int().positive(),
     /** The maximum number of tasks that can be run */
@@ -181,7 +437,12 @@ const ConductorConfigSchema = z.object({
   localhostWhitelist: z.boolean().default(false),
 });
 
-const WebConfigSchema = z.object({});
+const WebConfigSchema = z.object({
+  title: z.string().default('Control Centre'),
+});
+
+/** Documentation site (Sphinx user docs) configuration */
+const DocsConfigSchema = z.object({});
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -218,24 +479,55 @@ const AppSupportLinksSchema = z.object({
   privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
   /** The URL for the contact page */
   contactUrl: z.string().url().default(''),
+  /** Documentation website URL */
+  docsUrl: z.string().url().optional(),
 });
 
-export const UiConfiguration = z.object({
-  /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
-  /** The notebook list type for the app */
-  notebookListType: z.enum(['tabs', 'headings']),
-  /** The display name for notebooks e.g. survey, notebook */
-  notebookName: z.string(),
-  /** The name of the App in app store etc - heading by default */
-  appName: z.string(),
-  /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
-  appId: z.string(),
-  /** Override the heading text in banner */
-  headingAppName: z.string().optional(),
-  /** Offline maps settings */
-  offlineMaps: OfflineMapsConfigSchema,
-});
+export const UiConfiguration = z
+  .object({
+    /** The UI Theme for the app */
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
+    /** The notebook list type for the app */
+    notebookListType: z.enum(['tabs', 'headings']),
+    /** The display name for notebooks e.g. survey, notebook */
+    notebookName: z.string(),
+    /** The name of the App in app store etc - heading by default */
+    appName: z.string(),
+    /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
+    appId: z.string(),
+    /** Override the heading text in banner */
+    headingAppName: z.string().optional(),
+    /** Offline maps settings */
+    offlineMaps: OfflineMapsConfigSchema,
+    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
+    addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
+      source: 'NONE',
+    }),
+    /**
+     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
+     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
+     */
+    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
+    /**
+     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
+     */
+    deleteOnDeactivation: z.boolean().optional(),
+  })
+  .refine(
+    data => {
+      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
+      if (data.addressAutosuggest.maptilerKey?.trim()) return true;
+      return (
+        data.offlineMaps.mapSource === 'maptiler' &&
+        !!data.offlineMaps.mapSourceKey?.trim()
+      );
+    },
+    {
+      message:
+        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
+    }
+  );
 
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
@@ -291,14 +583,18 @@ export const ConfigSchema = z.object({
   }),
   /** The new-conductor / web config */
   web: WebConfigSchema,
+  /** Documentation site config (Sphinx user docs) */
+  docs: DocsConfigSchema.optional().default({}),
   /** Email service configuration */
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
-  socialProviders: SocialProvidersConfigSchema.optional(),
+  authProviders: AuthProvidersConfigSchema.optional(),
   /** Security parameters */
   security: SecurityConfigSchema.optional().default({
     maximumLongLivedTokenDurationDays: 90,
   }),
+  /** Bugsnag/monitoring */
+  bugMonitoring: BugMonitoringConfigurationSchema,
 });
 
 // Infer the types from the schemas
@@ -306,10 +602,16 @@ export type Config = z.infer<typeof ConfigSchema>;
 export type CouchConfig = z.infer<typeof CouchConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
+export type BugMonitoringConfiguration = z.infer<
+  typeof BugMonitoringConfigurationSchema
+>;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
+export type AddressAutosuggestConfig = z.infer<
+  typeof AddressAutosuggestConfigSchema
+>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config

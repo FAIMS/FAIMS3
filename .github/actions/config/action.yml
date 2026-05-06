@@ -1,25 +1,25 @@
-name: "FAIMS Config"
-description: "Pull FAIMS configuration into CDK context and output AWS details. Requires an already cloned github repo!"
+name: 'FAIMS Config'
+description: 'Pull FAIMS configuration into CDK context and output AWS details. Requires an already cloned github repo!'
 inputs:
   environment:
-    description: "The deployment environment (e.g., dev, staging, production)"
+    description: 'The deployment environment (e.g., dev, staging, production)'
     required: true
   config-repo-path:
-    description: "Path to the cloned config repository relative to the GitHub workspace"
+    description: 'Path to the cloned config repository relative to the GitHub workspace'
     required: true
   branch:
-    description: "Branch to use in the config repository"
+    description: 'Branch to use in the config repository'
     required: true
-    default: "main"
+    default: 'main'
 outputs:
   aws-region:
-    description: "AWS region from the config"
+    description: 'AWS region from the config'
     value: ${{ steps.parse-config.outputs.aws-region }}
   aws-account:
-    description: "AWS account ID from the config"
+    description: 'AWS account ID from the config'
     value: ${{ steps.parse-config.outputs.aws-account }}
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Run config script
       shell: bash

@@ -33,7 +33,7 @@ details following the workflow prompts.
 #### Build the App and Sync Android Project:
 
 ```bash
-npm run build
+pnpm run build
 cd app
 npx cap sync android
 npx cap open android
@@ -179,7 +179,7 @@ Workflow `nightly-android-testbuild.yml` does a nightly build and deploy to the 
 Here are the initial setup steps, others are described in more detail below.
 
 - **Checkout**: Checkout the latest version of the code.
-- **Cache Node Modules**: Sets up and/or restores a cache of node modules to speed up npm install
+- **Cache Node Modules**: Sets up and/or restores a cache of node modules to speed up pnpm install
 - **Configure Turborepo Remote Cache**
   Configures a turborepo build cache so that previous builds can be used if there
   are no changes.
@@ -210,7 +210,7 @@ This is the standard build step with the environment settings copied in from
 Github variables or secrets and in some cases hard coded for production build
 values.
 
-Runs `npm run build` and then copies the build to android (`npm run app-update android`)
+Runs `pnpm run build` and then copies the build to android (`pnpm run app-update android`)
 
 ### Run Fastlane
 

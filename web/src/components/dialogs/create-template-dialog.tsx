@@ -27,7 +27,7 @@ export const CreateTemplateDialog = ({
     return <ErrorComponent error="Unauthenticated" />;
   }
 
-  const {data: team} = useGetTeam(user, specifiedTeam);
+  const {data: team} = useGetTeam({user, teamId: specifiedTeam});
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

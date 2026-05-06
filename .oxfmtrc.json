@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "es5",
+  "bracketSpacing": false,
+  "arrowParens": "avoid",
+  "objectWrap": "preserve",
+  "printWidth": 80,
+  "ignorePatterns": [
+    "node_modules/**",
+    ".git/**",
+    ".turbo/**",
+    "build/**",
+    "dist/**",
+    "**/build/**",
+    "**/*gen.ts",
+    "**/dist/**",
+    "**/cdk.out/**",
+    "**/coverage/**",
+    "app/android/**",
+    "app/ios/**",
+    "**/*.min.js",
+    "**/*.handlebars"
+  ]
+}

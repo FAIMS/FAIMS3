@@ -23,7 +23,6 @@ import {AuthContext} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {AuthProvider} from '../buildconfig';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
 import {DEFAULT_REDIRECT_URL} from './authRoutes';
@@ -32,10 +31,11 @@ import {
   providersToRenderDetails,
   validateRedirect,
 } from './helpers';
-
 import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
+import {RegisteredAuthProviders} from './strategies/applyStrategies';
+import {LOCAL_LOGIN_ENABLED} from '../buildconfig';
 
 // This must occur before express app is used
 patch();
@@ -49,7 +49,10 @@ patch();
  * @param app Express router
  * @param socialProviders an array of login provider identifiers
  */
-export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
+export function addAuthPages(
+  app: Router,
+  socialProviders: RegisteredAuthProviders | null
+) {
   // PAGES
   // =====
 
@@ -84,6 +87,8 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         action,
       });
 
+      const messages = req.flash();
+
       return res.render('login', {
         providers: providers.length > 0 ? providers : undefined,
         // Where should the POST endpoint be for the local login form?
@@ -93,9 +98,9 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
           inviteId: inviteId,
           redirect: redirect,
         } satisfies AuthContext,
-        localAuth: true,
+        localAuth: LOCAL_LOGIN_ENABLED,
         redirect,
-        messages: req.flash(),
+        messages: messages,
       });
     }
   );
@@ -166,7 +171,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
           inviteId,
           action: 'register',
         } satisfies AuthContext,
-        localAuth: true,
+        localAuth: LOCAL_LOGIN_ENABLED,
         messages: req.flash(),
       });
     }
@@ -212,7 +217,9 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
 
   /*
    * PAGE: Email verification landing page
-   * This renders a view showing the result of the email verification process
+   * GET with code: shows a confirmation step (do not verify yet - avoids email
+   * scanners consuming the code). User must click "Verify" to submit.
+   * POST: performs verification and shows success or error.
    */
   app.get(
     '/verify-email',
@@ -240,17 +247,45 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         req.flash('error', 'No verification code was provided.');
         return res.render('verify-email', {
           success: false,
+          pending: false,
           redirect,
           messages: req.flash(),
         });
       }
 
-      // Call the shared verification function
+      // Show confirmation step only; do not verify yet (user must click button)
+      return res.render('verify-email', {
+        pending: true,
+        code,
+        redirect: valid ? redirect : DEFAULT_REDIRECT_URL,
+      });
+    }
+  );
+
+  app.post(
+    '/verify-email',
+    processRequest({
+      body: z.object({
+        code: z.string(),
+        redirect: z.string().optional(),
+      }),
+    }),
+    async (req, res) => {
+      const {code, redirect: redirectParam} = req.body;
+      const {valid, redirect} = validateRedirect(
+        redirectParam || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
       const result = await verifyEmailWithCode({code});
 
       if (!result.success) {
         return res.render('verify-email', {
           success: false,
+          pending: false,
           redirect,
           messages: {
             error:
@@ -260,11 +295,11 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         });
       }
 
-      // Verification successful
       return res.render('verify-email', {
         success: true,
+        pending: false,
         email: result.email,
-        redirect: valid ? redirect : DEFAULT_REDIRECT_URL,
+        redirect,
       });
     }
   );
@@ -280,7 +315,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         redirect: z.string().optional(),
       }),
     }),
-    (req, res) => {
+    async (req, res) => {
       const {valid, redirect} = validateRedirect(
         req.query.redirect || DEFAULT_REDIRECT_URL
       );

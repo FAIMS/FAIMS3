@@ -5,12 +5,17 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 import {DBCallbackObject, getDataDB} from '../src';
 import {
-  initDataDB,
   couchInitialiser,
   generateFAIMSDataID,
+  initDataDB,
   upsertFAIMSData,
 } from '../src/data_storage';
-import {ProjectID, ProjectUIModel, Record} from '../src/types';
+import {
+  DatabaseInterface,
+  ProjectID,
+  ProjectUIModel,
+  Record,
+} from '../src/types';
 
 const databaseList: any = {};
 
@@ -41,7 +46,7 @@ const mockShouldDisplayRecord = async () => {
 };
 
 export const cleanDataDBS = async () => {
-  let db: PouchDB.Database;
+  let db: DatabaseInterface;
   for (const name in databaseList) {
     db = databaseList[name];
     delete databaseList[name];

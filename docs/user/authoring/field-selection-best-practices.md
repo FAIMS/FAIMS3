@@ -36,7 +36,7 @@ Every record includes metadata that records:
 - for every subsequent edit, the time and person responsible for the change
 
 This means that you don't need to include fields in your form for the person recording
-the data or the time that they are doing it.  You may want to use a _Date Time Now_
+the data or the time that they are doing it. You may want to use a _Date Time Now_
 field to allow recording of times during data entry (eg. start of recording, end of recording).
 
 You can also automatically collect:
@@ -157,7 +157,7 @@ The number of options and selection constraints guide choice:
 - 2 options → Checkbox (if binary) or RadioGroup (if strings needed)
 - 3–7 options → RadioGroup (all visible)
 - 8–20 options → Select dropdown
-- >20 options OR hierarchical → AdvancedSelect
+- > 20 options OR hierarchical → AdvancedSelect
 
 **Multiple Selection:**
 
@@ -236,7 +236,7 @@ The system exhibits performance degradation with extensive relationships:
 - <50 relationships: Optimal performance
 - 50–100 relationships: Noticeable lag
 - 100–200 relationships: Significant delays
-- >200 relationships: Effectively unusable
+- > 200 relationships: Effectively unusable
 
 **Mitigation Strategies:**
 

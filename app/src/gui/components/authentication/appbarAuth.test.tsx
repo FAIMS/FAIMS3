@@ -16,7 +16,7 @@
  * Filename: appbarAuth.test.tsx
  */
 
-import {TestWrapper} from '../../fields/utils';
+import {TestWrapper} from '../../testUtils';
 import {render, screen} from '@testing-library/react';
 import AppBarAuth from './appbarAuth';
 import {describe, expect, it} from 'vitest';

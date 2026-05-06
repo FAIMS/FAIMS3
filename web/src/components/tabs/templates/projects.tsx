@@ -14,7 +14,7 @@ import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-templ
  */
 const TemplateProjects = ({templateId}: {templateId: string}) => {
   const {user} = useAuth();
-  const {isPending, data} = useGetProjects(user);
+  const {isPending, data} = useGetProjects({user});
   const navigate = useNavigate();
 
   return (

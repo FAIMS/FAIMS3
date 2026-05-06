@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Section header UI: rename, condition, reorder, duplicate, delete warnings.
+ */
+
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
@@ -39,12 +43,13 @@ import {
 } from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {sectionDuplicated} from '../state/uiSpec-reducer';
+import {sectionDuplicated} from '../store/slices/uiSpec';
+import {sectionConditionChanged, sectionRenamed} from '../store/slices/uiSpec';
 
 import {ConditionModal} from './condition/ConditionModal';
 import {ConditionTranslation} from './condition/ConditionTranslation';
 import {findSectionExternalUsage} from './condition/utils';
-import {ConditionType} from './condition/types';
+import {ConditionType} from '../types/condition';
 
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
@@ -73,6 +78,7 @@ type Props = {
   moveFieldCallback: (targetViewId: string) => void;
 };
 
+/** One section (`fview`): title, condition, duplicate/move/delete, and {@link FieldList}. */
 export const SectionEditor = ({
   viewSetId,
   viewId,
@@ -211,10 +217,7 @@ export const SectionEditor = ({
   };
 
   const updateSectionLabel = (label: string) => {
-    dispatch({
-      type: 'ui-specification/sectionRenamed',
-      payload: {viewId, label},
-    });
+    dispatch(sectionRenamed({viewId, label}));
   };
 
   const addNewSection = () => {
@@ -238,10 +241,7 @@ export const SectionEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    dispatch({
-      type: 'ui-specification/sectionConditionChanged',
-      payload: {viewId, condition},
-    });
+    dispatch(sectionConditionChanged({viewId, condition}));
   };
 
   const duplicateSection = () => {

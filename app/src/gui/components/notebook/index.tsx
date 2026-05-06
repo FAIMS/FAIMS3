@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import {Action, ProjectStatus} from '@faims3/data-model';
+import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
 import {
   Alert,
   AlertTitle,
@@ -14,46 +14,46 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  DEBUG_APP,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {getVisibleTypes} from '../../../uiSpecification';
+import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
-  useDraftsList,
   useIsAuthorisedTo,
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
+import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
-import {DraftsTable} from './draft_table';
 import {MetadataDisplayComponent} from './MetadataDisplay';
-import {OverviewMap} from './overview_map';
+import {OverviewMap} from './OverviewMap';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {selectActiveUser} from '../../../context/slices/authSlice';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
   | 'my_records'
-  | 'drafts'
   | 'other_records'
   | 'details'
   | 'settings'
   | 'map';
-type TabIndex = 0 | 1 | 2 | 3 | 4 | 5;
+type TabIndex = 0 | 1 | 2 | 3 | 4;
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
-  ['drafts', 1],
-  ['other_records', 2],
-  ['details', 3],
-  ['settings', 4],
-  ['map', 5],
+  ['other_records', 1],
+  ['details', 2],
+  ['settings', 3],
+  ['map', 4],
 ]);
 const INDEX_TO_TAB = new Map<TabIndex, TabIndexLabel>(
   Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
@@ -183,22 +183,15 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
+    // Profiling enabled when debugging
+    enableProfiling: DEBUG_APP,
     projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     metadataRefreshIntervalMs: 10000,
-    // rehydrate every 2 minutes (local only fetch - no network traffic here)
-    hydrationRefreshIntervalMs: 120000,
     uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.initialQuery.refetch;
-
-  // Fetch drafts
-  const drafts = useDraftsList({
-    projectId: project.projectId,
-    filter: 'all',
-  });
-  const forceDraftRefresh = drafts.refetch;
 
   const viewsets = uiSpecification.viewsets;
 
@@ -246,9 +239,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
       {project.status === ProjectStatus.CLOSED && (
         <Alert variant="standard" severity="warning" sx={{mb: 1}}>
           <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
-          This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
-          uploaded, but no additional data can be collected. It is recommended
-          to deactivate this {NOTEBOOK_NAME} in the settings tab below.
+          Ensure your records have a green sync status and then{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} via the settings
+          tab. No additional data can be collected for this {NOTEBOOK_NAME}.
         </Alert>
       )}
       <Box>
@@ -327,29 +320,21 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
-              {(tabIndex === 1 || (drafts.data?.length ?? 0) > 0) && (
+              {(tabIndex === 1 || visibleOtherRecords.length > 0) && (
                 <Tab
                   value={1}
-                  label={`Drafts (${drafts.data?.length ?? 0})`}
-                  {...a11yProps(1, `${NOTEBOOK_NAME}-drafts`)}
-                />
-              )}
-
-              {(tabIndex === 2 || visibleOtherRecords.length > 0) && (
-                <Tab
-                  value={2}
                   label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
                   {...a11yProps(2, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}
 
+              <Tab value={2} label="Map" {...a11yProps(2, NOTEBOOK_NAME)} />
               <Tab value={3} label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
               <Tab
                 value={4}
                 label="Settings"
                 {...a11yProps(4, NOTEBOOK_NAME)}
               />
-              <Tab value={5} label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
             </Tabs>
           </AppBar>
         </Box>
@@ -371,25 +356,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           />
         </TabPanel>
         {
-          // Drafts
-        }
-
-        <TabPanel value={tabIndex} index={1} id={'record-drafts'}>
-          <DraftsTable
-            project_id={project.projectId}
-            serverId={project.serverId}
-            maxRows={25}
-            rows={drafts.data ?? []}
-            loading={drafts.isLoading}
-            viewsets={viewsets}
-            handleRefresh={forceDraftRefresh}
-          />
-        </TabPanel>
-        {
           // Other records
         }
 
-        <TabPanel value={tabIndex} index={2} id={'records-all'}>
+        <TabPanel value={tabIndex} index={1} id={'records-all'}>
           <RecordsTable
             project={project}
             maxRows={25}
@@ -403,6 +373,17 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           />
         </TabPanel>
 
+        <TabPanel value={tabIndex} index={2} id={'map'}>
+          {uiSpecification !== null && (
+            <OverviewMap
+              serverId={project.serverId}
+              records={records}
+              project_id={project.projectId}
+              uiSpec={uiSpecification}
+            />
+          )}
+        </TabPanel>
+
         <TabPanel value={tabIndex} index={3} id={'details'}>
           <MetadataDisplayComponent
             handleTabChange={(index: number) => setTabIndex(index as TabIndex)}
@@ -413,17 +394,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
         <TabPanel value={tabIndex} index={4} id={'settings'}>
           <NotebookSettings uiSpec={uiSpecification} />
-        </TabPanel>
-
-        <TabPanel value={tabIndex} index={5} id={'map'}>
-          {uiSpecification !== null && (
-            <OverviewMap
-              serverId={project.serverId}
-              records={records}
-              project_id={project.projectId}
-              uiSpec={uiSpecification}
-            />
-          )}
         </TabPanel>
       </Box>
     </Box>

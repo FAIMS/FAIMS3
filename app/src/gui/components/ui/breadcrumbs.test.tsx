@@ -31,17 +31,19 @@ const testData1 = [{title: 'Workspace'}];
 const testData2 = [{title: 'Workspace'}, {title: NOTEBOOK_NAME_CAPITALIZED}];
 
 // Can only check this if breadcrumbs are enabled
-if (NAVIGATION_STYLE === 'breadcrumbs') {
-  describe('Check breadcrumbs component', () => {
-    it('Check with one element in array', async () => {
+describe('Check breadcrumbs component', () => {
+  it('Check with one element in array', async () => {
+    if (NAVIGATION_STYLE === 'breadcrumbs') {
       render(
         <Router>
           <Breadcrumbs data={testData1} />
         </Router>
       );
       expect(screen.getByText(testData1[0].title)).toBeTruthy();
-    });
-    it('Check with two elements in array', async () => {
+    }
+  });
+  it('Check with two elements in array', async () => {
+    if (NAVIGATION_STYLE === 'breadcrumbs') {
       render(
         <Router>
           <Breadcrumbs data={testData2} />
@@ -50,6 +52,6 @@ if (NAVIGATION_STYLE === 'breadcrumbs') {
       expect(screen.getByText(testData2[0].title)).toBeTruthy();
 
       expect(screen.getByText(testData2[1].title)).toBeTruthy();
-    });
+    }
   });
-}
+});

@@ -4,11 +4,7 @@
     "schema_version": "1.0",
     "name": "Protection Test Template (Derived)",
     "derived-from": "Protection-Test-Template",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "filenames": [],
     "ispublic": false,
     "isrequest": false,
@@ -35,11 +31,7 @@
           },
           "name": "Field-with-No-Protection"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -76,11 +68,7 @@
           "helperText": "Make sure you choose the right one!",
           "protection": "allow-hiding"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -108,11 +96,7 @@
           "geoTiff": "",
           "protection": "protected"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -137,11 +121,7 @@
           "type": "checkbox",
           "helperText": "Checkbox help."
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
           "annotation": {
@@ -167,11 +147,7 @@
           "helperText": "Checkbox help.",
           "protection": "allow-hiding"
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
           "annotation": {
@@ -197,11 +173,7 @@
           "helperText": "Checkbox help.",
           "protection": "protected"
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
           "annotation": {
@@ -231,13 +203,9 @@
     "viewsets": {
       "New-Form": {
         "label": "Protection Test",
-        "views": [
-          "New-Form-New-Section"
-        ]
+        "views": ["New-Form-New-Section"]
       }
     },
-    "visible_types": [
-      "New-Form"
-    ]
+    "visible_types": ["New-Form"]
   }
 }

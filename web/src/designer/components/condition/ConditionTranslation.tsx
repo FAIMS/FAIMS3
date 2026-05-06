@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Read-only natural-language rendering of a condition tree.
+ */
+
 import {useAppSelector} from '../../state/hooks';
 import {allOperators} from './constants';
-import {ConditionType} from './types';
+import {ConditionType} from '../../types/condition';
 import {getFieldLabel} from './utils';
 
+/** Human-readable sentence for a condition tree (uses field labels from the store). */
 export const ConditionTranslation = (props: {condition: ConditionType}) => {
   const allFields = useAppSelector(
     state => state.notebook['ui-specification'].present.fields

@@ -32,6 +32,7 @@ import {
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 import {useState} from 'react';
 import DebouncedTextField from '../debounced-text-field';
@@ -48,6 +49,7 @@ type newState = {
   valueType: string;
 };
 
+/** Hierarchical option tree editor and value mode (`full` vs stored id) for `AdvancedSelect`. */
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -76,10 +78,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
         newState.optionTree;
     }
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const updateProperty = (prop: string, value: string | OptionTreeType[]) => {

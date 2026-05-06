@@ -121,8 +121,8 @@ export function AuthReturn() {
       );
 
       const login = async () => {
-        await dispatch(initialiseServers());
-        await dispatch(initialiseAllProjects());
+        dispatch(initialiseServers());
+        dispatch(initialiseAllProjects());
         navigate('/');
       };
 

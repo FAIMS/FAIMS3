@@ -1,11 +1,13 @@
 import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
+import {CONTACT_URL, PRIVACY_POLICY_URL} from '../../../buildconfig';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
 
 export default function FullFooter() {
   const theme = useTheme();
+
   return (
     <Box
       sx={{
@@ -59,8 +61,8 @@ export default function FullFooter() {
             About
           </Typography>
           <Typography variant={'caption'}>
-            Fieldmark™ is an open-source tool for born-digital field data
-            collection brought to you by the FAIMS Project
+            FAIMS3 is an open-source tool for born-digital field data collection
+            brought to you by the FAIMS Project
           </Typography>
         </Grid>
         <Grid
@@ -80,20 +82,24 @@ export default function FullFooter() {
           </Typography>
           <SupportEmail />
           <Typography variant={'caption'}>
+            {CONTACT_URL && (
+              <>
+                <Link
+                  href={CONTACT_URL}
+                  underline="none"
+                  target="_blank"
+                  rel="noreferrer"
+                  sx={{color: theme.palette.text.primary}}
+                >
+                  Contact
+                </Link>
+                <br />
+              </>
+            )}
             <Link
-              href="https://fieldnote.au/contact/"
+              href={PRIVACY_POLICY_URL}
               underline="none"
-              target={'_blank'}
-              rel="noreferrer"
-              sx={{color: theme.palette.text.primary}}
-            >
-              Contact
-            </Link>
-            <br />
-            <Link
-              href="https://fieldnote.au/privacy"
-              underline="none"
-              target={'_blank'}
+              target="_blank"
               rel="noreferrer"
               sx={{color: theme.palette.text.primary}}
             >
@@ -103,7 +109,7 @@ export default function FullFooter() {
             <Link
               href="https://faims.edu.au/licenses/"
               underline="none"
-              target={'_blank'}
+              target="_blank"
               rel="noreferrer"
               sx={{color: theme.palette.text.primary}}
             >
@@ -130,8 +136,8 @@ export default function FullFooter() {
           <Grid container spacing={2}>
             <Grid item>
               <img
-                src={'/static/logo/partners/ARDC_logo_RGB.png'}
-                alt={'ardc logo'}
+                src="/static/logo/partners/ARDC_logo_RGB.png"
+                alt="ARDC logo"
                 style={{
                   maxWidth: '150px',
                   width: '100%',
@@ -153,8 +159,8 @@ export default function FullFooter() {
             <Grid container>
               <Grid item style={{textAlign: 'left'}}>
                 <img
-                  src={'/static/logo/partners/MQ_INT_HOR_RGB_POS.png'}
-                  alt={'macquarie university logo'}
+                  src="/static/logo/partners/MQ_INT_HOR_RGB_POS.png"
+                  alt="Macquarie University logo"
                   style={{
                     maxWidth: '200px',
                     width: '100%',
@@ -163,8 +169,8 @@ export default function FullFooter() {
               </Grid>
               <Grid item style={{textAlign: 'left'}}>
                 <img
-                  src={'/static/logo/partners/CSIRO_Solid_RGB.png'}
-                  alt={'csiro logo'}
+                  src="/static/logo/partners/CSIRO_Solid_RGB.png"
+                  alt="CSIRO logo"
                   style={{
                     maxWidth: '80px',
                     width: '100%',

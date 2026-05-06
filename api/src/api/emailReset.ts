@@ -25,7 +25,7 @@ import {
   sendPasswordResetEmail,
 } from '../utils/emailHelpers';
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
 
 /**
  * POST /reset

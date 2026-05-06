@@ -19,6 +19,7 @@
 
 import {
   Action,
+  ErrorResponse,
   PostExchangeTokenInputSchema,
   PostExchangeTokenResponse,
   PostLongLivedTokenExchangeInputSchema,
@@ -30,11 +31,13 @@ import {
 import express, {Response} from 'express';
 import multer from 'multer';
 import {processRequest} from 'zod-express-middleware';
+import {z} from 'zod';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
 import {
+  API_VERSION,
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
@@ -70,7 +73,7 @@ const upload = multer({dest: '/tmp/'});
 // This must occur before express api is used
 patch();
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
 
 api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
   res.send({message: 'hello from the api!'});
@@ -111,6 +114,8 @@ api.get('/info', async (req, res) => {
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
     prefix: CONDUCTOR_SHORT_CODE_PREFIX,
+    // Report the server version e.g. 1.3.1
+    serverVersion: API_VERSION,
   };
   res.json(response);
 });
@@ -119,12 +124,18 @@ api.get(
   '/directory/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
+  processRequest({
+    query: z.object({
+      /** When `"true"`, includes surveys with status ARCHIVED. Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res) => {
-    // get the directory of notebooks on this server
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const projects = await getUserProjectsDirectory(req.user);
+    const includeArchived = req.query.includeArchived === 'true';
+    const projects = await getUserProjectsDirectory(req.user, includeArchived);
     res.json(projects);
   }
 );
@@ -183,7 +194,7 @@ api.post(
   '/auth/refresh',
   optionalAuthenticationJWT,
   processRequest({body: PostRefreshTokenInputSchema}),
-  async (req, res: Response<PostRefreshTokenResponse>) => {
+  async (req, res: Response<PostRefreshTokenResponse | ErrorResponse>) => {
     // If the user is logged in - then record the user ID as an additional
     // security measure - don't allow a user who currently has a JWT of user
     // A, to use a refresh token for user B, but if the user is not logged in
@@ -199,9 +210,14 @@ api.post(
 
     // If the refresh token is not valid, let user know
     if (!valid) {
-      throw new Exceptions.InvalidRequestException(
-        `Validation of refresh token failed. Validation error: ${validationError}.`
-      );
+      // Explicitly return a response here so that we're not reporting an error eg. to BugSnag
+      res.status(400).json({
+        error: {
+          message: `Validation of refresh token failed. Validation error: ${validationError}.`,
+          status: 400,
+        },
+      });
+      return;
     }
 
     // We know the refresh is valid, generate a JWT (no refresh) for this
