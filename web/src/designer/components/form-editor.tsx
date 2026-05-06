@@ -32,6 +32,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
   Button,
+  Card,
   Checkbox,
   Chip,
   CircularProgress,
@@ -60,13 +61,14 @@ import {useQueryClient} from '@tanstack/react-query';
 import {cloneDeep} from 'lodash';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {findFormExternalUsage} from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
+import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
 import {
   designerCancelButtonSx,
   designerControlActionRowSx,
@@ -74,6 +76,7 @@ import {
   designerControlHeadingSx,
   designerDialogActionsSx,
   designerDialogBodyTextSx,
+  designerDialogContentSx,
   designerDialogTitleSx,
   designerDividerSx,
   designerInfoIconSx,
@@ -125,8 +128,10 @@ export const FormEditor = ({
   setPreviewForm,
 }: Props) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
+  const createSectionParam = searchParams.get('createSection');
 
   const uiSpec = useAppSelector(
     state => state.notebook['ui-specification'].present
@@ -195,6 +200,7 @@ export const FormEditor = ({
   const [isSectionAtStart, setIsSectionAtStart] = useState(true);
   const [isSectionAtEnd, setIsSectionAtEnd] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [addSectionDialogOpen, setAddSectionDialogOpen] = useState(false);
   const prevViewSetIdRef = useRef<string>(viewSetId);
 
   // needed for the form preview
@@ -309,8 +315,24 @@ export const FormEditor = ({
   const addNewSection = (viewSetID: string, label: string) => {
     try {
       dispatch(sectionAdded({viewSetId: viewSetID, sectionLabel: label}));
-      // jump to the newly created section (i.e., to the end of the stepper)
-      setActiveStep(viewSet.views.length);
+      // Jump to and focus the newly created section (added to the end).
+      const newSectionIndex = viewSet.views.length;
+      setActiveStep(newSectionIndex);
+      const nextParams = new URLSearchParams(location.search);
+      nextParams.set('section', String(newSectionIndex));
+      nextParams.delete('createSection');
+      navigate(
+        `${location.pathname}?${nextParams.toString()}`,
+        {
+          replace: true,
+        }
+      );
+      window.requestAnimationFrame(() => {
+        sectionStripRef.current?.scrollTo({
+          left: sectionStripRef.current.scrollWidth,
+          behavior: 'smooth',
+        });
+      });
       setAddAlertMessage('');
       // let sectionEditor component know a section was addedd successfully
       return true;
@@ -426,6 +448,32 @@ export const FormEditor = ({
       }
     }
   }, [sectionParam, sections.length]);
+
+  useEffect(() => {
+    if (sections.length === 0 && createSectionParam === '1') {
+      setAddSectionDialogOpen(true);
+    }
+  }, [createSectionParam, sections.length]);
+
+  const clearCreateSectionFlag = () => {
+    const nextParams = new URLSearchParams(location.search);
+    nextParams.delete('createSection');
+    const nextQuery = nextParams.toString();
+    navigate(
+      `${location.pathname}${nextQuery.length > 0 ? `?${nextQuery}` : ''}`,
+      {
+        replace: true,
+      }
+    );
+  };
+
+  const submitNewSection = () => {
+    const ok = addNewSection(viewSetId, newSectionName.trim());
+    if (ok) {
+      setAddSectionDialogOpen(false);
+      clearCreateSectionFlag();
+    }
+  };
 
   // Show a brief loading spinner in the preview when the user switches form tabs
   useEffect(() => {
@@ -704,7 +752,7 @@ export const FormEditor = ({
             <DialogTitle id="alert-dialog-title" sx={designerDialogTitleSx}>
               {deleteAlertTitle}
             </DialogTitle>
-            <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+            <DialogContent sx={designerDialogContentSx}>
               <DialogContentText
                 id="alert-dialog-description"
                 sx={designerDialogBodyTextSx}
@@ -739,6 +787,65 @@ export const FormEditor = ({
             references={conditionReferences}
             onClose={() => setShowConditionAlert(false)}
           />
+          <Dialog
+            open={addSectionDialogOpen}
+            onClose={() => {
+              setAddSectionDialogOpen(false);
+              clearCreateSectionFlag();
+            }}
+            fullWidth
+            maxWidth="sm"
+            PaperProps={{
+              sx: {
+                minHeight: {xs: 280, sm: 320},
+              },
+            }}
+          >
+            <DialogTitle sx={designerDialogTitleSx}>Create New Section</DialogTitle>
+            <DialogContent sx={designerDialogContentSx}>
+              <SimpleFieldWrapper
+                heading="Section Name"
+                helperText={
+                  addAlertMessage || 'Name the section users will fill in first.'
+                }
+              >
+                <DebouncedTextField
+                  autoFocus
+                  fullWidth
+                  required
+                  label=""
+                  placeholder="Enter section name"
+                  name="sectionNameDialog"
+                  data-testid="sectionNameDialog"
+                  value={newSectionName}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    if (addAlertMessage) setAddAlertMessage('');
+                    setNewSectionName(event.target.value);
+                  }}
+                  error={Boolean(addAlertMessage)}
+                />
+              </SimpleFieldWrapper>
+            </DialogContent>
+            <DialogActions sx={designerDialogActionsSx}>
+              <Button
+                sx={designerCancelButtonSx}
+                onClick={() => {
+                  setAddSectionDialogOpen(false);
+                  clearCreateSectionFlag();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddRoundedIcon />}
+                disabled={!newSectionName.trim()}
+                onClick={submitNewSection}
+              >
+                Add Section
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Box mt={2} mb={1.25}>
             <HeadingWithInfo
@@ -941,54 +1048,58 @@ export const FormEditor = ({
               </Grid>
 
               {sections.length === 0 ? (
-                <Grid item xs={12}>
-                  <Grid
-                    container
-                    justifyContent="center"
-                    alignItems="center"
-                    item
-                    xs={12}
-                    direction="column"
-                  >
-                    <Alert severity="success">
-                      Form has been created. Add a section to get started.
-                    </Alert>
-                    <form
-                      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                        e.preventDefault();
-                        addNewSection(viewSetId, newSectionName);
+                addSectionDialogOpen ? null : (
+                  <Grid item xs={12}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        p: {xs: 2, sm: 2.5},
+                        borderColor: 'divider',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                        maxWidth: 640,
                       }}
                     >
-                      <DebouncedTextField
-                        required
-                        label="Section Name"
-                        name="sectionName"
-                        data-testid="sectionName"
-                        value={newSectionName}
-                        onChange={(
-                          event: React.ChangeEvent<HTMLInputElement>
-                        ) => {
-                          setNewSectionName(event.target.value);
-                        }}
-                        sx={{'& .MuiInputBase-root': {paddingRight: 1}, mt: 3}}
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Tooltip title="Add">
-                                <IconButton type="submit">
-                                  <AddRoundedIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    </form>
+                      <Alert severity="success" sx={{mb: 2}}>
+                        Form created. Add your first section to continue.
+                      </Alert>
+                      <Stack
+                        direction={{xs: 'column', sm: 'row'}}
+                        spacing={1.25}
+                        alignItems={{xs: 'stretch', sm: 'flex-end'}}
+                      >
+                        <DebouncedTextField
+                          required
+                          label="Section Name"
+                          name="sectionName"
+                          data-testid="sectionName"
+                          value={newSectionName}
+                          onChange={(
+                            event: React.ChangeEvent<HTMLInputElement>
+                          ) => {
+                            setNewSectionName(event.target.value);
+                          }}
+                          sx={{
+                            width: {xs: '100%', sm: 360},
+                            '& .MuiInputBase-root': {paddingRight: 1},
+                          }}
+                        />
+                        <Button
+                          variant="contained"
+                          startIcon={<AddRoundedIcon />}
+                          onClick={() => setAddSectionDialogOpen(true)}
+                          sx={{height: 40, textTransform: 'none', whiteSpace: 'nowrap'}}
+                        >
+                          Add Section
+                        </Button>
+                      </Stack>
+                    </Card>
+                    {addAlertMessage && (
+                      <Alert severity="error" sx={{mt: 2}}>
+                        {addAlertMessage}
+                      </Alert>
+                    )}
                   </Grid>
-                  {addAlertMessage && (
-                    <Alert severity="error">{addAlertMessage}</Alert>
-                  )}
-                </Grid>
+                )
               ) : (
                 <Grid item xs={12}>
                   <SectionEditor
