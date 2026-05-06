@@ -126,8 +126,8 @@ export const designerResponsiveFieldEditorSx = {
 
 /** Styled DialogTitle header with a subtle primary-tinted background. */
 export const designerDialogTitleSx: SxProps<Theme> = {
-  py: 2,
-  px: {xs: 2, sm: 3},
+  py: 2.25,
+  px: {xs: 2.25, sm: 3.25},
   borderBottom: '1px solid',
   borderColor: 'divider',
   backgroundColor: (t: Theme) =>
@@ -153,9 +153,9 @@ export const designerCancelButtonSx: SxProps<Theme> = {
 };
 
 export const designerDialogActionsSx: SxProps<Theme> = {
-  px: {xs: 2, sm: 3},
-  pb: {xs: 2, sm: 2.5},
-  pt: 1.5,
+  px: {xs: 2.25, sm: 3.25},
+  pb: {xs: 2.25, sm: 2.75},
+  pt: 1.75,
   gap: 1,
 };
 
@@ -173,4 +173,10 @@ export const designerDialogBodyTextSx: SxProps<Theme> = {
   fontSize: '0.875rem',
   lineHeight: 1.5,
   mb: 1.5,
+};
+
+export const designerDialogContentSx: SxProps<Theme> = {
+  pt: 2.75,
+  px: {xs: 2.25, sm: 3.25},
+  pb: 2.25,
 };
