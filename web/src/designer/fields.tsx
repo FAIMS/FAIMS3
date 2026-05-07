@@ -21,6 +21,8 @@ import {CategoryKey} from './field-categories';
 import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
+  // "Text field" is the new chooser-facing name, but it still uses the same
+  // component (`FAIMSTextField`) for compatibility.
   TextField: {
     // New chooser entry that reuses the existing FAIMSTextField runtime type.
     'component-namespace': 'faims-custom',
@@ -257,6 +259,7 @@ const fields: {[key: string]: FieldType} = {
   },
 
   RadioGroup: {
+    // This is the new primary "Select one" experience in field chooser.
     'component-namespace': 'faims-custom',
     'component-name': 'RadioGroup',
     'type-returned': 'faims-core::String',
@@ -323,6 +326,7 @@ const fields: {[key: string]: FieldType} = {
   },
 
   Select: {
+    // Kept for old notebooks, hidden in chooser to avoid duplicate "Select one" paths.
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
@@ -492,6 +496,7 @@ const fields: {[key: string]: FieldType} = {
   },
 
   NumberField: {
+    // Legacy numberfield retained for backwards compatibility, hidden for new adds.
     'component-namespace': 'faims-custom',
     'component-name': 'NumberField',
     'type-returned': 'faims-core::Number',
@@ -539,6 +544,7 @@ const fields: {[key: string]: FieldType} = {
   },
 
   ControlledNumberField: {
+    // Legacy bounded-number  retained for backwards compatibility only.
     'component-namespace': 'faims-custom',
     'component-name': 'ControlledNumber',
     'type-returned': 'faims-core::Integer',
