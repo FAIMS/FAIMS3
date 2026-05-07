@@ -22,7 +22,6 @@ import {
   Select,
   Tooltip,
   Typography,
-  SelectChangeEvent,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
