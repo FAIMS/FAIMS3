@@ -109,7 +109,7 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                             ? "Select today's date"
                             : isMonthPicker
                             ? 'Select current month'
-                            : 'Select date and time right now'}
+                            : 'Select current date and time'}
                         </strong>
                         " button
                       </Typography>

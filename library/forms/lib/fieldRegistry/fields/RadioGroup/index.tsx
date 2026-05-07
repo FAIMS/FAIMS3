@@ -292,12 +292,23 @@ export const RadioGroup = (props: FieldProps) => {
           })()}
         </MuiRadioGroup>
         <Button
-          variant="text"
+          variant="outlined"
           color="warning"
-          size="small"
+          size="medium"
           onClick={handleClearRequest}
           disabled={disabled || !rawValue}
-          sx={{mt: 0.25, textTransform: 'none', fontWeight: 700, width: 'fit-content'}}
+          sx={{
+            mt: 1,
+            px: 1.75,
+            py: 0.625,
+            minHeight: 40,
+            borderRadius: 1.5,
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '1rem',
+            letterSpacing: 0.1,
+            width: 'fit-content',
+          }}
         >
           Clear selection
         </Button>

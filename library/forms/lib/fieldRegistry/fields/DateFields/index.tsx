@@ -237,7 +237,7 @@ const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => {
               whiteSpace: 'nowrap',
             }}
           >
-            Select date and time right now
+            Select current date and time
           </Button>
         )}
       </Stack>
