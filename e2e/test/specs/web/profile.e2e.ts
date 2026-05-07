@@ -1,0 +1,53 @@
+import WebAuth from '../../pageobjects/web/web-auth.ts';
+import WebProfilePage from '../../pageobjects/web/web-profile.ts';
+
+/**
+ * E2E tests for the User Profile page of the web management dashboard.
+ *
+ * Credentials: TEST_ADMIN_USERNAME / TEST_ADMIN_PASSWORD env vars.
+ * Falls back to TEST_USERNAME / TEST_PASSWORD for backwards compatibility.
+ */
+describe('Web Dashboard - Profile', () => {
+  const TEST_USERNAME =
+    process.env.TEST_ADMIN_USERNAME ||
+    process.env.TEST_USERNAME ||
+    'test@example.com';
+  const TEST_PASSWORD =
+    process.env.TEST_ADMIN_PASSWORD ||
+    process.env.TEST_PASSWORD ||
+    'testpassword123';
+
+  before(async () => {
+    await browser.reloadSession();
+    await WebAuth.login(TEST_USERNAME, TEST_PASSWORD);
+  });
+
+  it('should display the user profile page', async () => {
+    await WebProfilePage.open();
+    expect(await WebProfilePage.isPageDisplayed()).toBe(true);
+    await WebProfilePage.takeScreenshot('web-profile', 'profile-page');
+  });
+
+  it("should show the logged-in user's email address", async () => {
+    await WebProfilePage.open();
+    const pageText = await WebProfilePage.getPageText();
+    // The profile page renders user.id which is the user's email address.
+    expect(pageText).toContain(TEST_USERNAME);
+    await WebProfilePage.takeScreenshot('web-profile', 'profile-email');
+  });
+
+  it('should show the Change Password button', async () => {
+    await WebProfilePage.open();
+    await WebProfilePage.changePasswordButton.waitForDisplayed({
+      timeout: 10000,
+    });
+    expect(await WebProfilePage.isChangePasswordButtonDisplayed()).toBe(true);
+  });
+
+  it('should show the Manage Long-Lived Tokens button', async () => {
+    await WebProfilePage.open();
+    await WebProfilePage.manageTokensButton.waitForDisplayed({timeout: 10000});
+    expect(await WebProfilePage.isManageTokensButtonDisplayed()).toBe(true);
+    await WebProfilePage.takeScreenshot('web-profile', 'profile-controls');
+  });
+});

@@ -9,7 +9,11 @@
     "test:e2e:wide": "VIEWPORT=wide pnpm run test:e2e",
     "test:e2e:all": "pnpm run test:e2e:mobile && pnpm run test:e2e:tablet && pnpm run test:e2e:desktop && pnpm run test:e2e:wide",
     "test:e2e:android": "wdio run wdio.mobile.conf.ts",
-    "test:e2e:ios": "PLATFORM=ios wdio run wdio.mobile.conf.ts"
+    "test:e2e:ios": "PLATFORM=ios wdio run wdio.mobile.conf.ts",
+    "test:e2e:web": "wdio run wdio.web.conf.ts",
+    "test:e2e:web:desktop": "VIEWPORT=desktop pnpm run test:e2e:web",
+    "test:e2e:web:wide": "VIEWPORT=wide pnpm run test:e2e:web",
+    "test:e2e:web:all": "pnpm run test:e2e:web:desktop && pnpm run test:e2e:web:wide"
   },
   "devDependencies": {
     "@testing-library/webdriverio": "^3.2.1",
