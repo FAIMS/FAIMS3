@@ -616,25 +616,24 @@ importers:
         version: 2.1.9(@types/node@22.18.8)(jsdom@22.1.0)(msw@2.11.3(@types/node@22.18.8)(typescript@5.9.3))
 
   e2e:
-    dependencies:
-      '@wdio/cli':
-        specifier: ^9.27.1
-        version: 9.27.1(@types/node@22.18.8)(expect-webdriverio@5.6.5)(puppeteer-core@21.11.0(encoding@0.1.13))
     devDependencies:
       '@testing-library/webdriverio':
         specifier: ^3.2.1
         version: 3.2.1(webdriverio@9.27.1(puppeteer-core@21.11.0(encoding@0.1.13)))
       '@wdio/appium-service':
-        specifier: ^9.18.0
+        specifier: ^9.27.1
         version: 9.27.1(puppeteer-core@21.11.0(encoding@0.1.13))
+      '@wdio/cli':
+        specifier: ^9.27.1
+        version: 9.27.1(@types/node@22.18.8)(expect-webdriverio@5.6.5)(puppeteer-core@21.11.0(encoding@0.1.13))
       '@wdio/local-runner':
-        specifier: ^9.18.4
+        specifier: ^9.27.1
         version: 9.27.1(@wdio/globals@9.27.1)(webdriverio@9.27.1(puppeteer-core@21.11.0(encoding@0.1.13)))
       '@wdio/mocha-framework':
-        specifier: ^9.18.0
+        specifier: ^9.27.1
         version: 9.27.1
       '@wdio/spec-reporter':
-        specifier: ^9.18.0
+        specifier: ^9.27.1
         version: 9.27.1
       appium:
         specifier: ^2.11.5
@@ -15191,7 +15190,7 @@ snapshots:
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
+      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -19217,7 +19216,7 @@ snapshots:
     dependencies:
       '@appium/base-driver': 9.18.0
       '@appium/support': 6.1.1
-      '@xmldom/xmldom': 0.8.11
+      '@xmldom/xmldom': 0.9.10
       appium-adb: 12.13.1
       asyncbox: 3.0.0
       axios: 1.12.2
@@ -19227,7 +19226,7 @@ snapshots:
       semver: 7.7.2
       source-map-support: 0.5.21
       teen_process: 2.3.3
-      xpath: 0.0.33
+      xpath: 0.0.34
     transitivePeerDependencies:
       - debug
       - react-native-b4a
@@ -20247,7 +20246,7 @@ snapshots:
   cookie-session@2.1.1:
     dependencies:
       cookies: 0.9.1
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       on-headers: 1.1.0
       safe-buffer: 5.2.1
     transitivePeerDependencies:
@@ -20318,7 +20317,7 @@ snapshots:
       chalk: 4.1.2
       exit: 0.1.2
       graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
+      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
       jest-util: 29.7.0
       prompts: 2.4.2
     transitivePeerDependencies:
@@ -22689,7 +22688,7 @@ snapshots:
       create-jest: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)
       exit: 0.1.2
       import-local: 3.2.0
-      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
+      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
       jest-util: 29.7.0
       jest-validate: 29.7.0
       yargs: 17.7.2
