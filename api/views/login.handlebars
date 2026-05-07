@@ -62,7 +62,7 @@
   </form>
 {{/if}}
 {{#if messages.error.loginError}}
-  <div class='alert alert-danger'>{{messages.error.loginError.msg}}</div>
+  <div class='alert alert-danger' data-testid="login-error">{{messages.error.loginError.msg}}</div>
 {{/if}}
 {{#if (and localAuth providers)}}
   <div class='divider' data-testid="divider">
