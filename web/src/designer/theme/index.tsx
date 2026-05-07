@@ -57,6 +57,8 @@ export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | 'dass' | 
 const resolveTokens = (
   themeName: DesignerThemeName
 ): {tokens: DesignerThemeTokens; isDass: boolean} => {
+  // We map bssTheme/dassTheme/dass to the same token family so brand switching
+  // stays centralized here and component code only checks `theme.designerMeta`.
   const isDass =
     themeName === 'bssTheme' || themeName === 'dassTheme' || themeName === 'dass';
   return {tokens: isDass ? dassTokens : faimsTokens, isDass};
