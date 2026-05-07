@@ -71,6 +71,7 @@ const checkSpeechEnabled = (field: FieldType) => {
     `${field['component-namespace']}::${field['component-name']}`
   );
 };
+const FIRST_AUTO_SYNC_DELAY_MS = 700;
 type Props = {
   fieldName: string;
   showExtraConfig?: boolean;
@@ -121,6 +122,7 @@ export const BaseFieldEditor = ({
   const autoSyncFieldIdEnabled = useRef(true);
   const initialAutoSyncDone = useRef(false);
   const internalRenameInFlight = useRef(false);
+  const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
 
   const debouncedRename = useCallback(
@@ -167,10 +169,27 @@ export const BaseFieldEditor = ({
 
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
+
+    // One-time auto-sync after a short typing pause for newly created fields.
+    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+      if (labelSyncTimerRef.current) {
+        clearTimeout(labelSyncTimerRef.current);
+      }
+      labelSyncTimerRef.current = setTimeout(() => {
+        syncFieldIDToLabel(newLabel);
+        initialAutoSyncDone.current = true;
+        autoSyncFieldIdEnabled.current = false;
+        labelSyncTimerRef.current = null;
+      }, FIRST_AUTO_SYNC_DELAY_MS);
+    }
   };
 
   const handleLabelBlur = () => {
-    // One-time auto-sync only after user leaves the label field.
+    // Flush pending one-time auto-sync immediately on blur.
+    if (labelSyncTimerRef.current) {
+      clearTimeout(labelSyncTimerRef.current);
+      labelSyncTimerRef.current = null;
+    }
     if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
       syncFieldIDToLabel(state.label || '');
       initialAutoSyncDone.current = true;
@@ -201,6 +220,9 @@ export const BaseFieldEditor = ({
 
   useEffect(() => {
     return () => {
+      if (labelSyncTimerRef.current) {
+        clearTimeout(labelSyncTimerRef.current);
+      }
       debouncedRename.cancel();
     };
   }, [debouncedRename]);
