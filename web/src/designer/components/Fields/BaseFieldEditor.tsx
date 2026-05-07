@@ -121,6 +121,7 @@ export const BaseFieldEditor = ({
   // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
   const autoSyncFieldIdEnabled = useRef(true);
   const initialAutoSyncDone = useRef(false);
+  // Mark renames triggered by auto-sync (not by user changing selected field).
   const internalRenameInFlight = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
@@ -170,7 +171,9 @@ export const BaseFieldEditor = ({
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
 
-    // One-time auto-sync after a short typing pause for newly created fields.
+    // - do one automatic Label -> Field ID sync for fresh fields
+    // - only after the user pauses typing
+    // - never keep re-syncing forever while they continue editing label text
     if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
       if (labelSyncTimerRef.current) {
         clearTimeout(labelSyncTimerRef.current);
@@ -201,6 +204,8 @@ export const BaseFieldEditor = ({
     const wasInternalRename = internalRenameInFlight.current;
     internalRenameInFlight.current = false;
 
+    // "New-Field*" means this field was just created by designer scaffolding.
+    // We allow first-time auto-sync only for this new-field state.
     const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
     autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
     initialAutoSyncDone.current = !isFreshGeneratedFieldId;
@@ -208,8 +213,9 @@ export const BaseFieldEditor = ({
     setLocalFieldName(fieldName);
 
     if (isMounted.current && !wasInternalRename) {
-      // Moving to a different field (especially a newly added field) should
-      // place focus on Label, not Field ID.
+      // Focus policy:
+      // when user lands on a new field, keep them in Label first (fast naming flow);
+      // do not jump focus to Field ID because that interrupts editing.
       window.setTimeout(() => {
         labelInputRef.current?.focus();
       }, 0);
