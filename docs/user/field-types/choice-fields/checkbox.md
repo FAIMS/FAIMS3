@@ -21,19 +21,11 @@ single yes/no state rather than a selection from a list.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the **CHOICE**
-tab, and click the **Checkbox** card (marked **Deprecated**).
+New Checkbox fields are not available from the add-field chooser.
+Checkbox remains supported for legacy notebooks where it already exists.
+For new forms, add **Select one option** instead.
 
-> **Note:** The CHOICE tab may not be visible in the tab bar initially —
-> click the **›** arrow button on the right side of the tab bar to scroll
-> until it appears.
-
-```{screenshot} field-types-design/checkbox-01-add-field.png
-:alt: Adding a Checkbox — the CHOICE tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit Checkbox settings for existing fields.
 
 ## Configuring the Field
 
