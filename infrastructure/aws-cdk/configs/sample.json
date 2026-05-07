@@ -31,7 +31,9 @@
     },
     "addressAutosuggest": {
       "source": "NONE"
-    }
+    },
+    "forceRemoteDeletion": "never",
+    "deleteOnDeactivation": false
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
@@ -111,11 +113,7 @@
   },
   "authProviders": {
     "disableLocalLogin": false,
-    "providers": [
-      "google",
-      "someOidcProvider",
-      "someSamlProvider"
-    ],
+    "providers": ["google", "someOidcProvider", "someSamlProvider"],
     "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
     "config": {
       "google": {
@@ -144,8 +142,10 @@
         "scope": "profile email",
         "entryPoint": "https://idp.example.com/saml2/sso",
         "issuer": "https://faims.example.com",
-        "callbackUrl": "https://faims.example.com/auth/saml/callback",
+        "authnRequestBinding": "HTTP-POST",
+        "callbackURL": "https://faims.example.com/auth/saml/callback",
         "signatureAlgorithm": "sha256",
+        "digestAlgorithm": "sha256",
         "wantAssertionsSigned": true
       }
     }
@@ -162,7 +162,9 @@
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
-  "web": {},
+  "web": {
+    "title": "Control Centre"
+  },
   "docs": {},
   "smtp": {
     "emailServiceType": "SMTP",

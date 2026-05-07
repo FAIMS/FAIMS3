@@ -1,5 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
+import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
@@ -15,6 +16,12 @@ import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
@@ -61,6 +68,16 @@ const TemplateActions = () => {
     resourceId: templateId,
   });
 
+  const canChangeTemplateArchiveStatus = useIsAuthorisedTo({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    resourceId: templateId,
+  });
+
+  const canChangeTemplateVisibility = useIsAuthorisedTo({
+    action: Action.CHANGE_TEMPLATE_VISIBILITY,
+    resourceId: templateId,
+  });
+
   const canCreateProject = useIsAuthorisedTo({
     action: Action.CREATE_PROJECT,
   });
@@ -71,16 +88,13 @@ const TemplateActions = () => {
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 
-  // per-team and global permissions for adding templates to a team
-  const canAddTemplateToTeam =
-    getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
-      action: Action.CREATE_TEMPLATE_IN_TEAM,
-    }).length > 0;
-
-  const globalCanAddTemplateToTeam = useIsAuthorisedTo({
-    action: Action.CREATE_TEMPLATE,
+  /** Reassigning team is a template update (PUT /api/templates/:id), not create-template. */
+  const canAssignTemplateToTeam = useIsAuthorisedTo({
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    resourceId: templateId,
   });
+
+  const archived = data?.archived === true;
 
   return (
     <>
@@ -91,33 +105,54 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Edit Template</ListLabel>
                 <ListDescription>
-                  Edit this template in the Notebook Editor.
+                  Edit this template in the {NOTEBOOK_NAME_CAPITALIZED} Editor.
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={() => setEditorOpen(true)}
-                >
-                  Open in Editor
-                </Button>
+                {archived ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-block w-fit">
+                          <Button variant="outline" disabled>
+                            Open in Editor
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-balance">
+                        Archived templates cannot be opened in the editor.
+                        Un-archive the template first.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={() => setEditorOpen(true)}
+                  >
+                    Open in Editor
+                  </Button>
+                )}
               </ListItem>
             </List>
           </Card>
         )}
 
-        {(canAddTemplateToTeam || globalCanAddTemplateToTeam) && (
+        {canAssignTemplateToTeam && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
-                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListLabel>Assign Template to Team</ListLabel>
                 <ListDescription>
-                  Assign this {NOTEBOOK_NAME} to a team.
+                  Assign this template to a team so its members can use it.
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <AddTemplateToTeamDialog templateId={templateId} />
+                <AddTemplateToTeamDialog
+                  templateId={templateId}
+                  disabled={archived}
+                />
               </ListItem>
             </List>
           </Card>
@@ -178,29 +213,36 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
-        <Card>
-          <List>
-            {data?.metadata.project_status === 'archived' ? (
-              <ListItem>
-                <ListLabel>Un-archive Template</ListLabel>
-                <ListDescription>
-                  Un-archive the current template.
-                </ListDescription>
-              </ListItem>
-            ) : (
-              <ListItem>
-                <ListLabel>Archive Template</ListLabel>
-                <ListDescription>Archive the current template.</ListDescription>
-              </ListItem>
-            )}
-            <ArchiveTemplateDialog
-              archived={data?.metadata.project_status === 'archived'}
-            />
-          </List>
-        </Card>
+        {canChangeTemplateVisibility && (
+          <Card className="flex-1">
+            <TemplateVisibilityDialog templateId={templateId} />
+          </Card>
+        )}
+        {canChangeTemplateArchiveStatus ? (
+          <Card>
+            <List>
+              {data?.archived === true ? (
+                <ListItem>
+                  <ListLabel>Un-archive Template</ListLabel>
+                  <ListDescription>
+                    Un-archive the current template.
+                  </ListDescription>
+                </ListItem>
+              ) : (
+                <ListItem>
+                  <ListLabel>Archive Template</ListLabel>
+                  <ListDescription>
+                    Archive the current template.
+                  </ListDescription>
+                </ListItem>
+              )}
+              <ArchiveTemplateDialog archived={data?.archived === true} />
+            </List>
+          </Card>
+        ) : null}
       </div>
       <DesignerDialog
-        open={editorOpen}
+        open={editorOpen && !archived}
         notebook={initialNotebook}
         onClose={handleEditorClose}
       />

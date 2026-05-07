@@ -1,7 +1,7 @@
 # Controlled Number
 
-*How to add and configure a Controlled Number field in the {{Notebook}}
-Editor.*
+_How to add and configure a Controlled Number field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -49,8 +49,8 @@ Field ID, and add any desired Helper Text.
 Below the identity fields, the Controlled Number provides settings for
 defining the valid numeric range:
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting | What It Does                                                |
+| ------- | ----------------------------------------------------------- |
 | **Min** | The minimum allowed value. Entries below this are rejected. |
 | **Max** | The maximum allowed value. Entries above this are rejected. |
 

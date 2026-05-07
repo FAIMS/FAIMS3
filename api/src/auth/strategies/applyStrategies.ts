@@ -20,7 +20,6 @@ import {LOCAL_LOGIN_ENABLED} from '../../buildconfig';
 const snakeToCamel = (str: string): string => {
   const exceptions = ['ID', 'URL'];
   const parts = str.split('_');
-  // split and capitalise each part unless it's in the exceptions list
   const almost = parts
     .map(part => {
       if (exceptions.includes(part)) {
@@ -29,7 +28,6 @@ const snakeToCamel = (str: string): string => {
       return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
     })
     .join('');
-  // lowercase the first character
   return almost.charAt(0).toLowerCase() + almost.slice(1);
 };
 

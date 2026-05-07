@@ -32,7 +32,6 @@ import {designerInfoIconSx} from './designer-style';
 import {
   viewSetHridUpdated,
   viewSetLayoutUpdated,
-  viewSetPublishButtonBehaviourUpdated,
   viewSetSummaryFieldsUpdated,
 } from '../store/slices/uiSpec';
 
@@ -105,32 +104,6 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
   const fviews = useAppSelector(
     state => state.notebook['ui-specification'].present.fviews
   );
-  const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
-    React.useState<'always' | 'visited' | 'noErrors'>('always');
-
-  // Ensure selected value persists and is updated in the Redux store
-  React.useEffect(() => {
-    if (viewSet?.publishButtonBehaviour) {
-      setSelectedPublishBehaviour(viewSet.publishButtonBehaviour);
-    }
-  }, [viewSet?.publishButtonBehaviour]);
-
-  /**
-   * Updates the Finish Button Behavior setting in Redux and persists it
-   */
-  const handlePublishButtonBehaviourChange = (
-    event: SelectChangeEvent<'always' | 'visited' | 'noErrors'>
-  ) => {
-    const newValue = event.target.value as 'always' | 'visited' | 'noErrors';
-    setSelectedPublishBehaviour(newValue);
-
-    dispatch(
-      viewSetPublishButtonBehaviourUpdated({
-        viewSetId,
-        publishButtonBehaviour: newValue,
-      })
-    );
-  };
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -219,23 +192,6 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
 
   return (
     <>
-      {/* Finish Button Behavior*/}
-      <SettingSection
-        title="Finish Button Behavior"
-        description="Configure when the Finish and Close buttons should be shown."
-        tooltipText="Help content for finish button behavior will be added soon."
-      >
-        <Select
-          fullWidth
-          value={selectedPublishBehaviour}
-          onChange={handlePublishButtonBehaviourChange}
-        >
-          <MenuItem value="always">Always Show</MenuItem>
-          <MenuItem value="visited">Show Once All Sections Visited</MenuItem>
-          <MenuItem value="noErrors">Show Only When No Errors Exist</MenuItem>
-        </Select>
-      </SettingSection>
-
       {/* Layout Style section  */}
       <SettingSection
         title="Layout Style"

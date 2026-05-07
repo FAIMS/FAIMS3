@@ -1,6 +1,6 @@
 # RichText
 
-*How to add and configure a RichText field in the Notebook Editor.*
+_How to add and configure a RichText field in the Notebook Editor._
 
 ---
 
@@ -52,11 +52,11 @@ Field ID, and add any desired Helper Text.
 The Rich Text field provides a **content editor** for authoring the
 display content, available in two modes:
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting            | What It Does                                                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Content editor** | A Markdown editor where you write the content that will be displayed in the form. Supports both a visual WYSIWYG mode and a source Markdown mode — toggle between them as needed. |
 
-The editor supports standard Markdown formatting: **bold**, *italic*,
+The editor supports standard Markdown formatting: **bold**, _italic_,
 headings, lists, and links. You can also insert images as Base64-encoded
 data through the editor's image upload feature.
 

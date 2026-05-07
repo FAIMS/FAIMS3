@@ -17,13 +17,13 @@ body > .image-dialog {
 
 /* Image dialog: Radix renders the overlay then the dialog content as direct
    children of the popup container. Target by role/aria attribute. */
-.image-dialog > div[aria-hidden="true"] {
+.image-dialog > div[aria-hidden='true'] {
   z-index: 9998 !important;
   opacity: 1 !important;
   background-color: rgba(0, 0, 0, 0.5) !important;
 }
 
-.image-dialog > [role="dialog"] {
+.image-dialog > [role='dialog'] {
   z-index: 9999 !important;
   box-shadow:
     0px 11px 15px -7px rgba(0, 0, 0, 0.2),
@@ -31,11 +31,11 @@ body > .image-dialog {
     0px 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
 }
 
-.image-dialog > [role="dialog"] form {
+.image-dialog > [role='dialog'] form {
   font-family: 'Open Sans', sans-serif !important;
 }
 
-.image-dialog > [role="dialog"] form label {
+.image-dialog > [role='dialog'] form label {
   font-family: 'Open Sans', sans-serif;
   font-weight: 500;
   font-size: 1.25rem;
@@ -43,8 +43,8 @@ body > .image-dialog {
   color: #263238;
 }
 
-.image-dialog > [role="dialog"] form button[type="submit"],
-.image-dialog > [role="dialog"] form button[type="reset"] {
+.image-dialog > [role='dialog'] form button[type='submit'],
+.image-dialog > [role='dialog'] form button[type='reset'] {
   cursor: pointer;
   user-select: none;
   color: #669911;
@@ -58,8 +58,8 @@ body > .image-dialog {
   border-radius: 4px;
 }
 
-.image-dialog > [role="dialog"] form button[type="submit"]:hover,
-.image-dialog > [role="dialog"] form button[type="reset"]:hover {
+.image-dialog > [role='dialog'] form button[type='submit']:hover,
+.image-dialog > [role='dialog'] form button[type='reset']:hover {
   background-color: rgba(102, 153, 17, 0.04);
 }
 

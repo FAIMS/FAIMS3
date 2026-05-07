@@ -375,7 +375,7 @@ export function buildColumnsFromSummaryFields({
     filterable: false,
     flex: 1,
     valueGetter: params => {
-      const data = 'data' in params.row ? params.row.data ?? {} : {};
+      const data = 'data' in params.row ? (params.row.data ?? {}) : {};
       return getDisplayDataFromRecordMetadata({
         field,
         data: data,

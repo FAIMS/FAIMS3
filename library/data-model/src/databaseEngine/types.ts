@@ -68,6 +68,51 @@ export const relationshipInstanceSchema = z.object({
 });
 export type RelationshipInstance = z.infer<typeof relationshipInstanceSchema>;
 
+/** Relation kind for RelatedRecordSelector `component-parameters.relation_type`. */
+export const relatedTypeSchema = z.enum([
+  'faims-core::Child',
+  'faims-core::Linked',
+]);
+export type RelatedType = z.infer<typeof relatedTypeSchema>;
+
+/**
+ * One RelatedRecordSelector link as stored in an AVP `data` value (revision field map).
+ * Same shape as {@link relationshipInstanceSchema} except `field_id` is omitted (that
+ * appears on `revision.relationship` for the inverse link, not in the forward field blob).
+ */
+export const relatedRecordFieldAvpEntrySchema = relationshipInstanceSchema
+  .omit({field_id: true})
+  .extend({
+    project_id: z.string().optional(),
+  })
+  .passthrough();
+export type RelatedRecordFieldAvpEntry = z.infer<
+  typeof relatedRecordFieldAvpEntrySchema
+>;
+
+/** AVP payload for a RelatedRecord field: a single link or a list of links. */
+export const relatedRecordFieldAvpValueSchema = z.union([
+  z.array(relatedRecordFieldAvpEntrySchema),
+  relatedRecordFieldAvpEntrySchema,
+]);
+export type RelatedRecordFieldAvpValue = z.infer<
+  typeof relatedRecordFieldAvpValueSchema
+>;
+
+/**
+ * RelatedRecordSelector-specific `component-parameters` (excludes shared base field
+ * props such as `label` and `name`, which are merged in by the forms package).
+ */
+export const relatedRecordSelectorComponentParamsSchema = z
+  .object({
+    related_type: z.string(),
+    relation_type: relatedTypeSchema,
+    multiple: z.boolean().optional().default(false),
+    allowLinkToExisting: z.boolean().optional().default(false),
+    hideCreateAnotherButton: z.boolean().optional().default(false),
+  })
+  .passthrough();
+
 // Revision relationship field can be either a list or singleton entry
 export const relationshipSchema = z.object({
   parent: z
@@ -494,7 +539,7 @@ export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
  * Schema for an annotation on a form field.
  * Annotations provide additional context and metadata about field values.
  */
-const formAnnotationSchema = z.object({
+export const formAnnotationSchema = z.object({
   /** Human-readable annotation text describing the field value */
   annotation: z.string(),
   /** Flag indicating if there is uncertainty about this field's value */
@@ -506,16 +551,16 @@ export type FormAnnotations = z.infer<typeof formAnnotations>;
 export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
 
 // Form data
-const formDataEntry = z.object({
+export const formDataEntrySchema = z.object({
   data: z.unknown(),
   // NOTE: do we want to use the internal representation
   annotation: formAnnotationSchema.optional(),
   // NOTE: do we want to use the internal representation?
   attachments: faimsAttachmentsSchema,
 });
-export type FormDataEntry = z.infer<typeof formDataEntry>;
-const formUpdateData = z.record(z.string(), formDataEntry);
-export type FormUpdateData = z.infer<typeof formUpdateData>;
+export type FormDataEntry = z.infer<typeof formDataEntrySchema>;
+export const formUpdateDataSchema = z.record(z.string(), formDataEntrySchema);
+export type FormUpdateData = z.infer<typeof formUpdateDataSchema>;
 
 // AVP update modes
 export type AvpUpdateMode = 'new' | 'parent';
@@ -524,7 +569,7 @@ export type AvpUpdateMode = 'new' | 'parent';
  * Schema for a relationship between records.
  * Used when a record is related to another record through a specific field.
  */
-const formRelationshipInstanceSchema = z.object({
+export const formRelationshipInstanceSchema = z.object({
   /** The ID of the parent record this record is related to */
   recordId: z.string(),
   /** The field ID in the parent record that defines this relationship */
@@ -535,7 +580,7 @@ const formRelationshipInstanceSchema = z.object({
 export type FormRelationshipInstance = z.infer<
   typeof formRelationshipInstanceSchema
 >;
-const formRelationshipSchema = z.object({
+export const formRelationshipSchema = z.object({
   parent: z.array(formRelationshipInstanceSchema).optional(),
   linked: z.array(formRelationshipInstanceSchema).optional(),
 });
@@ -689,7 +734,7 @@ export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;
 const initialFormData = z.object({
   revisionId: z.string(),
   formId: z.string(),
-  data: formUpdateData,
+  data: formUpdateDataSchema,
   context: z.object({
     hrid: z.string(),
     record: hydratedRecordDocumentSchema,
@@ -849,6 +894,8 @@ export interface MinimalRecordMetadataResult {
   count: number;
   /** Count of records skipped due to errors */
   errorCount: number;
+  /** When paginating, pass this as startKey for the next page (only set when more results exist) */
+  nextStartKey?: string;
 }
 
 // ============================================================================

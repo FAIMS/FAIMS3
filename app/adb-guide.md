@@ -43,6 +43,7 @@ This guide explains how to test FAIMS3 on a physical Android device when develop
    - Or your phone manufacturer's driver
 
 3. **Verify ADB sees your device**
+
    ```powershell
    adb devices
    ```
@@ -138,7 +139,6 @@ adb reverse tcp:5984 tcp:5984   # CouchDB
 ./dev.sh
 ```
 
-
 ### Step 6: Switch Capacitor Config and launch
 
 Then from within `/app`:
@@ -193,6 +193,7 @@ With `webContentsDebuggingEnabled: true` in the Capacitor config, you can use Ch
 ### Find the correct package name
 
 If `pidof` returns nothing, verify the package name:
+
 ```bash
 adb shell pm list packages | grep -i faims
 ```

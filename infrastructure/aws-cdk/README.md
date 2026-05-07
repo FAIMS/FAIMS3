@@ -316,12 +316,13 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `retentionDays`: The number of days to retain backups (default: 30)
   - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
 - `uiConfiguration`: UI and app build-time settings for the main FAIMS frontend.
-  - `uiTheme`: The UI theme: `bubble`, `default`, or `bssTheme`
+  - `uiTheme`: The UI theme: `bubble`, `default`, `fieldmark` or `bssTheme`
   - `notebookListType`: Notebook list display mode: `tabs` or `headings`
   - `notebookName`: Display name for notebooks, e.g. `survey` or `notebook`
   - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")
   - `appId`: App identifier for mobile builds (e.g. "FAIMS" or reverse-domain)
   - `headingAppName`: (Optional) Override for the banner heading; defaults to `appName`
+  - `forceRemoteDeletion`: (Optional) `allow` or `never` — whether the mobile app removes local survey databases after sync when a survey is archived (must match app build). Passed to `VITE_FORCE_REMOTE_DELETION` for both `/app` and Control Centre web builds. Defaults to `never` when omitted.
   - `offlineMaps`: Map and tile configuration for the app.
     - `mapSource`: Map tile provider: `osm` or `maptiler`
     - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)
@@ -332,7 +333,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `source`: `NONE` (disable), `MAPBOX`, or `MAPTILER`
     - `mapboxKey`: (Required when `source` is `MAPBOX`) Mapbox access token for Search Box API
     - `mapboxAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for Mapbox (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-    - `maptilerKey`: (Optional when `source` is `MAPTILER`) MapTiler API key for the Geocoding API (see https://cloud.maptiler.com/). If omitted and your map tiles use MapTiler (`mapSource` is `maptiler` and `mapSourceKey` is set), that key is used for address autosuggest as well. Provide `maptilerKey` only when you want a *separate* key for autosuggest (e.g. different quotas or restrictions) than for map tiles.
+    - `maptilerKey`: (Optional when `source` is `MAPTILER`) MapTiler API key for the Geocoding API (see https://cloud.maptiler.com/). If omitted and your map tiles use MapTiler (`mapSource` is `maptiler` and `mapSourceKey` is set), that key is used for address autosuggest as well. Provide `maptilerKey` only when you want a _separate_ key for autosuggest (e.g. different quotas or restrictions) than for map tiles.
     - `maptilerAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for MapTiler (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
   - Example with MapTiler autosuggest (shared key): `"addressAutosuggest": { "source": "MAPTILER", "maptilerAddressCountry": "AU" }` when `offlineMaps.mapSource` is `maptiler` and `mapSourceKey` is set. Example with a dedicated autosuggest key: `"addressAutosuggest": { "source": "MAPTILER", "maptilerKey": "your-geocoding-key", "maptilerAddressCountry": "AU" }`
 

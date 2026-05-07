@@ -27,7 +27,7 @@ import {PostLoginInput} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
 import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
-import {CONDUCTOR_INSTANCE_NAME, LOCAL_COUCHDB_AUTH, LOCAL_LOGIN_ENABLED} from '../src/buildconfig';
+import {LOCAL_COUCHDB_AUTH, LOCAL_LOGIN_ENABLED} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
 

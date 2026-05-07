@@ -1,24 +1,8 @@
 {
   "name": "@faims3/app",
-  "packageManager": "pnpm@10.7.0",
-  "version": "1.4.3",
+  "version": "1.5.2",
   "private": true,
   "type": "module",
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "prestart": "pnpm run runconfig",
     "start": "vite",
@@ -43,10 +27,10 @@
     "webapp-build": "cap copy",
     "webapp-sync": "cap sync",
     "app-update": "cap update",
-    "lint": "gts lint",
+    "lint": "oxlint -c ../.oxlintrc.json .",
     "clean": "gts clean",
     "compile": "tsc",
-    "fix": "gts fix",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt .",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
     "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
@@ -101,7 +85,7 @@
     "jose": "5.2.3",
     "jsonpointer": "5.0.1",
     "levelup": "^5.1.1",
-    "lodash": "4.17.23",
+    "lodash": "4.18.1",
     "markdown-it": "^14.1.1",
     "moment": "2.29.4",
     "ol": "^10.3.1",
@@ -140,7 +124,6 @@
     "@vitejs/plugin-react-swc": "^4.0.1",
     "@vitest/coverage-v8": "^2.1.8",
     "esbuild": "^0.25.0",
-    "eslint-plugin-react": "^7.32.2",
     "fast-check": "2.25.0",
     "gts": "^5.3.1",
     "jsdoc": "^4.0.2",
@@ -150,9 +133,25 @@
     "node-gyp": "^9.3.1",
     "type-fest": "^4.20.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.11",
+    "vite": "^7.3.2",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8"
-  }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
 }

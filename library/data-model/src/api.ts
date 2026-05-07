@@ -1,8 +1,16 @@
 import {z} from 'zod';
+import {
+  formRelationshipSchema,
+  formUpdateDataSchema,
+  hydratedRecordDocumentSchema,
+  hydratedRevisionDocumentSchema,
+  newFormRecordSchema,
+} from './databaseEngine';
 import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
+  TemplateListItemSchema,
 } from './data_storage/templatesDB/types';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
@@ -100,6 +108,7 @@ export const GetListAllUsersResponseSchema = z.array(
     name: true,
     user_id: true,
     profiles: true,
+    disabled: true,
   })
     // configure to strip not fail for extra fields
     .strip()
@@ -319,6 +328,14 @@ export type PutChangeNotebookTeamInput = z.infer<
   typeof PutChangeNotebookTeamInputSchema
 >;
 
+/** Body for POST /api/notebooks/:id/delete — must match project name exactly. */
+export const PostDestroyNotebookInputSchema = z.object({
+  confirmName: z.string().min(1),
+});
+export type PostDestroyNotebookInput = z.infer<
+  typeof PostDestroyNotebookInputSchema
+>;
+
 // POST create new notebook from template response
 export const PostCreateNotebookResponseSchema = z.object({
   notebook: z.string(),
@@ -409,6 +426,8 @@ export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
 }).extend({
   // prefer to use a nicer team ID input field
   teamId: z.string().trim().min(1).optional(),
+  /** When true, template is visible in the public list for all users */
+  isPublic: z.boolean().optional(),
 });
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
@@ -442,18 +461,63 @@ export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
+/** PUT /api/templates/:id/visibility */
+export const PutTemplateSetVisibilityInputSchema = z.object({
+  isPublic: z.boolean(),
+});
+export type PutTemplateSetVisibilityInput = z.infer<
+  typeof PutTemplateSetVisibilityInputSchema
+>;
+
+/**
+ * Full template document as returned by GET /templates/:id.
+ * Extends the stored document with optional server-injected fields (not persisted in CouchDB).
+ */
+export const TemplateApiDocumentSchema = ExistingTemplateDocumentSchema.extend({
+  /** Owning team's display name, looked up by the API when ownedByTeamId is set. */
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiDocument = z.infer<typeof TemplateApiDocumentSchema>;
+
+/**
+ * Template list row from GET /templates (summaries only; no ui-specification).
+ * Includes the same optional {@link TemplateApiDocument.ownedByTeamDisplayName} injection as the detail GET.
+ */
+export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
+
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(ExistingTemplateDocumentSchema),
+  templates: z.array(TemplateApiListItemSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
 
 // GET a specific template by _id response
-export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
+export const GetTemplateByIdResponseSchema = TemplateApiDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
+>;
+
+/** POST /api/templates/:id/restore — un-archive; body optional (empty JSON allowed). */
+export const PostRestoreTemplateRequestSchema = z.object({}).strict();
+export type PostRestoreTemplateRequest = z.infer<
+  typeof PostRestoreTemplateRequestSchema
+>;
+export const PostRestoreTemplateResponseSchema = ExistingTemplateDocumentSchema;
+export type PostRestoreTemplateResponse = z.infer<
+  typeof PostRestoreTemplateResponseSchema
+>;
+
+/** GET /api/templates/:id/references — how many surveys reference this template. */
+export const GetTemplateSurveyReferencesResponseSchema = z.object({
+  count: z.number().int().nonnegative(),
+});
+export type GetTemplateSurveyReferencesResponse = z.infer<
+  typeof GetTemplateSurveyReferencesResponseSchema
 >;
 
 // EMAIL RESET
@@ -814,6 +878,128 @@ export const PutConfirmEmailVerificationResponseSchema = z.object({
 export type PutConfirmEmailVerificationResponse = z.infer<
   typeof PutConfirmEmailVerificationResponseSchema
 >;
+
+// ==================
+// RECORDS API
+// ==================
+// Stateless CRUD for /api/notebooks/:id/records (list metadata: GET …/records/metadata)
+
+/** POST create record body (createdBy optional, filled server-side) */
+export const PostCreateRecordInputSchema = newFormRecordSchema.partial({
+  createdBy: true,
+});
+export type PostCreateRecordInput = z.infer<typeof PostCreateRecordInputSchema>;
+
+/** POST create record response */
+export const PostCreateRecordResponseSchema = z.object({
+  recordId: z.string(),
+  revisionId: z.string(),
+});
+export type PostCreateRecordResponse = z.infer<
+  typeof PostCreateRecordResponseSchema
+>;
+
+/** GET list records query (all values are strings from query string) */
+export const GetListRecordsQuerySchema = z
+  .object({
+    formId: z.string().optional(),
+    limit: z.string().optional(),
+    startKey: z.string().optional(),
+    filterDeleted: z.enum(['true', 'false']).optional(),
+  })
+  .refine(
+    data => {
+      if (data.limit === undefined || data.limit === '') return true;
+      const n = parseInt(data.limit, 10);
+      return !Number.isNaN(n) && n >= 1 && n <= 500;
+    },
+    {message: 'limit must be between 1 and 500'}
+  );
+export type GetListRecordsQuery = z.infer<typeof GetListRecordsQuerySchema>;
+
+/** Single record entry in list response (dates as ISO strings) */
+export const ListRecordsItemSchema = z.object({
+  projectId: z.string(),
+  recordId: z.string(),
+  revisionId: z.string(),
+  created: z.string(),
+  createdBy: z.string(),
+  updated: z.string(),
+  updatedBy: z.string(),
+  conflicts: z.boolean(),
+  deleted: z.boolean(),
+  type: z.string(),
+  relationship: formRelationshipSchema.optional(),
+});
+export type ListRecordsItem = z.infer<typeof ListRecordsItemSchema>;
+
+/** GET list records response */
+export const GetListRecordsResponseSchema = z.object({
+  records: z.array(ListRecordsItemSchema),
+});
+export type GetListRecordsResponse = z.infer<
+  typeof GetListRecordsResponseSchema
+>;
+
+/** GET one record query (revisionId for specific revision) */
+export const GetRecordQuerySchema = z.object({
+  revisionId: z.string().optional(),
+});
+export type GetRecordQuery = z.infer<typeof GetRecordQuerySchema>;
+
+/** GET one record response (existing form data) */
+export const GetRecordResponseSchema = z.object({
+  revisionId: z.string(),
+  formId: z.string(),
+  data: formUpdateDataSchema,
+  context: z.object({
+    hrid: z.string(),
+    record: hydratedRecordDocumentSchema,
+    revision: hydratedRevisionDocumentSchema,
+  }),
+});
+export type GetRecordResponse = z.infer<typeof GetRecordResponseSchema>;
+
+/** PATCH update record body */
+export const PatchUpdateRecordInputSchema = z.object({
+  revisionId: z.string(),
+  update: formUpdateDataSchema,
+  mode: z.enum(['new', 'parent']).optional(),
+});
+export type PatchUpdateRecordInput = z.infer<
+  typeof PatchUpdateRecordInputSchema
+>;
+
+/** PATCH update record response */
+export const PatchUpdateRecordResponseSchema = z.object({
+  revisionId: z.string(),
+});
+export type PatchUpdateRecordResponse = z.infer<
+  typeof PatchUpdateRecordResponseSchema
+>;
+
+/** POST fork revision body (parent revision to copy AVPs from) */
+export const PostCreateRevisionInputSchema = z.object({
+  revisionId: z.string(),
+  createdBy: z.string().optional(),
+});
+export type PostCreateRevisionInput = z.infer<
+  typeof PostCreateRevisionInputSchema
+>;
+
+/** POST fork revision response */
+export const PostCreateRevisionResponseSchema = z.object({
+  revisionId: z.string(),
+});
+export type PostCreateRevisionResponse = z.infer<
+  typeof PostCreateRevisionResponseSchema
+>;
+
+/** DELETE record query (revisionId required) */
+export const DeleteRecordQuerySchema = z.object({
+  revisionId: z.string(),
+});
+export type DeleteRecordQuery = z.infer<typeof DeleteRecordQuerySchema>;
 
 // ============================
 // LONG LIVED TOKENS API ROUTES

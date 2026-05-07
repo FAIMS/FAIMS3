@@ -20,6 +20,7 @@
 
 import {
   Action,
+  ProjectStatus,
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
@@ -29,12 +30,14 @@ import {
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getNotebookFieldTypes,
   getRecordListAudit,
   getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
+  PostDestroyNotebookInputSchema,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
   PostRecordStatusInputSchema,
@@ -48,8 +51,11 @@ import {
   removeProjectRole,
   Role,
   slugify,
+  isPeopleUserAccountDisabled,
+  userCanReadTemplateDocument,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
@@ -75,8 +81,9 @@ import {
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
 import {FullExportConfigSchema} from '../couchdb/export/types';
+import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
-  changeNotebookStatus,
+  applyNotebookLifecycleStatus,
   changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
@@ -89,8 +96,10 @@ import {
   getUserProjectsDetailed,
   updateNotebook,
 } from '../couchdb/notebooks';
+import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
   getUsers,
@@ -103,6 +112,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {recordsRouter} from './records';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
@@ -111,382 +121,35 @@ patch();
 
 export const api: express.Router = express.Router();
 
-/**
- * Gets a list of notebooks
- */
-api.get(
-  '/',
-  requireAuthenticationAPI,
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
-  async (req, res: Response<GetNotebookListResponse>) => {
-    // get a list of notebooks from the db
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
-    res.json(notebooks);
-  }
-);
-
-/**
- * POST to /notebooks/ to create a new notebook.
- *
- * This route accepts either a from scratch or from template payload. The
- * inclusion of a template_id indicates from a template, and the inclusion of a
- * ui-specification and metadata indicates from scratch. Both payloads are
- * validated in a type safe way.
- */
-api.post(
-  '/',
-  requireAuthenticationAPI,
-  processRequest({
-    body: PostCreateNotebookInputSchema,
-  }),
-  isAllowedToMiddleware({
-    getAction(req) {
-      const body = req.body as PostCreateNotebookInput;
-      // If in team - suitable action (which is against team ID)
-      if (body.teamId) {
-        return Action.CREATE_PROJECT_IN_TEAM;
-      } else {
-        // Otherwise global create project required
-        return Action.CREATE_PROJECT;
-      }
-    },
-    getResourceId(req) {
-      const body = req.body as PostCreateNotebookInput;
-      if (body.teamId) {
-        // If creating a project in a team, the resource ID is the team!
-        return body.teamId;
-      } else {
-        // If creating a project globally - there is no resource ID!
-        return undefined;
-      }
-    },
-  }),
-  async (req, res: Response<PostCreateNotebookResponse>) => {
-    // Force a check to be sure
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-    // Validate payload combination
-    if ('ui-specification' in req.body && 'template_id' in req.body) {
-      throw new Exceptions.ValidationException(
-        'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
-      );
-    }
-
-    // Functions which determine which type of payload is present
-
-    // TODO consider using a discriminated union approach for parsing here to
-    // make this more efficient e.g. zod allows literals on objects with
-    // discriminated unions on this
-    const isFromScratch = (
-      payload: PostCreateNotebookInput
-    ): payload is CreateNotebookFromScratch => {
-      return 'ui-specification' in payload;
-    };
-    const isFromTemplate = (
-      payload: PostCreateNotebookInput
-    ): payload is CreateNotebookFromTemplate => {
-      return 'template_id' in payload;
-    };
-
-    // Metadata is from payload, or from template
-    let metadata: any;
-    // ui Spec is from payload if manual, or from template
-    let uiSpec: EncodedProjectUIModel;
-    // Project name is in both payloads
-    const projectName: string = req.body.name;
-    // Template ID is only needed if created from template
-    let templateId: string | undefined = undefined;
-
-    // Check the type of creation
-    if (isFromTemplate(req.body)) {
-      // Now we use the template to get details needed to instantiate a new notebook
-      const template = await getTemplate(req.body.template_id);
-
-      // Pull out values needed to create a new notebook
-      metadata = template.metadata;
-      uiSpec = template['ui-specification'];
-      templateId = template._id;
-    } else if (isFromScratch(req.body)) {
-      // Creating a new notebook from scratch
-      uiSpec = req.body['ui-specification'];
-      metadata = req.body.metadata;
-    } else {
-      throw new Exceptions.ValidationException(
-        'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
-      );
-    }
-
-    const projectID = await createNotebook(
-      projectName,
-      uiSpec,
-      metadata,
-      // link to template ID if necessary
-      templateId,
-      // team ID if provided (authorisation to do so already checked)
-      req.body.teamId
+function permissionRequiredForNotebookStatusChange(
+  current: ProjectStatus,
+  target: ProjectStatus
+): Action {
+  if (target === ProjectStatus.OPEN && current === ProjectStatus.ARCHIVED) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
     );
-    if (projectID) {
-      // Make the user an admin of this notebook
-      addProjectRole({
-        user: req.user,
-        projectId: projectID,
-        role: Role.PROJECT_ADMIN,
-      });
-      await saveExpressUser(req.user);
-      res.json({notebook: projectID} satisfies PostCreateNotebookResponse);
-    } else {
-      throw new Exceptions.InternalSystemError(
-        'Error occurred during notebook creation.'
-      );
-    }
   }
-);
 
-// Get a specific notebook by ID
-api.get(
-  '/:id',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.READ_PROJECT_METADATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({params: z.object({id: z.string()})}),
-  async (req, res: Response<GetNotebookResponse>) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-
-    // get full details of a single notebook
-    const projectId = req.params.id;
-
-    const project = await getProjectById(projectId);
-    const metadata = await getNotebookMetadata(projectId);
-    const uiSpec = await getEncodedNotebookUISpec(projectId);
-
-    if (metadata && uiSpec) {
-      res.json({
-        // include name
-        name: project.name,
-        metadata,
-        // TODO fully implement a UI Spec zod model, and do runtime validation
-        // in all client apps
-        'ui-specification': uiSpec as unknown as Record<string, unknown>,
-        ownedByTeamId: project.ownedByTeamId,
-        status: project.status,
-        recordCount: await countRecordsInNotebook(projectId),
-      } satisfies GetNotebookResponse);
-    } else {
-      throw new Exceptions.ItemNotFoundException(
-        'Notebook not found. ' +
-          JSON.stringify({
-            'ui-specification': uiSpec as unknown as Record<string, unknown>,
-            ownedByTeamId: project.ownedByTeamId,
-            status: project.status,
-            metadata,
-          })
-      );
-    }
+  if (current === target) {
+    return current === ProjectStatus.ARCHIVED
+      ? Action.CHANGE_PROJECT_ARCHIVE_STATUS
+      : Action.CHANGE_PROJECT_STATUS;
   }
-);
 
-// PUT a new version of a notebook
-api.put(
-  '/:id',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.UPDATE_PROJECT_UISPEC,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({id: z.string()}),
-    body: PutUpdateNotebookInputSchema,
-  }),
-  async (req, res: Response<PutUpdateNotebookResponse>) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-    const uiSpec = req.body['ui-specification'];
-    const metadata = req.body.metadata;
-    const projectID = req.params.id;
-    await updateNotebook(projectID, uiSpec, metadata);
-    return res.json({notebook: projectID});
+  if (target === ProjectStatus.ARCHIVED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
   }
-);
 
-// PUT change project status
-api.put(
-  '/:projectId/status',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_STATUS,
-    getResourceId(req) {
-      return req.params.projectId;
-    },
-  }),
-  processRequest({
-    params: z.object({projectId: z.string()}),
-    body: PutChangeNotebookStatusInputSchema,
-  }),
-  async ({body: {status}, params: {projectId}}, res) => {
-    await changeNotebookStatus({projectId, status});
-    res.sendStatus(200);
-    return;
+  if (current === ProjectStatus.ARCHIVED && target === ProjectStatus.CLOSED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
   }
-);
 
-// PUT change project team
-api.put(
-  '/:projectId/team',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_TEAM,
-    getResourceId(req) {
-      return req.params.projectId;
-    },
-  }),
-  processRequest({
-    params: z.object({projectId: z.string()}),
-    body: PutChangeNotebookTeamInputSchema,
-  }),
-  async ({body: {teamId}, params: {projectId}}, res) => {
-    await changeNotebookTeam({projectId, teamId});
-    res.sendStatus(200);
-    return;
-  }
-);
-
-// POST to check sync status of a set of records
-api.post(
-  '/:id/sync-status/',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.AUDIT_ALL_PROJECT_RECORDS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({id: z.string()}),
-    body: PostRecordStatusInputSchema,
-  }),
-  async (req, res: Response<PostRecordStatusResponse>) => {
-    const {id: projectId} = req.params;
-    const {record_map} = req.body;
-
-    const dataDb = await getDataDb(projectId);
-
-    // compute hashes from our database for these records
-    const recordIds = Object.getOwnPropertyNames(record_map);
-    const localHashes = await getRecordListAudit({
-      recordIds,
-      dataDb,
-    });
-    // compare these hashes with the payload
-    const result: Record<string, boolean> = {};
-    for (const recordId of recordIds) {
-      const localHash = localHashes[recordId];
-      result[recordId] = record_map[recordId] === localHash;
-    }
-
-    res.json({
-      status: result,
-    });
-  }
-);
-
-// export current versions of all records in this notebook
-api.get(
-  '/:id/records/',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
-  // TODO complete type annotations for this method
-  async (req, res: Response<{records: any}>) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-    const tokenContents = mockTokenContentsForUser(req.user);
-    const {id: projectId} = req.params;
-    const uiSpecification = (await getProjectUIModel(
-      req.params.id
-    )) as ProjectUIModel;
-    const dataDb = await getDataDb(projectId);
-    const records = await getRecordsWithRegex({
-      dataDb,
-      filterDeleted: true,
-      projectId,
-      regex: '.*',
-      tokenContents,
-      uiSpecification,
-    });
-    if (records) {
-      const filenames: string[] = [];
-      // Process any file fields to give the file name in the zip download
-      records.forEach(record => {
-        const hrid = record.hrid || record.record_id;
-        for (const fieldName in record.data) {
-          const values = record.data[fieldName];
-          if (values instanceof Array) {
-            const names = values.map((v: any) => {
-              if (v instanceof File) {
-                let viewID = record.type;
-                try {
-                  const viewsetId = getIdsByFieldName({
-                    fieldName,
-                    uiSpecification,
-                  }).viewSetId;
-                  viewID = viewsetId;
-                } catch (e) {
-                  console.error(
-                    'missing viewset for field',
-                    fieldName,
-                    'falling back to type'
-                  );
-                }
-                const filename = generateFilenameForAttachment({
-                  file: v,
-                  fieldId: fieldName,
-                  hrid,
-                  // The view ID is the viewset ID - which is the 'type'
-                  viewID,
-                  filenames,
-                });
-                filenames.push(filename);
-                return filename;
-              } else {
-                return v;
-              }
-            });
-            if (names.length > 0) {
-              record.data[fieldName] = names;
-            }
-          }
-        }
-      });
-      res.json({records});
-    } else {
-      throw new Exceptions.ItemNotFoundException('Notebook not found');
-    }
-  }
-);
+  return Action.CHANGE_PROJECT_STATUS;
+}
 
 // =============================================================================
-// Types for download format and token payloads
+// Types for download format and token payloads (must be before records router)
 // =============================================================================
 
 const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
@@ -686,7 +349,7 @@ api.get(
     // check the view ID is valid
     if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
       throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.query.viewID} not found in notebook`
+        `Form with id ${req.params.viewID} not found in notebook`
       );
     }
 
@@ -703,6 +366,474 @@ api.get(
       payload: payload,
     });
     return res.redirect(`/api/notebooks/download/${jwt}`);
+  }
+);
+
+// Stateless CRUD API for record data (mount so :id = projectId)
+api.use('/:id/records', recordsRouter);
+
+/**
+ * Gets a list of notebooks
+ */
+api.get(
+  '/',
+  requireAuthenticationAPI,
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
+  async (req, res: Response<GetNotebookListResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const includeArchived = req.query.includeArchived === 'true';
+    const notebooks = await getUserProjectsDetailed(
+      req.user,
+      req.query.teamId,
+      includeArchived
+    );
+    res.json(notebooks);
+  }
+);
+
+/**
+ * POST to /notebooks/ to create a new notebook.
+ *
+ * This route accepts either a from scratch or from template payload. The
+ * inclusion of a template_id indicates from a template, and the inclusion of a
+ * ui-specification and metadata indicates from scratch. Both payloads are
+ * validated in a type safe way.
+ */
+api.post(
+  '/',
+  requireAuthenticationAPI,
+  processRequest({
+    body: PostCreateNotebookInputSchema,
+  }),
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateNotebookInput;
+      // If in team - suitable action (which is against team ID)
+      if (body.teamId) {
+        return Action.CREATE_PROJECT_IN_TEAM;
+      } else {
+        // Otherwise global create project required
+        return Action.CREATE_PROJECT;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateNotebookInput;
+      if (body.teamId) {
+        // If creating a project in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a project globally - there is no resource ID!
+        return undefined;
+      }
+    },
+  }),
+  async (req, res: Response<PostCreateNotebookResponse>) => {
+    // Force a check to be sure
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    // Validate payload combination
+    if ('ui-specification' in req.body && 'template_id' in req.body) {
+      throw new Exceptions.ValidationException(
+        'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
+      );
+    }
+
+    // Functions which determine which type of payload is present
+
+    // TODO consider using a discriminated union approach for parsing here to
+    // make this more efficient e.g. zod allows literals on objects with
+    // discriminated unions on this
+    const isFromScratch = (
+      payload: PostCreateNotebookInput
+    ): payload is CreateNotebookFromScratch => {
+      return 'ui-specification' in payload;
+    };
+    const isFromTemplate = (
+      payload: PostCreateNotebookInput
+    ): payload is CreateNotebookFromTemplate => {
+      return 'template_id' in payload;
+    };
+
+    // Metadata is from payload, or from template
+    let metadata: any;
+    // ui Spec is from payload if manual, or from template
+    let uiSpec: EncodedProjectUIModel;
+    // Project name is in both payloads
+    const projectName: string = req.body.name;
+    // Template ID is only needed if created from template
+    let templateId: string | undefined = undefined;
+
+    // Check the type of creation
+    if (isFromTemplate(req.body)) {
+      // Now we use the template to get details needed to instantiate a new notebook
+      const template = await getTemplate(req.body.template_id);
+
+      if (
+        !userCanReadTemplateDocument({
+          decodedToken: {
+            globalRoles: req.user.globalRoles,
+            resourceRoles: req.user.resourceRoles,
+          },
+          template,
+        })
+      ) {
+        throw new Exceptions.UnauthorizedException(
+          'You are not authorized to use this template.'
+        );
+      }
+
+      if (template.archived === true) {
+        throw new Exceptions.InvalidRequestException(
+          'Cannot create a notebook from an archived template.'
+        );
+      }
+
+      // Pull out values needed to create a new notebook
+      metadata = template.metadata;
+      uiSpec = template['ui-specification'];
+      templateId = template._id;
+    } else if (isFromScratch(req.body)) {
+      // Creating a new notebook from scratch
+      uiSpec = req.body['ui-specification'];
+      metadata = req.body.metadata;
+    } else {
+      throw new Exceptions.ValidationException(
+        'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
+      );
+    }
+
+    const projectID = await createNotebook(
+      projectName,
+      uiSpec,
+      metadata,
+      // link to template ID if necessary
+      templateId,
+      // team ID if provided (authorisation to do so already checked)
+      req.body.teamId
+    );
+    if (projectID) {
+      // Make the user an admin of this notebook
+      addProjectRole({
+        user: req.user,
+        projectId: projectID,
+        role: Role.PROJECT_ADMIN,
+      });
+      await saveExpressUser(req.user);
+      res.json({notebook: projectID} satisfies PostCreateNotebookResponse);
+    } else {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred during notebook creation.'
+      );
+    }
+  }
+);
+
+// Get a specific notebook by ID
+api.get(
+  '/:id',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_PROJECT_METADATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string()})}),
+  async (req, res: Response<GetNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    // get full details of a single notebook
+    const projectId = req.params.id;
+
+    const project = await getProjectById(projectId);
+    const metadata = await getNotebookMetadata(projectId);
+    const uiSpec = await getEncodedNotebookUISpec(projectId);
+
+    if (metadata && uiSpec) {
+      res.json({
+        // include name
+        name: project.name,
+        metadata,
+        // TODO fully implement a UI Spec zod model, and do runtime validation
+        // in all client apps
+        'ui-specification': uiSpec as unknown as Record<string, unknown>,
+        ownedByTeamId: project.ownedByTeamId,
+        status: project.status,
+        recordCount: await countRecordsInNotebook(projectId),
+      } satisfies GetNotebookResponse);
+    } else {
+      throw new Exceptions.ItemNotFoundException(
+        'Notebook not found. ' +
+          JSON.stringify({
+            'ui-specification': uiSpec as unknown as Record<string, unknown>,
+            ownedByTeamId: project.ownedByTeamId,
+            status: project.status,
+            metadata,
+          })
+      );
+    }
+  }
+);
+
+// PUT a new version of a notebook
+api.put(
+  '/:id',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.UPDATE_PROJECT_UISPEC,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutUpdateNotebookInputSchema,
+  }),
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const uiSpec = req.body['ui-specification'];
+    const metadata = req.body.metadata;
+    const projectID = req.params.id;
+    await updateNotebook(projectID, uiSpec, metadata);
+    return res.json({notebook: projectID});
+  }
+);
+
+// PUT set notebook lifecycle status (open / closed / archived)
+api.put(
+  '/:id/status',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutChangeNotebookStatusInputSchema,
+  }),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {id} = req.params;
+    const {status: targetStatus} = req.body;
+    const project = await getProjectById(id);
+    const requiredAction = permissionRequiredForNotebookStatusChange(
+      project.status,
+      targetStatus
+    );
+
+    if (
+      !userCanDo({
+        user: req.user,
+        action: requiredAction,
+        resourceId: id,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+
+    await applyNotebookLifecycleStatus(project, targetStatus);
+    res.sendStatus(200);
+  }
+);
+
+// PUT change project team
+api.put(
+  '/:projectId/team',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_PROJECT_TEAM,
+    getResourceId(req) {
+      return req.params.projectId;
+    },
+  }),
+  processRequest({
+    params: z.object({projectId: z.string()}),
+    body: PutChangeNotebookTeamInputSchema,
+  }),
+  async ({body: {teamId}, params: {projectId}}, res) => {
+    await changeNotebookTeam({projectId, teamId});
+    res.sendStatus(200);
+    return;
+  }
+);
+
+// POST to check sync status of a set of records
+api.post(
+  '/:id/sync-status/',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.AUDIT_ALL_PROJECT_RECORDS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PostRecordStatusInputSchema,
+  }),
+  async (req, res: Response<PostRecordStatusResponse>) => {
+    const {id: projectId} = req.params;
+    const {record_map} = req.body;
+
+    const dataDb = await getDataDb(projectId);
+
+    // compute hashes from our database for these records
+    const recordIds = Object.getOwnPropertyNames(record_map);
+    const localHashes = await getRecordListAudit({
+      recordIds,
+      dataDb,
+    });
+    // compare these hashes with the payload
+    const result: Record<string, boolean> = {};
+    for (const recordId of recordIds) {
+      const localHash = localHashes[recordId];
+      result[recordId] = record_map[recordId] === localHash;
+    }
+
+    res.json({
+      status: result,
+    });
+  }
+);
+
+// export current versions of all records in this notebook
+api.get(
+  '/:id/records/',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  // TODO complete type annotations for this method
+  async (req, res: Response<{records: any}>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const tokenContents = mockTokenContentsForUser(req.user);
+    const {id: projectId} = req.params;
+    const uiSpecification = (await getProjectUIModel(
+      req.params.id
+    )) as ProjectUIModel;
+    const dataDb = await getDataDb(projectId);
+    const records = await getRecordsWithRegex({
+      dataDb,
+      filterDeleted: true,
+      projectId,
+      regex: '.*',
+      tokenContents,
+      uiSpecification,
+    });
+    if (records) {
+      const filenames: string[] = [];
+      const viewIdsNeedingFieldTypes = new Set(
+        records.filter(r => r.data && r.type).map(r => r.type)
+      );
+
+      const fieldTypesByViewId: Partial<
+        Record<string, ReturnType<typeof getNotebookFieldTypes>>
+      > = {};
+      for (const viewID of viewIdsNeedingFieldTypes) {
+        try {
+          fieldTypesByViewId[viewID] = getNotebookFieldTypes({
+            uiSpecification,
+            viewID,
+          });
+        } catch (e) {
+          console.error(
+            'Failed to get notebook field types for export',
+            viewID,
+            e
+          );
+        }
+      }
+      // Process any file fields to give the file name in the zip download
+      for (const record of records) {
+        if (record.data) {
+          const fields = fieldTypesByViewId[record.type];
+          if (fields) {
+            try {
+              const dataCopy = {...record.data};
+              await stripDeletedRelatedRefsFromRecordData({
+                fields,
+                data: dataCopy,
+                dataDb,
+                uiSpecification,
+              });
+              record.data = dataCopy;
+            } catch (e) {
+              console.error(
+                'Failed to strip deleted related record refs for export',
+                e
+              );
+            }
+          }
+        }
+        const exportData = record.data;
+        if (!exportData) {
+          continue;
+        }
+        const hrid = record.hrid || record.record_id;
+        for (const fieldName in exportData) {
+          const values = exportData[fieldName];
+          if (values instanceof Array) {
+            const names = values.map((v: any) => {
+              if (v instanceof File) {
+                let viewID = record.type;
+                try {
+                  const viewsetId = getIdsByFieldName({
+                    fieldName,
+                    uiSpecification,
+                  }).viewSetId;
+                  viewID = viewsetId;
+                } catch (e) {
+                  console.error(
+                    'missing viewset for field',
+                    fieldName,
+                    'falling back to type'
+                  );
+                }
+                const filename = generateFilenameForAttachment({
+                  file: v,
+                  fieldId: fieldName,
+                  hrid,
+                  // The view ID is the viewset ID - which is the 'type'
+                  viewID,
+                  filenames,
+                });
+                filenames.push(filename);
+                return filename;
+              } else {
+                return v;
+              }
+            });
+            if (names.length > 0) {
+              exportData[fieldName] = names;
+            }
+          }
+        }
+      }
+      res.json({records});
+    } else {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
+    }
   }
 );
 
@@ -812,7 +943,7 @@ api.get(
   }),
   processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
-    const users = await getUsers();
+    const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
     res.json({
       roles: allRoles,
@@ -880,6 +1011,12 @@ api.post(
       );
     }
 
+    if (addRole && isPeopleUserAccountDisabled(user)) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot assign project roles to a disabled user account.'
+      );
+    }
+
     // Get the notebook metadata to modify
     const notebookMetadata = await getNotebookMetadata(req.params.id);
 
@@ -907,7 +1044,10 @@ api.post(
   }
 );
 
-/** Deletes a given notebook by ID */
+/**
+ * Permanently destroys survey server data (invites, people roles, Couch DBs).
+ * Requires archive first. Allowed for survey administrators (or operations staff).
+ */
 api.post(
   '/:notebookId/delete',
   requireAuthenticationAPI,
@@ -917,12 +1057,22 @@ api.post(
       return req.params.notebookId;
     },
   }),
-  processRequest({params: z.object({notebookId: z.string()})}),
+  processRequest({
+    params: z.object({notebookId: z.string()}),
+    body: PostDestroyNotebookInputSchema,
+  }),
   async (req, res) => {
-    // Delete the notebook
-    await deleteNotebook(req.params.notebookId);
-
-    // 200 OK indicating successful deletion
+    const {notebookId} = req.params;
+    const {confirmName} = req.body;
+    const project = await getProjectById(notebookId);
+    if (project.name.trim() !== confirmName.trim()) {
+      throw new Exceptions.InvalidRequestException(
+        'Confirmation name must match the survey name exactly.'
+      );
+    }
+    await deleteAllInvitesForProject(notebookId);
+    await stripProjectRolesForProjectId(notebookId);
+    await deleteNotebook(notebookId);
     res.status(200).end();
   }
 );

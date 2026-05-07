@@ -1,6 +1,6 @@
 # Take point
 
-*How to add and configure a Take point field in the Notebook Editor.*
+_How to add and configure a Take point field in the Notebook Editor._
 
 ---
 
@@ -48,8 +48,8 @@ Field ID, and add any desired Helper Text.
 
 ### Take GPS Point-Specific Settings
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting               | What It Does                                                                      |
+| --------------------- | --------------------------------------------------------------------------------- |
 | **Button Label Text** | Custom text for the location button. If left empty, the field label will be used. |
 
 ### Shared Field Options

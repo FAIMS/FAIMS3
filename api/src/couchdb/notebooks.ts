@@ -127,6 +127,73 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
 };
 
 /**
+ * Returns project (survey) IDs whose directory document references the given
+ * template (`templateId` on the project document).
+ */
+export const getProjectIdsReferencingTemplate = async (
+  templateId: string
+): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  const res = await projectsDb.allDocs<ProjectDocument>({
+    include_docs: true,
+  });
+  const ids: string[] = [];
+  for (const row of res.rows) {
+    const doc = row.doc;
+    if (!doc || row.id.startsWith('_')) {
+      continue;
+    }
+    if (doc.templateId === templateId) {
+      ids.push(doc._id);
+    }
+  }
+  return ids;
+};
+
+/**
+ * Drops the per-field metadata doc for `template_id` if it exists (see
+ * `writeProjectMetadata`), so notebook details no longer cite the template.
+ */
+export const removeTemplateIdFromNotebookMetadata = async (
+  projectId: string
+): Promise<void> => {
+  try {
+    const metaDB = await getMetadataDb(projectId);
+    const docId = `${PROJECT_METADATA_PREFIX}-template_id`;
+    try {
+      const doc = await metaDB.get(docId);
+      await metaDB.remove(doc);
+    } catch {
+      // Field doc missing — nothing to do
+    }
+  } catch {
+    // Metadata DB unavailable
+  }
+};
+
+/**
+ * Clears `templateId` on all project documents that reference the template.
+ * Used when permanently deleting a template so surveys do not keep stale
+ * references.
+ */
+export const clearTemplateIdFromProjectsReferencingTemplate = async (
+  templateId: string
+): Promise<void> => {
+  const projectIds = await getProjectIdsReferencingTemplate(templateId);
+  const projectsDb = localGetProjectsDb();
+  for (const projectId of projectIds) {
+    const doc = await projectsDb.get(projectId);
+    if (doc.templateId !== templateId) {
+      continue;
+    }
+    const updated: ProjectDocument = {...doc};
+    delete updated.templateId;
+    await putProjectDoc(updated);
+    await removeTemplateIdFromNotebookMetadata(projectId);
+  }
+};
+
+/**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
@@ -157,15 +224,19 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
  * @param user - only return projects visible to this user
  */
 export const getUserProjectsDirectory = async (
-  user: Express.User
+  user: Express.User,
+  includeArchived = false
 ): Promise<ProjectDocument[]> => {
-  return (await getAllProjectsDirectory()).filter(p =>
-    userCanDo({
+  return (await getAllProjectsDirectory()).filter(p => {
+    if (!includeArchived && p.status === ProjectStatus.ARCHIVED) {
+      return false;
+    }
+    return userCanDo({
       user,
       action: Action.READ_PROJECT_METADATA,
       resourceId: p._id,
-    })
-  );
+    });
+  });
 };
 
 /**
@@ -175,7 +246,8 @@ export const getUserProjectsDirectory = async (
  */
 export const getUserProjectsDetailed = async (
   user: Express.User,
-  teamId: string | undefined = undefined
+  teamId: string | undefined = undefined,
+  includeArchived = false
 ): Promise<APINotebookList[]> => {
   // Get projects DB
   const projectsDb = localGetProjectsDb();
@@ -197,13 +269,16 @@ export const getUserProjectsDetailed = async (
   const userProjects = allDocs.rows
     .map(r => r.doc)
     .filter(d => d !== undefined && !d._id.startsWith('_'))
-    .filter(p =>
-      userCanDo({
+    .filter(p => {
+      if (!includeArchived && p!.status === ProjectStatus.ARCHIVED) {
+        return false;
+      }
+      return userCanDo({
         action: Action.READ_PROJECT_METADATA,
         resourceId: p!._id,
         user,
-      })
-    );
+      });
+    });
 
   // Process all projects in parallel using Promise.all
   const output = await Promise.all(
@@ -454,23 +529,27 @@ export const changeNotebookName = async ({
 };
 
 /**
- * Updates the notebook status to the targeted value
+ * Apply a lifecycle status change to an already-loaded project document.
+ * Used by PUT /api/notebooks/:id/status after authorization.
  */
-export const changeNotebookStatus = async ({
-  projectId,
-  status,
-}: {
-  projectId: string;
-  status: ProjectStatus;
-}) => {
-  // get existing project record
-  const project = await getProjectById(projectId);
+export const applyNotebookLifecycleStatus = async (
+  project: ProjectDocument,
+  targetStatus: ProjectStatus
+): Promise<void> => {
+  if (
+    targetStatus === ProjectStatus.OPEN &&
+    project.status === ProjectStatus.ARCHIVED
+  ) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
+    );
+  }
 
-  // update status
-  const updated = {...project, status};
+  if (project.status === targetStatus) {
+    return;
+  }
 
-  // write it back
-  await putProjectDoc(updated);
+  await putProjectDoc({...project, status: targetStatus});
 };
 
 /**

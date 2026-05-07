@@ -24,6 +24,7 @@ import {readAuthProviderConfigFromEnv} from '../src/auth/strategies/applyStrateg
 import {
   GoogleAuthProviderConfig,
   OIDCAuthProviderConfig,
+  SAMLAuthProviderConfig,
 } from '../src/auth/strategies/strategyTypes';
 
 describe('readAuthProviderConfigFromEnv', () => {
@@ -185,6 +186,62 @@ describe('readAuthProviderConfigFromEnv', () => {
     ).to.be.true;
 
     consoleWarnStub.restore();
+  });
+
+  it('maps SAML *_URL env keys from CDK to schema ...Url camelCase fields', () => {
+    process.env.AUTH_VG_TYPE = 'saml';
+    process.env.AUTH_VG_DISPLAY_NAME = 'Vanguard';
+    process.env.AUTH_VG_SCOPE = 'profile,email';
+    process.env.AUTH_VG_ENTRY_POINT = 'https://idp.example/sso';
+    process.env.AUTH_VG_ISSUER = 'https://sp.example/';
+    process.env.AUTH_VG_IDP_PUBLIC_KEY = 'MIIB';
+    process.env.AUTH_VG_METADATA_ERROR_URL =
+      'https://conductor.example/auth/vg/sso-error';
+    process.env.AUTH_VG_SSO_ERROR_PAGE_RETURN_URL = 'https://web.example/';
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).to.not.be.null;
+    const vg = result?.vg as SAMLAuthProviderConfig;
+    expect(vg.type).to.equal('saml');
+    expect(vg.metadataErrorURL).to.equal(
+      'https://conductor.example/auth/vg/sso-error'
+    );
+    expect(vg.ssoErrorPageReturnURL).to.equal('https://web.example/');
+    // Default to HTTP-POST
+    expect(vg.authnRequestBinding).to.equal('HTTP-POST');
+  });
+
+  it('parses SAML authnRequestBinding HTTP-POST from env', () => {
+    process.env.AUTH_VG_TYPE = 'saml';
+    process.env.AUTH_VG_DISPLAY_NAME = 'Vanguard';
+    process.env.AUTH_VG_SCOPE = 'profile,email';
+    process.env.AUTH_VG_ENTRY_POINT = 'https://idp.example/sso';
+    process.env.AUTH_VG_ISSUER = 'https://sp.example/';
+    process.env.AUTH_VG_IDP_PUBLIC_KEY = 'MIIB';
+    process.env.AUTH_VG_AUTHN_REQUEST_BINDING = 'HTTP-POST';
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).to.not.be.null;
+    const vg = result?.vg as SAMLAuthProviderConfig;
+    expect(vg.authnRequestBinding).to.equal('HTTP-POST');
+  });
+
+  it('parses SAML skipRequestCompression from env', () => {
+    process.env.AUTH_VG_TYPE = 'saml';
+    process.env.AUTH_VG_DISPLAY_NAME = 'Vanguard';
+    process.env.AUTH_VG_SCOPE = 'profile,email';
+    process.env.AUTH_VG_ENTRY_POINT = 'https://idp.example/sso';
+    process.env.AUTH_VG_ISSUER = 'https://sp.example/';
+    process.env.AUTH_VG_IDP_PUBLIC_KEY = 'MIIB';
+    process.env.AUTH_VG_SKIP_REQUEST_COMPRESSION = 'true';
+
+    const result = readAuthProviderConfigFromEnv();
+
+    expect(result).to.not.be.null;
+    const vg = result?.vg as SAMLAuthProviderConfig;
+    expect(vg.skipRequestCompression).to.equal(true);
   });
 
   it('should return null and log errors when validation fails', () => {

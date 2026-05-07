@@ -21,8 +21,5 @@
     "files": true,
     "typeCheck": true
   },
-  "include": [
-    "src",
-    "test"
-  ]
+  "include": ["src", "test"]
 }

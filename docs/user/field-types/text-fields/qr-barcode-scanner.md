@@ -1,7 +1,7 @@
 # QR / Barcode Scanner
 
-*How to add and configure a QR / Barcode Scanner field in the {{Notebook}}
-Editor.*
+_How to add and configure a QR / Barcode Scanner field in the {{Notebook}}
+Editor._
 
 ---
 

@@ -1,7 +1,7 @@
 # Date and Time with Now button
 
-*How to add and configure a Date and Time with Now button field in the {{Notebook}}
-Editor.*
+_How to add and configure a Date and Time with Now button field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -46,8 +46,8 @@ Field ID, and add any desired Helper Text.
 
 ### Date/Time with Now-Specific Settings
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting                | What It Does                                                                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Time pre-populated** | When enabled, the field is automatically filled with the current date and time when a new record is created. Collectors can still override the value. |
 
 ### Shared Field Options

@@ -1,6 +1,6 @@
 # Adding a Field
 
-*How to open the Add a field dialog and add a new field to your form.*
+_How to open the Add a field dialog and add a new field to your form._
 
 ---
 

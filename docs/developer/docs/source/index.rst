@@ -7,10 +7,11 @@ FAIMS3 Developer Documentation
 
    markdown/Drafts.md
    markdown/CouchMigrations.md
-   markdown/NotebookMigrations.md
    markdown/PermissionModel.md
+   markdown/NotebookMigrations.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
+   markdown/RecordsCRUDApi.md
    markdown/Configuration.md
    markdown/Android-Deployment.md
    markdown/Backup.md

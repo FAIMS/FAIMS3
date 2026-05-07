@@ -1,6 +1,6 @@
 # Checkbox
 
-*How to add and configure a Checkbox field in the Notebook Editor.*
+_How to add and configure a Checkbox field in the Notebook Editor._
 
 ---
 

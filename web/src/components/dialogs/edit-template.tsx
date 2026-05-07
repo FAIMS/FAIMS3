@@ -34,7 +34,7 @@ export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
 
   return (
     <div>
-      {data?.metadata.project_status === 'archived' ? (
+      {data?.archived === true ? (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger className="w-fit">

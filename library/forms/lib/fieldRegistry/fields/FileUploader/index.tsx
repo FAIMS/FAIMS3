@@ -695,7 +695,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         )}
 
         {/* Upload Area */}
-        {!disabled && (maxFiles === 0 || maxFiles > 0) && (
+        {!disabled && maxFiles >= 0 && (
           <DropzoneArea
             onDrop={handleDrop}
             onReject={handleReject}

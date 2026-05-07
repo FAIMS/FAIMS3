@@ -1,6 +1,6 @@
 # User Roles and Permissions Guide (Task-Organised)
 
-*This guide is organised by common tasks you need to perform, not by system components. Use the task index below to find exactly what you need to do.*
+_This guide is organised by common tasks you need to perform, not by system components. Use the task index below to find exactly what you need to do._
 
 ---
 
@@ -8,18 +8,18 @@
 
 ### 1.1 Task Index
 
-| I want to... | See |
-|--------------|-----|
-| Add someone to my team | [Onboarding a New Staff Member](#21-onboarding-a-new-staff-member) |
-| Remove someone's access entirely | [Off-boarding: Removing All Access](#22-off-boarding-removing-all-access) |
-| Give someone admin access to a {{notebook}} | [Changing Someone's Role](#26-changing-someones-role) |
-| Let an external collaborator into one {{notebook}} | [Granting External Collaborator Access](#25-granting-external-collaborator-access) |
-| Hand off a project to a colleague | [Handing Off a Project](#27-handing-off-a-project) |
-| Start a new project with {{notebooks}} and team members | [Starting a New Project](#23-starting-a-new-project) |
-| Create a new team | [Creating a Team](#24-creating-a-team) |
-| Create or manage invites for system roles | [Managing Invites → Global invites](#28-managing-invites) |
-| Figure out why someone can't see a {{notebook}} | [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-{{notebook}}) |
-| Understand what roles exist | [Reference: Role Definitions](#51-role-definitions) |
+| I want to...                                            | See                                                                                |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Add someone to my team                                  | [Onboarding a New Staff Member](#21-onboarding-a-new-staff-member)                 |
+| Remove someone's access entirely                        | [Off-boarding: Removing All Access](#22-off-boarding-removing-all-access)          |
+| Give someone admin access to a {{notebook}}             | [Changing Someone's Role](#26-changing-someones-role)                              |
+| Let an external collaborator into one {{notebook}}      | [Granting External Collaborator Access](#25-granting-external-collaborator-access) |
+| Hand off a project to a colleague                       | [Handing Off a Project](#27-handing-off-a-project)                                 |
+| Start a new project with {{notebooks}} and team members | [Starting a New Project](#23-starting-a-new-project)                               |
+| Create a new team                                       | [Creating a Team](#24-creating-a-team)                                             |
+| Create or manage invites for system roles               | [Managing Invites → Global invites](#28-managing-invites)                          |
+| Figure out why someone can't see a {{notebook}}         | [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-{{notebook}})           |
+| Understand what roles exist                             | [Reference: Role Definitions](#51-role-definitions)                                |
 
 ### 1.2 Role Hierarchy Diagram
 
@@ -35,12 +35,12 @@ Understanding virtual and direct access is essential for troubleshooting unexpec
 
 **Virtual roles** are automatically granted through team membership. When you add someone to a team, they immediately gain access to all {{notebooks}} owned by that team. The access level depends on their team role:
 
-| Team Role | Virtual {{Notebook}} Role |
-|-----------|----------------------|
-| Team Administrator | Administrator |
-| Team Manager | Manager |
-| Team Member (Contributor) | Contributor |
-| Team Member (Creator) | **None** (can create {{notebooks}} but doesn't automatically access existing ones) |
+| Team Role                 | Virtual {{Notebook}} Role                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| Team Administrator        | Administrator                                                                      |
+| Team Manager              | Manager                                                                            |
+| Team Member (Contributor) | Contributor                                                                        |
+| Team Member (Creator)     | **None** (can create {{notebooks}} but doesn't automatically access existing ones) |
 
 **Direct roles** are explicitly assigned to a specific {{notebook}} through the Invites tab. A user can have a direct role on a {{notebook}} regardless of their team membership.
 
@@ -50,11 +50,11 @@ Understanding virtual and direct access is essential for troubleshooting unexpec
 
 ### 1.4 UI Patterns Summary
 
-| Location | How to Add User | How to Add Role | How to Change Role | How to Remove |
-|----------|-----------------|-----------------|-------------------|---------------|
-| **Users** (system) | Create a global invite (Users → Invites tab) | Click "add" button in Roles column | Click × on role badge, then add new role | Click × on role badge (removes role only) |
-| **Teams → Users** | Click "+ Add user" or go to **Invites** tab | Click "+" on existing member's row | Click × on role badge, then add new role | Click × on role badge (removes role only), or trash icon (removes user from team) |
-| **{{Notebooks}} → Users** | Go to **Invites** tab | N/A (one role per user) | Remove user, then re-invite with desired role | Click trash icon (removes user from {{notebook}}) |
+| Location                  | How to Add User                              | How to Add Role                    | How to Change Role                            | How to Remove                                                                     |
+| ------------------------- | -------------------------------------------- | ---------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Users** (system)        | Create a global invite (Users → Invites tab) | Click "add" button in Roles column | Click × on role badge, then add new role      | Click × on role badge (removes role only)                                         |
+| **Teams → Users**         | Click "+ Add user" or go to **Invites** tab  | Click "+" on existing member's row | Click × on role badge, then add new role      | Click × on role badge (removes role only), or trash icon (removes user from team) |
+| **{{Notebooks}} → Users** | Go to **Invites** tab                        | N/A (one role per user)            | Remove user, then re-invite with desired role | Click trash icon (removes user from {{notebook}})                                 |
 
 ---
 
@@ -69,7 +69,7 @@ Understanding virtual and direct access is essential for troubleshooting unexpec
 - **Content Creator** system role — they can create {{notebooks}} and templates
 - **Team Administrator** of their own assigned team — they have full control over their team
 
-This means they can immediately create {{notebooks}}, but they won't have access to *your* team's resources until you add them.
+This means they can immediately create {{notebooks}}, but they won't have access to _your_ team's resources until you add them.
 
 **Steps to add them to your team:**
 
@@ -139,12 +139,12 @@ The new team member will immediately have virtual access to all team {{notebooks
    - Click **+ Add user** (to the right of the Filter field)
    - Add each team member with the appropriate role:
 
-| Person Type | Recommended Role |
-|-------------|------------------|
-| Project lead | Team Administrator (requires Operations Administrator or Super User) or Team Manager |
-| Researchers designing forms | Team Manager |
-| Field workers collecting data | Team Member (Contributor) |
-| Users who create {{notebooks}} but shouldn't see others' data | Team Member (Creator) |
+| Person Type                                                   | Recommended Role                                                                     |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Project lead                                                  | Team Administrator (requires Operations Administrator or Super User) or Team Manager |
+| Researchers designing forms                                   | Team Manager                                                                         |
+| Field workers collecting data                                 | Team Member (Contributor)                                                            |
+| Users who create {{notebooks}} but shouldn't see others' data | Team Member (Creator)                                                                |
 
 3. **Create the project {{notebook}}(s)** ({{Notebooks}} tab):
    - Click the **{{Notebooks}}** tab
@@ -199,10 +199,10 @@ The new team member will immediately have virtual access to all team {{notebooks
 
 **Choose your approach:**
 
-| Approach | When to Use | Effect |
-|----------|-------------|--------|
-| **Invite to team** | Ongoing collaboration with multiple {{notebooks}} | Access to ALL current and future team {{notebooks}} |
-| **Invite to {{notebook}}** | One-time or limited access | Access to specific {{notebook}}(s) only |
+| Approach                   | When to Use                                       | Effect                                              |
+| -------------------------- | ------------------------------------------------- | --------------------------------------------------- |
+| **Invite to team**         | Ongoing collaboration with multiple {{notebooks}} | Access to ALL current and future team {{notebooks}} |
+| **Invite to {{notebook}}** | One-time or limited access                        | Access to specific {{notebook}}(s) only             |
 
 **Option A: Invite to team (ongoing access to team {{notebooks}})**
 
@@ -286,10 +286,10 @@ Alternatively, navigate via **{{Notebooks}}** in the left sidebar if you're not 
 
 **Choose your approach:**
 
-| Approach | When to Use | Effect |
-|----------|-------------|--------|
-| **Hand off team** | Transferring overall project leadership | New leader gains control of team AND all team {{notebooks}} |
-| **Hand off {{notebook}}** | Transferring a single {{notebook}} only | New leader gains control of specific {{notebook}} only |
+| Approach                  | When to Use                             | Effect                                                      |
+| ------------------------- | --------------------------------------- | ----------------------------------------------------------- |
+| **Hand off team**         | Transferring overall project leadership | New leader gains control of team AND all team {{notebooks}} |
+| **Hand off {{notebook}}** | Transferring a single {{notebook}} only | New leader gains control of specific {{notebook}} only      |
 
 **Option A: Hand off team (recommended for most cases)**
 
@@ -443,11 +443,11 @@ Once created, the invite appears in the Invites tab:
 
 {{FAIMS}} uses a role-based permissions system with three levels:
 
-| Level | Controls | Example Roles |
-|-------|----------|---------------|
-| **System** | What a user can create globally | General User, Content Creator, Operations Administrator, Super User |
-| **Team** | Access within a team | Team Administrator, Team Manager, Team Member (Contributor) |
-| **{{Notebook}}** | Access to specific {{notebooks}} | Administrator, Manager, Contributor, Guest |
+| Level            | Controls                         | Example Roles                                                       |
+| ---------------- | -------------------------------- | ------------------------------------------------------------------- |
+| **System**       | What a user can create globally  | General User, Content Creator, Operations Administrator, Super User |
+| **Team**         | Access within a team             | Team Administrator, Team Manager, Team Member (Contributor)         |
+| **{{Notebook}}** | Access to specific {{notebooks}} | Administrator, Manager, Contributor, Guest                          |
 
 Each level is independent but interacts:
 
@@ -566,12 +566,12 @@ This guide focuses on user, team, and {{notebook}} management. It does **not** c
 
 #### Understanding System Roles
 
-| Role | Description | Typical User |
-|------|-------------|--------------|
-| General User | View assigned resources, manage own tokens | Rarely used alone |
-| Content Creator | Create {{notebooks}} and templates globally | Researchers, project managers |
-| Operations Administrator | Manage users, teams, and system operations (no data access) | IT operations staff |
-| Super User | Full system control, all data access (emergency use) | IT administrators |
+| Role                     | Description                                                 | Typical User                  |
+| ------------------------ | ----------------------------------------------------------- | ----------------------------- |
+| General User             | View assigned resources, manage own tokens                  | Rarely used alone             |
+| Content Creator          | Create {{notebooks}} and templates globally                 | Researchers, project managers |
+| Operations Administrator | Manage users, teams, and system operations (no data access) | IT operations staff           |
+| Super User               | Full system control, all data access (emergency use)        | IT administrators             |
 
 #### Adding a Role to a User
 
@@ -635,22 +635,22 @@ For detailed screenshots of this interface, see [Managing Invites](#28-managing-
 
 #### Team Tabs Overview
 
-| Tab | Purpose |
-|-----|---------|
-| **Details** | View and edit team name and description |
-| **Invites** | Create and manage team membership invitations |
-| **{{Notebooks}}** | View all {{notebooks}} owned by this team |
-| **Templates** | View all templates owned by this team |
-| **Users** | Add, remove, and manage team members |
+| Tab               | Purpose                                       |
+| ----------------- | --------------------------------------------- |
+| **Details**       | View and edit team name and description       |
+| **Invites**       | Create and manage team membership invitations |
+| **{{Notebooks}}** | View all {{notebooks}} owned by this team     |
+| **Templates**     | View all templates owned by this team         |
+| **Users**         | Add, remove, and manage team members          |
 
 #### Understanding Team Roles
 
-| Role | Permissions | Virtual {{Notebook}} Role |
-|------|-------------|----------------------|
-| Team Administrator | Full team control | Administrator |
-| Team Manager | Manage members, create {{notebooks}} | Manager |
-| Team Member (Contributor) | Access team resources | Contributor |
-| Team Member (Creator) | Create {{notebooks}} only | **None** (no access to other team {{notebooks}}) |
+| Role                      | Permissions                          | Virtual {{Notebook}} Role                        |
+| ------------------------- | ------------------------------------ | ------------------------------------------------ |
+| Team Administrator        | Full team control                    | Administrator                                    |
+| Team Manager              | Manage members, create {{notebooks}} | Manager                                          |
+| Team Member (Contributor) | Access team resources                | Contributor                                      |
+| Team Member (Creator)     | Create {{notebooks}} only            | **None** (no access to other team {{notebooks}}) |
 
 > ⚠️ **Note**: Team Member (Creator) is a special role for users who need to create {{notebooks}} but should not automatically see other {{notebooks}} in the team. They must be explicitly invited to each {{notebook}} they need to access.
 
@@ -764,12 +764,12 @@ The Users tab shows two types of access:
 
 #### Understanding {{Notebook}} Roles
 
-| Role | Permissions |
-|------|-------------|
-| Project Admin | Full control, manage administrators |
-| Project Manager | Edit design, close {{notebook}}, export, manage invites/access |
-| Project Contributor | Edit others' records (plus all Guest permissions) |
-| Project Guest | Activate {{notebook}}, create records, view/edit/delete own records |
+| Role                | Permissions                                                         |
+| ------------------- | ------------------------------------------------------------------- |
+| Project Admin       | Full control, manage administrators                                 |
+| Project Manager     | Edit design, close {{notebook}}, export, manage invites/access      |
+| Project Contributor | Edit others' records (plus all Guest permissions)                   |
+| Project Guest       | Activate {{notebook}}, create records, view/edit/delete own records |
 
 #### How {{Notebook}} Access Works
 
@@ -819,75 +819,75 @@ To transfer a {{notebook}} to a new owner:
 
 #### System-Wide Roles
 
-| Role | Description | Typical User |
-|------|-------------|--------------|
-| General User | View assigned resources, manage own tokens | Rarely used alone |
-| Content Creator | Create {{notebooks}} and templates globally | Researchers, project managers |
-| Operations Administrator | Manage users, teams, and system operations (no data access) | IT operations staff |
-| Super User | Full system control, all data access (emergency use) | IT administrators |
+| Role                     | Description                                                 | Typical User                  |
+| ------------------------ | ----------------------------------------------------------- | ----------------------------- |
+| General User             | View assigned resources, manage own tokens                  | Rarely used alone             |
+| Content Creator          | Create {{notebooks}} and templates globally                 | Researchers, project managers |
+| Operations Administrator | Manage users, teams, and system operations (no data access) | IT operations staff           |
+| Super User               | Full system control, all data access (emergency use)        | IT administrators             |
 
 #### Team Roles
 
-| Role | Permissions | Virtual {{Notebook}} Role |
-|------|-------------|----------------------|
-| Team Administrator | Full team control | Administrator |
-| Team Manager | Manage members, create {{notebooks}} | Manager |
-| Team Member (Contributor) | Access team resources | Contributor |
-| Team Member (Creator) | Create {{notebooks}} only | **None** (no access to other team {{notebooks}}) |
+| Role                      | Permissions                          | Virtual {{Notebook}} Role                        |
+| ------------------------- | ------------------------------------ | ------------------------------------------------ |
+| Team Administrator        | Full team control                    | Administrator                                    |
+| Team Manager              | Manage members, create {{notebooks}} | Manager                                          |
+| Team Member (Contributor) | Access team resources                | Contributor                                      |
+| Team Member (Creator)     | Create {{notebooks}} only            | **None** (no access to other team {{notebooks}}) |
 
 > ⚠️ **Key restriction**: Only Operations Administrator or Super User can assign Team Administrator role. Team Member (Creator) cannot see other team {{notebooks}} — they must be explicitly invited.
 
 #### {{Notebook}} Roles
 
-| Role | Permissions |
-|------|-------------|
-| Project Admin | Full control, manage administrators |
-| Project Manager | Edit design, close {{notebook}}, export, manage invites/access |
-| Project Contributor | Edit others' records (plus all Guest permissions) |
-| Project Guest | Activate {{notebook}}, create records, view/edit/delete own records |
+| Role                | Permissions                                                         |
+| ------------------- | ------------------------------------------------------------------- |
+| Project Admin       | Full control, manage administrators                                 |
+| Project Manager     | Edit design, close {{notebook}}, export, manage invites/access      |
+| Project Contributor | Edit others' records (plus all Guest permissions)                   |
+| Project Guest       | Activate {{notebook}}, create records, view/edit/delete own records |
 
 ### 5.2 When to Use Each Role
 
-| Scenario | Recommended Role |
-|----------|------------------|
-| Project lead who manages everything | Team Administrator + {{notebook}} Administrator |
-| Researcher who designs forms | Team Manager or {{notebook}} Manager |
-| Field worker collecting data | Team Member (Contributor) or {{notebook}} Contributor |
-| External reviewer (limited access) | {{Notebook}} Guest |
-| Someone who creates {{notebooks}} but shouldn't see others' data | Team Member (Creator) |
-| Temporary access for one task | {{Notebook}} Guest or Contributor (with expiring invite) |
+| Scenario                                                         | Recommended Role                                         |
+| ---------------------------------------------------------------- | -------------------------------------------------------- |
+| Project lead who manages everything                              | Team Administrator + {{notebook}} Administrator          |
+| Researcher who designs forms                                     | Team Manager or {{notebook}} Manager                     |
+| Field worker collecting data                                     | Team Member (Contributor) or {{notebook}} Contributor    |
+| External reviewer (limited access)                               | {{Notebook}} Guest                                       |
+| Someone who creates {{notebooks}} but shouldn't see others' data | Team Member (Creator)                                    |
+| Temporary access for one task                                    | {{Notebook}} Guest or Contributor (with expiring invite) |
 
 ### 5.3 Permission Matrix — {{Notebooks}}
 
-| Action | Guest | Contributor | Manager | Administrator |
-|--------|:-----:|:-----------:|:-------:|:-------------:|
-| Create records | ✅ | ✅ | ✅ | ✅ |
-| View/edit/delete own records | ✅ | ✅ | ✅ | ✅ |
-| View all records | ❌ | ✅ | ✅ | ✅ |
-| Edit/delete others' records | ❌ | ✅ | ✅ | ✅ |
-| Export own data | ✅ | ✅ | ✅ | ✅ |
-| Export all {{notebook}} data | ❌ | ❌ | ✅ | ✅ |
-| Edit {{notebook}} design | ❌ | ❌ | ✅ | ✅ |
-| Close/reopen {{notebook}} | ❌ | ❌ | ✅ | ✅ |
-| Reassign to different team | ❌ | ❌ | ✅ | ✅ |
-| Manage invites and users | ❌ | ❌ | ✅ | ✅ |
-| Manage administrators | ❌ | ❌ | ❌ | ✅ |
+| Action                       | Guest | Contributor | Manager | Administrator |
+| ---------------------------- | :---: | :---------: | :-----: | :-----------: |
+| Create records               |  ✅   |     ✅      |   ✅    |      ✅       |
+| View/edit/delete own records |  ✅   |     ✅      |   ✅    |      ✅       |
+| View all records             |  ❌   |     ✅      |   ✅    |      ✅       |
+| Edit/delete others' records  |  ❌   |     ✅      |   ✅    |      ✅       |
+| Export own data              |  ✅   |     ✅      |   ✅    |      ✅       |
+| Export all {{notebook}} data |  ❌   |     ❌      |   ✅    |      ✅       |
+| Edit {{notebook}} design     |  ❌   |     ❌      |   ✅    |      ✅       |
+| Close/reopen {{notebook}}    |  ❌   |     ❌      |   ✅    |      ✅       |
+| Reassign to different team   |  ❌   |     ❌      |   ✅    |      ✅       |
+| Manage invites and users     |  ❌   |     ❌      |   ✅    |      ✅       |
+| Manage administrators        |  ❌   |     ❌      |   ❌    |      ✅       |
 
 ### 5.4 Permission Matrix — Teams
 
-| Action | Member | Member Creator | Manager | Admin |
-|--------|:--------------------:|:----------------:|:-------:|:-------------:|
-| View team details and members | ✅ | ✅ | ✅ | ✅ |
-| View team templates | ✅ | ❌ | ✅ | ✅ |
-| Access team {{notebooks}} (virtual role) | ✅ | ❌ | ✅ | ✅ |
-| Create {{notebooks}} in team | ❌ | ✅ | ✅ | ✅ |
-| Create templates in team | ❌ | ❌ | ✅ | ✅ |
-| Edit team details | ❌ | ❌ | ✅ | ✅ |
-| Add/remove team members | ❌ | ❌ | ✅ | ✅ |
-| Manage team invites | ❌ | ❌ | ✅ | ✅ |
-| Add/remove team managers | ❌ | ❌ | ❌ | ✅ |
-| Add team admins | ❌ | ❌ | ❌ | Operations Administrator or Super User only |
-| Delete team | ❌ | ❌ | ❌ | ✅ |
+| Action                                   | Member | Member Creator | Manager |                    Admin                    |
+| ---------------------------------------- | :----: | :------------: | :-----: | :-----------------------------------------: |
+| View team details and members            |   ✅   |       ✅       |   ✅    |                     ✅                      |
+| View team templates                      |   ✅   |       ❌       |   ✅    |                     ✅                      |
+| Access team {{notebooks}} (virtual role) |   ✅   |       ❌       |   ✅    |                     ✅                      |
+| Create {{notebooks}} in team             |   ❌   |       ✅       |   ✅    |                     ✅                      |
+| Create templates in team                 |   ❌   |       ❌       |   ✅    |                     ✅                      |
+| Edit team details                        |   ❌   |       ❌       |   ✅    |                     ✅                      |
+| Add/remove team members                  |   ❌   |       ❌       |   ✅    |                     ✅                      |
+| Manage team invites                      |   ❌   |       ❌       |   ✅    |                     ✅                      |
+| Add/remove team managers                 |   ❌   |       ❌       |   ❌    |                     ✅                      |
+| Add team admins                          |   ❌   |       ❌       |   ❌    | Operations Administrator or Super User only |
+| Delete team                              |   ❌   |       ❌       |   ❌    |                     ✅                      |
 
 > ⚠️ **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 >
@@ -996,5 +996,5 @@ To transfer a {{notebook}} to a new owner:
 
 ---
 
-*Guide Version: 1.4*
-*Last Updated: 2026-02-24*
+_Guide Version: 1.4_
+_Last Updated: 2026-02-24_

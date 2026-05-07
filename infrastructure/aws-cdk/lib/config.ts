@@ -131,7 +131,7 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
       'Service Provider entity ID - identifies your application to the IdP'
     ),
   // Callback configuration (at least one needed)
-  callbackUrl: z
+  callbackURL: z
     .string()
     .optional()
     .describe(
@@ -141,7 +141,20 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .string()
     .optional()
     .default('/saml/callback')
-    .describe('Callback path if callbackUrl not specified'),
+    .describe('Callback path if callbackURL not specified'),
+  authnRequestBinding: z
+    .enum(['HTTP-Redirect', 'HTTP-POST'])
+    .optional()
+    .default('HTTP-POST')
+    .describe(
+      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
+    ),
+  skipRequestCompression: z
+    .boolean()
+    .optional()
+    .describe(
+      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
+    ),
   // If you want the metadata document signed using your PK
   signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
@@ -162,7 +175,13 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .enum(['sha1', 'sha256', 'sha512'])
     .optional()
     .default('sha256'),
-  digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+  digestAlgorithm: z
+    .enum(['sha1', 'sha256', 'sha512'])
+    .optional()
+    .default('sha256')
+    .describe(
+      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
+    ),
   wantAssertionsSigned: z.boolean().optional().default(true),
   // SAML behavior options
   identifierFormat: z
@@ -203,17 +222,29 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .default(28800000)
     .describe('How long request IDs are valid (default 8 hours)'),
   // Logout
-  logoutUrl: z
+  logoutURL: z
     .string()
     .optional()
     .describe('IdP logout URL (defaults to entryPoint)'),
-  logoutCallbackUrl: z.string().optional().describe('SP logout callback URL'),
+  logoutCallbackURL: z.string().optional().describe('SP logout callback URL'),
   // IdP validation
   idpIssuer: z
     .string()
     .optional()
     .describe('Expected IdP issuer for logout validation'),
   audience: z.string().optional().describe('Expected SAML response Audience'),
+  metadataErrorURL: z
+    .string()
+    .optional()
+    .describe(
+      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
+    ),
+  ssoErrorPageTitle: z.string().optional(),
+  ssoErrorPageHeading: z.string().optional(),
+  ssoErrorPageLead: z.string().optional(),
+  ssoErrorPageDetailMarkdown: z.string().optional(),
+  ssoErrorPageReturnURL: z.string().optional(),
+  ssoErrorPageReturnLabel: z.string().optional(),
 });
 
 const AuthProvidersConfigSchema = z
@@ -406,7 +437,9 @@ const ConductorConfigSchema = z.object({
   localhostWhitelist: z.boolean().default(false),
 });
 
-const WebConfigSchema = z.object({});
+const WebConfigSchema = z.object({
+  title: z.string().default('Control Centre'),
+});
 
 /** Documentation site (Sphinx user docs) configuration */
 const DocsConfigSchema = z.object({});
@@ -453,7 +486,7 @@ const AppSupportLinksSchema = z.object({
 export const UiConfiguration = z
   .object({
     /** The UI Theme for the app */
-    uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
     /** The notebook list type for the app */
     notebookListType: z.enum(['tabs', 'headings']),
     /** The display name for notebooks e.g. survey, notebook */
@@ -470,6 +503,16 @@ export const UiConfiguration = z
     addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
       source: 'NONE',
     }),
+    /**
+     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
+     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
+     */
+    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
+    /**
+     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
+     */
+    deleteOnDeactivation: z.boolean().optional(),
   })
   .refine(
     data => {

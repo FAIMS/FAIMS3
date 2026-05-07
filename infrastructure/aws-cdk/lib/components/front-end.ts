@@ -36,7 +36,7 @@ export interface FaimsFrontEndProps {
   faimsDomainNames: Array<string>;
 
   // customisation
-  uiTheme: 'bubble' | 'default' | 'bssTheme';
+  uiTheme: 'bubble' | 'default' | 'bssTheme' | 'fieldmark';
   notebookListType: 'tabs' | 'headings';
   notebookName: string;
   // App display name
@@ -66,7 +66,7 @@ export interface FaimsFrontEndProps {
   // docs config (Sphinx user docs site)
   docsDomainName: string;
   /** Management website title for docs variable substitution (default: Control Centre) */
-  docsManagementWebsiteTitle?: string;
+  managementWebsiteTitle?: string;
   /** Mobile app store URLs for docs variable substitution */
   androidAppPublicUrl: string;
   iosAppPublicUrl: string;
@@ -85,6 +85,18 @@ export interface FaimsFrontEndProps {
 
   /** Bugsnag key - enables app monitoring if desired */
   bugsnagKey?: string;
+
+  /**
+   * Mobile app directory cleanup for archived surveys (`allow` | `never`).
+   * Passed to app and web VITE_FORCE_REMOTE_DELETION; default never.
+   */
+  forceRemoteDeletion?: 'allow' | 'never';
+
+  /**
+   * When true, manual notebook deactivation wipes local Pouch data (VITE_DELETE_ON_DEACTIVATION).
+   * Default false when omitted.
+   */
+  deleteOnDeactivation?: boolean;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -231,6 +243,9 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
+      VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
+      VITE_DELETE_ON_DEACTIVATION:
+        props.deleteOnDeactivation === true ? 'true' : 'false',
       VITE_TAG: 'CDKDeployment',
 
       // offline maps configuration
@@ -245,11 +260,15 @@ export class FaimsFrontEnd extends Construct {
         : {}),
 
       // Address autosuggest configuration
-      ...(props.addressAutosuggest?.source && props.addressAutosuggest.source !== 'NONE'
+      ...(props.addressAutosuggest?.source &&
+      props.addressAutosuggest.source !== 'NONE'
         ? {
             VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
             ...(props.addressAutosuggest.mapboxKey
-              ? {VITE_AUTOSUGGEST_MAPBOX_KEY: props.addressAutosuggest.mapboxKey}
+              ? {
+                  VITE_AUTOSUGGEST_MAPBOX_KEY:
+                    props.addressAutosuggest.mapboxKey,
+                }
               : {}),
             ...(props.addressAutosuggest.mapboxAddressCountry
               ? {
@@ -414,7 +433,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
       VITE_THEME: props.uiTheme,
-      VITE_WEBSITE_TITLE: 'Control Centre',
+      VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
       VITE_DOCS_URL: props.docsUrl || '',
       // Maps setup for web
       VITE_MAP_SOURCE: props.offlineMaps.mapSource,
@@ -427,6 +446,9 @@ export class FaimsFrontEnd extends Construct {
         : {}),
       VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
         props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
+      VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
+      VITE_DELETE_ON_DEACTIVATION:
+        props.deleteOnDeactivation === true ? 'true' : 'false',
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
     };
@@ -553,7 +575,7 @@ export class FaimsFrontEnd extends Construct {
     const docsEnv: {[key: string]: string} = {
       VITE_APP_NAME: props.appName,
       VITE_NOTEBOOK_NAME: props.notebookName,
-      VITE_WEBSITE_TITLE: props.docsManagementWebsiteTitle ?? 'Control Centre',
+      VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
       // Uses default for now, as other themes are not implemented properly
       VITE_THEME: 'default',
       VITE_API_URL: props.conductorUrl,

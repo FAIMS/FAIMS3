@@ -4,7 +4,7 @@ sd_hide_title: true
 
 # {{FAIMS}} User Guide
 
-*This guide is intended for a data collectors, {{notebook}} managers and system administrators of **{{FAIMS}}**. It is broadly organised by common tasks these users may need to perform, not by system components.*
+_This guide is intended for a data collectors, {{notebook}} managers and system administrators of **{{FAIMS}}**. It is broadly organised by common tasks these users may need to perform, not by system components._
 
 ## Quick Links
 

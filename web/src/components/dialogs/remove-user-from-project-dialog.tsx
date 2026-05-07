@@ -15,11 +15,10 @@ import {Route} from '@/routes/_protected/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
 
 /**
- *
- * Removes a user from a survey.
- * @param {string} userId - The ID of the user to remove.
- * @param {boolean} admin - Whether the user is an admin.
- * @returns {JSX.Element} The rendered RemoveUserFromSurveyDialog component.
+ * Removes a user from the current notebook/project (display name from
+ * `VITE_NOTEBOOK_NAME` / NOTEBOOK_NAME).
+ * @param userId - The ID of the user to remove.
+ * @param admin - Whether the user is an admin.
  */
 export const RemoveUserFromProjectDialog = ({
   userId,

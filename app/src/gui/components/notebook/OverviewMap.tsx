@@ -42,11 +42,11 @@ import {useQuery} from '@tanstack/react-query';
 import {Control} from 'ol/control';
 import type {EventsKey} from 'ol/events';
 import {Extent} from 'ol/extent';
-import {unByKey} from 'ol/Observable';
 import {FeatureLike} from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
+import {unByKey} from 'ol/Observable';
 import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
@@ -288,7 +288,10 @@ const createResetNorthControl = (map: Map): Control => {
   button.addEventListener('click', () => {
     const view = map.getView();
     const currentRotation = view.getRotation();
-    if (currentRotation !== undefined && Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD) {
+    if (
+      currentRotation !== undefined &&
+      Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD
+    ) {
       view.animate({rotation: 0, duration: 200});
     }
   });

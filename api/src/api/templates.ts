@@ -23,29 +23,38 @@ import {
   addTemplateRole,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  GetTemplateSurveyReferencesResponse,
+  isAuthorized,
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
+  PostRestoreTemplateResponse,
+  PutTemplateSetVisibilityInputSchema,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   Role,
+  userCanReadTemplateDocument,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
+import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
   getTemplates,
+  restoreTemplateFromArchive,
+  setTemplateVisibility,
   updateExistingTemplate,
+  withOwnedByTeamDisplayName,
+  withOwnedByTeamDisplayNames,
 } from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
 import {
   isAllowedToMiddleware,
   requireAuthenticationAPI,
-  userCanDo,
 } from '../middleware';
 
 import {saveExpressUser} from '../couchdb/users';
@@ -57,30 +66,81 @@ patch();
 export const api: express.Router = express.Router();
 
 /**
- * GET list templates Gets a list of templates from the templates DB.
+ * GET list templates — lightweight summaries from a CouchDB view (no
+ * ui-specification). Use GET /api/templates/:id for full detail.
  *
- * Can filter by team if desired -  uses an efficient index to do so.
- *
+ * Can filter by team; uses an index that omits the form payload.
  */
 api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      // Query strings only: omit (default) or includeArchived=true|false
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
 
-    res.json({
-      templates: (await getTemplates({teamId: req.query.teamId})).filter(t =>
-        userCanDo({
-          action: Action.READ_TEMPLATE_DETAILS,
-          user: req.user!,
-          resourceId: t._id,
-        })
-      ),
+    const templatesRaw = await getTemplates({
+      teamId: req.query.teamId,
     });
+    const includeArchived = req.query.includeArchived === 'true';
+
+    const filteredByArchive = templatesRaw.filter(t => {
+      const archived = t.archived === true;
+      return includeArchived ? archived : !archived;
+    });
+
+    const visible = filteredByArchive.filter(t =>
+      userCanReadTemplateDocument({
+        decodedToken: {
+          globalRoles: req.user!.globalRoles,
+          resourceRoles: req.user!.resourceRoles,
+        },
+        template: t,
+      })
+    );
+    res.json({
+      templates: await withOwnedByTeamDisplayNames(visible),
+    });
+  }
+);
+
+/**
+ * GET count of surveys (projects) that still reference this template id.
+ */
+api.get(
+  '/:id/references',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const template = await getTemplate(req.params.id);
+    if (
+      !userCanReadTemplateDocument({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        template,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+    const ids = await getProjectIdsReferencingTemplate(req.params.id);
+    res.json({count: ids.length});
   }
 );
 
@@ -91,18 +151,28 @@ api.get(
 api.get(
   '/:id',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.READ_TEMPLATE_DETAILS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetTemplateByIdResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
     const template = await getTemplate(req.params.id);
-    res.json(template);
+    if (
+      !userCanReadTemplateDocument({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        template,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+    res.json(await withOwnedByTeamDisplayName(template));
   }
 );
 
@@ -145,9 +215,25 @@ api.post(
       throw new Exceptions.UnauthorizedException();
     }
 
+    const body = req.body as PostCreateTemplateInput;
+    if (
+      body.isPublic === true &&
+      !isAuthorized({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        action: Action.CREATE_PUBLIC_TEMPLATE,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to create a public template.'
+      );
+    }
+
     // Now we can create the new template and return it
     const newTemplate = await createTemplate({
-      payload: req.body,
+      payload: body,
     });
 
     // Make the creator the admin
@@ -163,9 +249,31 @@ api.post(
 );
 
 /**
+ * PUT set public/private visibility only.
+ */
+api.put(
+  '/:id/visibility',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_VISIBILITY,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutTemplateSetVisibilityInputSchema,
+  }),
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
+    const updated = await setTemplateVisibility(req.params.id, req.body.isPublic);
+    res.json(updated);
+  }
+);
+
+/**
  * PUT update existing template Updates an existing template. The payload is
  * validated by Zod before reaching this function. Expects a document as the
- * response JSON. Requires cluster admin privileges.
+ * response JSON. Requires {@link Action.UPDATE_TEMPLATE_DETAILS} on the template.
  *
  * TODO distinguish between the different types of template updates permission
  * wise. Right now we look for just the update content action.
@@ -195,9 +303,31 @@ api.put(
 );
 
 /**
+ * POST restore archived template (clears top-level archived flag).
+ */
+api.post(
+  '/:id/restore',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<PostRestoreTemplateResponse>) => {
+    const updated = await restoreTemplateFromArchive(req.params.id);
+    res.json(updated);
+  }
+);
+
+/**
  * POST delete existing template
- * Deletes latest revision of an existing template. Requires cluster admin
- * privileges.
+ * Deletes latest revision of an existing template. Requires
+ * {@link Action.DELETE_TEMPLATE} on the template; the template must already
+ * be archived.
  */
 api.post(
   '/:id/delete',

@@ -1,6 +1,6 @@
 # Choosing a Field Type
 
-*A guide to selecting the right field type for your data.*
+_A guide to selecting the right field type for your data._
 
 ---
 
@@ -55,66 +55,66 @@ tabs in the ADD A FIELD dialog.
 
 ### Text
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
-| **[FAIMS Text Field](../text-fields/faims-text-field.md)** | Brief text entry | Codes, identifiers, short labels |
-| **[Multi-line Text Field](../text-fields/multiline-text-field.md)** | Extended text entry | Narrative descriptions, observations |
-| **[Email](../text-fields/email-field.md)** | Validated email input | Contact addresses |
-| **[Templated String](../text-fields/templated-string.md)** | Auto-generated text | Human-readable record identifiers |
-| **[QR / Barcode Scanner](../text-fields/qr-barcode-scanner.md)** | Camera-based scanning | Specimen barcodes, equipment tags (mobile only) |
-| **[Address](../text-fields/address.md)** | Structured address capture | Site locations, property details |
+| Field Type                                                          | Purpose                    | Good For                                        |
+| ------------------------------------------------------------------- | -------------------------- | ----------------------------------------------- |
+| **[FAIMS Text Field](../text-fields/faims-text-field.md)**          | Brief text entry           | Codes, identifiers, short labels                |
+| **[Multi-line Text Field](../text-fields/multiline-text-field.md)** | Extended text entry        | Narrative descriptions, observations            |
+| **[Email](../text-fields/email-field.md)**                          | Validated email input      | Contact addresses                               |
+| **[Templated String](../text-fields/templated-string.md)**          | Auto-generated text        | Human-readable record identifiers               |
+| **[QR / Barcode Scanner](../text-fields/qr-barcode-scanner.md)**    | Camera-based scanning      | Specimen barcodes, equipment tags (mobile only) |
+| **[Address](../text-fields/address.md)**                            | Structured address capture | Site locations, property details                |
 
 ### Numbers
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
-| **[Number Input](../number-fields/number-input.md)** | Numeric entry | Measurements, counts, scientific readings |
-| **[Controlled Number](../number-fields/controlled-number.md)** | Bounded numeric entry | pH (0–14), percentages (0–100), ratings |
-| **[Auto Incrementing Field](../number-fields/auto-incrementing-field.md)** | Sequential identifiers | Specimen numbers, catalogue IDs |
+| Field Type                                                                 | Purpose                | Good For                                  |
+| -------------------------------------------------------------------------- | ---------------------- | ----------------------------------------- |
+| **[Number Input](../number-fields/number-input.md)**                       | Numeric entry          | Measurements, counts, scientific readings |
+| **[Controlled Number](../number-fields/controlled-number.md)**             | Bounded numeric entry  | pH (0–14), percentages (0–100), ratings   |
+| **[Auto Incrementing Field](../number-fields/auto-incrementing-field.md)** | Sequential identifiers | Specimen numbers, catalogue IDs           |
 
 ### Date and Time
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
-| **[Date and Time with Now button](../date-time-fields/date-time-now.md)** | Timezone-aware timestamps | Observation moments, event timing |
-| **[Date picker](../date-time-fields/date-picker.md)** | Date-only selection | Excavation dates, permit dates |
-| **[Month picker](../date-time-fields/month-picker.md)** | Month-and-year selection | Seasonal data, approximate dates |
-| **[Date time picker](../date-time-fields/date-time-picker.md)** | Date and time selection | Precise event timing (no timezone support) |
+| Field Type                                                                | Purpose                   | Good For                                   |
+| ------------------------------------------------------------------------- | ------------------------- | ------------------------------------------ |
+| **[Date and Time with Now button](../date-time-fields/date-time-now.md)** | Timezone-aware timestamps | Observation moments, event timing          |
+| **[Date picker](../date-time-fields/date-picker.md)**                     | Date-only selection       | Excavation dates, permit dates             |
+| **[Month picker](../date-time-fields/month-picker.md)**                   | Month-and-year selection  | Seasonal data, approximate dates           |
+| **[Date time picker](../date-time-fields/date-time-picker.md)**           | Date and time selection   | Precise event timing (no timezone support) |
 
 ### Media
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
-| **[Take Photo](../media-fields/take-photo.md)** | Camera capture | Context photos, specimen images |
+| Field Type                                          | Purpose         | Good For                             |
+| --------------------------------------------------- | --------------- | ------------------------------------ |
+| **[Take Photo](../media-fields/take-photo.md)**     | Camera capture  | Context photos, specimen images      |
 | **[Upload a File](../media-fields/attach-file.md)** | File attachment | PDFs, spreadsheets, audio recordings |
 
 ### Location
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
-| **[Take point](../location-fields/take-gps-point.md)** | Single coordinate capture | Find spots, sample locations |
-| **[Map field](../location-fields/map-input.md)** | Interactive map drawing | Site boundaries, transects, polygons |
+| Field Type                                             | Purpose                   | Good For                             |
+| ------------------------------------------------------ | ------------------------- | ------------------------------------ |
+| **[Take point](../location-fields/take-gps-point.md)** | Single coordinate capture | Find spots, sample locations         |
+| **[Map field](../location-fields/map-input.md)**       | Interactive map drawing   | Site boundaries, transects, polygons |
 
 ### Choice
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
-| **[Checkbox](../choice-fields/checkbox.md)** | Boolean toggle | Presence/absence, yes/no flags |
-| **[Select one option](../choice-fields/radio-group.md)** | Visible single selection | Short lists of 2–10 items |
-| **[Select Field](../choice-fields/select.md)** | Dropdown single selection | Lists of 8–20 items |
-| **[Select Multiple](../choice-fields/multi-select.md)** | Multiple selection | Multi-attribute recording |
-| **[Select Field (Hierarchical)](../choice-fields/hierarchical-select.md)** | Nested vocabulary tree | Taxonomies, large lists (>20 items) |
+| Field Type                                                                 | Purpose                   | Good For                            |
+| -------------------------------------------------------------------------- | ------------------------- | ----------------------------------- |
+| **[Checkbox](../choice-fields/checkbox.md)**                               | Boolean toggle            | Presence/absence, yes/no flags      |
+| **[Select one option](../choice-fields/radio-group.md)**                   | Visible single selection  | Short lists of 2–10 items           |
+| **[Select Field](../choice-fields/select.md)**                             | Dropdown single selection | Lists of 8–20 items                 |
+| **[Select Multiple](../choice-fields/multi-select.md)**                    | Multiple selection        | Multi-attribute recording           |
+| **[Select Field (Hierarchical)](../choice-fields/hierarchical-select.md)** | Nested vocabulary tree    | Taxonomies, large lists (>20 items) |
 
 ### Relationship
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
+| Field Type                                                          | Purpose                    | Good For                            |
+| ------------------------------------------------------------------- | -------------------------- | ----------------------------------- |
 | **[Add Related Record](../relationship-fields/related-records.md)** | Bidirectional record links | Parent–child and peer relationships |
 
 ### Display
 
-| Field Type | Purpose | Good For |
-| ---------- | ------- | -------- |
+| Field Type                                     | Purpose                | Good For                       |
+| ---------------------------------------------- | ---------------------- | ------------------------------ |
 | **[RichText](../display-fields/rich-text.md)** | Formatted instructions | Procedures, warnings, headings |
 
 ## Which Field Type Do I Need?
@@ -128,7 +128,7 @@ If a value, e.g., for an identifier, can be **generated
 automatically** from other fields — such as a feature identifier
 combining an auto-incrementing feature number plus the feature
 type — use a **[Templated String](../text-fields/templated-string.md)**. Doing so
-produces a *human-readable record identifier (HRID)*, which is
+produces a _human-readable record identifier (HRID)_, which is
 essential; without one, the system defaults to opaque UUIDs.
 
 If a **controlled vocabulary** exists or could be developed for the

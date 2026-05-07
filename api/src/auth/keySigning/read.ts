@@ -18,7 +18,10 @@
  *   Provides a function to validate a user token and return user details
  */
 
-import {decodeAndValidateToken} from '@faims3/data-model';
+import {
+  decodeAndValidateToken,
+  isPeopleUserAccountDisabled,
+} from '@faims3/data-model';
 import {jwtVerify, errors as joseErrors} from 'jose';
 import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../../buildconfig';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
@@ -51,6 +54,10 @@ export const validateToken = async (
     if (!user) {
       // TODO here we could check more sophisticated things
       throw Error('User not present in database.');
+    }
+
+    if (isPeopleUserAccountDisabled(user)) {
+      throw Error('User account is disabled.');
     }
 
     // Better to use the token provided to build the user! This ensures

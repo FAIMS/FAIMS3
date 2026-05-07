@@ -5,7 +5,10 @@ import {
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
-import {NOTEBOOK_NAME_PLURAL, NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '../../../buildconfig';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
@@ -32,7 +35,7 @@ export default function HeadingProjectGrid({
   notActivatedColumns: GridColDef<Project>[];
   serverId: string;
 }) {
-  // pull out active/inactive surveys
+  // pull out active/inactive notebooks
   const activatedProjects = projects.filter(({isActivated}) => isActivated);
   const availableProjects = projects.filter(({isActivated}) => !isActivated);
 

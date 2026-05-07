@@ -18,36 +18,40 @@ export type ProjectV1Fields = {
 };
 export type ProjectV1Document = PouchDB.Core.Document<ProjectV1Fields>;
 
-// V2
-export enum ProjectStatus {
-  CLOSED = 'CLOSED',
+/** Stored project status before the ARCHIVED lifecycle value existed (projects DB v2). */
+export enum ProjectStatusV2 {
   OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+}
+
+/**
+ * Current survey lifecycle on the project document (projects DB v3).
+ * Name kept as {@link ProjectStatus} (not `ProjectStatusV3`) for stable imports.
+ */
+export enum ProjectStatus {
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export type ProjectV2Fields = {
-  // Project name
   name: string;
-
-  // Project status (default:= CLOSED)
-  status: ProjectStatus;
-
-  // Data and metadata connections (mandatory)
+  status: ProjectStatusV2;
   dataDb: PossibleConnectionInfo;
   metadataDb: PossibleConnectionInfo;
-
-  // Team ownership? Undefined means owned by an individual
   ownedByTeamId?: string;
-
-  // Was the project created from a template?
   templateId?: string;
 };
 export type ProjectV2Document = PouchDB.Core.Document<ProjectV2Fields>;
 
-// Current (V2)
-export type ProjectDBFields = ProjectV2Fields;
+export type ProjectV3Fields = Omit<ProjectV2Fields, 'status'> & {
+  status: ProjectStatus;
+};
+export type ProjectV3Document = PouchDB.Core.Document<ProjectV3Fields>;
+
+export type ProjectDBFields = ProjectV3Fields;
 export type ProjectDocument = PouchDB.Core.Document<ProjectDBFields>;
 export type ExistingProjectDocument =
   PouchDB.Core.ExistingDocument<ProjectDBFields>;
 
-// DB Type (V2)
 export type ProjectDB = DatabaseInterface<ProjectDBFields>;
