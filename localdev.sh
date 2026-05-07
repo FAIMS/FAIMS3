@@ -30,6 +30,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+echo "Clear DB: $CLEAR_DB"
+
 # Function to check and set Node.js version
 setup_node_version() {
   local required_major_version=22
@@ -110,8 +112,14 @@ manage_docker_volumes() {
   ${docker_prefix} down
 
   if [ "$CLEAR_DB" = true ]; then
-    echo "Pruning volumes related to this Docker Compose setup..."
-    docker volume prune -f --filter "label=com.docker.compose.project=$(${docker_prefix} config --services)"
+    echo "Pruning volume containing the couchdb database..."
+    volume_to_remove=$(docker volume ls -q --filter "label=com.docker.compose.volume=couchdb_data")
+    if [ -n "$volume_to_remove" ]; then
+      docker volume rm $volume_to_remove
+      echo "Volume removed: $volume_to_remove"
+    else
+      echo "No volumes found for couchdb_data"
+    fi
   else
     echo "Skipping volume pruning (use --clear-db to clear volumes)"
   fi
