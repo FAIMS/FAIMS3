@@ -514,7 +514,7 @@ const fields: {[key: string]: FieldType} = {
     deprecated: true,
     deprecationMessage:
       'Deprecated: use “Number field” for new additions. Existing notebooks continue to work.',
-    showInChooser: true,
+    showInChooser: false,
     order: 27,
   },
 
@@ -559,7 +559,7 @@ const fields: {[key: string]: FieldType} = {
     deprecated: true,
     deprecationMessage:
       'Deprecated: use “Number field” for new additions. Existing notebooks continue to work.',
-    showInChooser: true,
+    showInChooser: false,
     order: 28,
   },
 

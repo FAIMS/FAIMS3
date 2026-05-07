@@ -55,7 +55,8 @@ import {CSS} from '@dnd-kit/utilities';
 import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
-  findFieldConditionUsage,
+  findFieldDependencyReferences,
+  type FieldDependencyReference,
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
@@ -98,7 +99,7 @@ type FieldEditorProps = {
 type ConflictError = {
   title: string;
   message: string;
-  conflicts: string[];
+  conflicts: FieldDependencyReference[];
 };
 
 const shakeAnim = keyframes`
@@ -175,7 +176,9 @@ const FieldEditorComponent = ({
     fieldComponentLabelMap[fieldComponent] || fieldComponent;
 
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
-  const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+  const [conditionsAffected, setConditionsAffected] = useState<
+    FieldDependencyReference[]
+  >([]);
 
   const [conflictError, setConflictError] = useState<ConflictError | null>(
     null
@@ -185,7 +188,12 @@ const FieldEditorComponent = ({
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
 
-    const usage = findFieldConditionUsage(fieldName, allFields, allFviews);
+    const usage = findFieldDependencyReferences(
+      fieldName,
+      allFields,
+      allFviews,
+      viewsets
+    );
 
     if (usage.length > 0) {
       setConditionsAffected(usage);
@@ -281,11 +289,14 @@ const FieldEditorComponent = ({
 
   const moveFieldToSection = () => {
     if (targetViewId) {
-      const usage = findFieldConditionUsage(fieldName, allFields, allFviews);
-      const targetSectionLabel = allFviews[targetViewId]?.label || '';
-      const conflicts = usage.filter(u =>
-        u.includes(`Section: ${targetSectionLabel}`)
+      const usage = findFieldDependencyReferences(
+        fieldName,
+        allFields,
+        allFviews,
+        viewsets
       );
+      const targetSectionLabel = allFviews[targetViewId]?.label || '';
+      const conflicts = usage.filter(u => u.sectionId === targetViewId);
 
       if (conflicts.length > 0) {
         setConflictError({
@@ -758,16 +769,106 @@ const FieldEditorComponent = ({
           }}
         >
           <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
-          <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
-            <Alert severity="warning">
-              This field is referenced in the following conditions:
-              <ul>
-                {conditionsAffected.map((condition, index) => (
-                  <li key={index}>{condition}</li>
-                ))}
-              </ul>
-              Please remove all dependencies on this field before deleting it.
-            </Alert>
+          <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+            <Box
+              sx={{
+                border: '1px solid',
+                borderColor: 'warning.light',
+                borderRadius: 1.5,
+                p: 2,
+                backgroundColor: theme => alpha(theme.palette.warning.main, 0.08),
+                mb: 2,
+              }}
+            >
+              <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 0.75}}>
+                Referenced From
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Chip
+                  size="small"
+                  label={`Form: ${viewsets[viewSetId]?.label ?? viewSetId}`}
+                />
+                <Chip
+                  size="small"
+                  label={`Section: ${allFviews[viewId]?.label ?? viewId}`}
+                />
+                <Chip size="small" label={`Field: ${label}`} />
+              </Stack>
+            </Box>
+
+            <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 1}}>
+              Dependencies ({conditionsAffected.length})
+            </Typography>
+            <Stack spacing={1.1}>
+              {conditionsAffected.map((dependency, index) => (
+                <Box
+                  key={`${dependency.type}-${dependency.fieldId ?? dependency.sectionId ?? index}`}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: theme => alpha(theme.palette.warning.main, 0.22),
+                    borderRadius: 1.25,
+                    p: 1.25,
+                    backgroundColor: theme =>
+                      alpha(theme.palette.background.paper, 0.75),
+                  }}
+                >
+                  <Typography variant="body2" sx={{fontWeight: 700}}>
+                    {dependency.type === 'section-condition'
+                      ? 'Section Condition'
+                      : dependency.type === 'templated-string'
+                        ? 'Templated String'
+                        : 'Field Condition'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {dependency.fieldLabel ?? dependency.sectionLabel ?? 'Unknown reference'}
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} mt={0.75} flexWrap="wrap" useFlexGap>
+                    {dependency.formLabel && (
+                      <Chip
+                        size="small"
+                        variant="filled"
+                        label={`Form: ${dependency.formLabel}`}
+                        sx={{
+                          fontWeight: 700,
+                          color: 'primary.dark',
+                          backgroundColor: theme =>
+                            alpha(theme.palette.primary.main, 0.16),
+                          border: '1px solid',
+                          borderColor: theme =>
+                            alpha(theme.palette.primary.main, 0.35),
+                        }}
+                      />
+                    )}
+                    {dependency.sectionLabel && (
+                      <Chip
+                        size="small"
+                        variant="filled"
+                        label={`Section: ${dependency.sectionLabel}`}
+                        sx={{
+                          fontWeight: 700,
+                          color: 'secondary.dark',
+                          backgroundColor: theme =>
+                            alpha(theme.palette.secondary.main, 0.16),
+                          border: '1px solid',
+                          borderColor: theme =>
+                            alpha(theme.palette.secondary.main, 0.38),
+                        }}
+                      />
+                    )}
+                    {dependency.templateUsage && (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={`Uses ${dependency.templateUsage}`}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+            <Typography variant="body2" sx={{mt: 1.5}} color="text.secondary">
+              Remove these dependencies before deleting this field.
+            </Typography>
           </DialogContent>
           <DialogActions sx={designerDialogActionsSx}>
             <Button
@@ -801,7 +902,13 @@ const FieldEditorComponent = ({
               </Typography>
               <ul style={{marginTop: 8, paddingLeft: 20}}>
                 {conflictError.conflicts.map((ref, idx) => (
-                  <li key={idx}>{ref}</li>
+                  <li key={idx}>
+                    {ref.type === 'section-condition'
+                      ? `Section Condition: ${ref.sectionLabel ?? 'Unknown section'}`
+                      : ref.type === 'templated-string'
+                        ? `Templated String: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`
+                        : `Field Condition: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`}
+                  </li>
                 ))}
               </ul>
             </Alert>

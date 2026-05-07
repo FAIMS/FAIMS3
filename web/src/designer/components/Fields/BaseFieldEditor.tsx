@@ -65,6 +65,8 @@ export const SPEECH_ENABLED_FIELDS = [
   'formik-material-ui::MultipleTextField',
 ];
 
+const FIRST_AUTO_SYNC_DELAY_MS = 2200;
+
 /** True if {@link SPEECH_ENABLED_FIELDS} includes this field's composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
   return SPEECH_ENABLED_FIELDS.includes(
@@ -116,6 +118,8 @@ export const BaseFieldEditor = ({
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
+  // Enable one-time auto-sync (Label -> Field ID) for newly added fields
+  // until the user edits Field ID manually or first sync completes.
   const autoSyncFieldIdEnabled = useRef(true);
   const initialAutoSyncDone = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -176,7 +180,7 @@ export const BaseFieldEditor = ({
         syncFieldIDToLabel(newLabel);
         initialAutoSyncDone.current = true;
         autoSyncFieldIdEnabled.current = false;
-      }, 950);
+      }, FIRST_AUTO_SYNC_DELAY_MS);
     }
   };
 
@@ -190,11 +194,13 @@ export const BaseFieldEditor = ({
     } else {
       isMounted.current = true;
     }
-    const expectedIdFromCurrentLabel = slugify(state.label || '');
-    autoSyncFieldIdEnabled.current =
-      !initialAutoSyncDone.current &&
-      expectedIdFromCurrentLabel.length > 0 &&
-      fieldName === expectedIdFromCurrentLabel;
+    // Keep first-time auto-sync enabled for a newly created field, independent of
+    // initial generated IDs (e.g. New-Field-13), until either:
+    // 1) user edits Field ID manually, or
+    // 2) first automatic sync already happened.
+    if (!initialAutoSyncDone.current) {
+      autoSyncFieldIdEnabled.current = true;
+    }
     setLocalFieldName(fieldName);
   }, [fieldName]);
 
