@@ -284,7 +284,7 @@ const DatePickerField: React.FC<DateTimeFieldFullProps> = props => {
   return (
     <FieldWrapper
       heading={label}
-      subheading={helperText}   
+      subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
       errors={errors}

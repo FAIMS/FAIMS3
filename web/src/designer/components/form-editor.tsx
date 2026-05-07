@@ -114,7 +114,6 @@ type Props = {
   handleFieldMoveCallback: (targetViewId: string) => void;
   handleAddFormCallback: () => void;
   previewForm: boolean;
-  setPreviewForm: (preview: boolean) => void;
 };
 
 /** Single form (`viewSet`): sections stepper, CRUD, optional `PreviewFormManager`, settings panel. */
@@ -128,7 +127,6 @@ export const FormEditor = ({
   handleFieldMoveCallback,
   handleAddFormCallback,
   previewForm,
-  setPreviewForm,
 }: Props) => {
   const location = useLocation();
   const navigate = useNavigate();

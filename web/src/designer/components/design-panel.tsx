@@ -88,8 +88,7 @@ export const DesignPanel = () => {
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
 
-  const {previewForm, setPreviewForm} =
-    useOutletContext<PreviewOutletContext>();
+  const {previewForm} = useOutletContext<PreviewOutletContext>();
 
   const [newFormName, setNewFormName] = useState(
     () => `Form ${Object.keys(viewSets).length + 1}`
@@ -494,7 +493,6 @@ export const DesignPanel = () => {
                   handleFieldMoveCallback={handleFieldMove}
                   handleAddFormCallback={openAddFormDialog}
                   previewForm={previewForm}
-                  setPreviewForm={setPreviewForm}
                 />
               }
             />
@@ -517,7 +515,6 @@ export const DesignPanel = () => {
                   handleFieldMoveCallback={handleFieldMove}
                   handleAddFormCallback={openAddFormDialog}
                   previewForm={previewForm}
-                  setPreviewForm={setPreviewForm}
                 />
               }
             />

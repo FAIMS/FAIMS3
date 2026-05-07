@@ -42,12 +42,12 @@ The tab bar organises field types into nine categories:
 | Tab | Field Types |
 | --- | ----------- |
 | **ALL** | Shows every available field type (default view) |
-| **TEXT** | FAIMS Text Field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
-| **NUMBERS** | Number Input, Controlled Number, Auto Incrementing Field |
-| **DATE & TIME** | Date time picker, Date picker, Month picker, Date and Time with Now button |
+| **TEXT** | Text field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
+| **NUMBERS** | Number field, Auto Incrementing Field |
+| **DATE & TIME** | Date and time picker, Date only picker, Month only picker |
 | **MEDIA** | Take Photo, Upload a File |
 | **LOCATION** | Take GPS Point, Map Field |
-| **CHOICE** | Select Field, Select Multiple, Checkbox (deprecated), Select Field (Hierarchical), Select one option |
+| **CHOICE** | Select one, Select Multiple, Select Field (Hierarchical) |
 | **RELATIONSHIP** | Related Records |
 | **DISPLAY** | Rich Text |
 

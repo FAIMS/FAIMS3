@@ -65,8 +65,6 @@ export const SPEECH_ENABLED_FIELDS = [
   'formik-material-ui::MultipleTextField',
 ];
 
-const FIRST_AUTO_SYNC_DELAY_MS = 2200;
-
 /** True if {@link SPEECH_ENABLED_FIELDS} includes this field's composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
   return SPEECH_ENABLED_FIELDS.includes(
@@ -117,20 +115,19 @@ export const BaseFieldEditor = ({
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
 
   const idInputRef = useRef<HTMLInputElement>(null);
+  const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  // Enable one-time auto-sync (Label -> Field ID) for newly added fields
-  // until the user edits Field ID manually or first sync completes.
+  // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
   const autoSyncFieldIdEnabled = useRef(true);
   const initialAutoSyncDone = useRef(false);
-  const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const internalRenameInFlight = useRef(false);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
 
   const debouncedRename = useCallback(
     debounce((newFieldName: string) => {
       const viewId = getViewIDForField(uiSpec, fieldName);
       if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
+        internalRenameInFlight.current = true;
         dispatch(
           fieldRenamed({
             viewId,
@@ -155,6 +152,7 @@ export const BaseFieldEditor = ({
     const desired = slugify(label || '');
     const viewId = getViewIDForField(uiSpec, fieldName);
     if (viewId && desired && desired !== fieldName) {
+      internalRenameInFlight.current = true;
       setLocalFieldName(desired);
       dispatch(fieldRenamed({viewId, fieldName, newFieldName: desired}));
     }
@@ -169,48 +167,43 @@ export const BaseFieldEditor = ({
 
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
+  };
 
-    // Keep Field ID in sync with Label while users type, but only after they
-    // briefly pause typing and only while auto-sync mode remains enabled.
+  const handleLabelBlur = () => {
+    // One-time auto-sync only after user leaves the label field.
     if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
-      if (labelSyncTimerRef.current) {
-        clearTimeout(labelSyncTimerRef.current);
-      }
-      labelSyncTimerRef.current = setTimeout(() => {
-        syncFieldIDToLabel(newLabel);
-        initialAutoSyncDone.current = true;
-        autoSyncFieldIdEnabled.current = false;
-      }, FIRST_AUTO_SYNC_DELAY_MS);
+      syncFieldIDToLabel(state.label || '');
+      initialAutoSyncDone.current = true;
+      autoSyncFieldIdEnabled.current = false;
     }
   };
 
   useEffect(() => {
-    if (labelSyncTimerRef.current) {
-      clearTimeout(labelSyncTimerRef.current);
-      labelSyncTimerRef.current = null;
-    }
-    if (isMounted.current) {
-      idInputRef.current?.focus();
+    const wasInternalRename = internalRenameInFlight.current;
+    internalRenameInFlight.current = false;
+
+    const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
+    autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
+    initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+
+    setLocalFieldName(fieldName);
+
+    if (isMounted.current && !wasInternalRename) {
+      // Moving to a different field (especially a newly added field) should
+      // place focus on Label, not Field ID.
+      window.setTimeout(() => {
+        labelInputRef.current?.focus();
+      }, 0);
     } else {
       isMounted.current = true;
     }
-    // Keep first-time auto-sync enabled for a newly created field, independent of
-    // initial generated IDs (e.g. New-Field-13), until either:
-    // 1) user edits Field ID manually, or
-    // 2) first automatic sync already happened.
-    if (!initialAutoSyncDone.current) {
-      autoSyncFieldIdEnabled.current = true;
-    }
-    setLocalFieldName(fieldName);
   }, [fieldName]);
 
   useEffect(() => {
     return () => {
-      if (labelSyncTimerRef.current) {
-        clearTimeout(labelSyncTimerRef.current);
-      }
+      debouncedRename.cancel();
     };
-  }, []);
+  }, [debouncedRename]);
 
   const getFieldLabel = () => {
     return (
@@ -352,6 +345,8 @@ export const BaseFieldEditor = ({
                         placeholder="Enter field label"
                         value={state.label}
                         onChange={e => handleLabelChange(e.target.value)}
+                        onBlur={handleLabelBlur}
+                        inputRef={labelInputRef}
                         inputProps={{'data-field-label-input': 'true'}}
                       />
                     </SimpleFieldWrapper>
@@ -393,6 +388,8 @@ export const BaseFieldEditor = ({
                             placeholder="Enter field label"
                             value={state.label}
                             onChange={e => handleLabelChange(e.target.value)}
+                            onBlur={handleLabelBlur}
+                            inputRef={labelInputRef}
                             inputProps={{'data-field-label-input': 'true'}}
                           />
                         </SimpleFieldWrapper>
@@ -430,6 +427,8 @@ export const BaseFieldEditor = ({
                           label="Label"
                           value={state.label}
                           onChange={e => handleLabelChange(e.target.value)}
+                          onBlur={handleLabelBlur}
+                          inputRef={labelInputRef}
                           inputProps={{'data-field-label-input': 'true'}}
                         />
                         <TextField
