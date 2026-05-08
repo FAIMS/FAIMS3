@@ -159,7 +159,7 @@ export const MdxEditor = ({
       tablePlugin(),
       diffSourcePlugin({diffMarkdown: initialMarkdownRef.current}),
       linkPlugin(),
-      imagePlugin({imageUploadHandler}),
+      imagePlugin({imageUploadHandler, disableImageResize: false}),
       toolbarPlugin({
         toolbarContents: () => (
           <DiffSourceToggleWrapper>
@@ -193,7 +193,12 @@ export const MdxEditor = ({
           {errorMessage}
         </Alert>
       )}
-      <Card variant="outlined">
+      {/*
+       * overflow: visible is required so the image resize drag-handles (-6px
+       * outside the image node) are not clipped by the Card's default
+       * overflow: hidden.
+       */}
+      <Card variant="outlined" sx={{overflow: 'visible'}}>
         <MDXEditor
           className="image-dialog"
           placeholder="Start typing..."

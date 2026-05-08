@@ -64,6 +64,19 @@ body > .image-dialog {
 }
 
 /*
+ * Image resize handles.
+ *
+ * MDXEditor's image resize controls are positioned at -6px outside the image
+ * node's wrapper div. The parent MUI Card has overflow:hidden by default which
+ * clips them. We work around this by setting overflow:visible on the Card (see
+ * mdx-editor.tsx), and additionally ensure the image wrapper itself and its
+ * immediate ancestors in the Lexical tree don't clip the handles.
+ */
+.mdxEditor [data-editor-block-type='image'] {
+  overflow: visible !important;
+}
+
+/*
  * Restore list styles inside the MDXEditor content area.
  *
  * MDXEditor's Lexical theme assigns CSS classes to <li> but leaves <ul>/<ol>
