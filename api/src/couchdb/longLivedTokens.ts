@@ -10,6 +10,7 @@ import {
   AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
   GetLongLivedTokenIndex,
+  isPeopleUserAccountDisabled,
   LongLivedTokenExistingDocument,
   LongLivedTokenFields,
   safeWriteDocument,
@@ -237,6 +238,13 @@ export const validateLongLivedToken = async (
       return {
         valid: false,
         validationError: 'Could not find associated user.',
+      };
+    }
+
+    if (isPeopleUserAccountDisabled(user)) {
+      return {
+        valid: false,
+        validationError: 'User account is disabled.',
       };
     }
 

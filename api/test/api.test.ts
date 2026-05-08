@@ -356,6 +356,69 @@ describe('API tests', () => {
         const body = content.body as GetNotebookResponse;
         expect(body.status).to.eq(ProjectStatus.OPEN);
       });
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.CLOSED,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.ARCHIVED,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.ARCHIVED);
+      });
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.OPEN,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(400);
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.CLOSED,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.OPEN,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.OPEN);
+      });
   });
 
   it('get notebook', async () => {
@@ -397,6 +460,7 @@ describe('API tests', () => {
       .post('/api/notebooks/' + project_id + '/delete')
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
+      .send({confirmName: 'test-notebook'})
       .expect(200);
     notebooks = await getUserProjectsDetailed(adminUser);
     expect(notebooks).to.be.empty;

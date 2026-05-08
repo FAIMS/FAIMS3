@@ -30,6 +30,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {shallowEqual} from 'react-redux';
 import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
+import {NOTEBOOK_NAME} from '@/constants';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 
 /** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
@@ -293,9 +294,7 @@ export const DesignPanel = () => {
       />
       <TabContext value={tabIndex}>
         <Alert severity="info" sx={{marginBottom: 2}}>
-          Define the user interface for your notebook here. Add one or more
-          forms to collect data from users. Each form can have one or more
-          sections. Each section has one or more form fields.
+          {`Define the user interface for your ${NOTEBOOK_NAME} here. Add one or more forms to collect data from users. Each form can have one or more sections. Each section has one or more form fields.`}
         </Alert>
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>

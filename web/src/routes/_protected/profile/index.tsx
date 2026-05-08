@@ -91,55 +91,58 @@ function RouteComponent() {
   };
 
   return (
-    <div className="flex lg:flex-row flex-col gap-4">
-      <Card className="flex-1">
-        <List>
-          {userFields.map(({field, label, render}) => (
-            <ListItem key={field}>
-              <ListLabel>{label}</ListLabel>
-              <ListDescription>
-                {render ? render(user?.user[field]) : user?.user[field]}
-              </ListDescription>
-            </ListItem>
-          ))}
-        </List>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">User Profile</h1>
+      <div className="flex lg:flex-row flex-col gap-4">
+        <Card className="flex-1">
+          <List>
+            {userFields.map(({field, label, render}) => (
+              <ListItem key={field}>
+                <ListLabel>{label}</ListLabel>
+                <ListDescription>
+                  {render ? render(user?.user[field]) : user?.user[field]}
+                </ListDescription>
+              </ListItem>
+            ))}
+          </List>
+        </Card>
 
-      <Card className="flex-1">
-        <ListItem className="flex flex-col gap-2">
-          <ListLabel className="flex items-center gap-2">
-            <Key size={18} />
-            <span>Password</span>
-          </ListLabel>
-          <ListDescription>
-            Click the button below to change the password for your account.
-          </ListDescription>
-          <Button
-            variant="outline"
-            onClick={handleChangePassword}
-            className="mt-2"
-          >
-            Change Password
-          </Button>
-        </ListItem>
-      </Card>
-      <Card className="flex-1">
-        <ListItem className="flex flex-col gap-2">
-          <ListLabel className="flex items-center gap-2">
-            <ShieldAlert size={18} />
-            <span>Long-Lived API Tokens</span>
-          </ListLabel>
-          <ListDescription>
-            Click below to manage your long-lived API tokens. A long-lived token
-            can be used for programmatic access to the system APIs.
-          </ListDescription>
-          <Link to="/profile/long-lived-tokens">
-            <Button variant="outline" className="mt-2">
-              Manage Long-Lived Tokens
+        <Card className="flex-1">
+          <ListItem className="flex flex-col gap-2">
+            <ListLabel className="flex items-center gap-2">
+              <Key size={18} />
+              <span>Password</span>
+            </ListLabel>
+            <ListDescription>
+              Click the button below to change the password for your account.
+            </ListDescription>
+            <Button
+              variant="outline"
+              onClick={handleChangePassword}
+              className="mt-2"
+            >
+              Change Password
             </Button>
-          </Link>
-        </ListItem>
-      </Card>
+          </ListItem>
+        </Card>
+        <Card className="flex-1">
+          <ListItem className="flex flex-col gap-2">
+            <ListLabel className="flex items-center gap-2">
+              <ShieldAlert size={18} />
+              <span>Long-Lived API Tokens</span>
+            </ListLabel>
+            <ListDescription>
+              Click below to manage your long-lived API tokens. A long-lived
+              token can be used for programmatic access to the system APIs.
+            </ListDescription>
+            <Link to="/profile/long-lived-tokens">
+              <Button variant="outline" className="mt-2">
+                Manage Long-Lived Tokens
+              </Button>
+            </Link>
+          </ListItem>
+        </Card>
+      </div>
     </div>
   );
 }

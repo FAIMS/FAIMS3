@@ -77,7 +77,7 @@ export function CreateProjectFromTemplateForm({
     if (!response.ok)
       return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
 
-    // Invalidate projects list so template's survey list and sidebar refresh
+    // Invalidate projects list so the template’s notebook list and sidebar refresh
     await QueryClient.invalidateQueries({queryKey: ['projects']});
     if (team) {
       await QueryClient.invalidateQueries({

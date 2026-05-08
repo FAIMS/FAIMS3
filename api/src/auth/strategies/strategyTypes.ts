@@ -84,6 +84,20 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     callbackURL: z.string().optional(),
     /** Callback path if callbackURL not specified (default: /saml/callback) */
     path: z.string().optional(),
+    /**
+     * How the SP sends the AuthnRequest to the IdP (passport-saml `authnRequestBinding`).
+     * `HTTP-POST` (default): HTML form auto-post to IdP (POST binding for outbound auth request).
+     * `HTTP-Redirect`: 302 to IdP with SAMLRequest query param.
+     */
+    authnRequestBinding: z
+      .enum(['HTTP-Redirect', 'HTTP-POST'])
+      .optional()
+      .default('HTTP-POST'),
+    /**
+     * When true, passport-saml does not DEFLATE-compress outbound SAMLRequest /
+     * LogoutRequest before base64 (required by some IdPs e.g. VANguard FAS).
+     */
+    skipRequestCompression: z.boolean().optional(),
     /** Sign the metadata document with PK? */
     signMetadata: z
       .string()
@@ -104,8 +118,11 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     // Signature configuration
     /** Signature algorithm: 'sha1', 'sha256', or 'sha512' (default: sha256) */
     signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
-    /** Digest algorithm: 'sha1', 'sha256', or 'sha512' */
-    digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+    /** Digest for signed request references; passport-saml defaults to sha1 if omitted here */
+    digestAlgorithm: z
+      .enum(['sha1', 'sha256', 'sha512'])
+      .optional()
+      .default('sha256'),
     /** Request signed assertions from IdP (default: true) */
     wantAssertionsSigned: z.boolean().optional(),
     // SAML behavior options

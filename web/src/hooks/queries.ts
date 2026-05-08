@@ -1,11 +1,12 @@
 import {buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
+import {sortNotebookListNewestFirst} from '@/lib/utils';
 import type {
   GetCurrentUserResponse,
+  GetListAllUsersResponse,
   GetLongLivedTokensResponse,
   GetNotebookListResponse,
   GetTemplateByIdResponse,
-  PeopleDBDocument,
   PostCreateLongLivedTokenRequest,
   PostCreateLongLivedTokenResponse,
   PostRequestEmailVerificationRequest,
@@ -24,6 +25,7 @@ import {
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
 } from '@faims3/data-model';
+import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 
@@ -122,13 +124,23 @@ export const useGetProject = ({
 export const useGetProjects = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  /** When true, lists archived notebooks/projects too (directory-style sync uses this). */
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['projects', user?.token],
-    queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
+    queryKey: ['projects', user?.token, includeArchived],
+    queryFn: () =>
+      get<GetNotebookListResponse>(
+        includeArchived
+          ? '/api/notebooks/?includeArchived=true'
+          : '/api/notebooks/',
+        user
+      ),
+    select: sortNotebookListNewestFirst,
     enabled: !!user && enabled,
   });
 
@@ -142,14 +154,40 @@ export const useGetProjects = ({
 export const useGetTemplate = ({
   user,
   templateId,
+  enabled = true,
 }: {
   user: User | null;
   templateId: string;
+  enabled?: boolean;
 }) =>
   useQuery({
     queryKey: ['templates', templateId],
     queryFn: () =>
       get<GetTemplateByIdResponse>(`/api/templates/${templateId}`, user),
+    enabled: !!user && !!templateId && enabled,
+  });
+
+/**
+ * Notebook reference counts for delete-confirmation copy (archived template flow).
+ */
+export const useTemplateSurveyReferences = ({
+  user,
+  templateId,
+  enabled = true,
+}: {
+  user: User | null;
+  templateId: string;
+  enabled?: boolean;
+}) =>
+  useQuery({
+    queryKey: ['templates', templateId, 'references'],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      return getTemplateSurveyReferences({user, templateId});
+    },
+    enabled: !!user && !!templateId && enabled,
   });
 
 /**
@@ -169,6 +207,7 @@ export const useGetProjectsForTeam = ({
     queryKey: ['projectsbyteam', user?.token, teamId],
     queryFn: () =>
       get<GetNotebookListResponse>(`/api/notebooks?teamId=${teamId}`, user),
+    select: sortNotebookListNewestFirst,
   });
 
 /**
@@ -187,7 +226,10 @@ export const useGetTemplatesForTeam = ({
   useQuery({
     queryKey: ['templatesbyteam', user?.token, teamId],
     queryFn: async () =>
-      get<GetListTemplatesResponse>(`/api/templates?teamId=${teamId}`, user),
+      get<GetListTemplatesResponse>(
+        `/api/templates?teamId=${encodeURIComponent(teamId)}`,
+        user
+      ),
     enabled: !!user,
   });
 
@@ -220,14 +262,17 @@ export const useGetUsersForTeam = ({
 export const useGetTeam = ({
   user,
   teamId,
+  enabled: enabledOption = true,
 }: {
   user: User | null;
   teamId: string | undefined;
+  /** When false, the team request is skipped (e.g. team label already provided by another API). */
+  enabled?: boolean;
 }) =>
   useQuery({
     queryKey: ['teams', teamId],
     queryFn: async () => get<GetTeamByIdResponse>(`/api/teams/${teamId}`, user),
-    enabled: !!user && !!teamId,
+    enabled: !!user && !!teamId && enabledOption,
   });
 
 /**
@@ -251,6 +296,7 @@ export const useGetTeams = ({
 
 /**
  * useGetTemplates hook returns a query for fetching templates.
+ * By default archived templates are excluded. Pass includeArchived: true for the Archive section.
  *
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching templates.
@@ -258,14 +304,25 @@ export const useGetTeams = ({
 export const useGetTemplates = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  /** When true, lists only archived templates (requires includeArchived=true on the API). */
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['templates', user?.token],
+    queryKey: [
+      'templates',
+      user?.token,
+      includeArchived ? 'archived' : 'active',
+    ],
     queryFn: async () => {
-      const data = await get<GetListTemplatesResponse>('/api/templates/', user);
+      const qs = includeArchived ? '?includeArchived=true' : '';
+      const data = await get<GetListTemplatesResponse>(
+        `/api/templates${qs}`,
+        user
+      );
       return data.templates;
     },
     enabled: !!user && enabled,
@@ -273,6 +330,7 @@ export const useGetTemplates = ({
 
 /**
  * useGetUsers hook returns a query for fetching users.
+ * Disabled accounts are omitted unless `includeArchived` is true (matches API `includeArchived` query param).
  *
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching users.
@@ -280,13 +338,18 @@ export const useGetTemplates = ({
 export const useGetUsers = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['users'],
-    queryFn: () => get<PeopleDBDocument[]>('/api/users', user),
+    queryKey: ['users', includeArchived],
+    queryFn: () => {
+      const qs = includeArchived ? '?includeArchived=true' : '';
+      return get<GetListAllUsersResponse>(`/api/users${qs}`, user);
+    },
     enabled: !!user && enabled,
   });
 

@@ -138,6 +138,17 @@ export const VersionWarning = () => {
       anchorOrigin={{vertical: 'top', horizontal: 'center'}}
       // Don't auto-hide - let user explicitly dismiss
       autoHideDuration={null}
+      sx={{
+        /**
+         * This Snackbar is portaled with position:fixed, so it does not inherit
+         * body safe-area padding from App.css. Offset from the top using the
+         * WebView safe-area env. Android often reports 0 for safe-area-inset-top
+         * while still drawing under the status bar; keep a minimum gap on native.
+         */
+        top: Capacitor.isNativePlatform()
+          ? 'max(48px, calc(12px + env(safe-area-inset-top, 0px)))'
+          : 'calc(16px + env(safe-area-inset-top, 0px))',
+      }}
     >
       <Alert onClose={handleClose} severity="warning" sx={{width: '100%'}}>
         <AlertTitle>Version Mismatch - Update Required</AlertTitle>
