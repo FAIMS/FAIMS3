@@ -10,15 +10,11 @@ import WebProjectsPage from '../../pageobjects/web/web-projects.ts';
  * The tests do not assert on row count because no test-data pre-seeding is
  * performed at this stage — an empty list is a valid state.
  */
-describe('Web Dashboard - Projects', () => {
+describe('Web Dashboard - Projects Team Member', () => {
   const TEST_USERNAME =
-    process.env.TEST_ADMIN_USERNAME ||
-    process.env.TEST_USERNAME ||
-    'test@example.com';
+    process.env.TEST_PROJECT_CONTRIBUTOR_USERNAME || 'test@example.com';
   const TEST_PASSWORD =
-    process.env.TEST_ADMIN_PASSWORD ||
-    process.env.TEST_PASSWORD ||
-    'testpassword123';
+    process.env.TEST_PROJECT_CONTRIBUTOR_PASSWORD || 'testpassword123';
 
   before(async () => {
     // Start each suite with a clean session to avoid state leaking from other
@@ -30,7 +26,10 @@ describe('Web Dashboard - Projects', () => {
   it('should display the projects page after login', async () => {
     await WebProjectsPage.open();
     expect(await WebProjectsPage.isPageDisplayed()).toBe(true);
-    await WebProjectsPage.takeScreenshot('web-projects', 'projects-list');
+    await WebProjectsPage.takeScreenshot(
+      'web-projects',
+      'projects-list-team-member'
+    );
   });
 
   it('should show a create project button', async () => {
@@ -39,9 +38,30 @@ describe('Web Dashboard - Projects', () => {
     // fetch resolves, even when the list is empty).
     await WebProjectsPage.createButton.waitForDisplayed({timeout: 10000});
     expect(await WebProjectsPage.isCreateButtonDisplayed()).toBe(true);
+  });
+});
+
+describe('Web Dashboard - Projects - Operations Admin', () => {
+  const TEST_USERNAME =
+    process.env.TEST_OPERATIONS_ADMIN_USERNAME || 'test@example.com';
+  const TEST_PASSWORD =
+    process.env.TEST_OPERATIONS_ADMIN_PASSWORD || 'testpassword123';
+
+  before(async () => {
+    // Start each suite with a clean session to avoid state leaking from other
+    // test files.
+    await browser.reloadSession();
+    await WebAuth.login(TEST_USERNAME, TEST_PASSWORD);
+  });
+
+  it('should display the projects page after login', async () => {
+    await WebProjectsPage.open();
+    expect(await WebProjectsPage.isPageDisplayed()).toBe(true);
     await WebProjectsPage.takeScreenshot(
       'web-projects',
-      'projects-create-button'
+      'projects-list-operations-admin'
     );
   });
+
+  // check that the Users menu is visible for operations admin
 });

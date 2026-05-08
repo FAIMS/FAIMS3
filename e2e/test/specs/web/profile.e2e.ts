@@ -4,18 +4,13 @@ import WebProfilePage from '../../pageobjects/web/web-profile.ts';
 /**
  * E2E tests for the User Profile page of the web management dashboard.
  *
- * Credentials: TEST_ADMIN_USERNAME / TEST_ADMIN_PASSWORD env vars.
- * Falls back to TEST_USERNAME / TEST_PASSWORD for backwards compatibility.
+ * Credentials: TEST_OPERATIONS_ADMIN_USERNAME / TEST_OPERATIONS_ADMIN_PASSWORD env vars.
  */
 describe('Web Dashboard - Profile', () => {
   const TEST_USERNAME =
-    process.env.TEST_ADMIN_USERNAME ||
-    process.env.TEST_USERNAME ||
-    'test@example.com';
+    process.env.TEST_OPERATIONS_ADMIN_USERNAME || 'test@example.com';
   const TEST_PASSWORD =
-    process.env.TEST_ADMIN_PASSWORD ||
-    process.env.TEST_PASSWORD ||
-    'testpassword123';
+    process.env.TEST_OPERATIONS_ADMIN_PASSWORD || 'testpassword123';
 
   before(async () => {
     await browser.reloadSession();

@@ -19,8 +19,10 @@ const doLogin = async (username: string, password: string) => {
 };
 
 describe('Login Page', () => {
-  const TEST_USERNAME = process.env.TEST_USERNAME || 'test@example.com';
-  const TEST_PASSWORD = process.env.TEST_PASSWORD || 'testpassword123';
+  const TEST_USERNAME =
+    process.env.TEST_PROJECT_CONTRIBUTOR_USERNAME || 'test@example.com';
+  const TEST_PASSWORD =
+    process.env.TEST_PROJECT_CONTRIBUTOR_PASSWORD || 'testpassword123';
   const INVALID_EMAIL = 'invalid@example.com';
   const INVALID_PASSWORD = 'wrongpassword';
 
