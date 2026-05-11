@@ -513,8 +513,8 @@ const FieldEditorComponent = ({
                 variant="subtitle2"
                 sx={{
                   color: theme => theme.palette.grey[900],
-                  fontWeight: 800,
-                  fontSize: '1.06rem',
+                  fontWeight: 700,
+                  fontSize: '1.02rem',
                   lineHeight: 1.28,
                   letterSpacing: '0.005em',
                   width: '100%',
@@ -539,8 +539,8 @@ const FieldEditorComponent = ({
                     py: 0.5,
                     color: 'text.secondary',
                     background: theme =>
-                      `linear-gradient(100deg, ${alpha(theme.palette.info.light, 0.16)} 0%, ${alpha(
-                        theme.palette.info.main,
+                      `linear-gradient(100deg, ${alpha(theme.palette.grey[400], 0.15)} 0%, ${alpha(
+                        theme.palette.grey[500],
                         0.09
                       )} 18%, ${alpha(theme.palette.text.primary, 0.03)} 55%, ${alpha(
                         theme.palette.text.primary,
@@ -573,13 +573,16 @@ const FieldEditorComponent = ({
                     '& .MuiChip-label': {
                       px: 1,
                       fontSize: '0.8rem',
-                      fontWeight: 500,
+                      fontWeight: 700,
                     },
                     '&.MuiChip-outlined': {
                       background: theme =>
-                        alpha(theme.palette.text.primary, 0.02),
-                      color: 'text.secondary',
-                      borderColor: 'text.secondary',
+                        `linear-gradient(180deg, ${alpha(theme.palette.grey[300], 0.24)} 0%, ${alpha(
+                          theme.palette.grey[400],
+                          0.14
+                        )} 100%)`,
+                      color: theme => theme.palette.grey[800],
+                      borderColor: theme => alpha(theme.palette.grey[700], 0.38),
                     },
                   }}
                 />

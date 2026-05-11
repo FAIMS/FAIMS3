@@ -29,7 +29,7 @@ export const SimpleFieldWrapper = ({
         component="h4"
         sx={{
           fontSize: '1rem',
-          fontWeight: 800,
+          fontWeight: 700,
           color: 'text.primary',
           lineHeight: 1.25,
           letterSpacing: '0.012em',
@@ -48,8 +48,8 @@ export const SimpleFieldWrapper = ({
             py: 0.35,
             borderRadius: 0.85,
             background: theme =>
-              `linear-gradient(100deg, ${alpha(theme.palette.info.light, 0.14)} 0%, ${alpha(
-                theme.palette.info.main,
+              `linear-gradient(100deg, ${alpha(theme.palette.grey[400], 0.14)} 0%, ${alpha(
+                theme.palette.grey[500],
                 0.08
               )} 20%, ${alpha(theme.palette.text.primary, 0.03)} 58%, ${alpha(
                 theme.palette.text.primary,
