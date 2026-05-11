@@ -580,7 +580,8 @@ export const BaseFieldEditor = ({
                             <Alert severity="info" sx={{mt: 2}}>
                               This markdown-based helper will appear in a dialog
                               when users click the info icon next to the field
-                              label in the app.
+                              label in the app. You can resize inserted images by
+                              dragging their resize handles.
                             </Alert>
                           </Box>
                         </Collapse>

@@ -274,7 +274,6 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               overflowY: 'auto',
               '& img': {
                 maxWidth: '100%',
-                height: 'auto',
                 marginTop: 1,
                 borderRadius: 1,
                 display: 'block',
