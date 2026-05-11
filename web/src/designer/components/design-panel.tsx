@@ -156,15 +156,16 @@ export const DesignPanel = () => {
   const visibleTabSx = {
     ...baseTabRootSx,
     '&.Mui-selected': {
-      borderColor: 'common.black',
+      borderColor: isDass ? 'common.black' : 'secondary.main',
       color: 'common.white',
-      backgroundColor: 'common.black',
+      backgroundColor: isDass ? 'common.black' : 'primary.main',
       fontWeight: 800,
+      boxShadow: isDass ? 'none' : (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
     },
     '&:hover': {
-      color: 'common.white',
+      color: isDass ? 'common.white' : 'primary.contrastText',
       opacity: 1,
-      backgroundColor: '#111111',
+      backgroundColor: isDass ? '#111111' : 'primary.dark',
     },
   };
 
