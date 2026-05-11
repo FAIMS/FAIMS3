@@ -214,3 +214,27 @@ export const designerDialogContentSx: SxProps<Theme> = {
   px: {xs: 2.25, sm: 3.25},
   pb: 2.5,
 };
+
+export const designerInfoCalloutSx: SxProps<Theme> = {
+  mt: 1.5,
+  borderRadius: 1.5,
+  border: '1px solid',
+  borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.12),
+  backgroundColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.025),
+  boxShadow: (theme: Theme) =>
+    `0 1px 5px ${alpha(theme.palette.common.black, 0.05)}, inset 0 1px 0 ${alpha(
+      theme.palette.common.white,
+      0.74
+    )}`,
+  color: 'text.primary',
+};
+
+/**  light card surface used by field panels and helper areas. */
+export const designerSoftPanelCardSx: SxProps<Theme> = {
+  borderColor: 'divider',
+  boxShadow: (theme: Theme) =>
+    `0 1px 6px ${alpha(theme.palette.common.black, 0.045)}, inset 0 1px 0 ${alpha(
+      theme.palette.common.white,
+      0.78
+    )}`,
+};

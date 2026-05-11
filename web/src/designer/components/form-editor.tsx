@@ -82,6 +82,7 @@ import {
   designerInlineEditActionIconSx,
   designerInlineEditFocusOverlaySx,
   designerInlineEditPanelSx,
+  designerInfoCalloutSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
@@ -1249,7 +1250,7 @@ export const FormEditor = ({
 
             {sections.length === 0 ? (
               <Box sx={{p: 2}}>
-                <Alert severity="info" sx={{borderRadius: 1.5}}>
+                <Alert severity="info" sx={designerInfoCalloutSx}>
                   Add a section to see the live preview.
                 </Alert>
               </Box>

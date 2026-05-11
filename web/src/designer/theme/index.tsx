@@ -205,6 +205,39 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
           },
         },
       },
+      MuiAlert: {
+        styleOverrides: {
+          root: {
+            borderRadius: 10,
+            border: '1px solid transparent',
+            boxShadow: '0 1px 6px rgba(15, 23, 32, 0.06)',
+          },
+          standardInfo: {
+            borderColor: alpha(colors.blueGrey[700], 0.18),
+            backgroundColor: alpha(colors.blueGrey[700], 0.06),
+          },
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            background: `linear-gradient(180deg, ${alpha(colors.blueGrey[50], 0.45)} 0%, ${alpha(
+              colors.blueGrey[100],
+              0.38
+            )} 100%)`,
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: alpha(colors.blueGrey[700], 0.22),
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: alpha(colors.blueGrey[700], 0.34),
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: alpha(tokens.primaryMain, 0.5),
+              borderWidth: 1,
+            },
+          },
+        },
+      },
       MuiButton: {
         styleOverrides: {
           root: {

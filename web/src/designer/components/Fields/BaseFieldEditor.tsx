@@ -57,7 +57,12 @@ import {
   updateSpeechSettings,
 } from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
-import {designerCheckboxSx, designerInfoIconSx} from '../designer-style';
+import {
+  designerCheckboxSx,
+  designerInfoCalloutSx,
+  designerInfoIconSx,
+  designerSoftPanelCardSx,
+} from '../designer-style';
 
 /** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
 export const SPEECH_ENABLED_FIELDS = [
@@ -351,12 +356,7 @@ export const BaseFieldEditor = ({
             useUnifiedFieldWrapper
               ? {
                   p: 2,
-                  borderColor: 'divider',
-                  boxShadow: theme =>
-                    `0 2px 8px ${alpha(theme.palette.common.black, 0.08)}, inset 0 1px 0 ${alpha(
-                      theme.palette.common.white,
-                      0.7
-                    )}`,
+                  ...(designerSoftPanelCardSx as Record<string, unknown>),
                 }
               : {p: 2}
           }
@@ -535,6 +535,7 @@ export const BaseFieldEditor = ({
                           useUnifiedFieldWrapper
                             ? {
                                 p: 2,
+                                overflow: 'visible',
                                 borderColor: 'divider',
                                 boxShadow: theme =>
                                   `0 1px 6px ${alpha(
@@ -545,7 +546,7 @@ export const BaseFieldEditor = ({
                                     0.04
                                   )}`,
                               }
-                            : {mt: 2, p: 2}
+                            : {mt: 2, p: 2, overflow: 'visible'}
                         }
                       >
                         <Box
@@ -565,8 +566,15 @@ export const BaseFieldEditor = ({
                           </IconButton>
                         </Box>
 
-                        <Collapse in={expanded}>
-                          <Box mt={2}>
+                        <Collapse
+                          in={expanded}
+                          sx={{
+                            overflow: 'visible',
+                            '& .MuiCollapse-wrapper': {overflow: 'visible'},
+                            '& .MuiCollapse-wrapperInner': {overflow: 'visible'},
+                          }}
+                        >
+                          <Box mt={2} sx={{overflow: 'visible'}}>
                             <MdxEditor
                               initialMarkdown={state.advancedHelperText}
                               handleChange={debounce(
@@ -577,7 +585,10 @@ export const BaseFieldEditor = ({
                               )}
                               editorRef={mdxEditorRef}
                             />
-                            <Alert severity="info" sx={{mt: 2}}>
+                            <Alert
+                              severity="info"
+                              sx={{...(designerInfoCalloutSx as Record<string, unknown>), mt: 2}}
+                            >
                               This markdown-based helper will appear in a dialog
                               when users click the info icon next to the field
                               label in the app. You can resize inserted images by
@@ -680,12 +691,8 @@ export const BaseFieldEditor = ({
                 {state.condition && (
                   <Box
                     sx={{
-                      mt: 1.5,
+                      ...(designerInfoCalloutSx as Record<string, unknown>),
                       p: 1.5,
-                      bgcolor: theme => alpha(theme.palette.info.main, 0.06),
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: theme => alpha(theme.palette.info.main, 0.22),
                     }}
                   >
                     <Typography
@@ -822,28 +829,34 @@ export const BaseFieldEditor = ({
                   <Grid container spacing={1.5} sx={{mt: 0.5}}>
                     {state.annotation && (
                       <Grid item xs={12} sm={6}>
-                        <DebouncedTextField
-                          fullWidth
-                          size="small"
-                          label="Annotation Label"
-                          value={state.annotationLabel}
-                          onChange={e =>
-                            updateProperty('annotationLabel', e.target.value)
-                          }
-                        />
+                        <SimpleFieldWrapper heading="Annotation Label">
+                          <DebouncedTextField
+                            fullWidth
+                            size="small"
+                            label=""
+                            placeholder="Annotation label"
+                            value={state.annotationLabel}
+                            onChange={e =>
+                              updateProperty('annotationLabel', e.target.value)
+                            }
+                          />
+                        </SimpleFieldWrapper>
                       </Grid>
                     )}
                     {state.uncertainty && (
                       <Grid item xs={12} sm={6}>
-                        <DebouncedTextField
-                          fullWidth
-                          size="small"
-                          label="Uncertainty Label"
-                          value={state.uncertaintyLabel}
-                          onChange={e =>
-                            updateProperty('uncertaintyLabel', e.target.value)
-                          }
-                        />
+                        <SimpleFieldWrapper heading="Uncertainty Label">
+                          <DebouncedTextField
+                            fullWidth
+                            size="small"
+                            label=""
+                            placeholder="Uncertainty label"
+                            value={state.uncertaintyLabel}
+                            onChange={e =>
+                              updateProperty('uncertaintyLabel', e.target.value)
+                            }
+                          />
+                        </SimpleFieldWrapper>
                       </Grid>
                     )}
                   </Grid>

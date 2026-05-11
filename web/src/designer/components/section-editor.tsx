@@ -73,6 +73,7 @@ import {
   designerInlineEditActionIconSx,
   designerInlineEditFocusOverlaySx,
   designerInlineEditPanelSx,
+  designerInfoCalloutSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
@@ -714,7 +715,7 @@ export const SectionEditor = ({
       </Dialog>
       <Grid>
         {fView.condition ? (
-          <Alert severity="info">
+          <Alert severity="info" sx={designerInfoCalloutSx}>
             <strong>Section Condition:</strong> Show this section if&nbsp;
             <ConditionTranslation condition={fView.condition} />
           </Alert>

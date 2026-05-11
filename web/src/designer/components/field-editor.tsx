@@ -379,6 +379,7 @@ const FieldEditorComponent = ({
   );
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id: fieldName});
+  const baseTransform = CSS.Transform.toString(transform) || 'translate3d(0, 0, 0)';
   const canDragField = !expanded;
 
   useEffect(() => {
@@ -408,23 +409,38 @@ const FieldEditorComponent = ({
       square
       elevation={0}
       sx={{
-        transform: CSS.Transform.toString(transform),
+        transform: baseTransform,
         transition:
-          transition ?? 'transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)',
+          transition ??
+          'transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 180ms ease, border-color 180ms ease, background 180ms ease',
         opacity: isDragging ? 0.86 : 1,
         border: '1px solid',
         borderColor: theme =>
           isDragging
             ? alpha(theme.palette.primary.main, 0.36)
-            : alpha(theme.palette.text.primary, 0.11),
+            : alpha(theme.palette.text.primary, 0.12),
         borderRadius: 1.25,
         overflow: 'hidden',
         mb: 0.9,
+        background: theme =>
+          `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.985)} 0%, ${alpha(
+            theme.palette.text.primary,
+            0.03
+          )} 100%)`,
         boxShadow: isDragging
-          ? '0 9px 22px rgba(0, 0, 0, 0.11)'
-          : '0 1px 8px rgba(0, 0, 0, 0.045)',
-        '&:not(:nth-of-type(2))': {
-          borderTop: '1px solid',
+          ? '0 10px 24px rgba(22, 35, 50, 0.13)'
+          : '0 7px 18px rgba(22, 35, 50, 0.09), 0 2px 6px rgba(22, 35, 50, 0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
+        '&:hover': {
+          borderColor: theme =>
+            isDragging
+              ? alpha(theme.palette.primary.main, 0.36)
+              : alpha(theme.palette.primary.main, 0.28),
+          boxShadow: isDragging
+            ? '0 10px 24px rgba(22, 35, 50, 0.13)'
+            : '0 10px 22px rgba(22, 35, 50, 0.12), 0 3px 8px rgba(22, 35, 50, 0.08), inset 0 1px 0 rgba(255,255,255,0.84)',
+          transform: isDragging
+            ? baseTransform
+            : `${baseTransform} translateY(-1px)`,
         },
         '&:before': {
           display: 'none',
@@ -454,14 +470,22 @@ const FieldEditorComponent = ({
           </Box>
         }
         sx={{
-          backgroundColor: theme => alpha(theme.palette.text.primary, 0.022),
+          background: theme =>
+            `linear-gradient(180deg, ${alpha(theme.palette.text.primary, 0.032)} 0%, ${alpha(
+              theme.palette.text.primary,
+              0.02
+            )} 100%)`,
           flexDirection: 'row-reverse',
           px: {xs: 1.2, sm: 1.6},
           py: 0.2,
           minHeight: 84,
-          transition: 'background-color 160ms ease',
+          transition: 'background 160ms ease',
           '&:hover': {
-            backgroundColor: theme => alpha(theme.palette.text.primary, 0.04),
+            background: theme =>
+              `linear-gradient(180deg, ${alpha(theme.palette.text.primary, 0.05)} 0%, ${alpha(
+                theme.palette.text.primary,
+                0.03
+              )} 100%)`,
           },
           '& .MuiAccordionSummary-expandIconWrapper': {
             transform: 'none !important',
@@ -488,9 +512,9 @@ const FieldEditorComponent = ({
               <Typography
                 variant="subtitle2"
                 sx={{
-                  color: theme => theme.palette.grey[800],
-                  fontWeight: 700,
-                  fontSize: '1.02rem',
+                  color: theme => theme.palette.grey[900],
+                  fontWeight: 800,
+                  fontSize: '1.06rem',
                   lineHeight: 1.28,
                   letterSpacing: '0.005em',
                   width: '100%',
@@ -511,13 +535,23 @@ const FieldEditorComponent = ({
                   fontStyle="italic"
                   sx={{
                     mt: 0.65,
-                    px: 1.1,
-                    py: 0.6,
+                    px: 1,
+                    py: 0.5,
                     color: 'text.secondary',
-                    borderLeft: '2px solid',
-                    borderColor: theme => alpha(theme.palette.text.secondary, 0.35),
-                    backgroundColor: theme => alpha(theme.palette.text.primary, 0.02),
-                    borderRadius: 0.75,
+                    background: theme =>
+                      `linear-gradient(100deg, ${alpha(theme.palette.info.light, 0.16)} 0%, ${alpha(
+                        theme.palette.info.main,
+                        0.09
+                      )} 18%, ${alpha(theme.palette.text.primary, 0.03)} 55%, ${alpha(
+                        theme.palette.text.primary,
+                        0.014
+                      )} 100%)`,
+                    boxShadow: theme =>
+                      `0 1px 5px ${alpha(theme.palette.common.black, 0.045)}, inset 0 1px 0 ${alpha(
+                        theme.palette.common.white,
+                        0.72
+                      )}`,
+                    borderRadius: 0.95,
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',

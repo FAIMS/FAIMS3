@@ -322,10 +322,14 @@ export default function FieldChooserDialog({
                     variant="outlined"
                     sx={{
                       minHeight: CARD_HEIGHT,
-                      borderWidth: 1.5,
-                      borderColor: theme.palette.divider,
-                      bgcolor: theme.palette.background.paper,
-                      boxShadow: theme.shadows[1],
+                      borderWidth: 1,
+                      borderColor: theme => alpha(theme.palette.text.primary, 0.15),
+                      background: theme =>
+                        `linear-gradient(180deg, ${alpha(
+                          theme.palette.background.paper,
+                          0.96
+                        )} 0%, ${alpha(theme.palette.text.primary, 0.035)} 100%)`,
+                      boxShadow: '0 3px 8px rgba(15, 23, 42, 0.08)',
                       transition: theme.transitions.create(
                         ['border-color', 'box-shadow', 'transform'],
                         {duration: theme.transitions.duration.short}
@@ -333,8 +337,8 @@ export default function FieldChooserDialog({
                       display: 'flex',
                       flexDirection: 'column',
                       '&:hover': {
-                        borderColor: theme.palette.primary.main,
-                        boxShadow: theme.shadows[4],
+                        borderColor: theme => alpha(theme.palette.primary.main, 0.35),
+                        boxShadow: '0 8px 18px rgba(15, 23, 42, 0.12)',
                         transform: 'translateY(-1px)',
                       },
                     }}
@@ -364,6 +368,8 @@ export default function FieldChooserDialog({
                           <Typography
                             variant="subtitle2"
                             sx={{
+                              fontWeight: 700,
+                              color: 'text.primary',
                               display: '-webkit-box',
                               overflow: 'hidden',
                               WebkitBoxOrient: 'vertical',
