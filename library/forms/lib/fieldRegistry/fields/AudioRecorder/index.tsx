@@ -1,12 +1,14 @@
 import {logError} from '@faims3/data-model';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import MicIcon from '@mui/icons-material/Mic';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {
+  Alert,
   Box,
   Button,
   IconButton,
@@ -17,7 +19,7 @@ import {
 } from '@mui/material';
 import {Capacitor} from '@capacitor/core';
 import {CapacitorAudioRecorder} from '@capgo/capacitor-audio-recorder';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
@@ -34,7 +36,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // ============================================================================
 
 const audioRecorderPropsSchema = BaseFieldPropsSchema.extend({
-  maximum_number_of_recordings: z.number().optional().default(0),
+  maximumNumberOfRecordings: z.number().optional().default(0),
   bitRate: z.number().optional(),
   sampleRate: z.number().optional(),
 });
@@ -46,15 +48,61 @@ interface FullAudioRecorderFieldProps extends AudioRecorderFieldProps {
   config: FullFormConfig;
 }
 
-const AUDIO_MIME = 'audio/mp4';
-const AUDIO_EXT = 'm4a';
+// Fallback MIME type and extension used when the recording blob has no type
+// set (some native platforms return untyped blobs). On web, the browser's
+// MediaRecorder typically produces audio/webm; on iOS/Android the Capgo
+// plugin produces audio/mp4 (m4a). The actual blob type is always
+// preferred when available — these only apply as a last resort.
+const FALLBACK_MIME = 'audio/mp4';
+const FALLBACK_EXT = 'm4a';
+
+/** Derives a file extension from a MIME type string. */
+function extensionFromMime(mime: string): string {
+  // Strip codec suffixes (e.g. "audio/webm;codecs=opus" -> "audio/webm")
+  const baseMime = mime.split(';')[0].trim();
+  const map: Record<string, string> = {
+    'audio/webm': 'webm',
+    'audio/ogg': 'ogg',
+    'audio/mp4': 'm4a',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
+  };
+  return map[baseMime] ?? FALLBACK_EXT;
+}
+
+const NAV_CONFIRM_MESSAGE =
+  'A recording is in progress. Please stop or cancel the recording before navigating away.';
+
+// ============================================================================
+// Module-level recording lock — prevents simultaneous recording across
+// multiple AudioRecorder fields on the same form.
+// ============================================================================
+
+let activeRecordingFieldId: string | null = null;
+
+function acquireRecordingLock(fieldId: string): boolean {
+  if (activeRecordingFieldId !== null && activeRecordingFieldId !== fieldId) {
+    return false;
+  }
+  activeRecordingFieldId = fieldId;
+  return true;
+}
+
+function releaseRecordingLock(fieldId: string): void {
+  if (activeRecordingFieldId === fieldId) {
+    activeRecordingFieldId = null;
+  }
+}
+
+function isRecordingLocked(fieldId: string): boolean {
+  return activeRecordingFieldId !== null && activeRecordingFieldId !== fieldId;
+}
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
 /** Formats milliseconds as m:ss for the elapsed time display. */
-
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const m = Math.floor(totalSeconds / 60);
@@ -63,7 +111,6 @@ function formatDuration(ms: number): string {
 }
 
 /** Converts the plugin's stop result to a Blob, handling the web/native difference. */
-
 async function blobFromResult(result: {
   blob?: Blob;
   uri?: string;
@@ -75,6 +122,33 @@ async function blobFromResult(result: {
     return await response.blob();
   }
   return null;
+}
+
+/**
+ * Checks whether a click target is inside a form field or other safe
+ * interactive area that should remain usable during recording.
+ */
+function isInsideFormContent(target: HTMLElement): boolean {
+  // Inside a FAIMS field container (id="field-xxx")
+  if (target.closest('[id^="field-"]')) return true;
+
+  // Native form inputs
+  const tag = target.tagName.toLowerCase();
+  if (['input', 'textarea', 'select', 'option', 'label'].includes(tag))
+    return true;
+
+  // MUI portals (dropdowns, menus, autocomplete popups)
+  if (
+    target.closest(
+      '.MuiPopover-root, .MuiMenu-root, .MuiModal-root, .MuiPopper-root, .MuiAutocomplete-popper, .MuiDialog-root'
+    )
+  )
+    return true;
+
+  // Tab panels / section content within the form
+  if (target.closest('[role="tabpanel"]')) return true;
+
+  return false;
 }
 
 // ============================================================================
@@ -125,13 +199,15 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
     required,
     advancedHelperText,
     disabled = false,
-    maximum_number_of_recordings: maxRecordings = 0,
+    maximumNumberOfRecordings: maxRecordings = 0,
     bitRate,
     sampleRate,
     state,
+    fieldId,
     setFieldData,
     addAttachment,
     removeAttachment,
+    setAttachmentSaving,
   } = props;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -140,23 +216,92 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
   const [error, setError] = useState<string | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef(0);
+  const isRecordingRef = useRef(false);
+  const recorderRef = useRef<HTMLDivElement>(null);
 
   const attachmentIds = (state.value?.data as string[]) ?? [];
   const atLimit = maxRecordings > 0 && attachmentIds.length >= maxRecordings;
+  const lockedByOther = isRecordingLocked(fieldId);
 
   // Load attachments for playback
-  const attachmentService = props.config.attachmentEngine();
+  const attachmentService = useMemo(
+    () => props.config.attachmentEngine(),
+    [props.config]
+  );
   const loadedFiles = useAttachments(
     (state.value?.attachments || []).map(att => att.attachmentId),
     attachmentService
   );
 
+  // Block browser refresh/close while recording
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isRecordingRef.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Block browser back button while recording
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!isRecordingRef.current) return;
+      window.history.pushState(null, '');
+      window.alert(NAV_CONFIRM_MESSAGE);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Block clicks outside form fields while recording. Allows interaction
+  // with other fields, dropdowns, and inputs but prevents navigation via
+  // tabs, sidebar links, back buttons, breadcrumbs, etc.
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!isRecordingRef.current) return;
+
+      const target = e.target as HTMLElement;
+
+      // Allow clicks inside the recorder itself
+      if (recorderRef.current?.contains(target)) return;
+
+      // Allow clicks inside form fields and safe interactive areas
+      if (isInsideFormContent(target)) return;
+
+      // Everything else is blocked — likely navigation
+      e.preventDefault();
+      e.stopPropagation();
+      window.alert(NAV_CONFIRM_MESSAGE);
+    };
+
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, []);
+
+  // Push a guard history entry when recording starts
+  useEffect(() => {
+    if (isRecording) {
+      window.history.pushState(null, '');
+    }
+  }, [isRecording]);
+
+  // Clean up timer and release lock on unmount
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
+      if (isRecordingRef.current) {
+        releaseRecordingLock(fieldId);
+        setAttachmentSaving?.(false);
+        CapacitorAudioRecorder.cancelRecording().catch(() => {});
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Starts a 250ms interval that updates the elapsed time display.
+  // Accepts an optional offset to resume from a paused position.
   const startTimer = useCallback((from = 0) => {
     startedAtRef.current = Date.now() - from;
     tickRef.current = setInterval(
@@ -165,6 +310,7 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
     );
   }, []);
 
+  // Clears the elapsed time interval so the display freezes.
   const stopTimer = useCallback(() => {
     if (tickRef.current) {
       clearInterval(tickRef.current);
@@ -174,11 +320,18 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
 
   const handleStart = useCallback(async () => {
     setError(null);
+
+    if (!acquireRecordingLock(fieldId)) {
+      setError('Another audio field is currently recording.');
+      return;
+    }
+
     try {
       const perm = await CapacitorAudioRecorder.checkPermissions();
       if (perm.recordAudio !== 'granted') {
         const req = await CapacitorAudioRecorder.requestPermissions();
         if (req.recordAudio !== 'granted') {
+          releaseRecordingLock(fieldId);
           setError('Microphone permission denied.');
           return;
         }
@@ -194,13 +347,17 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
         ...(sampleRate ? {sampleRate} : {}),
       });
       setIsRecording(true);
+      isRecordingRef.current = true;
       setIsPaused(false);
       startTimer();
+      // Signal to the form that an attachment operation is in progress
+      setAttachmentSaving?.(true);
     } catch (e) {
+      releaseRecordingLock(fieldId);
       logError(e);
       setError(e instanceof Error ? e.message : 'Failed to start recording.');
     }
-  }, [bitRate, sampleRate, startTimer]);
+  }, [bitRate, sampleRate, startTimer, fieldId]);
 
   const handlePause = useCallback(async () => {
     try {
@@ -232,14 +389,20 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
     }
     stopTimer();
     setIsRecording(false);
+    isRecordingRef.current = false;
     setIsPaused(false);
     setElapsed(0);
-  }, [stopTimer]);
+    setAttachmentSaving?.(false);
+    releaseRecordingLock(fieldId);
+  }, [stopTimer, fieldId]);
 
   const handleStop = useCallback(async () => {
     stopTimer();
     setIsRecording(false);
+    isRecordingRef.current = false;
     setIsPaused(false);
+    releaseRecordingLock(fieldId);
+    setAttachmentSaving?.(false);
     try {
       const result = await CapacitorAudioRecorder.stopRecording();
       const blob = await blobFromResult(result);
@@ -247,19 +410,18 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
         setError('Recording produced no audio.');
         return;
       }
-      // Ensure a valid MIME type before handing to the attachment service.
       const typedBlob =
         blob.type && blob.type.length > 0
           ? blob
-          : new Blob([blob], {type: AUDIO_MIME});
+          : new Blob([blob], {type: FALLBACK_MIME});
 
+      const mime = typedBlob.type || FALLBACK_MIME;
       const newId = await addAttachment({
         blob: typedBlob,
-        contentType: typedBlob.type || AUDIO_MIME,
+        contentType: mime,
         type: 'file',
-        fileFormat: AUDIO_EXT,
+        fileFormat: extensionFromMime(mime),
       });
-
       const currentData = state.value?.data as string[] | undefined;
       setFieldData([...(currentData ?? []), newId]);
       setElapsed(0);
@@ -267,7 +429,7 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
       logError(e);
       setError(e instanceof Error ? e.message : 'Failed to save recording.');
     }
-  }, [stopTimer, addAttachment, setFieldData, state.value?.data]);
+  }, [stopTimer, addAttachment, setFieldData, state.value?.data, fieldId]);
 
   const handleRemove = useCallback(
     (attachmentId: string) => {
@@ -292,64 +454,118 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
       advancedHelperText={advancedHelperText}
       errors={relevantErrors}
     >
-      <Box sx={{width: '100%'}}>
-        {/* Recording controls */}
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          {!isRecording && (
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<MicIcon />}
-              disabled={disabled || atLimit}
-              onClick={handleStart}
-            >
-              Record
-            </Button>
-          )}
-          {isRecording && !isPaused && (
-            <Button
-              variant="outlined"
-              startIcon={<PauseIcon />}
-              onClick={handlePause}
-            >
-              Pause
-            </Button>
-          )}
-          {isRecording && isPaused && (
-            <Button
-              variant="outlined"
-              startIcon={<PlayArrowIcon />}
-              onClick={handleResume}
-            >
-              Resume
-            </Button>
-          )}
-          {isRecording && (
-            <>
+      <Box ref={recorderRef} sx={{width: '100%'}}>
+        {/* Recording in progress warning */}
+        {isRecording && (
+          <Alert
+            severity="warning"
+            icon={
+              <FiberManualRecordIcon
+                sx={{
+                  color: 'error.main',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                  '@keyframes pulse': {
+                    '0%, 100%': {opacity: 1},
+                    '50%': {opacity: 0.3},
+                  },
+                }}
+              />
+            }
+            sx={{mb: 2}}
+          >
+            Recording in progress — stop or cancel before navigating away.
+          </Alert>
+        )}
+
+        {/* Recording controls — fixed to bottom when actively recording */}
+        <Box
+          sx={{
+            ...(isRecording
+              ? {
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 1300,
+                  bgcolor: 'background.paper',
+                  borderTop: 2,
+                  borderColor: 'error.main',
+                  py: 1.5,
+                  px: 3,
+                  boxShadow: 6,
+                }
+              : {}),
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            flexWrap="wrap"
+          >
+            {!isRecording && (
               <Button
                 variant="contained"
-                color="secondary"
-                startIcon={<StopIcon />}
-                onClick={handleStop}
+                color="primary"
+                startIcon={<MicIcon />}
+                disabled={disabled || atLimit || lockedByOther}
+                onClick={handleStart}
               >
-                Stop
+                Record
               </Button>
+            )}
+            {isRecording && !isPaused && (
               <Button
-                variant="text"
-                startIcon={<CancelIcon />}
-                onClick={handleCancel}
+                variant="outlined"
+                startIcon={<PauseIcon />}
+                onClick={handlePause}
               >
-                Cancel
+                Pause
               </Button>
-              <Typography
-                variant="body2"
-                sx={{fontFamily: 'monospace', minWidth: 48}}
+            )}
+            {isRecording && isPaused && (
+              <Button
+                variant="outlined"
+                startIcon={<PlayArrowIcon />}
+                onClick={handleResume}
               >
-                {formatDuration(elapsed)}
-              </Typography>
-            </>
+                Resume
+              </Button>
+            )}
+            {isRecording && (
+              <>
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<StopIcon />}
+                  onClick={handleStop}
+                >
+                  Stop
+                </Button>
+                <Button
+                  variant="text"
+                  startIcon={<CancelIcon />}
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
+                <Typography
+                  variant="body2"
+                  sx={{fontFamily: 'monospace', minWidth: 48}}
+                >
+                  {formatDuration(elapsed)}
+                </Typography>
+              </>
+            )}
+          </Stack>
+
+          {/* Lock notice when another field is recording */}
+          {lockedByOther && !isRecording && (
+            <Typography variant="caption" color="text.secondary" sx={{mt: 1}}>
+              Another audio field is currently recording.
+            </Typography>
           )}
-        </Stack>
+        </Box>
 
         {/* Limit notice */}
         {atLimit && (
@@ -381,7 +597,7 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                   <MicIcon fontSize="small" color="action" />
                   <Typography variant="body2" sx={{flexGrow: 1}}>
-                    {file.data?.metadata?.filename ?? `Recording ${idx + 1}`}
+                    {`Recording ${idx + 1}`}
                   </Typography>
                   {!disabled && (
                     <IconButton
@@ -421,7 +637,6 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
 // ============================================================================
 
 /** AudioRecorder field component — routes to preview or full mode. */
-
 export const AudioRecorder: React.FC<AudioRecorderFieldProps> = props => {
   if (props.config.mode === 'preview') {
     return <AudioRecorderPreview {...props} />;
@@ -440,7 +655,6 @@ export const AudioRecorder: React.FC<AudioRecorderFieldProps> = props => {
 // ============================================================================
 
 /** Field specification for registering the AudioRecorder component. */
-
 export const audioRecorderFieldSpec: FieldInfo<AudioRecorderFieldProps> = {
   namespace: 'faims-custom',
   name: 'AudioRecorder',
@@ -454,8 +668,8 @@ export const audioRecorderFieldSpec: FieldInfo<AudioRecorderFieldProps> = {
         message: 'At least one audio recording is required.',
       });
     }
-    if (props.maximum_number_of_recordings > 0) {
-      const max = props.maximum_number_of_recordings;
+    if (props. maximumNumberOfRecordings > 0) {
+      const max = props. maximumNumberOfRecordings;
       base = base.refine(val => val.length <= max, {
         message: `Maximum ${max} recording${max === 1 ? '' : 's'} allowed.`,
       });

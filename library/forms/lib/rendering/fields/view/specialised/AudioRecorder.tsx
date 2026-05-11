@@ -6,9 +6,9 @@ import {useAttachments} from '../../../../hooks/useAttachment';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
-const AudioClip: React.FC<{url: string; filename: string}> = ({
+const AudioClip: React.FC<{url: string; label: string}> = ({
   url,
-  filename,
+  label,
 }) => (
   <Paper
     elevation={0}
@@ -27,7 +27,7 @@ const AudioClip: React.FC<{url: string; filename: string}> = ({
     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
       <AudioFileIcon color="primary" />
       <Typography variant="body2" sx={{wordBreak: 'break-word'}}>
-        {filename}
+        {label}
       </Typography>
     </Box>
     <audio controls src={url} style={{width: '100%'}} preload="metadata">
@@ -83,7 +83,7 @@ export const AudioRecorderRender: DataViewFieldRender = props => {
         <AudioClip
           key={`audio-${att.metadata.filename}-${idx}`}
           url={att.url}
-          filename={att.metadata.filename}
+          label={`Recording ${idx + 1}`}
         />
       ))}
       {Array.from({length: unsyncedCount}).map((_, idx) => (
