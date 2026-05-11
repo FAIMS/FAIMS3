@@ -844,7 +844,7 @@ export const FormEditor = ({
                 </Tooltip>
               </Box>
             </DialogTitle>
-            <DialogContent sx={{...designerDialogContentSx, pt: 3.25}}>
+            <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
               <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
                 <SimpleFieldWrapper
                   heading="Section Name"

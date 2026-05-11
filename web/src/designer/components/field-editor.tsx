@@ -415,14 +415,14 @@ const FieldEditorComponent = ({
         border: '1px solid',
         borderColor: theme =>
           isDragging
-            ? alpha(theme.palette.primary.main, 0.45)
-            : alpha(theme.palette.text.primary, 0.16),
+            ? alpha(theme.palette.primary.main, 0.36)
+            : alpha(theme.palette.text.primary, 0.11),
         borderRadius: 1.25,
         overflow: 'hidden',
         mb: 0.9,
         boxShadow: isDragging
-          ? '0 10px 24px rgba(0, 0, 0, 0.12)'
-          : '0 2px 9px rgba(0, 0, 0, 0.06)',
+          ? '0 9px 22px rgba(0, 0, 0, 0.11)'
+          : '0 1px 8px rgba(0, 0, 0, 0.045)',
         '&:not(:nth-of-type(2))': {
           borderTop: '1px solid',
         },
@@ -454,14 +454,14 @@ const FieldEditorComponent = ({
           </Box>
         }
         sx={{
-          backgroundColor: theme => alpha(theme.palette.text.primary, 0.035),
+          backgroundColor: theme => alpha(theme.palette.text.primary, 0.022),
           flexDirection: 'row-reverse',
           px: {xs: 1.2, sm: 1.6},
           py: 0.2,
           minHeight: 84,
           transition: 'background-color 160ms ease',
           '&:hover': {
-            backgroundColor: theme => alpha(theme.palette.text.primary, 0.055),
+            backgroundColor: theme => alpha(theme.palette.text.primary, 0.04),
           },
           '& .MuiAccordionSummary-expandIconWrapper': {
             transform: 'none !important',
@@ -769,7 +769,7 @@ const FieldEditorComponent = ({
           }}
         >
           <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
-          <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <DialogContent sx={{pt: 3.5, px: {xs: 2, sm: 3}}}>
             <Box
               sx={{
                 border: '1px solid',
@@ -894,7 +894,7 @@ const FieldEditorComponent = ({
         <DialogTitle id="move-dialog-title" sx={designerDialogTitleSx}>
           Move Field
         </DialogTitle>
-        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
           {conflictError && (
             <Alert severity="error" sx={{mb: 2}}>
               <Typography variant="body2" sx={{mb: 1}}>
@@ -981,7 +981,7 @@ const FieldEditorComponent = ({
         <DialogTitle id="duplicate-dialog-title" sx={designerDialogTitleSx}>
           Duplicate Field
         </DialogTitle>
-        <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
           <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             Field Title
           </Typography>

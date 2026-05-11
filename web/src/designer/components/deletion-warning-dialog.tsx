@@ -33,7 +33,7 @@ export const DeletionWarningDialog = ({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={designerDialogTitleSx}>{title}</DialogTitle>
-      <DialogContent sx={{pt: 3.25, px: {xs: 2, sm: 3}}}>
+      <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
         <Alert severity="warning">
           This item is referenced in the following conditions:
           <ul style={{marginTop: 8}}>

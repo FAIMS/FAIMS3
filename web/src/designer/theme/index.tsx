@@ -200,6 +200,8 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
             border: '1px solid rgba(17,24,39,0.12)',
             boxShadow: '0 20px 46px rgba(15, 23, 32, 0.24)',
             overflow: 'hidden',
+            marginTop: 16,
+            marginBottom: 24,
           },
         },
       },

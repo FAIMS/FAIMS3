@@ -160,7 +160,7 @@ export const designerResponsiveFieldEditorSx = {
 
 /** Styled DialogTitle header with a subtle primary-tinted background. */
 export const designerDialogTitleSx: SxProps<Theme> = {
-  py: 2.25,
+  py: 2.35,
   px: {xs: 2.25, sm: 3.25},
   borderBottom: '1px solid',
   borderColor: 'divider',
@@ -197,8 +197,8 @@ export const designerDialogFieldLabelSx: SxProps<Theme> = {
   fontWeight: 600,
   color: 'text.secondary',
   fontSize: '0.875rem',
-  mb: 0.75,
-  mt: 1.5,
+  mb: 0.9,
+  mt: 2.1,
 };
 
 /** Secondary body text inside dialogs. */
@@ -206,11 +206,11 @@ export const designerDialogBodyTextSx: SxProps<Theme> = {
   color: 'text.secondary',
   fontSize: '0.875rem',
   lineHeight: 1.5,
-  mb: 1.5,
+  mb: 1.65,
 };
 
 export const designerDialogContentSx: SxProps<Theme> = {
-  pt: 3.25,
+  pt: 4,
   px: {xs: 2.25, sm: 3.25},
-  pb: 2.25,
+  pb: 2.5,
 };

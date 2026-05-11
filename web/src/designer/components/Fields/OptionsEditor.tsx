@@ -1065,47 +1065,50 @@ export const OptionsEditor = ({
                   >
                     Add
                   </Button>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    size="small"
-                    onClick={toggleEnableOtherOption}
-                    disabled={enableOther}
-                    sx={{
-                      width: {xs: '100%', sm: 'auto'},
-                      minWidth: 56,
-                      height: 40,
-                      px: 2,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      borderWidth: 1.5,
-                      color: theme.designerMeta.isDass ? 'common.white' : 'primary.main',
-                      borderColor: theme.designerMeta.isDass ? 'common.black' : 'primary.main',
-                      backgroundColor: theme.designerMeta.isDass
-                        ? 'common.black'
-                        : 'transparent',
-                      '&:hover': {
-                        borderWidth: 1.5,
-                        backgroundColor: theme.designerMeta.isDass
-                          ? 'rgba(0,0,0,0.88)'
-                          : 'action.hover',
-                      },
-                      '&.Mui-disabled': {
-                        backgroundColor: 'action.disabledBackground',
-                        color: 'text.disabled',
-                        borderColor: 'action.disabledBackground',
-                      },
-                    }}
-                  >
-                    Add "Other" Option
-                  </Button>
-                  <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
-                    <InfoIcon
+                  <Stack direction="row" spacing={0.65} alignItems="center">
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      onClick={toggleEnableOtherOption}
+                      disabled={enableOther}
                       sx={{
-                        ...(designerInfoIconSx as Record<string, unknown>),
+                        width: {xs: '100%', sm: 'auto'},
+                        minWidth: 56,
+                        height: 40,
+                        px: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        borderWidth: 1.5,
+                        color: theme.designerMeta.isDass ? 'common.white' : 'primary.main',
+                        borderColor: theme.designerMeta.isDass ? 'common.black' : 'primary.main',
+                        backgroundColor: theme.designerMeta.isDass
+                          ? 'common.black'
+                          : 'transparent',
+                        '&:hover': {
+                          borderWidth: 1.5,
+                          backgroundColor: theme.designerMeta.isDass
+                            ? 'rgba(0,0,0,0.88)'
+                            : 'action.hover',
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: 'action.disabledBackground',
+                          color: 'text.disabled',
+                          borderColor: 'action.disabledBackground',
+                        },
                       }}
-                    />
-                  </Tooltip>
+                    >
+                      Add "Other" Option
+                    </Button>
+                    <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
+                      <InfoIcon
+                        sx={{
+                          ...(designerInfoIconSx as Record<string, unknown>),
+                          ml: 0,
+                        }}
+                      />
+                    </Tooltip>
+                  </Stack>
                 </Stack>
               </form>
 
