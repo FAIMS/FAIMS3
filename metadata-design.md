@@ -477,5 +477,6 @@ Maps **legacy** locations (projects row, metadata DB, merged notebook `metadata`
 **Global migration**
 
 - New **cross-database migration** type, **versioned**, applied in a defined order across **all** relevant DBs for an environment. **Cannot** rely solely on single-DB “doc in doc out” migration within one scope.
+- **Implementation** lives in `@faims3/data-model` (`GLOBAL_MIGRATIONS`, `migrationService.migrateDbs`, invariants). Maintainer-oriented documentation: `docs/developer/docs/source/markdown/CouchMigrations.md`.
 
 ## Other issues / notes
