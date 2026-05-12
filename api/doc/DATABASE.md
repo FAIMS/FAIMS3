@@ -75,6 +75,16 @@ here are used to locate the databases.
 `auth_mechanisms` is repeated here from the projects database. It doesn't seem to be
 used anywhere at all.
 
+## Migrations and schema versions
+
+Each **physical** Couch database that participates in automated upgrades has a row in a dedicated **migrations** database: `(DatabaseType, db_name)` → current **integer version**, **status** (`healthy` / `not-healthy`), and a **migration log**. Platform-wide DBs (directory, people, projects, …) each have one such document; every `data-{project}` and `metadata-{project}` pair has its own document keyed by that DB’s name.
+
+The conductor/API runs **`migrateDbs`** from the `@faims3/data-model` package (`library/data-model/src/data_storage/migrations/migrationService.ts`): it applies **individual** per-document migrations (`DB_MIGRATIONS` in `migrations.ts`) and, when needed, **global** coordinated steps (`GLOBAL_MIGRATIONS` in `globalMigrations.ts`). Developer-facing details, invariants, and how to add new steps are documented in `docs/developer/docs/source/markdown/CouchMigrations.md` (Sphinx developer docs).
+
+`initialiseAndMigrateDBs` in `api/src/couchdb/index.ts` calls **`getAllProjectsDirectory`** (see `api/src/couchdb/notebooks.ts`) **before** a **single** `migrateDbs` over every **platform** database (auth, directory, invites, people, projects, templates, **teams**) plus **each project’s `DATA` and `METADATA`**. That way **global** migrations always see one combined batch (`GlobalMigrationRunContext.allBatchHandles()` / `allHandlesForType()` in `run`). Because listing runs first, **project documents must stay backwards compatible** enough to enumerate projects and resolve data/metadata DB names at whatever Couch version is still on disk—see the `getAllProjectsDirectory` docstring.
+
+**Notebook JSON** (`schema_version`, UI spec shape) is migrated separately; see `docs/developer/docs/source/markdown/NotebookMigrations.md`.
+
 ## Individual project databases
 
 Two databases hold the data for a notebook: `data-{project name}` and `metadata-{project name}`.

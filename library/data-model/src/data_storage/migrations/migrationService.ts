@@ -6,6 +6,12 @@ import {
   MigrationsDBDocument,
   MigrationsDBFields,
 } from '../migrationsDB';
+import {
+  createGlobalMigrationRunContext,
+  findApplicableGlobalMigration,
+} from './globalMigrationResolver';
+import {GLOBAL_MIGRATIONS} from './globalMigrations';
+import {LoadedDbHandle} from './globalMigrationTypes';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
 import {
   DATABASE_TYPE,
@@ -144,6 +150,291 @@ export function identifyMigrations({
 }
 
 /**
+ * Returns the registered single-step individual migration (from → from+1), if any.
+ */
+export function findNextIndividualMigration(
+  dbType: DatabaseType,
+  fromVersion: number
+): MigrationDetails | null {
+  const next = DB_MIGRATIONS.find(
+    m =>
+      m.dbType === dbType &&
+      m.from === fromVersion &&
+      m.to === fromVersion + 1
+  );
+  return next ?? null;
+}
+
+async function getOrCreateMigrationDoc({
+  dbType,
+  dbName,
+  migrationDb,
+}: {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  migrationDb: MigrationsDB;
+}): Promise<MigrationsDBDocument> {
+  const migrationDocs = await migrationDb.query<MigrationsDBFields>(
+    MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+    {
+      key: [dbType, dbName],
+      include_docs: true,
+    }
+  );
+
+  if (migrationDocs.rows.length === 0) {
+    const defaultMigrationFields = buildDefaultMigrationDoc({
+      dbType,
+      dbName,
+    });
+    const response = await migrationDb.post(defaultMigrationFields);
+    return await migrationDb.get(response.id);
+  }
+
+  return migrationDocs.rows[0].doc!;
+}
+
+/**
+ * Applies zero or more consecutive individual (per-document) migrations until
+ * the next version step is missing or the database reaches its target version.
+ *
+ * @returns true if the migration document version changed.
+ */
+async function applyIndividualMigrationChain({
+  handle,
+  migrationDb,
+  userId,
+}: {
+  handle: LoadedDbHandle;
+  migrationDb: MigrationsDB;
+  userId: string;
+}): Promise<boolean> {
+  const {db, dbType, dbName, migrationDoc} = handle;
+
+  if (isDbUpToDate({migrationDoc})) {
+    return false;
+  }
+
+  const migrationStartTime = Date.now();
+  const initialVersion = migrationDoc.version;
+  let currentVersion = migrationDoc.version;
+  const targetVersion = DB_TARGET_VERSIONS[dbType].targetVersion;
+
+  const migrationLogEntry: MigrationLog = {
+    from: initialVersion,
+    to: targetVersion,
+    startedAtTimestampMs: migrationStartTime,
+    completedAtTimestampMs: 0,
+    launchedBy: userId,
+    status: 'success',
+    issues: [],
+    notes: `Migrating from v${initialVersion} to v${targetVersion}`,
+  };
+
+  let ranAtLeastOneMigrationStep = false;
+
+  while (currentVersion < targetVersion) {
+    const migrationDetail = findNextIndividualMigration(dbType, currentVersion);
+    if (!migrationDetail) {
+      break;
+    }
+
+    ranAtLeastOneMigrationStep = true;
+
+    if (!IS_TESTING) {
+      console.log(
+        `Applying migration for ${dbType} from v${migrationDetail.from} to v${migrationDetail.to}: ${migrationDetail.description}`
+      );
+    }
+
+    migrationLogEntry.notes += `\n- ${migrationDetail.description}`;
+
+    const result = await performMigration({
+      db,
+      migrationFunc: migrationDetail.migrationFunction,
+    });
+
+    if (!IS_TESTING) {
+      console.log(
+        `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
+      );
+    }
+
+    if (result.issues.length > 0) {
+      migrationLogEntry.issues = [
+        ...(migrationLogEntry.issues || []),
+        ...result.issues,
+      ];
+      migrationLogEntry.status = 'failure';
+      break;
+    }
+
+    currentVersion = migrationDetail.to;
+  }
+
+  if (!ranAtLeastOneMigrationStep && currentVersion === initialVersion) {
+    return false;
+  }
+
+  migrationLogEntry.completedAtTimestampMs = Date.now();
+  migrationLogEntry.to = currentVersion;
+  migrationDoc.version = currentVersion;
+  migrationDoc.status =
+    migrationLogEntry.status === 'success' ? 'healthy' : 'not-healthy';
+  migrationDoc.migrationLog = [...migrationDoc.migrationLog, migrationLogEntry];
+
+  await migrationDb.put(migrationDoc);
+
+  if (migrationLogEntry.status === 'success') {
+    if (!IS_TESTING) {
+      console.log(
+        `Successfully migrated database ${dbName} (${dbType}) from version ${migrationLogEntry.from} to ${migrationLogEntry.to}`
+      );
+    }
+  } else if (!IS_TESTING) {
+    console.error(
+      `Migration of database ${dbName} (${dbType}) completed with issues. Check migration logs for details.`
+    );
+  }
+
+  return true;
+}
+
+async function recordUnexpectedMigrationFailure({
+  dbType,
+  dbName,
+  migrationDb,
+  migrationStartTime,
+  userId,
+  error,
+}: {
+  dbType: DatabaseType;
+  dbName: string;
+  migrationDb: MigrationsDB;
+  migrationStartTime: number;
+  userId: string;
+  error: unknown;
+}): Promise<void> {
+  try {
+    const migrationDocs = await migrationDb.query<MigrationsDBFields>(
+      MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+      {
+        key: [dbType, dbName],
+        include_docs: true,
+      }
+    );
+
+    if (migrationDocs.rows.length > 0) {
+      const migrationDoc = migrationDocs.rows[0].doc!;
+
+      const failureLogEntry: MigrationLog = {
+        from: migrationDoc.version,
+        to: DB_TARGET_VERSIONS[dbType].targetVersion,
+        startedAtTimestampMs: migrationStartTime,
+        completedAtTimestampMs: Date.now(),
+        launchedBy: userId,
+        status: 'failure',
+        notes: 'Migration failed due to an unexpected error',
+        issues: [error instanceof Error ? error.message : String(error)],
+      };
+
+      migrationDoc.status = 'not-healthy';
+      migrationDoc.migrationLog = [...migrationDoc.migrationLog, failureLogEntry];
+
+      await migrationDb.put(migrationDoc);
+    }
+  } catch (logError) {
+    console.error(
+      `Failed to log migration failure for ${dbName} (${dbType}):`,
+      logError
+    );
+  }
+}
+
+async function runGlobalMigrationStep({
+  match,
+  allHandles,
+  migrationDb,
+  userId,
+}: {
+  match: NonNullable<ReturnType<typeof findApplicableGlobalMigration>>;
+  allHandles: LoadedDbHandle[];
+  migrationDb: MigrationsDB;
+  userId: string;
+}): Promise<'success' | 'failure'> {
+  const {definition, matchedByDbType} = match;
+
+  const ctx = createGlobalMigrationRunContext({
+    definition,
+    matchedByDbType,
+    userId,
+    migrationDb,
+    allBatchHandles: allHandles,
+  });
+
+  const started = Date.now();
+
+  if (!IS_TESTING) {
+    console.log(`Applying global migration: ${definition.id} — ${definition.description}`);
+  }
+
+  const result = await definition.run(ctx);
+
+  if (result.status === 'failure') {
+    const issues = result.issues;
+    for (const h of ctx.allHandles()) {
+      const logEntry: MigrationLog = {
+        from: h.migrationDoc.version,
+        to: h.migrationDoc.version,
+        startedAtTimestampMs: started,
+        completedAtTimestampMs: Date.now(),
+        launchedBy: userId,
+        status: 'failure',
+        issues,
+        notes: `Global migration ${definition.id}`,
+        globalMigrationId: definition.id,
+      };
+      h.migrationDoc.status = 'not-healthy';
+      h.migrationDoc.migrationLog = [...h.migrationDoc.migrationLog, logEntry];
+      await migrationDb.put(h.migrationDoc);
+    }
+
+    if (!IS_TESTING) {
+      console.error(`Global migration ${definition.id} failed.`);
+    }
+    return 'failure';
+  }
+
+  for (const p of definition.participants) {
+    const toVersion = p.to;
+    for (const h of matchedByDbType.get(p.dbType) ?? []) {
+      const fromV = h.migrationDoc.version;
+      const logEntry: MigrationLog = {
+        from: fromV,
+        to: toVersion,
+        startedAtTimestampMs: started,
+        completedAtTimestampMs: Date.now(),
+        launchedBy: userId,
+        status: 'success',
+        issues: [],
+        notes: definition.description,
+        globalMigrationId: definition.id,
+      };
+      h.migrationDoc.version = toVersion;
+      h.migrationDoc.status = 'healthy';
+      h.migrationDoc.migrationLog = [...h.migrationDoc.migrationLog, logEntry];
+      await migrationDb.put(h.migrationDoc);
+    }
+  }
+
+  if (!IS_TESTING) {
+    console.log(`Global migration ${definition.id} completed successfully.`);
+  }
+
+  return 'success';
+}
+
+/**
  * Performs a migration on all non-design documents in a PouchDB database.
  *
  * This function:
@@ -264,11 +555,12 @@ export async function performMigration({
  *
  * This function handles the entire migration process for multiple databases:
  * 1. Retrieves or creates migration documents for each database
- * 2. Checks if each database is up to date
- * 3. Identifies required migrations
- * 4. Executes migrations in the correct order
- * 5. Updates migration logs with results
- * 6. Updates the migration documents in the migration database
+ * 2. Repeatedly applies consecutive individual (per-document) migrations per
+ *    database whenever the next single-step migration exists
+ * 3. When no database can advance via an individual step but some are still
+ *    behind their target version, applies the first matching **global**
+ *    migration from {@link GLOBAL_MIGRATIONS} (cross-database, full-connection context)
+ * 4. Updates migration logs with results
  *
  * @param dbs - Array of database objects to migrate.
  * @param migrationDb - The database that stores migration documents.
@@ -283,196 +575,104 @@ export async function migrateDbs({
   migrationDb: MigrationsDB;
   userId?: string;
 }): Promise<void> {
-  // Process each database one by one
+  const handles: LoadedDbHandle[] = [];
+
   for (const {dbType, dbName, db} of dbs) {
-    // Track migration start time
-    const migrationStartTime = Date.now();
-
     try {
-      // Try to find an existing migration document for this database
-      const migrationDocs = await migrationDb.query<MigrationsDBFields>(
-        MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [dbType, dbName],
-          include_docs: true,
-        }
+      const migrationDoc = await getOrCreateMigrationDoc({
+        dbType,
+        dbName,
+        migrationDb,
+      });
+      handles.push({dbType, dbName, db, migrationDoc});
+
+      if (isDbUpToDate({migrationDoc}) && !IS_TESTING) {
+        console.log(
+          `Database ${dbName} (${dbType}) is already up to date at version ${migrationDoc.version}`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Failed to load migration document for ${dbName} (${dbType}):`,
+        error
       );
+    }
+  }
 
-      // Determine if we have an existing migration document or need to create one
-      let migrationDoc: MigrationsDBDocument;
+  while (handles.some(h => !isDbUpToDate({migrationDoc: h.migrationDoc}))) {
+    let progressed = false;
 
-      if (migrationDocs.rows.length === 0) {
-        // No existing migration document found, create a new one
-        const defaultMigrationFields = buildDefaultMigrationDoc({
-          dbType,
-          dbName,
-        });
-
-        // Save the new migration document
-        const response = await migrationDb.post(defaultMigrationFields);
-
-        // Retrieve the created document with its _id and _rev
-        migrationDoc = await migrationDb.get(response.id);
-      } else {
-        // Use the existing migration document
-        migrationDoc = migrationDocs.rows[0].doc!;
-      }
-
-      // Check if the database is already up to date
-      if (isDbUpToDate({migrationDoc})) {
-        if (!IS_TESTING) {
-          console.log(
-            `Database ${dbName} (${dbType}) is already up to date at version ${migrationDoc.version}`
-          );
-        }
-        continue; // Skip to the next database
-      }
-
-      // Database needs migration - identify required migration details
-      const migrationsToApply = identifyMigrations({migrationDoc});
-
-      // If no migrations are needed (this should not happen due to isDbUpToDate check, but as a safeguard)
-      if (migrationsToApply.length === 0) {
+    for (const handle of handles) {
+      if (isDbUpToDate({migrationDoc: handle.migrationDoc})) {
         continue;
       }
 
-      // Create a migration log entry to track this migration process
-      const migrationLogEntry: MigrationLog = {
-        from: migrationDoc.version,
-        to: DB_TARGET_VERSIONS[dbType].targetVersion,
-        startedAtTimestampMs: migrationStartTime,
-        completedAtTimestampMs: 0, // Will be updated when migration completes
-        launchedBy: userId,
-        status: 'success', // Optimistic, will be updated if there are issues
-        issues: [],
-        notes: `Migrating from v${migrationDoc.version} to v${DB_TARGET_VERSIONS[dbType].targetVersion}`,
-      };
-
-      // Apply each migration in sequence
-      let currentVersion = migrationDoc.version;
-
-      for (const migrationDetail of migrationsToApply) {
-        // Start migration for this step
-        if (!IS_TESTING) {
-          console.log(
-            `Applying migration for ${dbType} from v${migrationDetail.from} to v${migrationDetail.to}: ${migrationDetail.description}`
-          );
-        }
-
-        // Add the migration description to the notes
-        if (!migrationLogEntry.notes) {
-          migrationLogEntry.notes = '';
-        }
-        migrationLogEntry.notes += `\n- ${migrationDetail.description}`;
-
-        // Perform the migration
-        const result = await performMigration({
-          db,
-          migrationFunc: migrationDetail.migrationFunction,
-        });
-
-        // Log stats about this migration step
-        if (!IS_TESTING) {
-          console.log(
-            `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
-          );
-        }
-
-        // Check for issues during migration
-        if (result.issues.length > 0) {
-          // Add these issues to the migration log
-          migrationLogEntry.issues = [
-            ...(migrationLogEntry.issues || []),
-            ...result.issues,
-          ];
-
-          // If we have issues, mark the migration as failed
-          migrationLogEntry.status = 'failure';
-
-          // Don't continue running subsequent migrations if there were issues!
-          break;
-        } else {
-          // Update the current version
-          currentVersion = migrationDetail.to;
-        }
+      if (handle.migrationDoc.status === 'not-healthy') {
+        continue;
       }
 
-      // Complete the migration log entry
-      migrationLogEntry.completedAtTimestampMs = Date.now();
+      const migrationStartTime = Date.now();
 
-      // Update the migration document (only to successful spot)
-      migrationDoc.version = currentVersion;
-      migrationDoc.status =
-        migrationLogEntry.status === 'success' ? 'healthy' : 'not-healthy';
-      migrationDoc.migrationLog = [
-        ...migrationDoc.migrationLog,
-        migrationLogEntry,
-      ];
-
-      // Save the updated migration document
-      await migrationDb.put(migrationDoc);
-
-      // Log completion status
-      if (migrationLogEntry.status === 'success') {
-        if (!IS_TESTING) {
-          console.log(
-            `Successfully migrated database ${dbName} (${dbType}) from version ${migrationLogEntry.from} to ${migrationLogEntry.to}`
-          );
-        }
-      } else {
-        if (!IS_TESTING) {
-          console.error(
-            `Migration of database ${dbName} (${dbType}) completed with issues. Check migration logs for details.`
-          );
-        }
-      }
-    } catch (error) {
-      // Handle any unexpected errors in the migration process
-      console.error(`Failed to migrate database ${dbName} (${dbType}):`, error);
-
-      // Try to update the migration document to reflect the failure if possible
       try {
-        // Try to find the migration document
-        const migrationDocs = await migrationDb.query<MigrationsDBFields>(
-          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-          {
-            key: [dbType, dbName],
-            include_docs: true,
-          }
-        );
-
-        if (migrationDocs.rows.length > 0) {
-          const migrationDoc = migrationDocs.rows[0].doc!;
-
-          // Create a failure log entry
-          const failureLogEntry: MigrationLog = {
-            from: migrationDoc.version,
-            to: DB_TARGET_VERSIONS[dbType].targetVersion,
-            startedAtTimestampMs: migrationStartTime,
-            completedAtTimestampMs: Date.now(),
-            launchedBy: userId,
-            status: 'failure',
-            notes: 'Migration failed due to an unexpected error',
-            issues: [error instanceof Error ? error.message : String(error)],
-          };
-
-          // Update the migration document
-          migrationDoc.status = 'not-healthy';
-          migrationDoc.migrationLog = [
-            ...migrationDoc.migrationLog,
-            failureLogEntry,
-          ];
-
-          // Save the updated migration document
-          await migrationDb.put(migrationDoc);
+        const did = await applyIndividualMigrationChain({
+          handle,
+          migrationDb,
+          userId,
+        });
+        if (did) {
+          progressed = true;
         }
-      } catch (logError) {
-        // At this point, we've failed to migrate and also failed to log the failure
+      } catch (error) {
         console.error(
-          `Failed to log migration failure for ${dbName} (${dbType}):`,
-          logError
+          `Failed to migrate database ${handle.dbName} (${handle.dbType}):`,
+          error
         );
+        await recordUnexpectedMigrationFailure({
+          dbType: handle.dbType,
+          dbName: handle.dbName,
+          migrationDb,
+          migrationStartTime,
+          userId,
+          error,
+        });
       }
     }
+
+    if (progressed) {
+      continue;
+    }
+
+    const globalMatch = findApplicableGlobalMigration(handles, GLOBAL_MIGRATIONS);
+    if (globalMatch) {
+      const globalOutcome = await runGlobalMigrationStep({
+        match: globalMatch,
+        allHandles: handles,
+        migrationDb,
+        userId,
+      });
+      if (globalOutcome === 'failure') {
+        throw new Error(
+          `Global migration "${globalMatch.definition.id}" failed. See migration logs on participating databases.`
+        );
+      }
+      continue;
+    }
+
+    const stuckHealthy = handles.filter(
+      h =>
+        !isDbUpToDate({migrationDoc: h.migrationDoc}) &&
+        h.migrationDoc.status === 'healthy'
+    );
+    if (stuckHealthy.length === 0) {
+      break;
+    }
+
+    const detail = stuckHealthy
+      .map(
+        h =>
+          `${h.dbName} (${h.dbType}) is at v${h.migrationDoc.version} but target is v${DB_TARGET_VERSIONS[h.dbType].targetVersion}; no individual step from v${h.migrationDoc.version} to v${h.migrationDoc.version + 1} and no applicable global migration.`
+      )
+      .join('\n');
+    throw new Error(`Cannot complete database migrations:\n${detail}`);
   }
 }

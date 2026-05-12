@@ -1,7 +1,9 @@
 # Notebook Migrations
 
-`data-model/src/data_storage/migrations/notebookMigrations` implements a basic
+`library/data-model/src/data_storage/migrations/notebookMigrations` implements a basic
 migration for notebooks.
+
+This is **not** the same system as **Couch per-database versioning** (people, projects, metadata DBs, etc.). For that, see [CouchMigrations.md](CouchMigrations.md).
 
 Each notebook has a property `schema_version` in metadata that records the
 schema version that it conforms to. In very early versions this was missing. In
@@ -19,3 +21,7 @@ but does so in an idempotent manner meaning multiple migrations would be safe.
 Future migrations will require some planning and design work to ensure that we
 can manage versions cleanly and migrate through different versions. This will
 need to be done when we make future updates to the notebook format.
+
+## See also
+
+- [CouchMigrations.md](CouchMigrations.md) — `migrateDbs`, `DB_MIGRATIONS`, `GLOBAL_MIGRATIONS`, migration metadata database.

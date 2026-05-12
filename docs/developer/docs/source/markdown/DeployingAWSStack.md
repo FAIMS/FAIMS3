@@ -737,6 +737,8 @@ In my case, deployment was successful in about 10 minutes.
 
 To get started, you'll need to run the DB migration.
 
+For how Couch migrations work (individual vs global steps, `migrateDbs`, and adding new versions), see [CouchMigrations.md](CouchMigrations.md).
+
 Before doing this, you'll need to find the auto generated DB credentials. Navigate to AWS Secrets Manager, and find the secret with a name such as `couchdbCouchDBAdminPassword-ABCD1234`. Click on it, and retrieve the secret value.
 
 **Warning**: This is the root credentials for the DB. Do NOT share this, or leave it in a vulnerable location.

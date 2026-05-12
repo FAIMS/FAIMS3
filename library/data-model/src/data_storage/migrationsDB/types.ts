@@ -4,6 +4,8 @@ export type MigrationLog = {
   // from and to version ID
   from: number;
   to: number;
+  /** When set, this entry records a cross-database global migration step */
+  globalMigrationId?: string;
   // Any notes about this migration?
   notes?: string;
   // MS timestamp started at
