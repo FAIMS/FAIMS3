@@ -196,6 +196,15 @@ export const clearTemplateIdFromProjectsReferencingTemplate = async (
 /**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
+ *
+ * **Startup / migrations:** `initialiseAndMigrateDBs` calls this **before**
+ * `migrateDbs` runs, to build the list of per-project `DATA` / `METADATA`
+ * handles. Project rows must therefore remain **backwards compatible** at every
+ * on-disk schema revision: `allDocs` filtering and fields used here (and by
+ * `getDataDb` / `getMetadataDb`, which read `dataDb` / `metadataDb` or legacy
+ * `data_db` / `metadata_db`) must still work until migrations have caught up.
+ * Prefer additive fields, keep connection info readable under old shapes, or
+ * use a short compatibility shim in this layer when changing project records.
  */
 export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
   const projectsDb = localGetProjectsDb();

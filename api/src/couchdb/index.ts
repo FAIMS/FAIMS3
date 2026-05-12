@@ -650,7 +650,15 @@ export const initialiseDbAndKeys = async ({
 };
 
 /**
- * Initialises and then migrates all databases!
+ * Initialises and then migrates all databases.
+ *
+ * Uses a **single** `migrateDbs` call over every platform handle (including
+ * teams), plus each project’s data and metadata DB, so global migrations and
+ * `allBatchHandles()` / `allHandlesForType()` in global `run`) always see one combined batch.
+ *
+ * `getAllProjectsDirectory` runs **before** any Couch migrations execute, so
+ * project documents on disk must stay **backwards compatible** enough to list
+ * projects and resolve `dataDb` / `metadataDb` (see docstring there).
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
@@ -662,7 +670,13 @@ export const initialiseAndMigrateDBs = async ({
 }) => {
   await initialiseDbAndKeys({force, pushKeys});
 
-  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: DatabaseInterface}[] = [
+  const migrationsDb = getMigrationDb();
+
+  const platformDbs: {
+    dbType: DATABASE_TYPE;
+    dbName: string;
+    db: DatabaseInterface;
+  }[] = [
     {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
     {
       db: getDirectoryDB(),
@@ -681,22 +695,22 @@ export const initialiseAndMigrateDBs = async ({
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
     },
+    {db: getTeamsDB(), dbType: DatabaseType.TEAMS, dbName: TEAMS_DB_NAME},
   ];
 
-  // Migrate these first
-  const migrationsDb = getMigrationDb();
-  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
 
-  // Now migrate all data/metadata DBs
   const projects = await getAllProjectsDirectory();
-  dbs = [];
+  const projectDbs: {
+    dbType: DATABASE_TYPE;
+    dbName: string;
+    db: DatabaseInterface;
+  }[] = [];
 
   for (const project of projects) {
-    // Project ID
     const projectId = project._id;
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
     const metadataDb = (await getMetadataDb(projectId)) as DatabaseInterface;
-    dbs.concat([
+    projectDbs.push(
       {
         db: dataDb,
         dbType: DatabaseType.DATA,
@@ -706,10 +720,15 @@ export const initialiseAndMigrateDBs = async ({
         db: metadataDb,
         dbType: DatabaseType.METADATA,
         dbName: metadataDb.name,
-      },
-    ]);
+      }
+    );
   }
-  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  await migrateDbs({
+    dbs: [...platformDbs, ...projectDbs],
+    migrationDb: migrationsDb,
+    userId: 'system',
+  });
 
   // For users, we also establish an admin user, if not already present
   // do this after all migrations so we know the db is up to date

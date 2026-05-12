@@ -1,11 +1,13 @@
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
+import type {GlobalMigrationRunContext} from '../src/data_storage';
 import {
   DATABASE_TYPE,
   DATABASE_TYPES,
   DB_MIGRATIONS,
   DB_TARGET_VERSIONS,
   DatabaseType,
+  GLOBAL_MIGRATIONS,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
   MigrationFunc,
   MigrationsDB,
@@ -20,6 +22,7 @@ import {
   isDbUpToDate,
   migrateDbs,
   performMigration,
+  validateConfiguredMigrationNetwork,
 } from '../src/data_storage';
 import {DatabaseInterface} from '../src';
 
@@ -43,33 +46,8 @@ describe('Migration System Tests', () => {
       });
     });
 
-    it('should have a complete migration path for each database that needs migration', () => {
-      // For each database type where target > default
-      Object.entries(DB_TARGET_VERSIONS).forEach(
-        ([dbType, {defaultVersion, targetVersion}]) => {
-          // Skip if no migration needed
-          if (defaultVersion === targetVersion) {
-            return;
-          }
-
-          // Check if we have migrations for each version step
-          let version = defaultVersion;
-          while (version < targetVersion) {
-            const migration = DB_MIGRATIONS.find(
-              m =>
-                m.dbType === dbType &&
-                m.from === version &&
-                m.to === version + 1
-            );
-
-            expect(migration).toBeDefined();
-            expect(migration?.migrationFunction).toBeDefined();
-            expect(migration?.description).toBeDefined();
-
-            version++;
-          }
-        }
-      );
+    it('should have a unique individual migration path and consistent globals', () => {
+      expect(() => validateConfiguredMigrationNetwork()).not.toThrow();
     });
   });
 
@@ -858,6 +836,581 @@ describe('Migration System Tests', () => {
       } finally {
         // Clean up
         await testProjectsDb.destroy();
+      }
+    });
+
+    it('runs a global migration when no individual step is registered', async () => {
+      const directoryDb = new PouchDB('test-directory-global', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      const originalDirectoryTarget =
+        DB_TARGET_VERSIONS[DatabaseType.DIRECTORY].targetVersion;
+      DB_TARGET_VERSIONS[DatabaseType.DIRECTORY].targetVersion = 2;
+
+      const globalDef = {
+        id: 'test-directory-global-1-to-2',
+        description: 'Test-only global migration for DIRECTORY',
+        participants: [
+          {
+            dbType: DatabaseType.DIRECTORY,
+            from: 1,
+            to: 2,
+            multiplicity: 'single' as const,
+          },
+        ],
+        run: async () => ({status: 'success' as const}),
+      };
+      GLOBAL_MIGRATIONS.push(globalDef);
+
+      try {
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DIRECTORY,
+              dbName: 'test-directory-global',
+              db: directoryDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          userId: 'system',
+        });
+
+        const migrationDocs = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DIRECTORY, 'test-directory-global'],
+            include_docs: true,
+          }
+        );
+        const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
+        expect(migrationDoc.version).toBe(2);
+        expect(
+          migrationDoc.migrationLog.some(
+            e => e.globalMigrationId === 'test-directory-global-1-to-2'
+          )
+        ).toBe(true);
+      } finally {
+        GLOBAL_MIGRATIONS.pop();
+        DB_TARGET_VERSIONS[DatabaseType.DIRECTORY].targetVersion =
+          originalDirectoryTarget;
+        await directoryDb.destroy();
+      }
+    });
+
+    it('passes all matched connections to the global migration run context', async () => {
+      const directoryDb = new PouchDB('test-dir-multi-global', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const teamsDb = new PouchDB('test-teams-multi-global', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      const originalDirectoryTarget =
+        DB_TARGET_VERSIONS[DatabaseType.DIRECTORY].targetVersion;
+      const originalTeamsTarget =
+        DB_TARGET_VERSIONS[DatabaseType.TEAMS].targetVersion;
+      DB_TARGET_VERSIONS[DatabaseType.DIRECTORY].targetVersion = 2;
+      DB_TARGET_VERSIONS[DatabaseType.TEAMS].targetVersion = 2;
+
+      const globalDef = {
+        id: 'test-dual-global',
+        description: 'Coordinated DIRECTORY + TEAMS bump',
+        participants: [
+          {
+            dbType: DatabaseType.DIRECTORY,
+            from: 1,
+            to: 2,
+            multiplicity: 'single' as const,
+          },
+          {
+            dbType: DatabaseType.TEAMS,
+            from: 1,
+            to: 2,
+            multiplicity: 'single' as const,
+          },
+        ],
+        run: async (ctx: GlobalMigrationRunContext) => {
+          const d = ctx.getUnique(DatabaseType.DIRECTORY);
+          const t = ctx.getUnique(DatabaseType.TEAMS);
+          expect(d.dbName).toBe('test-dir-multi-global');
+          expect(t.dbName).toBe('test-teams-multi-global');
+          expect(ctx.allBatchHandles().length).toBe(2);
+          return {status: 'success' as const};
+        },
+      };
+      GLOBAL_MIGRATIONS.push(globalDef);
+
+      try {
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DIRECTORY,
+              dbName: 'test-dir-multi-global',
+              db: directoryDb,
+            },
+            {
+              dbType: DatabaseType.TEAMS,
+              dbName: 'test-teams-multi-global',
+              db: teamsDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+        });
+
+        const dirDoc = (
+          await testMigrationDb.query<MigrationsDBFields>(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {
+              key: [DatabaseType.DIRECTORY, 'test-dir-multi-global'],
+              include_docs: true,
+            }
+          )
+        ).rows[0].doc as MigrationsDBDocument;
+        const teamsDoc = (
+          await testMigrationDb.query<MigrationsDBFields>(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {
+              key: [DatabaseType.TEAMS, 'test-teams-multi-global'],
+              include_docs: true,
+            }
+          )
+        ).rows[0].doc as MigrationsDBDocument;
+
+        expect(dirDoc.version).toBe(2);
+        expect(teamsDoc.version).toBe(2);
+      } finally {
+        GLOBAL_MIGRATIONS.pop();
+        DB_TARGET_VERSIONS[DatabaseType.DIRECTORY].targetVersion =
+          originalDirectoryTarget;
+        DB_TARGET_VERSIONS[DatabaseType.TEAMS].targetVersion =
+          originalTeamsTarget;
+        await directoryDb.destroy();
+        await teamsDb.destroy();
+      }
+    });
+
+    /**
+     * Mirrors the CouchMigrations walkthrough: coordinated PROJECTS + TEMPLATES
+     * jump with PEOPLE for lookups, plus **two** `DATA` DBs (`all-of-type`) where
+     * the global stamps **every** observation record whose `created_by_id` matches
+     * a known person (multi-document updates per physical data DB).
+     */
+    it('walkthrough-style global: PROJECTS + TEMPLATES + multi-notebook DATA with PEOPLE lookups', async () => {
+      const projectsDb = new PouchDB('test-wt-projects', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const templatesDb = new PouchDB('test-wt-templates', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const dataDbA = new PouchDB('test-wt-data-notebook-a', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const dataDbB = new PouchDB('test-wt-data-notebook-b', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      const projectsDbName = 'test-wt-projects';
+      const templatesDbName = 'test-wt-templates';
+      const dataDbAName = 'test-wt-data-notebook-a';
+      const dataDbBName = 'test-wt-data-notebook-b';
+      const peopleDbName = 'test-people-db';
+
+      const originalProjectsTarget =
+        DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion;
+      const originalTemplatesTarget =
+        DB_TARGET_VERSIONS[DatabaseType.TEMPLATES].targetVersion;
+      const originalDataTarget =
+        DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion;
+
+      DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion = 4;
+      DB_TARGET_VERSIONS[DatabaseType.TEMPLATES].targetVersion = 5;
+      DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion = 2;
+
+      const logSeed = (
+        from: number,
+        to: number
+      ): MigrationsDBFields['migrationLog'][0] => ({
+        from,
+        to,
+        startedAtTimestampMs: Date.now(),
+        completedAtTimestampMs: Date.now(),
+        launchedBy: 'system',
+        status: 'success',
+        issues: [],
+        notes: 'seed',
+      });
+
+      await projectsDb.put({
+        _id: 'nb-1',
+        name: 'Notebook',
+        last_updated_by_user_id: 'person1',
+      });
+      await templatesDb.put({
+        _id: 'tpl-1',
+        name: 'Template',
+        last_updated_by_user_id: 'person1',
+      });
+
+      // Two project "data" DBs: multiple records per DB; only those with
+      // created_by_id === person1 get stamped (exercises bulk updates per DATA).
+      await dataDbA.bulkDocs([
+        {
+          _id: 'obs-a1',
+          type: 'data_record',
+          created_by_id: 'person1',
+          sample_field: 'alpha',
+        },
+        {
+          _id: 'obs-a2',
+          type: 'data_record',
+          created_by_id: 'person2',
+          sample_field: 'beta',
+        },
+        {
+          _id: 'obs-a3',
+          type: 'data_record',
+          created_by_id: 'person1',
+          sample_field: 'gamma',
+        },
+        {
+          _id: 'obs-a4',
+          type: 'data_record',
+          created_by_id: 'no-such-person',
+          sample_field: 'unresolved',
+        },
+      ]);
+      await dataDbB.bulkDocs([
+        {
+          _id: 'obs-b1',
+          type: 'data_record',
+          created_by_id: 'person1',
+          sample_field: 'delta',
+        },
+      ]);
+
+      await testMigrationDb.post({
+        dbType: DatabaseType.PROJECTS,
+        dbName: projectsDbName,
+        version: 3,
+        status: 'healthy',
+        migrationLog: [
+          logSeed(0, 1),
+          logSeed(1, 2),
+          logSeed(2, 3),
+        ],
+      });
+      await testMigrationDb.post({
+        dbType: DatabaseType.TEMPLATES,
+        dbName: templatesDbName,
+        version: 4,
+        status: 'healthy',
+        migrationLog: [
+          logSeed(0, 1),
+          logSeed(1, 2),
+          logSeed(2, 3),
+          logSeed(3, 4),
+        ],
+      });
+      await testMigrationDb.post({
+        dbType: DatabaseType.PEOPLE,
+        dbName: peopleDbName,
+        version: 5,
+        status: 'healthy',
+        migrationLog: [
+          logSeed(0, 1),
+          logSeed(1, 2),
+          logSeed(2, 3),
+          logSeed(3, 4),
+          logSeed(4, 5),
+        ],
+      });
+      await testMigrationDb.post({
+        dbType: DatabaseType.DATA,
+        dbName: dataDbAName,
+        version: 1,
+        status: 'healthy',
+        migrationLog: [logSeed(0, 1)],
+      });
+      await testMigrationDb.post({
+        dbType: DatabaseType.DATA,
+        dbName: dataDbBName,
+        version: 1,
+        status: 'healthy',
+        migrationLog: [logSeed(0, 1)],
+      });
+
+      const globalId = 'test-global-walkthrough-audit-coord';
+      const globalDef = {
+        id: globalId,
+        description:
+          'Coordinated audit on projects, templates, and all DATA DBs using people (test)',
+        participants: [
+          {
+            dbType: DatabaseType.PROJECTS,
+            from: 3,
+            to: 4,
+            multiplicity: 'single' as const,
+          },
+          {
+            dbType: DatabaseType.TEMPLATES,
+            from: 4,
+            to: 5,
+            multiplicity: 'single' as const,
+          },
+          {
+            dbType: DatabaseType.DATA,
+            from: 1,
+            to: 2,
+            multiplicity: 'all-of-type' as const,
+          },
+        ],
+        run: async (ctx: GlobalMigrationRunContext) => {
+          const peopleInBatch = ctx.allHandlesForType(DatabaseType.PEOPLE);
+          if (peopleInBatch.length === 0) {
+            return {
+              status: 'failure' as const,
+              issues: ['Expected PEOPLE in migrateDbs batch for lookups'],
+            };
+          }
+          const peopleHandle = peopleInBatch[0];
+
+          const projectsHandle = ctx.getUnique(DatabaseType.PROJECTS);
+          const templatesHandle = ctx.getUnique(DatabaseType.TEMPLATES);
+          expect(projectsHandle.dbName).toBe(projectsDbName);
+          expect(templatesHandle.dbName).toBe(templatesDbName);
+          expect(ctx.allBatchHandles().length).toBe(5);
+          expect(ctx.allHandlesForType(DatabaseType.PEOPLE).length).toBe(1);
+
+          const dataHandles = ctx.handles(DatabaseType.DATA);
+          expect(dataHandles.length).toBe(2);
+          const dataNames = new Set(dataHandles.map(h => h.dbName));
+          expect(dataNames.has(dataDbAName)).toBe(true);
+          expect(dataNames.has(dataDbBName)).toBe(true);
+
+          const enrichProjectLike = async (db: DatabaseInterface) => {
+            const res = await db.allDocs({include_docs: true});
+            for (const row of res.rows) {
+              if (!row.doc || row.id.startsWith('_design')) continue;
+              const doc = row.doc as Record<string, unknown> & {
+                _id: string;
+                _rev: string;
+              };
+              const uid = doc.last_updated_by_user_id;
+              let displayName = 'Unknown';
+              if (typeof uid === 'string') {
+                try {
+                  const person = (await peopleHandle.db.get(uid)) as {
+                    name?: string;
+                  };
+                  if (typeof person.name === 'string') {
+                    displayName = person.name;
+                  }
+                } catch {
+                  /* missing person */
+                }
+              }
+              await db.put({
+                ...doc,
+                migratedAuditDisplayName: displayName,
+                auditFilledByGlobalId: globalId,
+              });
+            }
+          };
+
+          /**
+           * Realistic pattern: backfill `creator_display_name` on every **data
+           * record** attributed to a user we can resolve in PEOPLE (multiple
+           * `put`s per DATA DB, two physical DATA DBs in this batch).
+           */
+          const stampDataRecordsForKnownCreators = async (
+            db: DatabaseInterface
+          ) => {
+            const res = await db.allDocs({include_docs: true});
+            for (const row of res.rows) {
+              if (!row.doc || row.id.startsWith('_design')) continue;
+              const doc = row.doc as Record<string, unknown> & {
+                _id: string;
+                _rev: string;
+              };
+              const creatorId = doc.created_by_id;
+              if (typeof creatorId !== 'string') continue;
+              let creatorDisplay: string | undefined;
+              try {
+                const person = (await peopleHandle.db.get(creatorId)) as {
+                  name?: string;
+                };
+                if (typeof person.name === 'string') {
+                  creatorDisplay = person.name;
+                }
+              } catch {
+                continue;
+              }
+              await db.put({
+                ...doc,
+                creator_display_name: creatorDisplay,
+                creator_display_filled_by_global: globalId,
+              });
+            }
+          };
+
+          await enrichProjectLike(projectsHandle.db);
+          await enrichProjectLike(templatesHandle.db);
+          for (const h of dataHandles) {
+            await stampDataRecordsForKnownCreators(h.db);
+          }
+          return {status: 'success' as const};
+        },
+      };
+      GLOBAL_MIGRATIONS.push(globalDef);
+
+      try {
+        expect(() => validateConfiguredMigrationNetwork()).not.toThrow();
+
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.PEOPLE,
+              dbName: peopleDbName,
+              db: testPeopleDb,
+            },
+            {
+              dbType: DatabaseType.PROJECTS,
+              dbName: projectsDbName,
+              db: projectsDb,
+            },
+            {
+              dbType: DatabaseType.TEMPLATES,
+              dbName: templatesDbName,
+              db: templatesDb,
+            },
+            {
+              dbType: DatabaseType.DATA,
+              dbName: dataDbAName,
+              db: dataDbA,
+            },
+            {
+              dbType: DatabaseType.DATA,
+              dbName: dataDbBName,
+              db: dataDbB,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          userId: 'walkthrough-test-user',
+        });
+
+        const projRow = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.PROJECTS, projectsDbName],
+            include_docs: true,
+          }
+        );
+        const tplRow = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.TEMPLATES, templatesDbName],
+            include_docs: true,
+          }
+        );
+        const projMig = projRow.rows[0].doc as MigrationsDBDocument;
+        const tplMig = tplRow.rows[0].doc as MigrationsDBDocument;
+
+        const dataAMig = (
+          await testMigrationDb.query<MigrationsDBFields>(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {
+              key: [DatabaseType.DATA, dataDbAName],
+              include_docs: true,
+            }
+          )
+        ).rows[0].doc as MigrationsDBDocument;
+        const dataBMig = (
+          await testMigrationDb.query<MigrationsDBFields>(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {
+              key: [DatabaseType.DATA, dataDbBName],
+              include_docs: true,
+            }
+          )
+        ).rows[0].doc as MigrationsDBDocument;
+
+        expect(projMig.version).toBe(4);
+        expect(tplMig.version).toBe(5);
+        expect(dataAMig.version).toBe(2);
+        expect(dataBMig.version).toBe(2);
+        expect(
+          projMig.migrationLog.some(e => e.globalMigrationId === globalId)
+        ).toBe(true);
+        expect(
+          tplMig.migrationLog.some(e => e.globalMigrationId === globalId)
+        ).toBe(true);
+        expect(
+          dataAMig.migrationLog.some(e => e.globalMigrationId === globalId)
+        ).toBe(true);
+        expect(
+          dataBMig.migrationLog.some(e => e.globalMigrationId === globalId)
+        ).toBe(true);
+
+        const nb = (await projectsDb.get('nb-1')) as {
+          migratedAuditDisplayName?: string;
+          auditFilledByGlobalId?: string;
+        };
+        const tpl = (await templatesDb.get('tpl-1')) as {
+          migratedAuditDisplayName?: string;
+          auditFilledByGlobalId?: string;
+        };
+        expect(nb.migratedAuditDisplayName).toBe('Alice');
+        expect(tpl.migratedAuditDisplayName).toBe('Alice');
+        expect(nb.auditFilledByGlobalId).toBe(globalId);
+        expect(tpl.auditFilledByGlobalId).toBe(globalId);
+
+        const obsA1 = (await dataDbA.get('obs-a1')) as {
+          creator_display_name?: string;
+          creator_display_filled_by_global?: string;
+        };
+        const obsA2 = (await dataDbA.get('obs-a2')) as {
+          creator_display_name?: string;
+          creator_display_filled_by_global?: string;
+        };
+        const obsA3 = (await dataDbA.get('obs-a3')) as {
+          creator_display_name?: string;
+          creator_display_filled_by_global?: string;
+        };
+        const obsB1 = (await dataDbB.get('obs-b1')) as {
+          creator_display_name?: string;
+          creator_display_filled_by_global?: string;
+        };
+
+        expect(obsA1.creator_display_name).toBe('Alice');
+        expect(obsA1.creator_display_filled_by_global).toBe(globalId);
+        expect(obsA3.creator_display_name).toBe('Alice');
+        expect(obsA3.creator_display_filled_by_global).toBe(globalId);
+        expect(obsB1.creator_display_name).toBe('Alice');
+        expect(obsB1.creator_display_filled_by_global).toBe(globalId);
+
+        // person2 exists in the fixture as "Bob" — same code path, different user
+        expect(obsA2.creator_display_name).toBe('Bob');
+        expect(obsA2.creator_display_filled_by_global).toBe(globalId);
+
+        const obsA4 = (await dataDbA.get('obs-a4')) as {
+          creator_display_name?: string;
+          creator_display_filled_by_global?: string;
+        };
+        expect(obsA4.creator_display_name).toBeUndefined();
+        expect(obsA4.creator_display_filled_by_global).toBeUndefined();
+      } finally {
+        GLOBAL_MIGRATIONS.pop();
+        DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion =
+          originalProjectsTarget;
+        DB_TARGET_VERSIONS[DatabaseType.TEMPLATES].targetVersion =
+          originalTemplatesTarget;
+        DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion =
+          originalDataTarget;
+        await projectsDb.destroy();
+        await templatesDb.destroy();
+        await dataDbA.destroy();
+        await dataDbB.destroy();
       }
     });
   });
