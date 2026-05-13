@@ -66,6 +66,7 @@ import {
   designerCancelButtonSx,
   designerDialogActionsSx,
   designerDialogBodyTextSx,
+  designerDialogContentSx,
   designerDialogFieldLabelSx,
   designerDialogTitleSx,
   designerResponsiveFieldEditorSx,
@@ -806,7 +807,7 @@ const FieldEditorComponent = ({
           }}
         >
           <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
-          <DialogContent sx={{pt: 3.5, px: {xs: 2, sm: 3}}}>
+          <DialogContent sx={designerDialogContentSx}>
             <Box
               sx={{
                 border: '1px solid',
@@ -931,7 +932,7 @@ const FieldEditorComponent = ({
         <DialogTitle id="move-dialog-title" sx={designerDialogTitleSx}>
           Move Field
         </DialogTitle>
-        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={designerDialogContentSx}>
           {conflictError && (
             <Alert severity="error" sx={{mb: 2}}>
               <Typography variant="body2" sx={{mb: 1}}>
@@ -1018,7 +1019,7 @@ const FieldEditorComponent = ({
         <DialogTitle id="duplicate-dialog-title" sx={designerDialogTitleSx}>
           Duplicate Field
         </DialogTitle>
-        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={designerDialogContentSx}>
           <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             Field Title
           </Typography>
