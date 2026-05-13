@@ -1292,6 +1292,7 @@ export const FormEditor = ({
                     uiSpec={uiSpecInternal}
                     queryClient={queryClient}
                     mapConfig={getMapConfig}
+                    previewSectionId={sections[activeStep]}
                   />
                 </ThemeProvider>
               </Box>
