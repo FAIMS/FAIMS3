@@ -1078,14 +1078,27 @@ export const FormEditor = ({
                 </Box>
                 {hasSectionOverflow && (
                   <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
+                    direction="column"
+                    alignItems="flex-start"
                     sx={{color: 'text.secondary', ml: 0.4, mt: 2, mb: 0.5}}
                   >
-                    <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
-                    <Typography variant="caption" sx={{fontWeight: 600}}>
-                      Scroll left or right to see all sections
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
+                      <Typography variant="caption" sx={{fontWeight: 600}}>
+                        Scroll left or right to see all sections
+                      </Typography>
+                    </Stack>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        ml: 2,
+                        mt: 0.25,
+                        color: 'text.disabled',
+                        display: {xs: 'none', md: 'block'},
+                      }}
+                    >
+                      Tip (desktop): Hold Shift and scroll your mouse wheel to
+                      move sideways.
                     </Typography>
                   </Stack>
                 )}

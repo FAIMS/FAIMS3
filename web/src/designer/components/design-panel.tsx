@@ -463,8 +463,8 @@ export const DesignPanel = () => {
             <Box
               sx={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
+                flexDirection: 'column',
+                alignItems: 'flex-start',
                 color: 'text.secondary',
                 px: 0.5,
                 mt: 2,
@@ -472,9 +472,23 @@ export const DesignPanel = () => {
                 pb: 0.5,
               }}
             >
-              <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
-              <Typography variant="caption" sx={{fontWeight: 600}}>
-                Scroll left or right to see more forms
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
+                <Typography variant="caption" sx={{fontWeight: 600}}>
+                  Scroll left or right to see more forms
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  ml: 2,
+                  mt: 0.25,
+                  color: 'text.disabled',
+                  display: {xs: 'none', md: 'block'},
+                }}
+              >
+                Tip (desktop): Hold Shift and scroll your mouse wheel to move
+                sideways.
               </Typography>
             </Box>
           )}
