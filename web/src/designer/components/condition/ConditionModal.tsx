@@ -30,7 +30,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {ConditionControl} from './ConditionControl';
 import {ConditionProps, ConditionType} from '../../types/condition';
 import QuizIcon from '@mui/icons-material/Quiz';
-import {designerCancelButtonSx} from '../designer-style';
+import {designerCancelButtonSx, designerDialogContentSx} from '../designer-style';
 
 /** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
 export const ConditionModal = (
@@ -93,7 +93,7 @@ export const ConditionModal = (
       </Button>
 
       <Dialog open={open} fullWidth={true} maxWidth="lg" onClose={handleCancel}>
-        <DialogContent>
+        <DialogContent sx={designerDialogContentSx}>
           <ConditionControl
             initial={draft}
             onChange={setDraft}
