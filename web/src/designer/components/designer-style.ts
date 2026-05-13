@@ -76,20 +76,22 @@ export const designerInlineEditFocusOverlaySx: SxProps<Theme> = {
   position: 'fixed',
   inset: 0,
   zIndex: 1200,
-  backgroundColor: 'rgba(8, 18, 29, 0.16)',
-  backdropFilter: 'blur(3px)',
+  backgroundColor: 'rgba(8, 18, 29, 0.1)',
+  backdropFilter: 'blur(1.5px)',
 };
 
 export const designerInlineEditPanelSx: SxProps<Theme> = {
   position: 'relative',
   zIndex: 1201,
+  width: 'fit-content',
+  maxWidth: {xs: '100%', sm: '36rem'},
   backgroundColor: 'background.paper',
   border: '1px solid',
   borderColor: 'divider',
   borderRadius: 1.25,
   boxShadow: '0 12px 30px rgba(0, 0, 0, 0.16)',
-  px: 1.2,
-  py: 0.75,
+  px: {xs: 1.5, sm: 2},
+  py: {xs: 1, sm: 1.25},
   mb: 1,
 };
 
