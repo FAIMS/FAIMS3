@@ -92,7 +92,6 @@ const getLocalNowValue = (inputType: HTMLInputTypeAttribute): string => {
 
 interface DateTimeBaseProps extends DateTimeFieldFullProps {
   inputType: HTMLInputTypeAttribute;
-  previewLabel: string;
   /** Label for the optional "Now" button (shown when show_now_button is true). */
   nowButtonLabel: string;
   /** Extra props forwarded to the native <input> element (e.g. step:1 for seconds). */
@@ -109,11 +108,9 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
   state,
   setFieldData,
   handleBlur,
-  config,
   is_auto_pick,
   show_now_button,
   inputType,
-  previewLabel,
   nowButtonLabel,
   inputPropsExtra,
 }) => {
@@ -128,14 +125,6 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
     // Only run on mount to avoid overriding user edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  if (config.mode === 'preview') {
-    return (
-      <FieldWrapper heading={label} subheading={helperText}>
-        <Typography color="text.secondary">{previewLabel}</Typography>
-      </FieldWrapper>
-    );
-  }
 
   const handleNowClick = () => setFieldData(getLocalNowValue(inputType));
 
@@ -199,7 +188,6 @@ const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => (
   <DateTimeBase
     {...props}
     inputType="datetime-local"
-    previewLabel="Date & Time Picker"
     nowButtonLabel="Select current date and time"
     inputPropsExtra={{step: 1}}
   />
@@ -209,7 +197,6 @@ const DatePickerField: React.FC<DateTimeFieldFullProps> = props => (
   <DateTimeBase
     {...props}
     inputType="date"
-    previewLabel="Date Picker"
     nowButtonLabel="Select today's date"
   />
 );
@@ -218,7 +205,6 @@ const MonthPickerField: React.FC<DateTimeFieldFullProps> = props => (
   <DateTimeBase
     {...props}
     inputType="month"
-    previewLabel="Month Picker"
     nowButtonLabel="Select current month"
   />
 );
