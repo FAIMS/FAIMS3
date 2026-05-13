@@ -1081,7 +1081,7 @@ export const FormEditor = ({
                     direction="row"
                     spacing={0.5}
                     alignItems="center"
-                    sx={{color: 'text.secondary', ml: 0.4, mt: 1.5, mb: 0.5}}
+                    sx={{color: 'text.secondary', ml: 0.4, mt: 2, mb: 0.5}}
                   >
                     <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
                     <Typography variant="caption" sx={{fontWeight: 600}}>
