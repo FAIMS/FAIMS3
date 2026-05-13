@@ -500,7 +500,7 @@ export const SectionEditor = ({
         <DialogTitle id="alert-move-dialog-title" sx={designerDialogTitleSx}>
           Move Section to Another Form
         </DialogTitle>
-        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={designerDialogContentSx}>
           <Typography variant="body2" sx={{mb: 1.5, color: 'text.secondary'}}>
             Choose the destination form for this section.
           </Typography>
@@ -545,7 +545,7 @@ export const SectionEditor = ({
         <DialogTitle id="alert-delete-dialog-title" sx={designerDialogTitleSx}>
           Delete Section
         </DialogTitle>
-        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={designerDialogContentSx}>
           <Typography variant="body2" sx={designerDialogBodyTextSx}>
             Are you sure you want to delete this section? All fields inside it
             will also be removed.
@@ -661,7 +661,7 @@ export const SectionEditor = ({
         >
           Duplicate Section
         </DialogTitle>
-        <DialogContent sx={{pt: 4, px: {xs: 2, sm: 3}}}>
+        <DialogContent sx={designerDialogContentSx}>
           <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             New Section Name
           </Typography>
