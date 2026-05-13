@@ -66,6 +66,8 @@ import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
 import {
   designerCancelButtonSx,
   designerCheckboxSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
   designerInfoIconSx,
 } from '../designer-style';
 import {DragHandle} from '../drag-handle';
@@ -1174,8 +1176,8 @@ export const OptionsEditor = ({
             },
           }}
         >
-          <DialogTitle>Edit Option</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
+          <DialogContent sx={designerDialogContentSx}>
             <TextField
               autoFocus
               margin="dense"
@@ -1241,8 +1243,8 @@ export const OptionsEditor = ({
             },
           }}
         >
-          <DialogTitle>Cannot Delete Option</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Option</DialogTitle>
+          <DialogContent sx={designerDialogContentSx}>
             <Alert severity="warning">
               This option is used in the following conditions:
               <ul>
