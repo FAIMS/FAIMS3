@@ -28,6 +28,8 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   uiSpec: ProjectUIModel;
   layout: 'tabs' | 'inline';
   mapConfig: () => MapConfig;
+  /** Optional section id to focus in tabbed preview mode. */
+  previewSectionId?: string;
 }
 
 /**
@@ -105,6 +107,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     platform: 'web',
     layout: props.layout,
     mapConfig: props.mapConfig,
+    previewSectionId: props.previewSectionId,
   };
 
   return (
