@@ -467,6 +467,8 @@ export const DesignPanel = () => {
                 gap: 0.5,
                 color: 'text.secondary',
                 px: 0.5,
+                mt: 2,
+                mb: 0.5,
                 pb: 0.5,
               }}
             >
