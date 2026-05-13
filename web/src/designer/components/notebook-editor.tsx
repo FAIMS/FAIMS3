@@ -279,7 +279,10 @@ export const NotebookEditor = ({
                   </Tooltip>
                   <FormControlLabel
                     sx={{
+                      alignItems: 'center',
                       '& .MuiFormControlLabel-label': {
+                        display: 'flex',
+                        alignItems: 'center',
                         color: 'text.secondary',
                         fontWeight: 600,
                       },
@@ -292,7 +295,15 @@ export const NotebookEditor = ({
                         sx={{userSelect: 'none'}}
                       >
                         <Typography>Preview</Typography>
-                        <Typography variant="caption" sx={{color: 'text.disabled'}}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.disabled',
+                            lineHeight: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
                           {previewForm ? 'On' : 'Off'}
                         </Typography>
                       </Stack>
@@ -304,14 +315,12 @@ export const NotebookEditor = ({
                       />
                     }
                   />
+                  {!isDesignRoute && (
+                    <Button variant="contained" onClick={onSave}>
+                      Save
+                    </Button>
+                  )}
                 </>
-              )}
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              {!isDesignRoute && (
-                <Button variant="contained" onClick={onSave}>
-                  Save
-                </Button>
               )}
             </Stack>
           </Box>
