@@ -482,13 +482,26 @@ export const DesignPanel = () => {
                 variant="caption"
                 sx={{
                   ml: 2,
-                  mt: 0.25,
-                  color: 'text.disabled',
+                  mt: 0.2,
+                  color: 'text.secondary',
+                  lineHeight: 1.2,
                   display: {xs: 'none', md: 'block'},
                 }}
               >
-                Tip (desktop): Hold Shift and scroll your mouse wheel to move
-                sideways.
+                Desktop tip:{' '}
+                <Box
+                  component="span"
+                  sx={{fontWeight: 800, color: 'text.primary'}}
+                >
+                  Hold{' '}
+                </Box>
+                <Box
+                  component="span"
+                  sx={{fontFamily: 'monospace', fontWeight: 800, color: 'text.primary'}}
+                >
+                  Shift
+                </Box>{' '}
+                and scroll your mouse wheel to move sideways.
               </Typography>
             </Box>
           )}
