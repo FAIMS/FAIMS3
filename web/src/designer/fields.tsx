@@ -509,6 +509,29 @@ const fields: {[key: string]: FieldType} = {
     order: 8,
   },
 
+  PercentageSlider: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'PercentageSlider',
+    'type-returned': 'faims-core::Integer',
+    'component-parameters': {
+      label: 'Percentage',
+      name: 'percentage-slider-field',
+      helperText: '',
+      advancedHelperText: '',
+      required: false,
+      min: 0,
+      max: 100,
+      stepSize: 1,
+    },
+    initialValue: null,
+    humanReadableName: 'Percentage Slider',
+    humanReadableDescription:
+      'Slider for selecting a percentage with optional step size',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 7,
+  },
+
   MultipleTextField: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'MultipleTextField',

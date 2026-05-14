@@ -10,6 +10,7 @@ hidden: true
 
 number-input.md
 controlled-number.md
+percentage-slider.md
 auto-incrementing-field.md
 
 ```
@@ -19,5 +20,7 @@ auto-incrementing-field.md
   for integers, decimals, and scientific notation.
 - **[Controlled Number](controlled-number.md)** — A bounded numeric input
   for ratings, scores, and measurements with minimum and maximum constraints.
+- **[Percentage Slider](percentage-slider.md)** — A slider for integer
+  percentages (0–100 by default) with optional step size.
 - **[Auto Incrementing Field](auto-incrementing-field.md)** — Generates sequential string
   identifiers such as specimen numbers and catalogue IDs.

@@ -70,6 +70,7 @@ tabs in the ADD A FIELD dialog.
 | -------------------------------------------------------------------------- | ---------------------- | ----------------------------------------- |
 | **[Number Input](../number-fields/number-input.md)**                       | Numeric entry          | Measurements, counts, scientific readings |
 | **[Controlled Number](../number-fields/controlled-number.md)**             | Bounded numeric entry  | pH (0–14), percentages (0–100), ratings   |
+| **[Percentage Slider](../number-fields/percentage-slider.md)**             | Slider percentage entry | Canopy cover, quick 0–100 estimates      |
 | **[Auto Incrementing Field](../number-fields/auto-incrementing-field.md)** | Sequential identifiers | Specimen numbers, catalogue IDs           |
 
 ### Date and Time
@@ -160,6 +161,11 @@ If the value has **known valid ranges** (e.g., pH 0–14, percentage
 0–100), use a
 **[Controlled Number](../number-fields/controlled-number.md)** — it enforces minimum
 and maximum bounds and supports default values.
+
+For **percentage-style values** where a **slider** is clearer than typing,
+use a
+**[Percentage Slider](../number-fields/percentage-slider.md)** — integer values
+on a configurable 0–100 scale with optional step size (for example steps of 5 or 10).
 
 If the value is a **sequential number**, e.g., for an identifier
 (specimen 001, 002, 003…), use an

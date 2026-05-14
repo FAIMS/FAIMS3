@@ -3,6 +3,7 @@ import {addressFieldSpec} from './fields/AddressField';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
 import {controlledNumberFieldSpec} from './fields/ControlledNumber';
+import {percentageSliderFieldSpec} from './fields/PercentageSlider';
 import {
   datePickerFieldSpec,
   dateTimeNowFieldSpec,
@@ -51,6 +52,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
   controlledNumberFieldSpec,
+  percentageSliderFieldSpec,
   numberFieldSpec,
   addressFieldSpec,
   dateTimeNowFieldSpec,

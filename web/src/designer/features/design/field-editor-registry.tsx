@@ -27,6 +27,7 @@ import {DateTimeNowEditor} from '../../components/Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from '../../components/Fields/MapFormFieldEditor';
 import {MultipleTextFieldEditor} from '../../components/Fields/MultipleTextField';
 import {NumberFieldEditor} from '../../components/Fields/NumberFieldEditor';
+import {PercentageSliderFieldEditor} from '../../components/Fields/PercentageSliderFieldEditor';
 import {OptionsEditor} from '../../components/Fields/OptionsEditor';
 import {RelatedRecordEditor} from '../../components/Fields/RelatedRecordEditor';
 import {RichTextEditor} from '../../components/Fields/RichTextEditor';
@@ -78,6 +79,9 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   NumberField: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
   ControlledNumber: ({fieldName}) => (
     <ControlledNumberFieldEditor fieldName={fieldName} />
+  ),
+  PercentageSlider: ({fieldName}) => (
+    <PercentageSliderFieldEditor fieldName={fieldName} />
   ),
   RichText: ({fieldName}) => <RichTextEditor fieldName={fieldName} />,
   RelatedRecordSelector: ({fieldName}) => (
