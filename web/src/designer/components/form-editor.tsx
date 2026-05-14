@@ -34,7 +34,6 @@ import {
   Button,
   Card,
   Checkbox,
-  Chip,
   CircularProgress,
   createTheme,
   Dialog,
@@ -233,6 +232,10 @@ export const FormEditor = ({
   const handleStep = (step: number) => () => {
     setActiveStep(step);
   };
+
+  useEffect(() => {
+    setAlertMessage('');
+  }, [viewSetId]);
 
   const handleClose = () => {
     setOpen(false);
@@ -741,7 +744,14 @@ export const FormEditor = ({
               </>
             )}
 
-            {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
+            {alertMessage && (
+              <Alert
+                severity="error"
+                onClose={() => setAlertMessage('')}
+              >
+                {alertMessage}
+              </Alert>
+            )}
           </Stack>
           <Divider sx={designerDividerSx} />
 
@@ -1208,26 +1218,6 @@ export const FormEditor = ({
             pl: {xl: 2.5},
           }}
         >
-          {/* Preview panel header */}
-          <Stack direction="row" alignItems="center" spacing={1} sx={{mb: 1.25}}>
-            <Typography
-              variant="caption"
-              fontWeight={700}
-              color="text.secondary"
-              sx={{textTransform: 'uppercase', letterSpacing: '0.09em', fontSize: '0.68rem', whiteSpace: 'nowrap'}}
-            >
-              Live Preview
-            </Typography>
-            <Box sx={{flex: 1, height: '1px', bgcolor: 'divider'}} />
-            <Chip
-              label="Preview On"
-              size="small"
-              color="primary"
-              variant="outlined"
-              sx={{height: 20, fontSize: '0.65rem', fontWeight: 700, borderRadius: 1}}
-            />
-          </Stack>
-
           {/* Preview frame */}
           <Box
             sx={{
