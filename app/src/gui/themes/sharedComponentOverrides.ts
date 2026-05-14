@@ -5,6 +5,103 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
     styleOverrides: {
       root: {
         cursor: 'pointer',
+        '& .MuiDataGrid-toolbarContainer': {
+          padding: '8px 16px',
+          borderBottom: '1px solid #e0e0e0',
+          backgroundColor: '#fafafa',
+          width: '100%',
+          '& .record-grid-toolbarContent': {
+            width: '100%',
+          },
+          '& .record-grid-toolbarLayout': {
+            display: 'flex',
+            gap: theme.spacing(1),
+            alignItems: 'center',
+          },
+          '& .record-grid-searchField': {
+            flex: 1,
+            minWidth: 0,
+          },
+          '& .record-grid-filterItem': {
+            flexShrink: 0,
+          },
+          '& .record-grid-searchField .MuiOutlinedInput-root': {
+            backgroundColor: '#ffffff',
+            transition: 'all 0.3s ease-in-out',
+            borderRadius: '8px',
+            border: '1px solid #e0e0e0',
+            '&:hover': {
+              borderColor: '#bdbdbd',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            },
+            '&.Mui-focused': {
+              borderColor: '#e0e0e0',
+              boxShadow: 'none',
+            },
+          },
+          '& .record-grid-searchField--active .MuiOutlinedInput-root': {
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+          },
+          '& .record-grid-searchField .MuiOutlinedInput-input': {
+            padding: '10px 14px',
+            fontSize: '0.9rem',
+            '&::placeholder': {
+              color: '#757575',
+              opacity: 0.8,
+            },
+          },
+          '& .record-grid-searchButton': {
+            color: theme.palette.primary.main,
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              transform: 'scale(1.05)',
+            },
+          },
+          '& .record-grid-searchButtonIcon': {
+            color: theme.palette.primary.main,
+            fontSize: '1.75rem',
+            fontWeight: 'bold',
+          },
+          '& .record-grid-clearButton': {
+            color: theme.palette.secondary.main,
+            transition: 'all 0.3s',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+              color: '#424242',
+            },
+          },
+          '& .record-grid-clearButtonIcon': {
+            color: theme.palette.secondary.main,
+            fontWeight: 'bold',
+            fontSize: '1.60rem',
+          },
+          '& .record-grid-filterButton': {
+            borderRadius: '8px',
+            padding: '8px',
+            minWidth: 'auto',
+            backgroundColor: theme.palette.background.default,
+            border: '2px solid #e0e0e0',
+            transition: 'all 0.2s ease-in-out',
+            textTransform: 'none',
+            boxShadow: 'none',
+            '&:hover': {
+              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              borderColor: theme.palette.primary.main,
+            },
+            '& .MuiButton-startIcon': {
+              margin: 0,
+            },
+            '& .MuiButton-startIcon .MuiSvgIcon-root': {
+              color: theme.palette.primary.main,
+              fontSize: '1.85rem',
+              fontWeight: 'bold',
+            },
+            '& .MuiButton-endIcon': {
+              display: 'none',
+            },
+          },
+        },
         '& .MuiDataGrid-columnHeaders': {
           backgroundColor: theme.palette.grey[100],
           borderBottom: `2px solid ${theme.palette.grey[200]}`,
@@ -62,6 +159,11 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
           lineHeight: 1.5,
         },
         [theme.breakpoints.down('sm')]: {
+          '& .MuiDataGrid-toolbarContainer .record-grid-toolbarLayout': {
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: theme.spacing(1.5),
+          },
           '& .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader': {
             padding: '12px 16px',
           },

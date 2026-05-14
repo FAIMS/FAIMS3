@@ -20,20 +20,10 @@
 
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import TuneIcon from '@mui/icons-material/Tune';
-import {
-  Box,
-  Grid,
-  IconButton,
-  InputAdornment,
-  Stack,
-  TextField,
-  useMediaQuery,
-} from '@mui/material';
+import {Box, Grid, IconButton, InputAdornment, TextField} from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import React, {ReactNode, useEffect} from 'react';
 import {usePrevious} from '../../../utils/customHooks';
-import {theme} from '../../themes';
 
 interface ToolbarProps {
   /** Function to handle search query changes */
@@ -100,6 +90,11 @@ export function GridToolbarSearchRecordDataButton({
 
   return (
     <TextField
+      className={
+        value === ''
+          ? 'record-grid-searchField'
+          : 'record-grid-searchField record-grid-searchField--active'
+      }
       placeholder="Search record data (case sensitive)"
       value={value}
       onChange={handleChange}
@@ -108,78 +103,27 @@ export function GridToolbarSearchRecordDataButton({
       variant="outlined"
       size="small"
       fullWidth
-      sx={{
-        '& .MuiOutlinedInput-root': {
-          backgroundColor: '#ffffff',
-          transition: 'all 0.3s ease-in-out',
-          borderRadius: '8px',
-          boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-          border: '1px solid #e0e0e0',
-          '&:hover': {
-            borderColor: '#bdbdbd',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-          },
-          '&.Mui-focused': {
-            borderColor: '#e0e0e0',
-            boxShadow: 'none',
-          },
-        },
-        '& .MuiOutlinedInput-input': {
-          padding: '10px 14px',
-          fontSize: '0.9rem',
-          '&::placeholder': {
-            color: '#757575',
-            opacity: 0.8,
-          },
-        },
-      }}
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
             <IconButton
+              className="record-grid-searchButton"
               onClick={handleSubmit}
               size="medium"
               data-testid="searchButton"
-              sx={{
-                color: theme => theme.palette.primary.main,
-                transition: 'all 0.3s ease-in-out',
-                '&:hover': {
-                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                  transform: 'scale(1.05)',
-                },
-              }}
             >
-              <SearchIcon
-                style={{
-                  color: theme.palette.primary.main,
-                  fontSize: '1.75rem',
-                  fontWeight: 'bold',
-                }}
-              />
+              <SearchIcon className="record-grid-searchButtonIcon" />
             </IconButton>
           </InputAdornment>
         ),
         endAdornment: value && (
           <InputAdornment position="end">
             <IconButton
+              className="record-grid-clearButton"
               onClick={handleClear}
               size="medium"
-              sx={{
-                color: theme.palette.secondary.main,
-                transition: 'all 0.3s',
-                '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  color: '#424242',
-                },
-              }}
             >
-              <ClearIcon
-                style={{
-                  color: theme.palette.secondary.main,
-                  fontWeight: 'bold',
-                  fontSize: '1.60rem',
-                }}
-              />
+              <ClearIcon className="record-grid-clearButtonIcon" />
             </IconButton>
           </InputAdornment>
         ),
@@ -198,24 +142,11 @@ export function GridToolbarSearchRecordDataButton({
  */
 export function NotebookDataGridToolbar(props: ToolbarProps) {
   const {handleQueryFunction, additionalControls} = props;
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <GridToolbarContainer
-      sx={{
-        padding: '8px 16px',
-        borderBottom: '1px solid #e0e0e0',
-        backgroundColor: '#fafafa',
-        width: '100%',
-      }}
-    >
-      <Box width="100%">
-        <Stack
-          // Conditional layout here
-          spacing={isMobile ? 1.5 : 1}
-          direction={isMobile ? 'column' : 'row'}
-          alignItems={isMobile ? 'stretch' : 'center'}
-        >
+    <GridToolbarContainer>
+      <Box className="record-grid-toolbarContent">
+        <Box className="record-grid-toolbarLayout">
           {/* Search input - takes remaining space */}
           <GridToolbarSearchRecordDataButton
             handleQueryFunction={handleQueryFunction}
@@ -226,46 +157,11 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
 
           {/* Filter button */}
           {enableFilters && (
-            <Grid item sx={{flexShrink: 0}}>
-              <GridToolbarFilterButton
-                componentsProps={{
-                  button: {
-                    startIcon: (
-                      <TuneIcon
-                        style={{
-                          color: theme.palette.primary.main,
-                          fontSize: '1.85rem',
-                          fontWeight: 'bold',
-                          marginRight: theme.spacing(1),
-                        }}
-                      />
-                    ),
-                  },
-                }}
-                sx={{
-                  borderRadius: '8px',
-                  padding: '8px',
-                  minWidth: 'auto',
-                  backgroundColor: theme.palette.background.default,
-                  border: '2px solid #e0e0e0',
-                  transition: 'all 0.2s ease-in-out',
-                  textTransform: 'none',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                    borderColor: theme => theme.palette.primary.main,
-                  },
-                  '& .MuiButton-startIcon': {
-                    margin: 0,
-                  },
-                  '& .MuiButton-endIcon': {
-                    display: 'none',
-                  },
-                }}
-              />
+            <Grid item className="record-grid-filterItem">
+              <GridToolbarFilterButton className="record-grid-filterButton" />
             </Grid>
           )}
-        </Stack>
+        </Box>
       </Box>
     </GridToolbarContainer>
   );
