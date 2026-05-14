@@ -24,7 +24,7 @@ export function filterTemplatesByVisibility<T extends {isPublic?: boolean}>(
 
 /** Subtle row tint for catalogue-public templates in list tables. */
 export const PUBLIC_TEMPLATE_ROW_CLASS =
-  'bg-emerald-500/[0.06] hover:bg-emerald-500/[0.11] dark:bg-emerald-500/[0.11] dark:hover:bg-emerald-500/[0.17]';
+  'bg-accented-row/[0.035] hover:bg-accented-row/[0.07] dark:bg-accented-row/[0.06] dark:hover:bg-accented-row/[0.1]';
 
 export function TemplateVisibilityFilterSelect({
   value,

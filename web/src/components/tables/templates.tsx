@@ -63,7 +63,7 @@ const visibilityColumn: ColumnDef<Column> = {
       <RoleCard
         className={cn(
           isPublic &&
-            'border border-emerald-200/70 bg-emerald-50/90 text-emerald-900 dark:border-emerald-800/55 dark:bg-emerald-950/40 dark:text-emerald-50'
+            'border border-accented-row/25 bg-accented-row/[0.12] text-accented-row dark:border-accented-row/35 dark:bg-accented-row/[0.18] dark:text-accented-row'
         )}
       >
         {label}
