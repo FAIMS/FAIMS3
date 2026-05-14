@@ -17,6 +17,7 @@ import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
+import {alpha, useTheme} from '@mui/material/styles';
 import React, {useMemo} from 'react';
 import z from 'zod';
 import {
@@ -79,6 +80,42 @@ function resolveBounds(props: PercentageSliderProps): {
   };
 }
 
+/** Percent positions (10–90) along the slider track for subtle graduation ticks. */
+const GRADUATION_TRACK_PERCENTS = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
+
+const SliderGraduationMark = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>(function SliderGraduationMark({style, className, ...rest}, ref) {
+  const theme = useTheme();
+  const incoming = style as React.CSSProperties | undefined;
+  const baseTransform = incoming?.transform;
+  const transform =
+    typeof baseTransform === 'string' &&
+    baseTransform.length > 0 &&
+    baseTransform !== 'none'
+      ? `${baseTransform} translateY(7px)`
+      : 'translateX(-50%) translateY(7px)';
+
+  return (
+    <span
+      ref={ref}
+      className={className}
+      {...rest}
+      style={{
+        ...incoming,
+        position: 'absolute',
+        width: 1,
+        height: 6,
+        borderRadius: 0,
+        backgroundColor: alpha(theme.palette.text.primary, 0.2),
+        top: '50%',
+        transform,
+      }}
+    />
+  );
+});
+
 const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
   const {
     state,
@@ -124,6 +161,16 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
 
   const fullHelperText = [helperText, rangeHint].filter(Boolean).join(' ');
 
+  const graduationMarks = useMemo(() => {
+    if (maxVal <= minVal) {
+      return [];
+    }
+    const span = maxVal - minVal;
+    return GRADUATION_TRACK_PERCENTS.map(p => ({
+      value: minVal + (span * p) / 100,
+    }));
+  }, [minVal, maxVal]);
+
   return (
     <FieldWrapper
       heading={label}
@@ -156,6 +203,8 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
           step={step}
           disabled={disabled || maxVal <= minVal}
           valueLabelDisplay="off"
+          marks={graduationMarks}
+          components={{Mark: SliderGraduationMark}}
           onChange={(_, value) => {
             const next = Array.isArray(value) ? value[0] : value;
             setFieldData(next);
@@ -206,7 +255,7 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
           }}
         >
           <RestartAltIcon sx={{fontSize: 18}} />
-          Reset
+          Clear
         </Link>
       </Box>
     </FieldWrapper>
