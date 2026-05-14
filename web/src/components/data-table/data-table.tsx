@@ -79,7 +79,7 @@ export function DataTable<TData, TValue>({
     <div className="flex flex-col gap-2">
       <div className="flex justify-start items-center gap-4">
         <Input
-          placeholder="Search results..."
+          placeholder="Search..."
           value={table.getState().globalFilter || ''}
           onChange={event => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
