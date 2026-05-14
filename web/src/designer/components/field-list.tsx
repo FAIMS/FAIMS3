@@ -127,7 +127,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   );
 
   const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
-  const [showCollapseButton, setShowCollapseButton] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {distance: 2},
@@ -169,7 +168,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     // Do not depend on `allClosed` / field data: that object is recreated on every field
     // edit and would collapse open accordions whenever the spec updates.
     setIsExpanded({});
-    setShowCollapseButton(false);
   }, [viewId]);
 
   const handleExpandedChange = useCallback(
@@ -226,25 +224,31 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         <Button
           variant="text"
           size="small"
-          onClick={() => {
-            setIsExpanded(showCollapseButton ? allClosed : allOpen);
-            setShowCollapseButton(!showCollapseButton);
+          onClick={() => setIsExpanded(allOpen)}
+          startIcon={<ExpandCircleDownRoundedIcon sx={{fontSize: '1.55rem'}} />}
+          sx={{
+            ...designerControlLabelSx,
+            '& .MuiButton-startIcon': {mr: 1},
           }}
+        >
+          Expand all
+        </Button>
+
+        <Button
+          variant="text"
+          size="small"
+          onClick={() => setIsExpanded(allClosed)}
           startIcon={
-            showCollapseButton ? (
-              <ExpandCircleDownRoundedIcon
-                sx={{fontSize: '1.55rem', transform: 'rotate(180deg)'}}
-              />
-            ) : (
-              <ExpandCircleDownRoundedIcon sx={{fontSize: '1.55rem'}} />
-            )
+            <ExpandCircleDownRoundedIcon
+              sx={{fontSize: '1.55rem', transform: 'rotate(180deg)'}}
+            />
           }
           sx={{
             ...designerControlLabelSx,
             '& .MuiButton-startIcon': {mr: 1},
           }}
         >
-          {showCollapseButton ? 'Collapse all' : 'Expand all'}
+          Collapse all
         </Button>
       </Stack>
 
