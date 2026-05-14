@@ -174,6 +174,48 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
       },
     },
   },
+  MuiDialogTitle: {
+    styleOverrides: {
+      root: {
+        '&.faims-dialogTitle': {
+          textAlign: 'center',
+          paddingBottom: 0,
+        },
+        '& .faims-dialogHeader': {
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'column',
+          marginBottom: theme.spacing(2),
+        },
+        '& .faims-dialogIcon': {
+          marginBottom: theme.spacing(1),
+        },
+        '& .faims-dialogHeading': {
+          fontWeight: theme.typography.fontWeightBold,
+          textAlign: 'center',
+        },
+        '& .faims-dialogCloseButton': {
+          position: 'absolute',
+          top: theme.spacing(1),
+          right: theme.spacing(1),
+        },
+      },
+    },
+  },
+  MuiDialogActions: {
+    styleOverrides: {
+      root: {
+        '&.dialog-actions-spread': {
+          justifyContent: 'space-between',
+        },
+        '&.faims-dialogActions': {
+          justifyContent: 'space-between',
+          padding: theme.spacing(1),
+        },
+      },
+    },
+  },
   MuiTablePagination: {
     styleOverrides: {
       displayedRows: {

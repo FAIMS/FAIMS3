@@ -313,9 +313,7 @@ export default function AboutBuild() {
                           <AlertTitle>Are you sure?</AlertTitle>
                           Go ahead and wipe all local databases?
                         </Alert>
-                        <DialogActions
-                          style={{justifyContent: 'space-between'}}
-                        >
+                        <DialogActions className="dialog-actions-spread">
                           <Button
                             onClick={() => setWipeDialogOpen(false)}
                             autoFocus
