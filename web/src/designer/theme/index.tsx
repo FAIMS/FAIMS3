@@ -19,7 +19,8 @@
  *   Amended to fit this project.
  */
 
-import {createTheme, colors} from '@mui/material';
+import {createTheme} from '@mui/material/styles';
+import {colors} from '@mui/material';
 
 const theme = createTheme({
   palette: {
