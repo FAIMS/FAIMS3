@@ -101,21 +101,21 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         {/* Left-aligned text */}
         <Typography
           variant="body2"
-          color="textPrimary"
+          color="text.primary"
           sx={{fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2}}
         >
           Last refresh
         </Typography>
         <Typography
           variant="body2"
-          color="textPrimary"
+          color="text.primary"
           sx={{fontSize: '0.85rem', lineHeight: 1.2}}
         >
           {lastRefresh}
         </Typography>
         <Typography
           variant="body2"
-          color="textSecondary"
+          color="text.secondary"
           sx={{fontSize: '0.75rem'}}
         >
           {fromNow}

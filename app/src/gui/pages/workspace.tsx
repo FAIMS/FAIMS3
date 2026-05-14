@@ -40,14 +40,14 @@ export default function Workspace() {
         <Grid size={{xs: 12, md: 12, lg: 8}} sx={{width: '100%', minWidth: 0}}>
           <Typography
             variant="h2"
-            color="textSecondary"
+            color="text.secondary"
             sx={{mb: theme.spacing(2)}}
           >
             My {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
           <Typography
             variant="h4"
-            color="textSecondary"
+            color="text.secondary"
             sx={{mb: theme.spacing(2)}}
           >
             {serverName}

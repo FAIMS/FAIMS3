@@ -107,7 +107,7 @@ export const MetadataDisplayComponent = (
             <Typography variant={'h6'} sx={{mb: 2}}>
               Description
             </Typography>
-            <Typography variant="body2" color="textPrimary" gutterBottom>
+            <Typography variant="body2" color="text.primary" gutterBottom>
               <MetadataRenderer
                 project_id={props.project.projectId}
                 metadata_key={'pre_description'}

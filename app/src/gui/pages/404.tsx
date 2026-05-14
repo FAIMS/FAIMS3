@@ -47,7 +47,7 @@ export default function NotFound404() {
       <Box sx={{display: 'flex', flexDirection: 'row-reverse', p: 1, m: 1}}>
         <Breadcrumbs aria-label="breadcrumb">
           <NavLink to={ROUTES.INDEX}>Home</NavLink>
-          <Typography color="textPrimary">Not Found</Typography>
+          <Typography color="text.primary">Not Found</Typography>
         </Breadcrumbs>
       </Box>
 

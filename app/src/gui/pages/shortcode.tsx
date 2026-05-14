@@ -26,10 +26,10 @@ import {
   InputAdornment,
   InputLabel,
   MenuItem,
+  OutlinedInput,
   Select,
   SelectChangeEvent,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import React, {useState} from 'react';
@@ -190,23 +190,18 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
             </FormControl>
           )}
 
-          <TextField
+          <OutlinedInput
             value={shortCode}
             placeholder="Enter code"
-            variant="outlined"
             onChange={updateShortCode}
             size="small"
             fullWidth
-            slotProps={{
-              input: {
-                sx: {fontFamily: 'monospace'},
-                startAdornment: (
-                  <InputAdornment position="start">
-                    {selectedPrefix} -
-                  </InputAdornment>
-                ),
-              },
-            }}
+            sx={{fontFamily: 'monospace'}}
+            startAdornment={
+              <InputAdornment position="start">
+                {selectedPrefix} -
+              </InputAdornment>
+            }
           />
 
           <Button

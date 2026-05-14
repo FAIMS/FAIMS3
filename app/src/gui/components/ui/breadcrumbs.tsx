@@ -57,7 +57,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
               </RouterLink>
             ) : (
               <Typography
-                color="textPrimary"
+                color="text.primary"
                 key={'breadcrumb-item-' + item.title}
               >
                 {abbreviateTitle(item.title)}
