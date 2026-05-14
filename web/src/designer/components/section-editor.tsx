@@ -19,6 +19,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -407,6 +408,21 @@ export const SectionEditor = ({
             icon={<DeviceHubRoundedIcon />}
             buttonSx={designerControlLabelSx}
           />
+
+          {fView.condition && (
+            <>
+              <Typography sx={designerPipeSx}> | </Typography>
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<ClearRoundedIcon />}
+                onClick={() => conditionChanged(null)}
+                sx={designerControlLabelSx}
+              >
+                Clear condition
+              </Button>
+            </>
+          )}
 
           <Typography sx={designerPipeSx}> | </Typography>
 
