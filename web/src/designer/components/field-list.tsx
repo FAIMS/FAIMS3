@@ -16,7 +16,7 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
-import {Box, Button, Stack, Typography} from '@mui/material';
+import {Alert, Box, Button, Stack, Typography} from '@mui/material';
 import {
   DndContext,
   DragEndEvent,
@@ -185,6 +185,11 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     []
   );
 
+  const hasExpandedField = useMemo(
+    () => Object.values(isExpanded).some(Boolean),
+    [isExpanded]
+  );
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const {active, over} = event;
@@ -243,6 +248,12 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         </Button>
       </Stack>
 
+      {hasExpandedField && (
+        <Alert severity="info" sx={{mt: 1.25}}>
+          Collapse expanded fields to enable drag-and-drop reordering.
+        </Alert>
+      )}
+
       <Box
         sx={{
           width: '100%',
@@ -300,6 +311,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
                 onExpandedChange={handleExpandedChange}
                 designerIdentifier={designerIdentifier}
                 moveFieldCallback={moveFieldCallback}
+                dragDisabled={hasExpandedField}
                 autoFocusLabel={autoFocusFieldKey === fieldName}
                 onLabelFocused={() => {
                   setAutoFocusFieldKey(prev =>
@@ -361,6 +373,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
                     moveFieldCallback={moveFieldCallback}
                     onExpandedChange={handleExpandedChange}
                     designerIdentifier={designerIdentifier}
+                    dragDisabled={hasExpandedField}
                     autoFocusLabel={autoFocusFieldKey === fieldName}
                     onLabelFocused={() => {
                       setAutoFocusFieldKey(prev =>
