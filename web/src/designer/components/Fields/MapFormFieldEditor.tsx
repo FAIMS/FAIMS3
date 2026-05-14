@@ -38,7 +38,7 @@ type FieldState = {
   buttonLabelText: string;
 };
 
-/** Map geometry type, zoom, GeoTIFF path, and “use current point” toggle for `MapFormField`. */
+/** Map geometry type, zoom, GeoTIFF path, and “use current location” toggle for `MapFormField`. */
 export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -159,8 +159,8 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                     <span
                       style={{display: 'flex', alignItems: 'center', gap: 4}}
                     >
-                      Display set to current point button
-                      <Tooltip title="Enabling this option allows users to directly set their current location as the selected point.">
+                      Display set to current location button
+                      <Tooltip title="Enabling this option allows users to directly set their current location as the selected location.">
                         <InfoIcon sx={designerInfoIconSx} />
                       </Tooltip>
                     </span>
