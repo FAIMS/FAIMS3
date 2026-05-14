@@ -1,6 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
+import {cn} from '@/lib/utils';
 import {TeamCellComponent} from './cells/team-cell';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {
@@ -14,17 +15,13 @@ export type Column = any;
 
 const nameColumn: ColumnDef<Column> = {
   accessorKey: 'name',
-  header: ({column}) => (
-    <DataTableColumnHeader column={column} title="Name" />
-  ),
+  header: ({column}) => <DataTableColumnHeader column={column} title="Name" />,
 };
 
 const teamColumn: ColumnDef<Column> = {
   id: 'team',
   accessorKey: 'ownedByTeamId',
-  header: ({column}) => (
-    <DataTableColumnHeader column={column} title="Team" />
-  ),
+  header: ({column}) => <DataTableColumnHeader column={column} title="Team" />,
   cell: ({
     row: {
       original: {ownedByTeamId, ownedByTeamDisplayName},
@@ -60,8 +57,18 @@ const visibilityColumn: ColumnDef<Column> = {
   accessorFn: (row: Column & {isPublic?: boolean}) =>
     row.isPublic === true ? 'Public' : 'Private',
   cell: ({row}: {row: {original: Column & {isPublic?: boolean}}}) => {
-    const label = row.original.isPublic === true ? 'Public' : 'Private';
-    return <RoleCard>{label}</RoleCard>;
+    const isPublic = row.original.isPublic === true;
+    const label = isPublic ? 'Public' : 'Private';
+    return (
+      <RoleCard
+        className={cn(
+          isPublic &&
+            'border border-accented-row/25 bg-accented-row/[0.12] text-accented-row dark:border-accented-row/35 dark:bg-accented-row/[0.18] dark:text-accented-row'
+        )}
+      >
+        {label}
+      </RoleCard>
+    );
   },
 };
 
