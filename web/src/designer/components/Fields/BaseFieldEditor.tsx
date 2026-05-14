@@ -330,15 +330,6 @@ export const BaseFieldEditor = ({
   };
 
   const isSpeechEnabled = checkSpeechEnabled(field);
-  const hasCondition = !!state.condition;
-  const sectionSubLabel = hasCondition && isSpeechEnabled
-    ? 'Conditions + voice to text'
-    : hasCondition
-    ? 'Conditions'
-    : isSpeechEnabled
-    ? 'Voice to text'
-    : 'No conditions';
-
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
   const isChoiceField =
     field['component-name'] === 'Select' || field['component-name'] === 'MultiSelect';
@@ -617,32 +608,6 @@ export const BaseFieldEditor = ({
       {showExtraConfig && (
         <Grid item xs={12}>
           <Card variant="outlined" sx={{overflow: 'hidden'}}>
-            {/* Section subheading strip */}
-            <Box
-              sx={{
-                px: 2,
-                py: 0.9,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                bgcolor: theme => alpha(theme.palette.primary.main, 0.04),
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 700,
-                  color: 'text.secondary',
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                General Field settings —{' '}
-                <Box component="span" sx={{color: 'text.primary'}}>
-                  {sectionSubLabel}
-                </Box>
-              </Typography>
-            </Box>
-
             <Grid container>
               {/* LEFT: Required + Condition button + condition display */}
               <Grid
