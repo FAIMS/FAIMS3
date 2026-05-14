@@ -93,6 +93,7 @@ type FieldEditorProps = {
   addFieldCallback: (fieldName: string) => void;
   onExpandedChange: (designerIdentifier: string, expanded: boolean) => void;
   moveFieldCallback: (targetViewId: string) => void;
+  dragDisabled?: boolean;
   autoFocusLabel?: boolean;
   onLabelFocused?: () => void;
 };
@@ -121,6 +122,7 @@ const FieldEditorComponent = ({
   addFieldCallback,
   onExpandedChange,
   moveFieldCallback,
+  dragDisabled = false,
   autoFocusLabel = false,
   onLabelFocused,
 }: FieldEditorProps) => {
@@ -379,9 +381,9 @@ const FieldEditorComponent = ({
     [designerIdentifier, onExpandedChange]
   );
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
-    useSortable({id: fieldName});
+    useSortable({id: fieldName, disabled: dragDisabled});
   const baseTransform = CSS.Transform.toString(transform) || 'translate3d(0, 0, 0)';
-  const canDragField = !expanded;
+  const canDragField = !expanded && !dragDisabled;
 
   useEffect(() => {
     if (!expanded || !autoFocusLabel) return;
@@ -456,7 +458,9 @@ const FieldEditorComponent = ({
               label={
                 canDragField
                   ? 'Drag field to reorder'
-                  : 'Collapse field first to drag and reorder'
+                  : dragDisabled
+                    ? 'Collapse expanded fields first to drag and reorder'
+                    : 'Collapse field first to drag and reorder'
               }
               disabled={!canDragField}
               dragAttributes={canDragField ? attributes : undefined}
