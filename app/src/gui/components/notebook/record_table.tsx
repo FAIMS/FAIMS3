@@ -27,7 +27,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import {useTheme} from '@mui/material/styles';
 import {
   DataGrid,
   GridCellParams,
@@ -1105,9 +1104,8 @@ export function RecordsTable(props: RecordsTableProps) {
     project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
 
-  const theme = useTheme();
   const history = useNavigate();
-  const styles = useDataGridStyles(theme);
+  const styles = useDataGridStyles();
 
   // Get UI specification
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
@@ -1255,7 +1253,6 @@ export function RecordsTable(props: RecordsTableProps) {
             ),
           },
         }}
-        sx={styles.grid}
       />
     </Box>
   );

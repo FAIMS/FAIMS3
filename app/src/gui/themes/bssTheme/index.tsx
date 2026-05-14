@@ -1,9 +1,10 @@
 import {colors, createTheme} from '@mui/material';
 import typography from '../fieldmark/typography';
+import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
 
 const primaryMainColor = '#000000';
 
-const theme = createTheme({
+const baseTheme = createTheme({
   stepperColors: {
     current: '#000000',
     visited: '#07a907',
@@ -72,7 +73,11 @@ const theme = createTheme({
     },
   },
   typography,
+});
+
+const theme = createTheme(baseTheme, {
   components: {
+    ...buildSharedComponentOverrides(baseTheme),
     MuiAppBar: {
       styleOverrides: {
         root: {

@@ -76,23 +76,11 @@ export default function HeadingProjectGrid({
         rowHeight={75}
         autoHeight
         sx={{
-          cursor: 'pointer',
           padding: '8px',
           backgroundColor: theme.palette.background.lightBackground,
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
           mb: 2,
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: theme.palette.background.default,
-            borderBottom: '1px solid #ccc',
-          },
-          '& .MuiDataGrid-columnSeparator': {
-            visibility: 'visible',
-            color: '#ccc',
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #eee',
-          },
         }}
         getRowId={({projectId}) => projectId}
         hideFooter={true}
@@ -117,23 +105,11 @@ export default function HeadingProjectGrid({
         columns={notActivatedColumns}
         autoHeight
         sx={{
-          cursor: 'pointer',
           padding: '8px',
           backgroundColor: theme.palette.background.lightBackground,
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
           mb: 2,
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: theme.palette.background.default,
-            borderBottom: '1px solid #ccc',
-          },
-          '& .MuiDataGrid-columnSeparator': {
-            visibility: 'visible',
-            color: '#ccc',
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #eee',
-          },
         }}
         onRowClick={handleRowClick}
         getRowId={({projectId}) => projectId}

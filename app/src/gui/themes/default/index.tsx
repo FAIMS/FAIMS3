@@ -20,7 +20,9 @@
  */
 import {colors, createTheme} from '@mui/material';
 import typography from './typography';
-const theme = createTheme({
+import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
+
+const baseTheme = createTheme({
   stepperColors: {
     current: '#000000',
     visited: '#223883',
@@ -89,7 +91,11 @@ const theme = createTheme({
     },
   },
   typography,
+});
+
+const theme = createTheme(baseTheme, {
   components: {
+    ...buildSharedComponentOverrides(baseTheme),
     MuiAppBar: {
       styleOverrides: {
         root: {
