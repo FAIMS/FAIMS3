@@ -103,8 +103,10 @@ export default function NotebookSyncSwitch({
             open={open}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
-            PaperProps={{
-              sx: {padding: 2},
+            slotProps={{
+              paper: {
+                sx: {padding: 2},
+              },
             }}
           >
             <Alert severity={isSyncing ? 'warning' : 'info'}>

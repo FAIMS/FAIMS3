@@ -20,7 +20,13 @@
 
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import {Box, Grid, IconButton, InputAdornment, TextField} from '@mui/material';
+import {
+  Box,
+  FormControl,
+  IconButton,
+  InputAdornment,
+  OutlinedInput,
+} from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import React, {ReactNode, useEffect} from 'react';
 import {usePrevious} from '../../../utils/customHooks';
@@ -89,22 +95,21 @@ export function GridToolbarSearchRecordDataButton({
   };
 
   return (
-    <TextField
-      className={
-        value === ''
-          ? 'record-grid-searchField'
-          : 'record-grid-searchField record-grid-searchField--active'
-      }
-      placeholder="Search record data (case sensitive)"
-      value={value}
-      onChange={handleChange}
-      onKeyDown={handleKeyPress}
-      data-testid="record-search-input"
-      variant="outlined"
-      size="small"
-      fullWidth
-      InputProps={{
-        startAdornment: (
+    <FormControl fullWidth size="small">
+      <OutlinedInput
+        className={
+          value === ''
+            ? 'record-grid-searchField'
+            : 'record-grid-searchField record-grid-searchField--active'
+        }
+        placeholder="Search record data (case sensitive)"
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyPress}
+        inputProps={{
+          'data-testid': 'record-search-input',
+        }}
+        startAdornment={
           <InputAdornment position="start">
             <IconButton
               className="record-grid-searchButton"
@@ -115,20 +120,22 @@ export function GridToolbarSearchRecordDataButton({
               <SearchIcon className="record-grid-searchButtonIcon" />
             </IconButton>
           </InputAdornment>
-        ),
-        endAdornment: value && (
-          <InputAdornment position="end">
-            <IconButton
-              className="record-grid-clearButton"
-              onClick={handleClear}
-              size="medium"
-            >
-              <ClearIcon className="record-grid-clearButtonIcon" />
-            </IconButton>
-          </InputAdornment>
-        ),
-      }}
-    />
+        }
+        endAdornment={
+          value ? (
+            <InputAdornment position="end">
+              <IconButton
+                className="record-grid-clearButton"
+                onClick={handleClear}
+                size="medium"
+              >
+                <ClearIcon className="record-grid-clearButtonIcon" />
+              </IconButton>
+            </InputAdornment>
+          ) : undefined
+        }
+      />
+    </FormControl>
   );
 }
 
@@ -157,9 +164,11 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
 
           {/* Filter button */}
           {enableFilters && (
-            <Grid item className="record-grid-filterItem">
-              <GridToolbarFilterButton className="record-grid-filterButton" />
-            </Grid>
+            <Box className="record-grid-filterItem">
+              <Box className="record-grid-filterButton">
+                <GridToolbarFilterButton />
+              </Box>
+            </Box>
           )}
         </Box>
       </Box>

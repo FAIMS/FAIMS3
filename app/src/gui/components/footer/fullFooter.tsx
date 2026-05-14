@@ -17,14 +17,11 @@ export default function FullFooter() {
       }}
     >
       <Grid container spacing={2}>
-        <Grid item xs={12} sx={{display: {xs: 'block', sm: 'none'}}}>
+        <Grid size={12} sx={{display: {xs: 'block', sm: 'none'}}}>
           <SlimFooter />
         </Grid>
         <Grid
-          item
-          sm={4}
-          md={4}
-          lg={3}
+          size={{sm: 4, md: 4, lg: 3}}
           sx={{display: {xs: 'none', sm: 'block'}, mt: 1}}
         >
           <Box>
@@ -38,7 +35,7 @@ export default function FullFooter() {
                 marginBottom: '20px',
               }}
             />
-            <Typography variant="caption" display="block" gutterBottom>
+            <Typography variant="caption" gutterBottom sx={{display: 'block'}}>
               Electronic Field Notebooks publishes this app under an Apache 2.0
               open source license. Researcher data copyright belongs to the
               researchers.
@@ -46,17 +43,13 @@ export default function FullFooter() {
           </Box>
         </Grid>
         <Grid
-          item
-          sm={5}
-          md={5}
-          lg={3}
+          size={{sm: 5, md: 5, lg: 3}}
           sx={{display: {xs: 'none', sm: 'block'}, mt: 1}}
         >
           <Typography
             variant="overline"
-            display="block"
             gutterBottom
-            sx={{color: theme.palette.grey[600]}}
+            sx={{color: theme.palette.grey[600], display: 'block'}}
           >
             About
           </Typography>
@@ -66,17 +59,13 @@ export default function FullFooter() {
           </Typography>
         </Grid>
         <Grid
-          item
-          sm={3}
-          md={3}
-          lg={3}
+          size={{sm: 3, md: 3, lg: 3}}
           sx={{display: {xs: 'none', sm: 'block'}, mt: 1}}
         >
           <Typography
             variant="overline"
-            display="block"
             gutterBottom
-            sx={{color: theme.palette.grey[600]}}
+            sx={{color: theme.palette.grey[600], display: 'block'}}
           >
             Support
           </Typography>
@@ -119,22 +108,18 @@ export default function FullFooter() {
           </Typography>
         </Grid>
         <Grid
-          item
-          sm={12}
-          md={12}
-          lg={3}
+          size={{sm: 12, md: 12, lg: 3}}
           sx={{display: {xs: 'none', sm: 'block'}, mt: 1}}
         >
           <Typography
             variant="overline"
-            display="block"
             gutterBottom
-            sx={{color: theme.palette.grey[600]}}
+            sx={{color: theme.palette.grey[600], display: 'block'}}
           >
             Partner Organisations
           </Typography>
           <Grid container spacing={2}>
-            <Grid item>
+            <Grid>
               <img
                 src="/static/logo/partners/ARDC_logo_RGB.png"
                 alt="ARDC logo"
@@ -145,7 +130,7 @@ export default function FullFooter() {
                 }}
               />
             </Grid>
-            <Grid item sm={8} lg={12}>
+            <Grid size={{sm: 8, lg: 12}}>
               <Typography variant={'caption'}>
                 The FAIMS 3.0 Electronic Field Notebooks project received
                 investment (doi: 10.47486/PL110) from the Australian Research
@@ -157,7 +142,7 @@ export default function FullFooter() {
           <Divider sx={{my: 1}} />
           <Box>
             <Grid container>
-              <Grid item style={{textAlign: 'left'}}>
+              <Grid sx={{textAlign: 'left'}}>
                 <img
                   src="/static/logo/partners/MQ_INT_HOR_RGB_POS.png"
                   alt="Macquarie University logo"
@@ -167,7 +152,7 @@ export default function FullFooter() {
                   }}
                 />
               </Grid>
-              <Grid item style={{textAlign: 'left'}}>
+              <Grid sx={{textAlign: 'left'}}>
                 <img
                   src="/static/logo/partners/CSIRO_Solid_RGB.png"
                   alt="CSIRO logo"

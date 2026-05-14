@@ -143,10 +143,10 @@ export default function NoteBooks() {
         <Box>
           <Typography
             variant={is_xs ? 'body2' : 'body1'}
-            fontWeight={row.isActivated ? 'bold' : 'normal'}
             color={row.isActivated ? 'black' : grey[800]}
             sx={{
               padding: '8px 0px',
+              fontWeight: row.isActivated ? 'bold' : 'normal',
             }}
           >
             {row.name ??
@@ -235,15 +235,22 @@ export default function NoteBooks() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   return (
-    <Box component={Paper} elevation={0} p={2}>
+    <Box
+      component={Paper}
+      elevation={0}
+      sx={{p: 2, width: '100%', minWidth: 0}}
+    >
       <Stack
         direction={isMobile ? 'column' : 'row'}
-        alignItems={isMobile ? 'stretch' : 'center'}
-        justifyContent={isMobile ? 'space-evenly' : 'space-between'}
         spacing={2}
-        sx={{mt: 1, mb: 2}}
+        sx={{
+          mt: 1,
+          mb: 2,
+          alignItems: isMobile ? 'stretch' : 'center',
+          justifyContent: isMobile ? 'space-evenly' : 'space-between',
+        }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" sx={{flex: 1}}>
+        <Stack direction="row" spacing={1} sx={{flex: 1, alignItems: 'center'}}>
           <Button
             variant="contained"
             disabled={!showRefreshButton || doRefresh.isPending}
@@ -398,13 +405,13 @@ export default function NoteBooks() {
           </Typography>
         </DialogTitle>
         <DialogContent>
-          <Typography paragraph>
+          <Typography sx={{mb: 2}}>
             <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
             ensures that you are safe to work offline at any point by
             downloading any existing records onto your device. Please do this
             with a stable internet connection.
           </Typography>
-          <Typography paragraph>
+          <Typography sx={{mb: 2}}>
             <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
             offloads records from your device, to{' '}
             {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:

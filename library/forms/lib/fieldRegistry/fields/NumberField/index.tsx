@@ -84,9 +84,11 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
         variant="outlined"
         disabled={disabled}
         type="number"
-        inputProps={{
-          // Step controls decimal precision
-          step: numberType === 'integer' ? 1 : 'any',
+        slotProps={{
+          htmlInput: {
+            // Step controls decimal precision
+            step: numberType === 'integer' ? 1 : 'any',
+          },
         }}
       />
     </FieldWrapper>

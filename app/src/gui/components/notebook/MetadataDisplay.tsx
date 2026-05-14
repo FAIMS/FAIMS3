@@ -102,8 +102,8 @@ export const MetadataDisplayComponent = (
       </Box>
 
       <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
-        <Grid item xs={12} sm={6} md={6} lg={4}>
-          <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
+        <Grid size={{xs: 12, sm: 6, md: 6, lg: 4}}>
+          <Box component={Paper} elevation={0} variant={'outlined'} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>
               Description
             </Typography>
@@ -116,7 +116,7 @@ export const MetadataDisplayComponent = (
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{xs: 12, sm: 6, md: 4}}>
           <TableContainer component={Paper} elevation={0} variant={'outlined'}>
             <Typography variant={'h6'} sx={{m: 2}} gutterBottom>
               About

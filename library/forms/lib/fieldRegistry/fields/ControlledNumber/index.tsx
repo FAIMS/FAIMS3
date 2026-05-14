@@ -82,7 +82,9 @@ const ControlledNumber: React.FC<ControlledNumberFullProps> = props => {
         variant="outlined"
         disabled={disabled}
         type="number"
-        inputProps={{min, max}}
+        slotProps={{
+          htmlInput: {min, max},
+        }}
       />
     </FieldWrapper>
   );

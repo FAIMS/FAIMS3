@@ -249,13 +249,15 @@ export default function MainAppBar() {
           variant="temporary"
           anchor="left"
           open={isOpen}
-          ModalProps={{onBackdropClick: toggle}}
-          PaperProps={{
-            sx: {
-              width: drawerWidth,
-              height: '100vh',
-              boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+          onClose={toggle}
+          slotProps={{
+            paper: {
+              sx: {
+                width: drawerWidth,
+                height: '100vh',
+                boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+                borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+              },
             },
           }}
         >

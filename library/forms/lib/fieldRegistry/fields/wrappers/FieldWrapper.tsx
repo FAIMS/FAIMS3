@@ -11,7 +11,7 @@
  * It is used across multiple input components to standardize the UI.
  */
 import CloseIcon from '@mui/icons-material/Close';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Box,
@@ -101,11 +101,13 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       {/* Heading (Label) + Info Icon for advanced help */}
       {(!!heading || advancedHelperText) && (
         <Box
-          display="flex"
-          alignItems="center"
-          mb={0.75}
-          flexWrap="wrap"
-          gap={1}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            mb: 0.75,
+            flexWrap: 'wrap',
+            gap: 1,
+          }}
         >
           <Typography
             variant="h5"
@@ -242,12 +244,14 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           onClose={() => setOpenDialog(false)}
           fullWidth
           maxWidth="md"
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              p: 1,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-              position: 'relative',
+          slotProps={{
+            paper: {
+              sx: {
+                borderRadius: 2,
+                p: 1,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+                position: 'relative',
+              },
             },
           }}
         >

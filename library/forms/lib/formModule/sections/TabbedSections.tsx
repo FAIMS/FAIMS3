@@ -932,7 +932,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         // ================================================================
         // Desktop View - Horizontal tabs with step indicators
         // ================================================================
-        <Box py={1}>
+        <Box sx={{py: 1}}>
           <Box
             sx={{
               overflowX: 'visible',

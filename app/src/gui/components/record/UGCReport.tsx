@@ -54,9 +54,9 @@ export default function UGCReport(props: UGCReportProps) {
     setOpen(false);
   };
   return (
-    <Grid item sm={12} xs={12} md={12} sx={{mt: 1}}>
+    <Grid size={{sm: 12, xs: 12, md: 12}} sx={{mt: 1}}>
       <Grid container spacing={2}>
-        <Grid item md={12}>
+        <Grid size={{md: 12}}>
           <Button
             variant="text"
             onClick={handleClickOpen}

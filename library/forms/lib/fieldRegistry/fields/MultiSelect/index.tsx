@@ -354,10 +354,12 @@ const MuiMultiSelect = ({
             );
           }}
           MenuProps={{
-            PaperProps: {
-              style: {
-                maxHeight: 300,
-                marginTop: 8,
+            slotProps: {
+              paper: {
+                style: {
+                  maxHeight: 300,
+                  marginTop: 8,
+                },
               },
             },
           }}

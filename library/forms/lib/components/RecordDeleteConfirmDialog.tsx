@@ -74,7 +74,7 @@ export function RecordDeleteConfirmDialog({
           </Typography>
           <Typography variant="body2" component="div">
             Record you will delete:{' '}
-            <Box component="span" fontWeight="bold">
+            <Box component="span" sx={{fontWeight: 'bold'}}>
               {recordHrid}
             </Box>
           </Typography>

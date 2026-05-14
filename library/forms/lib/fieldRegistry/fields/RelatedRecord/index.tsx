@@ -6,7 +6,7 @@ import {
   HydratedRecord,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
@@ -115,10 +115,12 @@ const RelatedRecordListItem = ({
           <ListItemText
             primary={link.record_id}
             secondary={link.relation_type_vocabPair[0] + ' (Load Error)'}
-            primaryTypographyProps={{
-              variant: 'body2',
-              fontFamily: 'monospace',
-              color: 'error',
+            slotProps={{
+              primary: {
+                variant: 'body2',
+                color: 'error',
+                sx: {fontFamily: 'monospace'},
+              },
             }}
           />
         </ListItemButton>
@@ -161,10 +163,14 @@ const RelatedRecordListItem = ({
         </ListItemIcon>
         <ListItemText
           primary={data.hrid}
-          primaryTypographyProps={{
-            variant: 'body2',
-            fontFamily: 'monospace',
-            fontWeight: data.hrid !== link.record_id ? 'bold' : 'normal',
+          slotProps={{
+            primary: {
+              variant: 'body2',
+              sx: {
+                fontFamily: 'monospace',
+                fontWeight: data.hrid !== link.record_id ? 'bold' : 'normal',
+              },
+            },
           }}
         />
       </ListItemButton>
@@ -307,12 +313,14 @@ const LinkExistingDialog = ({
           value={searchFilter}
           onChange={e => setSearchFilter(e.target.value)}
           sx={{mb: 2, mt: 1}}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -384,18 +392,22 @@ const LinkExistingDialog = ({
                       <ListItemText
                         primary={recordResult.record.hrid}
                         secondary={recordResult.record.record._id}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          fontFamily: 'monospace',
-                          fontWeight:
-                            recordResult.record.hrid !==
-                            recordResult.record.record._id
-                              ? 'bold'
-                              : 'normal',
-                        }}
-                        secondaryTypographyProps={{
-                          variant: 'caption',
-                          fontFamily: 'monospace',
+                        slotProps={{
+                          primary: {
+                            variant: 'body2',
+                            sx: {
+                              fontFamily: 'monospace',
+                              fontWeight:
+                                recordResult.record.hrid !==
+                                recordResult.record.record._id
+                                  ? 'bold'
+                                  : 'normal',
+                            },
+                          },
+                          secondary: {
+                            variant: 'caption',
+                            sx: {fontFamily: 'monospace'},
+                          },
                         }}
                       />
                     </ListItemButton>

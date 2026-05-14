@@ -366,21 +366,24 @@ export function buildColumnsFromSummaryFields({
 }): GridColumnType[] {
   if (!summaryFields || !uiSpecification) return [];
 
-  return summaryFields.map(field => ({
-    field: field,
-    sortable: false,
-    headerName: prettifyFieldName(field),
-    type: 'string',
-    filterable: false,
-    flex: 1,
-    valueGetter: params => {
-      const data = 'data' in params.row ? (params.row.data ?? {}) : {};
-      return getDisplayDataFromRecordMetadata({
-        field,
-        data: data,
-      });
-    },
-  }));
+  return summaryFields.map(
+    field =>
+      ({
+        field: field,
+        sortable: false,
+        headerName: prettifyFieldName(field),
+        type: 'string',
+        filterable: false,
+        flex: 1,
+        valueGetter: (params: any) => {
+          const data = params?.row?.data ?? {};
+          return getDisplayDataFromRecordMetadata({
+            field,
+            data: data,
+          });
+        },
+      }) as GridColumnType
+  );
 }
 
 /**
@@ -397,7 +400,7 @@ export function buildColumnFromSystemField({
   columnType: ColumnType;
   uiSpecification: ProjectUIModel;
 }): GridColumnType {
-  const baseColumn = {
+  const baseColumn: GridColumnType = {
     field: columnType.toLowerCase(),
     headerName: COLUMN_TO_LABEL_MAP.get(columnType) || columnType,
     type: 'string',
@@ -411,7 +414,7 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'dateTime',
-        valueGetter: params => {
+        valueGetter: (params: any) => {
           const rawValue = params.row.updated;
           return rawValue ? new Date(rawValue) : null;
         },
@@ -421,7 +424,7 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        valueGetter: params => {
+        valueGetter: (params: any) => {
           return getDataForColumn({
             record: params.row,
             column: columnType,
@@ -454,7 +457,7 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        valueGetter: params => {
+        valueGetter: (params: any) => {
           return getDataForColumn({
             record: params.row,
             column: columnType,
@@ -469,7 +472,7 @@ export function buildColumnFromSystemField({
         type: 'boolean',
         flex: 0,
         minWidth: 125,
-        renderCell: (params: GridCellParams) => (
+        renderCell: (params: any) => (
           <Box sx={{display: 'flex', alignItems: 'center'}}>
             {params.row.conflicts && (
               <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
@@ -1242,7 +1245,7 @@ export function RecordsTable(props: RecordsTableProps) {
         onRowClick={handleRowClick}
         getRowClassName={params => (params.row.conflicts ? 'conflict-row' : '')}
         // Custom toolbar with sort control
-        slots={{toolbar: NotebookDataGridToolbar}}
+        slots={{toolbar: NotebookDataGridToolbar as any}}
         slotProps={{
           filterPanel: {sx: {maxWidth: '96vw'}},
           toolbar: {
@@ -1251,7 +1254,7 @@ export function RecordsTable(props: RecordsTableProps) {
             additionalControls: (
               <SortControl value={sortOption} onChange={handleSortChange} />
             ),
-          },
+          } as any,
         }}
       />
     </Box>
