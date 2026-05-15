@@ -147,8 +147,7 @@ export const NotebookEditor = ({
       border: '1px solid',
       borderColor: enabled
         ? variant === 'redo'
-          ? (t: Theme) =>
-              t.designerMeta?.isDass ? '#7A1F2B' : t.palette.secondary.main
+          ? 'secondary.main'
           : 'common.black'
         : 'grey.400',
       color: enabled
@@ -156,8 +155,7 @@ export const NotebookEditor = ({
         : 'text.disabled',
       backgroundColor: enabled
         ? variant === 'redo'
-          ? (t: Theme) =>
-              t.designerMeta?.isDass ? '#7A1F2B' : t.palette.secondary.main
+          ? 'secondary.main'
           : 'common.black'
         : 'grey.100',
       '& .MuiButton-startIcon': {color: 'inherit'},
@@ -165,13 +163,11 @@ export const NotebookEditor = ({
         ? {
             backgroundColor:
               variant === 'redo'
-                ? (t: Theme) =>
-                    t.designerMeta?.isDass ? '#611824' : t.palette.secondary.dark
+                ? 'secondary.dark'
                 : '#111111',
             borderColor:
               variant === 'redo'
-                ? (t: Theme) =>
-                    t.designerMeta?.isDass ? '#611824' : t.palette.secondary.dark
+                ? 'secondary.dark'
                 : '#111111',
             boxShadow: 'none',
           }
