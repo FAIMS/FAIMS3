@@ -502,7 +502,7 @@ export const FormEditor = ({
 
   return (
     <Stack
-      direction={{xs: 'column', xl: 'row'}}
+      direction={{xs: 'column', md: 'row'}}
       spacing={2}
       alignItems="stretch"
       sx={[designerResponsiveSectionSx, {width: '100%'}]}
@@ -1206,16 +1206,16 @@ export const FormEditor = ({
       {previewForm && uiSpecInternal && (
         <Box
           sx={{
-            width: {xs: '100%', xl: '40%'},
-            minWidth: {xl: 320},
-            maxWidth: {xl: 540},
+            width: {xs: '100%', md: '42%', xl: '40%'},
+            minWidth: {md: 320},
+            maxWidth: {md: 540},
             flexShrink: 0,
             alignSelf: 'flex-start',
-            position: {xl: 'sticky'},
-            top: {xl: 12},
-            borderLeft: {xl: '2px solid'},
-            borderColor: {xl: 'divider'},
-            pl: {xl: 2.5},
+            position: {md: 'sticky'},
+            top: {md: 12},
+            borderLeft: {md: '2px solid'},
+            borderColor: {md: 'divider'},
+            pl: {md: 2.5},
           }}
         >
           {/* Preview frame */}
@@ -1229,7 +1229,7 @@ export const FormEditor = ({
               overflow: 'hidden',
               backgroundColor: 'background.paper',
               boxShadow: theme => `0 2px 16px ${alpha(theme.palette.common.black, 0.07)}`,
-              maxHeight: {xl: 'calc(100vh - 148px)'},
+              maxHeight: {md: 'calc(100vh - 148px)'},
             }}
           >
             {/* Accent bar */}
@@ -1271,7 +1271,7 @@ export const FormEditor = ({
                 </Alert>
               </Box>
             ) : (
-              <Box key={viewSetId} sx={{maxHeight: {xl: 'calc(100vh - 196px)'}, overflow: 'auto'}}>
+              <Box key={viewSetId} sx={{maxHeight: {md: 'calc(100vh - 196px)'}, overflow: 'auto'}}>
                 <ThemeProvider theme={defaultTheme}>
                   {/* resets CSS baseline within this scope */}
                   <CssBaseline />
