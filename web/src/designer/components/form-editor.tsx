@@ -587,8 +587,8 @@ export const FormEditor = ({
         </Grid>
         <Grid item xs={12}>
           <Card variant="outlined">
-            <Grid container spacing={2} p={3}>
-              <Grid item xs={12}>
+            <Stack direction="column" spacing={2} sx={{p: 2}}>
+              <Box xs={12}>
                 <Box sx={{position: 'relative'}}>
                   {/* outer scroll container */}
                   <Box
@@ -655,10 +655,10 @@ export const FormEditor = ({
                     />
                   )}
                 </Box>
-              </Grid>
+              </Box>
 
               {sections.length === 0 ? (
-                <Grid item xs={12}>
+                <Box xs={12}>
                   <Grid
                     container
                     justifyContent="center"
@@ -705,9 +705,9 @@ export const FormEditor = ({
                   {addAlertMessage && (
                     <Alert severity="error">{addAlertMessage}</Alert>
                   )}
-                </Grid>
+                </Box>
               ) : (
-                <Grid item xs={12}>
+                <Box xs={12}>
                   <SectionEditor
                     viewSetId={viewSetId}
                     viewId={viewSet.views[activeStep] || viewSet.views[0]}
@@ -719,9 +719,9 @@ export const FormEditor = ({
                     handleSectionMoveCallback={handleSectionMoveCallback}
                     moveFieldCallback={moveFieldToSection}
                   />
-                </Grid>
+                </Box>
               )}
-            </Grid>
+            </Stack>
           </Card>
         </Grid>
       </Grid>
