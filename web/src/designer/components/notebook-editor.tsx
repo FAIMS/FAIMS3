@@ -28,7 +28,6 @@ import {
   Tab,
   Tooltip,
   Typography,
-  Theme,
 } from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 import {useCallback, useEffect, useState} from 'react';
@@ -37,6 +36,7 @@ import RedoIcon from '@mui/icons-material/Redo';
 import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
 import {
   designerCancelButtonSx,
+  designerHistoryButtonSx,
   designerResponsiveFrameSx,
 } from './designer-style';
 
@@ -134,53 +134,6 @@ export const NotebookEditor = ({
     gap: 1,
   } as const;
 
-  const historyButtonSx = (
-    enabled: boolean,
-    variant: 'undo' | 'redo'
-  ) =>
-    ({
-      textTransform: 'none',
-      fontWeight: 700,
-      minWidth: 108,
-      borderRadius: 1.2,
-      boxShadow: 'none',
-      border: '1px solid',
-      borderColor: enabled
-        ? variant === 'redo'
-          ? 'secondary.main'
-          : 'common.black'
-        : 'grey.400',
-      color: enabled
-        ? 'common.white'
-        : 'text.disabled',
-      backgroundColor: enabled
-        ? variant === 'redo'
-          ? 'secondary.main'
-          : 'common.black'
-        : 'grey.100',
-      '& .MuiButton-startIcon': {color: 'inherit'},
-      '&:hover': enabled
-        ? {
-            backgroundColor:
-              variant === 'redo'
-                ? 'secondary.dark'
-                : '#111111',
-            borderColor:
-              variant === 'redo'
-                ? 'secondary.dark'
-                : '#111111',
-            boxShadow: 'none',
-          }
-        : {
-            backgroundColor: 'grey.200',
-          },
-      '&.Mui-disabled': {
-        color: 'text.disabled',
-        borderColor: 'grey.400',
-        backgroundColor: 'grey.100',
-      },
-    }) as const;
-
   return (
     <>
       <TabContext value={pathname}>
@@ -248,7 +201,7 @@ export const NotebookEditor = ({
                         startIcon={<UndoIcon />}
                         onClick={undo}
                         disabled={!canUndo}
-                        sx={historyButtonSx(canUndo, 'undo')}
+                        sx={designerHistoryButtonSx(canUndo, 'undo')}
                       >
                         Undo
                       </Button>
@@ -267,7 +220,7 @@ export const NotebookEditor = ({
                         startIcon={<RedoIcon />}
                         onClick={redo}
                         disabled={!canRedo}
-                        sx={historyButtonSx(canRedo, 'redo')}
+                        sx={designerHistoryButtonSx(canRedo, 'redo')}
                       >
                         Redo
                       </Button>

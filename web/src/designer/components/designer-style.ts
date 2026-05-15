@@ -113,6 +113,45 @@ export const designerPrimaryActionButtonSx: SxProps<Theme> = {
   fontWeight: 700,
 };
 
+/** Shared action style for notebook Undo/Redo buttons. */
+export const designerHistoryButtonSx = (
+  enabled: boolean,
+  variant: 'undo' | 'redo'
+): SxProps<Theme> => ({
+  textTransform: 'none',
+  fontWeight: 700,
+  minWidth: 108,
+  borderRadius: 1.2,
+  boxShadow: 'none',
+  border: '1px solid',
+  borderColor: enabled
+    ? variant === 'redo'
+      ? 'secondary.main'
+      : 'common.black'
+    : 'grey.400',
+  color: enabled ? 'common.white' : 'text.disabled',
+  backgroundColor: enabled
+    ? variant === 'redo'
+      ? 'secondary.main'
+      : 'common.black'
+    : 'grey.100',
+  '& .MuiButton-startIcon': {color: 'inherit'},
+  '&:hover': enabled
+    ? {
+        backgroundColor: variant === 'redo' ? 'secondary.dark' : '#111111',
+        borderColor: variant === 'redo' ? 'secondary.dark' : '#111111',
+        boxShadow: 'none',
+      }
+    : {
+        backgroundColor: 'grey.200',
+      },
+  '&.Mui-disabled': {
+    color: 'text.disabled',
+    borderColor: 'grey.400',
+    backgroundColor: 'grey.100',
+  },
+});
+
 export const designerControlHeadingSx: SxProps<Theme> = {
   color: 'text.primary',
   fontWeight: 700,
