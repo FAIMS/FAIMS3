@@ -36,7 +36,7 @@ export default function Workspace() {
 
   return (
     <React.Fragment>
-      <Grid container spacing={3}>
+      <Grid container>
         <Grid size={{xs: 12, md: 12, lg: 8}} sx={{width: '100%', minWidth: 0}}>
           <Typography
             variant="h2"
