@@ -123,14 +123,13 @@ const validateFieldRegistry = (registry: Map<string, FieldInfo>) => {
 // Always validate the registry on load
 validateFieldRegistry(FIELD_REGISTRY);
 
-// Ignored fields - currently narrow exception cases which should never be rendered - e.g. incrementer
+// Ignored fields - narrow exception cases which should never be rendered.
+// NOTE: do NOT add deprecated fields here — they will silently disappear from
+// existing notebooks. Deprecated fields should only be hidden from the chooser
+// (showInChooser: false in fields.tsx). Use migrations to move existing data.
 export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
   {
     namespace: 'faims-custom',
     name: 'BasicAutoIncrementer',
-  },
-  {
-    namespace: 'faims-custom',
-    name: 'Checkbox',
   },
 ];
