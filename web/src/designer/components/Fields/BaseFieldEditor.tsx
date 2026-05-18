@@ -130,6 +130,20 @@ export const BaseFieldEditor = ({
   const internalRenameInFlight = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
+  const [localHelperText, setLocalHelperText] = useState(field['component-parameters'].helperText || '');
+
+  // Always-fresh ref so the debounce below never closes over a stale field
+  const fieldRef = useRef(field);
+  fieldRef.current = field;
+
+  const debouncedHelperTextDispatch = useCallback(
+    debounce((value: string) => {
+      const newField = JSON.parse(JSON.stringify(fieldRef.current)) as FieldType;
+      newField['component-parameters'].helperText = value;
+      dispatch(fieldUpdated({fieldName, newField}));
+    }, 300),
+    [dispatch, fieldName]
+  );
 
   const debouncedRename = useCallback(
     debounce((newFieldName: string) => {
@@ -216,6 +230,7 @@ export const BaseFieldEditor = ({
     initialAutoSyncDone.current = !isFreshGeneratedFieldId;
 
     setLocalFieldName(fieldName);
+    setLocalHelperText(field['component-parameters'].helperText || '');
 
     if (isMounted.current && !wasInternalRename) {
       // Focus policy:
@@ -237,6 +252,12 @@ export const BaseFieldEditor = ({
       debouncedRename.cancel();
     };
   }, [debouncedRename]);
+
+  useEffect(() => {
+    return () => {
+      debouncedHelperTextDispatch.cancel();
+    };
+  }, [debouncedHelperTextDispatch]);
 
   const getFieldLabel = () => {
     return (
@@ -484,24 +505,30 @@ export const BaseFieldEditor = ({
                 <Box display="flex" flexDirection="column" gap={2}>
                   {useUnifiedFieldWrapper ? (
                     <SimpleFieldWrapper heading="Helper Text">
-                      <DebouncedTextField
+                      <TextField
                         fullWidth
                         label=""
                         placeholder="Enter helper text"
-                        value={state.helperText}
+                        value={localHelperText}
                         multiline
                         rows={2}
-                        onChange={e => updateProperty('helperText', e.target.value)}
+                        onChange={e => {
+                          setLocalHelperText(e.target.value);
+                          debouncedHelperTextDispatch(e.target.value);
+                        }}
                       />
                     </SimpleFieldWrapper>
                   ) : (
-                    <DebouncedTextField
+                    <TextField
                       fullWidth
                       label="Helper Text"
-                      value={state.helperText}
+                      value={localHelperText}
                       multiline
                       rows={2}
-                      onChange={e => updateProperty('helperText', e.target.value)}
+                      onChange={e => {
+                        setLocalHelperText(e.target.value);
+                        debouncedHelperTextDispatch(e.target.value);
+                      }}
                     />
                   )}
                 {hasAdvancedSupport && (

@@ -250,7 +250,7 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: [],
-    humanReadableName: 'Select Multiple',
+    humanReadableName: 'Select multiple',
     humanReadableDescription:
       'Pick several options from a list (expanded checklist by default, optional dropdown)',
     category: CategoryKey.CHOICE,
@@ -279,7 +279,7 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
     },
     initialValue: '',
-    humanReadableName: 'Select one',
+    humanReadableName: 'Select single',
     humanReadableDescription:
       'Single-choice list (expanded checklist by default, optional dropdown display)',
     category: CategoryKey.CHOICE,
@@ -342,7 +342,7 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: '',
-    humanReadableName: 'Select one (Legacy dropdown)',
+    humanReadableName: 'Select single (Legacy dropdown)',
     humanReadableDescription: 'Legacy single-choice dropdown (existing forms only)',
     category: CategoryKey.CHOICE,
     showInChooser: false,

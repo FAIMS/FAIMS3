@@ -174,6 +174,9 @@ const FieldEditorComponent = ({
     DateTimePicker: 'Date and time picker',
     DatePicker: 'Date only picker',
     MonthPicker: 'Month only picker',
+    RadioGroup: 'Select single',
+    MultiSelect: 'Select multiple',
+    Select: 'Select single (Legacy dropdown)',
   };
   const fieldComponentDisplayName =
     fieldComponentLabelMap[fieldComponent] || fieldComponent;
