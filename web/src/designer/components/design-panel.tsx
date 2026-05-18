@@ -64,6 +64,7 @@ import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
 import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
+import {NOTEBOOK_NAME} from '@/constants';
 
 /** Main designer surface for form tabs and routed `FormEditor` instances. */
 export const DesignPanel = () => {
@@ -171,10 +172,12 @@ export const DesignPanel = () => {
   const untickedTabSx = {
     ...baseTabRootSx,
     '&.Mui-selected': {
-      color: 'secondary.main',
+      color: 'secondary.contrastText',
       borderColor: 'secondary.main',
-      backgroundColor: (t: Theme) =>
-        alpha(t.palette.secondary.main, t.palette.mode === 'dark' ? 0.25 : 0.14),
+      backgroundColor: 'secondary.main',
+      fontWeight: 800,
+      boxShadow: (t: Theme) =>
+        `0 3px 10px ${alpha(t.palette.secondary.main, 0.34)}`,
     },
     '&:hover': {
       color: 'secondary.main',
@@ -328,7 +331,7 @@ export const DesignPanel = () => {
         <Box sx={{mb: 1.25, mt: 0.5}}>
           <HeadingWithInfo
             title="Forms"
-            tooltip="Forms are top-level data entry pages in your notebook."
+            tooltip={`Forms are top-level data entry pages in your ${NOTEBOOK_NAME}.`}
           />
           <Box
             sx={{
