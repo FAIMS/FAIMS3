@@ -128,10 +128,10 @@ export const DesignPanel = () => {
 
   const baseTabRootSx = {
     '&.MuiTab-root': {
-      backgroundColor: 'background.paper',
+      backgroundColor: 'grey.100',
       borderStyle: 'solid',
       borderWidth: '2px',
-      borderColor: 'secondary.main',
+      borderColor: 'divider',
       borderBottom: 'none',
       borderTopLeftRadius: '10px',
       borderTopRightRadius: '10px',
