@@ -645,10 +645,10 @@ const FieldEditorComponent = ({
                   aria-label="move"
                   size="small"
                   sx={{
-                    color: theme => alpha(theme.palette.warning.main, 0.72),
+                    color: theme => alpha(theme.palette.primary.main, 0.78),
                     '&:hover': {
                       backgroundColor: theme =>
-                        alpha(theme.palette.warning.main, 0.12),
+                        alpha(theme.palette.primary.main, 0.12),
                     },
                   }}
                 >
