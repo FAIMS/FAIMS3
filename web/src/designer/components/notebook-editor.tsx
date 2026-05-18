@@ -150,7 +150,7 @@ export const NotebookEditor = ({
         >
           <Box>
             <TabList
-              aria-label="lab API tabs example"
+              aria-label="Designer navigation tabs"
               sx={{
                 width: 'fit-content',
                 '& .MuiTabs-indicator': {height: 2},
