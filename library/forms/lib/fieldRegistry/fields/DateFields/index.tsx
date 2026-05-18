@@ -188,7 +188,7 @@ const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => (
   <DateTimeBase
     {...props}
     inputType="datetime-local"
-    nowButtonLabel="Select current date and time"
+    nowButtonLabel="Now"
     inputPropsExtra={{step: 1}}
   />
 );
