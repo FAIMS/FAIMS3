@@ -17,8 +17,9 @@
  * Description:
  *   Designer MUI theme factory.
  *   Themes are selected via VITE_THEME (same env var as the main app).
- *   - default / fieldmark → FAIMS green palette (original designer theme)
- *   - bssTheme            → BSS black/red palette (bss-tokens.ts)
+ *   - default   → blue palette matching the default app theme (default-tokens.ts)
+ *   - fieldmark → green/orange FAIMS palette (faims-tokens.ts)
+ *   - bssTheme  → BSS black/maroon palette (bss-tokens.ts)
  */
 
 import {createTheme, colors} from '@mui/material';
@@ -26,11 +27,13 @@ import {alpha} from '@mui/material/styles';
 import type {DesignerThemeTokens} from './tokens';
 import {faimsTokens} from './faims-tokens';
 import {bssTokens} from './bss-tokens';
+import {defaultTokens} from './default-tokens';
 
 // ── Re-export token types so consumers don't need a deep import ────────────
 export type {DesignerThemeTokens} from './tokens';
 export {faimsTokens} from './faims-tokens';
 export {bssTokens} from './bss-tokens';
+export {defaultTokens} from './default-tokens';
 
 // ── MUI theme augmentation ────────────────────────────────────────────────
 declare module '@mui/material/styles' {
@@ -57,8 +60,9 @@ export type DesignerThemeName = 'default' | 'bssTheme' | 'fieldmark' | string;
 const resolveTokens = (
   themeName: DesignerThemeName
 ): {tokens: DesignerThemeTokens; isDass: boolean} => {
-  const isDass = themeName === 'bssTheme';
-  return {tokens: isDass ? bssTokens : faimsTokens, isDass};
+  if (themeName === 'bssTheme') return {tokens: bssTokens, isDass: true};
+  if (themeName === 'fieldmark') return {tokens: faimsTokens, isDass: false};
+  return {tokens: defaultTokens, isDass: false};
 };
 
 export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
