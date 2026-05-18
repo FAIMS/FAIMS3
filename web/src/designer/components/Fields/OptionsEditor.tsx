@@ -220,7 +220,7 @@ const SortableOtherOptionRow = ({
             <IconButton
               size="small"
               disabled
-              sx={{p: {xs: 0.25, sm: 0.5}, color: theme.palette.text.disabled}}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.disabled'}}
             >
               <EditIcon fontSize="small" />
             </IconButton>
