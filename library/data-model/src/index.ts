@@ -20,6 +20,7 @@
  */
 
 // Files in this module
+export * from './brand-colours';
 export * from './api';
 export * from './callbacks';
 export * from './logging';

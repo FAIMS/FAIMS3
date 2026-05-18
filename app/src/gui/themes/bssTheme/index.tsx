@@ -1,13 +1,12 @@
 import {colors, createTheme} from '@mui/material';
+import {bssBrand} from '@faims3/data-model';
 import typography from '../fieldmark/typography';
-
-const primaryMainColor = '#000000';
 
 const theme = createTheme({
   stepperColors: {
-    current: '#000000',
-    visited: '#07a907',
-    error: '#EE1616FF',
+    current: bssBrand.primaryMain,
+    visited: bssBrand.successMain,
+    error: bssBrand.errorMain,
     notVisited: '#BDBDBD',
   },
   palette: {
@@ -19,9 +18,9 @@ const theme = createTheme({
       tabsBackground: '#F0F0F0FF',
     },
     primary: {
-      main: primaryMainColor,
-      light: '#FFFFFF',
-      dark: '#000000',
+      main: bssBrand.primaryMain,
+      light: bssBrand.primaryLight,
+      dark: bssBrand.primaryDark,
     },
     text: {
       primary: colors.blueGrey[900],
@@ -29,9 +28,9 @@ const theme = createTheme({
       helpText: colors.blueGrey[600],
     },
     stepper: {
-      current: '#000000',
-      visited: '#07a907',
-      error: '#EE1616FF',
+      current: bssBrand.primaryMain,
+      visited: bssBrand.successMain,
+      error: bssBrand.errorMain,
       notVisited: '#BDBDBD',
     },
     highlightColor: {
@@ -81,8 +80,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#FFFFFF',
-          color: '#000000FF',
+          backgroundColor: bssBrand.appBarBackground,
+          color: bssBrand.appBarForeground,
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
@@ -117,7 +116,7 @@ const theme = createTheme({
           color: '#000000',
           '&.Mui-selected': {
             color: '#FFFFFF',
-            backgroundColor: primaryMainColor,
+            backgroundColor: bssBrand.primaryMain,
             fontWeight: '700',
           },
           '&:not(.Mui-selected)': {

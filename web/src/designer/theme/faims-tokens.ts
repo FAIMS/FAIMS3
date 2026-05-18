@@ -1,38 +1,42 @@
 import {colors} from '@mui/material';
+import {fieldmarkBrand} from '@faims3/data-model';
 import type {DesignerThemeTokens} from './tokens';
 
 /**
- * FAIMS default theme tokens.
+ * FAIMS / Fieldmark theme tokens.
  * Primary: green  |  Secondary / accent: orange
+ * Brand palette values come from @faims3/data-model brand-colours.ts
  */
 export const faimsTokens: DesignerThemeTokens = {
   // ── Backgrounds ─────────────────────────────────────────────────────────
   backgroundDefault: '#FAFAFB',
 
   // ── Brand palette ────────────────────────────────────────────────────────
-  primaryMain: '#669911',
-  primaryLight: '#a7e938',
-  primaryDark: '#141E03',
-  primaryContrastText: '#FFFFFF',
-  secondaryMain: '#E18200',
+  primaryMain: fieldmarkBrand.primaryMain,
+  primaryLight: fieldmarkBrand.primaryLight,
+  primaryDark: fieldmarkBrand.primaryDark,
+  primaryContrastText: fieldmarkBrand.primaryContrastText,
+  secondaryMain: fieldmarkBrand.secondaryMain,
 
   // ── Text ────────────────────────────────────────────────────────────────
   helperTextColor: colors.blueGrey[500],
 
   // ── App bar ──────────────────────────────────────────────────────────────
-  appBarBackground: '#edeeeb',
-  appBarColor: '#324C08',
+  appBarBackground: fieldmarkBrand.appBarBackground,
+  appBarColor: fieldmarkBrand.appBarForeground,
+
   // ── Form tabs ────────────────────────────────────────────────────────────
-  formTabBorderColor: '#E18200',
+  formTabBorderColor: fieldmarkBrand.secondaryMain,
   formTabSelectedBg: '#DA9449',
   formTabSelectedText: '#FFFFFF',
-  formTabIndicatorVisible: false, // FAIMS uses filled-tab style; no underline
-  formTabIndicatorColor: '#E18200',
+  formTabIndicatorVisible: false,
+  formTabIndicatorColor: fieldmarkBrand.secondaryMain,
+
   // ── Semantic actions ────────────────────────────────────────────────────
-  errorMain: '#D32F2F',
-  deleteButtonColor: '#D32F2F',
-  successMain: '#388E3C',
-  infoMain: '#1976D2', // MUI info blue
+  errorMain: fieldmarkBrand.errorMain,
+  deleteButtonColor: fieldmarkBrand.errorMain,
+  successMain: fieldmarkBrand.successMain,
+  infoMain: fieldmarkBrand.infoMain,
 
   // ── Neutral greyscale ───────────────────────────────────────────────────
   darkGrey: colors.blueGrey[700],
