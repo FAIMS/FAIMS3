@@ -36,7 +36,6 @@ import RedoIcon from '@mui/icons-material/Redo';
 import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
 import {
   designerCancelButtonSx,
-  designerHistoryButtonSx,
   designerResponsiveFrameSx,
 } from './designer-style';
 
@@ -198,10 +197,11 @@ export const NotebookEditor = ({
                     <span>
                       <Button
                         variant={canUndo ? 'contained' : 'outlined'}
+                        color="primary"
                         startIcon={<UndoIcon />}
                         onClick={undo}
                         disabled={!canUndo}
-                        sx={designerHistoryButtonSx(canUndo, 'undo')}
+                        sx={{minWidth: 108}}
                       >
                         Undo
                       </Button>
@@ -217,10 +217,11 @@ export const NotebookEditor = ({
                     <span>
                       <Button
                         variant={canRedo ? 'contained' : 'outlined'}
+                        color="primary"
                         startIcon={<RedoIcon />}
                         onClick={redo}
                         disabled={!canRedo}
-                        sx={designerHistoryButtonSx(canRedo, 'redo')}
+                        sx={{minWidth: 108}}
                       >
                         Redo
                       </Button>
