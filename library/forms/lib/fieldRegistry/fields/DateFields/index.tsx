@@ -40,7 +40,8 @@ const dateTimePropsSchema = BaseFieldPropsSchema.extend({
    * When true, auto-populate the field with current datetime on first mount
    * if no value is currently set.
    */
-  is_auto_pick: z.boolean().optional().default(false),
+  isAutoPick: z.boolean().optional(),
+  is_auto_pick: z.boolean().optional(),
   /**
    * When true, renders a "Now" button that sets the field to the current datetime.
    */
@@ -108,6 +109,7 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
   state,
   setFieldData,
   handleBlur,
+  isAutoPick,
   is_auto_pick,
   show_now_button,
   inputType,
@@ -116,10 +118,11 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
 }) => {
   const value = (state.value?.data as string) ?? '';
   const errors = state.meta.errors as unknown as string[] | undefined;
+  const autoPickEnabled = isAutoPick ?? is_auto_pick ?? false;
 
   // Hooks must be called before any conditional return.
   useEffect(() => {
-    if (is_auto_pick && !value) {
+    if (autoPickEnabled && !value) {
       setFieldData(getLocalNowValue(inputType));
     }
     // Only run on mount to avoid overriding user edits.
@@ -239,8 +242,10 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
     state,
     setFieldData,
     handleBlur,
+    isAutoPick,
     is_auto_pick,
   } = props;
+  const autoPickEnabled = isAutoPick ?? is_auto_pick ?? false;
 
   // Get current stored value (ISO string) and convert to display format
   const storedValue = (state.value?.data as string) ?? '';
@@ -277,7 +282,7 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
    */
   useEffect(() => {
     if (
-      is_auto_pick &&
+      autoPickEnabled &&
       (storedValue === null || storedValue === undefined || storedValue === '')
     ) {
       const now = new Date();

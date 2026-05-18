@@ -84,7 +84,7 @@ const fields: {[key: string]: FieldType} = {
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
-      is_auto_pick: false,
+      isAutoPick: false,
       show_now_button: false,
     },
     initialValue: '',

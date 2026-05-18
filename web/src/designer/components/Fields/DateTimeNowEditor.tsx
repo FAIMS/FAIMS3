@@ -41,14 +41,23 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const supportsAutoPick = isDateTimePicker;
   const supportsNowButton = isDateTimePicker || isDatePicker || isMonthPicker;
 
-  const updateFieldProp = (key: 'is_auto_pick' | 'show_now_button', value: boolean) => {
+  const updateFieldProp = (
+    key: 'isAutoPick' | 'show_now_button',
+    value: boolean
+  ) => {
     const newField = withUpdatedField(field, nextField => {
       nextField['component-parameters'][key] = value;
+      if (key === 'isAutoPick') {
+        delete nextField['component-parameters'].is_auto_pick;
+      }
     });
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
-  const isAutoPick = field['component-parameters'].is_auto_pick ?? false;
+  const isAutoPick =
+    field['component-parameters'].isAutoPick ??
+    field['component-parameters'].is_auto_pick ??
+    false;
   const showNowButton = field['component-parameters'].show_now_button ?? false;
 
   return (
@@ -63,7 +72,7 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                     <Checkbox
                       checked={isAutoPick}
                       onChange={e => {
-                        updateFieldProp('is_auto_pick', e.target.checked);
+                        updateFieldProp('isAutoPick', e.target.checked);
                       }}
                     />
                   }
@@ -84,8 +93,9 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                   sx={{
                     m: 0,
                     '& .MuiFormControlLabel-label': {
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
+                      whiteSpace: 'normal',
                     },
                   }}
                 />
@@ -102,7 +112,10 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                   }
                   label={
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography component="span">
+                      <Typography
+                        component="span"
+                        sx={{whiteSpace: 'normal', overflowWrap: 'anywhere'}}
+                      >
                         Display a "
                         <strong>
                           {isDatePicker
@@ -133,8 +146,9 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                   sx={{
                     m: 0,
                     '& .MuiFormControlLabel-label': {
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
+                      whiteSpace: 'normal',
                     },
                   }}
                 />

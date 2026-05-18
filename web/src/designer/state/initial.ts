@@ -74,6 +74,7 @@ export type ComponentParameters = {
   template?: string;
   num_digits?: number;
   form_id?: string;
+  isAutoPick?: boolean;
   is_auto_pick?: boolean;
   show_now_button?: boolean;
   zoom?: number;
