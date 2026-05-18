@@ -27,10 +27,10 @@ export const faimsTokens: DesignerThemeTokens = {
 
   // ── Form tabs ────────────────────────────────────────────────────────────
   formTabBorderColor: fieldmarkBrand.secondaryMain,
-  formTabSelectedBg: '#DA9449',
+  formTabSelectedBg: fieldmarkBrand.primaryMain,
   formTabSelectedText: '#FFFFFF',
-  formTabIndicatorVisible: false,
-  formTabIndicatorColor: fieldmarkBrand.secondaryMain,
+  formTabIndicatorVisible: true,
+  formTabIndicatorColor: fieldmarkBrand.secondaryMain, // orange underline on selected tab
 
   // ── Semantic actions ────────────────────────────────────────────────────
   errorMain: fieldmarkBrand.errorMain,

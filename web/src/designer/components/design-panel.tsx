@@ -152,38 +152,41 @@ export const DesignPanel = () => {
     },
   } as const;
 
-  // Selected tabs are consistently dark/high-contrast for clear active state.
+  // Selected tabs: solid primary fill, consistent across visible and unticked tabs.
+  const selectedTabSx = {
+    borderColor: 'primary.main',
+    color: 'primary.contrastText',
+    backgroundColor: 'primary.main',
+    fontWeight: 800,
+    boxShadow: (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
+  } as const;
+
   const visibleTabSx = {
     ...baseTabRootSx,
-    '&.Mui-selected': {
-      borderColor: 'primary.main',
-      color: 'primary.contrastText',
-      backgroundColor: 'primary.main',
-      fontWeight: 800,
-      boxShadow: (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
-    },
-    '&:hover': {
-      color: 'primary.contrastText',
-      opacity: 1,
-      backgroundColor: 'primary.dark',
+    '&.Mui-selected': selectedTabSx,
+    // Light tint on hover — never pitch-black regardless of primary.dark value.
+    '&:not(.Mui-selected):hover': {
+      color: 'primary.main',
+      backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.1),
     },
   };
 
+  // Unticked (hidden) forms use the same selected colour as visible forms so
+  // the active-indicator colour is always consistent across BSS/fieldmark/default.
   const untickedTabSx = {
     ...baseTabRootSx,
-    '&.Mui-selected': {
-      color: 'secondary.contrastText',
-      borderColor: 'secondary.main',
-      backgroundColor: 'secondary.main',
-      fontWeight: 800,
-      boxShadow: (t: Theme) =>
-        `0 3px 10px ${alpha(t.palette.secondary.main, 0.34)}`,
+    '&.MuiTab-root': {
+      ...baseTabRootSx['&.MuiTab-root'],
+      opacity: 0.6, // de-emphasise to signal "hidden from app"
     },
-    '&:hover': {
-      color: 'secondary.main',
-      opacity: 1,
-      backgroundColor: (t: Theme) =>
-        alpha(t.palette.secondary.main, t.palette.mode === 'dark' ? 0.2 : 0.1),
+    '&.Mui-selected': {
+      ...selectedTabSx,
+      opacity: 1, // restore full opacity when this tab is active in editor
+    },
+    '&:not(.Mui-selected):hover': {
+      color: 'primary.main',
+      opacity: 0.85,
+      backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.08),
     },
   };
 
