@@ -41,10 +41,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   FormControlLabel,
+  FormLabel,
   Grid,
   IconButton,
   Paper,
+  Radio,
+  RadioGroup,
   Stack,
   Table,
   TableBody,
@@ -55,7 +59,6 @@ import {
   TextField,
   Tooltip,
   Typography,
-  useTheme,
 } from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -130,7 +133,6 @@ interface SortableItemProps {
 const OTHER_OPTION_ID = '__other__';
 
 interface OtherOptionRowProps {
-  id: string;
   showExclusiveOptions?: boolean;
   otherOptionPosition: number;
   totalOptions: number;
@@ -143,7 +145,6 @@ interface OtherOptionRowProps {
  * "Other" option row component (non-draggable, uses arrow buttons for positioning)
  */
 const SortableOtherOptionRow = ({
-  id,
   showExclusiveOptions,
   otherOptionPosition,
   totalOptions,
@@ -151,31 +152,13 @@ const SortableOtherOptionRow = ({
   onMoveDown,
   onRemove,
 }: OtherOptionRowProps) => {
-  const theme = useTheme();
-  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
-    useSortable({id});
-
   return (
     <TableRow
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-      }}
       sx={{
         backgroundColor: 'rgba(0, 0, 0, 0.02)',
       }}
     >
-      {/* EDITED: Drag handle is ENABLED for Other */}
-      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
-        <DragHandle
-          compact
-          label="Drag option to reorder"
-          dragAttributes={attributes}
-          dragListeners={listeners}
-        />
-      </TableCell>
+      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}} />
 
       <TableCell sx={{py: 1, minWidth: 0}}>
         <Tooltip title="Allows custom text input">
@@ -398,7 +381,6 @@ export const OptionsEditor = ({
   // should we show the exclusive options controls?
   showExclusiveOptions?: boolean;
 }) => {
-  const theme = useTheme();
   // Get field state from Redux store
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -789,17 +771,17 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Toggles dropdown mode for multi-select fields.
-   * Checked means dropdown, unchecked means expanded checklist.
+   * Switches between expanded checklist and dropdown display modes.
    */
-  const toggleDropdownMode = (
-    _event: React.ChangeEvent<HTMLInputElement>,
-    checked: boolean
+  const setDisplayMode = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    _value: string
   ) => {
+    const selectedMode = event.target.value;
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
-      expandedChecklist: !checked,
+      expandedChecklist: selectedMode === 'expanded',
     };
     dispatch(fieldUpdated({fieldName, newField}));
   };
@@ -824,7 +806,7 @@ export const OptionsEditor = ({
   /**
    * Updates the position of the "Other" option
    */
-  const updateOtherPosition = () => {
+  const ensureOtherIsLast = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
@@ -838,7 +820,7 @@ export const OptionsEditor = ({
    */
   const moveOtherOption = (direction: 'up' | 'down') => {
     void direction;
-    updateOtherPosition();
+    ensureOtherIsLast();
   };
 
   return (
@@ -963,7 +945,6 @@ export const OptionsEditor = ({
                             return (
                               <SortableOtherOptionRow
                                 key={OTHER_OPTION_ID}
-                                id={OTHER_OPTION_ID}
                                 showExclusiveOptions={showExclusiveOptions}
                                 otherOptionPosition={otherOptionPosition}
                                 totalOptions={options.length}
@@ -1014,11 +995,7 @@ export const OptionsEditor = ({
                 >
                   <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
                     <SimpleFieldWrapper
-                      heading={
-                        isMultiSelectField
-                          ? 'Select multiple options'
-                          : 'Select one option'
-                      }
+                      heading="Add another option"
                       helperText={optionGuidance}
                     >
                       <TextField
@@ -1079,16 +1056,6 @@ export const OptionsEditor = ({
                         minWidth: 56,
                         height: 40,
                         px: 2,
-                        fontWeight: 600,
-                        borderWidth: 1.5,
-                        '&:hover': {
-                          borderWidth: 1.5,
-                        },
-                        '&.Mui-disabled': {
-                          backgroundColor: 'action.disabledBackground',
-                          color: 'text.disabled',
-                          borderColor: 'action.disabledBackground',
-                        },
                       }}
                     >
                       Add "Other" Option
@@ -1106,27 +1073,19 @@ export const OptionsEditor = ({
               </form>
 
               {showExpandedCheckListControl && (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={isDropdownMode}
-                      onChange={toggleDropdownMode}
-                      size="small"
-                      sx={designerCheckboxSx}
-                    />
-                  }
-                  label={
+                <FormControl sx={{mb: 0}}>
+                  <FormLabel>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Typography component="span">
                         {isMultiSelectField
-                          ? 'Display multi-select as a dropdown?'
-                          : 'Display options as a dropdown list?'}
+                          ? 'Multi-select display mode'
+                          : 'Select-one display mode'}
                       </Typography>
                       <Tooltip
                         title={
                           isMultiSelectField
-                            ? 'By default, multi-select displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.'
-                            : 'By default, select one displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.'
+                            ? 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
+                            : 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
                         }
                       >
                         <InfoIcon
@@ -1136,9 +1095,24 @@ export const OptionsEditor = ({
                         />
                       </Tooltip>
                     </Stack>
-                  }
-                  sx={{mb: 0}}
-                />
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    value={isDropdownMode ? 'dropdown' : 'expanded'}
+                    onChange={setDisplayMode}
+                  >
+                    <FormControlLabel
+                      value="expanded"
+                      control={<Radio size="small" />}
+                      label="Expanded checklist"
+                    />
+                    <FormControlLabel
+                      value="dropdown"
+                      control={<Radio size="small" />}
+                      label="Dropdown list"
+                    />
+                  </RadioGroup>
+                </FormControl>
               )}
 
               {errorMessage && (
