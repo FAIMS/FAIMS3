@@ -25,7 +25,6 @@ import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
-import DeviceHubRoundedIcon from '@mui/icons-material/DeviceHubRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import InfoIcon from '@mui/icons-material/Info';
 
@@ -405,7 +404,6 @@ export const SectionEditor = ({
             initial={fView.condition}
             onChange={conditionChanged}
             view={viewId}
-            icon={<DeviceHubRoundedIcon />}
             buttonSx={designerControlLabelSx}
           />
 

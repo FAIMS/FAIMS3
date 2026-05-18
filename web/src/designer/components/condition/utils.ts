@@ -76,6 +76,7 @@ const buildFieldLocationMaps = (allFviews: ViewMap, viewsets: ViewSetMap) => {
 
 /**
  * Lists sections/fields/templated strings that reference `fieldName` (conditions or `{{fieldName}}`).
+ * Scoped to the same form as `fieldName` — conditions cannot reference fields from other forms.
  */
 export const findFieldDependencyReferences = (
   fieldName: string,
@@ -89,8 +90,30 @@ export const findFieldDependencyReferences = (
     viewsets
   );
 
+  // Conditions can only reference fields within the same form, so scope scanning
+  // to the viewset that contains fieldName.
+  const fieldSection = fieldToSection.get(fieldName);
+  const fieldFormId = fieldSection
+    ? sectionToForm.get(fieldSection.sectionId)?.formId
+    : undefined;
+  const scopedViewset = fieldFormId ? viewsets[fieldFormId] : null;
+  const scopedSectionIds = scopedViewset ? new Set(scopedViewset.views) : null;
+
+  const scopedFviews = scopedSectionIds
+    ? Object.fromEntries(
+        Object.entries(allFviews).filter(([id]) => scopedSectionIds.has(id))
+      )
+    : allFviews;
+
+  const scopedFieldIds = new Set(
+    Object.values(scopedFviews).flatMap(s => s.fields)
+  );
+  const scopedFields = Object.fromEntries(
+    Object.entries(allFields).filter(([id]) => scopedFieldIds.has(id))
+  );
+
   // Check section-level conditions
-  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+  for (const [sectionId, sectionDef] of Object.entries(scopedFviews)) {
     const condition = sectionDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
       const form = sectionToForm.get(sectionId);
@@ -105,7 +128,7 @@ export const findFieldDependencyReferences = (
   }
 
   // Check field-level conditions
-  for (const [fId, fieldDef] of Object.entries(allFields)) {
+  for (const [fId, fieldDef] of Object.entries(scopedFields)) {
     const condition = fieldDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
       const label = fieldDef['component-parameters']?.label ?? fId;
@@ -126,7 +149,7 @@ export const findFieldDependencyReferences = (
   }
 
   // Check for Templated String Fields using the deleted field
-  for (const [fId, fieldDef] of Object.entries(allFields)) {
+  for (const [fId, fieldDef] of Object.entries(scopedFields)) {
     if (fieldDef['component-name'] === 'TemplatedStringField') {
       const template = fieldDef['component-parameters']?.template || '';
 

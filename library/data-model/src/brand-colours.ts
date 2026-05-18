@@ -27,11 +27,7 @@ export const fieldmarkBrand = {
   infoMain: '#1976D2',
 } as const;
 
-/**
- * BSS primary palette only.
- * App bar and secondary intentionally omitted — they differ between
- * the app (white bar / blue nav accent) and the designer (dark bar / red form accent).
- */
+
 export const bssBrand = {
   primaryMain: '#000000',
   primaryDark: '#000000',
