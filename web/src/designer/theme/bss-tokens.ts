@@ -14,7 +14,7 @@ export const bssTokens: DesignerThemeTokens = {
 
   // ── Brand palette ────────────────────────────────────────────────────────
   primaryMain: bssBrand.primaryMain,
-  primaryLight: bssBrand.primaryLight,
+  primaryLight: '#424242',
   primaryDark: bssBrand.primaryDark,
   primaryContrastText: bssBrand.primaryContrastText,
   secondaryMain: '#C62828', // red form-action accent; app nav uses #12B0FB
@@ -23,8 +23,8 @@ export const bssTokens: DesignerThemeTokens = {
   helperTextColor: colors.blueGrey[500],
 
   // ── App bar ──────────────────────────────────────────────────────────────
-  appBarBackground: bssBrand.appBarBackground,
-  appBarColor: bssBrand.appBarForeground,
+  appBarBackground: '#111111', // designer uses dark bar; app uses white
+  appBarColor: '#FFFFFF',
 
   // ── Form tabs ────────────────────────────────────────────────────────────
   formTabBorderColor: '#C62828',

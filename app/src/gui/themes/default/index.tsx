@@ -23,9 +23,9 @@ import {defaultBrand} from '@faims3/data-model';
 import typography from './typography';
 const theme = createTheme({
   stepperColors: {
-    current: defaultBrand.primaryMain,
+    current: '#000000',
     visited: defaultBrand.primaryMain,
-    error: defaultBrand.errorMain,
+    error: '#EE1616FF',
     notVisited: '#BDBDBD',
   },
   palette: {
@@ -44,7 +44,7 @@ const theme = createTheme({
     stepper: {
       current: defaultBrand.secondaryMain,
       visited: defaultBrand.primaryMain,
-      error: defaultBrand.errorMain,
+      error: '#D50C0CFF',
       notVisited: '#A8B0C8',
     },
     highlightColor: {

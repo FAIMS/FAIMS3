@@ -1,16 +1,17 @@
 /**
  * Shared brand colour constants.
  *
- * These are the single source of truth for brand-palette hex values used by
- * both the main app themes (app/src/gui/themes/) and the designer token files
- * (web/src/designer/theme/). 
- * PLEASE NOTE:  Keep colour values here; do not duplicate them.
+ * Single source of truth for brand-palette hex values used by both the main
+ * app themes (app/src/gui/themes/) and the designer token files
+ * (web/src/designer/theme/).  Change a colour once here; both pick it up.
  *
- * NOTE on secondary colour for bssTheme:
- *   The app uses #12B0FB (light blue) as MUI secondary for nav / tab accents.
- *   The designer uses #C62828 (red) as MUI secondary for form-action accents.
- *   These serve different semantic purposes so they are NOT shared here; each
- *   consumer defines its own secondary.
+ * Values that intentionally differ between app and designer are NOT listed
+ * here — each consumer defines those locally with a comment explaining why.
+ *
+ * Known intentional differences:
+ *  - bssTheme app bar: app uses white (#FFFFFF), designer uses dark (#111111)
+ *  - bssTheme secondary: app uses #12B0FB (nav accent), designer uses #C62828 (form accent)
+ *  - bssTheme primary.light: app uses #FFFFFF, designer uses #424242
  */
 
 export const fieldmarkBrand = {
@@ -26,13 +27,15 @@ export const fieldmarkBrand = {
   infoMain: '#1976D2',
 } as const;
 
+/**
+ * BSS primary palette only.
+ * App bar and secondary intentionally omitted — they differ between
+ * the app (white bar / blue nav accent) and the designer (dark bar / red form accent).
+ */
 export const bssBrand = {
   primaryMain: '#000000',
-  primaryLight: '#424242',
   primaryDark: '#000000',
   primaryContrastText: '#FFFFFF',
-  appBarBackground: '#111111',
-  appBarForeground: '#FFFFFF',
   errorMain: '#D32F2F',
   successMain: '#2E7D32',
   infoMain: '#1565C0',

@@ -5,8 +5,8 @@ import typography from '../fieldmark/typography';
 const theme = createTheme({
   stepperColors: {
     current: bssBrand.primaryMain,
-    visited: bssBrand.successMain,
-    error: bssBrand.errorMain,
+    visited: '#07a907',
+    error: '#EE1616FF',
     notVisited: '#BDBDBD',
   },
   palette: {
@@ -19,7 +19,7 @@ const theme = createTheme({
     },
     primary: {
       main: bssBrand.primaryMain,
-      light: bssBrand.primaryLight,
+      light: '#FFFFFF',
       dark: bssBrand.primaryDark,
     },
     text: {
@@ -29,8 +29,8 @@ const theme = createTheme({
     },
     stepper: {
       current: bssBrand.primaryMain,
-      visited: bssBrand.successMain,
-      error: bssBrand.errorMain,
+      visited: '#07a907',
+      error: '#EE1616FF',
       notVisited: '#BDBDBD',
     },
     highlightColor: {
@@ -80,8 +80,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: bssBrand.appBarBackground,
-          color: bssBrand.appBarForeground,
+          backgroundColor: '#FFFFFF',
+          color: '#000000FF',
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
