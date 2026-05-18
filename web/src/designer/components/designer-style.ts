@@ -108,18 +108,13 @@ export const designerInlineEditActionIconSx: SxProps<Theme> = {
   },
 };
 
-export const designerPrimaryActionButtonSx: SxProps<Theme> = {
-  textTransform: 'none',
-  fontWeight: 700,
-};
+export const designerPrimaryActionButtonSx: SxProps<Theme> = {};
 
 /** Shared action style for notebook Undo/Redo buttons. */
 export const designerHistoryButtonSx = (
   enabled: boolean,
   variant: 'undo' | 'redo'
 ): SxProps<Theme> => ({
-  textTransform: 'none',
-  fontWeight: 700,
   minWidth: 108,
   borderRadius: 1.2,
   boxShadow: 'none',
