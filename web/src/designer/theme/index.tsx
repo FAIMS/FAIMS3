@@ -293,6 +293,18 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
           },
         },
       },
+
+      
+      MuiDialogContent: {
+        styleOverrides: {
+          root: {
+            paddingTop: 24,
+            '.MuiDialogTitle-root + &': {
+              paddingTop: 24,
+            },
+          },
+        },
+      },
     },
   });
 };

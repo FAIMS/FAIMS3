@@ -61,7 +61,7 @@ const isValidHridField = (field: FieldType): boolean => {
 const SettingSection = ({
   title,
   description,
-  tooltipText = 'Help content coming soon.',
+  tooltipText = 'Configure how this form behaves and appears to data collectors.',
   children,
 }: {
   title: string;
@@ -195,7 +195,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Layout Style"
         description="Choose how form sections are displayed. The 'tabs' layout will display questions split up into their sections. The 'inline' layout will display all questions in a single scrollable form."
-        tooltipText="Help content for layout style options will be added soon."
+        tooltipText="Tabs splits the form into one tab per section, so users move through sections step by step — best for long, multi-section forms. Inline shows every section's questions together on one scrollable page — best for short forms."
       >
         <Select
           fullWidth
@@ -218,7 +218,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Summary Fields"
         description="Select the field(s) you would like to display in the record list table."
-        tooltipText="Help content for summary fields will be added soon."
+        tooltipText="These fields' values appear as columns when records are listed in a table. Pick the fields that best identify a record at a glance, such as a name or site code. Leave empty to use the default record display."
       >
         <Autocomplete
           multiple
@@ -245,7 +245,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Human-Readable ID Field"
         description="A HRID is a human readable label for the record, which will be displayed in the record table. Select a required string field to use as the human-readable ID. You can use a TemplatedStringField to construct complex HRIDs."
-        tooltipText="Help content for HRID selection will be added soon."
+        tooltipText="The Human-Readable ID labels each record in lists and exports. It must be a required string field. For composite IDs (e.g. site code + date), build a Templated String field and select it here."
       >
         <Autocomplete
           fullWidth
