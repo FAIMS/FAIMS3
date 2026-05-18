@@ -124,7 +124,6 @@ export const DesignPanel = () => {
   }, [visibleTypes.length, untickedForms.length, compactAddTab]);
 
   const maxKeys = Object.keys(viewSets).length;
-  const isDass = theme.designerMeta?.isDass ?? false;
 
   const baseTabRootSx = {
     '&.MuiTab-root': {
@@ -156,16 +155,16 @@ export const DesignPanel = () => {
   const visibleTabSx = {
     ...baseTabRootSx,
     '&.Mui-selected': {
-      borderColor: isDass ? 'common.black' : 'secondary.main',
-      color: 'common.white',
-      backgroundColor: isDass ? 'common.black' : 'primary.main',
+      borderColor: 'primary.main',
+      color: 'primary.contrastText',
+      backgroundColor: 'primary.main',
       fontWeight: 800,
-      boxShadow: isDass ? 'none' : (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
+      boxShadow: (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
     },
     '&:hover': {
-      color: isDass ? 'common.white' : 'primary.contrastText',
+      color: 'primary.contrastText',
       opacity: 1,
-      backgroundColor: isDass ? '#111111' : 'primary.dark',
+      backgroundColor: 'primary.dark',
     },
   };
 
@@ -360,13 +359,6 @@ export const DesignPanel = () => {
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
-            TabIndicatorProps={{
-              sx: {
-                display: isDass ? 'block' : 'none',
-                height: 3,
-                backgroundColor: 'secondary.main',
-              },
-            }}
             sx={{
               minHeight: 48,
               ml: 0,

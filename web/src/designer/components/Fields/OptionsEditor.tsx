@@ -1079,19 +1079,10 @@ export const OptionsEditor = ({
                         minWidth: 56,
                         height: 40,
                         px: 2,
-                        textTransform: 'none',
                         fontWeight: 600,
                         borderWidth: 1.5,
-                        color: theme.designerMeta.isDass ? 'common.white' : 'primary.main',
-                        borderColor: theme.designerMeta.isDass ? 'common.black' : 'primary.main',
-                        backgroundColor: theme.designerMeta.isDass
-                          ? 'common.black'
-                          : 'transparent',
                         '&:hover': {
                           borderWidth: 1.5,
-                          backgroundColor: theme.designerMeta.isDass
-                            ? 'rgba(0,0,0,0.88)'
-                            : 'action.hover',
                         },
                         '&.Mui-disabled': {
                           backgroundColor: 'action.disabledBackground',

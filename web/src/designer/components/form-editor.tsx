@@ -988,12 +988,7 @@ export const FormEditor = ({
                           borderColor: isActive
                             ? 'divider'
                             : 'transparent',
-                          backgroundColor: isActive
-                            ? (t =>
-                                t.designerMeta.isDass
-                                  ? 'rgba(17,24,39,0.08)'
-                                  : 'rgba(17,24,39,0.045)')
-                            : 'transparent',
+                          backgroundColor: isActive ? 'rgba(17,24,39,0.08)' : 'transparent',
                           transition:
                             'background-color 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease',
                           '& .section-step-dot': {
@@ -1004,12 +999,7 @@ export const FormEditor = ({
                               : '0 1px 2px rgba(0,0,0,0.11)',
                           },
                           '&:hover': {
-                            backgroundColor: isActive
-                              ? (t =>
-                                  t.designerMeta.isDass
-                                    ? 'rgba(17,24,39,0.11)'
-                                    : 'rgba(17,24,39,0.06)')
-                              : 'rgba(17,24,39,0.02)',
+                            backgroundColor: isActive ? 'rgba(17,24,39,0.11)' : 'rgba(17,24,39,0.02)',
                             borderColor: isActive ? 'divider' : 'rgba(17,24,39,0.08)',
                             boxShadow: '0 4px 10px rgba(15,23,32,0.10)',
                             '& .section-step-dot': {

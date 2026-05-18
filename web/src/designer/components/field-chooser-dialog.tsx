@@ -198,10 +198,8 @@ export default function FieldChooserDialog({
               '& .MuiSvgIcon-root': {color: 'inherit'},
             },
             '& .MuiTab-root.Mui-selected': {
-              bgcolor: theme.designerMeta.isDass
-                ? theme.palette.common.black
-                : theme.palette.primary.main,
-              color: theme.palette.common.white,
+              bgcolor: 'primary.main',
+              color: 'common.white',
             },
           }}
         >
@@ -389,16 +387,10 @@ export default function FieldChooserDialog({
                                 height: 22,
                                 fontWeight: 800,
                                 borderRadius: '4px 10px 10px 4px',
-                                bgcolor: theme.designerMeta.isDass
-                                  ? '#F2C75C'
-                                  : '#F4C542',
-                                color: theme.designerMeta.isDass
-                                  ? '#1A1A1A'
-                                  : '#111111',
+                                bgcolor: '#F4C542',
+                                color: '#111111',
                                 border: '1px solid',
-                                borderColor: theme.designerMeta.isDass
-                                  ? '#D2A63B'
-                                  : '#C79A1D',
+                                borderColor: '#C79A1D',
                                 '& .MuiChip-icon': {
                                   color: 'inherit',
                                 },
