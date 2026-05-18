@@ -142,12 +142,12 @@ export const DesignPanel = () => {
       paddingX: {xs: 1, sm: 1.5},
       paddingY: 1,
       textTransform: 'uppercase',
-      fontWeight: 750,
+      fontWeight: 600,
       fontSize: '0.72rem',
       lineHeight: 1.2,
       whiteSpace: 'normal',
       textAlign: 'center',
-      color: 'text.secondary',
+      color: 'text.primary',
       flexShrink: 0,
     },
   } as const;
@@ -175,17 +175,9 @@ export const DesignPanel = () => {
   // the active-indicator colour is always consistent across BSS/fieldmark/default.
   const untickedTabSx = {
     ...baseTabRootSx,
-    '&.MuiTab-root': {
-      ...baseTabRootSx['&.MuiTab-root'],
-      opacity: 0.6, // de-emphasise to signal "hidden from app"
-    },
-    '&.Mui-selected': {
-      ...selectedTabSx,
-      opacity: 1, // restore full opacity when this tab is active in editor
-    },
+    '&.Mui-selected': selectedTabSx,
     '&:not(.Mui-selected):hover': {
       color: 'primary.main',
-      opacity: 0.85,
       backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.08),
     },
   };
