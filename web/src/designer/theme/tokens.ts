@@ -1,6 +1,6 @@
 /**
  * Canonical design-token contract shared by every designer theme variant.
- * Each theme file (faims-tokens.ts, dass-tokens.ts) must satisfy this type.
+ * Each theme file (faims-tokens.ts, bss-tokens.ts) must satisfy this type.
  */
 export type DesignerThemeTokens = {
   // ── Backgrounds ─────────────────────────────────────────────────────────
@@ -39,8 +39,8 @@ export type DesignerThemeTokens = {
   deleteButtonColor: string;
   /** Success / positive-action green (checkboxes, Add buttons, completed steps) */
   successMain: string;
-  /** Colour for info-tooltip icons */
-  tooltipIconColor: string;
+  /** Info palette main colour */
+  infoMain: string;
 
   // ── Neutral greyscale ───────────────────────────────────────────────────
   darkGrey: string;

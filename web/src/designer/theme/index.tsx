@@ -16,21 +16,21 @@
  * Filename: index.tsx
  * Description:
  *   Designer MUI theme factory.
- *   Token values live in faims-tokens.ts / dass-tokens.ts.
- *   Component code that needs to branch on theme variant should read
- *   `theme.designerMeta.isDass` or `theme.designerMeta.tokens.*`.
+ *   Themes are selected via VITE_THEME (same env var as the main app).
+ *   - default / fieldmark → FAIMS green palette (original designer theme)
+ *   - bssTheme            → BSS black/red palette (bss-tokens.ts)
  */
 
 import {createTheme, colors} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import type {DesignerThemeTokens} from './tokens';
 import {faimsTokens} from './faims-tokens';
-import {dassTokens} from './dass-tokens';
+import {bssTokens} from './bss-tokens';
 
 // ── Re-export token types so consumers don't need a deep import ────────────
 export type {DesignerThemeTokens} from './tokens';
 export {faimsTokens} from './faims-tokens';
-export {dassTokens} from './dass-tokens';
+export {bssTokens} from './bss-tokens';
 
 // ── MUI theme augmentation ────────────────────────────────────────────────
 declare module '@mui/material/styles' {
@@ -51,17 +51,14 @@ declare module '@mui/material/styles' {
   }
 }
 
-// ── Theme name union ──────────────────────────────────────────────────────
-export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | 'dass' | string;
+// ── Theme name union — matches VITE_THEME values in lib/theme.ts ─────────
+export type DesignerThemeName = 'default' | 'bssTheme' | 'fieldmark' | string;
 
 const resolveTokens = (
   themeName: DesignerThemeName
 ): {tokens: DesignerThemeTokens; isDass: boolean} => {
-  // We map bssTheme/dassTheme/dass to the same token family so brand switching
-  // stays centralized here and component code only checks `theme.designerMeta`.
-  const isDass =
-    themeName === 'bssTheme' || themeName === 'dassTheme' || themeName === 'dass';
-  return {tokens: isDass ? dassTokens : faimsTokens, isDass};
+  const isDass = themeName === 'bssTheme';
+  return {tokens: isDass ? bssTokens : faimsTokens, isDass};
 };
 
 export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
@@ -92,7 +89,7 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         main: tokens.successMain,
       },
       info: {
-        main: tokens.tooltipIconColor,
+        main: tokens.infoMain,
       },
       text: {
         primary: colors.blueGrey[900],
