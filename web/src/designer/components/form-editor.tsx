@@ -502,17 +502,17 @@ export const FormEditor = ({
 
   return (
     <Stack
-      direction={{xs: 'column', md: 'row'}}
+      direction="row"
       spacing={2}
       alignItems="stretch"
-      sx={[designerResponsiveSectionSx, {width: '100%'}]}
+      sx={[designerResponsiveSectionSx, {width: '100%', minWidth: 0, flexWrap: 'nowrap'}]}
     >
       <Grid
         container
         rowSpacing={1.25}
         columnSpacing={0}
         pt={1.25}
-        sx={{flex: 1, minWidth: 0}}
+        sx={{flex: '1 1 0%', minWidth: 0}}
       >
         <Grid item xs={12}>
           <Stack spacing={1.5} py={0.75}>
@@ -1196,16 +1196,16 @@ export const FormEditor = ({
       {previewForm && uiSpecInternal && (
         <Box
           sx={{
-            width: {xs: '100%', md: '42%', xl: '40%'},
-            minWidth: {md: 320},
-            maxWidth: {md: 540},
+            width: {xs: '38%', md: '42%', xl: '40%'},
+            minWidth: {xs: 280, md: 320},
+            maxWidth: {xs: 540, md: 540},
             flexShrink: 0,
             alignSelf: 'flex-start',
-            position: {md: 'sticky'},
-            top: {md: 12},
-            borderLeft: {md: '2px solid'},
-            borderColor: {md: 'divider'},
-            pl: {md: 2.5},
+            position: 'sticky',
+            top: 12,
+            borderLeft: '2px solid',
+            borderColor: 'divider',
+            pl: 2.5,
           }}
         >
           {/* Preview frame */}
