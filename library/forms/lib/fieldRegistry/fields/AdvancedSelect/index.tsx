@@ -37,7 +37,6 @@ import TreeView from '@mui/lab/TreeView';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
 import React from 'react';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
