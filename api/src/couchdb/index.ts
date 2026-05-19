@@ -40,6 +40,7 @@ import {
   initTeamsDB,
   initTemplatesDB,
   InvitesDB,
+  GetDbById,
   migrateDbs,
   MigrationsDB,
   PeopleDB,
@@ -387,6 +388,40 @@ export const getDataDb = async (
 };
 
 /**
+ * Opens an authenticated CouchDB handle for migrations and other server-side
+ * callers. Per-project {@link DatabaseType.DATA} and {@link DatabaseType.METADATA}
+ * databases use {@link id} as the project ID; singleton databases ignore {@link id}.
+ */
+export const getDbById: GetDbById = async ({dbType, id}) => {
+  switch (dbType) {
+    case DatabaseType.AUTH:
+      return getAuthDB();
+    case DatabaseType.DATA:
+      return getDataDb(id as ProjectID);
+    case DatabaseType.DIRECTORY:
+      return getDirectoryDB();
+    case DatabaseType.INVITES:
+      return getInvitesDB();
+    case DatabaseType.METADATA:
+      return getMetadataDb(id as ProjectID);
+    case DatabaseType.PEOPLE:
+      return getUsersDB();
+    case DatabaseType.PROJECTS:
+      return localGetProjectsDb();
+    case DatabaseType.TEMPLATES:
+      return getTemplatesDb();
+    case DatabaseType.TEAMS:
+      return getTeamsDB();
+    default: {
+      const _exhaustive: never = dbType;
+      throw new Exceptions.InternalSystemError(
+        `Unsupported database type for getDbById: ${_exhaustive}`
+      );
+    }
+  }
+};
+
+/**
  * Initialises the database level configuration for a project's metadata DB. Can
  * create the DB if it doesn't already exist.
  */
@@ -685,7 +720,12 @@ export const initialiseAndMigrateDBs = async ({
 
   // Migrate these first
   const migrationsDb = getMigrationDb();
-  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+  await migrateDbs({
+    dbs,
+    migrationDb: migrationsDb,
+    userId: 'system',
+    getDbById,
+  });
 
   // Now migrate all data/metadata DBs
   const projects = await getAllProjectsDirectory();
@@ -709,7 +749,12 @@ export const initialiseAndMigrateDBs = async ({
       },
     ]);
   }
-  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+  await migrateDbs({
+    dbs,
+    migrationDb: migrationsDb,
+    userId: 'system',
+    getDbById,
+  });
 
   // For users, we also establish an admin user, if not already present
   // do this after all migrations so we know the db is up to date

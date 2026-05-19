@@ -1,3 +1,5 @@
+import type {MigrationContext} from './hooks';
+
 // Check if we are testing
 export const IS_TESTING = process.env.NODE_ENV === 'test';
 
@@ -46,9 +48,12 @@ export type MigrationFuncReturn =
 
 export type MigrationFuncRecordInput = PouchDB.Core.ExistingDocument<any>;
 
+export type {GetDbById, GetDbByIdParams, MigrationContext} from './hooks';
+
 export type MigrationFunc = (
-  record: MigrationFuncRecordInput
-) => MigrationFuncReturn;
+  record: MigrationFuncRecordInput,
+  context?: MigrationContext
+) => MigrationFuncReturn | Promise<MigrationFuncReturn>;
 
 export type MigrationDetails = {
   dbType: DATABASE_TYPE;

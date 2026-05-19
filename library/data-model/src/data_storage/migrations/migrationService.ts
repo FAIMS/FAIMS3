@@ -6,11 +6,13 @@ import {
   MigrationsDBDocument,
   MigrationsDBFields,
 } from '../migrationsDB';
+import {GetDbById} from './hooks';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
 import {
   DATABASE_TYPE,
   DatabaseType,
   IS_TESTING,
+  MigrationContext,
   MigrationDetails,
   MigrationFunc,
 } from './types';
@@ -156,20 +158,24 @@ export function identifyMigrations({
  * @param {Object} params - The parameters object.
  * @param {DatabaseInterface} params.db - The PouchDB database to migrate.
  * @param {MigrationFunc} params.migrationFunc - The migration function to apply to each document.
+ * @param {GetDbById} params.getDbById - Opens other databases by type and id for cross-db migrations.
  * @returns {Object} - An object containing an array of issues encountered during migration.
  */
 export async function performMigration({
   db,
   migrationFunc,
+  getDbById,
 }: {
   db: DatabaseInterface;
   migrationFunc: MigrationFunc;
+  getDbById: GetDbById;
 }): Promise<{
   issues: string[];
   processedCount: number;
   writtenCount: number;
   deletedCount: number;
 }> {
+  const context: MigrationContext = {getDbById};
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
   let writtenCount = 0; // Track number of documents that were actually updated
@@ -213,7 +219,7 @@ export async function performMigration({
 
         try {
           // Apply the migration function to the document
-          const result = migrationFunc(doc);
+          const result = await Promise.resolve(migrationFunc(doc, context));
 
           // If the migration indicates a write is needed, update the document
           if (result.action === 'update' && result.updatedRecord) {
@@ -273,16 +279,20 @@ export async function performMigration({
  * @param dbs - Array of database objects to migrate.
  * @param migrationDb - The database that stores migration documents.
  * @param userId - The user ID to record for the migration log
+ * @param getDbById - Opens other databases by type and id for cross-db migrations
  */
 export async function migrateDbs({
   dbs,
   migrationDb,
   userId = 'system',
+  getDbById,
 }: {
   dbs: {dbType: DatabaseType; dbName: string; db: DatabaseInterface}[];
   migrationDb: MigrationsDB;
   userId?: string;
+  getDbById: GetDbById;
 }): Promise<void> {
+  const migrationContext: MigrationContext = {getDbById};
   // Process each database one by one
   for (const {dbType, dbName, db} of dbs) {
     // Track migration start time
@@ -369,6 +379,7 @@ export async function migrateDbs({
         const result = await performMigration({
           db,
           migrationFunc: migrationDetail.migrationFunction,
+          getDbById: migrationContext.getDbById,
         });
 
         // Log stats about this migration step
