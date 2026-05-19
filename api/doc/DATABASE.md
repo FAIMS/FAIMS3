@@ -50,9 +50,6 @@ Every notebook has it's own document with the notebook name as the `id` containi
   "_id": "blue_mountains_survey",
   "_rev": "1-d3aa99ada9503360b611b060bee1a72b",
   "name": "Blue-Mountains-Survey",
-  "metadataDb": {
-    "db_name": "metadata-blue_mountains_survey"
-  },
   "dataDb": {
     "db_name": "data-blue_mountains_survey"
   },

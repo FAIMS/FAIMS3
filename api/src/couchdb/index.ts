@@ -33,7 +33,6 @@ import {
   initDataDB,
   initDirectoryDB,
   initInvitesDB,
-  initMetadataDB,
   initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
@@ -287,60 +286,6 @@ export const getTeamsDB = (): TeamsDB => {
 };
 
 /**
- * Returns the metadata DB for a given project - involves fetching the project
- * doc and then fetching the corresponding metadata db
- * @param projectID The project Id to use
- * @returns The metadata DB for this project
- */
-export const getMetadataDb = async (
-  projectID: ProjectID,
-): Promise<DatabaseInterface<ProjectMetaObject>> => {
-  // Gets the projects DB
-  const projectsDB = localGetProjectsDb();
-  if (!projectsDB) {
-    throw new Exceptions.InternalSystemError(
-      "Could not fetch the projects DB. Contact system administrator.",
-    );
-  }
-
-  // Get the project doc for the given ID
-  const projectDoc = await projectsDB.get(projectID);
-
-  // 404 if project doc not found
-  if (!projectDoc) {
-    throw new Exceptions.ItemNotFoundException(
-      "Cannot find the given project ID in the projects database.",
-    );
-  }
-
-  // Now get the metadata DB from the project document (and be backwards
-  // compatible)
-  let db: PossibleConnectionInfo;
-  // TODO this should be removed
-  db = (projectDoc as any).metadataDb;
-  if (!db) {
-    const doc = projectDoc as any;
-    db = doc.metadata_db;
-    if (!db) {
-      throw new Exceptions.InternalSystemError(
-        "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting.",
-      );
-    }
-  }
-
-  // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + "/" + db.db_name;
-  const pouch_options = pouchOptions();
-
-  // Authorise against this DB
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    pouch_options.auth = LOCAL_COUCHDB_AUTH;
-  }
-
-  return new PouchDB(dbUrl, pouch_options);
-};
-
-/**
  * Returns the data DB for a given project - involves fetching the project
  * doc and then fetching the corresponding data db
  * @param projectID The project ID to use
@@ -404,8 +349,6 @@ export const getDbById: GetDbById = async ({ dbType, id }) => {
       return getDirectoryDB();
     case DatabaseType.INVITES:
       return getInvitesDB();
-    case DatabaseType.METADATA:
-      return getMetadataDb(id as ProjectID);
     case DatabaseType.PEOPLE:
       return getUsersDB();
     case DatabaseType.PROJECTS:
@@ -421,38 +364,6 @@ export const getDbById: GetDbById = async ({ dbType, id }) => {
       );
     }
   }
-};
-
-/**
- * Initialises the database level configuration for a project's metadata DB. Can
- * create the DB if it doesn't already exist.
- */
-export const initialiseMetadataDb = async ({
-  projectId,
-  force = false,
-}: {
-  projectId: string;
-  force?: boolean;
-}): Promise<DatabaseInterface<ProjectMetaObject>> => {
-  // Are we in a testing environment?
-  const isTesting = process.env.NODE_ENV === "test";
-
-  // Get the metadata DB
-  const metaDb = await getMetadataDb(projectId);
-
-  try {
-    await couchInitialiser({
-      db: metaDb,
-      content: initMetadataDB({ projectId }),
-      config: { applyPermissions: !isTesting, forceWrite: force },
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      `An error occurred while initialising the metadata DB for project ${projectId}!... ${e}`,
-    );
-  }
-
-  return metaDb;
 };
 
 /**
@@ -666,7 +577,6 @@ export const initialiseDbAndKeys = async ({
     const projectId = project._id;
 
     // Now initialise the DBs (potentially updating security documents etc)
-    await initialiseMetadataDb({ projectId, force });
     await initialiseDataDb({ projectId, force });
   }
 
@@ -742,17 +652,11 @@ export const initialiseAndMigrateDBs = async ({
     // Project ID
     const projectId = project._id;
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-    const metadataDb = (await getMetadataDb(projectId)) as DatabaseInterface;
     dbs.concat([
       {
         db: dataDb,
         dbType: DatabaseType.DATA,
         dbName: dataDb.name,
-      },
-      {
-        db: metadataDb,
-        dbType: DatabaseType.METADATA,
-        dbName: metadataDb.name,
       },
     ]);
   }

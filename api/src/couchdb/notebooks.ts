@@ -56,9 +56,7 @@ import {
   NotebookUiSpec,
 } from "@faims3/data-model";
 import {
-  getMetadataDb,
   initialiseDataDb,
-  initialiseMetadataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from ".";
@@ -321,13 +319,7 @@ export const validateDatabases = async () => {
     for (const project of projects) {
       const projectId = project._id;
       if (MIGRATE_NOTEBOOKS_ON_STARTUP && !hasInlineUiSpecification(project)) {
-        const metadata = await getNotebookMetadata(projectId);
-        if (!metadata) {
-          throw new Exceptions.InternalSystemError(
-            "No metadata DB setup for project with ID " + projectId,
-          );
-        }
-        const uiSpec = await getEncodedNotebookUISpec(projectId);
+        const uiSpec = await getProjectUIModel(projectId);
         if (!uiSpec) {
           throw new Exceptions.InternalSystemError(
             "Cannot find UI specification for project with ID " + projectId,
@@ -356,24 +348,17 @@ export const validateDatabases = async () => {
  */
 export const doNotebookMigration = async ({
   projectId,
-  metadata,
   uiSpec,
 }: {
   projectId: string;
-  metadata: any;
-  uiSpec: EncodedProjectUIModel;
+  uiSpec: NotebookUiSpec;
 }) => {
   const { changed, migrated } = migrateNotebook({
-    metadata,
-    "ui-specification": uiSpec,
+    uiSpec,
   });
   // update the notebook if it was changed by migration
   if (changed) {
-    await updateNotebook(
-      projectId,
-      migrated["ui-specification"],
-      migrated.metadata,
-    );
+    await updateProjectUiSpecification(projectId, migrated);
   }
 };
 
@@ -471,38 +456,6 @@ export const updateProjectUiSpecification = async (
 };
 
 /**
- * @deprecated Use {@link updateProjectUiSpecification} for v4 projects.
- * Legacy path: updates metadata DB ui-spec and metadata keys.
- */
-export const updateNotebook = async (
-  projectId: string,
-  uispec: EncodedProjectUIModel,
-  metadata: any,
-) => {
-  const project = await getProjectById(projectId);
-  if (hasInlineUiSpecification(project)) {
-    throw new Exceptions.InvalidRequestException(
-      "Use PUT /api/notebooks/:id/uiSpecification for this survey.",
-    );
-  }
-  const metaDB = await initialiseMetadataDb({
-    projectId,
-    force: true,
-  });
-
-  const existingUISpec = await metaDB.get("ui-specification");
-  const payload = {
-    _id: "ui-specification",
-    _rev: existingUISpec["_rev"],
-    ...uispec,
-  };
-  await safeWriteDocument({ db: metaDB, data: payload });
-  await writeProjectMetadata(metaDB, metadata);
-  await changeNotebookName({ projectId, name: metadata.name });
-  return projectId;
-};
-
-/**
  * Updates the notebook status to the targeted value
  */
 export const changeNotebookName = async ({
@@ -592,16 +545,6 @@ export const deleteNotebook = async (project_id: string) => {
   }
 
   const dataDB = await getDataDB(project_id);
-
-  if ("metadataDb" in projectDoc && projectDoc.metadataDb) {
-    try {
-      const metaDB = await getMetadataDb(project_id);
-      await metaDB.destroy();
-    } catch {
-      // Legacy metadata DB may already be removed
-    }
-  }
-
   await dataDB.destroy();
 
   // remove the project from the projectsDB
@@ -639,79 +582,6 @@ export const writeProjectMetadata = async (
   }
   await safeWriteDocument({ db: metaDB, data: metadata });
   return metadata;
-};
-
-/**
- * getNotebookMetadata -- return metadata for a single notebook from the database
- * @param project_id a project identifier
- * @returns a ProjectDocument object or null if it doesn't exist
- */
-export const getNotebookMetadata = async (
-  project_id: string,
-): Promise<Record<string, unknown> | null> => {
-  const result: Record<string, unknown> = {};
-  const isValid = await validateNotebookID(project_id);
-  if (isValid) {
-    try {
-      // get the metadata from the db
-      const projectDB = await getMetadataDb(project_id);
-      if (projectDB) {
-        const metaDocs = await projectDB.allDocs({ include_docs: true });
-        metaDocs.rows.forEach((doc: any) => {
-          const id: string = doc["id"];
-          if (id && id.startsWith(PROJECT_METADATA_PREFIX)) {
-            const key: string = id.substring(
-              PROJECT_METADATA_PREFIX.length + 1,
-            );
-            result[key] = doc.doc.metadata;
-          }
-        });
-        result.project_id = project_id;
-        return result;
-      } else {
-        console.error("no metadata database found for", project_id);
-      }
-    } catch (error) {
-      console.error("error reading project metadata", project_id, error);
-    }
-  } else {
-    console.log("unknown project", project_id);
-  }
-  return null;
-};
-
-/**
- * getNotebookUISpec -- return metadata for a single notebook from the database
- * @param projectId a project identifier
- * @returns the UISPec of the project or null if it doesn't exist
- */
-export const getEncodedNotebookUISpec = async (
-  projectId: string,
-): Promise<CouchProjectUIModel | null> => {
-  try {
-    const project = await getProjectById(projectId);
-    if (hasInlineUiSpecification(project)) {
-      const uiSpec = project.uiSpecification.uiSpec;
-      return {
-        fields: uiSpec.fields,
-        fviews: uiSpec.views,
-        viewsets: uiSpec.viewsets,
-        visible_types: uiSpec.visible_types,
-      } as CouchProjectUIModel;
-    }
-    const projectDB = await getMetadataDb(projectId);
-    if (projectDB) {
-      const uiSpec = (await projectDB.get("ui-specification")) as any;
-      delete uiSpec._id;
-      delete uiSpec._rev;
-      return uiSpec;
-    } else {
-      console.error("no metadata database found for", projectId);
-    }
-  } catch (error) {
-    console.error("error reading metadata db for project", projectId, error);
-  }
-  return null;
 };
 
 /**
