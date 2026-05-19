@@ -2,13 +2,12 @@ import {
   PROJECT_METADATA_PREFIX,
   UI_SPECIFICATION_NAME,
 } from '../../datamodel/database';
-import {
-  DatabaseInterface,
-  EncodedProjectUIModel,
-  EncodedUISpecificationSchema,
-  ProjectUIModel,
-} from '../../types';
+import {DatabaseInterface, ProjectUIModel} from '../../types';
 import type {NotebookDefinition, NotebookUiSpec} from '../../uiSpecification/types';
+import {
+  EncodedUISpecification,
+  EncodedUISpecificationSchema,
+} from '../templatesDB/types';
 import {migrateNotebook} from './notebookMigrations';
 
 /** Loose metadata bag as stored on templates or merged from the metadata DB. */
@@ -50,7 +49,7 @@ const LEGACY_KEYS_DROPPED = new Set([
   'sections',
 ]);
 
-export function emptyEncodedUiSpec(): EncodedProjectUIModel {
+export function emptyEncodedUiSpec(): EncodedUISpecification {
   return {fields: {}, fviews: {}, viewsets: {}, visible_types: []};
 }
 
@@ -62,7 +61,7 @@ export function emptyEncodedUiSpec(): EncodedProjectUIModel {
  * cutover.
  */
 function decodeLegacyEncodedUiSpec(
-  rawUiSpec: EncodedProjectUIModel
+  rawUiSpec: EncodedUISpecification
 ): Pick<ProjectUIModel, 'fields' | 'views' | 'viewsets' | 'visible_types'> {
   return {
     fields: rawUiSpec.fields,
@@ -82,7 +81,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  */
 export function parseEncodedUiSpecDocument(
   doc: unknown
-): EncodedProjectUIModel {
+): EncodedUISpecification {
   if (!isPlainObject(doc)) {
     throw new Error('UI specification document must be a JSON object');
   }
@@ -174,10 +173,10 @@ export async function readLegacyNotebookFromMetadataDb(
   _projectId: string
 ): Promise<{
   metadata: LegacyNotebookMetadata;
-  encodedUiSpec?: EncodedProjectUIModel;
+  encodedUiSpec?: EncodedUISpecification;
 }> {
   const metadata: LegacyNotebookMetadata = {};
-  let encodedUiSpec: EncodedProjectUIModel | undefined;
+  let encodedUiSpec: EncodedUISpecification | undefined;
 
   const metaDocs = await metaDB.allDocs({include_docs: true});
   for (const row of metaDocs.rows) {
@@ -218,7 +217,7 @@ export function buildSurveyNotebookDefinitionFromLegacy({
   encodedUiSpec,
 }: {
   legacyMetadata: LegacyNotebookMetadata;
-  encodedUiSpec?: EncodedProjectUIModel;
+  encodedUiSpec?: EncodedUISpecification;
 }): NotebookDefinition {
   const notebook = {
     metadata: {...legacyMetadata},
@@ -227,7 +226,9 @@ export function buildSurveyNotebookDefinitionFromLegacy({
 
   const {migrated} = migrateNotebook(notebook);
   const migratedMeta = migrated.metadata ?? {};
-  const migratedEncoded = migrated['ui-specification'] ?? emptyEncodedUiSpec();
+  const migratedEncoded = EncodedUISpecificationSchema.parse(
+    migrated['ui-specification'] ?? emptyEncodedUiSpec()
+  );
   const decodedUiSpec = decodeLegacyEncodedUiSpec(migratedEncoded);
 
   const schemaVersion = stringOrEmpty(migratedMeta.schema_version) || '3.0';

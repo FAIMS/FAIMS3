@@ -1,5 +1,5 @@
 import {Resource, ResourceRole, Role, RoleScope} from '../../permission';
-import {EncodedProjectUIModel} from '../../types';
+import {EncodedUISpecification} from '../templatesDB/types';
 import {
   AuthRecordV1ExistingDocumentSchema,
   AuthRecordV2ExistingDocumentSchema,
@@ -484,7 +484,7 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
     version: inputDoc.version,
 
     // Pull out name from metadata (defaulting in weird cases to a suitable ID)
-    name: inputDoc.metadata?.name ?? `template-${inputDoc._id}`,
+    name: (inputDoc.metadata as {name?: string})?.name ?? `template-${inputDoc._id}`,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -500,7 +500,7 @@ export const templatesV2toV3Migration: MigrationFunc = doc => {
   const inputDoc =
     doc as unknown as PouchDB.Core.ExistingDocument<TemplateV2Fields>;
   const meta = {...(inputDoc.metadata ?? {})};
-  const ps = meta.project_status;
+  const ps = (meta as {project_status?: string}).project_status;
   const archived = ps === 'archived';
   if ('project_status' in meta) {
     delete meta.project_status;

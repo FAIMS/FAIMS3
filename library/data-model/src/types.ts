@@ -731,30 +731,3 @@ export const CouchDocumentFieldsSchema = z.object({
   _deleted: z.boolean().optional(),
 });
 export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
-
-// ========================
-// UI SCHEMA AND METADATA
-// ========================
-// TODO use zod more effectively here to enhance validation
-export type ProjectMetadata = {[key: string]: any};
-
-// The UI specification
-// TODO use Zod for existing UI schema models to validate. Note that this is a
-// schema for an JSON notebook (fviews, not views). We refine this model so that
-// it cannot be undefined - Zod.custom by default allows undefined to validate
-export const EncodedUISpecificationSchema = z
-  .custom<EncodedProjectUIModel>()
-  .refine(val => !!val);
-export type EncodedUISpecification = z.infer<
-  typeof EncodedUISpecificationSchema
->;
-
-export const UISpecificationSchema = z
-  .custom<ProjectUIModel>()
-  .refine(val => !!val);
-export type UISpecification = z.infer<typeof UISpecificationSchema>;
-
-// Metadata schema
-// TODO use Zod for existing UI schema models to validate
-export const NotebookMetadataSchema = z.record(z.any());
-export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;

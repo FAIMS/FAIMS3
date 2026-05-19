@@ -1,7 +1,29 @@
 import {z} from 'zod';
-import {DatabaseInterface, EncodedUISpecificationSchema} from '../../types';
+import {DatabaseInterface} from '../../types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {NotebookDefinitionSchema} from '../../uiSpecification';
+
+// =============
+// Legacy encoded UI spec (template v1–v4, metadata DB `ui-specification`)
+// =============
+
+/**
+ * Zod schema for the legacy wire-format UI specification (`fviews`, not `views`).
+ *
+ * Intentional duplicate of the former `EncodedUISpecificationSchema` in `types.ts`
+ * — kept here so template version schemas and migrations remain self-contained when
+ * application encode/decode is removed.
+ */
+export const EncodedUISpecificationSchema = z
+  .object({
+    fields: z.record(z.any()),
+    fviews: z.record(z.any()),
+    viewsets: z.record(z.any()),
+    visible_types: z.array(z.string()),
+  })
+  .passthrough();
+
+export type EncodedUISpecification = z.infer<typeof EncodedUISpecificationSchema>;
 
 // =============
 // V1 Definition

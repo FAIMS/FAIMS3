@@ -785,6 +785,21 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   return _nanoInstance;
 };
 
+/** Default Couch metadata database name prefix (`metadata-{projectId}`). */
+export const METADATA_DATABASE_NAME_PREFIX = 'metadata-';
+
+/** Lists all database names on the configured CouchDB server. */
+export const listCouchDatabaseNames = async (): Promise<string[]> => {
+  const nano = await getNanoInstance();
+  return nano.db.list();
+};
+
+/** Permanently deletes a CouchDB database by name. */
+export const destroyCouchDatabase = async (dbName: string): Promise<void> => {
+  const nano = await getNanoInstance();
+  await nano.db.destroy(dbName);
+};
+
 /**
  * Returns the data DB for a given project using nano-couchdb
  * @param projectID The project ID to use

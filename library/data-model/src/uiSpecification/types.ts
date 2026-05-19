@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {UISpecificationSchema} from '../types';
+import {ProjectUIModel} from '../types';
 
 export type ValuesObject = {[fieldName: string]: any};
 export type ViewsetId = string;
@@ -44,6 +44,12 @@ export const NotebookMetadataSchema = z.object({
   custom: z.record(z.any()).optional(),
 });
 export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
+
+// TODO define this e2e with zod
+export const UISpecificationSchema = z
+  .custom<ProjectUIModel>()
+  .refine(val => !!val);
+export type UISpecification = z.infer<typeof UISpecificationSchema>;
 
 /**
  * Inlined former notebook JSON + metadata DB merge.

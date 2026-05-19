@@ -13,11 +13,11 @@
 // limitations under the License.
 
 // Minimal types for notebook structure
-export type NotebookMetadata = {
+type DeprecatedNotebookMetadata = {
   [key: string]: unknown;
 };
 
-export type NotebookUISpec = {
+type DeprecatedNotebookUISpec = {
   fields: {[key: string]: any};
   fviews: {[key: string]: any};
   viewsets: {[key: string]: any};
@@ -25,8 +25,8 @@ export type NotebookUISpec = {
 };
 
 export type NotebookV1 = {
-  metadata: NotebookMetadata;
-  'ui-specification': NotebookUISpec;
+  metadata: DeprecatedNotebookMetadata;
+  'ui-specification': DeprecatedNotebookUISpec;
 };
 
 /**

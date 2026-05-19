@@ -581,6 +581,8 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         name: 'My tpl',
         description: 'Design purpose',
         createdBy: 'admin',
+        createdAt: '1970-01-01T00:00:00.000Z',
+        updatedAt: '1970-01-01T00:00:00.000Z',
         archived: false,
         isPublic: true,
         ownedByTeamId: 'team-z',
@@ -603,7 +605,7 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
             custom: {org_tag: 'field-school'},
           },
         },
-      } as PouchDB.Core.ExistingDocument<TemplateV5Fields>,
+      } satisfies PouchDB.Core.ExistingDocument<TemplateV5Fields>,
     },
     equalityFunction: (actual, expected) => {
       expect(actual.createdAt).toEqual(expect.any(String));
