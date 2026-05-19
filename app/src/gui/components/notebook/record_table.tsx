@@ -43,7 +43,7 @@ import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {buildHydrateKeys} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
-import {prettifyFieldName} from '../../../utils/formUtilities';
+import {formatDate, prettifyFieldName} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
 import CircularLoading from '../ui/circular_loading';
@@ -285,9 +285,7 @@ function getDataForColumn({
     if ('createdBy' in record) {
       switch (column) {
         case 'LAST_UPDATED':
-          return record.updated
-            ? record.updated.toLocaleString().replace('T', ' ')
-            : fallback;
+          return record.updated ? formatDate(record.updated) : fallback;
 
         case 'LAST_UPDATED_BY':
           return record.updatedBy || fallback;
@@ -296,9 +294,7 @@ function getDataForColumn({
           return record.conflicts ? 'Yes' : 'No';
 
         case 'CREATED':
-          return record.created
-            ? record.created.toLocaleString().replace('T', ' ')
-            : fallback;
+          return record.created ? formatDate(record.created) : fallback;
 
         case 'CREATED_BY':
           return record.createdBy || fallback;
@@ -375,8 +371,8 @@ export function buildColumnsFromSummaryFields({
         type: 'string',
         filterable: false,
         flex: 1,
-        valueGetter: (params: any) => {
-          const data = params?.row?.data ?? {};
+        valueGetter: (value: any, row: any) => {
+          const data = row?.data ?? {};
           return getDisplayDataFromRecordMetadata({
             field,
             data: data,
@@ -414,8 +410,8 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'dateTime',
-        valueGetter: (params: any) => {
-          const rawValue = params.row.updated;
+        valueGetter: (value: any, row: any) => {
+          const rawValue = row.updated;
           return rawValue ? new Date(rawValue) : null;
         },
       };
@@ -424,9 +420,9 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        valueGetter: (params: any) => {
+        valueGetter: (value: any, row: any) => {
           return getDataForColumn({
-            record: params.row,
+            record: row,
             column: columnType,
             uiSpecification,
           });
@@ -457,9 +453,9 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        valueGetter: (params: any) => {
+        valueGetter: (value: any, row: any) => {
           return getDataForColumn({
-            record: params.row,
+            record: row,
             column: columnType,
             uiSpecification,
           });
