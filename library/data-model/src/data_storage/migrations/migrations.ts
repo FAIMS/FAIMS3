@@ -1,4 +1,5 @@
 import {Resource, ResourceRole, Role, RoleScope} from '../../permission';
+import {EncodedProjectUIModel} from '../../types';
 import {
   AuthRecordV1ExistingDocumentSchema,
   AuthRecordV2ExistingDocumentSchema,
@@ -42,6 +43,13 @@ import {
   MigrationDetails,
   MigrationFunc,
 } from './types';
+import {
+  buildSurveyNotebookDefinitionFromLegacy,
+  deriveRootDescription,
+  migrationTimestamps,
+  readLegacyNotebookFromMetadataDb,
+} from './uiSpecificationMigration';
+import {resolveMigrationCreatedBy} from './hooks';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -333,20 +341,56 @@ export const projectsV2toV3Migration: MigrationFunc = doc => {
 };
 
 /**
- * Projects DB v4 — scaffold migration. Copy/transform v3 fields into the v4
- * document shape; extend when {@link ProjectV4Fields} gains new properties.
+ * Projects DB v4 — inlines metadata DB + `ui-specification` into
+ * {@link ProjectV4Fields.uiSpecification}; drops `metadataDb`.
  */
-export const projectsV3toV4Migration: MigrationFunc = doc => {
+export const projectsV3toV4Migration: MigrationFunc = async (doc, context) => {
   const input =
     doc as unknown as PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+
+  if (!input.metadataDb?.db_name) {
+    throw new Error(
+      `Project ${input._id} has no metadataDb; cannot migrate to projects DB v4.`
+    );
+  }
+
+  if (!context?.getDbById) {
+    throw new Error(
+      `projectsV3toV4Migration requires MigrationContext.getDbById (project ${input._id}).`
+    );
+  }
+
+  const metaDB = await context.getDbById({
+    dbType: DatabaseType.METADATA,
+    id: input._id,
+  });
+
+  const {metadata: legacyMetadata, encodedUiSpec} =
+    await readLegacyNotebookFromMetadataDb(metaDB, input._id);
+
+  const name =
+    input.name?.trim() ||
+    String(legacyMetadata.name ?? '').trim() ||
+    input._id;
+
+  const uiSpecification = buildSurveyNotebookDefinitionFromLegacy({
+    legacyMetadata,
+    encodedUiSpec,
+  });
+
+  const {createdAt, updatedAt} = migrationTimestamps();
 
   const outputDoc: PouchDB.Core.ExistingDocument<ProjectV4Fields> = {
     _id: input._id,
     _rev: input._rev,
-    name: input.name,
+    name,
+    description: deriveRootDescription(legacyMetadata),
     status: input.status,
     dataDb: input.dataDb,
-    metadataDb: input.metadataDb,
+    createdBy: resolveMigrationCreatedBy(context),
+    createdAt,
+    updatedAt,
+    uiSpecification,
     ...(input.ownedByTeamId !== undefined
       ? {ownedByTeamId: input.ownedByTeamId}
       : {}),
@@ -499,21 +543,39 @@ export const templatesV3toV4Migration: MigrationFunc = doc => {
 };
 
 /**
- * Templates DB v5 — scaffold migration. Copy/transform v4 fields into the v5
- * document shape; extend when {@link TemplateV5Fields} gains new properties.
+ * Templates DB v5 — inlines `metadata` + `ui-specification` into
+ * {@link TemplateV5Fields.uiSpecification}; adds root audit/description fields.
  */
-export const templatesV4toV5Migration: MigrationFunc = doc => {
+export const templatesV4toV5Migration: MigrationFunc = (doc, context) => {
   const inputDoc =
     doc as unknown as PouchDB.Core.ExistingDocument<TemplateV4Fields>;
+
+  const legacyMetadata = {...(inputDoc.metadata ?? {})};
+  const uiSpecification = buildSurveyNotebookDefinitionFromLegacy({
+    legacyMetadata,
+    encodedUiSpec: inputDoc['ui-specification'],
+  });
+
+  const name =
+    inputDoc.name?.trim() ||
+    String(legacyMetadata.name ?? '').trim() ||
+    `template-${inputDoc._id}`;
+
+  const {createdAt, updatedAt} = migrationTimestamps();
 
   const outputDoc: PouchDB.Core.ExistingDocument<TemplateV5Fields> = {
     _id: inputDoc._id,
     _rev: inputDoc._rev,
-    name: inputDoc.name,
+    name,
+    description: deriveRootDescription(legacyMetadata),
     version: inputDoc.version,
-    metadata: inputDoc.metadata ?? {},
-    'ui-specification': inputDoc['ui-specification'],
-    ownedByTeamId: inputDoc.ownedByTeamId,
+    createdBy: resolveMigrationCreatedBy(context),
+    createdAt,
+    updatedAt,
+    uiSpecification,
+    ...(inputDoc.ownedByTeamId !== undefined
+      ? {ownedByTeamId: inputDoc.ownedByTeamId}
+      : {}),
     archived: inputDoc.archived ?? false,
     isPublic: inputDoc.isPublic ?? false,
   };
@@ -643,7 +705,7 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     from: 3,
     to: 4,
     description:
-      'Projects DB v4 schema (scaffold — copies v3 fields until v4 shape is defined).',
+      'Inlines metadata DB + ui-specification into Project.uiSpecification; adds description and audit fields; removes metadataDb.',
     migrationFunction: projectsV3toV4Migration,
   },
   {
@@ -683,7 +745,7 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     from: 4,
     to: 5,
     description:
-      'Templates DB v5 schema (scaffold — copies v4 fields until v5 shape is defined).',
+      'Inlines template metadata + ui-specification into Template.uiSpecification; adds description and audit fields.',
     migrationFunction: templatesV4toV5Migration,
   },
   {

@@ -47,9 +47,9 @@ export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 
 /**
  * Inlined former notebook JSON + metadata DB merge.
- * `uiSpec` base type = existing **`EncodedProjectUIModel`** (`fields`, `fviews`, `viewsets`, `visible_types`; legacy keys inside `fields` unchanged) + **`settings`**.
+ * `uiSpec` = decoded **`ProjectUIModel`** (`fields`, `views`, `viewsets`, `visible_types`) + **`settings`** + **`schemaVersion`**.
  */
-export const SurveyNotebookUiSpecSchema = UISpecificationSchema.and(
+export const NotebookUiSpecSchema = UISpecificationSchema.and(
   z.object({
     /** UI Functional settings */
     settings: NotebookSettingsSchema,
@@ -57,11 +57,10 @@ export const SurveyNotebookUiSpecSchema = UISpecificationSchema.and(
     schemaVersion: z.string(),
   })
 );
+export type NotebookUiSpec = z.infer<typeof NotebookUiSpecSchema>;
 
-export const SurveyNotebookDefinitionSchema = z.object({
-  uiSpec: SurveyNotebookUiSpecSchema,
+export const NotebookDefinitionSchema = z.object({
+  uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
 });
-export type SurveyNotebookDefinition = z.infer<
-  typeof SurveyNotebookDefinitionSchema
->;
+export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;

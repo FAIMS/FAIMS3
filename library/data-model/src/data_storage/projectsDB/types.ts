@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
-import {SurveyNotebookDefinitionSchema} from '../../uiSpecification';
+import {NotebookDefinitionSchema} from '../../uiSpecification';
 
 /** Couch connection descriptor for per-project data/metadata databases. */
 export const PossibleConnectionInfoSchema: z.ZodType<PossibleConnectionInfo> =
@@ -125,7 +125,7 @@ export const ProjectV4FieldsSchema = z.object({
 
   // UI Specification (now stored in the project) NOTE: This is never 'encoded'
   // anymore - no more fviews etc.
-  uiSpecification: SurveyNotebookDefinitionSchema,
+  uiSpecification: NotebookDefinitionSchema,
 });
 export type ProjectV4Fields = z.infer<typeof ProjectV4FieldsSchema>;
 

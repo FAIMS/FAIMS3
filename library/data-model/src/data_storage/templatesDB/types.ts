@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {DatabaseInterface, EncodedUISpecificationSchema} from '../../types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
-import {SurveyNotebookDefinitionSchema} from '../../uiSpecification';
+import {NotebookDefinitionSchema} from '../../uiSpecification';
 
 // =============
 // V1 Definition
@@ -79,7 +79,7 @@ export type TemplateV4Document = z.infer<typeof TemplateV4DocumentSchema>;
  * Templates DB v5 — extend this schema when adding new persisted template fields.
  * Update alongside {@link templatesV4toV5Migration}.
  */
-export const TemplateV5FieldsSchema = TemplateV4FieldsSchema.extend({
+export const TemplateV5FieldsSchema = z.object({
   // User metadata about templates - update with PUT /:id { ...name, ...description }
   name: z.string(),
   description: z.string(),
@@ -89,6 +89,9 @@ export const TemplateV5FieldsSchema = TemplateV4FieldsSchema.extend({
 
   // Team ownership
   ownedByTeamId: z.string().optional(),
+
+  // Visibility
+  isPublic: z.boolean().default(false),
 
   // New information about templates - tracked automatically
   createdBy: z.string(),
@@ -100,7 +103,7 @@ export const TemplateV5FieldsSchema = TemplateV4FieldsSchema.extend({
 
   // UI Specification (now stored in the project) NOTE: This is never 'encoded'
   // anymore - no more fviews etc.
-  uiSpecification: SurveyNotebookDefinitionSchema,
+  uiSpecification: NotebookDefinitionSchema,
 });
 export type TemplateV5Fields = z.infer<typeof TemplateV5FieldsSchema>;
 
@@ -127,7 +130,7 @@ export type ExistingTemplateDocument = z.infer<
 
 /** Stored template shape without the form payload (matches listing view value). */
 export const TemplateListItemSchema = ExistingTemplateDocumentSchema.omit({
-  'ui-specification': true,
+  uiSpecification: true,
 });
 export type TemplateListItem = z.infer<typeof TemplateListItemSchema>;
 

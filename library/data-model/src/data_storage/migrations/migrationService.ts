@@ -6,15 +6,17 @@ import {
   MigrationsDBDocument,
   MigrationsDBFields,
 } from '../migrationsDB';
-import {GetDbById} from './hooks';
+import {buildMigrationContext} from './hooks';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
 import {
   DATABASE_TYPE,
   DatabaseType,
+  DEFAULT_MIGRATION_CREATED_BY,
   IS_TESTING,
   MigrationContext,
   MigrationDetails,
   MigrationFunc,
+  GetDbById,
 } from './types';
 
 function generateErrorLog({
@@ -159,23 +161,29 @@ export function identifyMigrations({
  * @param {DatabaseInterface} params.db - The PouchDB database to migrate.
  * @param {MigrationFunc} params.migrationFunc - The migration function to apply to each document.
  * @param {GetDbById} params.getDbById - Opens other databases by type and id for cross-db migrations.
+ * @param {string} params.migrationCreatedBy - Username for migrated `createdBy` audit fields.
  * @returns {Object} - An object containing an array of issues encountered during migration.
  */
 export async function performMigration({
   db,
   migrationFunc,
   getDbById,
+  migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
 }: {
   db: DatabaseInterface;
   migrationFunc: MigrationFunc;
   getDbById: GetDbById;
+  migrationCreatedBy?: string;
 }): Promise<{
   issues: string[];
   processedCount: number;
   writtenCount: number;
   deletedCount: number;
 }> {
-  const context: MigrationContext = {getDbById};
+  const context: MigrationContext = buildMigrationContext({
+    getDbById,
+    migrationCreatedBy,
+  });
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
   let writtenCount = 0; // Track number of documents that were actually updated
@@ -280,19 +288,25 @@ export async function performMigration({
  * @param migrationDb - The database that stores migration documents.
  * @param userId - The user ID to record for the migration log
  * @param getDbById - Opens other databases by type and id for cross-db migrations
+ * @param migrationCreatedBy - Username for migrated `createdBy` audit fields on project/template docs
  */
 export async function migrateDbs({
   dbs,
   migrationDb,
   userId = 'system',
   getDbById,
+  migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
 }: {
   dbs: {dbType: DatabaseType; dbName: string; db: DatabaseInterface}[];
   migrationDb: MigrationsDB;
   userId?: string;
   getDbById: GetDbById;
+  migrationCreatedBy?: string;
 }): Promise<void> {
-  const migrationContext: MigrationContext = {getDbById};
+  const migrationContext: MigrationContext = buildMigrationContext({
+    getDbById,
+    migrationCreatedBy,
+  });
   // Process each database one by one
   for (const {dbType, dbName, db} of dbs) {
     // Track migration start time
@@ -380,6 +394,7 @@ export async function migrateDbs({
           db,
           migrationFunc: migrationDetail.migrationFunction,
           getDbById: migrationContext.getDbById,
+          migrationCreatedBy: migrationContext.migrationCreatedBy,
         });
 
         // Log stats about this migration step
