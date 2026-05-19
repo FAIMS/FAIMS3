@@ -1,16 +1,31 @@
 import {DataTable} from '@/components/data-table/data-table';
+import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTemplatesForTeam} from '@/hooks/queries';
-import {Action, globalRolesGrantAction} from '@faims3/data-model';
+import {
+  Action,
+  globalRolesGrantAction,
+  type GetListTemplatesResponse,
+} from '@faims3/data-model';
 import {useNavigate} from '@tanstack/react-router';
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
+import {
+  filterTemplatesByVisibility,
+  PUBLIC_TEMPLATE_ROW_CLASS,
+  TemplateVisibilityFilterSelect,
+  type TemplateVisibilityFilterValue,
+} from '@/components/tables/template-visibility-filter';
+
+type TemplateListRow = GetListTemplatesResponse['templates'][number];
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
   const {isPending, data} = useGetTemplatesForTeam({user, teamId});
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<TemplateVisibilityFilterValue>('all');
 
   // can the user see the add button?
   const canAddTemplateInTeam = useIsAuthorisedTo({
@@ -36,11 +51,25 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
     [user?.decodedToken]
   );
 
+  const filteredTemplates = useMemo(
+    () => filterTemplatesByVisibility(data?.templates, visibilityFilter),
+    [data?.templates, visibilityFilter]
+  );
+
   return (
     <DataTable
-      columns={columns}
-      data={data?.templates || []}
+      columns={columns as ColumnDef<TemplateListRow, unknown>[]}
+      data={filteredTemplates}
       loading={isPending}
+      toolbarExtra={
+        <TemplateVisibilityFilterSelect
+          value={visibilityFilter}
+          onValueChange={setVisibilityFilter}
+        />
+      }
+      getRowClassName={(row: TemplateListRow) =>
+        row.isPublic === true ? PUBLIC_TEMPLATE_ROW_CLASS : undefined
+      }
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
         canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
