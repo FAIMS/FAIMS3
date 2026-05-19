@@ -26,12 +26,14 @@ import {
   ProjectV1Fields,
   ProjectV2Fields,
   ProjectV3Fields,
+  ProjectV4Fields,
 } from '../projectsDB';
 import {
   TemplateV1Fields,
   TemplateV2Fields,
   TemplateV3Fields,
   TemplateV4Fields,
+  TemplateV5Fields,
 } from '../templatesDB/types';
 import {
   DBTargetVersions,
@@ -330,6 +332,30 @@ export const projectsV2toV3Migration: MigrationFunc = doc => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Projects DB v4 — scaffold migration. Copy/transform v3 fields into the v4
+ * document shape; extend when {@link ProjectV4Fields} gains new properties.
+ */
+export const projectsV3toV4Migration: MigrationFunc = doc => {
+  const input =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV4Fields> = {
+    _id: input._id,
+    _rev: input._rev,
+    name: input.name,
+    status: input.status,
+    dataDb: input.dataDb,
+    metadataDb: input.metadataDb,
+    ...(input.ownedByTeamId !== undefined
+      ? {ownedByTeamId: input.ownedByTeamId}
+      : {}),
+    ...(input.templateId !== undefined ? {templateId: input.templateId} : {}),
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
 export const invitesV2toV3Migration: MigrationFunc = doc => {
   // Cast input document to V2 type
   const inputDoc =
@@ -473,6 +499,29 @@ export const templatesV3toV4Migration: MigrationFunc = doc => {
 };
 
 /**
+ * Templates DB v5 — scaffold migration. Copy/transform v4 fields into the v5
+ * document shape; extend when {@link TemplateV5Fields} gains new properties.
+ */
+export const templatesV4toV5Migration: MigrationFunc = doc => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV4Fields>;
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV5Fields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name: inputDoc.name,
+    version: inputDoc.version,
+    metadata: inputDoc.metadata ?? {},
+    'ui-specification': inputDoc['ui-specification'],
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    archived: inputDoc.archived ?? false,
+    isPublic: inputDoc.isPublic ?? false,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
  * Adds the exchange token (fatuous) to mimic new format
  */
 export const authV1toV2Migration: MigrationFunc = doc => {
@@ -527,9 +576,10 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v5 (disabled flag)
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
-  // projects v3 (ARCHIVED status; v2→v3 model tracking migration)
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 3},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 4},
+  // projects v4 (extend ProjectV4Fields + projectsV3toV4Migration when schema changes)
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 4},
+  // templates v5 (extend TemplateV5Fields + templatesV4toV5Migration when schema changes)
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
@@ -589,6 +639,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     migrationFunction: projectsV2toV3Migration,
   },
   {
+    dbType: DatabaseType.PROJECTS,
+    from: 3,
+    to: 4,
+    description:
+      'Projects DB v4 schema (scaffold — copies v3 fields until v4 shape is defined).',
+    migrationFunction: projectsV3toV4Migration,
+  },
+  {
     dbType: DatabaseType.INVITES,
     from: 2,
     to: 3,
@@ -619,6 +677,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds isPublic flag for template visibility (existing templates default to private)',
     migrationFunction: templatesV3toV4Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 4,
+    to: 5,
+    description:
+      'Templates DB v5 schema (scaffold — copies v4 fields until v5 shape is defined).',
+    migrationFunction: templatesV4toV5Migration,
   },
   {
     dbType: DatabaseType.AUTH,

@@ -19,6 +19,7 @@ import {
   ProjectV1Fields,
   ProjectV2Fields,
   ProjectV3Fields,
+  ProjectV4Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
   RefreshRecordV3ExistingDocument,
@@ -32,6 +33,7 @@ import {
   TemplateV2Fields,
   TemplateV3Fields,
   TemplateV4Fields,
+  TemplateV5Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
 
@@ -532,6 +534,51 @@ const TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV4toV5Migration - copies v4 document unchanged',
+    dbType: DatabaseType.TEMPLATES,
+    from: 4,
+    to: 5,
+    inputDoc: {
+      _id: 'tpl-v5',
+      _rev: '5-rev',
+      version: 2,
+      name: 'My tpl',
+      metadata: {pre_description: 'x'},
+      archived: false,
+      isPublic: true,
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team-z',
+    } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-v5',
+        _rev: '5-rev',
+        version: 2,
+        name: 'My tpl',
+        metadata: {pre_description: 'x'},
+        archived: false,
+        isPublic: true,
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team-z',
+      } as PouchDB.Core.ExistingDocument<TemplateV5Fields>,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
 // New test cases for projectsV1toV2Migration
 const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Basic migration with all fields
@@ -930,6 +977,39 @@ const PROJECT_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         dataDb: {db_name: 'data-proj_v3_2'},
         metadataDb: {db_name: 'metadata-proj_v3_2'},
       } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
+const PROJECT_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'projectsV3toV4Migration - copies v3 document unchanged',
+    dbType: DatabaseType.PROJECTS,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'proj_v4_1',
+      _rev: '1-a',
+      name: 'Survey A',
+      status: ProjectStatus.OPEN,
+      dataDb: {db_name: 'data-proj_v4_1'},
+      metadataDb: {db_name: 'metadata-proj_v4_1'},
+      templateId: 'template-1',
+      ownedByTeamId: 'team-1',
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v4_1',
+        _rev: '1-a',
+        name: 'Survey A',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_v4_1'},
+        metadataDb: {db_name: 'metadata-proj_v4_1'},
+        templateId: 'template-1',
+        ownedByTeamId: 'team-1',
+      } as PouchDB.Core.ExistingDocument<ProjectV4Fields>,
     },
     equalityFunction: areDocsEqual,
   },
@@ -1912,10 +1992,12 @@ MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_V2_TO_V3_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PROJECT_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);
