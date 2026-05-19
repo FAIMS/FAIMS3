@@ -4,7 +4,7 @@
 
 FAIMS metadata is spread across JSON notebook files, a dedicated metadata database, and project/template/survey entities in other databases. The current setup mixes **design/spec documentation** with **runtime survey instantiation**, uses loosely typed or untyped key value pairs, and has known data-quality gaps (for example, survey ownership cannot be trusted because values were inherited from free-text project fields rather than real user records).
 
-This initiative aims to: **fully type and validate** metadata where possible; **separate** “what the design is” from “who instantiated what and when”; remove redundant storage (notably removing the metadata DB in favour of nested, typed structures on first-class entities); **document** project and template properties consistently; and **support migrations** that may span multiple databases—not a single “doc in, doc out” scope.
+This initiative aims to: **fully type and validate** metadata where possible; **separate** “what the design is” from “who instantiated what and when”; remove redundant storage (notably removing the metadata DB in favour of nested, typed structures on first-class entities); **document** project and template properties consistently.
 
 Near-term emphasis is **structural cleanup, typing, and code quality** rather than expanding into full standards like RAID immediately; the shape should remain **extensible** so RAID-aligned project metadata and archive publishing can follow.
 
@@ -18,16 +18,11 @@ Near-term emphasis is **structural cleanup, typing, and code quality** rather th
 - **Standardised, documented** properties for projects and templates (naming, descriptions, audit fields)—used **consistently** across the app and APIs.
 - **Clear update workflows** in `/web` for non-consequential properties (name, description, etc.) versus operations that imply design or data integrity constraints.
 
-### Standards
-
-- Support **standardised metadata for projects** over time (discussion referenced [RAID](https://metadata.raid.org/en/v1.6/) as a target); enable **publishing project metadata with data into an archive**. Manage after this overhaul structural baseline unless low-effort compatibility wins emerge from the field mapping.
-
 ### Engineering
 
 - **Fully typed interfaces** end-to-end; only **sandboxed untyped** regions where user-defined custom metadata cannot be predicted.
 - **Categorised** metadata where it helps (e.g. settings, display, user, system)—exact groupings to follow a **stocktake** of current fields.
 - **Migrations** for all affected entities: project DB, metadata DB (move then remove), template DB, and **notebook JSON** (designer + batch/custom migration to the new spec).
-- Introduce a **global migration** concept: **versioned**, scoped to the **full set of databases** for a deployment—not a single DB scope—because the current per-DB migration model is insufficient for this change.
 
 ## Current state (inventory — codebase, May 2026)
 
@@ -127,7 +122,7 @@ After merge, **`result.project_id`** is set to the queried id (not necessarily s
 | **`sections`**                               | Legacy; V2 migration reads **`metadata.sections`** for descriptions then removes key. Designer still initialises `{}`.                                                     |                                                                                                                                                                                                                                               | Legacy notebooks; designer `{}`.                                                                                                                                                | **`migrateToV2`** may **delete** key after moving content to `fviews`; otherwise **PUT** overwrites if still present.                                                                                                                                                             |
 | **`meta`**                                   | Protected in designer; sample JSON `{}`.                                                                                                                                   |                                                                                                                                                                                                                                               | Defaults / imports.                                                                                                                                                             | Typically untouched; could be updated via **PUT** if included in payload.                                                                                                                                                                                                         |
 | **`ispublic`**, **`isrequest`**              | Present in designer test notebook / V1 test fixtures.                                                                                                                      | **No grep hits** in app or API business logic beyond metadata reducer / info-panel “extra fields”. Likely **unused** for current conductor stack.                                                                                             | Fixtures / old JSON.                                                                                                                                                            | Only via **PUT** if ever sent; **no** dedicated API.                                                                                                                                                                                                                              |
-| **`derived-from`**                           | Designer: when `VITE_TEMPLATE_PROTECTIONS`, shows provenance; `field-editor` blocks edits if set.                                                                          | Template / copy workflow only.                                                                                                                                                                                                                | Set by whatever workflow seeds the notebook (not standard server create path in isolation).                                                                                     | Persists with **PUT**; designer treats as read-only signal when protections on.                                                                                                                                                                                                   |
+| **`derived-from`**                           | Designer: when `VITE_TEMPLATE_PROTECTIONS`, shows provenance; `field-editor` blocks edits if set.                                                                          | Template / copy workflow only; **loose metadata key** (kebab-case). Target: typed **`metadata.information.derivedFromTemplateId`** (see proposed state).                                                                                      | Set by whatever workflow seeds the notebook (not standard server create path in isolation).                                                                                     | Persists with **PUT**; designer treats as read-only signal when protections on.                                                                                                                                                                                                   |
 | **`description`**                            | `app/.../workspace/notebooks.tsx` shows `row.metadata.description` under name.                                                                                             | **Not** in designer default metadata; likely **legacy** or manually added; often empty.                                                                                                                                                       | Manual JSON / old exports.                                                                                                                                                      | **PUT** notebook if client adds the key.                                                                                                                                                                                                                                          |
 | **`last_updated`**                           | `MetadataDisplay` “Last Updated” row reads **`metadata.last_updated`**.                                                                                                    | **Not** set by current `createNotebook` / `writeProjectMetadata` flow reviewed; often blank. Project **v1** had `last_updated` on **project doc** — different field, also gone in v3.                                                         | Would only appear if client or migration wrote it into `metadata`.                                                                                                              | **Not** maintained automatically today; only **PUT** or manual Couch.                                                                                                                                                                                                             |
 | **`project_id`**                             | Injected on **read** by `getNotebookMetadata`; may also appear inside stored JSON in samples.                                                                              | Informational.                                                                                                                                                                                                                                | **Not stored** as a normal per-key write from `writeProjectMetadata` merge (added in code on read).                                                                             | N/A on write path from server; could exist in JSON from samples / **PUT** if someone includes it.                                                                                                                                                                                 |
@@ -197,7 +192,7 @@ Relevant schemas in `library/data-model/src/api.ts`:
 
 ---
 
-### 6. Data database (`data-{projectId}`) — not “notebook metadata” but often confused
+### 6. Data database (`data-{projectId}`)
 
 Record docs (`EncodedRecord`), revisions, AVPs include **`created_by`**, **`created`** as **strings** (usernames from auth at write time). This is **per-record**, not the survey’s “created by”.
 
@@ -216,12 +211,6 @@ Record docs (`EncodedRecord`), revisions, AVPs include **`created_by`**, **`crea
 | **`api/doc/DATABASE.md` `auth_mechanisms` on project**             | Doc notes **not used**.                                                                                      |
 | **Doc typo `behavious`**                                           | Listed in DATABASE.md; **no code references**.                                                               |
 | **`DATABASE.md` id `ui_specification` vs underscore**              | Doc says `ui_specification`; code uses **`ui-specification`**.                                               |
-
----
-
-### 8. Discussion snapshot (qualitative, still valid)
-
-These motivated the redesign but are not a second inventory: mixed **design** vs **instantiation** semantics; **`project_lead`** vs real **user** ids; desire to fold **render toggles** (e.g. QR) into clearer **spec** vs **metadata**; naming drift across web (“Created by”) vs domain (“project lead”).
 
 ---
 
@@ -253,7 +242,7 @@ type Timestamp = string;
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`uiSpec`**               | **Same top-level structure as today’s** Couch `ui-specification` / `EncodedProjectUIModel`: **`fields`**, **`fviews`**, **`viewsets`**, **`visible_types`**. Inner field definitions keep existing keys (`component-namespace`, `type-returned`, `component-parameters`, …). **Only addition:** sibling **`settings`** (camelCase, new). |
 | **`uiSpec.settings`**      | Typed toggles / numbers that affect **how** the app renders or behaves (e.g. QR on record list).                                                                                                                                                                                                                                         |
-| **`metadata.information`** | Human-facing **design documentation** only — no user ids, no auth.                                                                                                                                                                                                                                                                       |
+| **`metadata.information`** | Human-facing **design documentation** only — no user ids, no auth. Optional **`derivedFromTemplateId`** records design provenance (source template id), distinct from survey root **`templateId`** when both apply.                                                                                                                      |
 | **`metadata.custom`**      | Optional org-specific bag, **untyped** by design.                                                                                                                                                                                                                                                                                        |
 
 ```typescript
@@ -280,6 +269,12 @@ interface NotebookInformation {
   /** Responsible person label for the design — former `project_lead`; not a user id */
   projectLeadLabel: string;
   leadInstitution: string;
+  /**
+   * Source template id when this definition was derived or copied from another template design.
+   * Former loose metadata key **`derived-from`**. Omitted when not applicable.
+   * Not a substitute for survey root **`templateId`** (instantiation link on **`Project`**).
+   */
+  derivedFromTemplateId?: string;
 }
 
 /** Typed design metadata + optional org extensions */
@@ -370,9 +365,6 @@ interface Template {
   updatedAt: Timestamp;
   ownedByTeamId?: string;
 
-  /** Whether this template was derived from another */
-  derivedFromTemplateId?: string;
-
   /** Lifecycle and permission (same) */
   archived: boolean;
   isPublic: boolean;
@@ -390,76 +382,67 @@ All former Couch **`metadata-{projectId}`** documents are **replaced** by **`Pro
 
 ---
 
-### Zod implementation sketch
-
-- **`SurveyNotebookDefinitionSchema`**: `z.object({ uiSpec: EncodedProjectUIModelSchema.and(SettingsShape), metadata: MetadataPartitionSchema })` where **`EncodedProjectUIModelSchema`** is the existing (or tightened) Zod for the current wire shape, and **`SettingsShape`** is `z.object({ showQrCodeButton: z.boolean() })`.
-- **`NotebookInformationSchema`**: required strings per product rules for `notebookVersion` / `schemaVersion` / etc.
-- **`ProjectSchema`**: strict root keys; **`status`**: `z.nativeEnum(ProjectStatus)` (same **`OPEN` / `CLOSED` / `ARCHIVED`** strings as today); **`dataDb`**: reuse / refine **`PossibleConnectionInfo`** schema (keep `db_name`, `base_url`, …); **`description: z.string()`** (or `.min(1)` if required); `createdByUserId: z.string().min(1)`; timestamps as `z.string().datetime()` (or branded **`Timestamp`**). Same for **`TemplateSchema`** with **`description`** and template-only flags.
-- **`metadata.custom`**: `z.record(z.string(), z.unknown()).optional()` only.
-
----
-
 ## Mapping of fields
 
 Maps **legacy** locations (projects row, metadata DB, merged notebook `metadata`, `ui-specification` doc, template document) to the **proposed** shapes: **`Project`** / **`Template`** root and **`uiSpecification: { uiSpec, metadata }`**. Paths use **`Project`** / **`Template`** as the persisted document root.
 
 ### Project (`projects` DB) — top-level
 
-| Legacy source | Legacy field / path | New location | Migration / typing notes |
-| ------------- | -------------------- | ------------ | ------------------------- |
-| Project doc | `_id` | `Project._id` | Unchanged Couch id. |
-| Project doc | `_rev` | `Project._rev` | Unchanged. |
-| Project doc | `name` | `Project.name` | Prefer **`project.name`**; if only **`metadata.name`** existed historically, copy that string. |
-| Project doc | `status` (`ProjectStatus`: `OPEN` / `CLOSED` / `ARCHIVED`) | `Project.status` | **Unchanged** enum values and type — no casing migration. |
-| Project doc | `dataDb` (`PossibleConnectionInfo`, `db_name`, `base_url`, …) | `Project.dataDb` | **Unchanged** shape and property name. |
-| Project doc | `metadataDb` | _removed_ | No pointer after inline spec; metadata Couch DB destroyed after cutover. |
-| Project doc | `ownedByTeamId` | `Project.ownedByTeamId` | Same semantics. |
-| Project doc | `templateId` | `Project.templateId` | Same; drop duplicate **`metadata.template_id`** inside inlined bundle. |
-| — | _(missing today)_ | `Project.description` | **New required field:** derive from first non-empty of legacy **`metadata.description`**, truncated **`metadata.pre_description`**, or `''` then prompt ops to fill. |
-| — | _(missing today)_ | `Project.createdByUserId` | **New required field:** no trustworthy legacy value — use migration policy (e.g. creating admin JWT `user_id`, or sentinel) — see gap note below. |
-| — | _(missing today)_ | `Project.createdAt` | Use first-write timestamp from Couch, export audit, or migration run time if unknown. |
-| — | _(missing today)_ | `Project.updatedAt` | Use `Project._rev` history, last PUT audit, or migration run time. |
+| Legacy source | Legacy field / path                                           | New location              | Migration / typing notes                                                                                                                                             |
+| ------------- | ------------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project doc   | `_id`                                                         | `Project._id`             | Unchanged Couch id.                                                                                                                                                  |
+| Project doc   | `_rev`                                                        | `Project._rev`            | Unchanged.                                                                                                                                                           |
+| Project doc   | `name`                                                        | `Project.name`            | Prefer **`project.name`**; if only **`metadata.name`** existed historically, copy that string.                                                                       |
+| Project doc   | `status` (`ProjectStatus`: `OPEN` / `CLOSED` / `ARCHIVED`)    | `Project.status`          | **Unchanged** enum values and type — no casing migration.                                                                                                            |
+| Project doc   | `dataDb` (`PossibleConnectionInfo`, `db_name`, `base_url`, …) | `Project.dataDb`          | **Unchanged** shape and property name.                                                                                                                               |
+| Project doc   | `metadataDb`                                                  | _removed_                 | No pointer after inline spec; metadata Couch DB destroyed after cutover.                                                                                             |
+| Project doc   | `ownedByTeamId`                                               | `Project.ownedByTeamId`   | Same semantics.                                                                                                                                                      |
+| Project doc   | `templateId`                                                  | `Project.templateId`      | Same; drop duplicate **`metadata.template_id`** inside inlined bundle.                                                                                               |
+| —             | _(missing today)_                                             | `Project.description`     | **New required field:** derive from first non-empty of legacy **`metadata.description`**, truncated **`metadata.pre_description`**, or `''` then prompt ops to fill. |
+| —             | _(missing today)_                                             | `Project.createdByUserId` | **New required field:** no trustworthy legacy value — use migration policy (e.g. creating admin JWT `user_id`, or sentinel) — see gap note below.                    |
+| —             | _(missing today)_                                             | `Project.createdAt`       | Use first-write timestamp from Couch, export audit, or migration run time if unknown.                                                                                |
+| —             | _(missing today)_                                             | `Project.updatedAt`       | Use `Project._rev` history, last PUT audit, or migration run time.                                                                                                   |
 
 ### Notebook / metadata DB → `Project.uiSpecification`
 
-| Legacy source | Legacy field / path | New location | Migration / typing notes |
-| ------------- | -------------------- | ------------ | ------------------------- |
-| Metadata DB doc `_id` = `ui-specification` | whole `EncodedProjectUIModel` | `Project.uiSpecification.uiSpec` (minus `settings`) | Copy **`fields`**, **`fviews`**, **`viewsets`**, **`visible_types`** verbatim; run existing **`migrateNotebook`** first if needed. |
-| Metadata DB / merged `metadata` | `showQRCodeButton` | `Project.uiSpecification.uiSpec.settings.showQrCodeButton` | Coerce string **`'true'`** / **`'false'`** and legacy boolean to **boolean**; treat any other non-empty string as **`true`** only if product agrees, else default **`false`**. |
-| Merged `metadata` | `pre_description` | `Project.uiSpecification.metadata.information.purposeMarkdown` | Rename key; content unchanged. |
-| Merged `metadata` | `project_lead` | `Project.uiSpecification.metadata.information.projectLeadLabel` | Free text preserved; not a user id. |
-| Merged `metadata` | `lead_institution` | `Project.uiSpecification.metadata.information.leadInstitution` | Same. |
-| Merged `metadata` | `notebook_version` | `Project.uiSpecification.metadata.information.notebookVersion` | Rename to camelCase. |
-| Merged `metadata` | `schema_version` | `Project.uiSpecification.metadata.information.schemaVersion` | After **`migrateNotebook`**, expect **`3.0`** (or current target). |
-| Merged `metadata` | `name` | _see `Project.name`_ | Do not duplicate as canonical title; optional copy into **`metadata.custom.legacyMetadataName`** only if audits need it. |
-| Merged `metadata` | `template_id` | _drop_ | Authoritative link is **`Project.templateId`**; remove per-key doc / merged key. |
-| Merged `metadata` | `project_id` | _drop_ | Same as **`Project._id`**; remove from stored payload. |
-| Merged `metadata` | `derived-from` | `Project.uiSpecification.metadata.custom.derivedFrom` _or_ drop | Only if surveys carry provenance strings today; else omit. |
-| Merged `metadata` | arbitrary extra keys (designer “extra fields”) | `Project.uiSpecification.metadata.custom.<key>` | Preserve unknown keys under **`custom`** for forward compatibility. |
-| Merged `metadata` | `accesses`, `ispublic`, `isrequest`, `filenames`, `meta`, `forms`, `access` | _drop_ | No typed home; not used by server auth path today. |
-| Merged `metadata` | `sections` | _drop_ (after V2) | **`migrateToV2`** already moved content into **`fviews`**; if still present, run V2 then strip. |
-| Merged `metadata` | `project_status` | _drop_ | Use **`Project.status`**; removed from metadata in V3 for surveys. |
-| Merged `metadata` | `last_updated` | _drop_ | Prefer **`Project.updatedAt`** instead of a parallel string. |
-| Merged `metadata` | `description` | `Project.description` | Move to **root** survey description (not design `purposeMarkdown`). |
-| Metadata DB | `project-metadata-projectvalue` blob doc | _ignore on read_ | Rebuild from per-key docs + `ui-specification` merge; blob shape is unreliable today. |
+| Legacy source                              | Legacy field / path                                                         | New location                                                         | Migration / typing notes                                                                                                                                                       |
+| ------------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Metadata DB doc `_id` = `ui-specification` | whole `EncodedProjectUIModel`                                               | `Project.uiSpecification.uiSpec` (minus `settings`)                  | Copy **`fields`**, **`fviews`**, **`viewsets`**, **`visible_types`** verbatim; run existing **`migrateNotebook`** first if needed.                                             |
+| Metadata DB / merged `metadata`            | `showQRCodeButton`                                                          | `Project.uiSpecification.uiSpec.settings.showQrCodeButton`           | Coerce string **`'true'`** / **`'false'`** and legacy boolean to **boolean**; treat any other non-empty string as **`true`** only if product agrees, else default **`false`**. |
+| Merged `metadata`                          | `pre_description`                                                           | `Project.uiSpecification.metadata.information.purposeMarkdown`       | Rename key; content unchanged.                                                                                                                                                 |
+| Merged `metadata`                          | `project_lead`                                                              | `Project.uiSpecification.metadata.information.projectLeadLabel`      | Free text preserved; not a user id.                                                                                                                                            |
+| Merged `metadata`                          | `lead_institution`                                                          | `Project.uiSpecification.metadata.information.leadInstitution`       | Same.                                                                                                                                                                          |
+| Merged `metadata`                          | `notebook_version`                                                          | `Project.uiSpecification.metadata.information.notebookVersion`       | Rename to camelCase.                                                                                                                                                           |
+| Merged `metadata`                          | `schema_version`                                                            | `Project.uiSpecification.metadata.information.schemaVersion`         | After **`migrateNotebook`**, expect **`3.0`** (or current target).                                                                                                             |
+| Merged `metadata`                          | `name`                                                                      | _see `Project.name`_                                                 | Do not duplicate as canonical title; optional copy into **`metadata.custom.legacyMetadataName`** only if audits need it.                                                       |
+| Merged `metadata`                          | `template_id`                                                               | _drop_                                                               | Authoritative link is **`Project.templateId`**; remove per-key doc / merged key.                                                                                               |
+| Merged `metadata`                          | `project_id`                                                                | _drop_                                                               | Same as **`Project._id`**; remove from stored payload.                                                                                                                         |
+| Merged `metadata`                          | `derived-from`                                                              | `Project.uiSpecification.metadata.information.derivedFromTemplateId` | Parse to a single template id string when present; **optional** — omit if empty. Distinct from **`Project.templateId`** (instantiation).                                       |
+| Merged `metadata`                          | arbitrary extra keys (designer “extra fields”)                              | `Project.uiSpecification.metadata.custom.<key>`                      | Preserve unknown keys under **`custom`** for forward compatibility.                                                                                                            |
+| Merged `metadata`                          | `accesses`, `ispublic`, `isrequest`, `filenames`, `meta`, `forms`, `access` | _drop_                                                               | No typed home; not used by server auth path today.                                                                                                                             |
+| Merged `metadata`                          | `sections`                                                                  | _drop_ (after V2)                                                    | **`migrateToV2`** already moved content into **`fviews`**; if still present, run V2 then strip.                                                                                |
+| Merged `metadata`                          | `project_status`                                                            | _drop_                                                               | Use **`Project.status`**; removed from metadata in V3 for surveys.                                                                                                             |
+| Merged `metadata`                          | `last_updated`                                                              | _drop_                                                               | Prefer **`Project.updatedAt`** instead of a parallel string.                                                                                                                   |
+| Merged `metadata`                          | `description`                                                               | `Project.description`                                                | Move to **root** survey description (not design `purposeMarkdown`).                                                                                                            |
+| Metadata DB                                | `project-metadata-projectvalue` blob doc                                    | _ignore on read_                                                     | Rebuild from per-key docs + `ui-specification` merge; blob shape is unreliable today.                                                                                          |
 
 ### Template (`templates` DB)
 
-| Legacy source | Legacy field / path | New location | Migration / typing notes |
-| ------------- | -------------------- | ------------ | ------------------------- |
-| Template doc | `_id`, `_rev`, `version`, `name`, `ownedByTeamId`, `archived`, `isPublic` | `Template.*` same names | **`description`** new: from first non-empty legacy **`metadata.description`**, truncated **`metadata.pre_description`**, or `''`. |
-| Template doc | `metadata.*` (informational keys) | `Template.uiSpecification.metadata.information.*` | Same key mapping as **`Project`** table above (`pre_description` → **`purposeMarkdown`**, etc.). |
-| Template doc | `metadata.template_id` | _drop_ | Always equals **`Template._id`**; server injection removed in new model. |
-| Template doc | `ui-specification` | `Template.uiSpecification.uiSpec` | Same as survey: copy body then attach **`settings`**. |
-| — | _(missing today)_ | `Template.createdByUserId`, `createdAt`, `updatedAt`, `updatedByUserId?` | Same migration policy as surveys for **`createdByUserId`**; timestamps from Couch or migration run. |
-| Loose `metadata` / designer | `derived-from` (survey-style) | `Template.derivedFromTemplateId` | Parse id string only if format is a single template id; else stash in **`metadata.custom`**. |
+| Legacy source               | Legacy field / path                                                       | New location                                                             | Migration / typing notes                                                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Template doc                | `_id`, `_rev`, `version`, `name`, `ownedByTeamId`, `archived`, `isPublic` | `Template.*` same names                                                  | **`description`** new: from first non-empty legacy **`metadata.description`**, truncated **`metadata.pre_description`**, or `''`.                                                  |
+| Template doc                | `metadata.*` (informational keys)                                         | `Template.uiSpecification.metadata.information.*`                        | Same key mapping as **`Project`** table above (`pre_description` → **`purposeMarkdown`**, etc.).                                                                                   |
+| Template doc                | `metadata.template_id`                                                    | _drop_                                                                   | Always equals **`Template._id`**; server injection removed in new model.                                                                                                           |
+| Template doc                | `ui-specification`                                                        | `Template.uiSpecification.uiSpec`                                        | Same as survey: copy body then attach **`settings`**.                                                                                                                              |
+| —                           | _(missing today)_                                                         | `Template.createdByUserId`, `createdAt`, `updatedAt`, `updatedByUserId?` | Same migration policy as surveys for **`createdByUserId`**; timestamps from Couch or migration run.                                                                                |
+| Loose `metadata` / designer | `derived-from`                                                            | `Template.uiSpecification.metadata.information.derivedFromTemplateId`    | Same mapping as surveys: optional typed field; parse id when value is a single template id, else omit or preserve via **`metadata.custom`** only if audits require the raw string. |
 
 ### Cross-cutting
 
-| Legacy concept | New location | Notes |
-| -------------- | ------------ | ----- |
+| Legacy concept                                            | New location                     | Notes                                                                                                                                                                      |
+| --------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | “Notebook JSON” export `{ metadata, 'ui-specification' }` | `Project` or `Template` document | Split: wire **`ui-specification`** → **`uiSpecification.uiSpec`**; metadata bag → **`information`** + **`settings`** + **`custom`** + root **`description`** / **`name`**. |
-| Record `created_by` / `created` (data DB) | _unchanged_ | Still **per-record**; do not map to **`Project.createdByUserId`**. |
+| Record `created_by` / `created` (data DB)                 | _unchanged_                      | Still **per-record**; do not map to **`Project.createdByUserId`**.                                                                                                         |
 
 **Known gap (unchanged):** historical surveys have **no** trustworthy **creator** in DB — **`Project.createdByUserId`** must come from an explicit migration policy (e.g. conductor admin, first project admin role holder, or sentinel), not from **`project_lead`** text.
 
@@ -473,10 +456,5 @@ Maps **legacy** locations (projects row, metadata DB, merged notebook `metadata`
 - **Template DB**: same.
 - **Metadata DB**: read-only migration path → new stores → decommission.
 - **Notebook JSON**: update structure to meet new spec; support **designer** migration and a **batch migrator**.
-
-**Global migration**
-
-- New **cross-database migration** type, **versioned**, applied in a defined order across **all** relevant DBs for an environment. **Cannot** rely solely on single-DB “doc in doc out” migration within one scope.
-- **Implementation** lives in `@faims3/data-model` (`GLOBAL_MIGRATIONS`, `migrationService.migrateDbs`, invariants). Maintainer-oriented documentation: `docs/developer/docs/source/markdown/CouchMigrations.md`.
 
 ## Other issues / notes
