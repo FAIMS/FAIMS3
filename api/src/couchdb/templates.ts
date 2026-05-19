@@ -5,9 +5,11 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   ExistingTemplateDocument,
+  NotebookDefinition,
   PostCreateTemplateInput,
   ProjectID,
   PutUpdateTemplateInput,
+  PutUpdateTemplateUiSpecificationInput,
   safeWriteDocument,
   slugify,
   TemplateDBFields,
@@ -28,11 +30,15 @@ import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
 import {getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
 
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
 /**
  * Lists templates using CouchDB views whose map `value` is the template doc
- * without `ui-specification`. Uses `include_docs: false` on purpose: with
+ * without `uiSpecification`. Uses `include_docs: false` on purpose: with
  * `include_docs: true`, CouchDB would also attach the full stored document for
- * each row (including `ui-specification`), which would defeat the lean list.
+ * each row (including `uiSpecification`), which would defeat the lean list.
  *
  * @returns an array of template list items (from each row's `value`)
  */
@@ -196,26 +202,17 @@ const generateTemplateId = (templateName: string): ProjectID => {
  * thrown under failure to lodge.
  *
  * NOTE this does not add any permissions!
- *
- * @param payload The document details for a template
- * @returns The ID of the minted template
  */
 export const createTemplate = async ({
   payload,
+  createdBy,
 }: {
   payload: PostCreateTemplateInput;
+  createdBy: string;
 }): Promise<ExistingTemplateDocument> => {
-  // Get the templates DB so we can interact with it
   const templatesDb = getTemplatesDb();
-
-  // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.name);
 
-  // inject templateId into the metadata
-  // TODO see BSS-343
-  payload.metadata.template_id = templateId;
-
-  // if there is a team id provided, it must be an actual team
   if (payload.teamId) {
     try {
       await getTeamById(payload.teamId);
@@ -226,19 +223,21 @@ export const createTemplate = async ({
     }
   }
 
-  // Setup the document with id included
+  const now = nowIso();
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
     archived: false,
     isPublic: payload.isPublic ?? false,
-    'ui-specification': payload['ui-specification'],
-    metadata: payload.metadata,
+    uiSpecification: payload.uiSpecification,
     ownedByTeamId: payload.teamId,
     name: payload.name,
+    description: payload.description ?? '',
+    createdBy,
+    createdAt: now,
+    updatedAt: now,
   };
 
-  // Try putting the new document
   try {
     await templatesDb.put(templateDoc);
   } catch (e) {
@@ -248,7 +247,6 @@ export const createTemplate = async ({
     );
   }
 
-  // Then return the fetched result
   try {
     return await templatesDb.get(templateId);
   } catch (e) {
@@ -259,19 +257,12 @@ export const createTemplate = async ({
 };
 
 /**
- * Fetches existing template by ID, replaces the details, and puts back with
- * latest revision included. Returns the new revision. Throws an exception if
- * the fetch fails or the update.
- * @param templateId The existing template Id to update
- * @param payload The payload to replace it with - details only
- * @returns The revision ID of the new version of the document
+ * Merges inconsequential root fields on an existing template (name, description, team).
  */
 export const updateExistingTemplate = async (
   templateId: string,
   payload: PutUpdateTemplateInput
 ): Promise<ExistingTemplateDocument> => {
-  // Now fetch the existing template - this will allow us to get the latest
-  // revision etc
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -281,8 +272,6 @@ export const updateExistingTemplate = async (
     );
   }
 
-  // team might be overridden in the payload
-  // check that it is a valid team
   if (payload.teamId) {
     try {
       await getTeamById(payload.teamId);
@@ -292,39 +281,21 @@ export const updateExistingTemplate = async (
       );
     }
   }
-  const teamId = payload.teamId || existingTemplate.ownedByTeamId;
 
-  // ditto for the template name
-  const name = payload.name || existingTemplate.name;
-  const metadata = (payload.metadata ||
-    existingTemplate.metadata) as TemplateDocument['metadata'];
-  const uiSpecification =
-    payload['ui-specification'] || existingTemplate['ui-specification'];
-
-  // Now on the new put, we make sure to include the _rev of previous document which allows replacement
-  const templateDb = getTemplatesDb();
-
-  // inject templateId into the metadata - we have to do this here because a
-  // user could potentially change the metadata
-  // TODO see BSS-343
-  metadata.template_id = templateId;
-
-  const archived = existingTemplate.archived ?? false;
-  const isPublic = existingTemplate.isPublic ?? false;
-
-  const newDocument = {
-    metadata: metadata,
-    'ui-specification': uiSpecification,
-    archived,
-    isPublic,
-    // explicitly retain these details!
+  const newDocument: TemplateDocument = {
+    ...existingTemplate,
     _id: templateId,
     _rev: existingTemplate._rev,
-    // Increment version by 1 when updated
-    version: existingTemplate.version + 1,
-    ownedByTeamId: teamId,
-    name: name,
-  } satisfies TemplateDocument;
+    name: payload.name ?? existingTemplate.name,
+    description: payload.description ?? existingTemplate.description,
+    ownedByTeamId:
+      payload.teamId !== undefined
+        ? payload.teamId
+        : existingTemplate.ownedByTeamId,
+    updatedAt: nowIso(),
+  };
+
+  const templateDb = getTemplatesDb();
   try {
     await safeWriteDocument({db: templateDb, data: newDocument});
   } catch (e) {
@@ -332,6 +303,49 @@ export const updateExistingTemplate = async (
       'An unexpected error occurred while trying to update an existing template.'
     );
   }
+  try {
+    return await templateDb.get(templateId);
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the updated template.'
+    );
+  }
+};
+
+/**
+ * Replaces the full uiSpecification bundle and bumps version.
+ */
+export const updateTemplateUiSpecification = async (
+  templateId: string,
+  uiSpecification: PutUpdateTemplateUiSpecificationInput
+): Promise<ExistingTemplateDocument> => {
+  let existingTemplate;
+  try {
+    existingTemplate = await getTemplate(templateId);
+  } catch (e) {
+    throw new Exceptions.ItemNotFoundException(
+      'An error occurred while trying to fetch an existing template. Are you sure the ID is correct?'
+    );
+  }
+
+  const templateDb = getTemplatesDb();
+  const newDocument: TemplateDocument = {
+    ...existingTemplate,
+    _id: templateId,
+    _rev: existingTemplate._rev,
+    uiSpecification: uiSpecification as NotebookDefinition,
+    version: existingTemplate.version + 1,
+    updatedAt: nowIso(),
+  };
+
+  try {
+    await safeWriteDocument({db: templateDb, data: newDocument});
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to update template uiSpecification.'
+    );
+  }
+
   try {
     return await templateDb.get(templateId);
   } catch (e) {
@@ -363,6 +377,7 @@ export const setTemplateVisibility = async (
     _id: templateId,
     _rev: existingTemplate._rev,
     isPublic,
+    updatedAt: nowIso(),
   } satisfies TemplateDocument;
 
   try {
@@ -385,13 +400,9 @@ export const setTemplateVisibility = async (
 /**
  * Removes the latest revision of a template from the templates DB by fetching
  * it then deleting that document.
- * @param templateId The ID of the existing template to remove - deletes the
- * latest revision.
  */
 export const deleteExistingTemplate = async (templateId: string) => {
   const templatesDb = getTemplatesDb();
-  // Now fetch the existing template - this will allow us to get the latest
-  // revision etc
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -421,8 +432,6 @@ export const deleteExistingTemplate = async (templateId: string) => {
 
 /**
  * Archives or un-archives a template (top-level `archived` flag).
- * @param id The ID of the template to archive.
- * @returns The updated template document.
  */
 export const archiveTemplate = async (id: string, archive: boolean) => {
   const {get, put} = getTemplatesDb();
@@ -433,6 +442,7 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
       ...template,
       version: template.version + 1,
       archived: archive,
+      updatedAt: nowIso(),
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(

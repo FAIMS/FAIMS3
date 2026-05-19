@@ -24,7 +24,6 @@ import {
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
-  EncodedProjectUIModel,
   GetExportNotebookResponse,
   getIdsByFieldName,
   GetNotebookListResponse,
@@ -43,10 +42,10 @@ import {
   PostRecordStatusInputSchema,
   PostRecordStatusResponse,
   projectRoleToAction,
-  ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
-  PutUpdateNotebookInputSchema,
+  PutUpdateNotebookMetadataInputSchema,
+  PutUpdateNotebookUiSpecificationInputSchema,
   PutUpdateNotebookResponse,
   removeProjectRole,
   Role,
@@ -89,12 +88,12 @@ import {
   createNotebook,
   deleteNotebook,
   getEncodedNotebookUISpec,
-  getNotebookMetadata,
   getProjectById,
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  updateNotebook,
+  updateProjectMetadata,
+  updateProjectUiSpecification,
 } from '../couchdb/notebooks';
 import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
@@ -440,22 +439,16 @@ api.post(
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    // Validate payload combination
-    if ('ui-specification' in req.body && 'template_id' in req.body) {
+    if ('uiSpecification' in req.body && 'template_id' in req.body) {
       throw new Exceptions.ValidationException(
-        'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
+        'Inappropriate inclusion of both a template_id and uiSpecification when creating a notebook.'
       );
     }
 
-    // Functions which determine which type of payload is present
-
-    // TODO consider using a discriminated union approach for parsing here to
-    // make this more efficient e.g. zod allows literals on objects with
-    // discriminated unions on this
     const isFromScratch = (
       payload: PostCreateNotebookInput
     ): payload is CreateNotebookFromScratch => {
-      return 'ui-specification' in payload;
+      return 'uiSpecification' in payload;
     };
     const isFromTemplate = (
       payload: PostCreateNotebookInput
@@ -463,18 +456,12 @@ api.post(
       return 'template_id' in payload;
     };
 
-    // Metadata is from payload, or from template
-    let metadata: any;
-    // ui Spec is from payload if manual, or from template
-    let uiSpec: EncodedProjectUIModel;
-    // Project name is in both payloads
+    let uiSpecification;
     const projectName: string = req.body.name;
-    // Template ID is only needed if created from template
     let templateId: string | undefined = undefined;
+    let description = '';
 
-    // Check the type of creation
     if (isFromTemplate(req.body)) {
-      // Now we use the template to get details needed to instantiate a new notebook
       const template = await getTemplate(req.body.template_id);
 
       if (
@@ -497,29 +484,26 @@ api.post(
         );
       }
 
-      // Pull out values needed to create a new notebook
-      metadata = template.metadata;
-      uiSpec = template['ui-specification'];
+      uiSpecification = template.uiSpecification;
+      description = template.description;
       templateId = template._id;
     } else if (isFromScratch(req.body)) {
-      // Creating a new notebook from scratch
-      uiSpec = req.body['ui-specification'];
-      metadata = req.body.metadata;
+      uiSpecification = req.body.uiSpecification;
+      description = req.body.description ?? '';
     } else {
       throw new Exceptions.ValidationException(
         'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
       );
     }
 
-    const projectID = await createNotebook(
+    const projectID = await createNotebook({
       projectName,
-      uiSpec,
-      metadata,
-      // link to template ID if necessary
+      uiSpecification,
+      description,
       templateId,
-      // team ID if provided (authorisation to do so already checked)
-      req.body.teamId
-    );
+      teamId: req.body.teamId,
+      createdBy: req.user.user_id,
+    });
     if (projectID) {
       // Make the user an admin of this notebook
       addProjectRole({
@@ -557,36 +541,21 @@ api.get(
     const projectId = req.params.id;
 
     const project = await getProjectById(projectId);
-    const metadata = await getNotebookMetadata(projectId);
-    const uiSpec = await getEncodedNotebookUISpec(projectId);
 
-    if (metadata && uiSpec) {
-      res.json({
-        // include name
-        name: project.name,
-        metadata,
-        // TODO fully implement a UI Spec zod model, and do runtime validation
-        // in all client apps
-        'ui-specification': uiSpec as unknown as Record<string, unknown>,
-        ownedByTeamId: project.ownedByTeamId,
-        status: project.status,
-        recordCount: await countRecordsInNotebook(projectId),
-      } satisfies GetNotebookResponse);
-    } else {
+    if (!project.uiSpecification) {
       throw new Exceptions.ItemNotFoundException(
-        'Notebook not found. ' +
-          JSON.stringify({
-            'ui-specification': uiSpec as unknown as Record<string, unknown>,
-            ownedByTeamId: project.ownedByTeamId,
-            status: project.status,
-            metadata,
-          })
+        'Notebook uiSpecification not found. This survey may need migration to projects DB v4.'
       );
     }
+
+    res.json({
+      ...project,
+      recordCount: await countRecordsInNotebook(projectId),
+    } satisfies GetNotebookResponse);
   }
 );
 
-// PUT a new version of a notebook
+// PUT merge inconsequential project metadata (name, description)
 api.put(
   '/:id',
   requireAuthenticationAPI,
@@ -598,17 +567,37 @@ api.put(
   }),
   processRequest({
     params: z.object({id: z.string()}),
-    body: PutUpdateNotebookInputSchema,
+    body: PutUpdateNotebookMetadataInputSchema,
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const uiSpec = req.body['ui-specification'];
-    const metadata = req.body.metadata;
-    const projectID = req.params.id;
-    await updateNotebook(projectID, uiSpec, metadata);
-    return res.json({notebook: projectID});
+    const updated = await updateProjectMetadata(req.params.id, req.body);
+    return res.json(updated);
+  }
+);
+
+// PUT replace full uiSpecification (designer / JSON export)
+api.put(
+  '/:id/uiSpecification',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.UPDATE_PROJECT_UISPEC,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutUpdateNotebookUiSpecificationInputSchema,
+  }),
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const updated = await updateProjectUiSpecification(req.params.id, req.body);
+    return res.json(updated);
   }
 );
 
@@ -729,9 +718,7 @@ api.get(
     }
     const tokenContents = mockTokenContentsForUser(req.user);
     const {id: projectId} = req.params;
-    const uiSpecification = (await getProjectUIModel(
-      req.params.id
-    )) as ProjectUIModel;
+    const uiSpecification = await getProjectUIModel(req.params.id);
     const dataDb = await getDataDb(projectId);
     const records = await getRecordsWithRegex({
       dataDb,
@@ -1017,25 +1004,16 @@ api.post(
       );
     }
 
-    // Get the notebook metadata to modify
-    const notebookMetadata = await getNotebookMetadata(req.params.id);
-
-    if (!notebookMetadata) {
-      throw new Exceptions.ItemNotFoundException(
-        'Could not find specified notebook.'
-      );
-    }
+    await getProjectById(req.params.id);
 
     if (addRole) {
-      // Add project role to the user
       addProjectRole({
         user,
         projectId: req.params.id,
         role: role,
       });
     } else {
-      // Remove project role from the user
-      removeProjectRole({user, projectId: notebookMetadata.project_id, role});
+      removeProjectRole({user, projectId: req.params.id, role});
     }
 
     // save the user after modifications have been made

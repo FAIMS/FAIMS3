@@ -151,4 +151,10 @@ export type ExistingProjectDocument = z.infer<
   typeof ExistingProjectDocumentSchema
 >;
 
+/** Stored project shape without the form payload (matches listing responses). */
+export const ProjectListItemSchema = ExistingProjectDocumentSchema.omit({
+  uiSpecification: true,
+});
+export type ProjectListItem = z.infer<typeof ProjectListItemSchema>;
+
 export type ProjectDB = DatabaseInterface<ProjectDBFields>;

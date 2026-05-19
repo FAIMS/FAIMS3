@@ -18,10 +18,10 @@
  *    Core functions to access the various databases used by the application
  */
 
-import PouchDB from 'pouchdb';
-import PouchDBFind from 'pouchdb-find';
+import PouchDB from "pouchdb";
+import PouchDBFind from "pouchdb-find";
 PouchDB.plugin(PouchDBFind);
-PouchDB.plugin(require('pouchdb-security-helper'));
+PouchDB.plugin(require("pouchdb-security-helper"));
 
 import {
   AuthDatabase,
@@ -52,28 +52,28 @@ import {
   ProjectMetaObject,
   TeamsDB,
   TemplateDB,
-} from '@faims3/data-model';
-import Nano from 'nano';
-import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
+} from "@faims3/data-model";
+import Nano from "nano";
+import { initialiseJWTKey } from "../auth/keySigning/initJWTKeys";
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
   LOCAL_COUCHDB_AUTH,
-} from '../buildconfig';
-import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory} from './notebooks';
-import {registerAdminUser} from './users';
+} from "../buildconfig";
+import * as Exceptions from "../exceptions";
+import { getAllProjectsDirectory } from "./notebooks";
+import { registerAdminUser } from "./users";
 
-const DIRECTORY_DB_NAME = 'directory';
-const PROJECTS_DB_NAME = 'projects';
-const TEMPLATES_DB_NAME = 'templates';
-const AUTH_DB_NAME = 'auth';
-const PEOPLE_DB_NAME = 'people';
-const MIGRATIONS_DB_NAME = 'migrations';
-const INVITE_DB_NAME = 'invites';
-const TEAMS_DB_NAME = 'teams';
+const DIRECTORY_DB_NAME = "directory";
+const PROJECTS_DB_NAME = "projects";
+const TEMPLATES_DB_NAME = "templates";
+const AUTH_DB_NAME = "auth";
+const PEOPLE_DB_NAME = "people";
+const MIGRATIONS_DB_NAME = "migrations";
+const INVITE_DB_NAME = "invites";
+const TEAMS_DB_NAME = "teams";
 
 let _directoryDB: DatabaseInterface | undefined;
 let _projectsDB: DatabaseInterface<ProjectDocument> | undefined;
@@ -87,8 +87,8 @@ let _migrationsDB: MigrationsDB | undefined;
 const pouchOptions = () => {
   const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
 
-  if (process.env.NODE_ENV === 'test') {
-    options.adapter = 'memory';
+  if (process.env.NODE_ENV === "test") {
+    options.adapter = "memory";
   }
 
   if (LOCAL_COUCHDB_AUTH !== undefined) {
@@ -106,9 +106,9 @@ export type CouchDBConnectionResult = {
 
 export const databaseValidityReport: CouchDBConnectionResult = {
   valid: true,
-  server_msg: '',
+  server_msg: "",
   database_errors: [],
-  validate_error: '',
+  validate_error: "",
 };
 
 export const verifyCouchDBConnection = async () => {
@@ -117,12 +117,12 @@ export const verifyCouchDBConnection = async () => {
 
   // can we reach the couchdb server?
   const response = await fetch(url, {
-    method: 'HEAD',
+    method: "HEAD",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   }).catch(() => {
-    console.log('Catching error');
+    console.log("Catching error");
     return null;
   });
 
@@ -141,22 +141,22 @@ export const verifyCouchDBConnection = async () => {
   pouch_options.skip_setup = true;
 
   // check for all required databases
-  const required = ['people', 'projects', 'templates', 'auth'];
+  const required = ["people", "projects", "templates", "auth"];
 
   for (let i = 0; i < required.length; i++) {
     const db = required[i];
-    const dbName = COUCHDB_INTERNAL_URL + '/' + db;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + db;
     try {
       const dbInstance = new PouchDB(dbName, pouch_options);
       const info = (await dbInstance.info()) as any; // type does not include error
-      if (info.error === 'not_found') {
+      if (info.error === "not_found") {
         result.valid = false;
         result.database_errors?.push(`Database ${db} not found`);
       }
     } catch {
       result.valid = false;
       result.database_errors?.push(
-        `Unable to connect to CouchDB database ${db}`
+        `Unable to connect to CouchDB database ${db}`,
       );
     }
   }
@@ -168,12 +168,12 @@ export const getDirectoryDB = (): DatabaseInterface => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
 
-    const directorydb = COUCHDB_INTERNAL_URL + '/' + DIRECTORY_DB_NAME;
+    const directorydb = COUCHDB_INTERNAL_URL + "/" + DIRECTORY_DB_NAME;
     try {
       _directoryDB = new PouchDB(directorydb, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting directory database.'
+        "Error occurred while getting directory database.",
       );
     }
   }
@@ -183,12 +183,12 @@ export const getDirectoryDB = (): DatabaseInterface => {
 export const getAuthDB = (): AuthDatabase => {
   if (!_authDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + AUTH_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + AUTH_DB_NAME;
     try {
       _authDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting auth database.'
+        "Error occurred while getting auth database.",
       );
     }
   }
@@ -198,12 +198,12 @@ export const getAuthDB = (): AuthDatabase => {
 export const getUsersDB = (): PeopleDB => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + PEOPLE_DB_NAME;
     try {
       _usersDB = new PouchDB<PeopleDBFields>(dbName, pouch_options);
     } catch {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting users database.'
+        "Error occurred while getting users database.",
       );
     }
   }
@@ -214,12 +214,12 @@ export const getUsersDB = (): PeopleDB => {
 export const localGetProjectsDb = (): DatabaseInterface<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + PROJECTS_DB_NAME;
     try {
       _projectsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting projects database.'
+        "Error occurred while getting projects database.",
       );
     }
   }
@@ -229,12 +229,12 @@ export const localGetProjectsDb = (): DatabaseInterface<ProjectDocument> => {
 export const getTemplatesDb = (): TemplateDB => {
   if (!_templatesDb) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + TEMPLATES_DB_NAME;
     try {
       _templatesDb = new PouchDB(dbName, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting templates database.'
+        "Error occurred while getting templates database.",
       );
     }
   }
@@ -244,12 +244,12 @@ export const getTemplatesDb = (): TemplateDB => {
 export const getMigrationDb = (): MigrationsDB => {
   if (!_migrationsDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + MIGRATIONS_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + MIGRATIONS_DB_NAME;
     try {
       _migrationsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting migrations database.'
+        "Error occurred while getting migrations database.",
       );
     }
   }
@@ -259,12 +259,12 @@ export const getMigrationDb = (): MigrationsDB => {
 export const getInvitesDB = (): DatabaseInterface => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + INVITE_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + INVITE_DB_NAME;
     try {
       _invitesDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting invites database.'
+        "Error occurred while getting invites database.",
       );
     }
   }
@@ -274,17 +274,18 @@ export const getInvitesDB = (): DatabaseInterface => {
 export const getTeamsDB = (): TeamsDB => {
   if (!_teamsDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + TEAMS_DB_NAME;
+    const dbName = COUCHDB_INTERNAL_URL + "/" + TEAMS_DB_NAME;
     try {
       _teamsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
       throw new Exceptions.InternalSystemError(
-        'Error occurred while getting teams database.'
+        "Error occurred while getting teams database.",
       );
     }
   }
   return _teamsDB;
 };
+
 /**
  * Returns the metadata DB for a given project - involves fetching the project
  * doc and then fetching the corresponding metadata db
@@ -292,13 +293,13 @@ export const getTeamsDB = (): TeamsDB => {
  * @returns The metadata DB for this project
  */
 export const getMetadataDb = async (
-  projectID: ProjectID
+  projectID: ProjectID,
 ): Promise<DatabaseInterface<ProjectMetaObject>> => {
   // Gets the projects DB
   const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
-      'Could not fetch the projects DB. Contact system administrator.'
+      "Could not fetch the projects DB. Contact system administrator.",
     );
   }
 
@@ -308,26 +309,27 @@ export const getMetadataDb = async (
   // 404 if project doc not found
   if (!projectDoc) {
     throw new Exceptions.ItemNotFoundException(
-      'Cannot find the given project ID in the projects database.'
+      "Cannot find the given project ID in the projects database.",
     );
   }
 
   // Now get the metadata DB from the project document (and be backwards
   // compatible)
   let db: PossibleConnectionInfo;
-  db = projectDoc.metadataDb;
+  // TODO this should be removed
+  db = (projectDoc as any).metadataDb;
   if (!db) {
     const doc = projectDoc as any;
     db = doc.metadata_db;
     if (!db) {
       throw new Exceptions.InternalSystemError(
-        "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
+        "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting.",
       );
     }
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + "/" + db.db_name;
   const pouch_options = pouchOptions();
 
   // Authorise against this DB
@@ -345,13 +347,13 @@ export const getMetadataDb = async (
  * @returns The data DB for this project or undefined if not found
  */
 export const getDataDb = async (
-  projectID: ProjectID
+  projectID: ProjectID,
 ): Promise<DatabaseInterface<ProjectDataObject>> => {
   // Get the projects DB
   const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
-      'Could not fetch the projects DB. Contact system administrator.'
+      "Could not fetch the projects DB. Contact system administrator.",
     );
   }
 
@@ -359,7 +361,7 @@ export const getDataDb = async (
   const projectDoc = await projectsDB.get(projectID);
   if (!projectDoc) {
     throw new Exceptions.ItemNotFoundException(
-      'Cannot find the given project ID in the projects database.'
+      "Cannot find the given project ID in the projects database.",
     );
   }
 
@@ -372,13 +374,13 @@ export const getDataDb = async (
     db = doc.data_db;
     if (!db) {
       throw new Exceptions.InternalSystemError(
-        "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+        "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting.",
       );
     }
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + "/" + db.db_name;
   const pouch_options = pouchOptions();
   // Authorize against this DB
   if (LOCAL_COUCHDB_AUTH !== undefined) {
@@ -392,7 +394,7 @@ export const getDataDb = async (
  * callers. Per-project {@link DatabaseType.DATA} and {@link DatabaseType.METADATA}
  * databases use {@link id} as the project ID; singleton databases ignore {@link id}.
  */
-export const getDbById: GetDbById = async ({dbType, id}) => {
+export const getDbById: GetDbById = async ({ dbType, id }) => {
   switch (dbType) {
     case DatabaseType.AUTH:
       return getAuthDB();
@@ -415,7 +417,7 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
     default: {
       const _exhaustive: never = dbType;
       throw new Exceptions.InternalSystemError(
-        `Unsupported database type for getDbById: ${_exhaustive}`
+        `Unsupported database type for getDbById: ${_exhaustive}`,
       );
     }
   }
@@ -433,7 +435,7 @@ export const initialiseMetadataDb = async ({
   force?: boolean;
 }): Promise<DatabaseInterface<ProjectMetaObject>> => {
   // Are we in a testing environment?
-  const isTesting = process.env.NODE_ENV === 'test';
+  const isTesting = process.env.NODE_ENV === "test";
 
   // Get the metadata DB
   const metaDb = await getMetadataDb(projectId);
@@ -441,12 +443,12 @@ export const initialiseMetadataDb = async ({
   try {
     await couchInitialiser({
       db: metaDb,
-      content: initMetadataDB({projectId}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      content: initMetadataDB({ projectId }),
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      `An error occurred while initialising the metadata DB for project ${projectId}!... ${e}`
+      `An error occurred while initialising the metadata DB for project ${projectId}!... ${e}`,
     );
   }
 
@@ -465,7 +467,7 @@ export const initialiseDataDb = async ({
   force?: boolean;
 }): Promise<DatabaseInterface<ProjectDataObject>> => {
   // Are we in a testing environment?
-  const isTesting = process.env.NODE_ENV === 'test';
+  const isTesting = process.env.NODE_ENV === "test";
 
   // Get the metadata DB
   const dataDb = await getDataDb(projectId);
@@ -473,12 +475,12 @@ export const initialiseDataDb = async ({
   try {
     await couchInitialiser({
       db: dataDb,
-      content: initDataDB({projectId}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      content: initDataDB({ projectId }),
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      `An error occurred while initialising the data DB for project ${projectId}!... ${e}`
+      `An error occurred while initialising the data DB for project ${projectId}!... ${e}`,
     );
   }
 
@@ -513,7 +515,7 @@ export const initialiseDbAndKeys = async ({
   pushKeys?: boolean;
 }) => {
   // Are we in a testing environment?
-  const isTesting = process.env.NODE_ENV === 'test';
+  const isTesting = process.env.NODE_ENV === "test";
 
   // Establish databases (this either fetches or creates)
   // Auth
@@ -547,11 +549,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: authDB,
       content: initAuthDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the auth database!...' + e
+      "An error occurred while initialising the auth database!..." + e,
     );
   }
 
@@ -569,11 +571,11 @@ export const initialiseDbAndKeys = async ({
           projectsDbName: PROJECTS_DB_NAME,
         },
       }),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the directory database!...' + e
+      "An error occurred while initialising the directory database!..." + e,
     );
   }
 
@@ -582,11 +584,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: projectsDB,
       content: initProjectsDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the projects database!...' + e
+      "An error occurred while initialising the projects database!..." + e,
     );
   }
 
@@ -595,11 +597,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: templatesDb,
       content: initTemplatesDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the templates database!...' + e
+      "An error occurred while initialising the templates database!..." + e,
     );
   }
 
@@ -608,11 +610,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: peopleDb,
       content: initPeopleDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the people database!...' + e
+      "An error occurred while initialising the people database!..." + e,
     );
   }
 
@@ -621,11 +623,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: invitesDB,
       content: initInvitesDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the invites database!...' + e
+      "An error occurred while initialising the invites database!..." + e,
     );
   }
 
@@ -634,11 +636,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: teamsDB,
       content: initTeamsDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the teams database!...' + e
+      "An error occurred while initialising the teams database!..." + e,
     );
   }
 
@@ -647,11 +649,11 @@ export const initialiseDbAndKeys = async ({
     await couchInitialiser({
       db: migrationsDb,
       content: initMigrationsDB({}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      config: { applyPermissions: !isTesting, forceWrite: force },
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while initialising the migrations database!...' + e
+      "An error occurred while initialising the migrations database!..." + e,
     );
   }
 
@@ -664,8 +666,8 @@ export const initialiseDbAndKeys = async ({
     const projectId = project._id;
 
     // Now initialise the DBs (potentially updating security documents etc)
-    await initialiseMetadataDb({projectId, force});
-    await initialiseDataDb({projectId, force});
+    await initialiseMetadataDb({ projectId, force });
+    await initialiseDataDb({ projectId, force });
   }
 
   if (pushKeys) {
@@ -674,13 +676,13 @@ export const initialiseDbAndKeys = async ({
       await initialiseJWTKey();
     } catch (error) {
       console.log(
-        'something wrong PUTing jwt_keys into the db configuration...',
-        error
+        "something wrong PUTing jwt_keys into the db configuration...",
+        error,
       );
       throw error;
     }
   } else {
-    console.log('Not pushing key configuration.');
+    console.log("Not pushing key configuration.");
   }
 };
 
@@ -695,35 +697,40 @@ export const initialiseAndMigrateDBs = async ({
   // Should we push the key configuration?
   pushKeys?: boolean;
 }) => {
-  await initialiseDbAndKeys({force, pushKeys});
+  await initialiseDbAndKeys({ force, pushKeys });
 
-  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: DatabaseInterface}[] = [
-    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
-    {
-      db: getDirectoryDB(),
-      dbType: DatabaseType.DIRECTORY,
-      dbName: DIRECTORY_DB_NAME,
-    },
-    {db: getInvitesDB(), dbType: DatabaseType.INVITES, dbName: INVITE_DB_NAME},
-    {db: getUsersDB(), dbType: DatabaseType.PEOPLE, dbName: PEOPLE_DB_NAME},
-    {
-      db: localGetProjectsDb(),
-      dbType: DatabaseType.PROJECTS,
-      dbName: PROJECTS_DB_NAME,
-    },
-    {
-      db: getTemplatesDb(),
-      dbType: DatabaseType.TEMPLATES,
-      dbName: TEMPLATES_DB_NAME,
-    },
-  ];
+  let dbs: { dbType: DATABASE_TYPE; dbName: string; db: DatabaseInterface }[] =
+    [
+      { db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME },
+      {
+        db: getDirectoryDB(),
+        dbType: DatabaseType.DIRECTORY,
+        dbName: DIRECTORY_DB_NAME,
+      },
+      {
+        db: getInvitesDB(),
+        dbType: DatabaseType.INVITES,
+        dbName: INVITE_DB_NAME,
+      },
+      { db: getUsersDB(), dbType: DatabaseType.PEOPLE, dbName: PEOPLE_DB_NAME },
+      {
+        db: localGetProjectsDb(),
+        dbType: DatabaseType.PROJECTS,
+        dbName: PROJECTS_DB_NAME,
+      },
+      {
+        db: getTemplatesDb(),
+        dbType: DatabaseType.TEMPLATES,
+        dbName: TEMPLATES_DB_NAME,
+      },
+    ];
 
   // Migrate these first
   const migrationsDb = getMigrationDb();
   await migrateDbs({
     dbs,
     migrationDb: migrationsDb,
-    userId: 'system',
+    userId: "system",
     getDbById,
   });
 
@@ -752,7 +759,7 @@ export const initialiseAndMigrateDBs = async ({
   await migrateDbs({
     dbs,
     migrationDb: migrationsDb,
-    userId: 'system',
+    userId: "system",
     getDbById,
   });
 
@@ -776,7 +783,7 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   if (LOCAL_COUCHDB_AUTH) {
     await _nanoInstance.auth(
       LOCAL_COUCHDB_AUTH.username,
-      LOCAL_COUCHDB_AUTH.password
+      LOCAL_COUCHDB_AUTH.password,
     );
   } else {
     console.error("No local CouchDB auth configured - can't talk to CouchDB!");
@@ -786,7 +793,7 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
 };
 
 /** Default Couch metadata database name prefix (`metadata-{projectId}`). */
-export const METADATA_DATABASE_NAME_PREFIX = 'metadata-';
+export const METADATA_DATABASE_NAME_PREFIX = "metadata-";
 
 /** Lists all database names on the configured CouchDB server. */
 export const listCouchDatabaseNames = async (): Promise<string[]> => {
@@ -806,11 +813,11 @@ export const destroyCouchDatabase = async (dbName: string): Promise<void> => {
  * @returns The nano document scope for this project's data DB
  */
 export const getNanoDataDb = async (
-  projectID: ProjectID
+  projectID: ProjectID,
 ): Promise<Nano.DocumentScope<ProjectDataObject>> => {
   const nano = await getNanoInstance();
   // Get the projects DB
-  const projectsDB = nano.db.use('projects');
+  const projectsDB = nano.db.use("projects");
   try {
     // Get the project document
     const projectDoc = await projectsDB.get(projectID);
@@ -819,7 +826,7 @@ export const getNanoDataDb = async (
       (projectDoc as any).dataDb || (projectDoc as any).data_db;
     if (!db || !db.db_name) {
       throw new Exceptions.InternalSystemError(
-        'The given project document does not contain a mandatory reference to its data database.'
+        "The given project document does not contain a mandatory reference to its data database.",
       );
     }
     // Return the nano document scope for the data DB
@@ -827,11 +834,11 @@ export const getNanoDataDb = async (
   } catch (error: any) {
     if (error.statusCode === 404) {
       throw new Exceptions.ItemNotFoundException(
-        'Cannot find the given project ID in the projects database.'
+        "Cannot find the given project ID in the projects database.",
       );
     }
     throw new Exceptions.InternalSystemError(
-      `Error fetching data DB for project ${projectID}: ${error.message}`
+      `Error fetching data DB for project ${projectID}: ${error.message}`,
     );
   }
 };

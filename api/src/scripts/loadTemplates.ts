@@ -15,7 +15,10 @@ const loadTemplate = async (filename: string) => {
     const jsonText = readFileSync(filename, 'utf-8');
     const templateSpec = JSON.parse(jsonText);
 
-    const result = await createTemplate({payload: templateSpec});
+    const result = await createTemplate({
+      payload: templateSpec,
+      createdBy: 'admin',
+    });
     console.log('created template', result._id);
     process.exit(0);
   } catch (error) {

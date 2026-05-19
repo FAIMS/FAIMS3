@@ -53,7 +53,7 @@ export const useDesignerSaveMutation = ({
     mutationFn: async file => {
       const jsonText = await file.text();
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/${apiResourceType}/${resourceId}`,
+        `${import.meta.env.VITE_API_URL}/api/${apiResourceType}/${resourceId}/uiSpecification`,
         {
           method: 'PUT',
           headers: {

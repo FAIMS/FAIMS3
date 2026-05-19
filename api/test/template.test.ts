@@ -25,8 +25,6 @@ PouchDB.plugin(PouchDBFind);
 
 import {
   CreateNotebookFromTemplate,
-  EncodedNotebook,
-  EncodedProjectUIModel,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
@@ -60,28 +58,20 @@ import {
   requestAuthAndType,
 } from './utils';
 import {createSampleTeam} from './teams.test';
+import {
+  EMPTY_UI_SPECIFICATION,
+  readSampleNotebookFile,
+  sampleCreateNotebookPayload,
+  sampleCreateTemplatePayload,
+} from './sampleNotebook';
 
 const NOTEBOOKS_API_BASE = '/api/notebooks';
-
-const EMPTY_UI_SPEC = {
-  fields: {},
-  fviews: {},
-  viewsets: {},
-  visible_types: [],
-} satisfies EncodedProjectUIModel;
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
 
-/**
- * Loads example notebook from file system and parses into appropriate format
- * @returns The sample notebook with metadata and 'ui-specification' properties
- */
-const getSampleNotebook = () => {
-  const filename = 'notebooks/sample_notebook.json';
-  const jsonText = fs.readFileSync(filename, 'utf-8');
-  return JSON.parse(jsonText) as EncodedNotebook;
-};
+/** Payload for POST /api/templates from the on-disk v5 sample notebook. */
+const getSampleNotebook = () => sampleCreateTemplatePayload('test template');
 
 /**
  * Creates a new template through API, testing the ID matches and parsing the
@@ -275,13 +265,12 @@ describe('template API tests', () => {
     const listed = await listTemplates(app);
     const summary = listed.templates.find(t => t._id === template._id);
     expect(summary).to.be.ok;
-    expect(summary!).to.not.have.property('ui-specification');
+    expect(summary!).to.not.have.property('uiSpecification');
 
-    // Detail: single-template GET must still return the full document for edit/create flows
     const detail = await getATemplate(app, template._id);
-    expect(detail['ui-specification']).to.be.ok;
-    expect(JSON.stringify(detail['ui-specification'])).to.equal(
-      JSON.stringify(nb['ui-specification'])
+    expect(detail.uiSpecification).to.be.ok;
+    expect(JSON.stringify(detail.uiSpecification)).to.equal(
+      JSON.stringify(nb.uiSpecification)
     );
 
     await setTemplateArchived(app, template._id, true);
@@ -385,7 +374,7 @@ describe('template API tests', () => {
       expect(entry.name).to.equal(name);
 
       // List endpoint returns summaries only (no ui-specification field).
-      expect(entry).to.not.have.property('ui-specification');
+      expect(entry).to.not.have.property('uiSpecification');
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
       // expect(JSON.stringify(entry['ui-specification'])).to.equal(
@@ -407,8 +396,8 @@ describe('template API tests', () => {
     await getATemplate(app, templateId1).then(template => {
       // Check all properties match
       expect(template._id).to.equal(templateId1);
-      expect(JSON.stringify(template['ui-specification'])).to.equal(
-        JSON.stringify(nb['ui-specification'])
+      expect(JSON.stringify(template.uiSpecification)).to.equal(
+        JSON.stringify(nb.uiSpecification)
       );
 
       // should be version 1
@@ -432,7 +421,7 @@ describe('template API tests', () => {
       expect(entry?._id).to.equal(templateId2);
       if (entry) {
         // Same as above: list entries are summaries without ui-specification
-        expect(entry).to.not.have.property('ui-specification');
+        expect(entry).to.not.have.property('uiSpecification');
       }
 
       // should be version 1
@@ -443,8 +432,8 @@ describe('template API tests', () => {
     await getATemplate(app, templateId2).then(template => {
       // Check all properties match
       expect(template._id).to.equal(templateId2);
-      expect(JSON.stringify(template['ui-specification'])).to.equal(
-        JSON.stringify(nb['ui-specification'])
+      expect(JSON.stringify(template.uiSpecification)).to.equal(
+        JSON.stringify(nb.uiSpecification)
       );
 
       // should be version 1
@@ -500,65 +489,36 @@ describe('template API tests', () => {
   });
 
   it('update', async () => {
-    // create a template
     const {template} = await createSampleTemplate(app, {});
 
-    // update some details and check properties
-
-    // change the template name and add a metadata field
-    template.metadata.updated_field = 'updated-value';
-
-    // update the existing template
-    await updateATemplate(
-      app,
-      template._id,
-      // This wills trip out unnecessary fields
-      PutUpdateTemplateInputSchema.parse(template)
-    ).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
-      expect(newTemplate.metadata.updated_field).to.equal('updated-value');
+    await updateATemplate(app, template._id, {
+      name: 'updated name for template',
+      description: 'updated description',
+    }).then(newTemplate => {
+      expect(newTemplate.version).to.equal(1);
+      expect(newTemplate.name).to.equal('updated name for template');
+      expect(newTemplate.description).to.equal('updated description');
     });
 
-    // get the template and check the same
     await getATemplate(app, template._id).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
-      expect(newTemplate.metadata.updated_field).to.equal('updated-value');
+      expect(newTemplate.name).to.equal('updated name for template');
+      expect(newTemplate.description).to.equal('updated description');
     });
   });
 
   it('update only some fields', async () => {
-    // create a template
     const {template} = await createSampleTemplate(app, {});
 
-    const {metadata} = template;
-
-    // update some details and check properties
-
-    // change the template name and add a metadata field
-    metadata.updated_field = 'updated-value';
-
-    // update the existing template but only send the metadata and name
     await updateATemplate(app, template._id, {
-      metadata,
       name: 'updated name for template',
     }).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
-      expect(newTemplate.metadata.updated_field).to.equal('updated-value');
+      expect(newTemplate.version).to.equal(1);
       expect(newTemplate.name).to.equal('updated name for template');
-      // but team is still the same
       expect(newTemplate.ownedByTeamId).to.equal(template.ownedByTeamId);
     });
 
-    // get the template and check the same
     await getATemplate(app, template._id).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
-      expect(newTemplate.metadata.updated_field).to.equal('updated-value');
       expect(newTemplate.name).to.equal('updated name for template');
-      // but team is still the same
       expect(newTemplate.ownedByTeamId).to.equal(template.ownedByTeamId);
     });
   });
@@ -781,7 +741,7 @@ describe('template API tests', () => {
     )
       .expect(200)
       .then(res => {
-        expect(res.body.metadata?.template_id).to.equal(undefined);
+        expect(res.body.templateId).to.equal(undefined);
       });
 
     await requestAuthAndType(
@@ -817,13 +777,11 @@ describe('template API tests', () => {
       .then(response => {
         // Parse response as the get model
 
-        // due to "test_key": "test_value",
-        expect(response.body.metadata.test_key).to.equal(
-          notebook.metadata.test_key
+        expect(response.body.uiSpecification.metadata.custom?.test_key).to.equal(
+          notebook.uiSpecification.metadata.custom?.test_key
         );
 
-        // check template ID is processed properly
-        expect(response.body.metadata.template_id).to.equal(template._id);
+        expect(response.body.templateId).to.equal(template._id);
       });
   });
 
@@ -864,10 +822,7 @@ describe('template API tests', () => {
     await requestAuthAndType(
       request(app)
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({
-          metadata: {},
-          'ui-specification': EMPTY_UI_SPEC,
-        } satisfies PutUpdateTemplateInput)
+        .send({name: 'x'} satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404)
@@ -888,10 +843,7 @@ describe('template API tests', () => {
     await requestAuthAndType(
       request(app)
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({
-          metadata: {},
-          'ui-specification': EMPTY_UI_SPEC,
-        } satisfies PutUpdateTemplateInput)
+        .send({name: 'x'} satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404);
@@ -975,10 +927,7 @@ describe('template API tests', () => {
   it('update template not authorised', async () => {
     await request(app)
       .put(`${TEMPLATE_API_BASE}/12345`)
-      .send({
-        metadata: {},
-        'ui-specification': EMPTY_UI_SPEC,
-      } satisfies PutUpdateTemplateInput)
+      .send({name: 'x'} satisfies PutUpdateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -986,9 +935,8 @@ describe('template API tests', () => {
     return await request(app)
       .post(`${TEMPLATE_API_BASE}`)
       .send({
+        ...sampleCreateTemplatePayload('tests'),
         name: 'tests',
-        metadata: {},
-        'ui-specification': EMPTY_UI_SPEC,
       } satisfies PostCreateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
@@ -1014,11 +962,7 @@ describe('template API tests', () => {
     return await requestAuthAndType(
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
-        .send({
-          metadata: {},
-          'ui-specification': EMPTY_UI_SPEC,
-          name: 'test template 123',
-        } satisfies PostCreateTemplateInput),
+        .send(sampleCreateTemplatePayload('test template 123')),
       localUserToken
     )
       .set('Content-Type', 'application/json')
@@ -1028,10 +972,7 @@ describe('template API tests', () => {
     return await requestAuthAndType(
       request(app)
         .put(`${TEMPLATE_API_BASE}/12345`)
-        .send({
-          metadata: {},
-          'ui-specification': EMPTY_UI_SPEC,
-        } satisfies PutUpdateTemplateInput),
+        .send({name: 'x'} satisfies PutUpdateTemplateInput),
       localUserToken
     ).expect(401);
   });
@@ -1119,9 +1060,8 @@ describe('template API tests', () => {
     });
     await requestAuthAndType(
       request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
-        metadata: template.metadata,
-        'ui-specification': template['ui-specification'],
         name: template.name,
+        description: template.description,
         isPublic: true,
       } as PutUpdateTemplateInput & {isPublic: boolean})
     ).expect(200);

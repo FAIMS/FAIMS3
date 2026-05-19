@@ -49,6 +49,8 @@ import {
   migrationTimestamps,
   readLegacyNotebookFromMetadataDb,
 } from './uiSpecificationMigration';
+
+export {buildSurveyNotebookDefinitionFromLegacy} from './uiSpecificationMigration';
 import {resolveMigrationCreatedBy} from './hooks';
 
 /**

@@ -42,8 +42,26 @@ const projectIdFromMetadataDbName = (dbName: string): string | null => {
   return id.length > 0 ? id : null;
 };
 
+/** Default per-project metadata Couch DB name (`metadata-{projectId}`), matching createNotebook. */
+const metadataDbNameFromProjectId = (projectId: string): string =>
+  METADATA_DATABASE_NAME_PREFIX + projectId;
+
 const metadataDbNameFromProject = (project: ProjectDocument): string | undefined => {
-  return project.metadataDb?.db_name ?? (project as {metadata_db?: {db_name?: string}}).metadata_db?.db_name;
+  const projectId = project._id?.trim();
+  return projectId ? metadataDbNameFromProjectId(projectId) : undefined;
+};
+
+type LegacyProjectMetadataDbRef = {
+  metadataDb?: {db_name?: string};
+  metadata_db?: {db_name?: string};
+};
+
+/** Whether the project doc still stores the deprecated metadataDb / metadata_db reference. */
+const projectStillHasMetadataDbRef = (project: ProjectDocument): boolean => {
+  const legacy = project as ProjectDocument & LegacyProjectMetadataDbRef;
+  return Boolean(
+    legacy.metadataDb?.db_name ?? legacy.metadata_db?.db_name
+  );
 };
 
 export const discoverMetadataDatabases = async (): Promise<
@@ -88,14 +106,14 @@ export const discoverMetadataDatabases = async (): Promise<
     if (existing) {
       existing.projectId = existing.projectId ?? projectId;
       existing.projectName = project.name;
-      existing.stillReferencedOnProject = true;
+      existing.stillReferencedOnProject = projectStillHasMetadataDbRef(project);
       existing.hasInlinedUiSpecification = hasInlinedUiSpecification;
     } else {
       byName.set(dbName, {
         dbName,
         projectId,
         projectName: project.name,
-        stillReferencedOnProject: true,
+        stillReferencedOnProject: projectStillHasMetadataDbRef(project),
         hasInlinedUiSpecification,
       });
     }
@@ -106,9 +124,8 @@ export const discoverMetadataDatabases = async (): Promise<
       const project = projectById.get(candidate.projectId);
       if (project) {
         candidate.projectName = project.name;
-        candidate.stillReferencedOnProject = Boolean(
-          metadataDbNameFromProject(project)
-        );
+        candidate.stillReferencedOnProject =
+          projectStillHasMetadataDbRef(project);
         candidate.hasInlinedUiSpecification = Boolean(
           (project as {uiSpecification?: unknown}).uiSpecification
         );

@@ -4,6 +4,8 @@ import {
   buildSurveyNotebookDefinitionFromLegacy,
 } from '../src/data_storage/migrations/uiSpecificationMigration';
 
+/** Legacy wire-format fixture: `api/notebooks/sample_notebook.legacy.json` */
+
 describe('uiSpecificationMigration helpers', () => {
   describe('coerceShowQrCodeButton', () => {
     it('enables QR search only for true and the string "true"', () => {

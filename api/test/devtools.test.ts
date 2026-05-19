@@ -38,13 +38,8 @@ if (DEVELOPER_MODE) {
   it('createRecords', async () => {
     await initialiseDbAndKeys({});
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const projectID = await createNotebook('Test Notebook', uiSpec, metadata);
+    const {createNotebookFromSampleFile} = await import('./sampleNotebook');
+    const projectID = await createNotebookFromSampleFile('Test Notebook');
 
     expect(projectID).not.to.be.undefined;
 

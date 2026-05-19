@@ -32,6 +32,7 @@ import {
   PutTemplateSetVisibilityInputSchema,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
+  PutUpdateTemplateUiSpecificationInputSchema,
   Role,
   userCanReadTemplateDocument,
 } from '@faims3/data-model';
@@ -48,6 +49,7 @@ import {
   restoreTemplateFromArchive,
   setTemplateVisibility,
   updateExistingTemplate,
+  updateTemplateUiSpecification,
   withOwnedByTeamDisplayName,
   withOwnedByTeamDisplayNames,
 } from '../couchdb/templates';
@@ -234,6 +236,7 @@ api.post(
     // Now we can create the new template and return it
     const newTemplate = await createTemplate({
       payload: body,
+      createdBy: req.user.user_id,
     });
 
     // Make the creator the admin
@@ -271,18 +274,12 @@ api.put(
 );
 
 /**
- * PUT update existing template Updates an existing template. The payload is
- * validated by Zod before reaching this function. Expects a document as the
- * response JSON. Requires {@link Action.UPDATE_TEMPLATE_DETAILS} on the template.
- *
- * TODO distinguish between the different types of template updates permission
- * wise. Right now we look for just the update content action.
+ * PUT update existing template — merge inconsequential root fields only.
  */
 api.put(
   '/:id',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update (i.e. ui spec or not)
     action: Action.UPDATE_TEMPLATE_DETAILS,
     getResourceId(req) {
       return req.params.id;
@@ -293,12 +290,34 @@ api.put(
     body: PutUpdateTemplateInputSchema,
   }),
   async (req, res: Response<PutUpdateTemplateResponse>) => {
-    // pull out template Id
     const templateId = req.params.id;
-
-    // And respond with fulfilled document after updating
     const updatedTemplate = await updateExistingTemplate(templateId, req.body);
-    res.json(updatedTemplate);
+    res.json(await withOwnedByTeamDisplayName(updatedTemplate));
+  }
+);
+
+/**
+ * PUT replace template uiSpecification (designer / full JSON export).
+ */
+api.put(
+  '/:id/uiSpecification',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutUpdateTemplateUiSpecificationInputSchema,
+  }),
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
+    const updatedTemplate = await updateTemplateUiSpecification(
+      req.params.id,
+      req.body
+    );
+    res.json(await withOwnedByTeamDisplayName(updatedTemplate));
   }
 );
 

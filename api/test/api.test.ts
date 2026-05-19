@@ -55,9 +55,14 @@ import {
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
-  getNotebookMetadata,
+  getProjectById,
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
+import {
+  createNotebookFromSampleFile,
+  EMPTY_UI_SPECIFICATION,
+  sampleCreateNotebookPayload,
+} from './sampleNotebook';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {callbackObject, databaseList} from './mocks';
@@ -111,11 +116,7 @@ describe('API tests', () => {
   });
 
   it('get notebooks', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    await createNotebook('test-notebook', uiSpec, metadata);
+    await createNotebookFromSampleFile('test-notebook');
 
     return request(app)
       .get('/api/notebooks')
@@ -127,17 +128,9 @@ describe('API tests', () => {
   });
 
   it('can create a notebook', () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
     return request(app)
       .post('/api/notebooks')
-      .send({
-        'ui-specification': uiSpec,
-        metadata: metadata,
-        name: 'test notebook',
-      })
+      .send(sampleCreateNotebookPayload('test notebook'))
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200)
@@ -147,33 +140,18 @@ describe('API tests', () => {
   });
 
   it('will not create a notebook if not authorised', () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
     return request(app)
       .post('/api/notebooks')
-      .send({
-        'ui-specification': uiSpec,
-        metadata: metadata,
-        name: 'test notebook',
-      })
+      .send(sampleCreateNotebookPayload('test notebook'))
       .set('Authorization', `Bearer ${localUserToken}`)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
 
   it('can create a notebook and set up ownership', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
     const response = await request(app)
       .post('/api/notebooks')
-      .send({
-        'ui-specification': uiSpec,
-        metadata: metadata,
-        name: 'test notebook',
-      })
+      .send(sampleCreateNotebookPayload('test notebook'))
       .set('Authorization', `Bearer ${notebookUserToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
@@ -200,29 +178,20 @@ describe('API tests', () => {
   });
 
   it('update notebook', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+    const createPayload = sampleCreateNotebookPayload('test notebook');
+    const {uiSpecification} = createPayload;
 
-    // create notebook
     const response = await request(app)
       .post('/api/notebooks')
-      .send({
-        'ui-specification': uiSpec,
-        metadata: metadata,
-        name: 'test notebook',
-      })
+      .send(createPayload)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
 
     const projectID = response.body.notebook;
-    // update the notebook
-    metadata['name'] = 'Updated Test Notebook';
-    metadata['project_lead'] = 'Bob Bobalooba';
-    uiSpec.fviews['FORM1SECTION1']['label'] = 'Updated Label';
+    uiSpecification.metadata.information.projectLeadLabel = 'Bob Bobalooba';
+    uiSpecification.uiSpec.views['FORM1SECTION1'].label = 'Updated Label';
 
-    // add a new autoincrementer field
     const newField = {
       'component-namespace': 'faims-custom',
       'component-name': 'BasicAutoIncrementer',
@@ -248,42 +217,34 @@ describe('API tests', () => {
       },
     };
 
-    uiSpec.fields['newincrementor'] = newField;
-    uiSpec.fviews['FORM1SECTION1']['fields'].push('newincrementor');
+    uiSpecification.uiSpec.fields['newincrementor'] = newField;
+    uiSpecification.uiSpec.views['FORM1SECTION1'].fields.push('newincrementor');
 
-    const newResponse = await request(app)
-      .put(`/api/notebooks/${projectID}`)
-      .send({
-        'ui-specification': uiSpec,
-        metadata: metadata,
-        name: 'test notebook',
-      })
+    await request(app)
+      .put(`/api/notebooks/${projectID}/uiSpecification`)
+      .send(uiSpecification)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
 
-    expect(newResponse.body.notebook).to.include('-test-notebook');
-    const newNotebook = await getNotebookMetadata(projectID);
-    if (newNotebook) {
-      expect(newNotebook.name).to.equal('Updated Test Notebook');
-    } else {
-      expect(newNotebook).not.to.be.null;
-    }
+    await request(app)
+      .put(`/api/notebooks/${projectID}`)
+      .send({name: 'Updated Test Notebook'})
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const project = await getProjectById(projectID);
+    expect(project.name).to.equal('Updated Test Notebook');
+    expect(
+      project.uiSpecification.metadata.information.projectLeadLabel
+    ).to.equal('Bob Bobalooba');
   });
 
   it('update notebook status', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    // create notebook
     let response = await request(app)
       .post('/api/notebooks')
-      .send({
-        'ui-specification': uiSpec,
-        metadata: metadata,
-        name: 'test notebook',
-      })
+      .send(sampleCreateNotebookPayload('test notebook'))
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
@@ -422,11 +383,7 @@ describe('API tests', () => {
   });
 
   it('get notebook', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const project_id = await createNotebook('test-notebook', uiSpec, metadata);
+    const project_id = await createNotebookFromSampleFile('test-notebook');
 
     expect(project_id).not.to.be.undefined;
     return request(app)
@@ -435,14 +392,12 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200)
       .expect(response => {
-        expect(response.body.metadata.name).to.equal('test-notebook');
+        expect(response.body.name).to.equal('test-notebook');
+        expect(response.body.uiSpecification).to.be.ok;
       });
   });
 
   it('can delete a notebook', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
     const adminDbUser = await getExpressUserFromEmailOrUserId('admin');
     if (!adminDbUser) {
       throw Error('Admin db user missing!');
@@ -451,7 +406,7 @@ describe('API tests', () => {
       dbUser: adminDbUser,
     });
 
-    const project_id = await createNotebook('test-notebook', uiSpec, metadata);
+    const project_id = await createNotebookFromSampleFile('test-notebook');
     let notebooks = await getUserProjectsDetailed(adminUser);
     const dataDb = await getDataDB(project_id!);
     expect(notebooks).to.have.lengthOf(1);
@@ -546,11 +501,7 @@ describe('API tests', () => {
   });
 
   it('get notebook users', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const project_id = await createNotebook('test-notebook', uiSpec, metadata);
+    const project_id = await createNotebookFromSampleFile('test-notebook');
 
     return request(app)
       .get(`/api/notebooks/${project_id}/users`)
@@ -569,7 +520,12 @@ describe('API tests', () => {
 
   it('update notebook roles', async () => {
     // make some notebooks
-    const nb1 = await createNotebook('NB1', uispec, {});
+    const nb1 = await createNotebook({
+      projectName: 'NB1',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
 
     if (nb1) {
       await request(app)
@@ -601,7 +557,12 @@ describe('API tests', () => {
 
   it('fails to update notebook roles', async () => {
     // make some notebooks
-    const nb1 = await createNotebook('NB1', uispec, {});
+    const nb1 = await createNotebook({
+      projectName: 'NB1',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
 
     if (nb1) {
       // invalid notebook name
@@ -898,13 +859,7 @@ describe('API tests', () => {
 
   if (DEVELOPER_MODE) {
     it('can create some random records', async () => {
-      const jsonText = fs.readFileSync(
-        './notebooks/sample_notebook.json',
-        'utf-8'
-      );
-      const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-      const projectID = await createNotebook('Test Notebook', uiSpec, metadata);
+      const projectID = await createNotebookFromSampleFile('Test Notebook');
 
       if (projectID) {
         return request(app)

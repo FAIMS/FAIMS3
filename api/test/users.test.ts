@@ -385,13 +385,8 @@ describe('user creation', () => {
     await initialiseDbAndKeys({force: false});
     registerAdminUser();
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-    const name = 'Test Notebook';
-    const project_id = await createNotebook(name, uiSpec, metadata);
+    const {createNotebookFromSampleFile} = await import('./sampleNotebook');
+    const project_id = await createNotebookFromSampleFile('Test Notebook');
     const username = 'bobalooba';
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
