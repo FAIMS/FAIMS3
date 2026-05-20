@@ -320,7 +320,16 @@ export const DesignPanel = () => {
   return (
     <>
       <TabContext value={tabIndex}>
-        <Box sx={{mb: 1.25, mt: 1}}>
+        <Box
+          sx={{
+            mb: 1.5,
+            mt: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            flexWrap: 'wrap',
+          }}
+        >
           <HeadingWithInfo
             title="Forms"
             tooltip={
@@ -347,33 +356,21 @@ export const DesignPanel = () => {
               </Box>
             }
           />
-          <Box
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddRoundedIcon />}
+            onClick={openAddFormDialog}
             sx={{
-              mt: 1,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.75,
-              px: 1.25,
-              py: 0.5,
-              borderRadius: 1,
-              backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.06),
-              border: '1px solid',
-              borderColor: (t: Theme) => alpha(t.palette.primary.main, 0.18),
-              color: 'text.secondary',
+              ...designerPrimaryActionButtonSx,
+              boxShadow: 'none',
+              whiteSpace: 'nowrap',
+              textTransform: 'none',
+              fontWeight: 700,
             }}
           >
-            <SwapHorizRoundedIcon sx={{fontSize: '1rem', color: 'primary.main'}} />
-            <Typography variant="caption" sx={{fontWeight: 600, lineHeight: 1.3}}>
-              Tip: Hold{' '}
-              <Box
-                component="span"
-                sx={{fontFamily: 'monospace', fontWeight: 800, color: 'text.primary'}}
-              >
-                Shift
-              </Box>{' '}
-              and scroll to move sideways through forms and sections.
-            </Typography>
-          </Box>
+            New Form
+          </Button>
         </Box>
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
