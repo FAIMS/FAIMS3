@@ -528,7 +528,6 @@ export const DesignPanel = () => {
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
-                  handleAddFormCallback={openAddFormDialog}
                   previewForm={previewForm}
                 />
               }
@@ -550,7 +549,6 @@ export const DesignPanel = () => {
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
-                  handleAddFormCallback={openAddFormDialog}
                   previewForm={previewForm}
                 />
               }
