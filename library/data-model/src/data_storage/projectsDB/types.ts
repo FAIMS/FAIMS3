@@ -123,8 +123,8 @@ export const ProjectV4FieldsSchema = z.object({
   // Project connection information
   dataDb: PossibleConnectionInfoSchema,
 
-  // UI Specification (now stored in the project) NOTE: This is never 'encoded'
-  // anymore - no more fviews etc.
+  // UI Specification (now stored in the project) 
+  // NOTE: This is never 'encoded' anymore - no more fviews etc.
   uiSpecification: NotebookDefinitionSchema,
 });
 export type ProjectV4Fields = z.infer<typeof ProjectV4FieldsSchema>;

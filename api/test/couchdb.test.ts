@@ -36,7 +36,7 @@ import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
-  getEncodedNotebookUISpec,
+  getProjectUIModel,
   getProjectById,
   getRolesForNotebook,
   getUserProjectsDetailed,
@@ -335,11 +335,11 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getEncodedNotebookUISpec(projectID);
+      const retrieved = await getProjectUIModel(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
-        expect(Object.keys(retrieved.fviews).length).to.equal(
+        expect(Object.keys(retrieved.views).length).to.equal(
           Object.keys(sample.uiSpecification.uiSpec.views).length
         );
         expect(retrieved.fields).not.to.equal(undefined);
@@ -408,7 +408,9 @@ describe('notebook api', () => {
       };
 
       uiSpecification.uiSpec.fields['newincrementor'] = newField;
-      uiSpecification.uiSpec.views['FORM1SECTION1'].fields.push('newincrementor');
+      uiSpecification.uiSpec.views['FORM1SECTION1'].fields.push(
+        'newincrementor'
+      );
 
       await updateProjectUiSpecification(projectID, uiSpecification);
       await updateProjectMetadata(projectID, {name: 'Updated Test Notebook'});
@@ -417,9 +419,9 @@ describe('notebook api', () => {
 
       const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const newUISpec = await getEncodedNotebookUISpec(projectID);
+      const newUISpec = await getProjectUIModel(projectID);
       if (newUISpec) {
-        expect(newUISpec.fviews['FORM1SECTION1'].label).to.equal(
+        expect(newUISpec.views['FORM1SECTION1'].label).to.equal(
           'Updated Label'
         );
       }

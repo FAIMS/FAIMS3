@@ -1,5 +1,4 @@
 import {Resource, ResourceRole, Role, RoleScope} from '../../permission';
-import {EncodedUISpecification} from '../templatesDB/types';
 import {
   AuthRecordV1ExistingDocumentSchema,
   AuthRecordV2ExistingDocumentSchema,
@@ -50,8 +49,10 @@ import {
   readLegacyNotebookFromMetadataDb,
 } from './uiSpecificationMigration';
 
-export {buildSurveyNotebookDefinitionFromLegacy} from './uiSpecificationMigration';
-import {resolveMigrationCreatedBy} from './hooks';
+import {
+  LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
+  resolveMigrationCreatedBy,
+} from './hooks';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -363,17 +364,15 @@ export const projectsV3toV4Migration: MigrationFunc = async (doc, context) => {
   }
 
   const metaDB = await context.getDbById({
-    dbType: DatabaseType.METADATA,
-    id: input._id,
+    // Grab the metadata DB directly
+    id: LEGACY_INLINE_NOTEBOOK_DB_PREFIX + input._id,
   });
 
   const {metadata: legacyMetadata, encodedUiSpec} =
     await readLegacyNotebookFromMetadataDb(metaDB, input._id);
 
   const name =
-    input.name?.trim() ||
-    String(legacyMetadata.name ?? '').trim() ||
-    input._id;
+    input.name?.trim() || String(legacyMetadata.name ?? '').trim() || input._id;
 
   const uiSpecification = buildSurveyNotebookDefinitionFromLegacy({
     legacyMetadata,
@@ -486,7 +485,9 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
     version: inputDoc.version,
 
     // Pull out name from metadata (defaulting in weird cases to a suitable ID)
-    name: (inputDoc.metadata as {name?: string})?.name ?? `template-${inputDoc._id}`,
+    name:
+      (inputDoc.metadata as {name?: string})?.name ??
+      `template-${inputDoc._id}`,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -637,7 +638,6 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v3
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
-  [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v5 (disabled flag)
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
   // projects v4 (extend ProjectV4Fields + projectsV3toV4Migration when schema changes)

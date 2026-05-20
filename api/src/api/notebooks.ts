@@ -53,50 +53,49 @@ import {
   isPeopleUserAccountDisabled,
   userCanReadTemplateDocument,
   userHasProjectRole,
-} from '@faims3/data-model';
-import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
-import express, {Response} from 'express';
-import {jwtVerify, SignJWT} from 'jose';
-import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+} from "@faims3/data-model";
+import { stripDeletedRelatedRefsFromRecordData } from "../couchdb/export/stripDeletedRelatedRefs";
+import express, { Response } from "express";
+import { jwtVerify, SignJWT } from "jose";
+import { z } from "zod";
+import { processRequest } from "zod-express-middleware";
 import {
   CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
   KEY_SERVICE,
-} from '../buildconfig';
-import {getDataDb} from '../couchdb';
-import {createManyRandomRecords} from '../couchdb/devtools';
+} from "../buildconfig";
+import { getDataDb } from "../couchdb";
+import { createManyRandomRecords } from "../couchdb/devtools";
 import {
   generateFilenameForAttachment,
   streamNotebookFilesAsZip,
-} from '../couchdb/export/attachmentExport';
-import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
+} from "../couchdb/export/attachmentExport";
+import { streamNotebookRecordsAsCSV } from "../couchdb/export/csvExport";
 import {
   generateFullExportFilename,
   streamFullExport,
-} from '../couchdb/export/fullExport';
+} from "../couchdb/export/fullExport";
 import {
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsKML,
-} from '../couchdb/export/geospatialExport';
-import {FullExportConfigSchema} from '../couchdb/export/types';
-import {deleteAllInvitesForProject} from '../couchdb/invites';
+} from "../couchdb/export/geospatialExport";
+import { FullExportConfigSchema } from "../couchdb/export/types";
+import { deleteAllInvitesForProject } from "../couchdb/invites";
 import {
   applyNotebookLifecycleStatus,
   changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
-  getEncodedNotebookUISpec,
   getProjectById,
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
   updateProjectMetadata,
   updateProjectUiSpecification,
-} from '../couchdb/notebooks';
-import {stripProjectRolesForProjectId} from '../couchdb/users';
-import {getTemplate} from '../couchdb/templates';
+} from "../couchdb/notebooks";
+import { stripProjectRolesForProjectId } from "../couchdb/users";
+import { getTemplate } from "../couchdb/templates";
 import {
   filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
@@ -104,16 +103,16 @@ import {
   getUsers,
   saveCouchUser,
   saveExpressUser,
-} from '../couchdb/users';
-import * as Exceptions from '../exceptions';
+} from "../couchdb/users";
+import * as Exceptions from "../exceptions";
 import {
   isAllowedToMiddleware,
   requireAuthenticationAPI,
   userCanDo,
-} from '../middleware';
-import {recordsRouter} from './records';
-import {mockTokenContentsForUser} from '../utils';
-import patch from '../utils/patchExpressAsync';
+} from "../middleware";
+import { recordsRouter } from "./records";
+import { mockTokenContentsForUser } from "../utils";
+import patch from "../utils/patchExpressAsync";
 
 // This must occur before express api is used
 patch();
@@ -122,11 +121,11 @@ export const api: express.Router = express.Router();
 
 function permissionRequiredForNotebookStatusChange(
   current: ProjectStatus,
-  target: ProjectStatus
+  target: ProjectStatus,
 ): Action {
   if (target === ProjectStatus.OPEN && current === ProjectStatus.ARCHIVED) {
     throw new Exceptions.InvalidRequestException(
-      'Cannot open an archived survey. Restore it from the archive first.'
+      "Cannot open an archived survey. Restore it from the archive first.",
     );
   }
 
@@ -151,7 +150,7 @@ function permissionRequiredForNotebookStatusChange(
 // Types for download format and token payloads (must be before records router)
 // =============================================================================
 
-const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
+const DownloadFormatSchema = z.enum(["csv", "zip", "geojson", "kml", "full"]);
 type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 
 const DownloadTokenPayloadSchema = z.object({
@@ -165,7 +164,7 @@ const DownloadTokenPayloadSchema = z.object({
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
 // Formats requiring a view ID
-const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
+const REQUIRES_VIEW_ID: DownloadFormat[] = ["csv"];
 
 // Download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
@@ -186,7 +185,7 @@ const generateDownloadToken = async ({
     .setSubject(user.user_id)
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
-    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + "m")
     .sign(signingKey.privateKey);
   return token;
 };
@@ -204,7 +203,7 @@ const validateDownloadToken = async ({
     });
     return DownloadTokenPayloadSchema.parse(result.payload);
   } catch {
-    console.log('invalid token');
+    console.log("invalid token");
     return null;
   }
 };
@@ -234,7 +233,7 @@ const validateDownloadToken = async ({
  * - includeMetadata (default: true)
  */
 api.get(
-  '/:id/records/export',
+  "/:id/records/export",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -247,11 +246,11 @@ api.get(
       viewID: z.string().optional(),
       format: DownloadFormatSchema,
       // Full export options
-      includeTabular: z.string().optional().default('true'),
-      includeAttachments: z.string().optional().default('true'),
-      includeGeoJSON: z.string().optional().default('true'),
-      includeKML: z.string().optional().default('true'),
-      includeMetadata: z.string().optional().default('true'),
+      includeTabular: z.string().optional().default("true"),
+      includeAttachments: z.string().optional().default("true"),
+      includeGeoJSON: z.string().optional().default("true"),
+      includeKML: z.string().optional().default("true"),
+      includeMetadata: z.string().optional().default("true"),
     }),
     params: z.object({
       id: z.string(),
@@ -259,7 +258,7 @@ api.get(
   }),
   async (req, res: Response<GetExportNotebookResponse>) => {
     if (!req.user) {
-      throw new Exceptions.UnauthorizedException('Not authenticated.');
+      throw new Exceptions.UnauthorizedException("Not authenticated.");
     }
 
     const payload: DownloadTokenPayload = {
@@ -269,14 +268,14 @@ api.get(
     };
 
     // Handle full export
-    if (req.query.format === 'full') {
+    if (req.query.format === "full") {
       // Build full config from query params (defaults to true if not specified)
       payload.fullConfig = {
-        includeTabular: req.query.includeTabular === 'true',
-        includeAttachments: req.query.includeAttachments === 'true',
-        includeGeoJSON: req.query.includeGeoJSON === 'true',
-        includeKML: req.query.includeKML === 'true',
-        includeMetadata: req.query.includeMetadata === 'true',
+        includeTabular: req.query.includeTabular === "true",
+        includeAttachments: req.query.includeAttachments === "true",
+        includeGeoJSON: req.query.includeGeoJSON === "true",
+        includeKML: req.query.includeKML === "true",
+        includeMetadata: req.query.includeMetadata === "true",
       };
     } else if (
       REQUIRES_VIEW_ID.includes(req.query.format) ||
@@ -285,16 +284,16 @@ api.get(
       // Existing viewID handling for CSV
       if (!req.query.viewID) {
         throw new Exceptions.InvalidRequestException(
-          `The specified format ${req.query.format} requires a viewID to be included.`
+          `The specified format ${req.query.format} requires a viewID to be included.`,
         );
       }
 
       // Validate the viewID exists
-      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+      const uiSpec = await getProjectUIModel(req.params.id);
 
       if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
-          `Form with id ${req.query.viewID} not found in notebook`
+          `Form with id ${req.query.viewID} not found in notebook`,
         );
       }
 
@@ -312,7 +311,7 @@ api.get(
     return res.json({
       url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
     });
-  }
+  },
 );
 
 /**
@@ -320,7 +319,7 @@ api.get(
  * @deprecated - use the new /export style route above - this is here for backwards compat
  */
 api.get(
-  '/:id/records/:viewID.:format',
+  "/:id/records/:viewID.:format",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -334,21 +333,21 @@ api.get(
       viewID: z.string(),
       // don't allow geoJSON or full here - must use new route
       // @deprecated
-      format: z.enum(['csv', 'zip']),
+      format: z.enum(["csv", "zip"]),
     }),
   }),
   async (req, res) => {
     if (!req.user) {
-      throw new Exceptions.UnauthorizedException('Not authenticated.');
+      throw new Exceptions.UnauthorizedException("Not authenticated.");
     }
 
     // get the label for this form for the filename header
-    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+    const uiSpec = await getProjectUIModel(req.params.id);
 
     // check the view ID is valid
     if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
       throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.params.viewID} not found in notebook`
+        `Form with id ${req.params.viewID} not found in notebook`,
       );
     }
 
@@ -365,37 +364,37 @@ api.get(
       payload: payload,
     });
     return res.redirect(`/api/notebooks/download/${jwt}`);
-  }
+  },
 );
 
 // Stateless CRUD API for record data (mount so :id = projectId)
-api.use('/:id/records', recordsRouter);
+api.use("/:id/records", recordsRouter);
 
 /**
  * Gets a list of notebooks
  */
 api.get(
-  '/',
+  "/",
   requireAuthenticationAPI,
   processRequest({
     query: z.object({
       teamId: z.string().min(1).optional(),
       /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
-      includeArchived: z.enum(['true', 'false']).optional(),
+      includeArchived: z.enum(["true", "false"]).optional(),
     }),
   }),
   async (req, res: Response<GetNotebookListResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const includeArchived = req.query.includeArchived === 'true';
+    const includeArchived = req.query.includeArchived === "true";
     const notebooks = await getUserProjectsDetailed(
       req.user,
       req.query.teamId,
-      includeArchived
+      includeArchived,
     );
     res.json(notebooks);
-  }
+  },
 );
 
 /**
@@ -407,7 +406,7 @@ api.get(
  * validated in a type safe way.
  */
 api.post(
-  '/',
+  "/",
   requireAuthenticationAPI,
   processRequest({
     body: PostCreateNotebookInputSchema,
@@ -439,27 +438,27 @@ api.post(
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    if ('uiSpecification' in req.body && 'template_id' in req.body) {
+    if ("uiSpecification" in req.body && "template_id" in req.body) {
       throw new Exceptions.ValidationException(
-        'Inappropriate inclusion of both a template_id and uiSpecification when creating a notebook.'
+        "Inappropriate inclusion of both a template_id and uiSpecification when creating a notebook.",
       );
     }
 
     const isFromScratch = (
-      payload: PostCreateNotebookInput
+      payload: PostCreateNotebookInput,
     ): payload is CreateNotebookFromScratch => {
-      return 'uiSpecification' in payload;
+      return "uiSpecification" in payload;
     };
     const isFromTemplate = (
-      payload: PostCreateNotebookInput
+      payload: PostCreateNotebookInput,
     ): payload is CreateNotebookFromTemplate => {
-      return 'template_id' in payload;
+      return "template_id" in payload;
     };
 
     let uiSpecification;
     const projectName: string = req.body.name;
     let templateId: string | undefined = undefined;
-    let description = '';
+    let description = "";
 
     if (isFromTemplate(req.body)) {
       const template = await getTemplate(req.body.template_id);
@@ -474,13 +473,13 @@ api.post(
         })
       ) {
         throw new Exceptions.UnauthorizedException(
-          'You are not authorized to use this template.'
+          "You are not authorized to use this template.",
         );
       }
 
       if (template.archived === true) {
         throw new Exceptions.InvalidRequestException(
-          'Cannot create a notebook from an archived template.'
+          "Cannot create a notebook from an archived template.",
         );
       }
 
@@ -489,10 +488,10 @@ api.post(
       templateId = template._id;
     } else if (isFromScratch(req.body)) {
       uiSpecification = req.body.uiSpecification;
-      description = req.body.description ?? '';
+      description = req.body.description ?? "";
     } else {
       throw new Exceptions.ValidationException(
-        'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
+        "Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.",
       );
     }
 
@@ -512,18 +511,18 @@ api.post(
         role: Role.PROJECT_ADMIN,
       });
       await saveExpressUser(req.user);
-      res.json({notebook: projectID} satisfies PostCreateNotebookResponse);
+      res.json({ notebook: projectID } satisfies PostCreateNotebookResponse);
     } else {
       throw new Exceptions.InternalSystemError(
-        'Error occurred during notebook creation.'
+        "Error occurred during notebook creation.",
       );
     }
-  }
+  },
 );
 
 // Get a specific notebook by ID
 api.get(
-  '/:id',
+  "/:id",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.READ_PROJECT_METADATA,
@@ -531,7 +530,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string()})}),
+  processRequest({ params: z.object({ id: z.string() }) }),
   async (req, res: Response<GetNotebookResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
@@ -544,7 +543,7 @@ api.get(
 
     if (!project.uiSpecification) {
       throw new Exceptions.ItemNotFoundException(
-        'Notebook uiSpecification not found. This survey may need migration to projects DB v4.'
+        "Notebook uiSpecification not found. This survey may need migration to projects DB v4.",
       );
     }
 
@@ -552,12 +551,12 @@ api.get(
       ...project,
       recordCount: await countRecordsInNotebook(projectId),
     } satisfies GetNotebookResponse);
-  }
+  },
 );
 
 // PUT merge inconsequential project metadata (name, description)
 api.put(
-  '/:id',
+  "/:id",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.UPDATE_PROJECT_UISPEC,
@@ -566,7 +565,7 @@ api.put(
     },
   }),
   processRequest({
-    params: z.object({id: z.string()}),
+    params: z.object({ id: z.string() }),
     body: PutUpdateNotebookMetadataInputSchema,
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {
@@ -575,12 +574,12 @@ api.put(
     }
     const updated = await updateProjectMetadata(req.params.id, req.body);
     return res.json(updated);
-  }
+  },
 );
 
 // PUT replace full uiSpecification (designer / JSON export)
 api.put(
-  '/:id/uiSpecification',
+  "/:id/uiSpecification",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.UPDATE_PROJECT_UISPEC,
@@ -589,7 +588,7 @@ api.put(
     },
   }),
   processRequest({
-    params: z.object({id: z.string()}),
+    params: z.object({ id: z.string() }),
     body: PutUpdateNotebookUiSpecificationInputSchema,
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {
@@ -598,27 +597,27 @@ api.put(
     }
     const updated = await updateProjectUiSpecification(req.params.id, req.body);
     return res.json(updated);
-  }
+  },
 );
 
 // PUT set notebook lifecycle status (open / closed / archived)
 api.put(
-  '/:id/status',
+  "/:id/status",
   requireAuthenticationAPI,
   processRequest({
-    params: z.object({id: z.string()}),
+    params: z.object({ id: z.string() }),
     body: PutChangeNotebookStatusInputSchema,
   }),
   async (req, res) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const {id} = req.params;
-    const {status: targetStatus} = req.body;
+    const { id } = req.params;
+    const { status: targetStatus } = req.body;
     const project = await getProjectById(id);
     const requiredAction = permissionRequiredForNotebookStatusChange(
       project.status,
-      targetStatus
+      targetStatus,
     );
 
     if (
@@ -629,18 +628,18 @@ api.put(
       })
     ) {
       throw new Exceptions.UnauthorizedException(
-        'You are not authorized to perform this action.'
+        "You are not authorized to perform this action.",
       );
     }
 
     await applyNotebookLifecycleStatus(project, targetStatus);
     res.sendStatus(200);
-  }
+  },
 );
 
 // PUT change project team
 api.put(
-  '/:projectId/team',
+  "/:projectId/team",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.CHANGE_PROJECT_TEAM,
@@ -649,19 +648,19 @@ api.put(
     },
   }),
   processRequest({
-    params: z.object({projectId: z.string()}),
+    params: z.object({ projectId: z.string() }),
     body: PutChangeNotebookTeamInputSchema,
   }),
-  async ({body: {teamId}, params: {projectId}}, res) => {
-    await changeNotebookTeam({projectId, teamId});
+  async ({ body: { teamId }, params: { projectId } }, res) => {
+    await changeNotebookTeam({ projectId, teamId });
     res.sendStatus(200);
     return;
-  }
+  },
 );
 
 // POST to check sync status of a set of records
 api.post(
-  '/:id/sync-status/',
+  "/:id/sync-status/",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.AUDIT_ALL_PROJECT_RECORDS,
@@ -670,12 +669,12 @@ api.post(
     },
   }),
   processRequest({
-    params: z.object({id: z.string()}),
+    params: z.object({ id: z.string() }),
     body: PostRecordStatusInputSchema,
   }),
   async (req, res: Response<PostRecordStatusResponse>) => {
-    const {id: projectId} = req.params;
-    const {record_map} = req.body;
+    const { id: projectId } = req.params;
+    const { record_map } = req.body;
 
     const dataDb = await getDataDb(projectId);
 
@@ -695,12 +694,12 @@ api.post(
     res.json({
       status: result,
     });
-  }
+  },
 );
 
 // export current versions of all records in this notebook
 api.get(
-  '/:id/records/',
+  "/:id/records/",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -709,29 +708,29 @@ api.get(
     },
   }),
   processRequest({
-    params: z.object({id: z.string()}),
+    params: z.object({ id: z.string() }),
   }),
   // TODO complete type annotations for this method
-  async (req, res: Response<{records: any}>) => {
+  async (req, res: Response<{ records: any }>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
     const tokenContents = mockTokenContentsForUser(req.user);
-    const {id: projectId} = req.params;
+    const { id: projectId } = req.params;
     const uiSpecification = await getProjectUIModel(req.params.id);
     const dataDb = await getDataDb(projectId);
     const records = await getRecordsWithRegex({
       dataDb,
       filterDeleted: true,
       projectId,
-      regex: '.*',
+      regex: ".*",
       tokenContents,
       uiSpecification,
     });
     if (records) {
       const filenames: string[] = [];
       const viewIdsNeedingFieldTypes = new Set(
-        records.filter(r => r.data && r.type).map(r => r.type)
+        records.filter((r) => r.data && r.type).map((r) => r.type),
       );
 
       const fieldTypesByViewId: Partial<
@@ -745,9 +744,9 @@ api.get(
           });
         } catch (e) {
           console.error(
-            'Failed to get notebook field types for export',
+            "Failed to get notebook field types for export",
             viewID,
-            e
+            e,
           );
         }
       }
@@ -757,7 +756,7 @@ api.get(
           const fields = fieldTypesByViewId[record.type];
           if (fields) {
             try {
-              const dataCopy = {...record.data};
+              const dataCopy = { ...record.data };
               await stripDeletedRelatedRefsFromRecordData({
                 fields,
                 data: dataCopy,
@@ -767,8 +766,8 @@ api.get(
               record.data = dataCopy;
             } catch (e) {
               console.error(
-                'Failed to strip deleted related record refs for export',
-                e
+                "Failed to strip deleted related record refs for export",
+                e,
               );
             }
           }
@@ -792,9 +791,9 @@ api.get(
                   viewID = viewsetId;
                 } catch (e) {
                   console.error(
-                    'missing viewset for field',
+                    "missing viewset for field",
                     fieldName,
-                    'falling back to type'
+                    "falling back to type",
                   );
                 }
                 const filename = generateFilenameForAttachment({
@@ -817,11 +816,11 @@ api.get(
           }
         }
       }
-      res.json({records});
+      res.json({ records });
     } else {
-      throw new Exceptions.ItemNotFoundException('Notebook not found');
+      throw new Exceptions.ItemNotFoundException("Notebook not found");
     }
-  }
+  },
 );
 
 /**
@@ -831,8 +830,8 @@ api.get(
  * The JWT contains all necessary information about what to export.
  */
 api.get(
-  '/download/:downloadToken',
-  processRequest({params: z.object({downloadToken: z.string()})}),
+  "/download/:downloadToken",
+  processRequest({ params: z.object({ downloadToken: z.string() }) }),
   async (req, res) => {
     // Validate payload
     const payload = await validateDownloadToken({
@@ -842,23 +841,23 @@ api.get(
     // If invalid/issue - throw
     if (!payload) {
       throw new Exceptions.InvalidRequestException(
-        'Cannot download without a valid downloadToken.'
+        "Cannot download without a valid downloadToken.",
       );
     }
 
     // Depending on the format type - handle differently
-    let exportLabel = '';
+    let exportLabel = "";
     if (REQUIRES_VIEW_ID.includes(payload.format) || payload.viewID) {
-      const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
+      const uiSpec = await getProjectUIModel(payload.projectID);
       if (!payload.viewID) {
         throw new Exceptions.InvalidRequestException(
-          'Must provide viewID for this export format.'
+          "Must provide viewID for this export format.",
         );
       }
 
       if (!(uiSpec && payload.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
-          `Form with id ${payload.viewID} not found in notebook`
+          `Form with id ${payload.viewID} not found in notebook`,
         );
       }
       exportLabel = uiSpec.viewsets[payload.viewID].label ?? payload.viewID;
@@ -866,44 +865,44 @@ api.get(
       exportLabel = slugify(payload.projectID);
     }
 
-    if (payload.format === 'csv') {
-      res.setHeader('Content-Type', 'text/csv');
+    if (payload.format === "csv") {
+      res.setHeader("Content-Type", "text/csv");
       res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${exportLabel}-export.csv"`
+        "Content-Disposition",
+        `attachment; filename="${exportLabel}-export.csv"`,
       );
       streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
-    } else if (payload.format === 'zip') {
+    } else if (payload.format === "zip") {
       res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${exportLabel}-photos.zip"`
+        "Content-Disposition",
+        `attachment; filename="${exportLabel}-photos.zip"`,
       );
-      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader("Content-Type", "application/zip");
       streamNotebookFilesAsZip({
         projectId: payload.projectID,
         targetViewID: payload.viewID,
         res,
       });
-    } else if (payload.format === 'geojson') {
-      res.setHeader('Content-Type', 'application/geo+json');
+    } else if (payload.format === "geojson") {
+      res.setHeader("Content-Type", "application/geo+json");
       res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+        "Content-Disposition",
+        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`,
       );
       streamNotebookRecordsAsGeoJSON(payload.projectID, res);
-    } else if (payload.format === 'kml') {
-      res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+    } else if (payload.format === "kml") {
+      res.setHeader("Content-Type", "application/vnd.google-earth.kml+xml");
       res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+        "Content-Disposition",
+        `attachment; filename="${slugify(payload.projectID)}-export.kml"`,
       );
       streamNotebookRecordsAsKML(payload.projectID, res);
-    } else if (payload.format === 'full') {
+    } else if (payload.format === "full") {
       const fullFilename = generateFullExportFilename(payload.projectID);
-      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader("Content-Type", "application/zip");
       res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${fullFilename}"`
+        "Content-Disposition",
+        `attachment; filename="${fullFilename}"`,
       );
       await streamFullExport({
         projectId: payload.projectID,
@@ -913,14 +912,14 @@ api.get(
       });
     } else {
       throw new Exceptions.InvalidRequestException(
-        `Unknown export format: ${payload.format}`
+        `Unknown export format: ${payload.format}`,
       );
     }
-  }
+  },
 );
 
 api.get(
-  '/:id/users/',
+  "/:id/users/",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.VIEW_PROJECT_USERS,
@@ -928,18 +927,18 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string()})}),
+  processRequest({ params: z.object({ id: z.string() }) }),
   async (req, res: Response<GetNotebookUsersResponse>) => {
     const users = filterPeopleUsersForList(await getUsers(), false);
-    const allRoles = getRolesForNotebook().map(r => r.role);
+    const allRoles = getRolesForNotebook().map((r) => r.role);
     res.json({
       roles: allRoles,
       users: users
-        .map(u => {
+        .map((u) => {
           return {
             name: u.name,
             username: u.user_id,
-            roles: allRoles.map(r => ({
+            roles: allRoles.map((r) => ({
               value: userHasProjectRole({
                 user: u,
                 projectId: req.params.id,
@@ -949,18 +948,18 @@ api.get(
             })),
           };
         })
-        .filter(d => d.roles.filter(r => r.value).length > 0),
+        .filter((d) => d.roles.filter((r) => r.value).length > 0),
     });
-  }
+  },
 );
 
 // POST to give a user permissions on this notebook
 api.post(
-  '/:id/users/',
+  "/:id/users/",
   requireAuthenticationAPI,
   processRequest({
     body: PostAddNotebookUserInputSchema,
-    params: z.object({id: z.string()}),
+    params: z.object({ id: z.string() }),
   }),
   async (req, res) => {
     if (!req.user) {
@@ -968,7 +967,7 @@ api.post(
     }
 
     // Destructure request body
-    const {username, role, addrole: addRole} = req.body;
+    const { username, role, addrole: addRole } = req.body;
 
     // Work out what action this is (specifically protected given role elevation
     // risks)
@@ -985,7 +984,7 @@ api.post(
       })
     ) {
       throw new Exceptions.UnauthorizedException(
-        'You are not authorised to perform this role change.'
+        "You are not authorised to perform this role change.",
       );
     }
 
@@ -994,13 +993,13 @@ api.post(
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
-        'The username provided cannot be found in the user database.'
+        "The username provided cannot be found in the user database.",
       );
     }
 
     if (addRole && isPeopleUserAccountDisabled(user)) {
       throw new Exceptions.ForbiddenException(
-        'Cannot assign project roles to a disabled user account.'
+        "Cannot assign project roles to a disabled user account.",
       );
     }
 
@@ -1013,13 +1012,13 @@ api.post(
         role: role,
       });
     } else {
-      removeProjectRole({user, projectId: req.params.id, role});
+      removeProjectRole({ user, projectId: req.params.id, role });
     }
 
     // save the user after modifications have been made
     await saveCouchUser(user);
     res.status(200).end();
-  }
+  },
 );
 
 /**
@@ -1027,7 +1026,7 @@ api.post(
  * Requires archive first. Allowed for survey administrators (or operations staff).
  */
 api.post(
-  '/:notebookId/delete',
+  "/:notebookId/delete",
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.DELETE_PROJECT,
@@ -1036,28 +1035,28 @@ api.post(
     },
   }),
   processRequest({
-    params: z.object({notebookId: z.string()}),
+    params: z.object({ notebookId: z.string() }),
     body: PostDestroyNotebookInputSchema,
   }),
   async (req, res) => {
-    const {notebookId} = req.params;
-    const {confirmName} = req.body;
+    const { notebookId } = req.params;
+    const { confirmName } = req.body;
     const project = await getProjectById(notebookId);
     if (project.name.trim() !== confirmName.trim()) {
       throw new Exceptions.InvalidRequestException(
-        'Confirmation name must match the survey name exactly.'
+        "Confirmation name must match the survey name exactly.",
       );
     }
     await deleteAllInvitesForProject(notebookId);
     await stripProjectRolesForProjectId(notebookId);
     await deleteNotebook(notebookId);
     res.status(200).end();
-  }
+  },
 );
 
 if (DEVELOPER_MODE) {
   api.post(
-    '/:notebookId/generate',
+    "/:notebookId/generate",
     requireAuthenticationAPI,
     isAllowedToMiddleware({
       action: Action.GENERATE_RANDOM_PROJECT_RECORDS,
@@ -1067,28 +1066,28 @@ if (DEVELOPER_MODE) {
     }),
     processRequest({
       body: PostRandomRecordsInputSchema,
-      params: z.object({notebookId: z.string()}),
+      params: z.object({ notebookId: z.string() }),
     }),
     async (req, res: Response<PostRandomRecordsResponse>) => {
       const record_ids = await createManyRandomRecords(
         req.params.notebookId,
-        req.body.count
+        req.body.count,
       );
-      res.json({record_ids});
-    }
+      res.json({ record_ids });
+    },
   );
 }
 
 // DELETE a user from a notebook
 api.delete(
-  '/:notebook_id/users/:user_id',
+  "/:notebook_id/users/:user_id",
   requireAuthenticationAPI,
   processRequest({
-    params: z.object({notebook_id: z.string(), user_id: z.string()}),
+    params: z.object({ notebook_id: z.string(), user_id: z.string() }),
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {
     if (!req.user) {
-      throw new Exceptions.UnauthorizedException('Must be authenticated.');
+      throw new Exceptions.UnauthorizedException("Must be authenticated.");
     }
 
     // Check what resource role the user has on this notebook
@@ -1096,11 +1095,12 @@ api.delete(
       projectId: req.params.notebook_id,
     });
     const userHasRoles =
-      userInfo.users.find(u => u.username === req.params.user_id)?.roles ?? [];
+      userInfo.users.find((u) => u.username === req.params.user_id)?.roles ??
+      [];
 
     // Need all actions from these roles
-    const requiredActions = userHasRoles.map(role =>
-      projectRoleToAction({add: false, role: role.name})
+    const requiredActions = userHasRoles.map((role) =>
+      projectRoleToAction({ add: false, role: role.name }),
     );
     for (const required of requiredActions) {
       if (
@@ -1111,7 +1111,7 @@ api.delete(
         })
       ) {
         throw new Exceptions.UnauthorizedException(
-          'You are not authorised to remove the user from this notebook.'
+          "You are not authorised to remove the user from this notebook.",
         );
       }
     }
@@ -1120,7 +1120,7 @@ api.delete(
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
-        'The username provided cannot be found in the user database.'
+        "The username provided cannot be found in the user database.",
       );
     }
 
@@ -1137,5 +1137,5 @@ api.delete(
 
     await saveCouchUser(user);
     res.status(200).end();
-  }
+  },
 );

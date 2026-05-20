@@ -1,10 +1,21 @@
 import {DatabaseInterface} from '../../types';
 import {DATABASE_TYPE} from './types';
 
+/**
+ * Couch database name prefix for per-project notebook JSON before projects DB v4
+ * inlined it into the project document `uiSpecification` field.
+ */
+export const LEGACY_INLINE_NOTEBOOK_DB_PREFIX = 'metadata-';
+
+/**
+ * Open a database for migrations.
+ *
+ * - With {@link dbType}: {@link id} is interpreted per kind (e.g. project id for DATA).
+ * - Without {@link dbType}: {@link id} is the Couch database name to open directly.
+ */
 export type GetDbByIdParams = {
-  dbType: DATABASE_TYPE;
-  /** Project ID for per-project DBs; ignored for singleton global databases */
   id: string;
+  dbType?: DATABASE_TYPE;
 };
 
 export type GetDbById = (params: GetDbByIdParams) => Promise<DatabaseInterface>;

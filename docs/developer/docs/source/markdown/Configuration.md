@@ -46,7 +46,7 @@ The most significant form of configuration in the application is the specificati
   - arbitrary user metadata key-value pairs
 - field definitions (`ui-specification.fields`): a set of fields with a unique name, this includes detailed specifications on how to render the field, it's allowable returned values etc
 - forms (`ui-specification.viewsets`): top level forms which display as discrete forms in the application e.g. Site, Building - these are a collection of views, which are a collection of fields
-- views/sections (`ui-specification.fviews`): a sub-section within a form, which contain a collection of Fields identified from the field definitions list by their unique identifier
+- views/sections (`ui-specification.views`): a sub-section within a form, which contain a collection of Fields identified from the field definitions list by their unique identifier
 
 **When should this be used**: The notebook specification is a powerful form of configuration for the behaviour of a _specific_ notebook. When the behaviour to be configured applies to a) a specific notebook b) individual fields/forms/sections c) some notebooks but not all d) should be configurable by the user within a given deployment, then the notebook specification should be used.
 

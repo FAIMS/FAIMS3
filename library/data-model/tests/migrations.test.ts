@@ -1,6 +1,6 @@
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
-import {DatabaseInterface, EncodedProjectUIModel, Resource, Role} from '../src';
+import {DatabaseInterface, Resource, Role} from '../src';
 import {
   PROJECT_METADATA_PREFIX,
   UI_SPECIFICATION_NAME,
@@ -32,6 +32,7 @@ import {
   V2InviteDBFields,
   V3InviteDBFields,
   VerificationChallengeV3ExistingDocument,
+  LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
 } from '../src/data_storage';
 import {
   TemplateV1Fields,
@@ -41,6 +42,7 @@ import {
   TemplateV5Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
+import {NotebookDefinitionV1} from '../src/data_storage/migrations/notebookMigrations/migrateV2';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -70,6 +72,8 @@ type MigrationTestCase = {
   context?: MigrationContext;
 };
 
+type LegacyNotebookShape = NotebookDefinitionV1['ui-specification'];
+
 // Test cases for templatesV1toV2Migration
 const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Basic migration test with all fields
@@ -93,7 +97,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies NotebookDefinitionV1['ui-specification'],
       ownedByTeamId: 'team_456',
     } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
@@ -114,7 +118,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team_456',
       } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -141,7 +145,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
       action: 'update',
@@ -159,7 +163,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: undefined,
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -182,7 +186,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
       action: 'update',
@@ -197,7 +201,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: undefined,
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -237,7 +241,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team_complex',
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
@@ -270,7 +274,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team_complex',
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -293,7 +297,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
       action: 'update',
@@ -308,7 +312,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: undefined,
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -333,7 +337,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team_add',
       customField1: 'This should be dropped',
       customField2: 42,
@@ -353,7 +357,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team_add',
         // Additional fields should be dropped
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
@@ -399,7 +403,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: [],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team-a',
     } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     expectedResult: {
@@ -418,7 +422,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: [],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team-a',
         archived: true,
       } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
@@ -440,7 +444,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: [],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     expectedResult: {
       action: 'update',
@@ -455,7 +459,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: [],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         archived: false,
       } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
     },
@@ -476,7 +480,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: [],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     expectedResult: {
       action: 'update',
@@ -491,7 +495,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: [],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         archived: false,
       } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
     },
@@ -516,7 +520,7 @@ const TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: [],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team-z',
     } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
     expectedResult: {
@@ -533,7 +537,7 @@ const TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: [],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team-z',
         isPublic: false,
       } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
@@ -569,7 +573,7 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: [],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team-z',
     } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
     expectedResult: {
@@ -593,7 +597,7 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
             viewsets: {},
             visible_types: [],
             settings: {showQrCodeButton: true},
-            schemaVersion: '3.0',
+            schemaVersion: '4.0',
           },
           metadata: {
             information: {
@@ -2070,7 +2074,7 @@ describe('Migration Specific Tests', () => {
         status: ProjectStatus.OPEN,
         dataDb: {db_name: 'data-proj_no_context'},
         metadataDb: {db_name: 'metadata-proj_no_context'},
-      } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+      } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>; // v3 shape fixture
 
       await expect(projectsV3toV4Migration(inputDoc)).rejects.toThrow(
         /requires MigrationContext\.getDbById/
@@ -2135,8 +2139,7 @@ describe('Migration Specific Tests', () => {
       const result = await projectsV3toV4Migration(inputDoc, {getDbById});
 
       expect(getDbById).toHaveBeenCalledWith({
-        dbType: DatabaseType.METADATA,
-        id: 'proj_meta_load',
+        id: LEGACY_INLINE_NOTEBOOK_DB_PREFIX + 'proj_meta_load',
       });
       expect(result.action).toBe('update');
       if (result.action !== 'update') {
@@ -2153,7 +2156,8 @@ describe('Migration Specific Tests', () => {
         result.updatedRecord.uiSpecification.uiSpec.settings.showQrCodeButton
       ).toBe(false);
       expect(
-        result.updatedRecord.uiSpecification.metadata.information.purposeMarkdown
+        result.updatedRecord.uiSpecification.metadata.information
+          .purposeMarkdown
       ).toBe('Loaded from metadata DB');
       expect(result.updatedRecord.createdBy).toBe('admin');
 

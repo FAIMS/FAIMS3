@@ -2,11 +2,11 @@ import {
   PROJECT_METADATA_PREFIX,
   UI_SPECIFICATION_NAME,
 } from '../../datamodel/database';
-import {DatabaseInterface, ProjectUIModel} from '../../types';
-import type {NotebookDefinition, NotebookUiSpec} from '../../uiSpecification/types';
+import {DatabaseInterface} from '../../types';
+import type {NotebookDefinition} from '../../uiSpecification/types';
 import {
-  EncodedUISpecification,
-  EncodedUISpecificationSchema,
+  LegacyEncodedUISpecification,
+  LegacyEncodedUISpecificationSchema,
 } from '../templatesDB/types';
 import {migrateNotebook} from './notebookMigrations';
 
@@ -16,59 +16,8 @@ export type LegacyNotebookMetadata = Record<string, unknown>;
 /** Max length for root `Project.description` / `Template.description` from `pre_description`. */
 export const OLD_DESCRIPTION_MAX_LENGTH = 500;
 
-/** Keys mapped into {@link NotebookDefinition} — not copied to `custom`. */
-const LEGACY_KEYS_MAPPED = new Set([
-  'pre_description',
-  'project_lead',
-  'lead_institution',
-  'notebook_version',
-  'schema_version',
-  'derived-from',
-  'showQRCodeButton',
-  'name',
-  'template_id',
-  'project_id',
-  'project_status',
-  'projectvalue',
-  'description',
-]);
-
-/**
- * Legacy keys dropped entirely (not promoted to `metadata.custom`).
- * See metadata-design.md “intentionally removed”.
- */
-const LEGACY_KEYS_DROPPED = new Set([
-  'access',
-  'accesses',
-  'behaviours',
-  'filenames',
-  'forms',
-  'ispublic',
-  'isrequest',
-  'meta',
-  'sections',
-]);
-
-export function emptyEncodedUiSpec(): EncodedUISpecification {
+export function emptyEncodedUiSpec(): LegacyEncodedUISpecification {
   return {fields: {}, fviews: {}, viewsets: {}, visible_types: []};
-}
-
-/**
- * Converts legacy encoded UI spec (`fviews`, …) into the decoded shape (`views`, …).
- *
- * Intentional duplicate of `decodeUiSpec` in `datamodel/core.ts` — retain only in
- * migration code so encode/decode can be removed from the rest of the codebase after
- * cutover.
- */
-function decodeLegacyEncodedUiSpec(
-  rawUiSpec: EncodedUISpecification
-): Pick<ProjectUIModel, 'fields' | 'views' | 'viewsets' | 'visible_types'> {
-  return {
-    fields: rawUiSpec.fields,
-    views: rawUiSpec.fviews,
-    viewsets: rawUiSpec.viewsets,
-    visible_types: rawUiSpec.visible_types,
-  };
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -81,7 +30,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  */
 export function parseEncodedUiSpecDocument(
   doc: unknown
-): EncodedUISpecification {
+): LegacyEncodedUISpecification {
   if (!isPlainObject(doc)) {
     throw new Error('UI specification document must be a JSON object');
   }
@@ -104,7 +53,7 @@ export function parseEncodedUiSpecDocument(
     throw new Error('UI specification visible_types must be a string array');
   }
 
-  return EncodedUISpecificationSchema.parse({
+  return LegacyEncodedUISpecificationSchema.parse({
     fields,
     fviews,
     viewsets,
@@ -141,29 +90,6 @@ export function deriveRootDescription(
   return '';
 }
 
-function stringOrEmpty(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (value === undefined || value === null) {
-    return '';
-  }
-  return String(value);
-}
-
-function buildCustomMetadata(
-  legacyMetadata: LegacyNotebookMetadata
-): Record<string, unknown> | undefined {
-  const custom: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(legacyMetadata)) {
-    if (LEGACY_KEYS_MAPPED.has(key) || LEGACY_KEYS_DROPPED.has(key)) {
-      continue;
-    }
-    custom[key] = value;
-  }
-  return Object.keys(custom).length > 0 ? custom : undefined;
-}
-
 /**
  * Read merged per-key metadata and the `ui-specification` doc from a project's
  * metadata database (same rules as API `getNotebookMetadata` + `getEncodedNotebookUISpec`).
@@ -173,10 +99,10 @@ export async function readLegacyNotebookFromMetadataDb(
   _projectId: string
 ): Promise<{
   metadata: LegacyNotebookMetadata;
-  encodedUiSpec?: EncodedUISpecification;
+  encodedUiSpec?: LegacyEncodedUISpecification;
 }> {
   const metadata: LegacyNotebookMetadata = {};
-  let encodedUiSpec: EncodedUISpecification | undefined;
+  let encodedUiSpec: LegacyEncodedUISpecification | undefined;
 
   const metaDocs = await metaDB.allDocs({include_docs: true});
   for (const row of metaDocs.rows) {
@@ -210,14 +136,14 @@ export async function readLegacyNotebookFromMetadataDb(
 
 /**
  * Build {@link NotebookDefinition} from legacy template metadata + encoded UI spec,
- * running {@link migrateNotebook} on the wire notebook shape first.
+ * running {@link migrateNotebook} on the notebook shape first.
  */
 export function buildSurveyNotebookDefinitionFromLegacy({
   legacyMetadata,
   encodedUiSpec,
 }: {
   legacyMetadata: LegacyNotebookMetadata;
-  encodedUiSpec?: EncodedUISpecification;
+  encodedUiSpec?: LegacyEncodedUISpecification;
 }): NotebookDefinition {
   const notebook = {
     metadata: {...legacyMetadata},
@@ -225,48 +151,7 @@ export function buildSurveyNotebookDefinitionFromLegacy({
   };
 
   const {migrated} = migrateNotebook(notebook);
-  const migratedMeta = migrated.metadata ?? {};
-  const migratedEncoded = EncodedUISpecificationSchema.parse(
-    migrated['ui-specification'] ?? emptyEncodedUiSpec()
-  );
-  const decodedUiSpec = decodeLegacyEncodedUiSpec(migratedEncoded);
-
-  const schemaVersion = stringOrEmpty(migratedMeta.schema_version) || '3.0';
-
-  const information = {
-    notebookVersion: stringOrEmpty(migratedMeta.notebook_version),
-    purposeMarkdown: stringOrEmpty(migratedMeta.pre_description),
-    projectLeadLabel: stringOrEmpty(migratedMeta.project_lead),
-    leadInstitution: stringOrEmpty(migratedMeta.lead_institution),
-    ...(migratedMeta['derived-from'] !== undefined &&
-    migratedMeta['derived-from'] !== null &&
-    String(migratedMeta['derived-from']).trim() !== ''
-      ? {derivedFromTemplateId: stringOrEmpty(migratedMeta['derived-from'])}
-      : {}),
-  };
-
-  const custom = buildCustomMetadata(migratedMeta);
-
-  const uiSpec: NotebookUiSpec = {
-    fields: decodedUiSpec.fields,
-    views: decodedUiSpec.views,
-    viewsets: decodedUiSpec.viewsets,
-    visible_types: decodedUiSpec.visible_types,
-    settings: {
-      showQrCodeButton: coerceShowQrCodeButton(migratedMeta.showQRCodeButton),
-    },
-    schemaVersion,
-  };
-
-  const uiSpecification: NotebookDefinition = {
-    uiSpec,
-    metadata: {
-      information,
-      ...(custom !== undefined ? {custom} : {}),
-    },
-  };
-
-  return uiSpecification;
+  return migrated;
 }
 
 /** ISO timestamps for migrated audit fields (both set to migration run time). */

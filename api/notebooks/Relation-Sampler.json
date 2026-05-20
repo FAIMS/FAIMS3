@@ -211,7 +211,7 @@
         "displayParent": false
       }
     },
-    "fviews": {
+    "views": {
       "Form-Section": {
         "label": "Section",
         "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]

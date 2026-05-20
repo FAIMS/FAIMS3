@@ -14,7 +14,7 @@ import {NotebookDefinitionSchema} from '../../uiSpecification';
  * — kept here so template version schemas and migrations remain self-contained when
  * application encode/decode is removed.
  */
-export const EncodedUISpecificationSchema = z
+export const LegacyEncodedUISpecificationSchema = z
   .object({
     fields: z.record(z.any()),
     fviews: z.record(z.any()),
@@ -23,7 +23,9 @@ export const EncodedUISpecificationSchema = z
   })
   .passthrough();
 
-export type EncodedUISpecification = z.infer<typeof EncodedUISpecificationSchema>;
+export type LegacyEncodedUISpecification = z.infer<
+  typeof LegacyEncodedUISpecificationSchema
+>;
 
 // =============
 // V1 Definition
@@ -37,7 +39,7 @@ export const TemplateV1FieldsSchema = z.object({
   // refine to enforce this)
   metadata: z.record(z.any()).refine(val => !!val),
   // UI Spec of the template
-  'ui-specification': EncodedUISpecificationSchema,
+  'ui-specification': LegacyEncodedUISpecificationSchema,
   // Which team owns this (optional)
   ownedByTeamId: z.string().optional(),
 });

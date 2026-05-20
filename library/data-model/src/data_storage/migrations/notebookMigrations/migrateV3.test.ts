@@ -39,26 +39,21 @@ describe('migrateToV3', () => {
 });
 
 describe('migrateNotebook chains v2 then v3', () => {
-  test('single call upgrades 1.0 notebook to 3.0 without project_status', () => {
+  test('single call upgrades 1.0 notebook through v3 without project_status', () => {
     const {migrated, changed} = migrateNotebook(sampleNotebook);
     expect(changed).toBe(true);
-    expect(migrated.metadata.schema_version).toBe('3.0');
-    expect(migrated.metadata.project_status).toBeUndefined();
+    expect(migrated.uiSpec.schemaVersion).toBe('4.0');
+    expect(migrated.metadata.information).toBeDefined();
+    expect(migrated).not.toHaveProperty('ui-specification');
   });
 
-  test('only runs v3 when already at 2.0', () => {
+  test('only runs v3 when already at 2.0 (then continues to v4)', () => {
     const v2Only = migrateToV2(sampleNotebook);
+    expect(v2Only.metadata.project_status).toBeDefined();
+
     const {migrated, changed} = migrateNotebook(v2Only);
     expect(changed).toBe(true);
-    expect(migrated.metadata.schema_version).toBe('3.0');
-    expect(migrated.metadata.project_status).toBeUndefined();
-  });
-
-  test('no change when already at 3.0', () => {
-    const v2 = migrateToV2(sampleNotebook);
-    const v3 = migrateToV3(v2);
-    const {migrated, changed} = migrateNotebook(v3);
-    expect(changed).toBe(false);
-    expect(migrated.metadata.schema_version).toBe('3.0');
+    expect(migrated.uiSpec.schemaVersion).toBe('4.0');
+    expect(migrated).not.toHaveProperty('ui-specification');
   });
 });

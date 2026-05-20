@@ -22,7 +22,8 @@
     "migrate": "env-cmd ts-node src/scripts/migrate.ts",
     "migrate-with-keys": "env-cmd ts-node src/scripts/migrate.ts --keys",
     "delete-metadata-databases": "env-cmd ts-node src/scripts/deleteMetadataDatabases.ts",
-    "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts"
+    "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts",
+    "migrate-test-backups": "ts-node src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl test/backup.jsonl"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",

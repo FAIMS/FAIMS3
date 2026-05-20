@@ -24,16 +24,16 @@ import {
   Record,
   generateFAIMSDataID,
   getDataDB,
-} from '@faims3/data-model';
-import {getEncodedNotebookUISpec} from './notebooks';
-import {randomInt} from 'crypto';
-import {readFileSync} from 'node:fs';
-import * as Exceptions from '../exceptions';
-import {getDataDb} from '.';
+} from "@faims3/data-model";
+import { getProjectUIModel } from "./notebooks";
+import { randomInt } from "crypto";
+import { readFileSync } from "node:fs";
+import * as Exceptions from "../exceptions";
+import { getDataDb } from ".";
 
 export const createManyRandomRecords = async (
   project_id: ProjectID,
-  count: number
+  count: number,
 ): Promise<string[]> => {
   const record_ids = [];
 
@@ -49,7 +49,7 @@ export const createManyRandomRecords = async (
  * @param projectId Project id
  */
 export const createRandomRecord = async (
-  projectId: ProjectID
+  projectId: ProjectID,
 ): Promise<string> => {
   // get the project uiSpec
   // select one form from the notebook
@@ -58,17 +58,17 @@ export const createRandomRecord = async (
   // create the record object and call upsertFAIMSData
 
   const dataDb = await getDataDb(projectId);
-  const uiSpec = await getEncodedNotebookUISpec(projectId);
+  const uiSpec = await getProjectUIModel(projectId);
   if (!uiSpec) {
     throw new Exceptions.ItemNotFoundException(
-      `Notebook not found with id ${projectId}`
+      `Notebook not found with id ${projectId}`,
     );
   }
 
   const forms = Object.keys(uiSpec.viewsets);
   if (forms.length === 0) {
     throw new Exceptions.InvalidRequestException(
-      `The ui spec for project with id ${projectId} has no forms in the viewsets.`
+      `The ui spec for project with id ${projectId} has no forms in the viewsets.`,
     );
   }
 
@@ -77,61 +77,61 @@ export const createRandomRecord = async (
   const views = form.views;
   const fields: string[] = [];
   views.map((view: string) => {
-    uiSpec.fviews[view].fields.map((f: string) => fields.push(f));
+    uiSpec.views[view].fields.map((f: string) => fields.push(f));
   });
   // get the types of the fields
-  const field_types: {[key: string]: string} = {};
+  const field_types: { [key: string]: string } = {};
   fields.map((field: string) => {
     field_types[field] =
-      uiSpec.fields[field]['type-returned'] || 'faims-core::String';
+      uiSpec.fields[field]["type-returned"] || "faims-core::String";
   });
-  const values: {[key: string]: any} = {};
+  const values: { [key: string]: any } = {};
   fields.map((field: string) => {
     values[field] = generateValue(uiSpec.fields[field]);
   });
 
-  const annotations: {[key: string]: any} = {};
+  const annotations: { [key: string]: any } = {};
   fields.map((field: string) => {
-    annotations[field] = {annotation: '', uncertainty: false};
+    annotations[field] = { annotation: "", uncertainty: false };
   });
 
   const newRecord: Record = {
     record_id: generateFAIMSDataID(),
     data: values,
     type: formName,
-    updated_by: 'admin',
+    updated_by: "admin",
     updated: new Date(),
     field_types: field_types,
-    ugc_comment: '',
+    ugc_comment: "",
     relationship: {},
     deleted: false,
     revision_id: null,
     annotations: annotations,
   };
-  const result = await upsertFAIMSData({dataDb, record: newRecord});
+  const result = await upsertFAIMSData({ dataDb, record: newRecord });
   return result;
 };
 
-const SAMPLE_IMAGE_FILE = 'test/test-attachment-image.jpg';
+const SAMPLE_IMAGE_FILE = "test/test-attachment-image.jpg";
 
 const generateValue = (field: any) => {
   //console.log('generateValue', field);
-  const fieldType = field['type-returned'];
-  if (field['component-parameters'].hrid) {
+  const fieldType = field["type-returned"];
+  if (field["component-parameters"].hrid) {
     // create a nice HRID like thing
-    return 'Bobalooba' + randomInt(10000).toString();
+    return "Bobalooba" + randomInt(10000).toString();
   }
 
-  if (field['component-name'] === 'Select') {
-    const options = field['component-parameters'].ElementProps.options.map(
-      (o: any) => o.value
+  if (field["component-name"] === "Select") {
+    const options = field["component-parameters"].ElementProps.options.map(
+      (o: any) => o.value,
     );
     return options[randomInt(options.length)];
   }
 
-  if (field['component-name'] === 'MultiSelect') {
-    const options = field['component-parameters'].ElementProps.options.map(
-      (o: any) => o.value
+  if (field["component-name"] === "MultiSelect") {
+    const options = field["component-parameters"].ElementProps.options.map(
+      (o: any) => o.value,
     );
     // value is an array
     return [options[randomInt(options.length)]];
@@ -139,22 +139,22 @@ const generateValue = (field: any) => {
 
   // TODO: use 'faker' to generate more realistic data
   switch (fieldType) {
-    case 'faims-core::String':
-      return 'Bobalooba';
-    case 'faims-attachment::Files': {
+    case "faims-core::String":
+      return "Bobalooba";
+    case "faims-attachment::Files": {
       const buffer = readFileSync(SAMPLE_IMAGE_FILE);
       //const buffer = Buffer.from(image);
-      return [{type: 'image/jpeg', data: buffer}];
+      return [{ type: "image/jpeg", data: buffer }];
     }
-    case 'faims-core::Integer':
+    case "faims-core::Integer":
       return randomInt(100);
-    case 'faims-core::Bool':
+    case "faims-core::Bool":
       return randomInt(10) > 5;
-    case 'faims-core::Date':
+    case "faims-core::Date":
       return new Date().toISOString();
-    case 'faims-pos::Location':
+    case "faims-pos::Location":
       return {
-        type: 'Feature',
+        type: "Feature",
         properties: {
           timestamp: Date.now(),
           altitude: null,
@@ -164,7 +164,7 @@ const generateValue = (field: any) => {
           altitude_accuracy: null,
         },
         geometry: {
-          type: 'Point',
+          type: "Point",
           coordinates: [
             randomInt(180) + randomInt(10000) / 10000,
             randomInt(180) - 90 + randomInt(10000) / 10000,
@@ -172,7 +172,7 @@ const generateValue = (field: any) => {
         },
       };
     default:
-      return '';
+      return "";
   }
 };
 
@@ -191,24 +191,24 @@ export const validateProjectDatabase = async (project_id: ProjectID) => {
 
   // an array of records to drive the validation
   const recordIDs = allDocs.rows
-    .filter((doc: any) => doc.id.startsWith('rec'))
+    .filter((doc: any) => doc.id.startsWith("rec"))
     .map((doc: any) => doc.id);
 
   // these are all sets as we will remove ids as we see them
   const revisionIDs = new Set<string>(
     allDocs.rows
-      .filter((doc: any) => doc.id.startsWith('frev'))
-      .map((doc: any) => doc.id)
+      .filter((doc: any) => doc.id.startsWith("frev"))
+      .map((doc: any) => doc.id),
   );
   const avpIDs = new Set<string>(
     allDocs.rows
-      .filter((doc: any) => doc.id.startsWith('avp'))
-      .map((doc: any) => doc.id)
+      .filter((doc: any) => doc.id.startsWith("avp"))
+      .map((doc: any) => doc.id),
   );
   const attIDs = new Set<string>(
     allDocs.rows
-      .filter((doc: any) => doc.id.startsWith('att'))
-      .map((doc: any) => doc.id)
+      .filter((doc: any) => doc.id.startsWith("att"))
+      .map((doc: any) => doc.id),
   );
 
   const errors: string[] = [];
@@ -236,20 +236,20 @@ export const validateProjectDatabase = async (project_id: ProjectID) => {
                       attIDs.delete(att.attachment_id);
                     } catch {
                       errors.push(
-                        `missing attachment ${att.attachment_id} on ${avps[k]} in ${rev} of ${doc._id}`
+                        `missing attachment ${att.attachment_id} on ${avps[k]} in ${rev} of ${doc._id}`,
                       );
                     }
                   }
                 }
               } catch {
                 errors.push(
-                  `missing avp document ${avps[k]} in ${rev} of ${doc._id}`
+                  `missing avp document ${avps[k]} in ${rev} of ${doc._id}`,
                 );
               }
             }
           } catch {
             errors.push(
-              `missing revision document ${rev} in ${doc._id} which has ${doc.revisions.length} revisions`
+              `missing revision document ${rev} in ${doc._id} which has ${doc.revisions.length} revisions`,
             );
           }
         }
@@ -263,14 +263,14 @@ export const validateProjectDatabase = async (project_id: ProjectID) => {
     errors.push(
       `found ${
         revisionIDs.size
-      } revisions not referenced in any record: ${Array.from(revisionIDs)}`
+      } revisions not referenced in any record: ${Array.from(revisionIDs)}`,
     );
 
   if (avpIDs.size > 0)
     errors.push(
       `found ${
         avpIDs.size
-      } AVP documents not referenced in any revision: ${Array.from(avpIDs)}`
+      } AVP documents not referenced in any revision: ${Array.from(avpIDs)}`,
     );
 
   if (attIDs.size > 0)
@@ -278,9 +278,9 @@ export const validateProjectDatabase = async (project_id: ProjectID) => {
       `found ${
         attIDs.size
       } attachment documents not referenced in any revision: ${Array.from(
-        attIDs
-      )}`
+        attIDs,
+      )}`,
     );
 
-  return {errors: errors};
+  return { errors: errors };
 };

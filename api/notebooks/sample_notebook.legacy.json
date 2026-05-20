@@ -854,7 +854,7 @@
         }
       }
     },
-    "fviews": {
+    "views": {
       "FORM1SECTION1": {
         "fields": [
           "featureidincrementor",

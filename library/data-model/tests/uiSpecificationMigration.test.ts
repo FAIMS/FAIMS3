@@ -56,6 +56,7 @@ describe('uiSpecificationMigration helpers', () => {
       expect(def.metadata.custom).not.toHaveProperty('template_id');
       expect(def.uiSpec.views).toEqual({});
       expect(def.uiSpec).not.toHaveProperty('fviews');
+      expect(def.uiSpec.schemaVersion).toBe('4.0');
     });
   });
 });

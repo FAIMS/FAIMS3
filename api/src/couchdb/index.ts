@@ -48,7 +48,6 @@ import {
   ProjectDataObject,
   ProjectDocument,
   ProjectID,
-  ProjectMetaObject,
   TeamsDB,
   TemplateDB,
 } from "@faims3/data-model";
@@ -334,12 +333,27 @@ export const getDataDb = async (
   return new PouchDB(dbUrl, pouch_options);
 };
 
+const openCouchDatabaseByName = (dbName: string): DatabaseInterface => {
+  const pouch_options = pouchOptions();
+  const dbUrl = COUCHDB_INTERNAL_URL + "/" + dbName;
+  if (LOCAL_COUCHDB_AUTH !== undefined) {
+    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  }
+  return new PouchDB(dbUrl, pouch_options);
+};
+
 /**
  * Opens an authenticated CouchDB handle for migrations and other server-side
- * callers. Per-project {@link DatabaseType.DATA} and {@link DatabaseType.METADATA}
- * databases use {@link id} as the project ID; singleton databases ignore {@link id}.
+ * callers.
+ *
+ * - With {@link dbType}: {@link id} is interpreted per kind (e.g. project id for DATA).
+ * - Without {@link dbType}: {@link id} is the Couch database name to open directly.
  */
 export const getDbById: GetDbById = async ({ dbType, id }) => {
+  if (dbType === undefined) {
+    return openCouchDatabaseByName(id);
+  }
+
   switch (dbType) {
     case DatabaseType.AUTH:
       return getAuthDB();

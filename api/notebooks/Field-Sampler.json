@@ -436,7 +436,7 @@
         "displayParent": false
       }
     },
-    "fviews": {
+    "views": {
       "Main-New-Section": {
         "label": "Section 1",
         "fields": [

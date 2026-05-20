@@ -27,9 +27,7 @@ PouchDB.plugin(SecurityPlugin);
 import {
   Action,
   APINotebookList,
-  CouchProjectUIModel,
   DatabaseInterface,
-  EncodedProjectUIModel,
   ExistingProjectDocument,
   file_attachments_to_data,
   file_data_to_attachments,
@@ -327,7 +325,6 @@ export const validateDatabases = async () => {
         }
         await doNotebookMigration({
           projectId,
-          metadata,
           uiSpec: uiSpec,
         });
       }
