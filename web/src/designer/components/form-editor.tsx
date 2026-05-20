@@ -27,7 +27,6 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
@@ -1076,45 +1075,6 @@ export const FormEditor = ({
                     );
                   })}
                 </Box>
-                {hasSectionOverflow && (
-                  <Stack
-                    direction="column"
-                    alignItems="flex-start"
-                    sx={{color: 'text.secondary', ml: 0.4, mt: 2, mb: 0.5}}
-                  >
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
-                      <Typography variant="caption" sx={{fontWeight: 600}}>
-                        Scroll left or right to see all sections
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        ml: 2,
-                        mt: 0.2,
-                        color: 'text.secondary',
-                        lineHeight: 1.2,
-                        display: {xs: 'none', md: 'block'},
-                      }}
-                    >
-                      Desktop tip:{' '}
-                      <Box
-                        component="span"
-                        sx={{fontWeight: 800, color: 'text.primary'}}
-                      >
-                        Hold{' '}
-                      </Box>
-                      <Box
-                        component="span"
-                        sx={{fontFamily: 'monospace', fontWeight: 800, color: 'text.primary'}}
-                      >
-                        Shift
-                      </Box>{' '}
-                      and scroll your mouse wheel to move sideways.
-                    </Typography>
-                  </Stack>
-                )}
               </Grid>
 
               {sections.length === 0 ? (
