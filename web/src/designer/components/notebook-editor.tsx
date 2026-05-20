@@ -145,7 +145,7 @@ export const NotebookEditor = ({
             bgcolor: 'background.paper',
             borderBottom: '1px solid',
             borderColor: 'divider',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.025)',
           }}
         >
           <Box>
@@ -166,18 +166,21 @@ export const NotebookEditor = ({
             </TabList>
           </Box>
           <Box sx={toolbarSx}>
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center">
               {isDesignRoute && (
                 <>
                   <Button
                     variant="contained"
                     color="primary"
+                    size="small"
                     onClick={onSave}
                     sx={{
                       textTransform: 'none',
                       fontWeight: 700,
                       boxShadow: 'none',
-                      minWidth: 92,
+                      minWidth: 72,
+                      fontSize: '0.78rem',
+                      py: 0.4,
                     }}
                   >
                     Save
@@ -185,7 +188,13 @@ export const NotebookEditor = ({
                   <Button
                     onClick={onCancelRequest}
                     color="primary"
-                    sx={designerCancelButtonSx}
+                    size="small"
+                    sx={{
+                      ...designerCancelButtonSx,
+                      fontSize: '0.78rem',
+                      py: 0.4,
+                      minWidth: 72,
+                    }}
                   >
                     Cancel
                   </Button>
@@ -198,10 +207,11 @@ export const NotebookEditor = ({
                       <Button
                         variant={canUndo ? 'contained' : 'outlined'}
                         color="primary"
-                        startIcon={<UndoIcon />}
+                        size="small"
+                        startIcon={<UndoIcon sx={{fontSize: '1rem !important'}} />}
                         onClick={undo}
                         disabled={!canUndo}
-                        sx={{minWidth: 108}}
+                        sx={{minWidth: 84, fontSize: '0.78rem', py: 0.4}}
                       >
                         Undo
                       </Button>
@@ -218,10 +228,11 @@ export const NotebookEditor = ({
                       <Button
                         variant={canRedo ? 'contained' : 'outlined'}
                         color="primary"
-                        startIcon={<RedoIcon />}
+                        size="small"
+                        startIcon={<RedoIcon sx={{fontSize: '1rem !important'}} />}
                         onClick={redo}
                         disabled={!canRedo}
-                        sx={{minWidth: 108}}
+                        sx={{minWidth: 84, fontSize: '0.78rem', py: 0.4}}
                       >
                         Redo
                       </Button>
@@ -229,22 +240,26 @@ export const NotebookEditor = ({
                   </Tooltip>
                   <FormControlLabel
                     sx={{
+                      ml: 0.5,
                       alignItems: 'center',
                       '& .MuiFormControlLabel-label': {
                         display: 'flex',
                         alignItems: 'center',
                         color: 'text.secondary',
                         fontWeight: 600,
+                        fontSize: '0.8rem',
                       },
                     }}
                     label={
                       <Stack
                         direction="row"
                         alignItems="center"
-                        spacing={0.75}
+                        spacing={0.5}
                         sx={{userSelect: 'none'}}
                       >
-                        <Typography>Preview</Typography>
+                        <Typography variant="body2" sx={{fontWeight: 600}}>
+                          Preview
+                        </Typography>
                         <Typography
                           variant="caption"
                           sx={{
@@ -260,13 +275,14 @@ export const NotebookEditor = ({
                     }
                     control={
                       <Switch
+                        size="small"
                         checked={previewForm}
                         onChange={e => setPreviewForm(e.target.checked)}
                       />
                     }
                   />
                   {!isDesignRoute && (
-                    <Button variant="contained" onClick={onSave}>
+                    <Button variant="contained" size="small" onClick={onSave}>
                       Save
                     </Button>
                   )}
