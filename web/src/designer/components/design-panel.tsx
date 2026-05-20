@@ -36,7 +36,6 @@ import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import InfoIcon from '@mui/icons-material/Info';
-import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 
 import {TabContext} from '@mui/lab';
 import {useState, useEffect, useRef} from 'react';
@@ -99,6 +98,9 @@ export const DesignPanel = () => {
   const compactAddTab = useMediaQuery(theme.breakpoints.down('md'));
   const formTabsRef = useRef<HTMLDivElement | null>(null);
   const [hasFormTabOverflow, setHasFormTabOverflow] = useState(false);
+  const [formToolbarSlot, setFormToolbarSlot] = useState<HTMLDivElement | null>(
+    null
+  );
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
@@ -323,11 +325,11 @@ export const DesignPanel = () => {
       <TabContext value={tabIndex}>
         <Box
           sx={{
-            mb: 1.5,
+            mb: 1.25,
             mt: 1,
             display: 'flex',
             alignItems: 'center',
-            gap: 1.5,
+            gap: 1,
             flexWrap: 'wrap',
           }}
         >
@@ -373,6 +375,14 @@ export const DesignPanel = () => {
             New Form
           </Button>
         </Box>
+
+        <Box
+          ref={setFormToolbarSlot}
+          sx={{
+            minHeight: 0,
+            '&:not(:empty)': {mb: 0.5},
+          }}
+        />
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
           <Tabs
@@ -467,52 +477,6 @@ export const DesignPanel = () => {
               }}
             />
           </Tabs>
-          {hasFormTabOverflow && (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                color: 'text.secondary',
-                px: 0.5,
-                mt: 2,
-                mb: 0.5,
-                pb: 0.5,
-              }}
-            >
-              <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
-                <Typography variant="caption" sx={{fontWeight: 600}}>
-                  Scroll left or right to see more forms
-                </Typography>
-              </Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  ml: 2,
-                  mt: 0.2,
-                  color: 'text.secondary',
-                  lineHeight: 1.2,
-                  display: {xs: 'none', md: 'block'},
-                }}
-              >
-                Desktop tip:{' '}
-                <Box
-                  component="span"
-                  sx={{fontWeight: 800, color: 'text.primary'}}
-                >
-                  Hold{' '}
-                </Box>
-                <Box
-                  component="span"
-                  sx={{fontFamily: 'monospace', fontWeight: 800, color: 'text.primary'}}
-                >
-                  Shift
-                </Box>{' '}
-                and scroll your mouse wheel to move sideways.
-              </Typography>
-            </Box>
-          )}
         </Box>
 
         <Routes>
@@ -530,6 +494,7 @@ export const DesignPanel = () => {
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
                   previewForm={previewForm}
+                  toolbarPortal={formToolbarSlot}
                 />
               }
             />
@@ -551,6 +516,7 @@ export const DesignPanel = () => {
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
                   previewForm={previewForm}
+                  toolbarPortal={formToolbarSlot}
                 />
               }
             />

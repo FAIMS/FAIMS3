@@ -53,6 +53,7 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import {createPortal} from 'react-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import {useQueryClient} from '@tanstack/react-query';
 import {cloneDeep} from 'lodash';
@@ -80,6 +81,7 @@ import {
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
+  designerPrimaryActionButtonSx,
   designerResponsiveSectionSx,
   designerScrollableControlRowSx,
 } from './designer-style';
@@ -107,6 +109,8 @@ type Props = {
   handleSectionMoveCallback: (targetViewSetId: string) => void;
   handleFieldMoveCallback: (targetViewId: string) => void;
   previewForm: boolean;
+  /** DOM node to portal the form action row into (lives above the form tabs). */
+  toolbarPortal?: HTMLElement | null;
 };
 
 /** Single form (`viewSet`): sections stepper, CRUD, optional `PreviewFormManager`, settings panel. */
@@ -119,6 +123,7 @@ export const FormEditor = ({
   handleSectionMoveCallback,
   handleFieldMoveCallback,
   previewForm,
+  toolbarPortal,
 }: Props) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -190,6 +195,8 @@ export const FormEditor = ({
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
   const sectionStripRef = useRef<HTMLDivElement | null>(null);
   const [hasSectionOverflow, setHasSectionOverflow] = useState(false);
+  const [sectionToolbarSlot, setSectionToolbarSlot] =
+    useState<HTMLDivElement | null>(null);
   const [isSectionAtStart, setIsSectionAtStart] = useState(true);
   const [isSectionAtEnd, setIsSectionAtEnd] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -492,6 +499,9 @@ export const FormEditor = ({
     return () => window.cancelAnimationFrame(raf);
   }, [editMode]);
 
+  const renderFormToolbar = (toolbarStack: React.ReactNode) =>
+    toolbarPortal ? createPortal(toolbarStack, toolbarPortal) : toolbarStack;
+
   return (
     <Stack
       direction="row"
@@ -507,6 +517,7 @@ export const FormEditor = ({
         sx={{flex: '1 1 0%', minWidth: 0}}
       >
         <Grid item xs={12}>
+          {renderFormToolbar(
           <Stack spacing={1.5} py={0.75}>
             <Stack
               direction="row"
@@ -718,6 +729,7 @@ export const FormEditor = ({
               </Alert>
             )}
           </Stack>
+          )}
           <Dialog
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
@@ -865,11 +877,29 @@ export const FormEditor = ({
           </Dialog>
 
           <Box mt={2} mb={1.25}>
-            <HeadingWithInfo
-              title="Sections"
-              tooltip="Sections break a form into logical groups of fields."
-            />
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}>
+              <HeadingWithInfo
+                title="Sections"
+                tooltip="Sections break a form into logical groups of fields."
+              />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setAddSectionDialogOpen(true)}
+                sx={designerPrimaryActionButtonSx}
+              >
+                New Section
+              </Button>
+            </Box>
           </Box>
+          <Box
+            ref={setSectionToolbarSlot}
+            sx={{
+              minHeight: 0,
+              '&:not(:empty)': {mb: 0.5},
+            }}
+          />
         </Grid>
         <Grid item xs={12}>
           <Box sx={{px: 0, pt: 1.5, pb: 2}}>
@@ -1110,6 +1140,7 @@ export const FormEditor = ({
                     moveCallback={moveSection}
                     handleSectionMoveCallback={handleSectionMoveCallback}
                     moveFieldCallback={moveFieldToSection}
+                    toolbarPortal={sectionToolbarSlot}
                   />
                 </Grid>
               )}
