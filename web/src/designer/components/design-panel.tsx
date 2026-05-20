@@ -319,28 +319,58 @@ export const DesignPanel = () => {
   return (
     <>
       <TabContext value={tabIndex}>
-        <Divider sx={{...designerDividerSx, mb: 1.5}} />
-        <Box sx={{mb: 1.25, mt: 0.5}}>
+        <Box sx={{mb: 1.25, mt: 1}}>
           <HeadingWithInfo
             title="Forms"
-            tooltip={`Forms are top-level data entry pages in your ${NOTEBOOK_NAME}.`}
+            tooltip={
+              <Box sx={{p: 0.25, maxWidth: 320}}>
+                <Typography
+                  variant="body2"
+                  sx={{fontWeight: 700, mb: 0.5, lineHeight: 1.35}}
+                >
+                  Forms are top-level data entry pages in your {NOTEBOOK_NAME}.
+                </Typography>
+                <Typography variant="caption" sx={{display: 'block', lineHeight: 1.45}}>
+                  Define the user interface for your notebook here. Add one or
+                  more forms to collect data from users. Each form can have one
+                  or more sections, and each section can have one or more form
+                  fields.
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{display: 'block', mt: 0.75, lineHeight: 1.45}}
+                >
+                  Tip: Hold <Box component="span" sx={{fontFamily: 'monospace', fontWeight: 800}}>Shift</Box> and scroll your mouse wheel
+                  to move sideways through the form and section tabs.
+                </Typography>
+              </Box>
+            }
           />
           <Box
             sx={{
-              display: 'flex',
+              mt: 1,
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: 1,
-              mt: 0.75,
-              flexWrap: 'wrap',
+              gap: 0.75,
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 1,
+              backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.06),
+              border: '1px solid',
+              borderColor: (t: Theme) => alpha(t.palette.primary.main, 0.18),
+              color: 'text.secondary',
             }}
           >
-            <Typography
-              variant="body1"
-              sx={{...designerSubheadingSx, maxWidth: 980}}
-            >
-              Define the user interface for your notebook here. Add one or more
-              forms to collect data from users. Each form can have one or more
-              sections. Each section has one or more form fields.
+            <SwapHorizRoundedIcon sx={{fontSize: '1rem', color: 'primary.main'}} />
+            <Typography variant="caption" sx={{fontWeight: 600, lineHeight: 1.3}}>
+              Tip: Hold{' '}
+              <Box
+                component="span"
+                sx={{fontFamily: 'monospace', fontWeight: 800, color: 'text.primary'}}
+              >
+                Shift
+              </Box>{' '}
+              and scroll to move sideways through forms and sections.
             </Typography>
           </Box>
         </Box>
