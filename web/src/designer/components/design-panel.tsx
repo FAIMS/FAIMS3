@@ -380,19 +380,11 @@ export const DesignPanel = () => {
             onChange={handleTabChange}
             aria-label="form tabs"
             variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
+            scrollButtons={false}
             sx={{
               minHeight: 48,
               ml: 0,
-              '& .MuiTabs-scrollButtons': {
-                color: 'text.primary',
-                '&.Mui-disabled': {opacity: 0.3},
-                '& .MuiSvgIcon-root': {
-                  fontSize: '1.9rem',
-                  fontWeight: 700,
-                },
-              },
+              pl: 0,
               '& .MuiTabs-scroller': {
                 overflowX: 'auto !important',
                 scrollbarWidth: hasFormTabOverflow ? 'thin' : 'none',
