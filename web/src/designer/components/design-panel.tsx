@@ -34,6 +34,7 @@ import {
 import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import InfoIcon from '@mui/icons-material/Info';
 
 import {TabContext} from '@mui/lab';
@@ -46,6 +47,7 @@ import {
   designerDialogContentSx,
   designerDialogTitleSx,
   designerInfoIconSx,
+  designerPrimaryActionButtonSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
 import {shallowEqual} from 'react-redux';
@@ -59,7 +61,6 @@ import {
 } from 'react-router-dom';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
-import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
 import {NOTEBOOK_NAME} from '@/constants';
 
