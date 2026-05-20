@@ -40,7 +40,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
   FormControlLabel,
   Grid,
   IconButton,
@@ -69,14 +68,11 @@ import {SectionEditor} from './section-editor';
 import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
 import {
   designerCancelButtonSx,
-  designerControlActionRowSx,
   designerControlLabelSx,
-  designerControlHeadingSx,
   designerDialogActionsSx,
   designerDialogBodyTextSx,
   designerDialogContentSx,
   designerDialogTitleSx,
-  designerDividerSx,
   designerInlineEditActionIconSx,
   designerInlineEditFocusOverlaySx,
   designerInlineEditPanelSx,
@@ -84,7 +80,6 @@ import {
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
-  designerPrimaryActionButtonSx,
   designerResponsiveSectionSx,
   designerScrollableControlRowSx,
 } from './designer-style';
@@ -515,38 +510,11 @@ export const FormEditor = ({
           <Stack spacing={1.5} py={0.75}>
             <Stack
               direction="row"
-              spacing={1.5}
-              alignItems="center"
-              flexWrap="wrap"
-              sx={designerScrollableControlRowSx}
-            >
-              <Typography variant="subtitle1" sx={designerControlHeadingSx}>
-                Form controls
-              </Typography>
-
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddRoundedIcon />}
-                onClick={handleAddFormCallback}
-                sx={{
-                  ...designerPrimaryActionButtonSx,
-                  boxShadow: 'none',
-                  mt: -0.25,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                New Form
-              </Button>
-            </Stack>
-
-            <Stack
-              direction="row"
               spacing={1}
               alignItems="center"
               flexWrap="wrap"
               columnGap={1}
-              sx={{...designerControlActionRowSx, color: 'text.secondary'}}
+              sx={{...designerScrollableControlRowSx, color: 'text.secondary'}}
             >
               <Button
                 variant="text"
@@ -750,8 +718,6 @@ export const FormEditor = ({
               </Alert>
             )}
           </Stack>
-          <Divider sx={designerDividerSx} />
-
           <Dialog
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
