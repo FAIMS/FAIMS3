@@ -36,6 +36,7 @@ import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import InfoIcon from '@mui/icons-material/Info';
+import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 
 import {TabContext} from '@mui/lab';
 import {useState, useEffect, useRef} from 'react';
