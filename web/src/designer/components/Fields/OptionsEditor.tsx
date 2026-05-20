@@ -46,7 +46,6 @@ import {
   FormLabel,
   Grid,
   IconButton,
-  Paper,
   Radio,
   RadioGroup,
   Stack,
@@ -54,12 +53,12 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -133,32 +132,49 @@ interface SortableItemProps {
 const OTHER_OPTION_ID = '__other__';
 
 interface OtherOptionRowProps {
+  id: string;
   showExclusiveOptions?: boolean;
-  otherOptionPosition: number;
-  totalOptions: number;
+  isFirst: boolean;
+  isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onRemove: () => void;
 }
 
 /**
- * "Other" option row component (non-draggable, uses arrow buttons for positioning)
+ * "Other" option row — drags via shared drag handle and also offers up/down
+ * arrows to nudge its position, exactly like normal option rows. Not pinned.
  */
 const SortableOtherOptionRow = ({
+  id,
   showExclusiveOptions,
-  otherOptionPosition,
-  totalOptions,
+  isFirst,
+  isLast,
   onMoveUp,
   onMoveDown,
   onRemove,
 }: OtherOptionRowProps) => {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id});
+
   return (
     <TableRow
-      sx={{
-        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
       }}
+      sx={optionRowSx}
     >
-      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}} />
+      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
+        <DragHandle
+          compact
+          label="Drag Other option to reorder"
+          dragAttributes={attributes}
+          dragListeners={listeners}
+        />
+      </TableCell>
 
       <TableCell sx={{py: 1, minWidth: 0}}>
         <Tooltip title="Allows custom text input">
@@ -170,7 +186,7 @@ const SortableOtherOptionRow = ({
               overflowWrap: 'anywhere',
             }}
           >
-            <strong>Other</strong>{' '}
+            Other{' '}
             <Typography
               component="span"
               sx={{
@@ -184,18 +200,17 @@ const SortableOtherOptionRow = ({
         </Tooltip>
       </TableCell>
 
-      {/* Empty exclusive checkbox column */}
+      {/* Empty exclusive checkbox column for alignment */}
       {showExclusiveOptions && (
         <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}} />
       )}
 
-      {/* Action buttons */}
       <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
         <Tooltip title="Move up">
           <span>
             <IconButton
               size="small"
-              disabled={otherOptionPosition === 0}
+              disabled={isFirst}
               onClick={onMoveUp}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
@@ -207,22 +222,11 @@ const SortableOtherOptionRow = ({
           <span>
             <IconButton
               size="small"
-              disabled={otherOptionPosition === totalOptions}
+              disabled={isLast}
               onClick={onMoveDown}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Other option cannot be edited">
-          <span>
-            <IconButton
-              size="small"
-              disabled
-              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.disabled'}}
-            >
-              <EditIcon fontSize="small" />
             </IconButton>
           </span>
         </Tooltip>
@@ -239,6 +243,18 @@ const SortableOtherOptionRow = ({
     </TableRow>
   );
 };
+
+/** Shared row styling: subtle background + clear hover state + row divider. */
+const optionRowSx = {
+  backgroundColor: alpha('#000', 0.015),
+  borderBottom: '1px solid',
+  borderColor: alpha('#000', 0.08),
+  transition: 'background-color 140ms ease',
+  '&:last-of-type': {borderBottom: 'none'},
+  '&:hover': {
+    backgroundColor: alpha('#1976d2', 0.06),
+  },
+} as const;
 
 /**
  * Individual sortable item row component for the options table
@@ -267,13 +283,11 @@ const SortableItem = ({
     <TableRow
       ref={setNodeRef}
       style={{
-        // transform the row based on the drag state
         transform: CSS.Transform.toString(transform),
-        // use sortable provides transition information
         transition,
-        // make it less opacity when draggin
         opacity: isDragging ? 0.5 : 1,
       }}
+      sx={optionRowSx}
     >
       {/* Drag handle column */}
       <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
@@ -404,7 +418,6 @@ export const OptionsEditor = ({
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const fieldComponent = field['component-name'];
   const isMultiSelectField = fieldComponent === 'MultiSelect';
-  const isDeprecatedComponent = fieldComponent === 'Select';
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
@@ -416,7 +429,6 @@ export const OptionsEditor = ({
   const [editValue, setEditValue] = useState('');
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
   const addOptionHasError = Boolean(errorMessage) && !editingOption;
-  const optionGuidance = 'Enter an option label, then click Add.';
 
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
@@ -433,24 +445,6 @@ export const OptionsEditor = ({
   const otherOptionPosition: number =
     field['component-parameters'].ElementProps?.otherOptionPosition ??
     options.length;
-
-  // Keep legacy specs normalized so "Other" always renders at bottom.
-  useEffect(() => {
-    if (!enableOther || otherOptionPosition === options.length) return;
-    const normalizedField = JSON.parse(JSON.stringify(field)) as FieldType;
-    normalizedField['component-parameters'].ElementProps = {
-      ...(normalizedField['component-parameters'].ElementProps ?? {}),
-      otherOptionPosition: options.length,
-    };
-    dispatch(fieldUpdated({fieldName, newField: normalizedField}));
-  }, [
-    dispatch,
-    enableOther,
-    field,
-    fieldName,
-    options.length,
-    otherOptionPosition,
-  ]);
 
   /**
    * made a combined list (options + other) in visual order.
@@ -534,7 +528,12 @@ export const OptionsEditor = ({
       }),
       exclusiveOptions: updatedExclusiveOptions,
       ...(enableOther
-        ? {otherOptionPosition: updatedOptions.length}
+        ? {
+            otherOptionPosition:
+              updatedOtherOptionPosition !== undefined
+                ? updatedOtherOptionPosition
+                : otherOptionPosition,
+          }
         : updatedOtherOptionPosition !== undefined
           ? {otherOptionPosition: updatedOtherOptionPosition}
           : {}),
@@ -623,7 +622,11 @@ export const OptionsEditor = ({
     // Safety: if mapping failed, do nothing
     if (newOptions.length !== options.length) return;
 
-    updateField(newOptions, exclusiveOptions);
+    const newOtherOptionPosition = enableOther
+      ? newCombined.findIndex(r => r.type === 'other')
+      : undefined;
+
+    updateField(newOptions, exclusiveOptions, newOtherOptionPosition);
   };
 
   /**
@@ -640,6 +643,21 @@ export const OptionsEditor = ({
       ];
       updateField(newOptions, exclusiveOptions);
     }
+  };
+
+  /**
+   * Nudges the "Other" row up/down in the combined list. Other is never pinned —
+   * its position is tracked independently via otherOptionPosition.
+   */
+  const moveOtherOption = (direction: 'up' | 'down') => {
+    if (!enableOther) return;
+    const current = Math.max(0, Math.min(otherOptionPosition, options.length));
+    const next =
+      direction === 'up'
+        ? Math.max(0, current - 1)
+        : Math.min(options.length, current + 1);
+    if (next === current) return;
+    updateField(options, exclusiveOptions, next);
   };
 
   /**
@@ -797,195 +815,119 @@ export const OptionsEditor = ({
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
       enableOtherOption: newValue,
-      otherOptionPosition: newValue ? options.length : undefined,
+      otherOptionPosition: undefined,
     };
 
     dispatch(fieldUpdated({fieldName, newField}));
-  };
-
-  /**
-   * Updates the position of the "Other" option
-   */
-  const ensureOtherIsLast = () => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
-      otherOptionPosition: options.length,
-    };
-    dispatch(fieldUpdated({fieldName, newField}));
-  };
-
-  /**
-   * Moves the "Other" option up or down
-   */
-  const moveOtherOption = (direction: 'up' | 'down') => {
-    void direction;
-    ensureOtherIsLast();
   };
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Paper
-        sx={{
-          width: '100%',
-          ml: 2,
-          mt: 2,
-          p: 3,
-          border: isDeprecatedComponent ? undefined : '1px solid',
-          borderColor: isDeprecatedComponent ? undefined : 'divider',
-          boxShadow: isDeprecatedComponent
-            ? undefined
-            : '0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
-          transition: 'box-shadow 160ms ease, border-color 160ms ease',
-          '&:hover': isDeprecatedComponent
-            ? undefined
-            : {
-                boxShadow:
-                  '0 4px 14px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.75)',
-                borderColor: 'rgba(0,0,0,0.18)',
-              },
-        }}
-      >
-        <Grid container spacing={2}>
-          {/* Options table */}
-          <Grid item xs={12}>
-            <SimpleFieldWrapper heading="Options list" helperText={undefined}>
-              <TableContainer
-                component={Paper}
-                variant="outlined"
-                sx={{
-                  border: '1px solid rgba(0, 0, 0, 0.12)',
-                  boxShadow: isDeprecatedComponent
-                    ? 'none'
-                    : '0 1px 6px rgba(0,0,0,0.08), inset 0 1px 2px rgba(0,0,0,0.04)',
-                  borderRadius: 1,
-                  maxHeight: '1000px',
-                  overflow: 'auto',
-                }}
-              >
-                <Table
-                  size="small"
-                  stickyHeader
-                  sx={{tableLayout: 'fixed', width: '100%'}}
+      <Box sx={{width: '100%', mt: 1.5}}>
+        <Typography
+          component="h4"
+          sx={{
+            fontSize: '1rem',
+            fontWeight: 700,
+            color: 'text.primary',
+            lineHeight: 1.25,
+            letterSpacing: '0.012em',
+            mb: 0.75,
+          }}
+        >
+          Options
+        </Typography>
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1.25,
+            p: {xs: 1.25, sm: 1.75},
+            backgroundColor: '#fff',
+          }}
+        >
+          <Grid container spacing={1.5}>
+            {/* Options table */}
+            <Grid item xs={12}>
+              {options.length === 0 && !enableOther ? (
+                <Typography
+                  variant="body2"
+                  sx={{color: 'text.secondary', py: 1.25, px: 0.5}}
                 >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          width: {xs: 32, sm: 40},
-                          backgroundColor: '#fafafa',
-                          fontWeight: 500,
-                          py: 1.5,
-                        }}
-                      />
-                      <TableCell
-                        sx={{
-                          backgroundColor: '#fafafa',
-                          fontWeight: 700,
-                          py: 1.5,
-                        }}
+                  No options yet — add one below to get started.
+                </Typography>
+              ) : (
+                <TableContainer
+                  component={Box}
+                  sx={{
+                    border: 'none',
+                    boxShadow: 'none',
+                    borderRadius: 0,
+                    maxHeight: '1000px',
+                    overflow: 'auto',
+                  }}
+                >
+                  <Table
+                    size="small"
+                    sx={{tableLayout: 'fixed', width: '100%'}}
+                  >
+                    <TableBody>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
                       >
-                        Option Text
-                      </TableCell>
-                      {showExclusiveOptions && (
-                        <TableCell
-                          align="center"
-                          sx={{
-                            width: {xs: 96, sm: 140},
-                            backgroundColor: '#fafafa',
-                            fontWeight: 700,
-                            py: 1.5,
-                          }}
+                        <SortableContext
+                          items={combinedRows.map(r => r.id)}
+                          strategy={verticalListSortingStrategy}
                         >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 0.5,
-                            }}
-                          >
-                            Exclusive
-                            <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
-                              <InfoIcon
-                                sx={{
-                                  ...(designerInfoIconSx as Record<string, unknown>),
-                                }}
-                              />
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      )}
-                      <TableCell
-                        align="right"
-                        sx={{
-                          width: {xs: 120, sm: 180},
-                          backgroundColor: '#fafafa',
-                          fontWeight: 700,
-                          py: 1.5,
-                        }}
-                      >
-                        Actions
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                    >
-                      {/* SortableContext now includes "Other" id when enabled */}
-                      <SortableContext
-                        items={combinedRows.map(r => r.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {combinedRows.map(row => {
-                          if (row.type === 'other') {
+                          {combinedRows.map((row, rowIdx) => {
+                            if (row.type === 'other') {
+                              return (
+                                <SortableOtherOptionRow
+                                  key={OTHER_OPTION_ID}
+                                  id={OTHER_OPTION_ID}
+                                  showExclusiveOptions={showExclusiveOptions}
+                                  isFirst={rowIdx === 0}
+                                  isLast={rowIdx === combinedRows.length - 1}
+                                  onMoveUp={() => moveOtherOption('up')}
+                                  onMoveDown={() => moveOtherOption('down')}
+                                  onRemove={toggleEnableOtherOption}
+                                />
+                              );
+                            }
+
+                            const optionIndex = options.findIndex(
+                              o => o.value === row.option.value
+                            );
+
                             return (
-                              <SortableOtherOptionRow
-                                key={OTHER_OPTION_ID}
+                              <SortableItem
+                                key={row.option.value}
+                                id={row.option.value}
+                                option={row.option}
+                                index={optionIndex}
                                 showExclusiveOptions={showExclusiveOptions}
-                                otherOptionPosition={otherOptionPosition}
-                                totalOptions={options.length}
-                                onMoveUp={() => moveOtherOption('up')}
-                                onMoveDown={() => moveOtherOption('down')}
-                                onRemove={toggleEnableOtherOption}
+                                exclusiveOptions={exclusiveOptions}
+                                onExclusiveToggle={handleExclusiveToggle}
+                                onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
+                                onRemove={removeOption}
+                                onMove={moveOption}
+                                totalItems={options.length}
                               />
                             );
-                          }
+                          })}
+                        </SortableContext>
+                      </DndContext>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Grid>
 
-                          const optionIndex = options.findIndex(
-                            o => o.value === row.option.value
-                          );
-
-                          return (
-                            <SortableItem
-                              key={row.option.value}
-                              id={row.option.value}
-                              option={row.option}
-                              index={optionIndex}
-                              showExclusiveOptions={showExclusiveOptions}
-                              exclusiveOptions={exclusiveOptions}
-                              onExclusiveToggle={handleExclusiveToggle}
-                              onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
-                              onRemove={removeOption}
-                              onMove={moveOption}
-                              totalItems={options.length}
-                            />
-                          );
-                        })}
-                      </SortableContext>
-                    </DndContext>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </SimpleFieldWrapper>
-          </Grid>
-
-          {/* Controls under table */}
-          <Grid item xs={12}>
-            <Box sx={{mt: 1}}>
+            {/* Controls under table */}
+            <Grid item xs={12}>
+              <Box sx={{mt: 0.5}}>
               <form onSubmit={addOption}>
                 <Stack
                   direction={{xs: 'column', sm: 'row'}}
@@ -995,8 +937,8 @@ export const OptionsEditor = ({
                 >
                   <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
                     <SimpleFieldWrapper
-                      heading="Add another option"
-                      helperText={optionGuidance}
+                      heading="Add option"
+                      helperText={undefined}
                     >
                       <TextField
                         size="small"
@@ -1128,7 +1070,9 @@ export const OptionsEditor = ({
               )}
             </Box>
           </Grid>
-        </Grid>
+          </Grid>
+        </Box>
+      </Box>
 
         {/* Edit option dialog */}
         <Dialog
@@ -1229,7 +1173,6 @@ export const OptionsEditor = ({
             </Button>
           </DialogActions>
         </Dialog>
-      </Paper>
     </BaseFieldEditor>
   );
 };
