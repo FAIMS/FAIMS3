@@ -19,7 +19,6 @@
 import {
   Box,
   Button,
-  Divider,
   Dialog,
   DialogActions,
   DialogContent,
@@ -46,9 +45,7 @@ import {
   designerDialogActionsSx,
   designerDialogContentSx,
   designerDialogTitleSx,
-  designerDividerSx,
   designerInfoIconSx,
-  designerSubheadingSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
 import {shallowEqual} from 'react-redux';
