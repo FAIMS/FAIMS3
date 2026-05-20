@@ -16,7 +16,6 @@
  * @file Section header UI: rename, condition, reorder, duplicate, delete warnings.
  */
 
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
@@ -27,6 +26,7 @@ import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import InfoIcon from '@mui/icons-material/Info';
+import {createPortal} from 'react-dom';
 
 import {
   Alert,
@@ -36,7 +36,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Grid,
   IconButton,
   InputAdornment,
@@ -61,15 +60,11 @@ import {
   designerCancelButtonSx,
   designerControlActionRowSx,
   designerControlLabelSx,
-  designerControlHeadingSx,
   designerDialogActionsSx,
   designerDialogBodyTextSx,
   designerDialogContentSx,
   designerDialogFieldLabelSx,
   designerDialogTitleSx,
-  designerDividerSx,
-  designerHeadingRowSx,
-  designerHeadingTextSx,
   designerInlineEditActionIconSx,
   designerInlineEditFocusOverlaySx,
   designerInlineEditPanelSx,
@@ -77,8 +72,6 @@ import {
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
-  designerPrimaryActionButtonSx,
-  designerScrollableControlRowSx,
 } from './designer-style';
 import {FieldList} from './field-list';
 
@@ -103,6 +96,8 @@ type Props = {
   ) => boolean;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
   moveFieldCallback: (targetViewId: string) => void;
+  /** DOM node to portal the section action row into (above the section strip). */
+  toolbarPortal?: HTMLElement | null;
 };
 
 /** One section (`fview`): title, condition, duplicate/move/delete, and {@link FieldList}. */
@@ -116,6 +111,7 @@ export const SectionEditor = ({
   moveCallback,
   handleSectionMoveCallback,
   moveFieldCallback,
+  toolbarPortal,
 }: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].present.fviews[viewId]
@@ -300,28 +296,13 @@ export const SectionEditor = ({
     }
   };
 
+  const renderSectionToolbar = (toolbarNode: React.ReactNode) =>
+    toolbarPortal ? createPortal(toolbarNode, toolbarPortal) : toolbarNode;
+
   return (
     <>
+      {renderSectionToolbar(
       <Stack spacing={1.5} mt={0.75} mb={2}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.5}
-          sx={designerScrollableControlRowSx}
-        >
-          <Typography variant="subtitle1" sx={designerControlHeadingSx}>
-            Section controls
-          </Typography>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setAddDialogOpen(true)}
-            sx={{...designerPrimaryActionButtonSx, mt: -0.35}}
-          >
-            New Section
-          </Button>
-        </Stack>
         <Stack
           direction="row"
           alignItems="center"
@@ -440,6 +421,7 @@ export const SectionEditor = ({
           </Button>
         </Stack>
       </Stack>
+      )}
       {editMode && (
         <>
           <Grid
@@ -502,7 +484,6 @@ export const SectionEditor = ({
           </Grid>
         </>
       )}
-      <Divider sx={{...designerDividerSx, mb: 2}} />
 
       <Dialog
         open={openMoveDialog}
@@ -644,21 +625,6 @@ export const SectionEditor = ({
           </Button>
         </DialogActions>
       </Dialog>
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={1}
-        mt={2}
-        mb={1.5}
-        sx={designerHeadingRowSx}
-      >
-        <Typography variant="h2" sx={designerHeadingTextSx}>
-          Fields
-        </Typography>
-        <Tooltip title="Fields are the individual inputs that collect data in this section.">
-          <InfoIcon sx={designerInfoIconSx} />
-        </Tooltip>
-      </Stack>
       <Dialog
         open={openDuplicateDialog}
         onClose={() => {
