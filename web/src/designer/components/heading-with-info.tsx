@@ -1,6 +1,7 @@
 import InfoIcon from '@mui/icons-material/Info';
 import {Tooltip, Typography} from '@mui/material';
 import Box from '@mui/material/Box';
+import type {ReactNode} from 'react';
 import {
   designerHeadingRowSx,
   designerHeadingTextSx,
@@ -9,7 +10,7 @@ import {
 
 type HeadingWithInfoProps = {
   title: string;
-  tooltip: string;
+  tooltip: ReactNode;
   variant?: 'h2' | 'subtitle1' | 'body1' | 'body2';
   titleSx?: Record<string, unknown>;
   containerSx?: Record<string, unknown>;
