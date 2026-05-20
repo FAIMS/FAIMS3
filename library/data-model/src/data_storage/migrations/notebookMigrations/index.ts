@@ -3,6 +3,9 @@ import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';
 import {migrateToV4} from './migrateV4';
 
+/** Target schema version after {@link migrateNotebook} completes. */
+export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION = '4.0';
+
 type NotebookWithSchemaVersion = {
   metadata?: {schema_version?: string | null};
   uiSpec?: {schemaVersion?: string | null};
@@ -12,7 +15,7 @@ type NotebookWithSchemaVersion = {
  * Read schema version from legacy `metadata.schema_version` or v3+
  * `uiSpec.schemaVersion` (see {@link NotebookUiSpec}).
  */
-function getNotebookSchemaVersion(
+export function getNotebookSchemaVersion(
   notebook: NotebookWithSchemaVersion
 ): string | undefined {
   const legacy = notebook.metadata?.schema_version;

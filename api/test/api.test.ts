@@ -28,6 +28,7 @@ import {
   GetListAllUsersResponseSchema,
   GetNotebookResponse,
   getRecordListAudit,
+  NotebookDefinition,
   ProjectStatus,
   queryCouch,
   RECORDS_INDEX,
@@ -59,6 +60,7 @@ import {
 import {
   createNotebookFromSampleFile,
   EMPTY_UI_SPECIFICATION,
+  readLegacyNotebookFile,
   sampleCreateNotebookPayload,
 } from "./sampleNotebook";
 import { getExpressUserFromEmailOrUserId } from "../src/couchdb/users";
@@ -170,7 +172,8 @@ describe("API tests", () => {
 
   it("update notebook", async () => {
     const createPayload = sampleCreateNotebookPayload("test notebook");
-    const { uiSpecification } = createPayload;
+    const uiSpecification =
+      createPayload.uiSpecification as NotebookDefinition;
 
     const response = await request(app)
       .post("/api/notebooks")
@@ -230,6 +233,51 @@ describe("API tests", () => {
     expect(
       project.uiSpecification.metadata.information.projectLeadLabel,
     ).to.equal("Bob Bobalooba");
+  });
+
+  it("creates a notebook from a legacy uiSpecification upload", async () => {
+    const legacy = readLegacyNotebookFile();
+    const response = await request(app)
+      .post("/api/notebooks")
+      .send({
+        name: "legacy upload notebook",
+        uiSpecification: legacy,
+      })
+      .set("Authorization", `Bearer ${adminToken}`)
+      .set("Content-Type", "application/json")
+      .expect(200);
+
+    const project = await getProjectById(response.body.notebook);
+    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal("4.0");
+    expect(project.uiSpecification.uiSpec.views).to.be.ok;
+    expect(project.uiSpecification).to.not.have.property("ui-specification");
+    expect(project.uiSpecification.metadata.information.purposeMarkdown).to.include(
+      "Nellies Glen",
+    );
+  });
+
+  it("PUT uiSpecification migrates legacy wire JSON", async () => {
+    const createPayload = sampleCreateNotebookPayload("legacy put notebook");
+    const createRes = await request(app)
+      .post("/api/notebooks")
+      .send(createPayload)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .set("Content-Type", "application/json")
+      .expect(200);
+
+    const projectId = createRes.body.notebook as string;
+    const legacy = readLegacyNotebookFile();
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/uiSpecification`)
+      .send(legacy)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .set("Content-Type", "application/json")
+      .expect(200);
+
+    const project = await getProjectById(projectId);
+    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal("4.0");
+    expect(project.uiSpecification.uiSpec.views).to.be.ok;
   });
 
   it("update notebook status", async () => {

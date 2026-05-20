@@ -111,7 +111,7 @@ export const TemplateV5FieldsSchema = z.object({
   // Version (internally incremented upon update)
   version: z.number().min(1),
 
-  // Team ownership
+  // Team ownership (change via PUT /api/templates/:id/team only)
   ownedByTeamId: z.string().optional(),
 
   // Visibility

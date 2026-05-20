@@ -34,6 +34,7 @@ import {
   getDataDB,
   GetNotebookListResponse,
   NotebookDefinition,
+  NotebookUiSpecificationInput,
   PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
@@ -53,6 +54,7 @@ import {
   migrateNotebook,
   NotebookUiSpec,
 } from "@faims3/data-model";
+import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
 import {
   initialiseDataDb,
   localGetProjectsDb,
@@ -376,12 +378,14 @@ export const createNotebook = async ({
   createdBy,
 }: {
   projectName: string;
-  uiSpecification: NotebookDefinition;
+  uiSpecification: NotebookDefinition | NotebookUiSpecificationInput;
   description?: string;
   templateId?: string;
   teamId?: string;
   createdBy: string;
 }) => {
+  const normalizedUiSpecification =
+    normalizeUiSpecificationOrThrow(uiSpecification);
   const projectId = generateProjectID(projectName);
   const dataDBName = `data-${projectId}`;
   const now = nowIso();
@@ -398,7 +402,7 @@ export const createNotebook = async ({
     createdBy,
     createdAt: now,
     updatedAt: now,
-    uiSpecification,
+    uiSpecification: normalizedUiSpecification,
   } satisfies ProjectDocument;
 
   try {
@@ -440,12 +444,14 @@ export const updateProjectMetadata = async (
  */
 export const updateProjectUiSpecification = async (
   projectId: string,
-  uiSpecification: PutUpdateNotebookUiSpecificationInput,
+  uiSpecification: PutUpdateNotebookUiSpecificationInput | NotebookUiSpecificationInput,
 ): Promise<ExistingProjectDocument> => {
+  const normalizedUiSpecification =
+    normalizeUiSpecificationOrThrow(uiSpecification);
   const project = await getProjectById(projectId);
   const updated: ProjectDocument = {
     ...project,
-    uiSpecification,
+    uiSpecification: normalizedUiSpecification,
     updatedAt: nowIso(),
   };
   await putProjectDoc(updated);

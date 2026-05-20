@@ -35,6 +35,7 @@ import {
   PostCreateTemplateInput,
   PostCreateTemplateResponseSchema,
   PostRestoreTemplateResponseSchema,
+  PutChangeTemplateTeamInput,
   PutUpdateTemplateInput,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
@@ -151,6 +152,22 @@ const updateATemplate = async (
       // parse the response as proper model
       return PutUpdateTemplateResponseSchema.parse(res.body);
     });
+};
+
+const changeTemplateTeam = async (
+  app: Express,
+  templateId: string,
+  payload: PutChangeTemplateTeamInput,
+  token: string = adminToken
+): Promise<PutUpdateTemplateResponse> => {
+  return await requestAuthAndType(
+    request(app)
+      .put(`${TEMPLATE_API_BASE}/${templateId}/team`)
+      .send(payload),
+    token
+  )
+    .expect(200)
+    .then(res => PutUpdateTemplateResponseSchema.parse(res.body));
 };
 
 /**
@@ -638,19 +655,15 @@ describe('template API tests', () => {
 
     // update team ownership
 
-    // update the existing template but only send the metadata and name
-    await updateATemplate(app, template._id, {
+    await changeTemplateTeam(app, template._id, {
       teamId: team2._id,
     }).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
+      expect(newTemplate.version).to.equal(1);
       expect(newTemplate.ownedByTeamId).to.equal(team2._id);
     });
 
-    // get the template and check the same
     await getATemplate(app, template._id).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
+      expect(newTemplate.version).to.equal(1);
       expect(newTemplate.ownedByTeamId).to.equal(team2._id);
       expect(newTemplate.ownedByTeamDisplayName).to.equal('team2');
     });
@@ -665,9 +678,11 @@ describe('template API tests', () => {
     });
 
     const response = await requestAuthAndType(
-      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
-        teamId: 'non-existent-team-id',
-      }),
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}/team`)
+        .send({
+          teamId: 'non-existent-team-id',
+        }),
       adminToken
     );
 
@@ -807,12 +822,11 @@ describe('template API tests', () => {
     // check that it is version 1 - i.e. version is ignored
     expect(template.version).to.equal(1);
 
-    // Forcefully inject a version change then check v2
+    // Metadata-only PUT does not bump version; version in the body is not accepted
     await updateATemplate(app, template._id, {
-      ...template,
-      version: 5,
-    } as unknown as PutUpdateTemplateInput).then(template => {
-      expect(template.version).to.equal(2);
+      name: template.name,
+    }).then(updated => {
+      expect(updated.version).to.equal(1);
     });
   });
 

@@ -6,8 +6,10 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 import {
   ExistingTemplateDocument,
   NotebookDefinition,
+  NotebookUiSpecificationInput,
   PostCreateTemplateInput,
   ProjectID,
+  PutChangeTemplateTeamInput,
   PutUpdateTemplateInput,
   PutUpdateTemplateUiSpecificationInput,
   safeWriteDocument,
@@ -19,6 +21,7 @@ import {
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
 } from '@faims3/data-model';
+import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
 import type {
   TemplateApiDocument,
   TemplateApiListItem,
@@ -224,12 +227,13 @@ export const createTemplate = async ({
   }
 
   const now = nowIso();
+  const uiSpecification = normalizeUiSpecificationOrThrow(payload.uiSpecification);
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
     archived: false,
     isPublic: payload.isPublic ?? false,
-    uiSpecification: payload.uiSpecification,
+    uiSpecification,
     ownedByTeamId: payload.teamId,
     name: payload.name,
     description: payload.description ?? '',
@@ -257,7 +261,7 @@ export const createTemplate = async ({
 };
 
 /**
- * Merges inconsequential root fields on an existing template (name, description, team).
+ * Merges inconsequential root fields on an existing template (name, description).
  */
 export const updateExistingTemplate = async (
   templateId: string,
@@ -272,26 +276,12 @@ export const updateExistingTemplate = async (
     );
   }
 
-  if (payload.teamId) {
-    try {
-      await getTeamById(payload.teamId);
-    } catch (error) {
-      throw new Exceptions.InternalSystemError(
-        'The specified team ID does not exist.'
-      );
-    }
-  }
-
   const newDocument: TemplateDocument = {
     ...existingTemplate,
     _id: templateId,
     _rev: existingTemplate._rev,
     name: payload.name ?? existingTemplate.name,
     description: payload.description ?? existingTemplate.description,
-    ownedByTeamId:
-      payload.teamId !== undefined
-        ? payload.teamId
-        : existingTemplate.ownedByTeamId,
     updatedAt: nowIso(),
   };
 
@@ -313,12 +303,63 @@ export const updateExistingTemplate = async (
 };
 
 /**
+ * Updates the team associated with a template.
+ */
+export const changeTemplateTeam = async (
+  templateId: string,
+  payload: PutChangeTemplateTeamInput
+): Promise<ExistingTemplateDocument> => {
+  let existingTemplate;
+  try {
+    existingTemplate = await getTemplate(templateId);
+  } catch (e) {
+    throw new Exceptions.ItemNotFoundException(
+      'An error occurred while trying to fetch an existing template in order to change its team. Are you sure the ID is correct?'
+    );
+  }
+
+  try {
+    await getTeamById(payload.teamId);
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'The specified team ID does not exist.'
+    );
+  }
+
+  const newDocument: TemplateDocument = {
+    ...existingTemplate,
+    _id: templateId,
+    _rev: existingTemplate._rev,
+    ownedByTeamId: payload.teamId,
+    updatedAt: nowIso(),
+  };
+
+  const templateDb = getTemplatesDb();
+  try {
+    await safeWriteDocument({db: templateDb, data: newDocument});
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to update the template team.'
+    );
+  }
+  try {
+    return await templateDb.get(templateId);
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the updated template.'
+    );
+  }
+};
+
+/**
  * Replaces the full uiSpecification bundle and bumps version.
  */
 export const updateTemplateUiSpecification = async (
   templateId: string,
-  uiSpecification: PutUpdateTemplateUiSpecificationInput
+  uiSpecification: PutUpdateTemplateUiSpecificationInput | NotebookUiSpecificationInput
 ): Promise<ExistingTemplateDocument> => {
+  const normalizedUiSpecification =
+    normalizeUiSpecificationOrThrow(uiSpecification);
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -333,7 +374,7 @@ export const updateTemplateUiSpecification = async (
     ...existingTemplate,
     _id: templateId,
     _rev: existingTemplate._rev,
-    uiSpecification: uiSpecification as NotebookDefinition,
+    uiSpecification: normalizedUiSpecification,
     version: existingTemplate.version + 1,
     updatedAt: nowIso(),
   };

@@ -88,9 +88,8 @@ const TemplateActions = () => {
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 
-  /** Reassigning team is a template update (PUT /api/templates/:id), not create-template. */
   const canAssignTemplateToTeam = useIsAuthorisedTo({
-    action: Action.UPDATE_TEMPLATE_DETAILS,
+    action: Action.CHANGE_TEMPLATE_TEAM,
     resourceId: templateId,
   });
 

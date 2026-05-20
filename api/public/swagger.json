@@ -1252,7 +1252,7 @@
       },
       "put": {
         "summary": "Update an existing template",
-        "description": "Updates an existing template. The payload is validated before processing. Requires `UPDATE_TEMPLATE_DETAILS` on the template resource.",
+        "description": "Updates an existing template (name and/or description). The payload is validated before processing. Requires `UPDATE_TEMPLATE_DETAILS` on the template resource. Team ownership uses `PUT /templates/{id}/team`.",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -1278,6 +1278,56 @@
             "application/json": {
               "schema": {
                 "$ref": "#/definitions/PutUpdateTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/team": {
+      "put": {
+        "summary": "Change template owning team",
+        "description": "Updates which team owns the template (`ownedByTeamId`). Requires `CHANGE_TEMPLATE_TEAM` on the template resource. Returns the updated template document.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Target team",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutChangeTemplateTeamInput"
               }
             }
           }
@@ -2459,21 +2509,26 @@
     "PutUpdateTemplateInput": {
       "type": "object",
       "properties": {
-        "metadata": {
-          "type": "object"
-        },
-        "ui-specification": {
-          "type": "object"
-        },
         "name": {
           "type": "string",
           "minLength": 1
         },
-        "teamId": {
+        "description": {
           "type": "string"
         }
       },
       "required": []
+    },
+    "PutChangeTemplateTeamInput": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Team that will own the template"
+        }
+      },
+      "required": ["teamId"]
     },
     "PutUpdateTemplateResponse": {
       "$ref": "#/definitions/TemplateStoredDocument"

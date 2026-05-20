@@ -22,10 +22,18 @@ export function readSampleNotebookFile(): SampleNotebookFile {
   ) as SampleNotebookFile;
 }
 
-/** Legacy wire-format export kept for migration tests (`metadata` + `ui-specification`). */
+/**
+ * Legacy wire-format export for migration tests (`metadata` + encoded `ui-specification`
+ * with `fields`, `fviews`, `viewsets`, `visible_types`).
+ */
 export function readLegacyNotebookFile(): {
   metadata: Record<string, unknown>;
-  'ui-specification': Record<string, unknown>;
+  'ui-specification': {
+    fields: Record<string, unknown>;
+    fviews: Record<string, unknown>;
+    viewsets: Record<string, unknown>;
+    visible_types: string[];
+  };
 } {
   return JSON.parse(
     fs.readFileSync(path.join(NOTEBOOKS_DIR, 'sample_notebook.legacy.json'), 'utf-8')
@@ -43,9 +51,12 @@ export function sampleCreateNotebookPayload(
   };
 }
 
-export function sampleCreateTemplatePayload(
-  name: string
-): Pick<PostCreateTemplateInput, 'name' | 'description' | 'uiSpecification'> {
+/** Sample template create body (current-format uiSpecification; satisfies loose API input). */
+export function sampleCreateTemplatePayload(name: string): {
+  name: string;
+  description: string;
+  uiSpecification: NotebookDefinition;
+} {
   const sample = readSampleNotebookFile();
   return {
     name,

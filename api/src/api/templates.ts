@@ -29,6 +29,7 @@ import {
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PostRestoreTemplateResponse,
+  PutChangeTemplateTeamInputSchema,
   PutTemplateSetVisibilityInputSchema,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
@@ -42,6 +43,7 @@ import {processRequest} from 'zod-express-middleware';
 import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
+  changeTemplateTeam,
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
@@ -270,6 +272,28 @@ api.put(
   async (req, res: Response<PutUpdateTemplateResponse>) => {
     const updated = await setTemplateVisibility(req.params.id, req.body.isPublic);
     res.json(updated);
+  }
+);
+
+/**
+ * PUT change template owning team.
+ */
+api.put(
+  '/:id/team',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_TEAM,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutChangeTemplateTeamInputSchema,
+  }),
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
+    const updatedTemplate = await changeTemplateTeam(req.params.id, req.body);
+    res.json(await withOwnedByTeamDisplayName(updatedTemplate));
   }
 );
 
