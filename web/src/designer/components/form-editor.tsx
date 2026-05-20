@@ -111,7 +111,6 @@ type Props = {
   handleDeleteCallback: (viewSetID: string) => void;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
   handleFieldMoveCallback: (targetViewId: string) => void;
-  handleAddFormCallback: () => void;
   previewForm: boolean;
 };
 
@@ -124,7 +123,6 @@ export const FormEditor = ({
   handleDeleteCallback,
   handleSectionMoveCallback,
   handleFieldMoveCallback,
-  handleAddFormCallback,
   previewForm,
 }: Props) => {
   const location = useLocation();
