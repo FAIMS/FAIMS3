@@ -648,8 +648,14 @@ export const BaseFieldEditor = ({
                   borderBottom: {xs: '1px solid', md: 'none'},
                 }}
               >
-                <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  gap={4}
+                  flexWrap="wrap"
+                >
                   <FormControlLabel
+                    sx={{mr: 0}}
                     control={
                       <Checkbox
                         checked={state.required}
@@ -705,15 +711,15 @@ export const BaseFieldEditor = ({
                 <Typography
                   variant="body2"
                   fontWeight={700}
-                  sx={{mb: 1.5, color: 'text.primary'}}
+                  sx={{mb: 0.5, color: 'text.primary'}}
                 >
                   Advanced controls
                 </Typography>
 
-                <Grid container rowGap={0.25}>
+                <Grid container rowSpacing={0} columnSpacing={1}>
                   <Grid item xs={12} sm={6}>
                     <FormControlLabel
-                      sx={{alignItems: 'center'}}
+                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
                       control={
                         <Checkbox
                           checked={state.displayParent}
@@ -739,7 +745,7 @@ export const BaseFieldEditor = ({
 
                   <Grid item xs={12} sm={6}>
                     <FormControlLabel
-                      sx={{alignItems: 'center'}}
+                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
                       control={
                         <Checkbox
                           checked={state.persistent}
@@ -767,7 +773,7 @@ export const BaseFieldEditor = ({
 
                   <Grid item xs={12} sm={6}>
                     <FormControlLabel
-                      sx={{alignItems: 'center'}}
+                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
                       control={
                         <Checkbox
                           checked={state.annotation}
@@ -793,7 +799,7 @@ export const BaseFieldEditor = ({
 
                   <Grid item xs={12} sm={6}>
                     <FormControlLabel
-                      sx={{alignItems: 'center'}}
+                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
                       control={
                         <Checkbox
                           checked={state.uncertainty}

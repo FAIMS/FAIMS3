@@ -633,9 +633,10 @@ const FieldEditorComponent = ({
                   aria-label="delete"
                   size="small"
                   sx={{
-                    color: theme => alpha(theme.palette.error.main, 0.68),
+                    color: 'error.main',
                     '&:hover': {
-                      backgroundColor: theme => alpha(theme.palette.error.main, 0.11),
+                      backgroundColor: theme => alpha(theme.palette.error.main, 0.14),
+                      color: 'error.dark',
                     },
                   }}
                 >
@@ -648,10 +649,11 @@ const FieldEditorComponent = ({
                   aria-label="move"
                   size="small"
                   sx={{
-                    color: theme => alpha(theme.palette.primary.main, 0.78),
+                    color: theme => alpha(theme.palette.common.black, 0.62),
                     '&:hover': {
+                      color: theme => alpha(theme.palette.common.black, 0.82),
                       backgroundColor: theme =>
-                        alpha(theme.palette.primary.main, 0.12),
+                        alpha(theme.palette.common.black, 0.06),
                     },
                   }}
                 >
@@ -664,10 +666,11 @@ const FieldEditorComponent = ({
                   aria-label="add field"
                   size="small"
                   sx={{
-                    color: theme => alpha(theme.palette.success.dark, 0.75),
+                    color: 'success.dark',
                     '&:hover': {
+                      color: theme => alpha(theme.palette.success.dark, 0.95),
                       backgroundColor: theme =>
-                        alpha(theme.palette.success.main, 0.12),
+                        alpha(theme.palette.success.main, 0.16),
                     },
                   }}
                 >

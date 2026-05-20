@@ -222,19 +222,56 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            background: `linear-gradient(180deg, ${alpha(colors.blueGrey[50], 0.45)} 0%, ${alpha(
+            background: `linear-gradient(180deg, #fff 0%, ${alpha(
               colors.blueGrey[100],
-              0.38
+              0.28
             )} 100%)`,
+            transition:
+              'box-shadow 160ms ease, background 160ms ease, border-color 160ms ease',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: alpha(colors.blueGrey[700], 0.22),
-            },
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: alpha(colors.blueGrey[700], 0.34),
-            },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: alpha(tokens.primaryMain, 0.5),
+              borderColor: alpha(colors.blueGrey[800], 0.38),
               borderWidth: 1,
+            },
+            '&:hover': {
+              background: `linear-gradient(180deg, #fff 0%, ${alpha(
+                colors.blueGrey[100],
+                0.36
+              )} 100%)`,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: alpha(colors.blueGrey[900], 0.6),
+              },
+            },
+            '&.Mui-focused': {
+              background: `linear-gradient(180deg, #fff 0%, ${alpha(
+                colors.blueGrey[100],
+                0.22
+              )} 100%)`,
+              boxShadow: `0 0 0 3px ${alpha(
+                colors.blueGrey[900],
+                0.12
+              )}, 0 2px 6px ${alpha(colors.common.black, 0.08)}`,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.grey[900],
+                borderWidth: 2,
+              },
+            },
+            '&.Mui-disabled': {
+              background: alpha(colors.blueGrey[50], 0.45),
+              boxShadow: 'none',
+            },
+            '&.Mui-error': {
+              '&.Mui-focused': {
+                boxShadow: `0 0 0 3px ${alpha(
+                  colors.red[700],
+                  0.16
+                )}, 0 2px 6px ${alpha(colors.common.black, 0.08)}`,
+              },
+            },
+          },
+          input: {
+            '&::placeholder': {
+              color: alpha(colors.blueGrey[700], 0.6),
+              opacity: 1,
             },
           },
         },
