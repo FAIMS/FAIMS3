@@ -232,40 +232,22 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={1} sx={designerControlActionRowSx}>
-        <Button
-          variant="text"
-          size="small"
-          onClick={() => setIsExpanded(allOpen)}
-          startIcon={<ExpandCircleDownRoundedIcon sx={{fontSize: '1.55rem'}} />}
-          sx={{
-            ...designerControlLabelSx,
-            '& .MuiButton-startIcon': {mr: 1},
-          }}
-        >
-          Expand all
-        </Button>
-
-        <Button
-          variant="text"
-          size="small"
-          onClick={() => setIsExpanded(allClosed)}
-          startIcon={
-            <ExpandCircleDownRoundedIcon
-              sx={{fontSize: '1.55rem', transform: 'rotate(180deg)'}}
-            />
-          }
-          sx={{
-            ...designerControlLabelSx,
-            '& .MuiButton-startIcon': {mr: 1},
-          }}
-        >
-          Collapse all
-        </Button>
-      </Stack>
-
       {hasExpandedField && (
-        <Alert severity="info" sx={{mt: 1.25}}>
+        <Alert
+          severity="info"
+          icon={false}
+          sx={{
+            mt: 1,
+            py: 0.25,
+            px: 1,
+            fontSize: '0.78rem',
+            lineHeight: 1.3,
+            width: 'fit-content',
+            maxWidth: '100%',
+            borderRadius: 1,
+            '& .MuiAlert-message': {py: 0.25, fontWeight: 500},
+          }}
+        >
           Collapse expanded fields to enable drag-and-drop reordering.
         </Alert>
       )}
@@ -273,26 +255,68 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       <Box
         sx={{
           width: '100%',
-          mt: 2,
-          mb: 2,
+          mt: 3,
+          mb: 1.5,
           ml: 0,
           mr: 'auto',
           textAlign: 'left',
         }}
       >
-        <HeadingWithInfo
-          title="Visible fields"
-          variant="subtitle1"
-          tooltip="Visible fields are shown to users in this section. They will appear in the survey."
-          titleSx={designerFieldSubHeadingSx as Record<string, unknown>}
-          containerSx={{
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            alignSelf: 'flex-start',
-            width: '100%',
-            textAlign: 'left',
-          }}
-        />
+        <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap">
+          <HeadingWithInfo
+            title="Visible fields"
+            variant="subtitle1"
+            tooltip="Visible fields are shown to users in this section. They will appear in the survey."
+            titleSx={{
+              ...(designerFieldSubHeadingSx as Record<string, unknown>),
+              fontSize: '1.1rem',
+            }}
+            iconSx={{fontSize: '1.35rem', ml: 0.35}}
+            containerSx={{
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+              alignSelf: 'flex-start',
+              width: 'auto',
+              textAlign: 'left',
+            }}
+          />
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setIsExpanded(allOpen)}
+            startIcon={<ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />}
+            sx={{
+              ...designerControlLabelSx,
+              minWidth: 'auto',
+              px: 0.6,
+              py: 0.1,
+              fontSize: '0.72rem',
+              '& .MuiButton-startIcon': {mr: 0.4},
+            }}
+          >
+            Expand all
+          </Button>
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setIsExpanded(allClosed)}
+            startIcon={
+              <ExpandCircleDownRoundedIcon
+                sx={{fontSize: '0.95rem', transform: 'rotate(180deg)'}}
+              />
+            }
+            sx={{
+              ...designerControlLabelSx,
+              minWidth: 'auto',
+              px: 0.6,
+              py: 0.1,
+              fontSize: '0.72rem',
+              '& .MuiButton-startIcon': {mr: 0.4},
+            }}
+          >
+            Collapse all
+          </Button>
+        </Stack>
       </Box>
       <DndContext
         sensors={sensors}
@@ -334,18 +358,60 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       </DndContext>
 
       <Box mt={2}>
-        <HeadingWithInfo
-          title="Hidden fields"
-          variant="subtitle1"
-          tooltip="Hidden fields stay in the schema but are not shown to users. They are available but do not appear in the survey."
-          titleSx={designerFieldSubHeadingSx as Record<string, unknown>}
-          containerSx={{
-            justifyContent: 'flex-start',
-            alignSelf: 'flex-start',
-            width: '100%',
-            textAlign: 'left',
-          }}
-        />
+        <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap">
+          <HeadingWithInfo
+            title="Hidden fields"
+            variant="subtitle1"
+            tooltip="Hidden fields stay in the schema but are not shown to users. They are available but do not appear in the survey."
+            titleSx={{
+              ...(designerFieldSubHeadingSx as Record<string, unknown>),
+              fontSize: '1.1rem',
+            }}
+            iconSx={{fontSize: '1.35rem', ml: 0.35}}
+            containerSx={{
+              justifyContent: 'flex-start',
+              alignSelf: 'flex-start',
+              width: 'auto',
+              textAlign: 'left',
+            }}
+          />
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setIsExpanded(allOpen)}
+            startIcon={<ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />}
+            sx={{
+              ...designerControlLabelSx,
+              minWidth: 'auto',
+              px: 0.6,
+              py: 0.1,
+              fontSize: '0.72rem',
+              '& .MuiButton-startIcon': {mr: 0.4},
+            }}
+          >
+            Expand all
+          </Button>
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setIsExpanded(allClosed)}
+            startIcon={
+              <ExpandCircleDownRoundedIcon
+                sx={{fontSize: '0.95rem', transform: 'rotate(180deg)'}}
+              />
+            }
+            sx={{
+              ...designerControlLabelSx,
+              minWidth: 'auto',
+              px: 0.6,
+              py: 0.1,
+              fontSize: '0.72rem',
+              '& .MuiButton-startIcon': {mr: 0.4},
+            }}
+          >
+            Collapse all
+          </Button>
+        </Stack>
       </Box>
       {hiddenFields.length > 0 ? (
         <>
