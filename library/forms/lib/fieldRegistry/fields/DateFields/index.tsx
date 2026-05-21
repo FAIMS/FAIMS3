@@ -6,7 +6,11 @@
  * - DateTimePicker (datetime-local; optional auto-pick and optional "Now" button)
  * - DatePicker (date; optional "Today" button)
  * - MonthPicker (month; optional "This month" button)
- * - DateTimeNow (legacy datetime-local field retained for backward compatibility)
+ *
+ * The legacy `DateTimeNow` field is no longer registered here. v4 notebook
+ * migration rewrites `DateTimeNow` data to `DateTimePicker` with
+ * `show_now_button: true`, and a registry alias keeps un-migrated data
+ * resolving to `DateTimePicker` during rollout.
  */
 
 import {
@@ -52,20 +56,6 @@ type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
 
 // Full props including injected form context
 type DateTimeFieldFullProps = FullFieldProps & DateTimeFieldProps;
-
-// =============================================================================
-// DateTimeNow Props Schema (legacy field support)
-// =============================================================================
-
-/**
- * Extended props schema for legacy DateTimeNow field.
- *
- * is_auto_pick is inherited from dateTimePropsSchema; no additional props needed.
- */
-const dateTimeNowPropsSchema = dateTimePropsSchema;
-
-type DateTimeNowFieldProps = z.infer<typeof dateTimeNowPropsSchema>;
-type DateTimeNowFieldFullProps = FullFieldProps & DateTimeNowFieldProps;
 
 // =============================================================================
 // Helpers
@@ -213,133 +203,6 @@ const MonthPickerField: React.FC<DateTimeFieldFullProps> = props => (
 );
 
 // =============================================================================
-// DateTimeNow Component (legacy)
-// =============================================================================
-
-/**
- * DateTimeNow Field (legacy)
- *
- * Legacy datetime picker with a "Now" button that captures the current timestamp.
- * Stores values as ISO strings internally but displays using local datetime format.
- *
- * Legacy features:
- * - "Now" button to quickly capture current datetime with 1-second precision
- * - Optional auto-pick on mount (is_auto_pick prop)
- * - ISO string storage for consistent timezone handling
- * - Local datetime display for user-friendly interaction
- *
- * Value storage:
- * - Internal storage: ISO string (e.g., "2024-01-15T10:30:00.000Z")
- * - Display format: yyyy-MM-ddTHH:mm:ss (local time)
- */
-const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
-  const {
-    label,
-    helperText,
-    required,
-    advancedHelperText,
-    fullWidth,
-    state,
-    setFieldData,
-    handleBlur,
-    isAutoPick,
-    is_auto_pick,
-  } = props;
-  const autoPickEnabled = isAutoPick ?? is_auto_pick ?? false;
-
-  // Get current stored value (ISO string) and convert to display format
-  const storedValue = (state.value?.data as string) ?? '';
-  const inputValue = storedValue
-    ? toDatetimeLocalFormat(storedValue)
-    : undefined;
-  const errors = state.meta.errors as unknown as string[] | undefined;
-
-  /**
-   * Handle input change - convert from local display format to ISO for storage
-   */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value.trim();
-    if (inputValue === '') {
-      setFieldData('');
-    } else {
-      const isoValue = localDisplayToIso(inputValue);
-      setFieldData(isoValue);
-    }
-  };
-
-  /**
-   * Handle "Now" button click - capture current time to 1-second precision
-   */
-  const handleNowClick = () => {
-    const now = new Date();
-    setFieldData(now.toISOString());
-  };
-
-  /**
-   * Auto-pick on mount if is_auto_pick is enabled and field is empty.
-   * This matches the legacy behavior where the field auto-populates
-   * when the user opens the form.
-   */
-  useEffect(() => {
-    if (
-      autoPickEnabled &&
-      (storedValue === null || storedValue === undefined || storedValue === '')
-    ) {
-      const now = new Date();
-      setFieldData(now.toISOString());
-    }
-    // Only run on mount - we don't want to override user changes
-  }, []);
-
-  return (
-    <FieldWrapper
-      heading={label}
-      subheading={helperText}
-      required={required}
-      advancedHelperText={advancedHelperText}
-      errors={errors}
-    >
-      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
-        <MuiTextField
-          type="datetime-local"
-          value={inputValue}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          variant="outlined"
-          fullWidth={fullWidth ?? true}
-          required={required}
-          error={Boolean(errors && errors.length > 0)}
-          inputProps={{
-            step: 1, // Enable 1-second precision in the time picker
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: {xs: '4px', sm: '4px 0 0 4px'},
-            },
-          }}
-          InputLabelProps={{
-            shrink: true,
-          }}
-        />
-        <Button
-          variant="contained"
-          disableElevation
-          aria-label="Capture current time"
-          onClick={handleNowClick}
-          sx={{
-            borderRadius: {xs: '4px', sm: '0 4px 4px 0'},
-            minWidth: {xs: 'auto', sm: '80px'},
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Now
-        </Button>
-      </Stack>
-    </FieldWrapper>
-  );
-};
-
-// =============================================================================
 // View Components
 // =============================================================================
 
@@ -443,18 +306,6 @@ const MonthPickerRenderer: DataViewFieldRender = props => {
   return <Typography>{formatMonth(value)}</Typography>;
 };
 
-/**
- * View renderer for legacy DateTimeNow field.
- * Since the stored value is ISO format, we use the same formatter as DateTimePicker.
- */
-const DateTimeNowRenderer: DataViewFieldRender = props => {
-  const {value} = props;
-  if (!value) {
-    return <EmptyResponsePlaceholder />;
-  }
-  return <Typography>{formatDateTime(value)}</Typography>;
-};
-
 // =============================================================================
 // Validation Schema Functions
 // =============================================================================
@@ -518,16 +369,3 @@ export const monthPickerFieldSpec: FieldInfo<DateTimeFieldFullProps> = {
   fieldDataSchemaFunction: dateTimeDataSchemaFunction,
 };
 
-export const dateTimeNowFieldSpec: FieldInfo<DateTimeNowFieldFullProps> = {
-  namespace: NAMESPACE,
-  name: 'DateTimeNow',
-  returns: RETURN_TYPE,
-  component: DateTimeNowField,
-  view: {
-    component: DateTimeNowRenderer,
-    config: {},
-    attributes: {singleColumn: false},
-  },
-  fieldPropsSchema: dateTimeNowPropsSchema,
-  fieldDataSchemaFunction: dateTimeDataSchemaFunction,
-};
