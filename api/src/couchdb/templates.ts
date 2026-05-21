@@ -210,6 +210,9 @@ const generateTemplateId = (templateName: string): ProjectID => {
  * thrown under failure to lodge.
  *
  * NOTE this does not add any permissions!
+ *
+ * @param payload The document details for a template
+ * @returns The ID of the minted template
  */
 export const createTemplate = async ({
   payload,
@@ -218,9 +221,13 @@ export const createTemplate = async ({
   payload: PostCreateTemplateInput;
   createdBy: string;
 }): Promise<ExistingTemplateDocument> => {
+  // Get the templates DB so we can interact with it
   const templatesDb = getTemplatesDb();
+
+  // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.name);
 
+  // if there is a team id provided, it must be an actual team
   if (payload.teamId) {
     try {
       await getTeamById(payload.teamId);
@@ -231,6 +238,7 @@ export const createTemplate = async ({
     }
   }
 
+  // Setup the document with id included
   const now = nowIso();
   const uiSpecification = normalizeUiSpecificationOrThrow(
     payload.uiSpecification
@@ -249,6 +257,7 @@ export const createTemplate = async ({
     updatedAt: now,
   };
 
+  // Try putting the new document
   try {
     await templatesDb.put(templateDoc);
   } catch (e) {
@@ -258,6 +267,7 @@ export const createTemplate = async ({
     );
   }
 
+  // Then return the fetched result
   try {
     return await templatesDb.get(templateId);
   } catch (e) {
@@ -269,11 +279,20 @@ export const createTemplate = async ({
 
 /**
  * Merges inconsequential root fields on an existing template (name, description).
+ *
+ * Fetches existing template by ID, replaces the details, and puts back with
+ * latest revision included. Returns the new revision. Throws an exception if
+ * the fetch fails or the update.
+ * @param templateId The existing template Id to update
+ * @param payload The payload to replace it with - details only
+ * @returns The revision ID of the new version of the document
  */
 export const updateExistingTemplate = async (
   templateId: string,
   payload: PutUpdateTemplateInput
 ): Promise<ExistingTemplateDocument> => {
+  // Now fetch the existing template - this will allow us to get the latest
+  // revision etc
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -295,6 +314,7 @@ export const updateExistingTemplate = async (
     updatedAt: nowIso(),
   };
 
+  // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
   try {
     await safeWriteDocument({db: templateDb, data: newDocument});
@@ -319,6 +339,8 @@ export const changeTemplateTeam = async (
   templateId: string,
   payload: PutChangeTemplateTeamInput
 ): Promise<ExistingTemplateDocument> => {
+  // Now fetch the existing template - this will allow us to get the latest
+  // revision etc
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -328,6 +350,7 @@ export const changeTemplateTeam = async (
     );
   }
 
+  // check that it is a valid team
   try {
     await getTeamById(payload.teamId);
   } catch (error) {
@@ -344,6 +367,7 @@ export const changeTemplateTeam = async (
     updatedAt: nowIso(),
   };
 
+  // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
   try {
     await safeWriteDocument({db: templateDb, data: newDocument});
@@ -372,6 +396,8 @@ export const updateTemplateUiSpecification = async (
 ): Promise<ExistingTemplateDocument> => {
   const normalizedUiSpecification =
     normalizeUiSpecificationOrThrow(uiSpecification);
+  // Now fetch the existing template - this will allow us to get the latest
+  // revision etc
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -381,12 +407,14 @@ export const updateTemplateUiSpecification = async (
     );
   }
 
+  // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
   const newDocument: TemplateDocument = {
     ...existingTemplate,
     _id: templateId,
     _rev: existingTemplate._rev,
     uiSpecification: normalizedUiSpecification,
+    // Increment version by 1 when updated
     version: existingTemplate.version + 1,
     updatedAt: nowIso(),
   };
@@ -453,9 +481,13 @@ export const setTemplateVisibility = async (
 /**
  * Removes the latest revision of a template from the templates DB by fetching
  * it then deleting that document.
+ * @param templateId The ID of the existing template to remove - deletes the
+ * latest revision.
  */
 export const deleteExistingTemplate = async (templateId: string) => {
   const templatesDb = getTemplatesDb();
+  // Now fetch the existing template - this will allow us to get the latest
+  // revision etc
   let existingTemplate;
   try {
     existingTemplate = await getTemplate(templateId);
@@ -485,6 +517,8 @@ export const deleteExistingTemplate = async (templateId: string) => {
 
 /**
  * Archives or un-archives a template (top-level `archived` flag).
+ * @param id The ID of the template to archive.
+ * @returns The updated template document.
  */
 export const archiveTemplate = async (id: string, archive: boolean) => {
   const {get, put} = getTemplatesDb();
