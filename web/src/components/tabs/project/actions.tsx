@@ -213,8 +213,7 @@ const ProjectActions = (): JSX.Element => {
               <ListItem>
                 <ListLabel>Download JSON</ListLabel>
                 <ListDescription>
-                  Download the {NOTEBOOK_NAME} design as JSON (metadata and
-                  uiSpec).
+                  Download the {NOTEBOOK_NAME} design JSON file.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -241,8 +240,7 @@ const ProjectActions = (): JSX.Element => {
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
                 <ListDescription>
-                  Upload a JSON file with metadata and uiSpec (same shape as
-                  Download JSON).
+                  Upload a JSON design file to replace the existing {NOTEBOOK_NAME} design.
                 </ListDescription>
               </ListItem>
               <ListItem>

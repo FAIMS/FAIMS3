@@ -216,8 +216,8 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
                 <ListDescription>
-                  Upload a JSON file with metadata and uiSpec (same shape as
-                  Download JSON).
+                  Upload a JSON design file to replace the existing template
+                  design.
                 </ListDescription>
               </ListItem>
               <ListItem>
