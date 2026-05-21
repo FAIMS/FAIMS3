@@ -2198,6 +2198,5 @@ describe('Migration Specific Tests', () => {
 
       await metaDb.destroy();
     });
-
   });
 });

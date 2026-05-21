@@ -2112,7 +2112,15 @@
         "updatedAt": {"type": "string", "format": "date-time"},
         "dataDb": {"$ref": "#/definitions/PossibleConnectionInfo"}
       },
-      "required": ["_id", "name", "status", "createdBy", "createdAt", "updatedAt", "dataDb"]
+      "required": [
+        "_id",
+        "name",
+        "status",
+        "createdBy",
+        "createdAt",
+        "updatedAt",
+        "dataDb"
+      ]
     },
     "ProjectDocument": {
       "description": "Full project document as stored in the projects DB (includes `uiSpecification`).",

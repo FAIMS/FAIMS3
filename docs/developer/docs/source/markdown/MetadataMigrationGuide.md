@@ -134,7 +134,7 @@ Schema **`4.0`** is applied by `migrateNotebook` (often wrapped in `normalizeNot
 
 | Trigger                                      | Location                                                | Notes                                                                                  |
 | -------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts`    | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted |
+| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts`      | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted |
 | **POST** create survey (from template)       | Copies `template.uiSpecification` only                  | Optional `description` on POST is **not** taken from the template                      |
 | **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                          | Designer save, full JSON replace                                                       |
 | **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                     |                                                                                        |
