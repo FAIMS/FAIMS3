@@ -65,10 +65,7 @@ import {
 } from '../designer-style';
 
 /** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
-export const SPEECH_ENABLED_FIELDS = [
-  'faims-custom::FAIMSTextField',
-  'formik-material-ui::MultipleTextField',
-];
+export const SPEECH_ENABLED_FIELDS = ['faims-custom::TextField'];
 
 /** True if {@link SPEECH_ENABLED_FIELDS} includes this field's composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
@@ -636,13 +633,22 @@ export const BaseFieldEditor = ({
         <Grid item xs={12}>
           <Card variant="outlined" sx={{overflow: 'hidden'}}>
             <Grid container>
-              {/* LEFT: Required + Condition button + condition display */}
+              {/* LEFT: Required + Condition button + condition display.
+                  Narrower than the right side because it only ever holds two
+                  controls. We make the column itself a vertical flex
+                  container so its contents sit centered against the taller
+                  right column — the right side may grow when Voice-to-text
+                  is visible, and we don't want Required/Add condition to
+                  ride at the top of that empty space. */}
               <Grid
                 item
                 xs={12}
-                md={6}
+                md={4}
                 sx={{
                   p: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
                   borderRight: {md: '1px solid'},
                   borderColor: {md: 'divider'},
                   borderBottom: {xs: '1px solid', md: 'none'},
@@ -651,7 +657,8 @@ export const BaseFieldEditor = ({
                 <Stack
                   direction="row"
                   alignItems="center"
-                  gap={4}
+                  justifyContent="space-around"
+                  gap={2}
                   flexWrap="wrap"
                 >
                   <FormControlLabel
@@ -706,8 +713,10 @@ export const BaseFieldEditor = ({
                 )}
               </Grid>
 
-              {/* RIGHT: Advanced controls + voice-to-text */}
-              <Grid item xs={12} md={6} sx={{p: 2}}>
+              {/* RIGHT: Advanced controls + voice-to-text. Takes the
+                  remaining two-thirds of the row since it has four toggles
+                  plus the speech section to lay out. */}
+              <Grid item xs={12} md={8} sx={{p: 2}}>
                 <Typography
                   variant="body2"
                   fontWeight={700}
@@ -716,111 +725,113 @@ export const BaseFieldEditor = ({
                   Advanced controls
                 </Typography>
 
-                <Grid container rowSpacing={0} columnSpacing={1}>
-                  <Grid item xs={12} sm={6}>
-                    <FormControlLabel
-                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
-                      control={
-                        <Checkbox
-                          checked={state.displayParent}
-                          onChange={e =>
-                            updateProperty('displayParent', e.target.checked)
-                          }
-                          sx={designerCheckboxSx}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
-                          <Typography variant="body2">
-                            Display in child records
-                          </Typography>
-                          <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
-                            <InfoIcon sx={designerInfoIconSx} />
-                          </Tooltip>
-                        </Box>
-                      }
-                    />
-                  </Grid>
+                {/*
+                 * Pack the four advanced toggles as natural-width flex items so
+                 * the right pair sits immediately next to the left pair instead
+                 * of stretching to a 50/50 grid column. Wraps to 2x2 (or even
+                 * a single column on mobile) when the card is narrow.
+                 */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    columnGap: 3,
+                    rowGap: 1.25,
+                    mt: 0.5,
+                  }}
+                >
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.displayParent}
+                        onChange={e =>
+                          updateProperty('displayParent', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">
+                          Display in child records
+                        </Typography>
+                        <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
 
-                  <Grid item xs={12} sm={6}>
-                    <FormControlLabel
-                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
-                      control={
-                        <Checkbox
-                          checked={state.persistent}
-                          onChange={e =>
-                            updateProperty('persistent', e.target.checked)
-                          }
-                          sx={designerCheckboxSx}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
-                          <Typography variant="body2">
-                            Copy value to new records
-                          </Typography>
-                          <Tooltip title="When enabled, the value entered in this field will be automatically copied when creating new records.">
-                            <InfoIcon
-                              sx={designerInfoIconSx}
-                            />
-                          </Tooltip>
-                        </Box>
-                      }
-                    />
-                  </Grid>
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.persistent}
+                        onChange={e =>
+                          updateProperty('persistent', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">
+                          Copy value to new records
+                        </Typography>
+                        <Tooltip title="When enabled, the value entered in this field will be automatically copied when creating new records.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
 
-                  <Grid item xs={12} sm={6}>
-                    <FormControlLabel
-                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
-                      control={
-                        <Checkbox
-                          checked={state.annotation}
-                          onChange={e =>
-                            updateProperty('annotation', e.target.checked)
-                          }
-                          sx={designerCheckboxSx}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
-                          <Typography variant="body2">Annotation</Typography>
-                          <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
-                            <InfoIcon
-                              sx={designerInfoIconSx}
-                            />
-                          </Tooltip>
-                        </Box>
-                      }
-                    />
-                  </Grid>
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.annotation}
+                        onChange={e =>
+                          updateProperty('annotation', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">Annotation</Typography>
+                        <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
 
-                  <Grid item xs={12} sm={6}>
-                    <FormControlLabel
-                      sx={{alignItems: 'center', mr: 0, my: -0.25}}
-                      control={
-                        <Checkbox
-                          checked={state.uncertainty}
-                          onChange={e =>
-                            updateProperty('uncertainty', e.target.checked)
-                          }
-                          sx={designerCheckboxSx}
-                          size="small"
-                        />
-                      }
-                      label={
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
-                          <Typography variant="body2">Uncertainty</Typography>
-                          <Tooltip title="Allows users to indicate confidence in the entered value.">
-                            <InfoIcon sx={designerInfoIconSx} />
-                          </Tooltip>
-                        </Box>
-                      }
-                    />
-                  </Grid>
-                </Grid>
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.uncertainty}
+                        onChange={e =>
+                          updateProperty('uncertainty', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">Uncertainty</Typography>
+                        <Tooltip title="Allows users to indicate confidence in the entered value.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
+                </Box>
 
                 {/* Annotation / Uncertainty label inputs */}
                 {(state.annotation || state.uncertainty) && (

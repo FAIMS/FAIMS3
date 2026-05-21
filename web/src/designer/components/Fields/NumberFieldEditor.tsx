@@ -24,7 +24,7 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   const numberType =
     (field['component-parameters'].numberType as 'integer' | 'floating') ||
-    (field['component-name'] === 'ControlledNumber' ? 'integer' : 'integer');
+    'integer';
   const min = field['component-parameters'].min as number | undefined;
   const max = field['component-parameters'].max as number | undefined;
 
@@ -115,35 +115,51 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
             p: 2,
           }}
         >
-          <Typography variant="h6" sx={{mb: 2, fontWeight: 700, fontSize: '1rem'}}>
+          <Typography variant="h6" sx={{mb: 1.5, fontWeight: 700, fontSize: '1rem'}}>
             Number limits
           </Typography>
-          <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <SimpleFieldWrapper heading="Minimum">
-              <TextField
-                label=""
-                type="number"
-                value={min ?? ''}
-                onChange={handleMinChange}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </SimpleFieldWrapper>
-            <FormHelperText sx={{mt: -1}}>
-              Set minimum and/or maximum allowed values. Leave empty for no limit.
-            </FormHelperText>
-            <SimpleFieldWrapper heading="Maximum">
-              <TextField
-                label=""
-                type="number"
-                value={max ?? ''}
-                onChange={handleMaxChange}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-            </SimpleFieldWrapper>
+          <FormHelperText sx={{mt: 0, mb: 1.25}}>
+            Set minimum and/or maximum allowed values. Leave empty for no limit.
+          </FormHelperText>
+          {/*
+           * Compact side-by-side layout: each input is sized to its value
+           * (just a number), not stretched across the card. Stacks vertically
+           * only on very narrow viewports.
+           */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: {xs: 'column', sm: 'row'},
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Box sx={{width: {xs: '100%', sm: 160}}}>
+              <SimpleFieldWrapper heading="Minimum">
+                <TextField
+                  label=""
+                  type="number"
+                  value={min ?? ''}
+                  onChange={handleMinChange}
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                />
+              </SimpleFieldWrapper>
+            </Box>
+            <Box sx={{width: {xs: '100%', sm: 160}}}>
+              <SimpleFieldWrapper heading="Maximum">
+                <TextField
+                  label=""
+                  type="number"
+                  value={max ?? ''}
+                  onChange={handleMaxChange}
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                />
+              </SimpleFieldWrapper>
+            </Box>
           </Box>
         </Box>
       </Box>
