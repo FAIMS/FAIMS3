@@ -53,6 +53,7 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableHead,
   TableRow,
   TextField,
   Tooltip,
@@ -871,6 +872,54 @@ export const OptionsEditor = ({
                     size="small"
                     sx={{tableLayout: 'fixed', width: '100%'}}
                   >
+                    <TableHead>
+                      <TableRow
+                        sx={{
+                          backgroundColor: alpha('#000', 0.025),
+                          '& .MuiTableCell-root': {
+                            borderBottom: '1px solid',
+                            borderColor: alpha('#000', 0.12),
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.03em',
+                            py: 0.9,
+                          },
+                        }}
+                      >
+                        {/* drag-handle column — empty header */}
+                        <TableCell sx={{width: {xs: 32, sm: 40}}} />
+                        <TableCell>Option text</TableCell>
+                        {showExclusiveOptions && (
+                          <TableCell
+                            align="center"
+                            sx={{width: {xs: 96, sm: 140}}}
+                          >
+                            <Box
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.4,
+                              }}
+                            >
+                              Exclusive
+                              <Tooltip title="Marks the option as exclusive — selecting it clears any other selections in this field. Useful for choices like 'None of the above'.">
+                                <InfoIcon
+                                  sx={{...designerInfoIconSx, fontSize: '1.1rem'}}
+                                />
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        )}
+                        <TableCell
+                          align="right"
+                          sx={{width: {xs: 120, sm: 180}}}
+                        >
+                          Actions
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
                     <TableBody>
                       <DndContext
                         sensors={sensors}
