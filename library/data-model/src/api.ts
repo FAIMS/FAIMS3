@@ -497,14 +497,12 @@ export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;
 
-/** POST /api/templates/:id/restore — un-archive; body optional (empty JSON allowed). */
-export const PostRestoreTemplateRequestSchema = z.object({}).strict();
-export type PostRestoreTemplateRequest = z.infer<
-  typeof PostRestoreTemplateRequestSchema
->;
-export const PostRestoreTemplateResponseSchema = ExistingTemplateDocumentSchema;
-export type PostRestoreTemplateResponse = z.infer<
-  typeof PostRestoreTemplateResponseSchema
+/** PUT /api/templates/:id/archive — set top-level `archived`; use `{ archive: false }` to restore. */
+export const PutArchiveTemplateRequestSchema = z.object({
+  archive: z.boolean(),
+});
+export type PutArchiveTemplateRequest = z.infer<
+  typeof PutArchiveTemplateRequestSchema
 >;
 
 /** GET /api/templates/:id/references — how many surveys reference this template. */

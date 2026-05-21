@@ -2,36 +2,32 @@ import {useAuth} from '@/context/auth-provider';
 import {postDeleteArchivedNotebook, putNotebookStatus} from '@/hooks/project-hooks';
 import {ProjectStatus} from '@faims3/data-model';
 import {postDeleteArchivedTemplate} from '@/hooks/template-hooks';
-import {
-  PostRestoreTemplateResponseSchema,
-  type PostRestoreTemplateResponse,
-} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 
 type RestoreTemplateArgs = {
   templateId: string;
 };
 
-async function postRestoreTemplateRequest({
+async function putUnarchiveTemplateRequest({
   templateId,
   token,
 }: {
   templateId: string;
   token: string;
-}): Promise<PostRestoreTemplateResponse> {
+}): Promise<void> {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/restore`,
+    `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
     {
-      method: 'POST',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({archive: false}),
     }
   );
-  const json: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
+    const json: unknown = await response.json().catch(() => undefined);
     const message =
       json &&
       typeof json === 'object' &&
@@ -42,7 +38,6 @@ async function postRestoreTemplateRequest({
         : response.statusText;
     throw new Error(message);
   }
-  return PostRestoreTemplateResponseSchema.parse(json);
 }
 
 type ArchiveProjectArgs = {
@@ -148,7 +143,7 @@ export function useDeleteArchivedTemplate() {
 }
 
 /**
- * Restores an archived template via POST /api/templates/:id/restore.
+ * Restores an archived template via PUT /api/templates/:id/archive { archive: false }.
  */
 export function useRestoreTemplateFromArchive() {
   const queryClient = useQueryClient();
@@ -159,7 +154,7 @@ export function useRestoreTemplateFromArchive() {
       if (!user) {
         throw new Error('Not authenticated');
       }
-      return postRestoreTemplateRequest({
+      await putUnarchiveTemplateRequest({
         templateId,
         token: user.token,
       });

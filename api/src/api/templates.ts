@@ -28,7 +28,6 @@ import {
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
-  PostRestoreTemplateResponse,
   PutChangeTemplateTeamInputSchema,
   PutTemplateSetVisibilityInputSchema,
   PutUpdateTemplateInputSchema,
@@ -346,27 +345,6 @@ api.put(
 );
 
 /**
- * POST restore archived template (clears top-level archived flag).
- */
-api.post(
-  '/:id/restore',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_TEMPLATE_STATUS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
-  async (req, res: Response<PostRestoreTemplateResponse>) => {
-    const updated = await restoreTemplateFromArchive(req.params.id);
-    res.json(updated);
-  }
-);
-
-/**
  * POST delete existing template
  * Deletes latest revision of an existing template. Requires
  * {@link Action.DELETE_TEMPLATE} on the template; the template must already
@@ -412,9 +390,13 @@ api.put(
   }),
   async (
     {params: {id}, body: {archive}},
-    res: Response<PutUpdateTemplateResponse>
+    res: Response
   ) => {
-    await archiveTemplate(id, archive);
+    if (archive) {
+      await archiveTemplate(id, true);
+    } else {
+      await restoreTemplateFromArchive(id);
+    }
     res.sendStatus(200);
   }
 );

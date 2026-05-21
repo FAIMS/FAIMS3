@@ -34,7 +34,6 @@ import {
   PostCreateNotebookResponseSchema,
   PostCreateTemplateInput,
   PostCreateTemplateResponseSchema,
-  PostRestoreTemplateResponseSchema,
   PutChangeTemplateTeamInput,
   PutUpdateTemplateInput,
   PutUpdateTemplateInputSchema,
@@ -216,19 +215,6 @@ const setTemplateArchived = async (
   ).expect(200);
 };
 
-const restoreTemplateFromArchive = async (
-  app: Express,
-  templateId: string,
-  token: string = adminToken
-) => {
-  return await requestAuthAndType(
-    request(app).post(`${TEMPLATE_API_BASE}/${templateId}/restore`).send({}),
-    token
-  )
-    .expect(200)
-    .then(res => PostRestoreTemplateResponseSchema.parse(res.body));
-};
-
 const putTemplateSetVisibility = async (
   app: Express,
   templateId: string,
@@ -318,7 +304,7 @@ describe('template API tests', () => {
     await deleteATemplate(app, archivedTpl._id);
   });
 
-  it('PUT archive removes template from default list; POST restore returns active document and lists update', async () => {
+  it('PUT archive removes template from default list; PUT archive {archive:false} restores and lists update', async () => {
     const {template} = await createSampleTemplate(app, {
       name: 'archive-restore-cycle',
     });
@@ -339,9 +325,11 @@ describe('template API tests', () => {
     });
     expect(archivedOnly.templates.map(t => t._id)).to.include(id);
 
-    const restored = await restoreTemplateFromArchive(app, id);
-    expect(restored.archived).to.equal(false);
-    expect(restored._id).to.equal(id);
+    await setTemplateArchived(app, id, false);
+    await getATemplate(app, id).then(doc => {
+      expect(doc.archived).to.equal(false);
+      expect(doc._id).to.equal(id);
+    });
 
     defaultList = await listTemplates(app);
     expect(defaultList.templates.map(t => t._id)).to.include(id);
@@ -354,14 +342,14 @@ describe('template API tests', () => {
     await deleteATemplate(app, id);
   });
 
-  it('POST restore rejects when template is not archived', async () => {
+  it('PUT archive {archive:false} rejects when template is not archived', async () => {
     const {template} = await createSampleTemplate(app, {
       name: 'not-archived',
     });
     const response = await requestAuthAndType(
       request(app)
-        .post(`${TEMPLATE_API_BASE}/${template._id}/restore`)
-        .send({}),
+        .put(`${TEMPLATE_API_BASE}/${template._id}/archive`)
+        .send({archive: false}),
       adminToken
     );
     expect(response.status).to.equal(400);

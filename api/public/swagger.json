@@ -1441,12 +1441,11 @@
         }
       }
     },
-    "/templates/{id}/restore": {
-      "post": {
-        "summary": "Restore an archived template",
-        "description": "Clears the template’s archived flag. Requires `CHANGE_TEMPLATE_STATUS` on the template. Returns the updated template document.",
+    "/templates/{id}/archive": {
+      "put": {
+        "summary": "Archive or restore a template",
+        "description": "Sets the template’s top-level `archived` flag. Use `{ \"archive\": true }` to archive and `{ \"archive\": false }` to restore from archive (replaces removed `POST /templates/{id}/restore`). Restore is rejected unless the template is currently archived. Requires `CHANGE_TEMPLATE_STATUS` on the template.",
         "tags": ["Templates"],
-        "produces": ["application/json"],
         "security": [
           {
             "Auth": []
@@ -1463,16 +1462,22 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostRestoreTemplateResponse"
-                }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutArchiveTemplateRequest"
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "400": {
+            "description": "Invalid request (e.g. restore when not archived)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -2094,8 +2099,15 @@
       },
       "required": ["count"]
     },
-    "PostRestoreTemplateResponse": {
-      "$ref": "#/definitions/TemplateStoredDocument"
+    "PutArchiveTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "archive": {
+          "type": "boolean",
+          "description": "When true, archive the template; when false, restore from archive"
+        }
+      },
+      "required": ["archive"]
     },
     "Notebook": {
       "type": "object",
@@ -2545,7 +2557,7 @@
     },
     "TemplateApiResponseExtensions": {
       "type": "object",
-      "description": "Optional fields returned only by GET /templates and GET /templates/{id}. Not persisted on the template document and not returned by POST/PUT restore responses.",
+      "description": "Optional fields returned only by GET /templates and GET /templates/{id}. Not persisted on the template document.",
       "properties": {
         "ownedByTeamDisplayName": {
           "type": "string",
@@ -2554,7 +2566,7 @@
       }
     },
     "TemplateStoredDocument": {
-      "description": "Template as stored in CouchDB (create/update/restore responses).",
+      "description": "Template as stored in CouchDB (create/update responses).",
       "allOf": [
         {
           "$ref": "#/definitions/TemplateDetails"
