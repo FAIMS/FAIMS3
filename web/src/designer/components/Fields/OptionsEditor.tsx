@@ -60,7 +60,7 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';

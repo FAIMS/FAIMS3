@@ -36,7 +36,6 @@ import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
 import {fieldAdded, fieldReordered} from '../store/slices/uiSpec';
 import {
-  designerControlActionRowSx,
   designerControlLabelSx,
   designerFieldSubHeadingSx,
   designerHeadingRowSx,
