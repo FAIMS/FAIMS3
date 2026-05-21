@@ -27,15 +27,14 @@ PouchDB.plugin(SecurityPlugin);
 import {
   Action,
   APINotebookList,
-  DatabaseInterface,
   ExistingProjectDocument,
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
   GetNotebookListResponse,
+  notebookUiSpecificationNeedsMigration,
   NotebookDefinition,
   NotebookUiSpecificationInput,
-  PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
@@ -46,12 +45,10 @@ import {
   Resource,
   resourceRoles,
   Role,
-  safeWriteDocument,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
   slugify,
   userHasProjectRole,
-  migrateNotebook,
   NotebookUiSpec,
 } from '@faims3/data-model';
 import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
@@ -62,16 +59,6 @@ import {userCanDo} from '../middleware';
 
 function nowIso(): string {
   return new Date().toISOString();
-}
-
-function hasInlineUiSpecification(
-  project: ProjectDocument
-): project is ProjectDocument & {uiSpecification: NotebookDefinition} {
-  return (
-    'uiSpecification' in project &&
-    project.uiSpecification != null &&
-    typeof project.uiSpecification === 'object'
-  );
 }
 
 /**
@@ -311,17 +298,14 @@ export const validateDatabases = async () => {
 
     for (const project of projects) {
       const projectId = project._id;
-      if (MIGRATE_NOTEBOOKS_ON_STARTUP && !hasInlineUiSpecification(project)) {
-        const uiSpec = await getProjectUIModel(projectId);
-        if (!uiSpec) {
-          throw new Exceptions.InternalSystemError(
-            'Cannot find UI specification for project with ID ' + projectId
-          );
+      if (MIGRATE_NOTEBOOKS_ON_STARTUP && project.uiSpecification != null) {
+        const raw = project.uiSpecification;
+        if (
+          typeof raw === 'object' &&
+          notebookUiSpecificationNeedsMigration(raw)
+        ) {
+          await updateProjectUiSpecification(projectId, raw);
         }
-        await doNotebookMigration({
-          projectId,
-          uiSpec: uiSpec,
-        });
       }
       await initialiseDataDb({
         projectId,
@@ -331,26 +315,6 @@ export const validateDatabases = async () => {
     return report;
   } catch (e) {
     return {valid: false};
-  }
-};
-
-/**
- * Perform notebook migration and save updated notebook
- * if required.
- */
-export const doNotebookMigration = async ({
-  projectId,
-  uiSpec,
-}: {
-  projectId: string;
-  uiSpec: NotebookUiSpec;
-}) => {
-  const {changed, migrated} = migrateNotebook({
-    uiSpec,
-  });
-  // update the notebook if it was changed by migration
-  if (changed) {
-    await updateProjectUiSpecification(projectId, migrated);
   }
 };
 
@@ -454,25 +418,6 @@ export const updateProjectUiSpecification = async (
 };
 
 /**
- * Updates the notebook status to the targeted value
- */
-export const changeNotebookName = async ({
-  projectId,
-  name,
-}: {
-  projectId: string;
-  name: string;
-}) => {
-  // get existing project record
-  const project = await getProjectById(projectId);
-
-  if (project.name !== name) {
-    const updated = {...project, name, updatedAt: nowIso()};
-    await putProjectDoc(updated);
-  }
-};
-
-/**
  * Apply a lifecycle status change to an already-loaded project document.
  * Used by PUT /api/notebooks/:id/status after authorization.
  */
@@ -549,39 +494,6 @@ export const deleteNotebook = async (project_id: string) => {
   await projectsDB.remove(projectDoc);
 };
 
-export const writeProjectMetadata = async (
-  metaDB: DatabaseInterface,
-  metadata: any
-) => {
-  // add metadata, one document per attribute value pair
-  for (const field in metadata) {
-    const doc: any = {
-      _id: PROJECT_METADATA_PREFIX + '-' + field,
-      is_attachment: false, // TODO: well it might not be false! Deal with attachments
-      metadata: metadata[field],
-    };
-    // is there already a version of this document?
-    try {
-      const existingDoc = await metaDB.get(doc._id);
-      doc['_rev'] = existingDoc['_rev'];
-    } catch {
-      // no existing document, so don't set the rev
-    }
-
-    await safeWriteDocument({db: metaDB, data: doc});
-  }
-  // also add the whole metadata as 'projectvalue'
-  metadata._id = PROJECT_METADATA_PREFIX + '-projectvalue';
-  try {
-    const existingDoc = await metaDB.get(metadata._id);
-    metadata['_rev'] = existingDoc['_rev'];
-  } catch {
-    // no existing document, so don't set the rev
-  }
-  await safeWriteDocument({db: metaDB, data: metadata});
-  return metadata;
-};
-
 /**
  * Gets the ready to use representation of the UI spec for a given project.
  *
@@ -617,12 +529,7 @@ export const validateNotebookID = async (
   return false;
 };
 
-/**
- * Fetches the roles configured for a notebook from the notebook metadata DB.
- * @param project_id The project ID to lookup
- * @param metadata If the project metadata is known, no need to fetch it again
- * @returns A list of roles for this notebook including at least admin and user
- */
+/** Project-scoped roles from the permission model (not stored in Couch metadata DBs). */
 export const getRolesForNotebook = () => {
   return resourceRoles[Resource.PROJECT];
 };

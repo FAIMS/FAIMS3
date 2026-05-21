@@ -381,7 +381,7 @@ describe('user creation', () => {
 
   it('listing users for notebooks', async () => {
     await initialiseDbAndKeys({force: false});
-    registerAdminUser();
+    await registerAdminUser();
 
     const {createNotebookFromSampleFile} = await import('./sampleNotebook');
     const project_id = await createNotebookFromSampleFile('Test Notebook');
@@ -402,15 +402,15 @@ describe('user creation', () => {
       });
       await saveCouchUser(user);
 
-      const userInfo = await getUserInfoForProject({projectId: project_id});
+      const projectUserInfo = await getUserInfoForProject({projectId: project_id});
 
-      expect(userInfo.roles).to.include(Role.PROJECT_ADMIN);
-      expect(userInfo.roles).to.include(Role.PROJECT_MANAGER);
-      expect(userInfo.roles).to.include(Role.PROJECT_CONTRIBUTOR);
+      expect(projectUserInfo.roles).to.include(Role.PROJECT_ADMIN);
+      expect(projectUserInfo.roles).to.include(Role.PROJECT_MANAGER);
+      expect(projectUserInfo.roles).to.include(Role.PROJECT_CONTRIBUTOR);
       // should have the admin user and this new one
-      expect(userInfo.users.length).to.equal(2);
-      expect(userInfo.users[1].username).to.equal(username);
-      expect(userInfo.users[1].roles[0].value).to.be.false;
+      expect(projectUserInfo.users.length).to.equal(2);
+      expect(projectUserInfo.users[1].username).to.equal(username);
+      expect(projectUserInfo.users[1].roles[0].value).to.be.false;
     }
   });
 });

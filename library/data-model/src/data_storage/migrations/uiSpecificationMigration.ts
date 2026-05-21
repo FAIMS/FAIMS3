@@ -92,7 +92,7 @@ export function deriveRootDescription(
 
 /**
  * Read merged per-key metadata and the `ui-specification` doc from a project's
- * metadata database (same rules as API `getNotebookMetadata` + `getEncodedNotebookUISpec`).
+ * metadata database (per-key `project-metadata-*` docs + `ui-specification` doc).
  */
 export async function readLegacyNotebookFromMetadataDb(
   metaDB: DatabaseInterface,

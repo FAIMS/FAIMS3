@@ -38,7 +38,6 @@ export * from './authDB';
 export * from './dataDB';
 export * from './directoryDB';
 export * from './invitesDB';
-export * from './metadataDB';
 export * from './migrations';
 export * from './migrationsDB';
 export * from './peopleDB';
