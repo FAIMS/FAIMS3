@@ -13,8 +13,8 @@ import {migrateNotebook} from './notebookMigrations';
 /** Loose metadata bag as stored on templates or merged from the metadata DB. */
 export type LegacyNotebookMetadata = Record<string, unknown>;
 
-/** Max length for root `Project.description` / `Template.description` from `pre_description`. */
-export const OLD_DESCRIPTION_MAX_LENGTH = 500;
+/** Max length for legacy `description` → root `description` on migrated projects/templates. */
+export const OLD_DESCRIPTION_MAX_LENGTH = 250;
 
 export function emptyEncodedUiSpec(): LegacyEncodedUISpecification {
   return {fields: {}, fviews: {}, viewsets: {}, visible_types: []};
@@ -72,20 +72,29 @@ export function coerceShowQrCodeButton(value: unknown): boolean {
 /**
  * Short operational description for `Project.description` / `Template.description`.
  */
+function capLegacyDescription(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= OLD_DESCRIPTION_MAX_LENGTH) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, OLD_DESCRIPTION_MAX_LENGTH)}…`;
+}
+
+/**
+ * Short operational description for `Project.description` / `Template.description`.
+ * Legacy `description` is capped; `pre_description` is only used as a short fallback
+ * (full text lives in `purposeMarkdown` via {@link migrateNotebook}).
+ */
 export function deriveRootDescription(
   legacyMetadata: LegacyNotebookMetadata
 ): string {
   const description = legacyMetadata.description;
   if (typeof description === 'string' && description.trim()) {
-    return description.trim();
+    return capLegacyDescription(description);
   }
   const preDescription = legacyMetadata.pre_description;
   if (typeof preDescription === 'string' && preDescription.trim()) {
-    const trimmed = preDescription.trim();
-    if (trimmed.length <= OLD_DESCRIPTION_MAX_LENGTH) {
-      return trimmed;
-    }
-    return `${trimmed.slice(0, OLD_DESCRIPTION_MAX_LENGTH)}…`;
+    return preDescription.trim();
   }
   return '';
 }

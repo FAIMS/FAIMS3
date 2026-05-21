@@ -2,6 +2,7 @@ import {
   coerceShowQrCodeButton,
   deriveRootDescription,
   buildSurveyNotebookDefinitionFromLegacy,
+  OLD_DESCRIPTION_MAX_LENGTH,
 } from '../src/data_storage/migrations/uiSpecificationMigration';
 
 /** Legacy wire-format fixture: `api/notebooks/sample_notebook.legacy.json` */
@@ -27,6 +28,18 @@ describe('uiSpecificationMigration helpers', () => {
           pre_description: 'Long markdown',
         })
       ).toBe('Short');
+    });
+
+    it('caps legacy description to OLD_DESCRIPTION_MAX_LENGTH', () => {
+      const long = 'x'.repeat(OLD_DESCRIPTION_MAX_LENGTH + 100);
+      expect(deriveRootDescription({description: long})).toBe(
+        `${'x'.repeat(OLD_DESCRIPTION_MAX_LENGTH)}…`
+      );
+    });
+
+    it('does not cap pre_description used as root fallback', () => {
+      const long = 'y'.repeat(OLD_DESCRIPTION_MAX_LENGTH + 50);
+      expect(deriveRootDescription({pre_description: long})).toBe(long);
     });
   });
 
