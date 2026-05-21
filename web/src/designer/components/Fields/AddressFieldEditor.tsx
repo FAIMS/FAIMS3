@@ -34,7 +34,7 @@ type AddressFieldConfig = {
 /** Address plugin toggles: online suggestions vs full manual structured entry. */
 export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 

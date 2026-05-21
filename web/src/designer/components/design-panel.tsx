@@ -41,11 +41,11 @@ export const DesignPanel = () => {
   const basePath = pathname.split('/').slice(0, 2).join('/');
 
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets,
+    state => state.notebook.uiSpec.present.viewsets,
     shallowEqual
   );
   const visibleTypes: string[] = useAppSelector(
-    state => state.notebook['ui-specification'].present.visible_types
+    state => state.notebook.uiSpec.present.visible_types
   );
   const dispatch = useAppDispatch();
 
@@ -74,7 +74,7 @@ export const DesignPanel = () => {
 
   // Use redux-undo state to determine if there is something to undo/redo
   const undoableState = useAppSelector(
-    state => state.notebook['ui-specification']
+    state => state.notebook.uiSpec
   );
   const canUndo = undoableState.past.length > 0;
   const canRedo = undoableState.future.length > 0;

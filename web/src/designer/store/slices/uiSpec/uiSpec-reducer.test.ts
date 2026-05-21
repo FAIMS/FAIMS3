@@ -23,7 +23,7 @@ import {
 
 const createBaseUiSpec = (): NotebookUISpec => ({
   fields: {},
-  fviews: {
+  views: {
     sectionA: {
       label: 'Section A',
       fields: [],
@@ -45,6 +45,8 @@ const createBaseUiSpec = (): NotebookUISpec => ({
     },
   },
   visible_types: ['formA', 'formB'],
+  settings: {showQrCodeButton: false},
+  schemaVersion: '4.0',
 });
 
 describe('uiSpecificationReducer', () => {
@@ -64,7 +66,7 @@ describe('uiSpecificationReducer', () => {
 
     expect(Object.keys(next.fields)).toEqual(['Text-Field']);
     expect(next.fields['Text-Field'].designerIdentifier).toBeTypeOf('string');
-    expect(next.fviews.sectionA.fields).toEqual(['Text-Field']);
+    expect(next.views.sectionA.fields).toEqual(['Text-Field']);
   });
 
   it('renames field and updates summary/hrid references', () => {
@@ -74,7 +76,7 @@ describe('uiSpecificationReducer', () => {
     existingField['component-parameters'].label = 'Old Field';
 
     initial.fields['old-field'] = existingField;
-    initial.fviews.sectionA.fields = ['old-field'];
+    initial.views.sectionA.fields = ['old-field'];
     initial.viewsets.formA.summary_fields = ['old-field'];
     initial.viewsets.formA.hridField = 'old-field';
 
@@ -89,7 +91,7 @@ describe('uiSpecificationReducer', () => {
 
     expect(next.fields['New-Field']).toBeDefined();
     expect(next.fields['old-field']).toBeUndefined();
-    expect(next.fviews.sectionA.fields).toEqual(['New-Field']);
+    expect(next.views.sectionA.fields).toEqual(['New-Field']);
     expect(next.viewsets.formA.summary_fields).toEqual(['New-Field']);
     expect(next.viewsets.formA.hridField).toBe('New-Field');
   });
@@ -104,7 +106,7 @@ describe('uiSpecificationReducer', () => {
 
     initial.fields['field-a'] = fieldA;
     initial.fields['field-b'] = fieldB;
-    initial.fviews.sectionA.fields = ['field-a', 'field-b'];
+    initial.views.sectionA.fields = ['field-a', 'field-b'];
     initial.viewsets.formA.summary_fields = ['field-b'];
 
     const moved = uiSpecificationReducer.reducer(
@@ -115,14 +117,14 @@ describe('uiSpecificationReducer', () => {
         direction: 'down',
       })
     );
-    expect(moved.fviews.sectionA.fields).toEqual(['field-b', 'field-a']);
+    expect(moved.views.sectionA.fields).toEqual(['field-b', 'field-a']);
 
     const deleted = uiSpecificationReducer.reducer(
       moved,
       fieldDeleted({fieldName: 'field-b', viewId: 'sectionA'})
     );
     expect(deleted.fields['field-b']).toBeUndefined();
-    expect(deleted.fviews.sectionA.fields).toEqual(['field-a']);
+    expect(deleted.views.sectionA.fields).toEqual(['field-a']);
     expect(deleted.viewsets.formA.summary_fields).toEqual([]);
   });
 
@@ -132,7 +134,7 @@ describe('uiSpecificationReducer', () => {
     sourceField['component-parameters'].name = 'field-a';
     sourceField['component-parameters'].label = 'Field A';
     initial.fields['field-a'] = sourceField;
-    initial.fviews.sectionA.fields = ['field-a'];
+    initial.views.sectionA.fields = ['field-a'];
 
     const duplicated = uiSpecificationReducer.reducer(
       initial,
@@ -144,7 +146,7 @@ describe('uiSpecificationReducer', () => {
     );
 
     const duplicatedSectionId = 'formB-Section-Clone';
-    const duplicatedSection = duplicated.fviews[duplicatedSectionId];
+    const duplicatedSection = duplicated.views[duplicatedSectionId];
     expect(duplicatedSection).toBeDefined();
     expect(duplicated.viewsets.formB.views).toContain(duplicatedSectionId);
     expect(duplicatedSection.fields).toHaveLength(1);
@@ -170,7 +172,7 @@ describe('uiSpecificationReducer', () => {
       moved,
       sectionDeleted({viewSetID: 'formB', viewID: duplicatedSectionId})
     );
-    expect(deleted.fviews[duplicatedSectionId]).toBeUndefined();
+    expect(deleted.views[duplicatedSectionId]).toBeUndefined();
     expect(deleted.fields[duplicatedFieldName]).toBeUndefined();
     expect(deleted.viewsets.formB.views).toEqual(['sectionB']);
   });
@@ -225,7 +227,7 @@ describe('uiSpecificationReducer', () => {
     const fieldA = getFieldSpec('FAIMSTextField');
     fieldA['component-parameters'].name = 'field-a';
     initial.fields['field-a'] = fieldA;
-    initial.fviews.sectionA.fields = ['field-a'];
+    initial.views.sectionA.fields = ['field-a'];
 
     const next = uiSpecificationReducer.reducer(
       initial,
@@ -233,7 +235,7 @@ describe('uiSpecificationReducer', () => {
     );
 
     expect(next.viewsets.formA).toBeUndefined();
-    expect(next.fviews.sectionA).toBeUndefined();
+    expect(next.views.sectionA).toBeUndefined();
     expect(next.fields['field-a']).toBeUndefined();
     expect(next.visible_types.includes('formA')).toBe(false);
   });

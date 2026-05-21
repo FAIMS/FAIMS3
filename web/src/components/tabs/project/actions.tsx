@@ -179,10 +179,7 @@ const ProjectActions = (): JSX.Element => {
               <Button variant="outline">
                 <a
                   href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify({
-                      'ui-specification': data?.['ui-specification'],
-                      metadata: data?.metadata,
-                    })
+                    JSON.stringify(data?.uiSpecification ?? {}, null, 2)
                   )}`}
                   download={`${projectId}.json`}
                 >
@@ -253,6 +250,7 @@ const ProjectActions = (): JSX.Element => {
       <DesignerDialog
         open={editorOpen}
         notebook={initialNotebook}
+        exportBaseName={data?.name}
         onClose={handleEditorClose}
       />
     </>

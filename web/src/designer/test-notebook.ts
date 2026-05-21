@@ -2,9 +2,10 @@
  * @file Large in-repo {@link Notebook} fixture for tests and local designer development.
  */
 
-import {Notebook} from './state/initial';
+import {migrateNotebook} from '@faims3/data-model';
+import type {Notebook} from './state/initial';
 
-export const sampleNotebook: Notebook = {
+const legacyWireNotebook = {
   metadata: {
     notebook_version: '1.0',
     schema_version: '1.0',
@@ -335,3 +336,6 @@ export const sampleNotebook: Notebook = {
     visible_types: ['Primary'],
   },
 };
+
+/** Schema 4.0 notebook migrated from legacy wire JSON above. */
+export const sampleNotebook: Notebook = migrateNotebook(legacyWireNotebook).migrated;

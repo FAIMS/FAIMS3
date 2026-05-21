@@ -234,10 +234,10 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const [condition, setCondition] = useState(initialValue);
 
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const views = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
 
   // work out which fields to show in the select/combobox, remove either

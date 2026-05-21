@@ -30,11 +30,11 @@ export const selectNotebookMetadata = (state: AppState) =>
 
 /** Full redux-undo wrapper `{ present, past, future }` for the UI spec. */
 export const selectNotebookHistory = (state: AppState) =>
-  state.notebook['ui-specification'];
+  state.notebook.uiSpec;
 
 /** Current editable UI specification (not historical states). */
 export const selectPresentUiSpec = (state: AppState) =>
-  state.notebook['ui-specification'].present;
+  state.notebook.uiSpec.present;
 
 /** Field id → field spec map. */
 export const selectUiFields = (state: AppState) =>
@@ -42,7 +42,7 @@ export const selectUiFields = (state: AppState) =>
 
 /** Section id → section definition map (`fviews`). */
 export const selectUiViews = (state: AppState) =>
-  selectPresentUiSpec(state).fviews;
+  selectPresentUiSpec(state).views;
 
 /** Form id → viewset map. */
 export const selectUiViewSets = (state: AppState) =>

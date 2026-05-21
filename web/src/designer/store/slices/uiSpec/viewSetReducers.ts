@@ -47,14 +47,14 @@ export const viewSetReducers = {
     if (viewSetId in state.viewsets) {
       const viewSetViews: string[] = state.viewsets[viewSetId].views;
       viewSetViews.forEach(view => {
-        if (view in state.fviews) {
-          const viewFields: string[] = state.fviews[view].fields;
+        if (view in state.views) {
+          const viewFields: string[] = state.views[view].fields;
           viewFields.forEach(formField => {
             if (formField in state.fields) {
               delete state.fields[formField];
             }
           });
-          delete state.fviews[view];
+          delete state.views[view];
         }
       });
       delete state.viewsets[viewSetId];

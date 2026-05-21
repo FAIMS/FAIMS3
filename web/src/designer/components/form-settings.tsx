@@ -78,15 +78,15 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
 
   const fields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const viewSet: ViewSetType | undefined = useAppSelector(
     state =>
-      state.notebook?.['ui-specification']?.present.viewsets?.[viewSetId] ||
+      state.notebook?.uiSpec?.present.viewsets?.[viewSetId] ||
       undefined
   );
   const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
   const [expanded, setExpanded] = React.useState(false);
 

@@ -169,10 +169,7 @@ const TemplateActions = () => {
               <Button variant="outline" disabled={isLoading}>
                 <a
                   href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify({
-                      metadata: data?.metadata,
-                      'ui-specification': data?.['ui-specification'],
-                    })
+                    JSON.stringify(data?.uiSpecification ?? {}, null, 2)
                   )}`}
                   download={`${templateId}.json`}
                 >
@@ -243,6 +240,7 @@ const TemplateActions = () => {
       <DesignerDialog
         open={editorOpen && !archived}
         notebook={initialNotebook}
+        exportBaseName={data?.name}
         onClose={handleEditorClose}
       />
     </>

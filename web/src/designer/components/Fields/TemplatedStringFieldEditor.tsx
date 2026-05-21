@@ -22,10 +22,10 @@ export const TemplatedStringFieldEditor = ({
   viewsetId,
 }: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const dispatch = useAppDispatch();
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
@@ -36,10 +36,10 @@ export const TemplatedStringFieldEditor = ({
   const state = field['component-parameters'];
 
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets[viewsetId]
+    state => state.notebook.uiSpec.present.viewsets[viewsetId]
   );
   const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
 
   /**

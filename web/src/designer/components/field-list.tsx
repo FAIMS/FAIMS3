@@ -41,11 +41,11 @@ type Props = {
  */
 export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const fView = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews[viewId]
+    state => state.notebook.uiSpec.present.views[viewId]
   );
 
   const fields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
 
   const dispatch = useAppDispatch();
