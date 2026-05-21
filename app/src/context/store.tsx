@@ -7,6 +7,7 @@ import {
   useSelector,
 } from 'react-redux';
 import {
+  createMigrate,
   FLUSH,
   PAUSE,
   PERSIST,
@@ -28,6 +29,7 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
+import {migrateProjectsPersistedState} from './slices/projectsPersistMigration';
 import projectsReducer from './slices/projectSlice';
 
 // The below configures indexed DB storage which has a greater limit than
@@ -44,8 +46,22 @@ const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 // Configure persistence for the projects slice
 const projectsPersistConfig = {
   key: 'projects',
+  version: 1,
   storage: storage('faims-projects-db'),
   blacklist: ['isInitialised'],
+  migrate: createMigrate(
+    {
+      0: state => state,
+      1: state => {
+        if (!state) {
+          return state;
+        }
+        const migrated = migrateProjectsPersistedState(state);
+        return {...migrated, _persist: state._persist};
+      },
+    },
+    {debug: false}
+  ),
 };
 
 const persistedProjectsReducer = persistReducer(

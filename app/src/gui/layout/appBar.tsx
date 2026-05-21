@@ -103,7 +103,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
       return;
     }
     projectListItems.push({
-      title: project_info.name ?? project_info.metadata.name,
+      title: project_info.name,
       icon: <DescriptionIcon />,
       to:
         ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +

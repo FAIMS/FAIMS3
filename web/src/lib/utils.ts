@@ -91,6 +91,15 @@ export const downloadFile = async (
   link.click();
 };
 
+/** Format an ISO-8601 timestamp string for display in detail panels. */
+export function displayIsoTimestamp(timestamp: string): string {
+  const ms = Date.parse(timestamp);
+  if (Number.isNaN(ms)) {
+    return timestamp;
+  }
+  return displayUnixTimestampMs({timestamp: ms});
+}
+
 export function displayUnixTimestampMs({
   timestamp,
 }: {
@@ -140,13 +149,13 @@ export const getDaysDifference = (date: Date): number => {
 };
 
 function notebookCreatedMs(row: GetNotebookListResponse[number]): number {
-  if (row.created) {
-    const t = Date.parse(row.created);
+  if (row.createdAt) {
+    const t = Date.parse(row.createdAt);
     if (!Number.isNaN(t)) {
       return t;
     }
   }
-  const head = row.project_id.split('-')[0] ?? '';
+  const head = row._id.split('-')[0] ?? '';
   const n = parseInt(head, 10);
   if (!Number.isNaN(n) && String(n) === head) {
     return n;
@@ -155,8 +164,8 @@ function notebookCreatedMs(row: GetNotebookListResponse[number]): number {
 }
 
 /**
- * Returns a new array of notebook list rows sorted newest first (by `created`
- * when present, else the millisecond prefix of standard `project_id` values).
+ * Returns a new array of notebook list rows sorted newest first (by `createdAt`
+ * when present, else the millisecond prefix of standard Couch `_id` values).
  */
 export function sortNotebookListNewestFirst(
   notebooks: GetNotebookListResponse

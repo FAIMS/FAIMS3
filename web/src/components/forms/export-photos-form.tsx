@@ -23,7 +23,7 @@ const ExportPhotosForm = () => {
     return null;
   }
 
-  const viewSets = data['ui-specification'].viewsets as ProjectUIViewsets;
+  const viewSets = data.uiSpecification.uiSpec.viewsets as ProjectUIViewsets;
 
   const singleFormFields: Field[] = [
     {
@@ -32,7 +32,7 @@ const ExportPhotosForm = () => {
       description: 'Select the form to export photos from',
       schema: z.string().min(1, 'Please select a form'),
       options:
-        data && data['ui-specification']?.viewsets
+        data?.uiSpecification.uiSpec.viewsets
           ? Object.keys(viewSets).map(name => ({
               label: viewSets[name].label || name,
               value: name,

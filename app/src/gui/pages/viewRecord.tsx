@@ -55,6 +55,7 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {dataEngineUiSpecFromProject} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -383,17 +384,16 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const uiSpecId = useAppSelector(
-    state => selectProjectById(state, projectId)?.uiSpecificationId
-  );
-  if (!uiSpecId) {
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) {
     return null;
   }
 
-  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
   if (!uiSpec) {
     return <div>UI Specification not found</div>;
   }
+  const engineUiSpec = dataEngineUiSpecFromProject(project);
 
   const dataDb = localGetDataDb(projectId);
 
@@ -401,9 +401,9 @@ export const ViewRecordPage: React.FC = () => {
     () =>
       new DataEngine({
         dataDb: dataDb as DatabaseInterface<DataDocument>,
-        uiSpec,
+        uiSpec: engineUiSpec,
       }),
-    [dataDb, uiSpec]
+    [dataDb, engineUiSpec]
   );
 
   const getAttachmentService = useCallback(

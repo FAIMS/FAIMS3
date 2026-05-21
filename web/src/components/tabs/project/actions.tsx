@@ -22,6 +22,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {NotebookWithHistory} from '@/designer/state/initial';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
+import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
 import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
 import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
@@ -73,6 +74,11 @@ const ProjectActions = (): JSX.Element => {
     setEditorOpen(false);
   };
 
+  const canUpdateProjectDetails = useIsAuthorisedTo({
+    action: Action.UPDATE_PROJECT_DETAILS,
+    resourceId: projectId,
+  });
+
   const canEditProject = useIsAuthorisedTo({
     action: Action.UPDATE_PROJECT_UISPEC,
     resourceId: projectId,
@@ -89,11 +95,23 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
-  const canCreateTemplateInTeam =
+  /** Matches {@link CreateTemplateFromProjectForm}: global create or any permitted team. */
+  const canCreateTemplateFromProject =
+    useIsAuthorisedTo({action: Action.CREATE_TEMPLATE}) ||
     getUserResourcesForAction({
       decodedToken: user?.decodedToken,
       action: Action.CREATE_TEMPLATE_IN_TEAM,
     }).length > 0;
+
+  const canReadProjectMetadata = useIsAuthorisedTo({
+    action: Action.READ_PROJECT_METADATA,
+    resourceId: projectId,
+  });
+
+  const canGenerateTestRecords = useIsAuthorisedTo({
+    action: Action.GENERATE_RANDOM_PROJECT_RECORDS,
+    resourceId: projectId,
+  });
 
   const projectIsClosed = data?.status === ProjectStatus.CLOSED;
 
@@ -114,7 +132,7 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {DEVELOPER_MODE && (
+        {DEVELOPER_MODE && canGenerateTestRecords && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
@@ -133,6 +151,25 @@ const ProjectActions = (): JSX.Element => {
                 >
                   Generate Records
                 </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {canUpdateProjectDetails && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>Name &amp; description</ListLabel>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  Update listing title and short description without opening the
+                  designer.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditProjectDetailsDialog />
               </ListItem>
             </List>
           </Card>
@@ -170,25 +207,27 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        <Card className="flex-1">
-          <List className="flex flex-col gap-2 space-y-0">
-            <ListItem>
-              <ListLabel>Download JSON</ListLabel>
-            </ListItem>
-            <ListItem>
-              <Button variant="outline">
-                <a
-                  href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify(data?.uiSpecification ?? {}, null, 2)
-                  )}`}
-                  download={`${projectId}.json`}
-                >
-                  Download JSON
-                </a>
-              </Button>
-            </ListItem>
-          </List>
-        </Card>
+        {canReadProjectMetadata && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>Download JSON</ListLabel>
+              </ListItem>
+              <ListItem>
+                <Button variant="outline" disabled={isLoading}>
+                  <a
+                    href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                      JSON.stringify(data?.uiSpecification ?? {}, null, 2)
+                    )}`}
+                    download={`${projectId}.json`}
+                  >
+                    Download JSON
+                  </a>
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
 
         {canEditProject && (
           <Card className="flex-1">
@@ -205,7 +244,7 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canCreateTemplateInTeam && (
+        {canCreateTemplateFromProject && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>

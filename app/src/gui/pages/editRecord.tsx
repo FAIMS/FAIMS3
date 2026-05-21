@@ -48,6 +48,7 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {dataEngineUiSpecFromProject} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -111,16 +112,13 @@ export const EditRecordPage = () => {
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
   if (!serverId || !projectId) return <></>;
-  const uiSpecificationId = useAppSelector(
-    state => selectProjectById(state, projectId)?.uiSpecificationId
-  );
-  if (!uiSpecificationId) return <></>;
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const uiSpec = uiSpecificationId
-    ? compiledSpecService.getSpec(uiSpecificationId)
-    : undefined;
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
   if (!uiSpec) return <div>UI Specification not found</div>;
+  const engineUiSpec = dataEngineUiSpecFromProject(project);
 
   // These are handlers passed back from the editable form to assist with
   // navigation management
@@ -174,7 +172,7 @@ export const EditRecordPage = () => {
   const dataEngine = () => {
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec,
+      uiSpec: engineUiSpec,
     });
   };
 
@@ -203,7 +201,7 @@ export const EditRecordPage = () => {
   });
 
   // Query to fetch the relevant viewset
-  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
+  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec: engineUiSpec});
 
   // Generate attachment service for this project
   const attachmentEngine = () => {

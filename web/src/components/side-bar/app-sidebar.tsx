@@ -67,10 +67,10 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
         projects && projects?.length > 0
-          ? projects.map(({name, project_id}: any) => ({
-              id: project_id,
+          ? projects.map(({name, _id}) => ({
+              id: _id,
               title: name,
-              url: `/projects/${project_id}`,
+              url: `/projects/${_id}`,
             }))
           : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME_PLURAL}...`}],
     });

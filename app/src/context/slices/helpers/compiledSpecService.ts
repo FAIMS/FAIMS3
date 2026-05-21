@@ -4,7 +4,7 @@
  * data is not part of the store since it contains runtime JS functions (which
  * are compiled) meaning that it cannot safely be serialised.
  *
- * Note that is the ProjectUIModel - not the Encoded model (e.g. with fviews).
+ * Note that this is the ProjectUIModel — decoded views (no fviews / encode step).
  *
  * NOTE The ID used here is arbitrary so long as it unique to the server +
  * project combo. To this end, databaseHelpers has a buildCompiledSpecId

@@ -14,6 +14,7 @@ import {useState} from 'react';
 import {Navigate, useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {dataEngineUiSpecFromProject} from '../../../context/slices/helpers/notebookDefinition';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
@@ -27,7 +28,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, serverId, uiSpecificationId, metadata},
+  project: {projectId, serverId, uiSpecificationId, uiDefinition},
   refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
@@ -39,7 +40,7 @@ export default function AddRecordButtons({
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-  const showQRButton = !!metadata['showQRCodeButton'];
+  const showQRButton = uiDefinition.uiSpec.settings.showQrCodeButton;
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
@@ -52,7 +53,7 @@ export default function AddRecordButtons({
   const dataEngine = () => {
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec,
+      uiSpec: dataEngineUiSpecFromProject({uiDefinition}),
     });
   };
 

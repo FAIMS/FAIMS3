@@ -149,14 +149,10 @@ export default function NoteBooks() {
               padding: '8px 0px',
             }}
           >
-            {row.name ??
-              // Just as a backwards compat thing, consider looking for name in
-              // metadata
-              row.metadata.name ??
-              'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
+            {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
           </Typography>
           <Typography variant="caption" sx={{display: 'block', mt: 1}}>
-            {row.metadata.description}
+            {row.description}
           </Typography>
         </Box>
       ),

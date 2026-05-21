@@ -23,6 +23,7 @@ import {
   DataDocument,
   DataEngine,
   MinimalRecordMetadata,
+  NotebookUiSpec,
   ProjectID,
   ProjectUIModel,
 } from '@faims3/data-model';
@@ -59,7 +60,10 @@ import {localGetDataDb} from '../../../utils/database';
 import {formatTimestamp} from '../../../utils/formUtilities';
 
 interface OverviewMapProps {
+  /** Compiled UI model for GIS field discovery and display. */
   uiSpec: ProjectUIModel;
+  /** Full uiSpec for {@link DataEngine} (includes settings / schemaVersion). */
+  engineUiSpec: NotebookUiSpec;
   project_id: ProjectID;
   serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};
@@ -333,7 +337,7 @@ const createResetNorthControl = (map: Map): Control => {
  * Create an overview map of the records in the notebook.
  */
 export const OverviewMap = (props: OverviewMapProps) => {
-  const {uiSpec, project_id, serverId, records} = props;
+  const {uiSpec, engineUiSpec, project_id, serverId, records} = props;
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
@@ -384,9 +388,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const dataDb = localGetDataDb(project_id);
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: uiSpec,
+      uiSpec: engineUiSpec,
     });
-  }, [project_id, uiSpec]);
+  }, [project_id, engineUiSpec]);
 
   // Memoize GIS fields
   const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);

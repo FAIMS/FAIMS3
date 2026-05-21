@@ -9,6 +9,7 @@ import {Action, getUserResourcesForAction} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
+import {uiSpecificationFromNotebookJsonPayload} from '@/hooks/project-hooks';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -127,7 +128,7 @@ export function CreateTemplateForm({
     const {name, file, team, visibility} = values;
     const isPublic =
       canCreatePublicTemplate && visibility === 'public';
-    let jsonPayload: Record<string, any> = {};
+    let jsonPayload: Record<string, unknown> = {};
 
     if (file) {
       // parse the user-uploaded file
@@ -136,17 +137,17 @@ export function CreateTemplateForm({
         return {type: 'submit', message: 'Error reading file'};
       }
       try {
-        jsonPayload = JSON.parse(text);
+        jsonPayload = JSON.parse(text) as Record<string, unknown>;
       } catch {
         return {type: 'submit', message: 'Invalid JSON file'};
       }
-    } else {
-      // pull in the sample's metadata + ui-spec
-      jsonPayload = {
-        metadata: (blankNotebook as any).metadata,
-        'ui-specification': (blankNotebook as any)['ui-specification'],
-      };
     }
+
+    const description =
+      typeof jsonPayload.description === 'string' ? jsonPayload.description : '';
+    const uiSpecification = file
+      ? uiSpecificationFromNotebookJsonPayload(jsonPayload)
+      : blankNotebook;
 
     let chosenTeamId = specifiedTeam;
     if (justOneTeam && possibleTeams.length > 0) {
@@ -167,8 +168,9 @@ export function CreateTemplateForm({
           body: JSON.stringify({
             teamId: chosenTeamId,
             name,
+            description,
             isPublic,
-            ...jsonPayload,
+            uiSpecification,
           }),
         }
       );

@@ -4,8 +4,6 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
-  decodeUiSpec,
-  EncodedUISpecification,
   GetExportNotebookResponse,
   isValidForSpatialExport,
 } from '@faims3/data-model';
@@ -40,12 +38,8 @@ const ExportFullForm = () => {
 
   const isValidForSpatial = useMemo(() => {
     if (!data) return false;
-    const uiSpecification = data['ui-specification'] as unknown;
-    const decodedUiSpec = decodeUiSpec(
-      uiSpecification as EncodedUISpecification
-    );
     return isValidForSpatialExport({
-      uiSpecification: decodedUiSpec,
+      uiSpecification: data.uiSpecification.uiSpec,
     });
   }, [data]);
 

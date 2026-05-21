@@ -189,17 +189,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     metadataRefreshIntervalMs: 10000,
-    uiSpecification: uiSpecification,
+    uiSpecification: project.uiDefinition.uiSpec,
   });
   const forceRecordRefresh = records.initialQuery.refetch;
 
   const viewsets = uiSpecification.viewsets;
 
   const templateId = useAppSelector(
-    state =>
-      selectProjectById(state, project.projectId)?.metadata?.['template_id'] as
-        | string
-        | undefined
+    state => selectProjectById(state, project.projectId)?.templateId
   );
 
   /**
@@ -380,6 +377,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               records={records}
               project_id={project.projectId}
               uiSpec={uiSpecification}
+              engineUiSpec={project.uiDefinition.uiSpec}
             />
           )}
         </TabPanel>

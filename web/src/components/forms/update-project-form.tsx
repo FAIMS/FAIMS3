@@ -4,6 +4,12 @@ import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {NOTEBOOK_NAME} from '@/constants';
 import {Route} from '@/routes/_protected/projects/$projectId';
+import {
+  errorMessageFromNotebookJsonBody,
+  modifyTeamForProject,
+  updateNotebookMetadataRequest,
+  updateNotebookUiSpecificationRequest,
+} from '@/hooks/project-hooks';
 
 const fields = [
   {
@@ -13,13 +19,22 @@ const fields = [
   },
 ];
 
+function teamIdFromUpload(payload: Record<string, unknown>): string | undefined {
+  if (typeof payload.teamId === 'string' && payload.teamId.trim().length > 0) {
+    return payload.teamId.trim();
+  }
+  if (
+    typeof payload.ownedByTeamId === 'string' &&
+    payload.ownedByTeamId.trim().length > 0
+  ) {
+    return payload.ownedByTeamId.trim();
+  }
+  return undefined;
+}
+
 /**
- * UpdateProjectForm component renders a form for updating a project.
- * It provides a button to submit the form and a file input for selecting a JSON file.
- * The onSuccess callback is called after a successful update.
- *
- * @param {React.Dispatch<React.SetStateAction<boolean>>} setDialogOpen - A function to set the dialog open state.
- * @returns {JSX.Element} The rendered UpdateProjectForm component.
+ * UpdateProjectForm uploads a project JSON export and applies it via the split
+ * API routes (metadata, team, uiSpecification).
  */
 export function UpdateProjectForm({
   setDialogOpen,
@@ -38,24 +53,77 @@ export function UpdateProjectForm({
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: jsonString,
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(jsonString) as Record<string, unknown>;
+    } catch {
+      return {type: 'submit', message: 'Invalid JSON file'};
+    }
+
+    const reportError = async (response: Response, label: string) => {
+      const json: unknown = await response.json().catch(() => undefined);
+      return {
+        type: 'submit' as const,
+        message:
+          `${label}: ` +
+          errorMessageFromNotebookJsonBody(json, response.statusText),
+      };
+    };
+
+    const teamId = teamIdFromUpload(payload);
+    if (teamId) {
+      const teamResponse = await modifyTeamForProject({
+        projectId,
+        teamId,
+        user,
+      });
+      if (!teamResponse.ok) {
+        return reportError(teamResponse, 'Error updating project team');
       }
-    );
+    }
 
-    if (!response.ok)
-      return {type: 'submit', message: 'Error updating template'};
+    const name = typeof payload.name === 'string' ? payload.name : undefined;
+    const description =
+      typeof payload.description === 'string' ? payload.description : undefined;
+    if (name !== undefined || description !== undefined) {
+      const metaResponse = await updateNotebookMetadataRequest({
+        user,
+        projectId,
+        name,
+        description,
+      });
+      if (!metaResponse.ok) {
+        return reportError(metaResponse, 'Error updating project details');
+      }
+    }
 
-    // call the onSuccess callback if everything worked
+    const uiSpecification =
+      payload.uiSpecification ?? payload['ui-specification'];
+    if (uiSpecification !== undefined && uiSpecification !== null) {
+      const uiResponse = await updateNotebookUiSpecificationRequest({
+        user,
+        projectId,
+        uiSpecification,
+      });
+      if (!uiResponse.ok) {
+        return reportError(uiResponse, 'Error updating project design');
+      }
+    }
+
+    if (
+      teamId === undefined &&
+      name === undefined &&
+      description === undefined &&
+      (uiSpecification === undefined || uiSpecification === null)
+    ) {
+      return {
+        type: 'submit',
+        message:
+          'JSON must include at least one of: teamId, ownedByTeamId, name, description, uiSpecification',
+      };
+    }
+
     onSuccess();
-
     setDialogOpen(false);
   };
 

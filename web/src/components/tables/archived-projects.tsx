@@ -36,7 +36,7 @@ function ArchivedProjectRestoreCell({row}: {row: ArchivedProjectRow}) {
     userCanDo({
       user,
       action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
-      resourceId: row.project_id,
+      resourceId: row._id,
     });
 
   const tooltip = canRestore
@@ -85,7 +85,7 @@ function ArchivedProjectRestoreCell({row}: {row: ArchivedProjectRow}) {
       </TooltipProvider>
       {canRestore ? (
         <RestoreArchivedProjectDialog
-          projectId={row.project_id}
+          projectId={row._id}
           open={open}
           onOpenChange={setOpen}
         />
@@ -103,7 +103,7 @@ function ArchivedProjectDeleteCell({row}: {row: ArchivedProjectRow}) {
     userCanDo({
       user,
       action: Action.DELETE_PROJECT,
-      resourceId: row.project_id,
+      resourceId: row._id,
     });
 
   const tooltip = canDelete
@@ -152,7 +152,7 @@ function ArchivedProjectDeleteCell({row}: {row: ArchivedProjectRow}) {
       </TooltipProvider>
       {canDelete ? (
         <DeleteArchivedProjectDialog
-          projectId={row.project_id}
+          projectId={row._id}
           projectDisplayName={row.name}
           open={open}
           onOpenChange={setOpen}
@@ -205,16 +205,13 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
     ),
   },
   {
-    accessorKey: 'metadata.project_lead',
+    accessorKey: 'createdBy',
     header: ({column}) => (
-      <DataTableColumnHeader
-        column={column}
-        title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
-      />
+      <DataTableColumnHeader column={column} title="Created by" />
     ),
   },
   {
-    accessorKey: 'metadata.pre_description',
+    accessorKey: 'description',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Description" />
     ),
