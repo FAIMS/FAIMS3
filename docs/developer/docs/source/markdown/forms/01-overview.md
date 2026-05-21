@@ -94,11 +94,11 @@ graph TD
     FDE --> M[meta]
 ```
 
-| Level      | Key        | Description                                                                   |
-| ---------- | ---------- | ----------------------------------------------------------------------------- |
-| `viewsets` | Form ID    | Defines a complete form with ordered sections                                 |
-| `views`    | Section ID | Groups related fields into a section  |
-| `fields`   | Field ID   | Individual field configuration                                                |
+| Level      | Key        | Description                                   |
+| ---------- | ---------- | --------------------------------------------- |
+| `viewsets` | Form ID    | Defines a complete form with ordered sections |
+| `views`    | Section ID | Groups related fields into a section          |
+| `fields`   | Field ID   | Individual field configuration                |
 
 ## Configuration Modes
 

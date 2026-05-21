@@ -188,7 +188,7 @@ export async function batchWriteDocuments<T extends {}>({
           successful++;
         }
       }
-    } catch (bulkErr) {
+    } catch (_err) {
       // Fallback to individual writes for this chunk
       for (const doc of chunk) {
         try {

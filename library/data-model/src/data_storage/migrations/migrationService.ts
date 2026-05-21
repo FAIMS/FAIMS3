@@ -6,17 +6,16 @@ import {
   MigrationsDBDocument,
   MigrationsDBFields,
 } from '../migrationsDB';
-import {buildMigrationContext} from './hooks';
+import {buildMigrationContext, DEFAULT_MIGRATION_CREATED_BY} from './hooks';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
 import {
   DATABASE_TYPE,
   DatabaseType,
-  DEFAULT_MIGRATION_CREATED_BY,
+  GetDbById,
   IS_TESTING,
   MigrationContext,
   MigrationDetails,
   MigrationFunc,
-  GetDbById,
 } from './types';
 
 function generateErrorLog({

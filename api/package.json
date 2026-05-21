@@ -8,7 +8,7 @@
     "clean": "gts clean",
     "compile": "tsc",
     "build": "tsc && copyfiles views/* views/**/* public/* public/**/* build/src",
-    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt .",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
     "prestart": "pnpm run-script compile",
     "start": "node --expose-gc --max-old-space-size=4096  .",
     "start:prod": "node --expose-gc --max-old-space-size=4096 build/src/index.js",

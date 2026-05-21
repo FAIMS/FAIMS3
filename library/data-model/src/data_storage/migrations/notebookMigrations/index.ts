@@ -1,4 +1,4 @@
-import {NotebookDefinition} from '../../../uiSpecification';
+import type {NotebookDefinition} from '../../../uiSpecification/types';
 import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';
 import {migrateToV4} from './migrateV4';

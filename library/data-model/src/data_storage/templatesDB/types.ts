@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {DatabaseInterface} from '../../types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
-import {NotebookDefinitionSchema} from '../../uiSpecification';
+import {NotebookDefinitionSchema} from '../../uiSpecification/types';
 
 // =============
 // Legacy encoded UI spec (template v1–v4, metadata DB `ui-specification`)
