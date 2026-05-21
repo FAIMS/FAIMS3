@@ -21,12 +21,6 @@ export const PersistedRootDescriptionSchema =
 /** Optional description on POST /api/notebooks and POST /api/templates. */
 export const CreateRootDescriptionSchema = PersistedRootDescriptionSchema;
 
-/** @deprecated Use {@link RootDescriptionInputSchema} */
-export const RootDescriptionSchema = RootDescriptionInputSchema;
-
-/** @deprecated Use {@link CreateRootDescriptionSchema} */
-export const CreateNotebookDescriptionSchema = CreateRootDescriptionSchema;
-
 /** Normalize API/form description for Couch storage (omit when empty). */
 export function normalizeRootDescriptionForStore(
   description?: string

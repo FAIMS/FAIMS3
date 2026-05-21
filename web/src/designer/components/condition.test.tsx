@@ -47,7 +47,7 @@ describe('ConditionControl', () => {
   test('render and interact with a field condition', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch(loaded(notebook.uiSpec as unknown as NotebookUISpec));
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
     const condition = {
       operator: 'equal',
       field: 'New-Text-Field',
@@ -99,7 +99,7 @@ describe('ConditionControl', () => {
   test('field condition omits field in select', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch(loaded(notebook.uiSpec as unknown as NotebookUISpec));
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
 
     const theField = 'New-Text-Field';
     const onChangeFn = vi.fn();
@@ -127,7 +127,7 @@ describe('ConditionControl', () => {
   test('field condition omits all view fields in select', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch(loaded(notebook.uiSpec as unknown as NotebookUISpec));
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
 
     const theView = 'Primary-New-Section';
     const onChangeFn = vi.fn();
@@ -157,7 +157,7 @@ describe('ConditionControl', () => {
   test('make a boolean condition from a field', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch(loaded(notebook.uiSpec as unknown as NotebookUISpec));
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
 
     const condition = {
       operator: 'equal',
