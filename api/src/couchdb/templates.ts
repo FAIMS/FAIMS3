@@ -27,15 +27,14 @@ import {
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
+import {nowIso} from '../time';
 import {generateRandomString} from '../utils';
-import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
-import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
+import {
+  clearTemplateIdFromProjectsReferencingTemplate,
+  normalizeUiSpecificationOrThrow,
+} from './notebooks';
 import {getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
 
 /**
  * Lists templates using CouchDB views whose map `value` is the template doc

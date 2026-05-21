@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {displayUnixTimestampMs} from '@/lib/utils';
+import {displayUnixTimestampMs, nowMs} from '@/lib/time';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {Edit, Trash} from 'lucide-react';
@@ -100,7 +100,7 @@ export const useGetLongLivedTokensColumns = ({
             original: {enabled, expiresAt},
           },
         }) => {
-          const isExpired = expiresAt && expiresAt < Date.now();
+          const isExpired = expiresAt && expiresAt < nowMs();
 
           if (!enabled) {
             return <Badge variant="destructive">Revoked</Badge>;
@@ -148,7 +148,7 @@ export const useGetLongLivedTokensColumns = ({
         }) => {
           if (!expiresAt) return '∞';
 
-          const isExpired = expiresAt < Date.now();
+          const isExpired = expiresAt < nowMs();
           const display = displayUnixTimestampMs({timestamp: expiresAt});
 
           return (

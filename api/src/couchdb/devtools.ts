@@ -18,6 +18,7 @@
  *    Tools used in development and testing of FAIMS
  */
 
+import {nowIso, nowMs} from '../time';
 import {
   ProjectID,
   upsertFAIMSData,
@@ -151,12 +152,12 @@ const generateValue = (field: any) => {
     case 'faims-core::Bool':
       return randomInt(10) > 5;
     case 'faims-core::Date':
-      return new Date().toISOString();
+      return nowIso();
     case 'faims-pos::Location':
       return {
         type: 'Feature',
         properties: {
-          timestamp: Date.now(),
+          timestamp: nowMs(),
           altitude: null,
           speed: null,
           heading: null,

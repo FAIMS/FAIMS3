@@ -36,6 +36,7 @@ import {
 } from '@mui/material';
 import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {nowMs} from '@/lib/time';
 import DebouncedTextField from './debounced-text-field';
 
 /*
@@ -70,8 +71,7 @@ let blockCounter = 0;
  * @returns {string} A unique identifier string
  */
 export const generateBlockId = (): string => {
-  // Get current timestamp
-  const timestamp = Date.now();
+  const timestamp = nowMs();
 
   // Increment counter
   blockCounter++;

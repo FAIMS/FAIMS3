@@ -7,7 +7,7 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
 import type {GetTemplateByIdResponse} from '@faims3/data-model';
-import {displayIsoTimestamp} from '@/lib/utils';
+import {displayIsoTimestamp} from '@/lib/time';
 
 type DetailRow = {
   key: string;

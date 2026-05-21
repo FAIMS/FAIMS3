@@ -9,7 +9,7 @@ import {useGetProject} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
 import type {GetNotebookResponse} from '@faims3/data-model';
 import {ProjectStatus} from '@faims3/data-model';
-import {displayIsoTimestamp} from '@/lib/utils';
+import {displayIsoTimestamp} from '@/lib/time';
 
 type DetailRow = {
   key: string;
