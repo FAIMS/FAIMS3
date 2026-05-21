@@ -105,9 +105,7 @@ export const FormEditor = ({
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
 
-  const uiSpec = useAppSelector(
-    state => state.notebook.uiSpec.present
-  );
+  const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   // we need this to be a ProjectUIModel type for the PreviewFormManager
   // we should also compile this
   const uiSpecInternal = useMemo(
@@ -140,12 +138,8 @@ export const FormEditor = ({
   );
   const sections = viewSet ? viewSet.views : [];
 
-  const views = useAppSelector(
-    state => state.notebook.uiSpec.present.views
-  );
-  const fields = useAppSelector(
-    state => state.notebook.uiSpec.present.fields
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
   const dispatch = useAppDispatch();
 
   const [activeStep, setActiveStep] = useState(0);

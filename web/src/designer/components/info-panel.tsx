@@ -48,7 +48,9 @@ export const InfoPanel = () => {
     state => state.notebook.metadata.information
   );
   const custom = useAppSelector(state => state.notebook.metadata.custom ?? {});
-  const settings = useAppSelector(state => state.notebook.uiSpec.present.settings);
+  const settings = useAppSelector(
+    state => state.notebook.uiSpec.present.settings
+  );
   const dispatch = useAppDispatch();
 
   const purposeRef = useRef<MDXEditorMethods>(null);
@@ -269,9 +271,7 @@ export const InfoPanel = () => {
                     name={key}
                     data-testid={'custom-field-' + key}
                     value={String(custom[key] ?? '')}
-                    onChange={(
-                      event: React.ChangeEvent<HTMLInputElement>
-                    ) => {
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       dispatch(
                         customFieldUpdated({key, value: event.target.value})
                       );

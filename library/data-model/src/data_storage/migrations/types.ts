@@ -46,11 +46,7 @@ export type MigrationFuncReturn =
 
 export type MigrationFuncRecordInput = PouchDB.Core.ExistingDocument<any>;
 
-export type {
-  GetDbById,
-  GetDbByIdParams,
-  MigrationContext,
-} from './hooks';
+export type {GetDbById, GetDbByIdParams, MigrationContext} from './hooks';
 export {
   DEFAULT_MIGRATION_CREATED_BY,
   buildMigrationContext,

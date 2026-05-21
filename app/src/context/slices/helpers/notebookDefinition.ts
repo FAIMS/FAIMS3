@@ -19,8 +19,11 @@ export function dataEngineUiSpecFromProject(project: {
 export function projectUiModelFromUiDefinition(
   uiDefinition: NotebookDefinition
 ): ProjectUIModel {
-  const {settings: _settings, schemaVersion: _schemaVersion, ...uiModel} =
-    uiDefinition.uiSpec;
+  const {
+    settings: _settings,
+    schemaVersion: _schemaVersion,
+    ...uiModel
+  } = uiDefinition.uiSpec;
   return uiModel as ProjectUIModel;
 }
 
@@ -52,7 +55,9 @@ export function notebookDefinitionFromLegacyPersistedProject(project: {
 export function projectInformationFromGetNotebook(
   notebook: GetNotebookResponse
 ): ProjectInformation {
-  const uiDefinition = normalizeNotebookUiSpecification(notebook.uiSpecification);
+  const uiDefinition = normalizeNotebookUiSpecification(
+    notebook.uiSpecification
+  );
   return {
     name: notebook.name,
     description: notebook.description,

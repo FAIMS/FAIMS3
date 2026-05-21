@@ -37,8 +37,8 @@ export const EditProjectDetailsDialog = () => {
           <DialogTitle>Edit {NOTEBOOK_NAME_CAPITALIZED} details</DialogTitle>
           <DialogDescription>
             Update the display name and short description for this{' '}
-            {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}. Design documentation stays
-            in the editor.
+            {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}. Design documentation
+            stays in the editor.
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (

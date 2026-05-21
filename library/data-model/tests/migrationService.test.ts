@@ -256,7 +256,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc, getDbById});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check that correct documents were processed
       expect(result.processedCount).toBe(3);
@@ -303,7 +307,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc, getDbById});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check results (should include original 3 docs + 250 batch docs)
       expect(result.processedCount).toBe(253);
@@ -333,7 +341,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc, getDbById});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Should have an issue for the problem document, but continue with others
       expect(result.issues.length).toBe(1);
@@ -387,7 +399,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc, getDbById});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check statistics
       expect(result.processedCount).toBe(4); // All docs including the new one
@@ -428,7 +444,10 @@ describe('Migration System Tests', () => {
         const person = await db.get(doc._id);
         return {
           action: 'update',
-          updatedRecord: {...doc, mirroredName: (person as {name?: string}).name},
+          updatedRecord: {
+            ...doc,
+            mirroredName: (person as {name?: string}).name,
+          },
         };
       };
 

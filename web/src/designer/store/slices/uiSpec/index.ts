@@ -20,8 +20,7 @@ import {viewSetReducers} from './viewSetReducers';
 
 import type {NotebookSettings} from '../../../state/initial';
 
-const uiSpecInitialState: NotebookUISpec =
-  initialState.notebook.uiSpec.present;
+const uiSpecInitialState: NotebookUISpec = initialState.notebook.uiSpec.present;
 
 /**
  * RTK slice for the present UI specification only. Wrapped with `redux-undo`

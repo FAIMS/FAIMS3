@@ -35,10 +35,11 @@ export function notebookUiSpecificationNeedsMigration(
 /**
  * Loose API/upload shape: any JSON object (legacy wire or current {@link NotebookDefinition}).
  */
-export const NotebookUiSpecificationInputSchema = z.custom<Record<string, unknown>>(
-  val => isPlainObject(val),
-  {message: 'uiSpecification must be a JSON object'}
-);
+export const NotebookUiSpecificationInputSchema = z.custom<
+  Record<string, unknown>
+>(val => isPlainObject(val), {
+  message: 'uiSpecification must be a JSON object',
+});
 export type NotebookUiSpecificationInput = z.infer<
   typeof NotebookUiSpecificationInputSchema
 >;
@@ -54,7 +55,9 @@ function formatZodIssues(error: ZodError): string {
 }
 
 function assertLatestSchemaVersion(notebook: NotebookDefinition): void {
-  const version = getNotebookSchemaVersion(notebook as NotebookSchemaVersionCarrier);
+  const version = getNotebookSchemaVersion(
+    notebook as NotebookSchemaVersionCarrier
+  );
   if (version !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION) {
     throw new Error(
       `uiSpecification must use schema version ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} after migration (got ${version ?? 'none'})`
@@ -88,7 +91,9 @@ export function normalizeNotebookUiSpecification(
 
   const parsed = NotebookDefinitionSchema.safeParse(candidate);
   if (!parsed.success) {
-    throw new Error(`Invalid uiSpecification: ${formatZodIssues(parsed.error)}`);
+    throw new Error(
+      `Invalid uiSpecification: ${formatZodIssues(parsed.error)}`
+    );
   }
 
   assertLatestSchemaVersion(parsed.data);
@@ -97,7 +102,9 @@ export function normalizeNotebookUiSpecification(
 }
 
 /** User-facing message for API validation failures after normalize/migrate. */
-export function notebookUiSpecificationValidationMessage(error: unknown): string {
+export function notebookUiSpecificationValidationMessage(
+  error: unknown
+): string {
   if (error instanceof ZodError) {
     return `Invalid uiSpecification: ${formatZodIssues(error)}`;
   }

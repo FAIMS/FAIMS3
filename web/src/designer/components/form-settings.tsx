@@ -19,17 +19,16 @@ import {
   MenuItem,
   Select,
   Typography,
-  SelectChangeEvent,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
-import DebouncedTextField from './debounced-text-field';
 import {
   viewSetHridUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } from '../store/slices/uiSpec';
+import DebouncedTextField from './debounced-text-field';
 
 type ViewSetType = {
   views: string[];
@@ -77,17 +76,11 @@ const SettingSection = ({
 export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
 
-  const fields = useAppSelector(
-    state => state.notebook.uiSpec.present.fields
-  );
+  const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
   const viewSet: ViewSetType | undefined = useAppSelector(
-    state =>
-      state.notebook?.uiSpec?.present.viewsets?.[viewSetId] ||
-      undefined
+    state => state.notebook?.uiSpec?.present.viewsets?.[viewSetId] || undefined
   );
-  const fviews = useAppSelector(
-    state => state.notebook.uiSpec.present.views
-  );
+  const fviews = useAppSelector(state => state.notebook.uiSpec.present.views);
   const [expanded, setExpanded] = React.useState(false);
 
   /**

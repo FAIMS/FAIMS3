@@ -18,13 +18,13 @@ import {
   deriveRootDescription,
   migrationTimestamps,
   readLegacyNotebookFromMetadataDb,
-} from "@faims3/data-model";
-import * as fs from "fs";
-import * as path from "path";
-import { createInterface } from "readline";
-import { finished } from "stream/promises";
+} from '@faims3/data-model';
+import * as fs from 'fs';
+import * as path from 'path';
+import {createInterface} from 'readline';
+import {finished} from 'stream/promises';
 
-const MIGRATION_CREATED_BY = "system";
+const MIGRATION_CREATED_BY = 'system';
 
 type JsonlRecord = Record<string, unknown>;
 
@@ -35,9 +35,9 @@ type BackupSection = {
 
 const EMPTY_UI_SPECIFICATION: NotebookDefinition = JSON.parse(
   fs.readFileSync(
-    path.join(__dirname, "../../notebooks/empty_ui_specification.json"),
-    "utf-8",
-  ),
+    path.join(__dirname, '../../notebooks/empty_ui_specification.json'),
+    'utf-8'
+  )
 ).uiSpecification as NotebookDefinition;
 
 function showHelp(): void {
@@ -63,24 +63,24 @@ function parseArgs(argv: string[]): {
   let help = false;
 
   for (const arg of argv) {
-    if (arg === "--replace") {
+    if (arg === '--replace') {
       replace = true;
-    } else if (arg === "--help" || arg === "-h") {
+    } else if (arg === '--help' || arg === '-h') {
       help = true;
-    } else if (!arg.startsWith("-")) {
+    } else if (!arg.startsWith('-')) {
       inputs.push(arg);
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
   }
 
-  return { inputs, replace, help };
+  return {inputs, replace, help};
 }
 
 function projectIdFromMetadataDatabaseName(dbName: string): string | null {
-  const marker = "||";
+  const marker = '||';
   const idx = dbName.indexOf(marker);
-  if (!dbName.startsWith("metadata") || idx < 0) {
+  if (!dbName.startsWith('metadata') || idx < 0) {
     return null;
   }
   const projectId = dbName.slice(idx + marker.length).trim();
@@ -98,18 +98,18 @@ function normalizeProjectStatus(status: unknown): ProjectStatus {
     return ProjectStatus.ARCHIVED;
   }
   if (
-    status === "published" ||
-    status === "OPEN" ||
+    status === 'published' ||
+    status === 'OPEN' ||
     status === undefined ||
     status === null ||
-    status === ""
+    status === ''
   ) {
     return ProjectStatus.OPEN;
   }
-  if (status === "CLOSED" || status === "closed") {
+  if (status === 'CLOSED' || status === 'closed') {
     return ProjectStatus.CLOSED;
   }
-  if (status === "ARCHIVED" || status === "archived") {
+  if (status === 'ARCHIVED' || status === 'archived') {
     return ProjectStatus.ARCHIVED;
   }
   console.warn(`Unknown project status "${String(status)}"; using OPEN`);
@@ -119,10 +119,10 @@ function normalizeProjectStatus(status: unknown): ProjectStatus {
 function inMemoryMetadataDb(docs: JsonlRecord[]): DatabaseInterface {
   return {
     allDocs: async (opts?: PouchDB.Core.AllDocsOptions) => ({
-      rows: docs.map((doc) => ({
+      rows: docs.map(doc => ({
         id: String(doc._id),
         key: String(doc._id),
-        value: { rev: String(doc._rev ?? "") },
+        value: {rev: String(doc._rev ?? '')},
         doc: opts?.include_docs ? doc : undefined,
       })),
     }),
@@ -131,7 +131,7 @@ function inMemoryMetadataDb(docs: JsonlRecord[]): DatabaseInterface {
 
 async function legacyNotebookFromSectionRows(
   rows: JsonlRecord[],
-  projectId: string,
+  projectId: string
 ): Promise<{
   legacyMetadata: Record<string, unknown>;
   encodedUiSpec?: LegacyEncodedUISpecification;
@@ -141,29 +141,29 @@ async function legacyNotebookFromSectionRows(
     const doc = row.doc;
     if (
       doc != null &&
-      typeof doc === "object" &&
-      typeof (doc as JsonlRecord)._id === "string"
+      typeof doc === 'object' &&
+      typeof (doc as JsonlRecord)._id === 'string'
     ) {
       couchDocs.push(doc as JsonlRecord);
     }
   }
 
   if (couchDocs.length === 0) {
-    return { legacyMetadata: {} };
+    return {legacyMetadata: {}};
   }
 
-  const { metadata, encodedUiSpec } = await readLegacyNotebookFromMetadataDb(
+  const {metadata, encodedUiSpec} = await readLegacyNotebookFromMetadataDb(
     inMemoryMetadataDb(couchDocs),
-    projectId,
+    projectId
   );
-  return { legacyMetadata: metadata, encodedUiSpec };
+  return {legacyMetadata: metadata, encodedUiSpec};
 }
 
 function isProjectsDataSection(dbName: string): boolean {
   return (
-    dbName.startsWith("projects_") &&
-    dbName !== "projects__design/permissions" &&
-    dbName !== "projects_locallycreatedproject"
+    dbName.startsWith('projects_') &&
+    dbName !== 'projects__design/permissions' &&
+    dbName !== 'projects_locallycreatedproject'
   );
 }
 
@@ -175,13 +175,13 @@ async function buildV4ProjectDoc(
       legacyMetadata: Record<string, unknown>;
       encodedUiSpec?: LegacyEncodedUISpecification;
     }
-  >,
+  >
 ): Promise<JsonlRecord> {
-  const projectId = String(projectDoc._id ?? "");
+  const projectId = String(projectDoc._id ?? '');
   const legacy = legacyByProjectId.get(projectId);
   const name =
-    String(projectDoc.name ?? "").trim() ||
-    String(legacy?.legacyMetadata.name ?? "").trim() ||
+    String(projectDoc.name ?? '').trim() ||
+    String(legacy?.legacyMetadata.name ?? '').trim() ||
     projectId;
 
   const uiSpecification = legacy
@@ -195,19 +195,19 @@ async function buildV4ProjectDoc(
           ...EMPTY_UI_SPECIFICATION.metadata,
           information: {
             ...EMPTY_UI_SPECIFICATION.metadata.information,
-            purposeMarkdown: "",
+            purposeMarkdown: '',
           },
         },
       };
 
   const description = legacy
     ? deriveRootDescription(legacy.legacyMetadata)
-    : "";
+    : '';
 
-  const { createdAt, updatedAt } = migrationTimestamps();
+  const {createdAt, updatedAt} = migrationTimestamps();
 
   const dataDb = projectDoc.dataDb;
-  if (!dataDb || typeof dataDb !== "object") {
+  if (!dataDb || typeof dataDb !== 'object') {
     throw new Error(`Project ${projectId} is missing dataDb`);
   }
 
@@ -239,7 +239,7 @@ async function readSections(filePath: string): Promise<BackupSection[]> {
   let current: BackupSection | undefined;
 
   const rl = createInterface({
-    input: fs.createReadStream(filePath, { encoding: "utf-8" }),
+    input: fs.createReadStream(filePath, {encoding: 'utf-8'}),
     crlfDelay: Infinity,
   });
 
@@ -248,11 +248,11 @@ async function readSections(filePath: string): Promise<BackupSection[]> {
       continue;
     }
     const record = JSON.parse(line) as JsonlRecord;
-    if (record.type === "header") {
+    if (record.type === 'header') {
       if (current) {
         sections.push(current);
       }
-      current = { header: record, rows: [] };
+      current = {header: record, rows: []};
     } else if (current) {
       current.rows.push(record);
     }
@@ -267,9 +267,9 @@ async function readSections(filePath: string): Promise<BackupSection[]> {
 
 async function writeJsonl(
   filePath: string,
-  sections: BackupSection[],
+  sections: BackupSection[]
 ): Promise<void> {
-  const stream = fs.createWriteStream(filePath, { encoding: "utf-8" });
+  const stream = fs.createWriteStream(filePath, {encoding: 'utf-8'});
   for (const section of sections) {
     stream.write(`${JSON.stringify(section.header)}\n`);
     for (const row of section.rows) {
@@ -282,7 +282,7 @@ async function writeJsonl(
 
 async function migrateBackupFileToOutput(
   inputPath: string,
-  outputPath: string,
+  outputPath: string
 ): Promise<{
   metadataSectionsDropped: number;
   projectsMigrated: number;
@@ -300,14 +300,14 @@ async function migrateBackupFileToOutput(
   >();
 
   for (const section of sections) {
-    const dbName = String(section.header.database ?? "");
+    const dbName = String(section.header.database ?? '');
     const projectId = projectIdFromMetadataDatabaseName(dbName);
     if (!projectId) {
       continue;
     }
     legacyByProjectId.set(
       projectId,
-      await legacyNotebookFromSectionRows(section.rows, projectId),
+      await legacyNotebookFromSectionRows(section.rows, projectId)
     );
   }
 
@@ -317,9 +317,9 @@ async function migrateBackupFileToOutput(
   const outSections: BackupSection[] = [];
 
   for (const section of sections) {
-    const dbName = String(section.header.database ?? "");
+    const dbName = String(section.header.database ?? '');
 
-    if (dbName.startsWith("metadata")) {
+    if (dbName.startsWith('metadata')) {
       metadataSectionsDropped += 1;
       continue;
     }
@@ -331,20 +331,20 @@ async function migrateBackupFileToOutput(
 
     const migratedRows: JsonlRecord[] = [];
     for (const row of section.rows) {
-      const rowId = String(row.id ?? "");
-      if (rowId.startsWith("_design")) {
+      const rowId = String(row.id ?? '');
+      if (rowId.startsWith('_design')) {
         migratedRows.push(row);
         continue;
       }
 
       const projectDoc = row.doc;
-      if (!projectDoc || typeof projectDoc !== "object") {
+      if (!projectDoc || typeof projectDoc !== 'object') {
         migratedRows.push(row);
         continue;
       }
 
       const projectRow = projectDoc as JsonlRecord;
-      const projectId = String(projectRow._id ?? "");
+      const projectId = String(projectRow._id ?? '');
       const hasLegacy = legacyByProjectId.has(projectId);
       const v4Doc = await buildV4ProjectDoc(projectRow, legacyByProjectId);
 
@@ -353,7 +353,7 @@ async function migrateBackupFileToOutput(
       } else {
         projectsStubbed += 1;
         console.warn(
-          `  No metadata section for project ${projectId}; wrote empty uiSpecification`,
+          `  No metadata section for project ${projectId}; wrote empty uiSpecification`
         );
       }
 
@@ -363,16 +363,16 @@ async function migrateBackupFileToOutput(
       });
     }
 
-    outSections.push({ header: section.header, rows: migratedRows });
+    outSections.push({header: section.header, rows: migratedRows});
   }
 
   await writeJsonl(outputPath, outSections);
 
-  return { metadataSectionsDropped, projectsMigrated, projectsStubbed };
+  return {metadataSectionsDropped, projectsMigrated, projectsStubbed};
 }
 
 async function main(): Promise<void> {
-  const { inputs, replace, help } = parseArgs(process.argv.slice(2));
+  const {inputs, replace, help} = parseArgs(process.argv.slice(2));
 
   if (help) {
     showHelp();
@@ -382,7 +382,7 @@ async function main(): Promise<void> {
   const files =
     inputs.length > 0
       ? inputs
-      : ["test/backup-short.jsonl", "test/backup.jsonl"];
+      : ['test/backup-short.jsonl', 'test/backup.jsonl'];
 
   for (const input of files) {
     const absInput = path.resolve(input);
@@ -392,7 +392,7 @@ async function main(): Promise<void> {
 
     const outputPath = replace
       ? absInput
-      : absInput.replace(/\.jsonl$/i, ".migrated.jsonl");
+      : absInput.replace(/\.jsonl$/i, '.migrated.jsonl');
 
     console.log(`Migrating ${absInput} -> ${outputPath}`);
 
@@ -401,14 +401,14 @@ async function main(): Promise<void> {
     console.log(
       `  dropped ${stats.metadataSectionsDropped} metadata section(s); ` +
         `migrated ${stats.projectsMigrated} project(s); ` +
-        `stubbed ${stats.projectsStubbed} project(s) without metadata`,
+        `stubbed ${stats.projectsStubbed} project(s) without metadata`
     );
   }
 
-  console.log("Done.");
+  console.log('Done.');
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err);
   process.exit(1);
 });

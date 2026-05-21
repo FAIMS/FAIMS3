@@ -42,8 +42,6 @@ export function buildMigrationContext({
   return {getDbById, migrationCreatedBy};
 }
 
-export function resolveMigrationCreatedBy(
-  context?: MigrationContext
-): string {
+export function resolveMigrationCreatedBy(context?: MigrationContext): string {
   return context?.migrationCreatedBy ?? DEFAULT_MIGRATION_CREATED_BY;
 }

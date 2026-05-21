@@ -18,7 +18,6 @@
 
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {
-  defaultNotebookMetadata,
   initialState,
   type NotebookInformation,
   type NotebookMetadata,
@@ -63,7 +62,11 @@ const metadataReducer = createSlice({
   },
 });
 
-export const {loaded, informationUpdated, customFieldUpdated, customFieldRemoved} =
-  metadataReducer.actions;
+export const {
+  loaded,
+  informationUpdated,
+  customFieldUpdated,
+  customFieldRemoved,
+} = metadataReducer.actions;
 
 export default metadataReducer.reducer;

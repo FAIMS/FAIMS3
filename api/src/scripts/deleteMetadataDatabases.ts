@@ -46,7 +46,9 @@ const projectIdFromMetadataDbName = (dbName: string): string | null => {
 const metadataDbNameFromProjectId = (projectId: string): string =>
   METADATA_DATABASE_NAME_PREFIX + projectId;
 
-const metadataDbNameFromProject = (project: ProjectDocument): string | undefined => {
+const metadataDbNameFromProject = (
+  project: ProjectDocument
+): string | undefined => {
   const projectId = project._id?.trim();
   return projectId ? metadataDbNameFromProjectId(projectId) : undefined;
 };
@@ -59,9 +61,7 @@ type LegacyProjectMetadataDbRef = {
 /** Whether the project doc still stores the deprecated metadataDb / metadata_db reference. */
 const projectStillHasMetadataDbRef = (project: ProjectDocument): boolean => {
   const legacy = project as ProjectDocument & LegacyProjectMetadataDbRef;
-  return Boolean(
-    legacy.metadataDb?.db_name ?? legacy.metadata_db?.db_name
-  );
+  return Boolean(legacy.metadataDb?.db_name ?? legacy.metadata_db?.db_name);
 };
 
 export const discoverMetadataDatabases = async (): Promise<
@@ -158,7 +158,9 @@ const printBanner = () => {
   console.log('  (ui-specification, project-metadata-*, etc.) will be lost.');
   console.log('');
   console.log('  Only run this AFTER:');
-  console.log('    • projects/templates DB migrations have inlined uiSpecification');
+  console.log(
+    '    • projects/templates DB migrations have inlined uiSpecification'
+  );
   console.log('    • you have verified surveys still load correctly');
   console.log('    • you have a current backup of CouchDB');
   console.log('');
@@ -291,9 +293,7 @@ const main = async () => {
     }
 
     const toDelete =
-      selection === 'all'
-        ? candidates
-        : selection.map(i => candidates[i - 1]);
+      selection === 'all' ? candidates : selection.map(i => candidates[i - 1]);
 
     console.log('');
     console.log('You are about to PERMANENTLY DELETE:');
@@ -319,9 +319,7 @@ const main = async () => {
     }
 
     const expectedPhrase = `${CONFIRMATION_PHRASE} ${toDelete.length}`;
-    console.log(
-      `To confirm, type exactly: ${expectedPhrase}`
-    );
+    console.log(`To confirm, type exactly: ${expectedPhrase}`);
     const confirmation = await ask(rl, '> ');
     if (confirmation !== expectedPhrase) {
       console.log('Confirmation phrase did not match. Aborting.');

@@ -73,9 +73,7 @@ export const DesignPanel = () => {
   const [toastMessage, setToastMessage] = useState('');
 
   // Use redux-undo state to determine if there is something to undo/redo
-  const undoableState = useAppSelector(
-    state => state.notebook.uiSpec
-  );
+  const undoableState = useAppSelector(state => state.notebook.uiSpec);
   const canUndo = undoableState.past.length > 0;
   const canRedo = undoableState.future.length > 0;
 

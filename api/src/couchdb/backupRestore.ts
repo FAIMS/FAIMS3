@@ -17,9 +17,9 @@
  * Description:
  *    Functions to backup and restore databases
  */
-import { batchWriteDocuments } from "@faims3/data-model";
-import { open } from "node:fs/promises";
-import { initialiseDataDb, localGetProjectsDb } from ".";
+import {batchWriteDocuments} from '@faims3/data-model';
+import {open} from 'node:fs/promises';
+import {initialiseDataDb, localGetProjectsDb} from '.';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -31,7 +31,7 @@ import { initialiseDataDb, localGetProjectsDb } from ".";
  */
 export const restoreFromBackup = async ({
   filename,
-  pattern = ".*",
+  pattern = '.*',
   force = false,
 }: {
   filename: string;
@@ -77,7 +77,7 @@ export const restoreFromBackup = async ({
 
       try {
         let doc = JSON.parse(line);
-        if (doc.type === "header") {
+        if (doc.type === 'header') {
           // write out any remaining documents to the previous db
           if (batch.length > 0 && db) {
             await batchWriteDocuments({
@@ -98,13 +98,13 @@ export const restoreFromBackup = async ({
           } else {
             console.log(`Processing database ${dbName}`);
           }
-          if (dbName.startsWith("projects")) {
+          if (dbName.startsWith('projects')) {
             // name will be eg. 'projects_default', where 'default' is the
             // conductor instance id
             // we'll put all projects into our projectsDB
             db = localGetProjectsDb();
-          } else if (!skipping && dbName.startsWith("data")) {
-            const projectName = dbName.split("||")[1];
+          } else if (!skipping && dbName.startsWith('data')) {
+            const projectName = dbName.split('||')[1];
             // TODO: set up permissions for the databases
             db = await initialiseDataDb({
               projectId: projectName,
@@ -114,7 +114,7 @@ export const restoreFromBackup = async ({
             // don't try to restore anything we don't know about
             db = undefined;
           }
-        } else if (!skipping && !doc.id.startsWith("_design") && db) {
+        } else if (!skipping && !doc.id.startsWith('_design') && db) {
           // don't try to restore design documents as these will have been
           // created on the database initialisation
           // Minimal document copy
@@ -146,7 +146,7 @@ export const restoreFromBackup = async ({
         doc = null;
       } catch (e: any) {
         console.error(
-          `error parsing JSON on line ${line_number} ${JSON.stringify(e, undefined, 2)} ${e.stack}`,
+          `error parsing JSON on line ${line_number} ${JSON.stringify(e, undefined, 2)} ${e.stack}`
         );
         return;
       }
@@ -154,7 +154,7 @@ export const restoreFromBackup = async ({
     }
     // Process final batch
     if (batch.length > 0 && db) {
-      await batchWriteDocuments({ db, documents: batch, writeOnClash: force });
+      await batchWriteDocuments({db, documents: batch, writeOnClash: force});
       batch = [];
     }
   } finally {

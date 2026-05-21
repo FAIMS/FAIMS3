@@ -49,9 +49,9 @@ describe('uiSpecificationMigration helpers', () => {
         },
       });
 
-      expect(
-        def.metadata.information.derivedFromTemplateId
-      ).toBe('template-abc');
+      expect(def.metadata.information.derivedFromTemplateId).toBe(
+        'template-abc'
+      );
       expect(def.metadata.custom).toEqual({extra_flag: true});
       expect(def.metadata.custom).not.toHaveProperty('template_id');
       expect(def.uiSpec.views).toEqual({});

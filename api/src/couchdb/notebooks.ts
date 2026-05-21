@@ -18,9 +18,9 @@
  *   This module provides functions to access notebooks from the database
  */
 
-import PouchDB from "pouchdb";
-import PouchDBFind from "pouchdb-find";
-import SecurityPlugin from "pouchdb-security-helper";
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+import SecurityPlugin from 'pouchdb-security-helper';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(SecurityPlugin);
 
@@ -53,31 +53,24 @@ import {
   userHasProjectRole,
   migrateNotebook,
   NotebookUiSpec,
-} from "@faims3/data-model";
+} from '@faims3/data-model';
 import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
-import {
-  initialiseDataDb,
-  localGetProjectsDb,
-  verifyCouchDBConnection,
-} from ".";
-import {
-  COUCHDB_PUBLIC_URL,
-  MIGRATE_NOTEBOOKS_ON_STARTUP,
-} from "../buildconfig";
-import * as Exceptions from "../exceptions";
-import { userCanDo } from "../middleware";
+import {initialiseDataDb, localGetProjectsDb, verifyCouchDBConnection} from '.';
+import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
+import * as Exceptions from '../exceptions';
+import {userCanDo} from '../middleware';
 
 function nowIso(): string {
   return new Date().toISOString();
 }
 
 function hasInlineUiSpecification(
-  project: ProjectDocument,
-): project is ProjectDocument & { uiSpecification: NotebookDefinition } {
+  project: ProjectDocument
+): project is ProjectDocument & {uiSpecification: NotebookDefinition} {
   return (
-    "uiSpecification" in project &&
+    'uiSpecification' in project &&
     project.uiSpecification != null &&
-    typeof project.uiSpecification === "object"
+    typeof project.uiSpecification === 'object'
   );
 }
 
@@ -97,18 +90,18 @@ export const getProjectIdsByTeamId = async ({
       {
         key: teamId,
         include_docs: false,
-      },
+      }
     );
     return resultList.rows
-      .filter((res) => {
-        return !res.id.startsWith("_");
+      .filter(res => {
+        return !res.id.startsWith('_');
       })
-      .map((res) => {
+      .map(res => {
         return res.id;
       });
   } catch (error) {
     throw new Exceptions.InternalSystemError(
-      "An error occurred while reading projects by team ID from the Project DB.",
+      'An error occurred while reading projects by team ID from the Project DB.'
     );
   }
 };
@@ -117,14 +110,14 @@ export const getProjectIdsByTeamId = async ({
  * Gets a single project document from DB
  */
 export const getProjectById = async (
-  id: string,
+  id: string
 ): Promise<ExistingProjectDocument> => {
   try {
     return await localGetProjectsDb().get(id);
   } catch (e) {
     // Could not find the project
     throw new Exceptions.ItemNotFoundException(
-      `Failed to find the project with ID ${id}.`,
+      `Failed to find the project with ID ${id}.`
     );
   }
 };
@@ -137,7 +130,7 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
     return await localGetProjectsDb().put(doc);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      "Could not put document into Projects DB.",
+      'Could not put document into Projects DB.'
     );
   }
 };
@@ -147,7 +140,7 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
  * template (`templateId` on the project document).
  */
 export const getProjectIdsReferencingTemplate = async (
-  templateId: string,
+  templateId: string
 ): Promise<string[]> => {
   const projectsDb = localGetProjectsDb();
   const res = await projectsDb.allDocs<ProjectDocument>({
@@ -156,7 +149,7 @@ export const getProjectIdsReferencingTemplate = async (
   const ids: string[] = [];
   for (const row of res.rows) {
     const doc = row.doc;
-    if (!doc || row.id.startsWith("_")) {
+    if (!doc || row.id.startsWith('_')) {
       continue;
     }
     if (doc.templateId === templateId) {
@@ -172,7 +165,7 @@ export const getProjectIdsReferencingTemplate = async (
  * references.
  */
 export const clearTemplateIdFromProjectsReferencingTemplate = async (
-  templateId: string,
+  templateId: string
 ): Promise<void> => {
   const projectIds = await getProjectIdsReferencingTemplate(templateId);
   const projectsDb = localGetProjectsDb();
@@ -181,7 +174,7 @@ export const clearTemplateIdFromProjectsReferencingTemplate = async (
     if (doc.templateId !== templateId) {
       continue;
     }
-    const updated: ProjectDocument = { ...doc };
+    const updated: ProjectDocument = {...doc};
     delete updated.templateId;
     await putProjectDoc(updated);
   }
@@ -197,10 +190,10 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
   const res = await projectsDb.allDocs<ProjectDocument>({
     include_docs: true,
   });
-  res.rows.forEach((e) => {
-    if (e.doc !== undefined && !e.id.startsWith("_")) {
+  res.rows.forEach(e => {
+    if (e.doc !== undefined && !e.id.startsWith('_')) {
       const doc = e.doc;
-      const project = { ...doc, _rev: undefined };
+      const project = {...doc, _rev: undefined};
       // delete rev so that we don't include in the result
       delete project._rev;
       // add database connection details
@@ -218,9 +211,9 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
  */
 export const getUserProjectsDirectory = async (
   user: Express.User,
-  includeArchived = false,
+  includeArchived = false
 ): Promise<ProjectDocument[]> => {
-  return (await getAllProjectsDirectory()).filter((p) => {
+  return (await getAllProjectsDirectory()).filter(p => {
     if (!includeArchived && p.status === ProjectStatus.ARCHIVED) {
       return false;
     }
@@ -240,7 +233,7 @@ export const getUserProjectsDirectory = async (
 export const getUserProjectsDetailed = async (
   user: Express.User,
   teamId: string | undefined = undefined,
-  includeArchived = false,
+  includeArchived = false
 ): Promise<APINotebookList[]> => {
   // Get projects DB
   const projectsDb = localGetProjectsDb();
@@ -260,9 +253,9 @@ export const getUserProjectsDetailed = async (
   }
 
   const userProjects = allDocs.rows
-    .map((r) => r.doc)
-    .filter((d) => d !== undefined && !d._id.startsWith("_"))
-    .filter((p) => {
+    .map(r => r.doc)
+    .filter(d => d !== undefined && !d._id.startsWith('_'))
+    .filter(p => {
       if (!includeArchived && p!.status === ProjectStatus.ARCHIVED) {
         return false;
       }
@@ -273,12 +266,12 @@ export const getUserProjectsDetailed = async (
       });
     });
 
-  const output = userProjects.map((project) => {
+  const output = userProjects.map(project => {
     if (!project) {
       return undefined;
     }
     const projectId = project._id;
-    const { uiSpecification: _omitUi, ...listFields } = project;
+    const {uiSpecification: _omitUi, ...listFields} = project;
     return {
       ...listFields,
       is_admin: userHasProjectRole({
@@ -290,7 +283,7 @@ export const getUserProjectsDetailed = async (
   });
 
   // Filter out null values from projects that user couldn't read
-  return output.filter((item) => item !== undefined);
+  return output.filter(item => item !== undefined);
 };
 
 /**
@@ -322,7 +315,7 @@ export const validateDatabases = async () => {
         const uiSpec = await getProjectUIModel(projectId);
         if (!uiSpec) {
           throw new Exceptions.InternalSystemError(
-            "Cannot find UI specification for project with ID " + projectId,
+            'Cannot find UI specification for project with ID ' + projectId
           );
         }
         await doNotebookMigration({
@@ -337,7 +330,7 @@ export const validateDatabases = async () => {
     }
     return report;
   } catch (e) {
-    return { valid: false };
+    return {valid: false};
   }
 };
 
@@ -352,7 +345,7 @@ export const doNotebookMigration = async ({
   projectId: string;
   uiSpec: NotebookUiSpec;
 }) => {
-  const { changed, migrated } = migrateNotebook({
+  const {changed, migrated} = migrateNotebook({
     uiSpec,
   });
   // update the notebook if it was changed by migration
@@ -372,7 +365,7 @@ export const doNotebookMigration = async ({
 export const createNotebook = async ({
   projectName,
   uiSpecification,
-  description = "",
+  description = '',
   templateId,
   teamId,
   createdBy,
@@ -409,7 +402,7 @@ export const createNotebook = async ({
     const projectsDB = localGetProjectsDb();
     await projectsDB.put(projectDoc);
   } catch (error) {
-    console.log("Error creating project entry in projects database:", error);
+    console.log('Error creating project entry in projects database:', error);
     return undefined;
   }
 
@@ -426,7 +419,7 @@ export const createNotebook = async ({
  */
 export const updateProjectMetadata = async (
   projectId: string,
-  payload: PutUpdateNotebookMetadataInput,
+  payload: PutUpdateNotebookMetadataInput
 ): Promise<ExistingProjectDocument> => {
   const project = await getProjectById(projectId);
   const updated: ProjectDocument = {
@@ -444,7 +437,9 @@ export const updateProjectMetadata = async (
  */
 export const updateProjectUiSpecification = async (
   projectId: string,
-  uiSpecification: PutUpdateNotebookUiSpecificationInput | NotebookUiSpecificationInput,
+  uiSpecification:
+    | PutUpdateNotebookUiSpecificationInput
+    | NotebookUiSpecificationInput
 ): Promise<ExistingProjectDocument> => {
   const normalizedUiSpecification =
     normalizeUiSpecificationOrThrow(uiSpecification);
@@ -472,7 +467,7 @@ export const changeNotebookName = async ({
   const project = await getProjectById(projectId);
 
   if (project.name !== name) {
-    const updated = { ...project, name, updatedAt: nowIso() };
+    const updated = {...project, name, updatedAt: nowIso()};
     await putProjectDoc(updated);
   }
 };
@@ -483,14 +478,14 @@ export const changeNotebookName = async ({
  */
 export const applyNotebookLifecycleStatus = async (
   project: ProjectDocument,
-  targetStatus: ProjectStatus,
+  targetStatus: ProjectStatus
 ): Promise<void> => {
   if (
     targetStatus === ProjectStatus.OPEN &&
     project.status === ProjectStatus.ARCHIVED
   ) {
     throw new Exceptions.InvalidRequestException(
-      "Cannot open an archived survey. Restore it from the archive first.",
+      'Cannot open an archived survey. Restore it from the archive first.'
     );
   }
 
@@ -519,7 +514,7 @@ export const changeNotebookTeam = async ({
   const project = await getProjectById(projectId);
 
   // update team
-  const updated = { ...project, ownedByTeamId: teamId, updatedAt: nowIso() };
+  const updated = {...project, ownedByTeamId: teamId, updatedAt: nowIso()};
   await putProjectDoc(updated);
 };
 
@@ -534,7 +529,7 @@ export const deleteNotebook = async (project_id: string) => {
   // If not found, 404
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
-      "Could not get the notebooks database. Contact a system administrator.",
+      'Could not get the notebooks database. Contact a system administrator.'
     );
   }
 
@@ -543,7 +538,7 @@ export const deleteNotebook = async (project_id: string) => {
 
   if (!projectDoc) {
     throw new Exceptions.ItemNotFoundException(
-      "Could not find the specified project. Are you sure the project id is correct?",
+      'Could not find the specified project. Are you sure the project id is correct?'
     );
   }
 
@@ -556,34 +551,34 @@ export const deleteNotebook = async (project_id: string) => {
 
 export const writeProjectMetadata = async (
   metaDB: DatabaseInterface,
-  metadata: any,
+  metadata: any
 ) => {
   // add metadata, one document per attribute value pair
   for (const field in metadata) {
     const doc: any = {
-      _id: PROJECT_METADATA_PREFIX + "-" + field,
+      _id: PROJECT_METADATA_PREFIX + '-' + field,
       is_attachment: false, // TODO: well it might not be false! Deal with attachments
       metadata: metadata[field],
     };
     // is there already a version of this document?
     try {
       const existingDoc = await metaDB.get(doc._id);
-      doc["_rev"] = existingDoc["_rev"];
+      doc['_rev'] = existingDoc['_rev'];
     } catch {
       // no existing document, so don't set the rev
     }
 
-    await safeWriteDocument({ db: metaDB, data: doc });
+    await safeWriteDocument({db: metaDB, data: doc});
   }
   // also add the whole metadata as 'projectvalue'
-  metadata._id = PROJECT_METADATA_PREFIX + "-projectvalue";
+  metadata._id = PROJECT_METADATA_PREFIX + '-projectvalue';
   try {
     const existingDoc = await metaDB.get(metadata._id);
-    metadata["_rev"] = existingDoc["_rev"];
+    metadata['_rev'] = existingDoc['_rev'];
   } catch {
     // no existing document, so don't set the rev
   }
-  await safeWriteDocument({ db: metaDB, data: metadata });
+  await safeWriteDocument({db: metaDB, data: metadata});
   return metadata;
 };
 
@@ -594,7 +589,7 @@ export const writeProjectMetadata = async (
  * @returns The decoded project UI model (not compiled)
  */
 export const getProjectUIModel = async (
-  projectId: string,
+  projectId: string
 ): Promise<NotebookUiSpec> => {
   const project = await getProjectById(projectId);
   return project.uiSpecification.uiSpec;
@@ -606,7 +601,7 @@ export const getProjectUIModel = async (
  * @returns true if this is a valid project identifier
  */
 export const validateNotebookID = async (
-  project_id: string,
+  project_id: string
 ): Promise<boolean> => {
   try {
     const projectsDB = localGetProjectsDb();
@@ -633,11 +628,11 @@ export const getRolesForNotebook = () => {
 };
 
 export async function countRecordsInNotebook(
-  project_id: ProjectID,
+  project_id: ProjectID
 ): Promise<number> {
   const dataDB = await getDataDB(project_id);
   try {
-    const res = await dataDB.query("index/recordCount");
+    const res = await dataDB.query('index/recordCount');
     if (res.rows.length === 0) {
       return 0;
     }
@@ -652,5 +647,5 @@ export async function countRecordsInNotebook(
  * For saving and loading attachment with type faims-attachment::Files
  */
 
-setAttachmentLoaderForType("faims-attachment::Files", file_attachments_to_data);
-setAttachmentDumperForType("faims-attachment::Files", file_data_to_attachments);
+setAttachmentLoaderForType('faims-attachment::Files', file_attachments_to_data);
+setAttachmentDumperForType('faims-attachment::Files', file_data_to_attachments);

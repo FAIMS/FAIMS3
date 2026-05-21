@@ -178,13 +178,11 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project without teamId
     const projectWithoutTeam = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Project without team',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          // No teamId
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project without team',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        // No teamId
+      }),
       adminToken
     )
       .expect(200)
@@ -192,13 +190,11 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project with teamId
     const projectWithTeam = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Project with team',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project with team',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       adminToken
     )
       .expect(200)
@@ -280,13 +276,11 @@ describe('Team integration with templates and projects', () => {
 
     // Verify API rejects member's attempt to create a project in the team
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Member team project attempt',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Member team project attempt',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       memberToken
     ).expect(401);
 
@@ -329,13 +323,11 @@ describe('Team integration with templates and projects', () => {
     ).to.be.true;
     // Try to create a project in the team using the API
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Team project via API',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Team project via API',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       managerToken
     ).expect(200);
     // Try to create a template in the team using the API
@@ -407,13 +399,11 @@ describe('Team integration with templates and projects', () => {
 
     // Try to create a project in the team using the API - should be denied
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Unauthorized team project',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Unauthorized team project',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       userToken
     ).expect(401);
 
@@ -439,13 +429,11 @@ describe('Team integration with templates and projects', () => {
 
     // System admin should be able to create projects and templates in any team
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Admin team project',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Admin team project',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       adminToken
     ).expect(200);
 
@@ -746,13 +734,11 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project in team 1
     const project = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Update Team Project',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-          teamId: team1._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Update Team Project',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team1._id,
+      }),
       adminToken
     )
       .expect(200)
@@ -763,12 +749,10 @@ describe('Team integration with templates and projects', () => {
 
     // Update template - teamId should persist even if not included in update
     await requestAuthAndType(
-      request(app)
-        .put(`${TEMPLATE_API_BASE}/${template._id}`)
-        .send({
-          name: templateData.name,
-          description: 'updated-value',
-        }),
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
+        name: templateData.name,
+        description: 'updated-value',
+      }),
       adminToken
     ).expect(200);
 
@@ -777,11 +761,9 @@ describe('Team integration with templates and projects', () => {
 
     // Update project - teamId should persist
     await requestAuthAndType(
-      request(app)
-        .put(`${NOTEBOOKS_API_BASE}/${project.notebook}`)
-        .send({
-          name: 'Project with team',
-        }),
+      request(app).put(`${NOTEBOOKS_API_BASE}/${project.notebook}`).send({
+        name: 'Project with team',
+      }),
       adminToken
     ).expect(200);
 
@@ -801,12 +783,10 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project without teamId
     const project = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Project to Assign',
-          uiSpecification: EMPTY_UI_SPECIFICATION,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project to Assign',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+      }),
       adminToken
     )
       .expect(200)

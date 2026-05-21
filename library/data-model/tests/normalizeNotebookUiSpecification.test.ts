@@ -12,7 +12,12 @@ describe('notebookUiSpecificationNeedsMigration', () => {
     expect(
       notebookUiSpecificationNeedsMigration({
         metadata: {},
-        'ui-specification': {fields: {}, fviews: {}, viewsets: {}, visible_types: []},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        },
       })
     ).toBe(true);
   });

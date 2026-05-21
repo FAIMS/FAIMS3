@@ -201,7 +201,11 @@ export const EditRecordPage = () => {
   });
 
   // Query to fetch the relevant viewset
-  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec: engineUiSpec});
+  const relevantUiSpec = useUiSpecLayout({
+    dataDb,
+    recordId,
+    uiSpec: engineUiSpec,
+  });
 
   // Generate attachment service for this project
   const attachmentEngine = () => {

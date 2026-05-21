@@ -338,7 +338,8 @@ export type PutUpdateNotebookMetadataInput = z.infer<
 >;
 
 /** @deprecated Use {@link PutUpdateNotebookMetadataInputSchema} */
-export const PutUpdateNotebookInputSchema = PutUpdateNotebookMetadataInputSchema;
+export const PutUpdateNotebookInputSchema =
+  PutUpdateNotebookMetadataInputSchema;
 export type PutUpdateNotebookInput = PutUpdateNotebookMetadataInput;
 
 /** PUT /api/notebooks/:id/uiSpecification — full replace of the design bundle (loose input; migrated server-side). */
@@ -411,8 +412,7 @@ export type GetExportNotebookResponse = z.infer<
 export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   name: true,
   description: true,
-})
-  .extend({
+}).extend({
   uiSpecification: NotebookUiSpecificationInputSchema,
   // prefer to use a nicer team ID input field
   teamId: z.string().trim().min(1).optional(),

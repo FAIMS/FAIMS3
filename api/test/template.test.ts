@@ -36,7 +36,6 @@ import {
   PostCreateTemplateResponseSchema,
   PutChangeTemplateTeamInput,
   PutUpdateTemplateInput,
-  PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   PutUpdateTemplateResponseSchema,
   TemplateApiDocumentSchema,
@@ -44,11 +43,12 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {Express} from 'express';
-import fs from 'fs';
 import request from 'supertest';
-import {app} from '../src/expressSetup';
 import {getProjectById} from '../src/couchdb/notebooks';
 import {getCouchUserFromEmailOrUserId} from '../src/couchdb/users';
+import {app} from '../src/expressSetup';
+import {sampleCreateTemplatePayload} from './sampleNotebook';
+import {createSampleTeam} from './teams.test';
 import {
   adminToken,
   adminUserName,
@@ -57,13 +57,6 @@ import {
   notebookUserToken,
   requestAuthAndType,
 } from './utils';
-import {createSampleTeam} from './teams.test';
-import {
-  EMPTY_UI_SPECIFICATION,
-  readSampleNotebookFile,
-  sampleCreateNotebookPayload,
-  sampleCreateTemplatePayload,
-} from './sampleNotebook';
 
 const NOTEBOOKS_API_BASE = '/api/notebooks';
 
@@ -160,9 +153,7 @@ const changeTemplateTeam = async (
   token: string = adminToken
 ): Promise<PutUpdateTemplateResponse> => {
   return await requestAuthAndType(
-    request(app)
-      .put(`${TEMPLATE_API_BASE}/${templateId}/team`)
-      .send(payload),
+    request(app).put(`${TEMPLATE_API_BASE}/${templateId}/team`).send(payload),
     token
   )
     .expect(200)
@@ -666,11 +657,9 @@ describe('template API tests', () => {
     });
 
     const response = await requestAuthAndType(
-      request(app)
-        .put(`${TEMPLATE_API_BASE}/${template._id}/team`)
-        .send({
-          teamId: 'non-existent-team-id',
-        }),
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}/team`).send({
+        teamId: 'non-existent-team-id',
+      }),
       adminToken
     );
 
@@ -780,9 +769,9 @@ describe('template API tests', () => {
       .then(response => {
         // Parse response as the get model
 
-        expect(response.body.uiSpecification.metadata.custom?.test_key).to.equal(
-          notebook.uiSpecification.metadata.custom?.test_key
-        );
+        expect(
+          response.body.uiSpecification.metadata.custom?.test_key
+        ).to.equal(notebook.uiSpecification.metadata.custom?.test_key);
 
         expect(response.body.templateId).to.equal(template._id);
       });
@@ -1061,11 +1050,13 @@ describe('template API tests', () => {
       name: 'no-inline-visibility',
     });
     await requestAuthAndType(
-      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
-        name: template.name,
-        description: template.description,
-        isPublic: true,
-      } as PutUpdateTemplateInput & {isPublic: boolean})
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}`)
+        .send({
+          name: template.name,
+          description: template.description,
+          isPublic: true,
+        } as PutUpdateTemplateInput & {isPublic: boolean})
     ).expect(200);
 
     const unchanged = await getATemplate(app, template._id);

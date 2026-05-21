@@ -17,7 +17,11 @@
  */
 
 import {v4 as uuidv4} from 'uuid';
-import type {Notebook, NotebookUISpec, NotebookWithHistory} from '../../state/initial';
+import type {
+  Notebook,
+  NotebookUISpec,
+  NotebookWithHistory,
+} from '../../state/initial';
 import {designerHistoryToNotebookDefinition} from '../../integration/notebookAdapters';
 
 /** Deep clone via JSON so exported notebooks stay plain serialisable objects. */

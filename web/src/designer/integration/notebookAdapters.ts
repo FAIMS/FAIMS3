@@ -17,7 +17,11 @@
  */
 
 import type {NotebookDefinition} from '@faims3/data-model';
-import type {Notebook, NotebookUISpec, NotebookWithHistory} from '../state/initial';
+import type {
+  Notebook,
+  NotebookUISpec,
+  NotebookWithHistory,
+} from '../state/initial';
 import {
   normalizeApiUiSpecification,
   type NormalizeApiUiSpecificationResult,

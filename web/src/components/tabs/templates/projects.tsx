@@ -20,9 +20,7 @@ const TemplateProjects = ({templateId}: {templateId: string}) => {
   return (
     <DataTable
       columns={columns}
-      data={
-        data?.filter(notebook => notebook.templateId === templateId) || []
-      }
+      data={data?.filter(notebook => notebook.templateId === templateId) || []}
       button={<ProjectFromTemplateDialog />}
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}

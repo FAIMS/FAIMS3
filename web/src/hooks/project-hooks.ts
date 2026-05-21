@@ -1,6 +1,9 @@
 import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
-import type {ProjectStatus, PutUpdateNotebookMetadataInput} from '@faims3/data-model';
+import type {
+  ProjectStatus,
+  PutUpdateNotebookMetadataInput,
+} from '@faims3/data-model';
 
 export function errorMessageFromNotebookJsonBody(
   json: unknown,

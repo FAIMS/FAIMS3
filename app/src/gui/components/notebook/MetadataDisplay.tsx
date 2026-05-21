@@ -153,7 +153,9 @@ export const MetadataDisplayComponent = (
                 </TableRow>
                 <TableRow>
                   <TableCell>
-                    <Typography variant={'overline'}>Notebook version</Typography>
+                    <Typography variant={'overline'}>
+                      Notebook version
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">

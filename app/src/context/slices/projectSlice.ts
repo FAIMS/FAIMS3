@@ -1866,8 +1866,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                   value.details.description ?? existingProject.description,
                 templateId:
                   value.details.templateId ?? existingProject.templateId,
-                updatedAt:
-                  value.details.updatedAt ?? existingProject.updatedAt,
+                updatedAt: value.details.updatedAt ?? existingProject.updatedAt,
               })
             );
           }

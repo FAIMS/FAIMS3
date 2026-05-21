@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface} from '../types';
-import { NotebookUiSpec } from '../uiSpecification';
+import {NotebookUiSpec} from '../uiSpecification';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
 import {differenceSets} from '../utils';
 import * as Exceptions from './exceptions';

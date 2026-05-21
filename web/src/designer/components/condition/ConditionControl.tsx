@@ -236,9 +236,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const allFields = useAppSelector(
     state => state.notebook.uiSpec.present.fields
   );
-  const views = useAppSelector(
-    state => state.notebook.uiSpec.present.views
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   // work out which fields to show in the select/combobox, remove either
   // the current field or the fields in the current view

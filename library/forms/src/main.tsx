@@ -14,9 +14,7 @@ initialiseMaps();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App
-        notebookDefinition={sampleNotebook as NotebookDefinition}
-      />
+      <App notebookDefinition={sampleNotebook as NotebookDefinition} />
     </QueryClientProvider>
   </StrictMode>
 );

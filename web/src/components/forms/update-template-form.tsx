@@ -24,7 +24,9 @@ interface UpdateTemplateFormProps {
   onSuccess: () => void;
 }
 
-function teamIdFromUpload(payload: Record<string, unknown>): string | undefined {
+function teamIdFromUpload(
+  payload: Record<string, unknown>
+): string | undefined {
   if (typeof payload.teamId === 'string' && payload.teamId.trim().length > 0) {
     return payload.teamId.trim();
   }
@@ -138,4 +140,4 @@ export function UpdateTemplateForm({
       warningMessage={`Editing the template does not change any of the ${NOTEBOOK_NAME}s created from it.  This may create inconsistencies in your data.`}
     />
   );
-};
+}

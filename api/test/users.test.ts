@@ -36,11 +36,10 @@ import {
   userProjectRoles,
 } from '@faims3/data-model';
 import {assert, expect} from 'chai';
-import * as fs from 'fs';
-import {validateLocalUser} from '../src/auth/strategies/localStrategy';
+import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
+import {validateLocalUser} from '../src/auth/strategies/localStrategy';
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
-import {createNotebook} from '../src/couchdb/notebooks';
 import {
   createUser,
   getUserInfoForProject,
@@ -48,7 +47,6 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
-import {addLocalPasswordForUser} from '../src/auth/helpers';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();

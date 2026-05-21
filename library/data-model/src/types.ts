@@ -204,7 +204,6 @@ export type ProjectDataObject =
   | EncodedRecord
   | FAIMSAttachment;
 
-
 //to get the metadata for the draft, for draft_table
 export interface DraftMetadata {
   _id: string;

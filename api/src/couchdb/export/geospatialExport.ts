@@ -14,13 +14,13 @@ import {
   ProjectID,
   buildViewsetFieldSummaries,
   notebookRecordIterator,
-} from "@faims3/data-model";
-import archiver from "archiver";
-import { PassThrough } from "stream";
-import { getDataDb } from "..";
-import { getProjectUIModel } from "../notebooks";
-import { buildExportReadyDataCopy } from "./stripDeletedRelatedRefs";
-import { convertDataForOutput } from "./utils";
+} from '@faims3/data-model';
+import archiver from 'archiver';
+import {PassThrough} from 'stream';
+import {getDataDb} from '..';
+import {getProjectUIModel} from '../notebooks';
+import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
+import {convertDataForOutput} from './utils';
 
 /**
  * Statistics returned from spatial export operations.
@@ -75,17 +75,17 @@ interface ProcessedRecord {
  * @returns Context object with database, UI spec, field map, and spatial field status
  */
 async function initSpatialExportContext(
-  projectId: ProjectID,
+  projectId: ProjectID
 ): Promise<SpatialExportContext> {
   const dataDb = await getDataDb(projectId);
   const uiSpecification = await getProjectUIModel(projectId);
-  const viewFieldsMap = buildViewsetFieldSummaries({ uiSpecification });
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
 
-  const hasSpatialFields = Object.keys(viewFieldsMap).some((viewsetID) =>
-    viewFieldsMap[viewsetID].some((fSummary) => fSummary.isSpatial),
+  const hasSpatialFields = Object.keys(viewFieldsMap).some(viewsetID =>
+    viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
   );
 
-  return { dataDb, uiSpecification, viewFieldsMap, hasSpatialFields };
+  return {dataDb, uiSpecification, viewFieldsMap, hasSpatialFields};
 }
 
 /**
@@ -97,7 +97,7 @@ async function initSpatialExportContext(
  */
 async function createRecordIterator(
   projectId: ProjectID,
-  context: SpatialExportContext,
+  context: SpatialExportContext
 ) {
   return notebookRecordIterator({
     dataDb: context.dataDb,
@@ -114,7 +114,7 @@ async function createRecordIterator(
  * @returns True if the project contains spatial fields
  */
 export const projectHasSpatialFields = async (
-  projectId: ProjectID,
+  projectId: ProjectID
 ): Promise<boolean> => {
   const context = await initSpatialExportContext(projectId);
   return context.hasSpatialFields;
@@ -138,7 +138,7 @@ export async function processRecordForSpatial(
   viewFieldsMap: Record<string, FieldSummary[]>,
   filenames: string[],
   dataDb: DatabaseInterface<ProjectDataObject>,
-  uiSpecification: NotebookUiSpec,
+  uiSpecification: NotebookUiSpec
 ): Promise<ProcessedRecord> {
   const hrid = record.hrid || record.record_id;
   const viewID = record.type;
@@ -165,7 +165,7 @@ export async function processRecordForSpatial(
   const fieldInfos = viewFieldsMap[viewID];
 
   if (!fieldInfos) {
-    return { hrid, baseProperties, geometries };
+    return {hrid, baseProperties, geometries};
   }
 
   // Always add converted data to properties - do this once as it's constant for
@@ -176,10 +176,10 @@ export async function processRecordForSpatial(
     record.annotations,
     hrid,
     filenames,
-    viewID,
+    viewID
   );
 
-  fieldInfos.forEach((fieldInfo) => {
+  fieldInfos.forEach(fieldInfo => {
     if (!Object.keys(data).includes(fieldInfo.name)) {
       return;
     }
@@ -196,7 +196,7 @@ export async function processRecordForSpatial(
     Object.assign(baseProperties, convertedData);
   });
 
-  return { hrid, baseProperties, geometries };
+  return {hrid, baseProperties, geometries};
 }
 
 /**
@@ -208,13 +208,13 @@ export async function processRecordForSpatial(
  */
 function isSpatialFieldWithData(
   fieldInfo: FieldSummary,
-  fieldData: any,
+  fieldData: any
 ): boolean {
   return (
     !!fieldInfo.isSpatial &&
     fieldData !== undefined &&
     fieldData !== null &&
-    fieldData !== ""
+    fieldData !== ''
   );
 }
 
@@ -229,13 +229,13 @@ function isSpatialFieldWithData(
 function extractGeometry(
   fieldData: any,
   fieldInfo: FieldSummary,
-  recordId: string,
+  recordId: string
 ): ExtractedGeometry | null {
   try {
     let feature: any = {};
-    if (fieldData.type === "FeatureCollection") {
-      feature = fieldData["features"][0];
-    } else if (fieldData.type === "Feature") {
+    if (fieldData.type === 'FeatureCollection') {
+      feature = fieldData['features'][0];
+    } else if (fieldData.type === 'Feature') {
       feature = fieldData;
     }
 
@@ -253,12 +253,12 @@ function extractGeometry(
     }
 
     console.warn(
-      `Encountered geometry which appeared valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}.`,
+      `Encountered geometry which appeared valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}.`
     );
     return null;
   } catch (e) {
     console.error(
-      `Issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${recordId}.`,
+      `Issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${recordId}.`
     );
     return null;
   }
@@ -273,7 +273,7 @@ function extractGeometry(
  */
 function buildFeatureProperties(
   baseProperties: Record<string, any>,
-  geometrySource: ExtractedGeometry["geometrySource"],
+  geometrySource: ExtractedGeometry['geometrySource']
 ): Record<string, any> {
   return {
     ...baseProperties,
@@ -303,7 +303,7 @@ function writeGeoJSONHeader(stream: NodeJS.WritableStream): void {
  * @param stream - Writable stream
  */
 function writeGeoJSONFooter(stream: NodeJS.WritableStream): void {
-  stream.write("]}");
+  stream.write(']}');
 }
 
 /**
@@ -318,14 +318,14 @@ function writeGeoJSONFeature(
   stream: NodeJS.WritableStream,
   geom: ExtractedGeometry,
   properties: Record<string, any>,
-  isFirst: boolean,
+  isFirst: boolean
 ): void {
   const output = {
     type: geom.type,
     geometry: geom.geometry,
     properties,
   };
-  stream.write(`${isFirst ? "" : ","}${JSON.stringify(output)}`);
+  stream.write(`${isFirst ? '' : ','}${JSON.stringify(output)}`);
 }
 
 // ============================================================================
@@ -340,7 +340,7 @@ function writeGeoJSONFeature(
 function writeKMLHeader(stream: NodeJS.WritableStream): void {
   stream.write('<?xml version="1.0" encoding="UTF-8"?>');
   stream.write('<kml xmlns="http://www.opengis.net/kml/2.2">');
-  stream.write("<Document>");
+  stream.write('<Document>');
 }
 
 /**
@@ -349,8 +349,8 @@ function writeKMLHeader(stream: NodeJS.WritableStream): void {
  * @param stream - Writable stream
  */
 function writeKMLFooter(stream: NodeJS.WritableStream): void {
-  stream.write("</Document>");
-  stream.write("</kml>");
+  stream.write('</Document>');
+  stream.write('</kml>');
 }
 
 /**
@@ -368,22 +368,22 @@ function writeKMLPlacemark(
   name: string,
   geometry: any,
   properties: Record<string, any>,
-  recordId: string,
+  recordId: string
 ): boolean {
   try {
     const escapedName = escapeXml(name);
     const geometryKML = convertGeometryToKML(geometry);
     const extendedData = buildExtendedData(properties);
 
-    stream.write("<Placemark>");
+    stream.write('<Placemark>');
     stream.write(`<name>${escapedName}</name>`);
     stream.write(extendedData);
     stream.write(geometryKML);
-    stream.write("</Placemark>");
+    stream.write('</Placemark>');
     return true;
   } catch (e) {
     console.error(
-      `Error converting geometry to KML for record ${recordId}: ${e}`,
+      `Error converting geometry to KML for record ${recordId}: ${e}`
     );
     return false;
   }
@@ -396,13 +396,13 @@ function writeKMLPlacemark(
  * @returns XML-escaped string
  */
 function escapeXml(unsafe: string): string {
-  if (typeof unsafe !== "string") return String(unsafe);
+  if (typeof unsafe !== 'string') return String(unsafe);
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 /**
@@ -417,12 +417,12 @@ function convertGeometryToKML(geometry: any): string {
   const coords = geometry.coordinates;
 
   const formatCoords = (coordArray: any): string => {
-    if (typeof coordArray[0] === "number") {
+    if (typeof coordArray[0] === 'number') {
       return coordArray.length === 3
         ? `${coordArray[0]},${coordArray[1]},${coordArray[2]}`
         : `${coordArray[0]},${coordArray[1]},0`;
     }
-    return coordArray.map((coord: any) => formatCoords(coord)).join(" ");
+    return coordArray.map((coord: any) => formatCoords(coord)).join(' ');
   };
 
   const formatPolygon = (polyCoords: any[]): string => {
@@ -431,37 +431,37 @@ function convertGeometryToKML(geometry: any): string {
       .slice(1)
       .map(
         (ring: any) =>
-          `<innerBoundaryIs><LinearRing><coordinates>${formatCoords(ring)}</coordinates></LinearRing></innerBoundaryIs>`,
+          `<innerBoundaryIs><LinearRing><coordinates>${formatCoords(ring)}</coordinates></LinearRing></innerBoundaryIs>`
       )
-      .join("");
+      .join('');
     return `<Polygon>${outer}${inner}</Polygon>`;
   };
 
   switch (type) {
-    case "Point":
+    case 'Point':
       return `<Point><coordinates>${formatCoords(coords)}</coordinates></Point>`;
-    case "LineString":
+    case 'LineString':
       return `<LineString><coordinates>${formatCoords(coords)}</coordinates></LineString>`;
-    case "Polygon":
+    case 'Polygon':
       return formatPolygon(coords);
-    case "MultiPoint":
+    case 'MultiPoint':
       return `<MultiGeometry>${coords
         .map(
           (coord: any) =>
-            `<Point><coordinates>${formatCoords(coord)}</coordinates></Point>`,
+            `<Point><coordinates>${formatCoords(coord)}</coordinates></Point>`
         )
-        .join("")}</MultiGeometry>`;
-    case "MultiLineString":
+        .join('')}</MultiGeometry>`;
+    case 'MultiLineString':
       return `<MultiGeometry>${coords
         .map(
           (lineCoords: any) =>
-            `<LineString><coordinates>${formatCoords(lineCoords)}</coordinates></LineString>`,
+            `<LineString><coordinates>${formatCoords(lineCoords)}</coordinates></LineString>`
         )
-        .join("")}</MultiGeometry>`;
-    case "MultiPolygon":
+        .join('')}</MultiGeometry>`;
+    case 'MultiPolygon':
       return `<MultiGeometry>${coords
         .map((polyCoords: any) => formatPolygon(polyCoords))
-        .join("")}</MultiGeometry>`;
+        .join('')}</MultiGeometry>`;
     default:
       throw new Error(`Unsupported geometry type: ${type}`);
   }
@@ -479,15 +479,15 @@ function buildExtendedData(properties: Record<string, any>): string {
       const displayName = escapeXml(key);
       let displayValue: string;
       if (value === null || value === undefined) {
-        displayValue = "";
-      } else if (typeof value === "object") {
+        displayValue = '';
+      } else if (typeof value === 'object') {
         displayValue = escapeXml(JSON.stringify(value));
       } else {
         displayValue = escapeXml(String(value));
       }
       return `<Data name="${displayName}"><value>${displayValue}</value></Data>`;
     })
-    .join("");
+    .join('');
 
   return `<ExtendedData>${dataElements}</ExtendedData>`;
 }
@@ -504,8 +504,8 @@ function buildExtendedData(properties: Record<string, any>): string {
  */
 function waitForStream(stream: PassThrough): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    stream.on("finish", resolve);
-    stream.on("error", reject);
+    stream.on('finish', resolve);
+    stream.on('error', reject);
   });
 }
 
@@ -518,7 +518,7 @@ function waitForStream(stream: PassThrough): Promise<void> {
  */
 function createInitialStats(
   filename: string,
-  hasSpatialFields: boolean,
+  hasSpatialFields: boolean
 ): SpatialAppendStats {
   return {
     featureCount: 0,
@@ -556,29 +556,29 @@ export const appendGeoJSONToArchive = async ({
   }
 
   const geojsonStream = new PassThrough();
-  archive.append(geojsonStream, { name: filename });
+  archive.append(geojsonStream, {name: filename});
 
   const filenames: string[] = [];
   writeGeoJSONHeader(geojsonStream);
 
   let isFirstFeature = true;
   const iterator = await createRecordIterator(projectId, context);
-  let { record, done } = await iterator.next();
+  let {record, done} = await iterator.next();
 
   while (!done) {
     if (record) {
-      const { baseProperties, geometries } = await processRecordForSpatial(
+      const {baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
         filenames,
         context.dataDb,
-        context.uiSpecification,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {
         const properties = buildFeatureProperties(
           baseProperties,
-          geom.geometrySource,
+          geom.geometrySource
         );
         writeGeoJSONFeature(geojsonStream, geom, properties, isFirstFeature);
         isFirstFeature = false;
@@ -623,29 +623,28 @@ export const appendKMLToArchive = async ({
   }
 
   const kmlStream = new PassThrough();
-  archive.append(kmlStream, { name: filename });
+  archive.append(kmlStream, {name: filename});
 
   const filenames: string[] = [];
   writeKMLHeader(kmlStream);
 
   const iterator = await createRecordIterator(projectId, context);
-  let { record, done } = await iterator.next();
+  let {record, done} = await iterator.next();
 
   while (!done) {
     if (record) {
-      const { hrid, baseProperties, geometries } =
-        await processRecordForSpatial(
-          record,
-          context.viewFieldsMap,
-          filenames,
-          context.dataDb,
-          context.uiSpecification,
-        );
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
+        record,
+        context.viewFieldsMap,
+        filenames,
+        context.dataDb,
+        context.uiSpecification
+      );
 
       for (const geom of geometries) {
         const properties = buildFeatureProperties(
           baseProperties,
-          geom.geometrySource,
+          geom.geometrySource
         );
         if (
           writeKMLPlacemark(
@@ -653,7 +652,7 @@ export const appendKMLToArchive = async ({
             hrid,
             geom.geometry,
             properties,
-            record.record_id,
+            record.record_id
           )
         ) {
           stats.featureCount++;
@@ -693,23 +692,23 @@ export const appendBothSpatialFormatsToArchive = async ({
   archive: archiver.Archiver;
   geojsonFilename: string;
   kmlFilename: string;
-}): Promise<{ geojson: SpatialAppendStats; kml: SpatialAppendStats }> => {
+}): Promise<{geojson: SpatialAppendStats; kml: SpatialAppendStats}> => {
   const context = await initSpatialExportContext(projectId);
   const geojsonStats = createInitialStats(
     geojsonFilename,
-    context.hasSpatialFields,
+    context.hasSpatialFields
   );
   const kmlStats = createInitialStats(kmlFilename, context.hasSpatialFields);
 
   if (!context.hasSpatialFields) {
-    return { geojson: geojsonStats, kml: kmlStats };
+    return {geojson: geojsonStats, kml: kmlStats};
   }
 
   const geojsonStream = new PassThrough();
   const kmlStream = new PassThrough();
 
-  archive.append(geojsonStream, { name: geojsonFilename });
-  archive.append(kmlStream, { name: kmlFilename });
+  archive.append(geojsonStream, {name: geojsonFilename});
+  archive.append(kmlStream, {name: kmlFilename});
 
   const filenames: string[] = [];
 
@@ -718,23 +717,22 @@ export const appendBothSpatialFormatsToArchive = async ({
 
   let isFirstGeoJSONFeature = true;
   const iterator = await createRecordIterator(projectId, context);
-  let { record, done } = await iterator.next();
+  let {record, done} = await iterator.next();
 
   while (!done) {
     if (record) {
-      const { hrid, baseProperties, geometries } =
-        await processRecordForSpatial(
-          record,
-          context.viewFieldsMap,
-          filenames,
-          context.dataDb,
-          context.uiSpecification,
-        );
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
+        record,
+        context.viewFieldsMap,
+        filenames,
+        context.dataDb,
+        context.uiSpecification
+      );
 
       for (const geom of geometries) {
         const properties = buildFeatureProperties(
           baseProperties,
-          geom.geometrySource,
+          geom.geometrySource
         );
 
         // Write GeoJSON feature
@@ -742,7 +740,7 @@ export const appendBothSpatialFormatsToArchive = async ({
           geojsonStream,
           geom,
           properties,
-          isFirstGeoJSONFeature,
+          isFirstGeoJSONFeature
         );
         isFirstGeoJSONFeature = false;
         geojsonStats.featureCount++;
@@ -754,7 +752,7 @@ export const appendBothSpatialFormatsToArchive = async ({
             hrid,
             geom.geometry,
             properties,
-            record.record_id,
+            record.record_id
           )
         ) {
           kmlStats.featureCount++;
@@ -775,7 +773,7 @@ export const appendBothSpatialFormatsToArchive = async ({
 
   await Promise.all([waitForStream(geojsonStream), waitForStream(kmlStream)]);
 
-  return { geojson: geojsonStats, kml: kmlStats };
+  return {geojson: geojsonStats, kml: kmlStats};
 };
 
 // ============================================================================
@@ -791,14 +789,14 @@ export const appendBothSpatialFormatsToArchive = async ({
  */
 export const streamNotebookRecordsAsGeoJSON = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream,
+  res: NodeJS.WritableStream
 ): Promise<void> => {
   const context = await initSpatialExportContext(projectId);
 
   if (!context.hasSpatialFields) {
     res.end();
     throw new Error(
-      "No spatial fields in any view, cannot produce a GeoJSON export!",
+      'No spatial fields in any view, cannot produce a GeoJSON export!'
     );
   }
 
@@ -807,22 +805,22 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
   let isFirstFeature = true;
   const iterator = await createRecordIterator(projectId, context);
-  let { record, done } = await iterator.next();
+  let {record, done} = await iterator.next();
 
   while (!done) {
     if (record) {
-      const { baseProperties, geometries } = await processRecordForSpatial(
+      const {baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
         filenames,
         context.dataDb,
-        context.uiSpecification,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {
         const properties = buildFeatureProperties(
           baseProperties,
-          geom.geometrySource,
+          geom.geometrySource
         );
         writeGeoJSONFeature(res, geom, properties, isFirstFeature);
         isFirstFeature = false;
@@ -847,14 +845,14 @@ export const streamNotebookRecordsAsGeoJSON = async (
  */
 export const streamNotebookRecordsAsKML = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream,
+  res: NodeJS.WritableStream
 ): Promise<void> => {
   const context = await initSpatialExportContext(projectId);
 
   if (!context.hasSpatialFields) {
     res.end();
     throw new Error(
-      "No spatial fields in any view, cannot produce a KML export!",
+      'No spatial fields in any view, cannot produce a KML export!'
     );
   }
 
@@ -862,30 +860,29 @@ export const streamNotebookRecordsAsKML = async (
   writeKMLHeader(res);
 
   const iterator = await createRecordIterator(projectId, context);
-  let { record, done } = await iterator.next();
+  let {record, done} = await iterator.next();
 
   while (!done) {
     if (record) {
-      const { hrid, baseProperties, geometries } =
-        await processRecordForSpatial(
-          record,
-          context.viewFieldsMap,
-          filenames,
-          context.dataDb,
-          context.uiSpecification,
-        );
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
+        record,
+        context.viewFieldsMap,
+        filenames,
+        context.dataDb,
+        context.uiSpecification
+      );
 
       for (const geom of geometries) {
         const properties = buildFeatureProperties(
           baseProperties,
-          geom.geometrySource,
+          geom.geometrySource
         );
         writeKMLPlacemark(
           res,
           hrid,
           geom.geometry,
           properties,
-          record.record_id,
+          record.record_id
         );
       }
     }

@@ -29,7 +29,12 @@ import {
 import {ConditionType} from '../types/condition';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
-export type {NotebookDefinition, NotebookInformation, NotebookMetadata, NotebookSettings};
+export type {
+  NotebookDefinition,
+  NotebookInformation,
+  NotebookMetadata,
+  NotebookSettings,
+};
 
 /** Merged props for FAIMS form components (`component-parameters` in notebook JSON). */
 export type ComponentParameters = {

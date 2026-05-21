@@ -38,9 +38,7 @@ export const TemplatedStringFieldEditor = ({
   const viewSet = useAppSelector(
     state => state.notebook.uiSpec.present.viewsets[viewsetId]
   );
-  const fviews = useAppSelector(
-    state => state.notebook.uiSpec.present.views
-  );
+  const fviews = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   /**
    * Collects all fields that belong to any view in the current viewset

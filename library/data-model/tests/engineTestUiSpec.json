@@ -248,53 +248,32 @@
     "views": {
       "A-A": {
         "label": "A",
-        "fields": [
-          "First-1",
-          "Second-1"
-        ]
+        "fields": ["First-1", "Second-1"]
       },
       "A-B": {
         "label": "B",
-        "fields": [
-          "First",
-          "Second"
-        ]
+        "fields": ["First", "Second"]
       },
       "B-A": {
         "label": "A",
-        "fields": [
-          "First-2",
-          "Second-2"
-        ]
+        "fields": ["First-2", "Second-2"]
       },
       "B-B": {
         "label": "B",
-        "fields": [
-          "First-3",
-          "Second-3"
-        ]
+        "fields": ["First-3", "Second-3"]
       }
     },
     "viewsets": {
       "A": {
         "label": "A",
-        "views": [
-          "A-A",
-          "A-B"
-        ]
+        "views": ["A-A", "A-B"]
       },
       "B": {
         "label": "B",
-        "views": [
-          "B-A",
-          "B-B"
-        ]
+        "views": ["B-A", "B-B"]
       }
     },
-    "visible_types": [
-      "A",
-      "B"
-    ],
+    "visible_types": ["A", "B"],
     "settings": {
       "showQrCodeButton": false
     },

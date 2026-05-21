@@ -19,7 +19,9 @@ const fields = [
   },
 ];
 
-function teamIdFromUpload(payload: Record<string, unknown>): string | undefined {
+function teamIdFromUpload(
+  payload: Record<string, unknown>
+): string | undefined {
   if (typeof payload.teamId === 'string' && payload.teamId.trim().length > 0) {
     return payload.teamId.trim();
   }

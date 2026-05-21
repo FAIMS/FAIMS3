@@ -35,14 +35,16 @@ export const EditTemplateDetailsDialog = () => {
         <DialogHeader>
           <DialogTitle>Edit template details</DialogTitle>
           <DialogDescription>
-            Update the listing title and short description. Form design and design
-            prose stay in the template editor.
+            Update the listing title and short description. Form design and
+            design prose stay in the template editor.
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (
           <LoaderCircleIcon className="animate-spin" aria-label="Loading" />
         ) : isError || !data ? (
-          <p className="text-sm text-destructive">Could not load template details.</p>
+          <p className="text-sm text-destructive">
+            Could not load template details.
+          </p>
         ) : (
           <EditTemplateDetailsForm
             templateId={templateId}

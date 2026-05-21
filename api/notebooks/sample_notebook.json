@@ -17,28 +17,12 @@
             "label": "Take Photo"
           },
           "validationSchema": [
-            [
-              "yup.array"
-            ],
-            [
-              "yup.of",
-              [
-                [
-                  "yup.object"
-                ],
-                [
-                  "yup.nullable"
-                ]
-              ]
-            ],
-            [
-              "yup.nullable"
-            ]
+            ["yup.array"],
+            ["yup.of", [["yup.object"], ["yup.nullable"]]],
+            ["yup.nullable"]
           ],
           "initialValue": null,
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -62,18 +46,9 @@
             "variant": "outlined",
             "label": "Take GPS Point"
           },
-          "validationSchema": [
-            [
-              "yup.object"
-            ],
-            [
-              "yup.nullable"
-            ]
-          ],
+          "validationSchema": [["yup.object"], ["yup.nullable"]],
           "initialValue": null,
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -129,15 +104,9 @@
             "name": "feature-type",
             "label": "Feature Type"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -168,15 +137,9 @@
             "name": "feature-description",
             "label": "Feature Description"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -208,15 +171,9 @@
             "name": "artefacts",
             "label": "Artefacts"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": [],
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -248,15 +205,9 @@
             "name": "measurements",
             "label": "Measurements"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -328,18 +279,9 @@
             "name": "dimension",
             "label": "Dimension"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -368,19 +310,9 @@
             "name": "measurement",
             "label": "Measurement"
           },
-          "validationSchema": [
-            [
-              "yup.number"
-            ],
-            [
-              "yup.min",
-              1
-            ]
-          ],
+          "validationSchema": [["yup.number"], ["yup.min", 1]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -436,15 +368,9 @@
             "name": "material",
             "label": "Material"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -469,28 +395,12 @@
             "label": "Take Photo"
           },
           "validationSchema": [
-            [
-              "yup.array"
-            ],
-            [
-              "yup.of",
-              [
-                [
-                  "yup.object"
-                ],
-                [
-                  "yup.nullable"
-                ]
-              ]
-            ],
-            [
-              "yup.nullable"
-            ]
+            ["yup.array"],
+            ["yup.of", [["yup.object"], ["yup.nullable"]]],
+            ["yup.nullable"]
           ],
           "initialValue": null,
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -523,18 +433,9 @@
             "fieldselect11": "artefactid-counter",
             "label": "ArtefactID"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -568,18 +469,9 @@
             "fieldselect11": "artefactid-counter",
             "label": "ArtefactID"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -610,15 +502,9 @@
             "name": "interpretation",
             "label": "Interpretation"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -649,15 +535,9 @@
             "name": "comments",
             "label": "Comments"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -682,18 +562,9 @@
             "form_id": "FORM1SECTION1",
             "label": "FeatureIDincrementor"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -718,18 +589,9 @@
             "form_id": "FORM2SECTION1",
             "label": "ArtefactID_counter"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -762,18 +624,9 @@
             "fieldselect11": "featureidincrementor",
             "label": "FeatureID"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -807,18 +660,9 @@
             "fieldselect11": "featureidincrementor",
             "label": "FeatureID"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -844,15 +688,9 @@
             "id": "html-text",
             "name": "html-text"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -888,18 +726,9 @@
             "fieldselect11": "dimension",
             "label": "templatedstringfield"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -936,18 +765,9 @@
             "fieldselect11": "dimension",
             "label": "hridFORM3"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ],
-            [
-              "yup.required"
-            ]
-          ],
+          "validationSchema": [["yup.string"], ["yup.required"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -978,15 +798,9 @@
             "name": "artefact-comment",
             "label": "Artefact Comment"
           },
-          "validationSchema": [
-            [
-              "yup.string"
-            ]
-          ],
+          "validationSchema": [["yup.string"]],
           "initialValue": "",
-          "access": [
-            "admin"
-          ],
+          "access": ["admin"],
           "meta": {
             "annotation": {
               "include": true,
@@ -1017,11 +831,7 @@
           "label": "SECTION1"
         },
         "FORM3SECTION1": {
-          "fields": [
-            "hridFORM3",
-            "dimension",
-            "measurement"
-          ],
+          "fields": ["hridFORM3", "dimension", "measurement"],
           "uidesign": "form",
           "label": "Dimension"
         },
@@ -1040,32 +850,22 @@
       },
       "viewsets": {
         "FORM1": {
-          "views": [
-            "FORM1SECTION1"
-          ],
+          "views": ["FORM1SECTION1"],
           "label": "Feature",
           "hridField": "hridFORM1"
         },
         "FORM2": {
-          "views": [
-            "FORM2SECTION1"
-          ],
+          "views": ["FORM2SECTION1"],
           "label": "Artefact",
           "hridField": "hridFORM2"
         },
         "FORM3": {
-          "views": [
-            "FORM3SECTION1"
-          ],
+          "views": ["FORM3SECTION1"],
           "label": "Measurements",
           "hridField": "hridFORM3"
         }
       },
-      "visible_types": [
-        "FORM1",
-        "FORM2",
-        "FORM3"
-      ],
+      "visible_types": ["FORM1", "FORM2", "FORM3"],
       "settings": {
         "showQrCodeButton": false
       },

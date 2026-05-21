@@ -1,10 +1,9 @@
-import fs from 'fs';
-import path from 'path';
 import type {
   CreateNotebookFromScratch,
   NotebookDefinition,
-  PostCreateTemplateInput,
 } from '@faims3/data-model';
+import fs from 'fs';
+import path from 'path';
 import {createNotebook} from '../src/couchdb/notebooks';
 
 /** On-disk shape of {@link ../notebooks/sample_notebook.json}. */
@@ -36,7 +35,10 @@ export function readLegacyNotebookFile(): {
   };
 } {
   return JSON.parse(
-    fs.readFileSync(path.join(NOTEBOOKS_DIR, 'sample_notebook.legacy.json'), 'utf-8')
+    fs.readFileSync(
+      path.join(NOTEBOOKS_DIR, 'sample_notebook.legacy.json'),
+      'utf-8'
+    )
   );
 }
 

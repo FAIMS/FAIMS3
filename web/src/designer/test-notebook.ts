@@ -338,4 +338,5 @@ const legacyWireNotebook = {
 };
 
 /** Schema 4.0 notebook migrated from legacy wire JSON above. */
-export const sampleNotebook: Notebook = migrateNotebook(legacyWireNotebook).migrated;
+export const sampleNotebook: Notebook =
+  migrateNotebook(legacyWireNotebook).migrated;

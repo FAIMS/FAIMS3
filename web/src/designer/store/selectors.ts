@@ -29,8 +29,7 @@ export const selectNotebookMetadata = (state: AppState) =>
   state.notebook.metadata;
 
 /** Full redux-undo wrapper `{ present, past, future }` for the UI spec. */
-export const selectNotebookHistory = (state: AppState) =>
-  state.notebook.uiSpec;
+export const selectNotebookHistory = (state: AppState) => state.notebook.uiSpec;
 
 /** Current editable UI specification (not historical states). */
 export const selectPresentUiSpec = (state: AppState) =>

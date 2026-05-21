@@ -700,16 +700,11 @@
       },
       "Person-Detail": {
         "label": "Detail",
-        "fields": [
-          "Description",
-          "Selection"
-        ]
+        "fields": ["Description", "Selection"]
       },
       "Person-New-Section": {
         "label": "Male section",
-        "fields": [
-          "Male-name"
-        ],
+        "fields": ["Male-name"],
         "condition": {
           "field": "Male-or-female",
           "operator": "equal",
@@ -728,33 +723,21 @@
       },
       "School-Location": {
         "label": "Location",
-        "fields": [
-          "Current-location"
-        ]
+        "fields": ["Current-location"]
       }
     },
     "viewsets": {
       "Person": {
         "label": "Person",
-        "views": [
-          "Person-Main",
-          "Person-Detail",
-          "Person-New-Section"
-        ],
+        "views": ["Person-Main", "Person-Detail", "Person-New-Section"],
         "hridField": "hridPerson-Main"
       },
       "School": {
         "label": "School",
-        "views": [
-          "School-New-Section",
-          "School-Location"
-        ]
+        "views": ["School-New-Section", "School-Location"]
       }
     },
-    "visible_types": [
-      "Person",
-      "School"
-    ],
+    "visible_types": ["Person", "School"],
     "settings": {
       "showQrCodeButton": false
     },

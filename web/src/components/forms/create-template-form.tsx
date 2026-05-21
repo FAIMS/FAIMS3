@@ -126,8 +126,7 @@ export function CreateTemplateForm({
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
     const {name, file, team, visibility} = values;
-    const isPublic =
-      canCreatePublicTemplate && visibility === 'public';
+    const isPublic = canCreatePublicTemplate && visibility === 'public';
     let jsonPayload: Record<string, unknown> = {};
 
     if (file) {
@@ -144,7 +143,9 @@ export function CreateTemplateForm({
     }
 
     const description =
-      typeof jsonPayload.description === 'string' ? jsonPayload.description : '';
+      typeof jsonPayload.description === 'string'
+        ? jsonPayload.description
+        : '';
     const uiSpecification = file
       ? uiSpecificationFromNotebookJsonPayload(jsonPayload)
       : blankNotebook;
@@ -214,7 +215,9 @@ export function CreateTemplateForm({
           submitButtonText="Create Template"
           defaultValues={{
             team: defaultValues?.teamId,
-            ...(canCreatePublicTemplate ? {visibility: 'private' as const} : {}),
+            ...(canCreatePublicTemplate
+              ? {visibility: 'private' as const}
+              : {}),
           }}
         />
       </>

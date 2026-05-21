@@ -27,7 +27,9 @@ export type NotebookDefinitionV3 = NotebookDefinitionV2;
  * @param notebook - notebook with metadata.schema_version '2.0' (or v2-shaped body)
  * @returns deep-cloned notebook with `project_status` removed and schema_version '3.0'
  */
-export const migrateToV3 = (notebook: NotebookDefinitionV2): NotebookDefinitionV3 => {
+export const migrateToV3 = (
+  notebook: NotebookDefinitionV2
+): NotebookDefinitionV3 => {
   const notebookCopy = JSON.parse(
     JSON.stringify(notebook)
   ) as NotebookDefinitionV3;

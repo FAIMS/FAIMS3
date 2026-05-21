@@ -9,7 +9,10 @@ vi.mock('../store', () => ({
     subscribe: vi.fn(() => vi.fn()),
   },
 }));
-import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION, ProjectStatus} from '@faims3/data-model';
+import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {migrateProjectsPersistedState} from './projectsPersistMigration';
 
 const buildCompiledSpecId = ({
@@ -66,9 +69,9 @@ describe('migrateProjectsPersistedState', () => {
     expect(project!.uiDefinition.uiSpec.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );
-    expect(project!.uiDefinition.metadata.information.purposeMarkdown).toContain(
-      'Nellies Glen'
-    );
+    expect(
+      project!.uiDefinition.metadata.information.purposeMarkdown
+    ).toContain('Nellies Glen');
     expect(project).not.toHaveProperty('metadata');
     expect(project).not.toHaveProperty('rawUiSpecification');
     expect(migrated.isInitialised).toBe(false);

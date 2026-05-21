@@ -3,9 +3,12 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
+import type {
+  TemplateApiDocument,
+  TemplateApiListItem,
+} from '@faims3/data-model';
 import {
   ExistingTemplateDocument,
-  NotebookDefinition,
   NotebookUiSpecificationInput,
   PostCreateTemplateInput,
   ProjectID,
@@ -21,14 +24,10 @@ import {
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
 } from '@faims3/data-model';
-import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
-import type {
-  TemplateApiDocument,
-  TemplateApiListItem,
-} from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
 import {generateRandomString} from '../utils';
+import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
 import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
 import {getTeamById} from './teams';
 import {stripTemplateRolesForTemplateId} from './users';
@@ -53,10 +52,13 @@ export const getTemplates = async ({
   const templatesDb = getTemplatesDb();
   try {
     const resultList = teamId
-      ? await templatesDb.query<TemplateListItem>(TEMPLATES_LISTING_BY_TEAM_ID, {
-          key: teamId,
-          include_docs: false,
-        })
+      ? await templatesDb.query<TemplateListItem>(
+          TEMPLATES_LISTING_BY_TEAM_ID,
+          {
+            key: teamId,
+            include_docs: false,
+          }
+        )
       : await templatesDb.query<TemplateListItem>(
           TEMPLATES_LISTING_BY_TEMPLATE_ID,
           {
@@ -123,7 +125,9 @@ export const getTemplate = async (
   }
 };
 
-async function teamDisplayNameForId(teamId: string): Promise<string | undefined> {
+async function teamDisplayNameForId(
+  teamId: string
+): Promise<string | undefined> {
   try {
     const team = await getTeamById(teamId);
     return team.name;
@@ -227,7 +231,9 @@ export const createTemplate = async ({
   }
 
   const now = nowIso();
-  const uiSpecification = normalizeUiSpecificationOrThrow(payload.uiSpecification);
+  const uiSpecification = normalizeUiSpecificationOrThrow(
+    payload.uiSpecification
+  );
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
@@ -356,7 +362,9 @@ export const changeTemplateTeam = async (
  */
 export const updateTemplateUiSpecification = async (
   templateId: string,
-  uiSpecification: PutUpdateTemplateUiSpecificationInput | NotebookUiSpecificationInput
+  uiSpecification:
+    | PutUpdateTemplateUiSpecificationInput
+    | NotebookUiSpecificationInput
 ): Promise<ExistingTemplateDocument> => {
   const normalizedUiSpecification =
     normalizeUiSpecificationOrThrow(uiSpecification);
