@@ -259,6 +259,9 @@ describe('notebook api', () => {
 
       const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);
+      for (const notebook of notebooks) {
+        expect(notebook).to.not.have.property('uiSpecification');
+      }
     } else {
       throw new Error('could not make test notebooks');
     }

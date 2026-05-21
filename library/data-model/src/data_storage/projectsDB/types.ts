@@ -152,7 +152,7 @@ export type ExistingProjectDocument = z.infer<
   typeof ExistingProjectDocumentSchema
 >;
 
-/** Stored project shape without the form payload (matches listing responses). */
+/** Stored project shape without the form payload (matches listing view value). */
 export const ProjectListItemSchema = ExistingProjectDocumentSchema.omit({
   uiSpecification: true,
 });

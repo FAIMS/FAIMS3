@@ -39,6 +39,9 @@ import {
   ProjectDocument,
   ProjectID,
   PROJECTS_BY_TEAM_ID,
+  PROJECTS_LISTING_BY_PROJECT_ID,
+  PROJECTS_LISTING_BY_TEAM_ID,
+  ProjectListItem,
   ProjectStatus,
   PutUpdateNotebookMetadataInput,
   PutUpdateNotebookUiSpecificationInput,
@@ -214,54 +217,58 @@ export const getUserProjectsDirectory = async (
 };
 
 /**
- * getNotebooks -- return an array of notebooks from the database
+ * Lists notebooks using CouchDB views whose map `value` is the project doc
+ * without `uiSpecification`. Uses `include_docs: false` on purpose: with
+ * `include_docs: true`, CouchDB would also attach the full stored document for
+ * each row (including `uiSpecification`), which would defeat the lean list.
+ *
  * @param user - only return notebooks that this user can see
- * @returns an array of ProjectDocument objects
+ * @returns notebook list rows (from each row's `value`) plus `is_admin`
  */
 export const getUserProjectsDetailed = async (
   user: Express.User,
   teamId: string | undefined = undefined,
   includeArchived = false
 ): Promise<APINotebookList[]> => {
-  // Get projects DB
   const projectsDb = localGetProjectsDb();
 
-  // Get all projects and filter for user access
-
-  let allDocs;
-  if (!teamId) {
-    allDocs = await projectsDb.allDocs<ProjectDocument>({
-      include_docs: true,
-    });
-  } else {
-    allDocs = await projectsDb.query<ProjectDocument>(PROJECTS_BY_TEAM_ID, {
-      key: teamId,
-      include_docs: true,
-    });
+  let resultList;
+  try {
+    resultList = teamId
+      ? await projectsDb.query<ProjectListItem>(PROJECTS_LISTING_BY_TEAM_ID, {
+          key: teamId,
+          include_docs: false,
+        })
+      : await projectsDb.query<ProjectListItem>(
+          PROJECTS_LISTING_BY_PROJECT_ID,
+          {
+            include_docs: false,
+          }
+        );
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects from the Project DB.'
+    );
   }
 
-  const userProjects = allDocs.rows
-    .map(r => r.doc)
-    .filter(d => d !== undefined && !d._id.startsWith('_'))
-    .filter(p => {
-      if (!includeArchived && p!.status === ProjectStatus.ARCHIVED) {
+  const userProjects = resultList.rows
+    .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
+    .map(row => row.value!)
+    .filter(project => {
+      if (!includeArchived && project.status === ProjectStatus.ARCHIVED) {
         return false;
       }
       return userCanDo({
         action: Action.READ_PROJECT_METADATA,
-        resourceId: p!._id,
+        resourceId: project._id,
         user,
       });
     });
 
-  const output = userProjects.map(project => {
-    if (!project) {
-      return undefined;
-    }
+  return userProjects.map(project => {
     const projectId = project._id;
-    const {uiSpecification: _omitUi, ...listFields} = project;
     return {
-      ...listFields,
+      ...project,
       is_admin: userHasProjectRole({
         user,
         projectId,
@@ -269,9 +276,6 @@ export const getUserProjectsDetailed = async (
       }),
     } satisfies GetNotebookListResponse[number];
   });
-
-  // Filter out null values from projects that user couldn't read
-  return output.filter(item => item !== undefined);
 };
 
 /**
@@ -367,6 +371,7 @@ export const createNotebook = async ({
   } satisfies ProjectDocument;
 
   try {
+    // first add an entry to the projects db about this project
     const projectsDB = localGetProjectsDb();
     await projectsDB.put(projectDoc);
   } catch (error) {
