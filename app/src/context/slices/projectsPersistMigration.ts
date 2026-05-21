@@ -1,3 +1,15 @@
+/**
+ * redux-persist migration for the projects slice (persist version 0 → 1).
+ *
+ * Older app builds stored each project with a loose `metadata` bag plus
+ * `rawUiSpecification` (decoded {@link ProjectUIModel}). Current builds expect
+ * a typed {@link NotebookDefinition} on `uiDefinition`, with `description` and
+ * `templateId` at the project root.
+ *
+ * Called from `projectsPersistConfig` in `store.tsx` (`createMigrate` version 1).
+ * After migration, `isInitialised` is reset to `false` so sync re-runs against
+ * the server with the modern shape.
+ */
 import {
   normalizeNotebookUiSpecification,
   NotebookDefinition,
@@ -8,17 +20,22 @@ import type {
   ProjectsState,
   ProjectIdToProjectMap,
 } from './projectSlice';
-
-const emptyProjectsState: ProjectsState = {
-  servers: {},
-  isInitialised: false,
-};
 import {
   notebookDefinitionFromLegacyPersistedProject,
   projectUiModelFromUiDefinition,
 } from './helpers/notebookDefinition';
 
-/** Persisted shape before uiDefinition / v4 metadata (redux-persist version 0). */
+const emptyProjectsState: ProjectsState = {
+  servers: {},
+  isInitialised: false,
+};
+
+/**
+ * Shape written by redux-persist before migration version 1.
+ *
+ * Either already has `uiDefinition` (partial upgrade) or still carries legacy
+ * `metadata` / `rawUiSpecification` from pre–NotebookDefinition storage.
+ */
 type LegacyPersistedProject = {
   projectId: string;
   serverId: string;
@@ -41,6 +58,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Convert one persisted project record to the current {@link Project} shape.
+ *
+ * @returns Migrated project, or `undefined` if there is no UI payload to migrate
+ *   or normalization / extraction throws (logged, project omitted from output).
+ */
 function migrateOnePersistedProject(
   legacy: LegacyPersistedProject
 ): Project | undefined {
@@ -76,7 +99,9 @@ function migrateOnePersistedProject(
         ? legacy.metadata.template_id
         : undefined);
 
-    // Touch compile path: ensures uiSpec is structurally valid
+    // Verify uiDefinition.uiSpec is present and can be split into ProjectUIModel
+    // (same helper used at runtime before DataEngine / compiledSpecService). Invalid
+    // specs throw here and the project is skipped in the catch below.
     projectUiModelFromUiDefinition(uiDefinition);
 
     return {
@@ -101,6 +126,13 @@ function migrateOnePersistedProject(
   }
 }
 
+/**
+ * Migrate all projects for one server entry in persisted state.
+ *
+ * Projects that already have `uiDefinition` without legacy fields get a light
+ * pass (normalize spec + backfill `description` only). Everything else goes
+ * through {@link migrateOnePersistedProject}.
+ */
 function migrateServerProjects(
   projects: ProjectIdToProjectMap | undefined
 ): ProjectIdToProjectMap {
@@ -139,8 +171,11 @@ function migrateServerProjects(
 }
 
 /**
- * redux-persist migration 1: legacy `metadata` + `rawUiSpecification` → typed
- * `uiDefinition` (and root `description` / `templateId`).
+ * redux-persist migration 1: legacy `metadata` + `rawUiSpecification` →
+ * `uiDefinition`, with root-level `description` / `templateId`.
+ *
+ * Safe on corrupt or non-object persisted blobs (returns {@link emptyProjectsState}).
+ * Per-project failures are dropped rather than failing the whole migration.
  */
 export function migrateProjectsPersistedState(state: unknown): ProjectsState {
   if (!isPlainObject(state)) {

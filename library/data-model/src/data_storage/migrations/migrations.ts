@@ -636,13 +636,9 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
-  // invites v3
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
-  // people v5 (disabled flag)
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
-  // projects v4 (extend ProjectV4Fields + projectsV3toV4Migration when schema changes)
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 4},
-  // templates v5 (extend TemplateV5Fields + templatesV4toV5Migration when schema changes)
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };

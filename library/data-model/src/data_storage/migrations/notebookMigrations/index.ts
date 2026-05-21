@@ -68,7 +68,7 @@ export const migrateNotebook = (
    * notebook itself. It should also decode the notebook!
    */
   if (getNotebookSchemaVersion(result) === '3.0') {
-    // Input type is NotebookAfterV3 (wire)
+    // Input type is NotebookAfterV3
     // Output type is NotebookDefinition (schema 4.0)
     result = migrateToV4(result);
     changed = true;
