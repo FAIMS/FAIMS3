@@ -22,12 +22,17 @@
  *   - bssTheme  → BSS black/maroon palette (bss-tokens.ts)
  */
 
+<<<<<<< HEAD
 import {createTheme, colors} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import type {DesignerThemeTokens} from './tokens';
 import {faimsTokens} from './faims-tokens';
 import {bssTokens} from './bss-tokens';
 import {defaultTokens} from './default-tokens';
+=======
+import {createTheme} from '@mui/material/styles';
+import {colors} from '@mui/material';
+>>>>>>> origin/main
 
 // ── Re-export token types so consumers don't need a deep import ────────────
 export type {DesignerThemeTokens} from './tokens';

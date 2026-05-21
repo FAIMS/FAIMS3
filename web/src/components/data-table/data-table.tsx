@@ -20,13 +20,18 @@ import {useState, ReactNode} from 'react';
 import {DataTablePagination} from './pagination';
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
+import {cn} from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data?: TData[];
   loading?: boolean;
   button?: ReactNode;
+  /** Renders after the global filter input (e.g. secondary filters). */
+  toolbarExtra?: ReactNode;
   onRowClick?: (row: TData) => void;
+  /** Merged into each body row; use for conditional row styling. */
+  getRowClassName?: (row: TData) => string | undefined;
   defaultRowsPerPage?: number;
 }
 
@@ -41,7 +46,9 @@ export function DataTable<TData, TValue>({
   data,
   loading,
   button,
+  toolbarExtra,
   onRowClick,
+  getRowClassName,
   defaultRowsPerPage = 10,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -72,11 +79,12 @@ export function DataTable<TData, TValue>({
     <div className="flex flex-col gap-2">
       <div className="flex justify-start items-center gap-4">
         <Input
-          placeholder="Filter results..."
+          placeholder="Search..."
           value={table.getState().globalFilter || ''}
           onChange={event => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
+        {toolbarExtra}
         {button}
       </div>
 
@@ -129,7 +137,10 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map(row => (
                 <TableRow
                   key={row.id}
-                  className={onRowClick ? 'cursor-pointer' : ''}
+                  className={cn(
+                    onRowClick && 'cursor-pointer',
+                    getRowClassName?.(row.original)
+                  )}
                   data-state={row.getIsSelected() && 'selected'}
                   onClick={() => onRowClick && onRowClick(row.original)}
                 >
