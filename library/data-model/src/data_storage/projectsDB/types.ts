@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
+import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {NotebookDefinitionSchema} from '../../uiSpecification';
 
@@ -106,7 +107,7 @@ export type ProjectV3Document = z.infer<typeof ProjectV3DocumentSchema>;
 export const ProjectV4FieldsSchema = z.object({
   // User metadata about projects - update with PUT /:id { ...name, ...description }
   name: z.string(),
-  description: z.string(),
+  description: PersistedRootDescriptionSchema,
 
   // Team / lineage
   templateId: z.string().optional(),

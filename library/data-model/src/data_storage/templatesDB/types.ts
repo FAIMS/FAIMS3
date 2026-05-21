@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {DatabaseInterface} from '../../types';
+import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {NotebookDefinitionSchema} from '../../uiSpecification/types';
 
@@ -106,7 +107,7 @@ export type TemplateV4Document = z.infer<typeof TemplateV4DocumentSchema>;
 export const TemplateV5FieldsSchema = z.object({
   // User metadata about templates - update with PUT /:id { ...name, ...description }
   name: z.string(),
-  description: z.string(),
+  description: PersistedRootDescriptionSchema,
 
   // Version (internally incremented upon update)
   version: z.number().min(1),

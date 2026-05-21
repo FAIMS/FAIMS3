@@ -82,6 +82,7 @@ Document `_design/permissions` implements a permissions check that restricts acc
 ```
 
 - **`dataDb`** points at the per-survey **data** database (`data-{projectId}`).
+- **`description`** (optional) — short operational blurb at document root, max 250 characters when present; may be omitted on new surveys. Not the long design prose in `uiSpecification.metadata.information.purposeMarkdown`.
 - **`uiSpecification`** holds the former **`metadata-{projectId}`** content: the form definition (legacy `ui-specification`, with `fviews` decoded to **`views`**) plus typed design metadata and **`uiSpec.settings`**.
 - **`metadataDb` is not stored** on new or migrated v4 documents.
 
@@ -89,7 +90,7 @@ Document `_design/permissions` implements a permissions check that restricts acc
 
 ### `templates`
 
-Same **`uiSpecification`** pattern as projects, with template-specific root fields (`version`, `archived`, `isPublic`, audit fields). See `library/data-model/src/data_storage/templatesDB/types.ts`.
+Same **`uiSpecification`** pattern as projects, with template-specific root fields (`version`, `archived`, `isPublic`, audit fields). Root **`description`** is likewise optional (max 250 characters when set). See `library/data-model/src/data_storage/templatesDB/types.ts`.
 
 ## Per-survey data database
 

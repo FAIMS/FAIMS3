@@ -62,6 +62,7 @@ import {
   EMPTY_UI_SPECIFICATION,
   readLegacyNotebookFile,
   sampleCreateNotebookPayload,
+  testNotebookDescription,
 } from './sampleNotebook';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
@@ -234,12 +235,39 @@ describe('API tests', () => {
     ).to.equal('Bob Bobalooba');
   });
 
+  it('creates a notebook without description', async () => {
+    const payload = sampleCreateNotebookPayload('test notebook');
+    const {description: _removed, ...withoutDescription} = payload;
+    const response = await request(app)
+      .post('/api/notebooks')
+      .send(withoutDescription)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const project = await getProjectById(response.body.notebook);
+    expect(project.description).to.equal(undefined);
+  });
+
+  it('rejects notebook create when description exceeds 250 characters', async () => {
+    await request(app)
+      .post('/api/notebooks')
+      .send({
+        ...sampleCreateNotebookPayload('test notebook'),
+        description: 'x'.repeat(251),
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(400);
+  });
+
   it('creates a notebook from a legacy uiSpecification upload', async () => {
     const legacy = readLegacyNotebookFile();
     const response = await request(app)
       .post('/api/notebooks')
       .send({
         name: 'legacy upload notebook',
+        description: testNotebookDescription,
         uiSpecification: legacy,
       })
       .set('Authorization', `Bearer ${adminToken}`)

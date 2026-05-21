@@ -457,8 +457,9 @@ api.post(
 
     let uiSpecification;
     const projectName: string = req.body.name;
+    const description =
+      'description' in req.body ? req.body.description : undefined;
     let templateId: string | undefined = undefined;
-    let description = '';
 
     if (isFromTemplate(req.body)) {
       const template = await getTemplate(req.body.template_id);
@@ -484,11 +485,9 @@ api.post(
       }
 
       uiSpecification = template.uiSpecification;
-      description = template.description;
       templateId = template._id;
     } else if (isFromScratch(req.body)) {
       uiSpecification = req.body.uiSpecification;
-      description = req.body.description ?? '';
     } else {
       throw new Exceptions.ValidationException(
         'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'

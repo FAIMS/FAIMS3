@@ -47,7 +47,10 @@ import request from 'supertest';
 import {getProjectById} from '../src/couchdb/notebooks';
 import {getCouchUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
-import {sampleCreateTemplatePayload} from './sampleNotebook';
+import {
+  sampleCreateTemplatePayload,
+  testNotebookDescription,
+} from './sampleNotebook';
 import {createSampleTeam} from './teams.test';
 import {
   adminToken,
@@ -250,6 +253,28 @@ describe('template API tests', () => {
 
   //======= TEMPLATES ===========
   //=============================
+
+  it('creates a template without description', async () => {
+    const payload = sampleCreateTemplatePayload('no-description-template');
+    const {description: _removed, ...withoutDescription} = payload;
+    const created = await requestAuthAndType(
+      request(app).post(`${TEMPLATE_API_BASE}`).send(withoutDescription)
+    )
+      .expect(200)
+      .then(res => PostCreateTemplateResponseSchema.parse(res.body));
+    expect(created.description).to.equal(undefined);
+  });
+
+  it('rejects template create when description exceeds 250 characters', async () => {
+    await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...sampleCreateTemplatePayload('long-description-template'),
+          description: 'x'.repeat(251),
+        })
+    ).expect(400);
+  });
 
   it('GET list returns summaries without ui-specification; GET by id includes full payload', async () => {
     const {template, notebook: nb} = await createSampleTemplate(app, {
@@ -709,6 +734,7 @@ describe('template API tests', () => {
         .post(`${NOTEBOOKS_API_BASE}`)
         .send({
           name: 'survey linked to template',
+          description: testNotebookDescription,
           template_id: template._id,
         } satisfies CreateNotebookFromTemplate)
     )
@@ -745,12 +771,15 @@ describe('template API tests', () => {
     // Create a template
     const {template, notebook} = await createSampleTemplate(app, {});
 
+    const userDescription = 'User-entered survey description at creation';
+
     // Create the notebook from template
     const notebookId = await requestAuthAndType(
       request(app)
         .post(`${NOTEBOOKS_API_BASE}`)
         .send({
           name: 'test project name',
+          description: userDescription,
           template_id: template._id,
         } satisfies CreateNotebookFromTemplate)
     )
@@ -774,6 +803,8 @@ describe('template API tests', () => {
         ).to.equal(notebook.uiSpecification.metadata.custom?.test_key);
 
         expect(response.body.templateId).to.equal(template._id);
+        expect(response.body.description).to.equal(userDescription);
+        expect(response.body.description).to.not.equal(template.description);
       });
   });
 
@@ -850,6 +881,7 @@ describe('template API tests', () => {
         .post(`${NOTEBOOKS_API_BASE}`)
         .send({
           name: 'test project name',
+          description: testNotebookDescription,
           template_id: template._id + 'jdkfljs',
         } satisfies CreateNotebookFromTemplate)
     ).expect(404);
@@ -944,6 +976,7 @@ describe('template API tests', () => {
       .post(`${NOTEBOOKS_API_BASE}`)
       .send({
         name: '12345',
+        description: testNotebookDescription,
         template_id: '12345',
       } satisfies CreateNotebookFromTemplate)
       .set('Content-Type', 'application/json')
@@ -980,6 +1013,7 @@ describe('template API tests', () => {
         .send({
           template_id: '12345',
           name: '12345',
+          description: testNotebookDescription,
         } satisfies CreateNotebookFromTemplate),
       localUserToken
     ).expect(401);
@@ -1092,6 +1126,7 @@ describe('template API tests', () => {
         .post(`${NOTEBOOKS_API_BASE}`)
         .send({
           name: 'clone attempt',
+          description: testNotebookDescription,
           template_id: template._id,
         } satisfies CreateNotebookFromTemplate),
       notebookUserToken

@@ -42,23 +42,23 @@ The most significant form of configuration is the **notebook definition**, store
 
 At a high level:
 
-| Layer                          | Where                                  | Examples                                                                    |
-| ------------------------------ | -------------------------------------- | --------------------------------------------------------------------------- |
-| Survey / template **resource** | Couch document **root**                | `name`, `description`, `status`, `templateId`, `createdBy`, `createdAt`     |
-| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)            |
-| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                               |
-| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion` |
-| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                     |
+| Layer                          | Where                                  | Examples                                                                             |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------ |
+| Survey / template **resource** | Couch document **root**                | `name`, optional `description` (max 250 chars), `status`, `templateId`, audit fields |
+| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)                     |
+| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                                        |
+| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`          |
+| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                              |
 
 The form graph uses **`uiSpec.fields`**, **`uiSpec.viewsets`**, and **`uiSpec.views`** (decoded from legacy `fviews` on import). Inner field keys remain legacy-shaped (`component-namespace`, `type-returned`, …).
 
-**When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title and short description are updated via **`PUT /api/notebooks/:id`** without replacing the whole design.
+**When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title and optional short root description are updated via **`PUT /api/notebooks/:id`** (partial body) without replacing the whole design.
 
 **Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }`; the server migrates to schema **`4.0`** before persistence. See [Notebook migrations](./NotebookMigrations.md).
 
 ```mermaid
 graph TD
-    P[Project or Template document] --> R[Root: name, description, audit, status, dataDb]
+    P[Project or Template document] --> R[Root: name, optional description, audit, status, dataDb]
     P --> U[uiSpecification]
     U --> US[uiSpec: fields, views, viewsets, settings, schemaVersion]
     U --> M[metadata.information + optional custom]
@@ -74,7 +74,7 @@ A user/developer can therefore change notebook behaviour in the following ways
 
 - editing **`uiSpec.settings`** or **`metadata.information`** in the Designer (or JSON upload via `PUT …/uiSpecification`)
 - changing fields or form/section layout under **`uiSpec`**
-- changing survey **`name`** / **`description`** via Control Centre without touching the form graph
+- changing survey **`name`** and optional root **`description`** via Control Centre without touching the form graph
 
 Ideally, any configuration available in the notebook specification should be exposed in a user-friendly way in the Designer application.
 

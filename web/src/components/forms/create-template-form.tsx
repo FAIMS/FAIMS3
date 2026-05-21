@@ -13,6 +13,10 @@ import {
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
+import {
+  optionalRootDescriptionField,
+  rootDescriptionForApi,
+} from '@/lib/rootDescriptionField';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -70,6 +74,7 @@ export function CreateTemplateForm({
         message: 'Template name must be at least 5 characters.',
       }),
     },
+    optionalRootDescriptionField(),
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
@@ -122,15 +127,15 @@ export function CreateTemplateForm({
 
   const onSubmit = async (values: {
     name: string;
+    description?: string;
     file?: File;
     team?: string;
     visibility?: 'private' | 'public';
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, file, team, visibility} = values;
+    const {name, description, file, team, visibility} = values;
     const isPublic = canCreatePublicTemplate && visibility === 'public';
-    let jsonPayload: Record<string, unknown> = {};
     let uiSpecification: unknown = blankNotebook;
 
     if (file) {
@@ -149,15 +154,7 @@ export function CreateTemplateForm({
         return {type: 'submit', message: prepared.message};
       }
       uiSpecification = prepared.uiSpecification;
-      if (parsed && typeof parsed === 'object' && parsed !== null) {
-        jsonPayload = parsed as Record<string, unknown>;
-      }
     }
-
-    const description =
-      typeof jsonPayload.description === 'string'
-        ? jsonPayload.description
-        : '';
 
     let chosenTeamId = specifiedTeam;
     if (justOneTeam && possibleTeams.length > 0) {
@@ -178,7 +175,7 @@ export function CreateTemplateForm({
           body: JSON.stringify({
             teamId: chosenTeamId,
             name,
-            description,
+            ...rootDescriptionForApi(description),
             isPublic,
             uiSpecification,
           }),

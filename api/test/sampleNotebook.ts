@@ -15,6 +15,10 @@ export type SampleNotebookFile = {
 
 const NOTEBOOKS_DIR = path.join(__dirname, '../notebooks');
 
+/** Description supplied at survey creation in API integration tests. */
+export const testNotebookDescription =
+  'Test survey description supplied at creation';
+
 export function readSampleNotebookFile(): SampleNotebookFile {
   return JSON.parse(
     fs.readFileSync(path.join(NOTEBOOKS_DIR, 'sample_notebook.json'), 'utf-8')
@@ -43,18 +47,22 @@ export function readLegacyNotebookFile(): {
 }
 
 export function sampleCreateNotebookPayload(
-  name: string
+  name: string,
+  description: string = testNotebookDescription
 ): CreateNotebookFromScratch {
   const sample = readSampleNotebookFile();
   return {
     name,
-    description: sample.description,
+    description,
     uiSpecification: sample.uiSpecification,
   };
 }
 
 /** Sample template create body (current-format uiSpecification; satisfies loose API input). */
-export function sampleCreateTemplatePayload(name: string): {
+export function sampleCreateTemplatePayload(
+  name: string,
+  description: string = testNotebookDescription
+): {
   name: string;
   description: string;
   uiSpecification: NotebookDefinition;
@@ -62,7 +70,7 @@ export function sampleCreateTemplatePayload(name: string): {
   const sample = readSampleNotebookFile();
   return {
     name,
-    description: sample.description,
+    description,
     uiSpecification: sample.uiSpecification,
   };
 }

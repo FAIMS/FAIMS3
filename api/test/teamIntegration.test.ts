@@ -67,6 +67,7 @@ import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {
   EMPTY_UI_SPECIFICATION,
   sampleCreateTemplatePayload,
+  testNotebookDescription,
 } from './sampleNotebook';
 
 registerClient(callbackObject);
@@ -82,7 +83,7 @@ const createTestNotebook = async (
   createNotebook({
     projectName,
     uiSpecification: EMPTY_UI_SPECIFICATION,
-    description: '',
+    description: testNotebookDescription,
     createdBy: 'admin',
     teamId,
   });
@@ -180,6 +181,7 @@ describe('Team integration with templates and projects', () => {
     const projectWithoutTeam = await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Project without team',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         // No teamId
       }),
@@ -192,6 +194,7 @@ describe('Team integration with templates and projects', () => {
     const projectWithTeam = await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Project with team',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         teamId: team._id,
       }),
@@ -278,6 +281,7 @@ describe('Team integration with templates and projects', () => {
     await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Member team project attempt',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         teamId: team._id,
       }),
@@ -325,6 +329,7 @@ describe('Team integration with templates and projects', () => {
     await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Team project via API',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         teamId: team._id,
       }),
@@ -401,6 +406,7 @@ describe('Team integration with templates and projects', () => {
     await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Unauthorized team project',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         teamId: team._id,
       }),
@@ -431,6 +437,7 @@ describe('Team integration with templates and projects', () => {
     await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Admin team project',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         teamId: team._id,
       }),
@@ -736,6 +743,7 @@ describe('Team integration with templates and projects', () => {
     const project = await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Update Team Project',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
         teamId: team1._id,
       }),
@@ -785,6 +793,7 @@ describe('Team integration with templates and projects', () => {
     const project = await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
         name: 'Project to Assign',
+        description: testNotebookDescription,
         uiSpecification: EMPTY_UI_SPECIFICATION,
       }),
       adminToken

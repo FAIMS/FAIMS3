@@ -5,6 +5,7 @@ import {
   type ProjectStatus,
   type PutUpdateNotebookMetadataInput,
 } from '@faims3/data-model';
+import {rootDescriptionForApi} from '@/lib/rootDescriptionField';
 
 export function errorMessageFromNotebookJsonBody(
   json: unknown,
@@ -32,11 +33,13 @@ export function errorMessageFromNotebookJsonBody(
 export const createProjectFromTemplate = async ({
   user,
   name,
+  description,
   template,
   teamId,
 }: {
   user: User;
   name: string;
+  description?: string;
   template: string;
   teamId?: string;
 }) =>
@@ -49,6 +52,7 @@ export const createProjectFromTemplate = async ({
     body: JSON.stringify({
       template_id: template,
       name,
+      ...rootDescriptionForApi(description),
       teamId,
     }),
   });
@@ -63,11 +67,13 @@ export const createProjectFromTemplate = async ({
 export const createProjectFromFile = async ({
   user,
   name,
+  description,
   file,
   teamId,
 }: {
   user: User;
   name: string;
+  description?: string;
   file: File;
   teamId?: string;
 }) => {
@@ -88,11 +94,6 @@ export const createProjectFromFile = async ({
     return new Response(null, {status: 400, statusText: prepared.message});
   }
 
-  const root =
-    payload && typeof payload === 'object' && payload !== null
-      ? (payload as Record<string, unknown>)
-      : {};
-
   return await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
     method: 'POST',
     headers: {
@@ -101,10 +102,8 @@ export const createProjectFromFile = async ({
     },
     body: JSON.stringify({
       name,
+      ...rootDescriptionForApi(description),
       teamId,
-      ...(typeof root.description === 'string'
-        ? {description: root.description}
-        : {}),
       uiSpecification: prepared.uiSpecification,
     }),
   });

@@ -6,7 +6,11 @@ import {
   hydratedRevisionDocumentSchema,
   newFormRecordSchema,
 } from './databaseEngine';
-import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
+import {
+  CreateRootDescriptionSchema,
+  PeopleDBDocumentSchema,
+  ProjectStatus,
+} from './data_storage';
 import {
   ExistingProjectDocumentSchema,
   ProjectDBFieldsSchema,
@@ -262,6 +266,7 @@ export type GetNotebookListResponse = z.infer<
 
 export const CreateNotebookFromTemplateSchema = z.object({
   name: z.string(),
+  description: CreateRootDescriptionSchema,
   template_id: z.string(),
   teamId: z.string().min(1).optional(),
 });
@@ -271,7 +276,7 @@ export type CreateNotebookFromTemplate = z.infer<
 
 export const CreateNotebookFromScratchSchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
+  description: CreateRootDescriptionSchema,
   uiSpecification: NotebookUiSpecificationInputSchema,
   teamId: z.string().min(1).optional(),
 });
@@ -411,8 +416,8 @@ export type GetExportNotebookResponse = z.infer<
 // POST create new template
 export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   name: true,
-  description: true,
 }).extend({
+  description: CreateRootDescriptionSchema,
   uiSpecification: NotebookUiSpecificationInputSchema,
   // prefer to use a nicer team ID input field
   teamId: z.string().trim().min(1).optional(),
@@ -429,8 +434,8 @@ export type PostCreateTemplateResponse = z.infer<
 
 /** PUT /api/templates/:id — merge inconsequential root fields only (name, description). */
 export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
-  description: true,
   name: true,
+  description: true,
 }).partial();
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema

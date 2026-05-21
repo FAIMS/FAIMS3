@@ -10,10 +10,10 @@ All of this section also applies to [templates](./templates.md) which share the 
 
 Survey and template properties are split into two layers:
 
-**Survey / template listing fields** (edited in the {{dashboard}} **Details** tab or when creating a survey):
+**Survey / template listing fields** (edited in the {{dashboard}} **Details** tab or when creating a survey/template):
 
-- **Name** — title shown in the app and {{dashboard}}
-- **Description** — short summary of what this survey is for (listings and admin)
+- **Name** — title shown in the app and {{dashboard}} (required)
+- **Description** — optional short summary for listings and admin (up to **250** characters; not copied from a template, source survey, or uploaded JSON design file)
 
 **Design metadata** (edited in the {{notebook}} editor **Info** panel; stored inside the design bundle):
 

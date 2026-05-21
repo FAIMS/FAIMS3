@@ -70,7 +70,7 @@ For each sampled project in the **`projects`** database:
 | Document version                      | Projects DB migration complete (no pending migration doc errors in logs) |
 | `metadataDb` / `metadata_db`          | **Absent** on v4 documents                                               |
 | `uiSpecification`                     | **Present** object with `uiSpec` and `metadata`                          |
-| `description`                         | String at **root** (operational blurb)                                   |
+| `description`                         | Optional string at **root** (operational blurb, max 250 chars when set)  |
 | `createdBy`, `createdAt`, `updatedAt` | Present (strings; ISO timestamps for dates)                              |
 | `dataDb`                              | Unchanged (`db_name` → `data-{projectId}`)                               |
 
@@ -95,7 +95,7 @@ Inside `uiSpecification`:
 
 1. Install the **new** app build.
 2. Open a migrated survey: first launch after upgrade runs **redux-persist migration** (`migrateProjectsPersistedState`) on cached project state, then syncs from API (`projectInformationFromGetNotebook` → `normalizeNotebookUiSpecification`).
-3. Confirm forms render and notebook summary shows root `description` / design
+3. Confirm forms render and notebook summary shows root `description` (when set) / design
    fields as expected.
 
 ### 3.4 Metadata database cleanup dry-run
@@ -132,20 +132,20 @@ Schema **`4.0`** is applied by `migrateNotebook` (often wrapped in `normalizeNot
 
 ### Server — persists to Couch
 
-| Trigger                                      | Location                                                | Notes                                                               |
-| -------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
-| **POST** create survey (from scratch)        | `createNotebook` → `normalizeUiSpecificationOrThrow`    | Body `uiSpecification`; legacy wire accepted                        |
-| **POST** create survey (from template)       | Copies `template.uiSpecification`                       | Template should already be v5 / schema 4.0 after Couch migrate      |
-| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                          | Designer save, full JSON replace                                    |
-| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                     |                                                                     |
-| **POST** create template                     | `createTemplate`                                        |                                                                     |
-| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                               | Reads metadata DB + `migrateNotebook`                               |
-| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                              | Same pattern for templates                                          |
-| **API startup** (optional)                   | `validateDatabases` when `MIGRATE_NOTEBOOKS_ON_STARTUP` | Re-writes projects whose inlined spec version is still behind `4.0` |
+| Trigger                                      | Location                                                | Notes                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **POST** create survey (from scratch)        | `createNotebook` → `normalizeUiSpecificationOrThrow`    | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted |
+| **POST** create survey (from template)       | Copies `template.uiSpecification` only                  | Optional `description` on POST is **not** taken from the template                      |
+| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                          | Designer save, full JSON replace                                                       |
+| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                     |                                                                                        |
+| **POST** create template                     | `createTemplate`                                        | Body `name`, optional `description` (max 250), `uiSpecification`                       |
+| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                               | Reads metadata DB + `migrateNotebook`                                                  |
+| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                              | Same pattern for templates                                                             |
+| **API startup** (optional)                   | `validateDatabases` when `MIGRATE_NOTEBOOKS_ON_STARTUP` | Re-writes projects whose inlined spec version is still behind `4.0`                    |
 
 **Does not migrate on server:**
 
-- **`PUT /api/notebooks/:id`** — only `name` / `description` (root metadata).
+- **`PUT /api/notebooks/:id`** — only optional `name` / `description` (root metadata, max 250 chars when set).
 
 ### Web Control Centre / designer — in browser
 

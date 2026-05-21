@@ -41,6 +41,7 @@ export * from './invitesDB';
 export * from './migrations';
 export * from './migrationsDB';
 export * from './peopleDB';
+export * from './rootMetadata';
 export * from './projectsDB';
 export * from './teamsDB';
 export * from './templatesDB';

@@ -23,6 +23,7 @@ import {
   TEMPLATES_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
+  normalizeRootDescriptionForStore,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
@@ -242,7 +243,7 @@ export const createTemplate = async ({
     uiSpecification,
     ownedByTeamId: payload.teamId,
     name: payload.name,
-    description: payload.description ?? '',
+    description: normalizeRootDescriptionForStore(payload.description),
     createdBy,
     createdAt: now,
     updatedAt: now,
@@ -287,7 +288,10 @@ export const updateExistingTemplate = async (
     _id: templateId,
     _rev: existingTemplate._rev,
     name: payload.name ?? existingTemplate.name,
-    description: payload.description ?? existingTemplate.description,
+    description:
+      payload.description !== undefined
+        ? normalizeRootDescriptionForStore(payload.description)
+        : existingTemplate.description,
     updatedAt: nowIso(),
   };
 

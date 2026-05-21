@@ -203,7 +203,7 @@ export interface ProjectInformation {
   /** Display title (project document root). */
   name: string;
   /** Operational description (project document root). */
-  description: string;
+  description?: string;
   /** Source template when created from a template. */
   templateId?: string;
   /** Inlined uiSpecification from GET /api/notebooks/:id (schema 4+). */

@@ -31,6 +31,7 @@ import {
   DialogTitle,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
@@ -56,6 +57,10 @@ import {
   selectServers,
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {
+  formatNotebookListDescription,
+  isNotebookListDescriptionTruncated,
+} from '../../../lib/notebookListDisplay';
 import {useIsOnline} from '../../../utils/customHooks';
 import {
   QRCodeButtonOnly,
@@ -139,23 +144,46 @@ export default function NoteBooks() {
       headerName: 'Name',
       type: 'string',
       flex: 0.4,
-      renderCell: ({row}) => (
-        <Box>
+      renderCell: ({row}) => {
+        const listDescription = formatNotebookListDescription(row.description);
+        const descriptionTypography = (
           <Typography
-            variant={is_xs ? 'body2' : 'body1'}
-            fontWeight={row.isActivated ? 'bold' : 'normal'}
-            color={row.isActivated ? 'black' : grey[800]}
+            variant="caption"
             sx={{
-              padding: '8px 0px',
+              display: 'block',
+              mt: 1,
+              ...(isNotebookListDescriptionTruncated(row.description)
+                ? {cursor: 'help'}
+                : {}),
             }}
           >
-            {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
+            {listDescription}
           </Typography>
-          <Typography variant="caption" sx={{display: 'block', mt: 1}}>
-            {row.description}
-          </Typography>
-        </Box>
-      ),
+        );
+
+        return (
+          <Box>
+            <Typography
+              variant={is_xs ? 'body2' : 'body1'}
+              fontWeight={row.isActivated ? 'bold' : 'normal'}
+              color={row.isActivated ? 'black' : grey[800]}
+              sx={{
+                padding: '8px 0px',
+              }}
+            >
+              {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
+            </Typography>
+            {listDescription &&
+              (isNotebookListDescriptionTruncated(row.description) ? (
+                <Tooltip title={row.description?.trim() ?? ''}>
+                  <span>{descriptionTypography}</span>
+                </Tooltip>
+              ) : (
+                descriptionTypography
+              ))}
+          </Box>
+        );
+      },
     },
   ];
   const activatedColumns = baseColumns;

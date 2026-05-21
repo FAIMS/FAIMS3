@@ -50,6 +50,7 @@ import {
   slugify,
   userHasProjectRole,
   NotebookUiSpec,
+  normalizeRootDescriptionForStore,
 } from '@faims3/data-model';
 import {normalizeUiSpecificationOrThrow} from './normalizeUiSpecification';
 import {initialiseDataDb, localGetProjectsDb, verifyCouchDBConnection} from '.';
@@ -346,10 +347,13 @@ export const createNotebook = async ({
   const projectId = generateProjectID(projectName);
   const dataDBName = `data-${projectId}`;
   const now = nowIso();
+  const storedDescription = normalizeRootDescriptionForStore(description);
   const projectDoc = {
     _id: projectId,
     name: projectName.trim(),
-    description,
+    ...(storedDescription !== undefined
+      ? {description: storedDescription}
+      : {}),
     templateId,
     dataDb: {
       db_name: dataDBName,
@@ -389,7 +393,10 @@ export const updateProjectMetadata = async (
   const updated: ProjectDocument = {
     ...project,
     name: payload.name ?? project.name,
-    description: payload.description ?? project.description,
+    description:
+      payload.description !== undefined
+        ? normalizeRootDescriptionForStore(payload.description)
+        : project.description,
     updatedAt: nowIso(),
   };
   await putProjectDoc(updated);

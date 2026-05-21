@@ -240,7 +240,8 @@ const ProjectActions = (): JSX.Element => {
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
                 <ListDescription>
-                  Upload a JSON design file to replace the existing {NOTEBOOK_NAME} design.
+                  Upload a JSON design file to replace the existing{' '}
+                  {NOTEBOOK_NAME} design.
                 </ListDescription>
               </ListItem>
               <ListItem>

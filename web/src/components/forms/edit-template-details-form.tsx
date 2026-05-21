@@ -6,12 +6,13 @@ import {
 } from '@/hooks/template-hooks';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
+import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 
 interface EditTemplateDetailsFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   templateId: string;
   name: string;
-  description: string;
+  description?: string;
 }
 
 /**
@@ -32,11 +33,7 @@ export function EditTemplateDetailsForm({
       label: 'Name',
       schema: z.string().trim().min(1, {message: 'Name is required'}),
     },
-    {
-      name: 'description',
-      label: 'Description',
-      schema: z.string(),
-    },
+    optionalRootDescriptionField(),
   ];
 
   const onSubmit = async ({
@@ -72,7 +69,7 @@ export function EditTemplateDetailsForm({
   return (
     <Form
       fields={fields}
-      defaultValues={{name, description}}
+      defaultValues={{name, description: description ?? ''}}
       onSubmit={onSubmit}
       submitButtonText="Save details"
     />

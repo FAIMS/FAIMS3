@@ -16,7 +16,7 @@ There is **no per-project `metadata-{id}` Couch database** in the current model.
 
 Each **project** or **template** document has two layers:
 
-1. **Root (resource / lifecycle / instantiation)** — `name`, `description`, `status`, `dataDb`, team and template linkage, audit timestamps and creator.
+1. **Root (resource / lifecycle / instantiation)** — `name`, optional `description`, `status`, `dataDb`, team and template linkage, audit timestamps and creator.
 2. **`uiSpecification`** — the form design: decoded UI graph plus typed design metadata and settings.
 
 Types live in `@faims3/data-model`:
@@ -27,24 +27,24 @@ Types live in `@faims3/data-model`:
 
 ### Project (survey) root fields
 
-| Field                    | Purpose                                                                                  |
-| ------------------------ | ---------------------------------------------------------------------------------------- |
-| `_id`                    | Stable survey id (also used as `data-{id}` suffix)                                       |
-| `name`                   | Display title                                                                            |
-| `description`            | Short operational description (listings, Control Centre) — **not** the long design prose |
-| `status`                 | `OPEN` \| `CLOSED` \| `ARCHIVED`                                                         |
-| `dataDb`                 | Connection to `data-{id}`                                                                |
-| `templateId`             | Source template when created from a template                                             |
-| `ownedByTeamId`          | Owning team                                                                              |
-| `createdBy`              | People DB user id of whoever created the survey                                          |
-| `createdAt`, `updatedAt` | ISO-8601 audit timestamps                                                                |
-| `uiSpecification`        | Full design bundle (see below)                                                           |
+| Field                    | Purpose                                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `_id`                    | Stable survey id (also used as `data-{id}` suffix)                                                                                      |
+| `name`                   | Display title                                                                                                                           |
+| `description` (optional) | Short operational blurb (listings, Control Centre), max **250** characters when set — **not** the long design prose (`purposeMarkdown`) |
+| `status`                 | `OPEN` \| `CLOSED` \| `ARCHIVED`                                                                                                        |
+| `dataDb`                 | Connection to `data-{id}`                                                                                                               |
+| `templateId`             | Source template when created from a template                                                                                            |
+| `ownedByTeamId`          | Owning team                                                                                                                             |
+| `createdBy`              | People DB user id of whoever created the survey                                                                                         |
+| `createdAt`, `updatedAt` | ISO-8601 audit timestamps                                                                                                               |
+| `uiSpecification`        | Full design bundle (see below)                                                                                                          |
 
 **Removed from the project document:** `metadataDb` (projects DB v4 migration inlines the former metadata database).
 
 ### Template root fields
 
-Same pattern as projects, plus `version`, `archived`, `isPublic`. Templates do not have `status` or `dataDb`.
+Same pattern as projects (including optional root `description`, max 250 characters when set), plus `version`, `archived`, `isPublic`. Templates do not have `status` or `dataDb`.
 
 ## `uiSpecification` shape
 
@@ -84,9 +84,15 @@ Step-by-step rollout (Couch migrate, validation, deleting `metadata-*` DBs, when
 | Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description? }` partial                             |
 | Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation |
 | Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`            |
-| Create from template | `POST /api/notebooks`                    | `{ name, template_id, teamId? }`                              |
+| Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                |
 
-Templates mirror this: `PUT /api/templates/:id` for `name` / `description`, `PUT /api/templates/:id/uiSpecification` for the design bundle.
+Templates mirror this: `PUT /api/templates/:id` for optional `name` / `description`, `PUT /api/templates/:id/uiSpecification` for the design bundle. **Create:** `POST /api/templates` with `{ name, description?, uiSpecification, teamId?, isPublic? }`.
+
+**Root `description` rules** (surveys and templates):
+
+- **Optional** on create and in persisted documents (`ProjectDBFieldsSchema` / `TemplateDBFieldsSchema` via `PersistedRootDescriptionSchema` in `library/data-model/src/data_storage/rootMetadata.ts`).
+- When provided: trimmed, max **250** characters (`ROOT_DESCRIPTION_MAX_LENGTH`).
+- Omitted or whitespace-only on create → field is not stored (not copied from a template, source survey, or a root `description` key in an uploaded design JSON file).
 
 ### JSON file upload / export
 
@@ -120,7 +126,7 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 ## Migrations
 
 1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/index.ts`): `1.0` → v2 → v3 → **4.0** (`migrateV4.ts`). Target version: `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
-2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` / audit fields, removes `metadataDb`.
+2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` (when derivable from legacy metadata) / audit fields, removes `metadataDb`.
 3. **Templates DB** — analogous template v4 → v5 migration.
 
 Optional startup migration: `MIGRATE_NOTEBOOKS_ON_STARTUP` still runs notebook migrations when validating databases.

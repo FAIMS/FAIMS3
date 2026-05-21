@@ -43,7 +43,7 @@ Downloaded JSON files can be uploaded to a different {{FAIMS}} Server at a futur
 
 Use this option to replace the form design via **PUT uiSpecification** (legacy `{ metadata, 'ui-specification' }` files are still accepted and migrated on upload).
 
-To change only the survey **name** or short **description**, use **Edit project details** on the Details tab instead of replacing the full JSON file.
+To change only the survey **name** or optional short **description** (up to 250 characters), use **Edit project details** on the Details tab instead of replacing the full JSON file.
 
 > **Caution!** Errors in the new JSON file may cause loss to data already captured in the {{Notebook}}.
 
