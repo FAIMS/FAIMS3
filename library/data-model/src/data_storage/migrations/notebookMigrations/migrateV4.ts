@@ -41,7 +41,7 @@ import {NotebookDefinitionV3} from './migrateV3';
  *
  * Callers that need the current application type (e.g. `buildSurveyNotebookDefinitionFromLegacy`)
  * cast the result at the boundary in `index.ts`. The duplicated types should mirror
- * the 4.0 layout documented in `metadata-design.md` but remain owned by this file.
+ * the 4.0 layout in `NotebookDefinition.md` but remain owned by this file.
  */
 
 /** UI behaviour toggles (schema 4.0). */

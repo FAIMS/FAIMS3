@@ -55,7 +55,7 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {dataEngineUiSpecFromProject} from '../../context/slices/helpers/notebookDefinition';
+import {dataEngineUiSpecFromCompiled} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -389,11 +389,14 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
-  if (!uiSpec) {
+  const compiledUiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
+  if (!compiledUiSpec) {
     return <div>UI Specification not found</div>;
   }
-  const engineUiSpec = dataEngineUiSpecFromProject(project);
+  const engineUiSpec = dataEngineUiSpecFromCompiled(
+    compiledUiSpec,
+    project.uiDefinition.uiSpec
+  );
 
   const dataDb = localGetDataDb(projectId);
 
@@ -448,7 +451,7 @@ export const ViewRecordPage: React.FC = () => {
       return getImpliedNavigationRelationships(
         formData.context.revision,
         getDataEngine(),
-        uiSpec
+        compiledUiSpec
       );
     },
     enabled: !!formData,
@@ -496,7 +499,8 @@ export const ViewRecordPage: React.FC = () => {
     );
   }
 
-  const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
+  const formLabel =
+    compiledUiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
@@ -549,7 +553,7 @@ export const ViewRecordPage: React.FC = () => {
                 })
               );
             }}
-            uiSpec={uiSpec}
+            uiSpec={compiledUiSpec}
             projectId={projectId}
             serverId={serverId}
             impliedRelationships={impliedRelationships}

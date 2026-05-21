@@ -48,7 +48,7 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {dataEngineUiSpecFromProject} from '../../context/slices/helpers/notebookDefinition';
+import {dataEngineUiSpecFromCompiled} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -116,9 +116,12 @@ export const EditRecordPage = () => {
   if (!project) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
-  if (!uiSpec) return <div>UI Specification not found</div>;
-  const engineUiSpec = dataEngineUiSpecFromProject(project);
+  const compiledUiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
+  if (!compiledUiSpec) return <div>UI Specification not found</div>;
+  const engineUiSpec = dataEngineUiSpecFromCompiled(
+    compiledUiSpec,
+    project.uiDefinition.uiSpec
+  );
 
   // These are handlers passed back from the editable form to assist with
   // navigation management
@@ -350,7 +353,7 @@ export const EditRecordPage = () => {
   );
 
   const formLabel = formData
-    ? uiSpec.viewsets[formData.formId]?.label
+    ? compiledUiSpec.viewsets[formData.formId]?.label
     : undefined;
 
   const headingSlot: React.ReactNode | undefined = useMemo(() => {

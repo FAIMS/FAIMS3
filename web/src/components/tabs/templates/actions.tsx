@@ -115,10 +115,9 @@ const TemplateActions = () => {
           <Card>
             <List>
               <ListItem>
-                <ListLabel>Name &amp; description</ListLabel>
+                <ListLabel>Edit Template details</ListLabel>
                 <ListDescription>
-                  Update listing title and short description without opening the
-                  editor.
+                  Update template title and short description.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -193,7 +192,7 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Download JSON</ListLabel>
                 <ListDescription>
-                  Download the JSON file for this template.
+                  Download the template design as JSON (metadata and uiSpec).
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -217,7 +216,8 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
                 <ListDescription>
-                  Replace the template JSON file.
+                  Upload a JSON file with metadata and uiSpec (same shape as
+                  Download JSON).
                 </ListDescription>
               </ListItem>
               <ListItem>

@@ -402,7 +402,9 @@ describe('user creation', () => {
       });
       await saveCouchUser(user);
 
-      const projectUserInfo = await getUserInfoForProject({projectId: project_id});
+      const projectUserInfo = await getUserInfoForProject({
+        projectId: project_id,
+      });
 
       expect(projectUserInfo.roles).to.include(Role.PROJECT_ADMIN);
       expect(projectUserInfo.roles).to.include(Role.PROJECT_MANAGER);

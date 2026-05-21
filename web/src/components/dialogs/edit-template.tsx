@@ -60,8 +60,9 @@ export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
             <DialogHeader>
               <DialogTitle>Replace Template JSON</DialogTitle>
               <DialogDescription>
-                Upload a new template JSON file to replace the current one. The
-                new file must be a valid JSON file.
+                Upload a JSON file with top-level metadata and uiSpec (same
+                shape as Download JSON). This replaces the template design only;
+                it does not change title, description, or team.
               </DialogDescription>
             </DialogHeader>
             <UpdateTemplateForm setDialogOpen={setOpen} onSuccess={onSuccess} />

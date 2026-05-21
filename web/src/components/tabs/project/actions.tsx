@@ -1,4 +1,10 @@
-import React, {useMemo, useState} from 'react';
+import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
+import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
+import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
+import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
+import {DesignerDialog} from '@/components/dialogs/designer-dialog';
+import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
+import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -8,29 +14,23 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '@/constants';
 import {useAuth} from '@/context/auth-provider';
+import {
+  toDesignerNotebookWithHistory,
+  useDesignerSaveMutation,
+} from '@/designer/integration';
+import type {NotebookWithHistory} from '@/designer/state/initial';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {
   Action,
   getUserResourcesForAction,
   ProjectStatus,
 } from '@faims3/data-model';
-import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
-import {useQueryClient} from '@tanstack/react-query';
-import {DesignerDialog} from '@/components/dialogs/designer-dialog';
-import type {NotebookWithHistory} from '@/designer/state/initial';
-import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
-import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
-import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
-import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
-import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
-import {
-  toDesignerNotebookWithHistory,
-  useDesignerSaveMutation,
-} from '@/designer/integration';
+import {useQueryClient} from '@tanstack/react-query';
+import {useMemo, useState} from 'react';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -160,12 +160,12 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Name &amp; description</ListLabel>
+                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED} details</ListLabel>
               </ListItem>
               <ListItem>
                 <ListDescription>
-                  Update listing title and short description without opening the
-                  designer.
+                  Update {NOTEBOOK_NAME_CAPITALIZED} title and short
+                  description.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -212,6 +212,10 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Download JSON</ListLabel>
+                <ListDescription>
+                  Download the {NOTEBOOK_NAME} design as JSON (metadata and
+                  uiSpec).
+                </ListDescription>
               </ListItem>
               <ListItem>
                 <Button variant="outline" disabled={isLoading}>
@@ -236,6 +240,10 @@ const ProjectActions = (): JSX.Element => {
                 <ListLabel>
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
+                <ListDescription>
+                  Upload a JSON file with metadata and uiSpec (same shape as
+                  Download JSON).
+                </ListDescription>
               </ListItem>
               <ListItem>
                 <EditProjectDialog onSuccess={uploadProjectCallback} />

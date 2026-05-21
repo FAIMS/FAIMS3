@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import {describe, expect, it} from 'vitest';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '@faims3/data-model';
+import {compileUiSpecConditionals} from '@faims3/data-model';
 import {
+  dataEngineUiSpecFromCompiled,
   notebookDefinitionFromLegacyPersistedProject,
   projectUiModelFromUiDefinition,
 } from './notebookDefinition';
@@ -53,5 +55,23 @@ describe('projectUiModelFromUiDefinition', () => {
     expect(model).not.toHaveProperty('settings');
     expect(model).not.toHaveProperty('schemaVersion');
     expect(model.views).toBeDefined();
+  });
+});
+
+describe('dataEngineUiSpecFromCompiled', () => {
+  it('merges compiled conditionFns with persisted settings', () => {
+    const def = notebookDefinitionFromLegacyPersistedProject({
+      metadata: legacyNotebook.metadata,
+    });
+    const compiled = projectUiModelFromUiDefinition(def);
+    compileUiSpecConditionals(compiled);
+    const engineSpec = dataEngineUiSpecFromCompiled(compiled, def.uiSpec);
+    const fieldNames = Object.keys(engineSpec.fields);
+    if (fieldNames.length > 0) {
+      const first = engineSpec.fields[fieldNames[0]];
+      expect(typeof first.conditionFn).toBe('function');
+    }
+    expect(engineSpec.settings).toEqual(def.uiSpec.settings);
+    expect(engineSpec.schemaVersion).toBe(def.uiSpec.schemaVersion);
   });
 });

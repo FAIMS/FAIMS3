@@ -1,8 +1,9 @@
 import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
-import type {
-  ProjectStatus,
-  PutUpdateNotebookMetadataInput,
+import {
+  prepareNotebookUiSpecificationInputForApi,
+  type ProjectStatus,
+  type PutUpdateNotebookMetadataInput,
 } from '@faims3/data-model';
 
 export function errorMessageFromNotebookJsonBody(
@@ -59,25 +60,6 @@ export const createProjectFromTemplate = async ({
  * @param {File} file - The file to upload
  * @returns {Promise<Response>} The response from the API
  */
-/** Extract design bundle from a notebook JSON file (current or legacy wire keys). */
-export function uiSpecificationFromNotebookJsonPayload(
-  payload: Record<string, unknown>
-): unknown {
-  if (payload.uiSpecification !== undefined) {
-    return payload.uiSpecification;
-  }
-  if (
-    payload.metadata !== undefined ||
-    payload['ui-specification'] !== undefined
-  ) {
-    return {
-      metadata: payload.metadata,
-      'ui-specification': payload['ui-specification'],
-    };
-  }
-  return payload;
-}
-
 export const createProjectFromFile = async ({
   user,
   name,
@@ -90,7 +72,26 @@ export const createProjectFromFile = async ({
   teamId?: string;
 }) => {
   const jsonString = await readFileAsText(file);
-  const payload = JSON.parse(jsonString) as Record<string, unknown>;
+  if (!jsonString) {
+    return new Response(null, {status: 400, statusText: 'Error reading file'});
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(jsonString);
+  } catch {
+    return new Response(null, {status: 400, statusText: 'Invalid JSON file'});
+  }
+
+  const prepared = prepareNotebookUiSpecificationInputForApi(payload);
+  if (!prepared.ok) {
+    return new Response(null, {status: 400, statusText: prepared.message});
+  }
+
+  const root =
+    payload && typeof payload === 'object' && payload !== null
+      ? (payload as Record<string, unknown>)
+      : {};
 
   return await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
     method: 'POST',
@@ -101,10 +102,10 @@ export const createProjectFromFile = async ({
     body: JSON.stringify({
       name,
       teamId,
-      ...(typeof payload.description === 'string'
-        ? {description: payload.description}
+      ...(typeof root.description === 'string'
+        ? {description: root.description}
         : {}),
-      uiSpecification: uiSpecificationFromNotebookJsonPayload(payload),
+      uiSpecification: prepared.uiSpecification,
     }),
   });
 };

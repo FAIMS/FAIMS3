@@ -5,11 +5,14 @@ import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {
+  Action,
+  getUserResourcesForAction,
+  prepareNotebookUiSpecificationInputForApi,
+} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
-import {uiSpecificationFromNotebookJsonPayload} from '@/hooks/project-hooks';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -128,17 +131,26 @@ export function CreateTemplateForm({
     const {name, file, team, visibility} = values;
     const isPublic = canCreatePublicTemplate && visibility === 'public';
     let jsonPayload: Record<string, unknown> = {};
+    let uiSpecification: unknown = blankNotebook;
 
     if (file) {
-      // parse the user-uploaded file
       const text = await readFileAsText(file);
       if (!text) {
         return {type: 'submit', message: 'Error reading file'};
       }
+      let parsed: unknown;
       try {
-        jsonPayload = JSON.parse(text) as Record<string, unknown>;
+        parsed = JSON.parse(text);
       } catch {
         return {type: 'submit', message: 'Invalid JSON file'};
+      }
+      const prepared = prepareNotebookUiSpecificationInputForApi(parsed);
+      if (!prepared.ok) {
+        return {type: 'submit', message: prepared.message};
+      }
+      uiSpecification = prepared.uiSpecification;
+      if (parsed && typeof parsed === 'object' && parsed !== null) {
+        jsonPayload = parsed as Record<string, unknown>;
       }
     }
 
@@ -146,9 +158,6 @@ export function CreateTemplateForm({
       typeof jsonPayload.description === 'string'
         ? jsonPayload.description
         : '';
-    const uiSpecification = file
-      ? uiSpecificationFromNotebookJsonPayload(jsonPayload)
-      : blankNotebook;
 
     let chosenTeamId = specifiedTeam;
     if (justOneTeam && possibleTeams.length > 0) {

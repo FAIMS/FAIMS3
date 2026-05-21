@@ -5,6 +5,8 @@ import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   normalizeNotebookUiSpecification,
   notebookUiSpecificationNeedsMigration,
+  parseNotebookDefinitionUpload,
+  prepareNotebookUiSpecificationInputForApi,
 } from '../src/uiSpecification/normalize';
 
 describe('notebookUiSpecificationNeedsMigration', () => {
@@ -79,5 +81,76 @@ describe('normalizeNotebookUiSpecification', () => {
     expect(normalized.metadata.information.purposeMarkdown).toContain(
       'Nellies Glen'
     );
+  });
+});
+
+describe('prepareNotebookUiSpecificationInputForApi', () => {
+  it('accepts legacy notebook JSON (POST API loose input)', () => {
+    const result = prepareNotebookUiSpecificationInputForApi(sampleNotebook);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.uiSpecification).toEqual(sampleNotebook);
+    }
+  });
+
+  it('accepts a wrapped uiSpecification property', () => {
+    const current = normalizeNotebookUiSpecification(sampleNotebook);
+    const result = prepareNotebookUiSpecificationInputForApi({
+      uiSpecification: current,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.uiSpecification).toEqual(current);
+    }
+  });
+
+  it('accepts current NotebookDefinition at the root without rewriting uiSpec', () => {
+    const current = normalizeNotebookUiSpecification(sampleNotebook);
+    const result = prepareNotebookUiSpecificationInputForApi(current);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.uiSpecification).toEqual(current);
+      expect(result.uiSpecification).toHaveProperty('uiSpec');
+    }
+  });
+
+  it('rejects non-object input', () => {
+    const result = prepareNotebookUiSpecificationInputForApi(null);
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('parseNotebookDefinitionUpload', () => {
+  it('rejects legacy notebook JSON (replace expects current shape only)', () => {
+    const result = parseNotebookDefinitionUpload(sampleNotebook);
+    expect(result.ok).toBe(false);
+  });
+
+  it('accepts a current NotebookDefinition at the root', () => {
+    const current = normalizeNotebookUiSpecification(sampleNotebook);
+    const result = parseNotebookDefinitionUpload(current);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.uiSpecification).toEqual(current);
+    }
+  });
+
+  it('rejects a wrapped uiSpecification object', () => {
+    const current = normalizeNotebookUiSpecification(sampleNotebook);
+    const result = parseNotebookDefinitionUpload({
+      uiSpecification: current,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain('top-level metadata and uiSpec');
+    }
+  });
+
+  it('rejects non-object input', () => {
+    const result = parseNotebookDefinitionUpload(null);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain('JSON must be an object');
+    }
   });
 });

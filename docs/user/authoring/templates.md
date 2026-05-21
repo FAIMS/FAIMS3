@@ -8,8 +8,8 @@ which can be used to create many {{notebooks}}.
 
 ## Template Structure
 
-A template is structured exactly like a {{notebook}}, the only difference is a field in the
-metadata that flags it as a template.
+A template uses the same form design structure as a {{notebook}}. Templates are stored in a
+separate templates database and can be marked **public** or **archived** for sharing across teams.
 
 ## Creating a Template
 
@@ -24,8 +24,9 @@ designer application.
 
 In the {{dashboard}} web application you can create a new {{notebook}} from a template.
 
-The {{notebook}} will record that it has been created from this template in its metadata so it will
-be possible to trace the origin of the {{notebook}}.
+The {{notebook}} records the source template on the survey (**template used** in the {{dashboard}})
+so you can trace which template it was created from. Design provenance from copying another
+definition may also appear as **derived from template** in design metadata when applicable.
 
 The created {{notebook}} is a snapshot copy of the template at time of creation. Any subsequent
 changes to the template **will not** be reflected in the {{notebooks}} created from it.

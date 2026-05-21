@@ -70,3 +70,22 @@ export const NotebookDefinitionSchema = z.object({
   metadata: NotebookMetadataSchema,
 });
 export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
+
+const isPlainObjectRecord = (
+  value: unknown
+): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Download JSON / PUT uiSpecification body: {@link NotebookDefinition} at the
+ * root (not wrapped in a `uiSpecification` property).
+ */
+export const NotebookDefinitionUploadSchema = z
+  .custom<Record<string, unknown>>(isPlainObjectRecord, {
+    message: 'JSON must be an object',
+  })
+  .refine(val => val.uiSpecification === undefined, {
+    message:
+      'JSON must use top-level metadata and uiSpec (not a wrapped uiSpecification object)',
+  })
+  .pipe(NotebookDefinitionSchema);

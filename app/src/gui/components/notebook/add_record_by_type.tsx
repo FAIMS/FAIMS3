@@ -14,7 +14,7 @@ import {useState} from 'react';
 import {Navigate, useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {dataEngineUiSpecFromProject} from '../../../context/slices/helpers/notebookDefinition';
+import {dataEngineUiSpecFromCompiled} from '../../../context/slices/helpers/notebookDefinition';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
@@ -53,7 +53,7 @@ export default function AddRecordButtons({
   const dataEngine = () => {
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: dataEngineUiSpecFromProject({uiDefinition}),
+      uiSpec: dataEngineUiSpecFromCompiled(uiSpec, uiDefinition.uiSpec),
     });
   };
 

@@ -22,6 +22,7 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {dataEngineUiSpecFromCompiled} from '../../../context/slices/helpers/notebookDefinition';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
@@ -377,7 +378,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               records={records}
               project_id={project.projectId}
               uiSpec={uiSpecification}
-              engineUiSpec={project.uiDefinition.uiSpec}
+              engineUiSpec={dataEngineUiSpecFromCompiled(
+                uiSpecification,
+                project.uiDefinition.uiSpec
+              )}
             />
           )}
         </TabPanel>

@@ -4,7 +4,11 @@ import {
   getNotebookSchemaVersion,
   migrateNotebook,
 } from '../data_storage/migrations/notebookMigrations';
-import {NotebookDefinitionSchema, type NotebookDefinition} from './types';
+import {
+  NotebookDefinitionSchema,
+  NotebookDefinitionUploadSchema,
+  type NotebookDefinition,
+} from './types';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 
@@ -99,6 +103,51 @@ export function normalizeNotebookUiSpecification(
   assertLatestSchemaVersion(parsed.data);
 
   return parsed.data;
+}
+
+export type PrepareNotebookUiSpecificationInputResult =
+  | {ok: true; uiSpecification: NotebookUiSpecificationInput}
+  | {ok: false; message: string};
+
+/**
+ * Loose client check aligned with POST/PUT API gateway
+ * ({@link NotebookUiSpecificationInputSchema}). Unwraps a top-level
+ * `uiSpecification` when present. Does not migrate or strict-validate — the
+ * API runs {@link normalizeNotebookUiSpecification}.
+ */
+export function prepareNotebookUiSpecificationInputForApi(
+  payload: unknown
+): PrepareNotebookUiSpecificationInputResult {
+  let candidate = payload;
+  if (isPlainObject(payload) && payload.uiSpecification !== undefined) {
+    candidate = payload.uiSpecification;
+  }
+  const parsed = NotebookUiSpecificationInputSchema.safeParse(candidate);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: notebookUiSpecificationValidationMessage(parsed.error),
+    };
+  }
+  return {ok: true, uiSpecification: parsed.data};
+}
+
+export type ParseNotebookDefinitionUploadResult =
+  | {ok: true; uiSpecification: NotebookDefinition}
+  | {ok: false; message: string};
+
+/** Validate Download JSON / PUT uiSpecification upload (no migration). */
+export function parseNotebookDefinitionUpload(
+  payload: unknown
+): ParseNotebookDefinitionUploadResult {
+  const parsed = NotebookDefinitionUploadSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: notebookUiSpecificationValidationMessage(parsed.error),
+    };
+  }
+  return {ok: true, uiSpecification: parsed.data};
 }
 
 /** User-facing message for API validation failures after normalize/migrate. */

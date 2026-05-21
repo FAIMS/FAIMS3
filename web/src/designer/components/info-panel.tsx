@@ -126,11 +126,10 @@ export const InfoPanel = () => {
           </Grid>
 
           <Grid item xs={12}>
-            <Typography variant="h6">Metadata</Typography>
+            <Typography variant="h6">Notebook information</Typography>
             <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
-              Non-functional design documentation bundled with the form
-              definition. Survey or template title and description are edited in
-              Control Centre, not here.
+              Optional details about this {NOTEBOOK_NAME}, such as who leads the
+              project. Edit the title and description in Control Centre.
             </Typography>
           </Grid>
 

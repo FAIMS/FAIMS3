@@ -120,7 +120,7 @@ export async function readLegacyNotebookFromMetadataDb(
     const prefix = `${PROJECT_METADATA_PREFIX}-`;
     if (id.startsWith(prefix)) {
       const key = id.substring(prefix.length);
-      // Flat aggregate doc — not reliable for round-trip (see metadata-design.md).
+      // Flat aggregate doc — not reliable for round-trip (see NotebookDefinition.md).
       if (key === 'projectvalue') {
         continue;
       }

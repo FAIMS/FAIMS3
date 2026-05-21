@@ -15,6 +15,22 @@ export function dataEngineUiSpecFromProject(project: {
   return project.uiDefinition.uiSpec;
 }
 
+/**
+ * {@link DataEngine} and form visibility need compiled `conditionFn` on fields/views.
+ * Merge the compiled {@link ProjectUIModel} from {@link compiledSpecService} with
+ * persisted `settings` / `schemaVersion` from the store.
+ */
+export function dataEngineUiSpecFromCompiled(
+  compiled: ProjectUIModel,
+  persistedUiSpec: NotebookUiSpec
+): NotebookUiSpec {
+  return {
+    ...compiled,
+    settings: persistedUiSpec.settings,
+    schemaVersion: persistedUiSpec.schemaVersion,
+  };
+}
+
 /** Runtime UI model: {@link NotebookUiSpec} without settings / schemaVersion. */
 export function projectUiModelFromUiDefinition(
   uiDefinition: NotebookDefinition
