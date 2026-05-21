@@ -151,7 +151,6 @@ export default function NoteBooks() {
             variant="caption"
             sx={{
               display: 'block',
-              mt: 1,
               ...(isNotebookListDescriptionTruncated(row.description)
                 ? {cursor: 'help'}
                 : {}),
@@ -162,14 +161,18 @@ export default function NoteBooks() {
         );
 
         return (
-          <Box>
+          <Box
+            sx={{
+              py: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+            }}
+          >
             <Typography
               variant={is_xs ? 'body2' : 'body1'}
               fontWeight={row.isActivated ? 'bold' : 'normal'}
               color={row.isActivated ? 'black' : grey[800]}
-              sx={{
-                padding: '8px 0px',
-              }}
             >
               {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
