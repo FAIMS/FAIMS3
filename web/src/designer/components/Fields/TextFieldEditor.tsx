@@ -36,8 +36,16 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const dispatch = useAppDispatch();
 
   const initVal = field['initialValue'] as string | number;
-  const isLongAnswer = field['component-name'] === 'MultipleTextField';
-  const rows = field['component-parameters'].InputProps?.rows || 4;
+  // Long answer = either the unified shape (TextField / legacy FAIMSTextField
+  // with `multiline: true`) or the un-migrated legacy `MultipleTextField`
+  // (where multiline was implicit). Treat all of those as long.
+  const isLongAnswer =
+    field['component-parameters'].multiline === true ||
+    field['component-name'] === 'MultipleTextField';
+  const rows =
+    (field['component-parameters'].rows as number | undefined) ||
+    field['component-parameters'].InputProps?.rows ||
+    4;
 
   const updateField = (updater: (nextField: typeof field) => void) => {
     const newField = withUpdatedField(field, nextField => {
@@ -52,17 +60,25 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
     });
   };
 
+  // Short and long answer share one runtime component (canonical `TextField`).
+  // Toggling just flips the `multiline` flag (and `rows` when long), and also
+  // promotes any legacy `FAIMSTextField` / `MultipleTextField` field onto the
+  // canonical name in the same write so subsequent edits stay on the new shape.
   const setAnswerMode = (mode: 'short' | 'long') => {
     updateField(nextField => {
+      const params = nextField['component-parameters'];
+      nextField['component-name'] = 'TextField';
+      nextField['component-namespace'] = 'faims-custom';
       if (mode === 'short') {
-        nextField['component-name'] = 'FAIMSTextField';
-        nextField['component-namespace'] = 'faims-custom';
+        delete params.multiline;
+        delete params.rows;
+        delete params.InputProps;
       } else {
-        nextField['component-name'] = 'MultipleTextField';
-        nextField['component-namespace'] = 'formik-material-ui';
-        nextField['component-parameters'].InputProps = {
-          rows: nextField['component-parameters'].InputProps?.rows || 4,
-        };
+        params.multiline = true;
+        params.rows = (params.rows as number | undefined) ?? rows ?? 4;
+        // Drop the legacy nested InputProps if it was carried over from
+        // an un-migrated MultipleTextField field.
+        delete params.InputProps;
       }
     });
   };
@@ -70,7 +86,15 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const updateRows = (value: number) => {
     const safeRows = Number.isFinite(value) && value > 0 ? value : 1;
     updateField(nextField => {
-      nextField['component-parameters'].InputProps = {rows: safeRows};
+      // Always promote to the unified shape before writing — otherwise editing
+      // an un-migrated MultipleTextField would orphan the rows value (the legacy
+      // runtime reads InputProps.rows, the new one reads top-level rows).
+      nextField['component-name'] = 'TextField';
+      nextField['component-namespace'] = 'faims-custom';
+      const params = nextField['component-parameters'];
+      params.multiline = true;
+      params.rows = safeRows;
+      delete params.InputProps;
     });
   };
 

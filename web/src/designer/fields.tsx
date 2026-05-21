@@ -21,12 +21,14 @@ import {CategoryKey} from './field-categories';
 import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
-  // "Text field" is the new chooser-facing name, but it still uses the same
-  // component (`FAIMSTextField`) for compatibility.
+  // Canonical "Text field" entry — new notebooks emit `faims-custom::TextField`.
+  // Existing notebooks that still reference `FAIMSTextField` (or the legacy
+  // `formik-material-ui::MultipleTextField`) are migrated to this canonical
+  // name by `migrateToV4`; the runtime keeps a backward-compat alias for
+  // un-migrated notebooks.
   TextField: {
-    // New chooser entry that reuses the existing FAIMSTextField runtime type.
     'component-namespace': 'faims-custom',
-    'component-name': 'FAIMSTextField',
+    'component-name': 'TextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
       label: 'Text field',
@@ -45,32 +47,6 @@ const fields: {[key: string]: FieldType} = {
     category: CategoryKey.TEXT,
     showInChooser: true,
     order: 1,
-  },
-
-  FAIMSTextField: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'FAIMSTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'FAIMS Text Field',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      // Default speech settings
-      speechAppendMode: false,
-      enableSpeech: true,
-    },
-    initialValue: '',
-    humanReadableName: 'FAIMS Text Field',
-    humanReadableDescription: 'Legacy text field template',
-    category: CategoryKey.TEXT,
-    deprecated: true,
-    deprecationMessage:
-      'Deprecated: use “Text field” for new additions. Existing notebooks continue to work.',
-    showInChooser: false,
-    order: 2,
   },
 
   DateTimePicker: {
@@ -159,6 +135,10 @@ const fields: {[key: string]: FieldType} = {
   },
 
   Checkbox: {
+    // Hidden legacy chooser entry. v4 notebook migration rewrites every
+    // `faims-custom::Checkbox` field to `faims-custom::RadioGroup` with
+    // synthesised Yes/No options, so this template is only retained so
+    // pre-migration field-spec lookups still resolve.
     'component-namespace': 'faims-custom',
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool',
@@ -174,11 +154,11 @@ const fields: {[key: string]: FieldType} = {
     initialValue: false,
     humanReadableName: 'Checkbox',
     humanReadableDescription:
-      'Deprecated boolean yes/no toggle (use Select one instead)',
+      'Deprecated boolean yes/no toggle — replaced by Select single with Yes/No options.',
     category: CategoryKey.CHOICE,
     deprecated: true,
     deprecationMessage:
-      'Deprecated: use “Select one” for new forms. Existing Checkbox fields continue to work.',
+      'Deprecated: existing Checkbox fields are migrated to "Select single" with Yes/No options automatically.',
     showInChooser: false,
     order: 11,
   },
@@ -326,7 +306,10 @@ const fields: {[key: string]: FieldType} = {
   },
 
   Select: {
-    // Kept for old notebooks, hidden in chooser to avoid duplicate "Select one" paths.
+    // Hidden legacy chooser entry. v4 notebook migration rewrites every
+    // `faims-custom::Select` field to `faims-custom::RadioGroup` (Select
+    // single), preserving the existing options. Retained only so pre-
+    // migration field-spec lookups still resolve.
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
@@ -342,13 +325,14 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: '',
-    humanReadableName: 'Select single (Legacy dropdown)',
-    humanReadableDescription: 'Legacy single-choice dropdown (existing forms only)',
+    humanReadableName: 'Select single (legacy dropdown)',
+    humanReadableDescription:
+      'Deprecated MUI-dropdown variant — replaced by Select single (radio).',
     category: CategoryKey.CHOICE,
     showInChooser: false,
     deprecated: true,
     deprecationMessage:
-      'Deprecated in chooser: use “Select one” and enable dropdown display if needed.',
+      'Deprecated: existing Select fields are migrated to "Select single" automatically.',
     order: 19,
   },
 
@@ -468,8 +452,11 @@ const fields: {[key: string]: FieldType} = {
     order: 25,
   },
 
-  Number: {
-    // New chooser entry that reuses the existing NumberField runtime type.
+  // Canonical "Number field" entry — new notebooks emit `faims-custom::NumberField`.
+  // Existing notebooks that still reference `ControlledNumber` are migrated to
+  // this canonical name by `migrateToV4`; the runtime keeps a backward-compat
+  // alias for un-migrated notebooks.
+  NumberField: {
     'component-namespace': 'faims-custom',
     'component-name': 'NumberField',
     'type-returned': 'faims-core::Number',
@@ -495,34 +482,6 @@ const fields: {[key: string]: FieldType} = {
     order: 26,
   },
 
-  NumberField: {
-    // Legacy numberfield retained for backwards compatibility, hidden for new adds.
-    'component-namespace': 'faims-custom',
-    'component-name': 'NumberField',
-    'type-returned': 'faims-core::Number',
-    'component-parameters': {
-      label: 'Number Input',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      required: false,
-      // Defaults to integer (can be floating)
-      numberType: 'integer',
-      InputProps: {
-        type: 'number',
-      },
-    },
-    initialValue: null,
-    humanReadableName: 'Number Input',
-    humanReadableDescription: 'Legacy number input template',
-    category: CategoryKey.NUMBERS,
-    deprecated: true,
-    deprecationMessage:
-      'Deprecated: use “Number field” for new additions. Existing notebooks continue to work.',
-    showInChooser: false,
-    order: 27,
-  },
-
   EmailField: {
     'component-namespace': 'faims-custom',
     'component-name': 'Email',
@@ -543,60 +502,6 @@ const fields: {[key: string]: FieldType} = {
     order: 6,
   },
 
-  ControlledNumberField: {
-    // Legacy bounded-number  retained for backwards compatibility only.
-    'component-namespace': 'faims-custom',
-    'component-name': 'ControlledNumber',
-    'type-returned': 'faims-core::Integer',
-    'component-parameters': {
-      label: 'Controlled Number',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      min: 0,
-      max: 100,
-    },
-    initialValue: null,
-    humanReadableName: 'Controlled Number',
-    humanReadableDescription: 'Legacy bounded number input template',
-    category: CategoryKey.NUMBERS,
-    deprecated: true,
-    deprecationMessage:
-      'Deprecated: use “Number field” for new additions. Existing notebooks continue to work.',
-    showInChooser: false,
-    order: 28,
-  },
-
-  MultipleTextField: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'MultipleTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Multi-line Text Field',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        rows: 4,
-      },
-      // Default speech settings
-      speechAppendMode: false,
-      enableSpeech: true,
-    },
-    initialValue: '',
-    humanReadableName: 'Multi-line Text Field (Deprecated)',
-    humanReadableDescription: 'Deprecated multiline text area (use Text field instead)',
-    category: CategoryKey.TEXT,
-    showInChooser: false,
-    deprecated: true,
-    deprecationMessage:
-      'Deprecated: use “Text field” and switch to “Long answer” in the editor. Existing notebooks continue to work.',
-    order: 10,
-  },
 };
 
 /** All registered field type keys (chooser + factory). */

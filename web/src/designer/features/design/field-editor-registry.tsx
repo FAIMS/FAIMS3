@@ -58,10 +58,8 @@ const multiSelectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
 );
 
 export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
-  FAIMSTextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
-  MultipleTextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
-  TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   TextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
+  TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   DateTimePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   DatePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   MonthPicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
@@ -75,7 +73,6 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   AddressField: ({fieldName}) => <AddressFieldEditor fieldName={fieldName} />,
   TakePoint: ({fieldName}) => <TakePointFieldEditor fieldName={fieldName} />,
   NumberField: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
-  ControlledNumber: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
   RichText: ({fieldName}) => <RichTextEditor fieldName={fieldName} />,
   RelatedRecordSelector: ({fieldName}) => (
     <RelatedRecordEditor fieldName={fieldName} />

@@ -167,16 +167,14 @@ const FieldEditorComponent = ({
 
   const fieldComponent = field['component-name'];
   const fieldComponentLabelMap: Record<string, string> = {
-    FAIMSTextField: 'Text field',
-    MultipleTextField: 'Text field',
+    TextField: 'Text field',
     NumberField: 'Number field',
-    ControlledNumber: 'Controlled number',
     DateTimePicker: 'Date and time picker',
     DatePicker: 'Date only picker',
     MonthPicker: 'Month only picker',
     RadioGroup: 'Select single',
     MultiSelect: 'Select multiple',
-    Select: 'Select single (Legacy dropdown)',
+    Select: 'Select single',
   };
   const fieldComponentDisplayName =
     fieldComponentLabelMap[fieldComponent] || fieldComponent;
