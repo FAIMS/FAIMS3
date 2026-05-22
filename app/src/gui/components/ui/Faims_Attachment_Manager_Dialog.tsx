@@ -50,7 +50,7 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title" style={{minWidth: '300px'}}>
+      <DialogTitle id="alert-dialog-title" sx={{minWidth: '300px'}}>
         {path !== null ? '' : 'Download attachments and photos'}
         <IconButton
           aria-label="close"

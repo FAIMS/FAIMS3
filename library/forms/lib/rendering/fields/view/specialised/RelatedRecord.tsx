@@ -230,8 +230,7 @@ const LinkedRecordItem = ({
         <Stack
           direction="row"
           spacing={1}
-          alignItems="center"
-          justifyContent="space-between"
+          sx={{alignItems: 'center', justifyContent: 'space-between'}}
         >
           {EditButton && (
             <Box sx={{flexShrink: 0}}>
@@ -306,10 +305,12 @@ const NestedRecordItem = ({
       >
         <Stack
           direction={isMobile ? 'column' : 'row'}
-          alignItems={isMobile ? 'flex-start' : 'center'}
-          justifyContent="flex-start"
           spacing={2}
-          sx={{width: '100%'}}
+          sx={{
+            width: '100%',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            justifyContent: 'flex-start',
+          }}
         >
           {EditButton && (
             <Box

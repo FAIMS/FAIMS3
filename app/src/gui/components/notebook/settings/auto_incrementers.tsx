@@ -29,7 +29,7 @@ export default function AutoIncrementerSettingsList(
       {references.length === 0 ? (
         <></>
       ) : (
-        <Box component={Paper} variant={'outlined'} p={2} elevation={0}>
+        <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
           <Typography variant={'h6'} gutterBottom>
             Edit auto-incrementers
           </Typography>
@@ -43,11 +43,7 @@ export default function AutoIncrementerSettingsList(
             const label = ai.label ?? '';
             return (
               <Grid
-                item
-                xs={12}
-                sm={6}
-                md={6}
-                lg={4}
+                size={{xs: 12, sm: 6, md: 6, lg: 4}}
                 key={
                   'autoincrementer_range_' + ai.form_id + ai.field_id + ai.label
                 }
@@ -78,7 +74,7 @@ const AutoIncrementerButton = (props: AutoIncrementerButtonProps) => {
   const [open, setOpen] = useState(false);
 
   return (
-    <Box mt={1}>
+    <Box sx={{mt: 1}}>
       <AutoIncrementEditForm
         project_id={props.project.projectId}
         form_id={props.form_id}

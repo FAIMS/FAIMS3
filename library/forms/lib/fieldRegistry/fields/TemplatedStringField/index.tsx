@@ -32,7 +32,7 @@ const TemplatedStringField = (
         // Placeholder breaks when update occurs
         placeholder={undefined}
         variant="outlined"
-        inputProps={{readOnly: true}}
+        slotProps={{htmlInput: {readOnly: true}}}
         onBlur={props.handleBlur}
       />
     </FieldWrapper>

@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {
   Card,
   Checkbox,
@@ -88,10 +88,10 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid container p={2} rowGap={2}>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{sm: 6, xs: 12}}>
               <DebouncedTextField
                 variant="outlined"
                 label="Zoom Level"
@@ -103,7 +103,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                 }
               />
             </Grid>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{sm: 6, xs: 12}}>
               <FormControl sx={{minWidth: 150}}>
                 <InputLabel id="featureType-label">
                   Select Feature Type
@@ -121,7 +121,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{sm: 6, xs: 12}}>
               <DebouncedTextField
                 variant="outlined"
                 label="Button Label Text"
@@ -134,7 +134,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               />
             </Grid>
             {initFeatureType === 'Point' && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControlLabel
                   control={
                     <Checkbox

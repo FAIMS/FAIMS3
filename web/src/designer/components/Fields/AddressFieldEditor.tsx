@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
 import {
   Card,
   Checkbox,
@@ -59,10 +59,10 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid container p={2} rowGap={1}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -88,7 +88,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox

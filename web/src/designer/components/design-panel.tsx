@@ -264,7 +264,7 @@ export const DesignPanel = () => {
   }, [handleKeyDown]);
 
   return (
-    <>
+    <Box sx={{p: 2}}>
       <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 2}}>
         <Button
           variant="contained"
@@ -490,6 +490,6 @@ export const DesignPanel = () => {
           />
         </Routes>
       </TabContext>
-    </>
+    </Box>
   );
 };

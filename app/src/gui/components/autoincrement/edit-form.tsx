@@ -142,7 +142,7 @@ export const AutoIncrementEditForm = ({
           based on this value.
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           <TextField
             label="Last Used Value"
             type="number"

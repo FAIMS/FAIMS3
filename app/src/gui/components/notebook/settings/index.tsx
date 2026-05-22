@@ -100,13 +100,12 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
         columnSpacing={{xs: 1, sm: 2, md: 3}}
         sx={{mb: {xs: 1, sm: 2, md: 3}}}
       >
-        <Grid item xs={12} sm={12} md={6} lg={4}>
+        <Grid size={{xs: 12, sm: 12, md: 6, lg: 4}}>
           <Box
             component={Paper}
             variant={'outlined'}
             elevation={0}
-            p={2}
-            mb={{xs: 1, sm: 2, md: 3}}
+            sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
               Sync {NOTEBOOK_NAME_CAPITALIZED}
@@ -118,8 +117,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             component={Paper}
             variant={'outlined'}
             elevation={0}
-            p={2}
-            mb={{xs: 1, sm: 2, md: 3}}
+            sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
               Get attachments from other devices
@@ -183,7 +181,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             </Box>
           </Box>
 
-          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
+          <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>
               {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
@@ -204,7 +202,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             </Box>
           </Box>
         </Grid>
-        <Grid item xs={12} sm={12} md={6} lg={8}>
+        <Grid size={{xs: 12, sm: 12, md: 6, lg: 8}}>
           <AutoIncrementerSettingsList
             project={project}
             uiSpec={props.uiSpec}

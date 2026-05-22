@@ -19,6 +19,13 @@ export function getRecordContextFromRecord({
   };
 }
 
+export function formatDate(date: Date | null | undefined): string {
+  if (!date) {
+    return '';
+  }
+  return formatTimestamp(date.getTime());
+}
+
 /**
  * Formats a timestamp into a date-time string in the format "DD/MM/YY H:MMam/pm"
  *

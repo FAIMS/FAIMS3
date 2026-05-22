@@ -124,8 +124,10 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = props => {
         disabled={disabled}
         required={required}
         error={Boolean(errors && errors.length > 0)}
-        InputLabelProps={{
-          shrink: true,
+        slotProps={{
+          inputLabel: {
+            shrink: true,
+          },
         }}
       />
     </FieldWrapper>
@@ -253,16 +255,18 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
           fullWidth={fullWidth ?? true}
           required={required}
           error={Boolean(errors && errors.length > 0)}
-          inputProps={{
-            step: 1, // Enable 1-second precision in the time picker
+          slotProps={{
+            htmlInput: {
+              step: 1, // Enable 1-second precision in the time picker
+            },
+            inputLabel: {
+              shrink: true,
+            },
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: {xs: '4px', sm: '4px 0 0 4px'},
             },
-          }}
-          InputLabelProps={{
-            shrink: true,
           }}
         />
         <Button

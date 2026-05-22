@@ -322,8 +322,10 @@ const UnavailableFilePlaceholder: React.FC<{filename: string}> = ({
       <ListItemText
         primary={filename}
         secondary="File not available - enable download in Settings"
-        secondaryTypographyProps={{
-          sx: {color: theme.palette.warning.main},
+        slotProps={{
+          secondary: {
+            sx: {color: theme.palette.warning.main},
+          },
         }}
       />
     </ListItem>
@@ -433,18 +435,20 @@ const FileItem: React.FC<{
             minWidth: 0,
             flex: 1,
           }}
-          primaryTypographyProps={{
-            sx: {
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              fontSize: {xs: '0.875rem', sm: '1rem'},
+          slotProps={{
+            primary: {
+              sx: {
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                fontSize: {xs: '0.875rem', sm: '1rem'},
+              },
             },
-          }}
-          secondaryTypographyProps={{
-            sx: {
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              fontSize: {xs: '0.75rem', sm: '0.875rem'},
+            secondary: {
+              sx: {
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                fontSize: {xs: '0.75rem', sm: '0.875rem'},
+              },
             },
           }}
           onClick={onClick}
