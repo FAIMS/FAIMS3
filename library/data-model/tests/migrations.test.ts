@@ -31,6 +31,7 @@ import {
   TemplateV1Fields,
   TemplateV2Fields,
   TemplateV3Fields,
+  TemplateV4Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
 
@@ -484,6 +485,49 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         } satisfies EncodedProjectUIModel,
         archived: false,
       } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+];
+
+const TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV3toV4Migration - adds isPublic false',
+    dbType: DatabaseType.TEMPLATES,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'tpl-v4',
+      _rev: '4-rev',
+      version: 2,
+      name: 'My tpl',
+      metadata: {pre_description: 'x'},
+      archived: false,
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team-z',
+    } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-v4',
+        _rev: '4-rev',
+        version: 2,
+        name: 'My tpl',
+        metadata: {pre_description: 'x'},
+        archived: false,
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team-z',
+        isPublic: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
     },
   },
 ];
@@ -1871,6 +1915,7 @@ MIGRATION_TEST_CASES.push(...PROJECT_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);

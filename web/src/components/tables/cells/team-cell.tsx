@@ -5,24 +5,50 @@ import {Link} from '@tanstack/react-router';
 
 interface TeamCellComponentProps {
   teamId: string;
+  /**
+   * When set (e.g. from GET /api/templates), skips fetching team details — avoids 401
+   * for users who can read a public template but not the owning team.
+   */
+  teamDisplayName?: string;
 }
 
 /**
  * Component: TeamCellComponent
  * Renders a team name as a clickable link in a table cell
  */
-export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
+export const TeamCellComponent = ({
+  teamId,
+  teamDisplayName,
+}: TeamCellComponentProps) => {
   const {user} = useAuth();
+  const hasInjectedName =
+    teamDisplayName !== undefined && teamDisplayName.length > 0;
+
+  const {data: team, isLoading, isError} = useGetTeam({
+    user,
+    teamId,
+    enabled: !hasInjectedName,
+  });
 
   if (!user) {
     return <p>Unauthenticated</p>;
   }
 
-  const {data: team, isLoading, isError} = useGetTeam({user, teamId});
+  const displayLabel = hasInjectedName
+    ? teamDisplayName
+    : isLoading
+      ? undefined
+      : isError
+        ? teamId
+        : (team?.name ?? teamId);
 
-  return isLoading ? (
-    <Skeleton className="h-5 w-24" />
-  ) : (
+  const linkActive = hasInjectedName || !!team;
+
+  if (!hasInjectedName && isLoading) {
+    return <Skeleton className="h-5 w-24" />;
+  }
+
+  return (
     <div
       className="w-full h-full"
       onClick={e => {
@@ -32,15 +58,15 @@ export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
     >
       <Link
         to="/teams/$teamId"
-        disabled={!team}
+        disabled={!linkActive}
         params={{teamId}}
         className={
-          'text-gray-700' + team
-            ? ' hover:text-gray-900 cursor-pointer transition-colors'
-            : ''
+          linkActive
+            ? 'cursor-pointer text-gray-700 transition-colors hover:text-gray-900'
+            : 'text-gray-700'
         }
       >
-        {isError ? teamId : isLoading ? 'Loading...' : (team?.name ?? teamId)}
+        {displayLabel ?? 'Loading...'}
       </Link>
     </div>
   );

@@ -113,6 +113,49 @@ export function isAuthorized({
 }
 
 /**
+ * True if any **global** role (including inherited actions) grants the action.
+ * Use when there is no resource id (e.g. list/table UI), including for actions
+ * that are resource-specific but granted only via global roles.
+ */
+export function globalRolesGrantAction(
+  decodedToken: DecodedTokenPermissions,
+  action: Action
+): boolean {
+  return roleGrantsAction({roles: decodedToken.globalRoles, action});
+}
+
+/**
+ * Whether the user may read a template (via private roles or the public list).
+ */
+export function userCanReadTemplateDocument({
+  decodedToken,
+  template,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  template: {_id: string; isPublic?: boolean};
+}): boolean {
+  if (
+    isAuthorized({
+      decodedToken,
+      action: Action.READ_TEMPLATE_DETAILS,
+      resourceId: template._id,
+    })
+  ) {
+    return true;
+  }
+  if (
+    template.isPublic === true &&
+    isAuthorized({
+      decodedToken,
+      action: Action.READ_PUBLIC_TEMPLATE_DETAILS,
+    })
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Record owner comes from the record document's `created_by` / hydrated `createdBy`
  * — same identifier space as API `user_id` and JWT `sub` / app username.
  */

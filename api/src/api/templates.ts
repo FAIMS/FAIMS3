@@ -24,13 +24,16 @@ import {
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
   GetTemplateSurveyReferencesResponse,
+  isAuthorized,
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PostRestoreTemplateResponse,
+  PutTemplateSetVisibilityInputSchema,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   Role,
+  userCanReadTemplateDocument,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -43,13 +46,15 @@ import {
   getTemplate,
   getTemplates,
   restoreTemplateFromArchive,
+  setTemplateVisibility,
   updateExistingTemplate,
+  withOwnedByTeamDisplayName,
+  withOwnedByTeamDisplayNames,
 } from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
 import {
   isAllowedToMiddleware,
   requireAuthenticationAPI,
-  userCanDo,
 } from '../middleware';
 
 import {saveExpressUser} from '../couchdb/users';
@@ -92,15 +97,50 @@ api.get(
       return includeArchived ? archived : !archived;
     });
 
+    const visible = filteredByArchive.filter(t =>
+      userCanReadTemplateDocument({
+        decodedToken: {
+          globalRoles: req.user!.globalRoles,
+          resourceRoles: req.user!.resourceRoles,
+        },
+        template: t,
+      })
+    );
     res.json({
-      templates: filteredByArchive.filter(t =>
-        userCanDo({
-          action: Action.READ_TEMPLATE_DETAILS,
-          user: req.user!,
-          resourceId: t._id,
-        })
-      ),
+      templates: await withOwnedByTeamDisplayNames(visible),
     });
+  }
+);
+
+/**
+ * GET count of surveys (projects) that still reference this template id.
+ */
+api.get(
+  '/:id/references',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const template = await getTemplate(req.params.id);
+    if (
+      !userCanReadTemplateDocument({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        template,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+    const ids = await getProjectIdsReferencingTemplate(req.params.id);
+    res.json({count: ids.length});
   }
 );
 
@@ -111,39 +151,28 @@ api.get(
 api.get(
   '/:id',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.READ_TEMPLATE_DETAILS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetTemplateByIdResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
     const template = await getTemplate(req.params.id);
-    res.json(template);
-  }
-);
-
-/**
- * GET count of surveys (projects) that still reference this template id.
- */
-api.get(
-  '/:id/references',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.READ_TEMPLATE_DETAILS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
-  async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
-    const ids = await getProjectIdsReferencingTemplate(req.params.id);
-    res.json({count: ids.length});
+    if (
+      !userCanReadTemplateDocument({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        template,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+    res.json(await withOwnedByTeamDisplayName(template));
   }
 );
 
@@ -186,9 +215,25 @@ api.post(
       throw new Exceptions.UnauthorizedException();
     }
 
+    const body = req.body as PostCreateTemplateInput;
+    if (
+      body.isPublic === true &&
+      !isAuthorized({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        action: Action.CREATE_PUBLIC_TEMPLATE,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to create a public template.'
+      );
+    }
+
     // Now we can create the new template and return it
     const newTemplate = await createTemplate({
-      payload: req.body,
+      payload: body,
     });
 
     // Make the creator the admin
@@ -200,6 +245,28 @@ api.post(
     await saveExpressUser(req.user);
 
     res.json(newTemplate);
+  }
+);
+
+/**
+ * PUT set public/private visibility only.
+ */
+api.put(
+  '/:id/visibility',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_VISIBILITY,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutTemplateSetVisibilityInputSchema,
+  }),
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
+    const updated = await setTemplateVisibility(req.params.id, req.body.isPublic);
+    res.json(updated);
   }
 );
 

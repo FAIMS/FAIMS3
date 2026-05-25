@@ -426,6 +426,8 @@ export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
 }).extend({
   // prefer to use a nicer team ID input field
   teamId: z.string().trim().min(1).optional(),
+  /** When true, template is visible in the public list for all users */
+  isPublic: z.boolean().optional(),
 });
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
@@ -459,16 +461,43 @@ export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
-// GET list all templates response (summaries only; no ui-specification)
+/** PUT /api/templates/:id/visibility */
+export const PutTemplateSetVisibilityInputSchema = z.object({
+  isPublic: z.boolean(),
+});
+export type PutTemplateSetVisibilityInput = z.infer<
+  typeof PutTemplateSetVisibilityInputSchema
+>;
+
+/**
+ * Full template document as returned by GET /templates/:id.
+ * Extends the stored document with optional server-injected fields (not persisted in CouchDB).
+ */
+export const TemplateApiDocumentSchema = ExistingTemplateDocumentSchema.extend({
+  /** Owning team's display name, looked up by the API when ownedByTeamId is set. */
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiDocument = z.infer<typeof TemplateApiDocumentSchema>;
+
+/**
+ * Template list row from GET /templates (summaries only; no ui-specification).
+ * Includes the same optional {@link TemplateApiDocument.ownedByTeamDisplayName} injection as the detail GET.
+ */
+export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
+
+// GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateListItemSchema),
+  templates: z.array(TemplateApiListItemSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
 
 // GET a specific template by _id response
-export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
+export const GetTemplateByIdResponseSchema = TemplateApiDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;

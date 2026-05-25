@@ -41,6 +41,8 @@ import {
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   PutUpdateTemplateResponseSchema,
+  TemplateApiDocumentSchema,
+  TemplateApiListItemSchema,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {Express} from 'express';
@@ -54,6 +56,7 @@ import {
   adminUserName,
   beforeApiTests,
   localUserToken,
+  notebookUserToken,
   requestAuthAndType,
 } from './utils';
 import {createSampleTeam} from './teams.test';
@@ -217,6 +220,22 @@ const restoreTemplateFromArchive = async (
   )
     .expect(200)
     .then(res => PostRestoreTemplateResponseSchema.parse(res.body));
+};
+
+const putTemplateSetVisibility = async (
+  app: Express,
+  templateId: string,
+  isPublic: boolean,
+  token: string = adminToken
+) => {
+  return await requestAuthAndType(
+    request(app)
+      .put(`${TEMPLATE_API_BASE}/${templateId}/visibility`)
+      .send({isPublic}),
+    token
+  )
+    .expect(200)
+    .then(res => PutUpdateTemplateResponseSchema.parse(res.body));
 };
 
 /**
@@ -544,6 +563,106 @@ describe('template API tests', () => {
     });
   });
 
+  it('GET list and GET by id inject ownedByTeamDisplayName for team-owned templates', async () => {
+    const team = await createSampleTeam(app, {teamName: 'Acme Research'});
+    const {template} = await createSampleTemplate(app, {
+      teamId: team._id,
+      name: 'team-owned-for-display-name',
+    });
+
+    const listed = await listTemplates(app);
+    const fromList = listed.templates.find(t => t._id === template._id);
+    expect(fromList?.ownedByTeamDisplayName).to.equal('Acme Research');
+    if (fromList) {
+      TemplateApiListItemSchema.parse(fromList);
+    }
+
+    const fetched = await getATemplate(app, template._id);
+    expect(fetched.ownedByTeamDisplayName).to.equal('Acme Research');
+    TemplateApiDocumentSchema.parse(fetched);
+
+    const {template: solo} = await createSampleTemplate(app, {
+      name: 'no-team-display-name',
+    });
+    const alone = await getATemplate(app, solo._id);
+    expect(alone.ownedByTeamDisplayName).to.be.undefined;
+    TemplateApiDocumentSchema.parse(alone);
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+    await setTemplateArchived(app, solo._id, true);
+    await deleteATemplate(app, solo._id);
+  });
+
+  it('GET list sets ownedByTeamDisplayName for multiple templates sharing one team (batch enrichment)', async () => {
+    const team = await createSampleTeam(app, {teamName: 'Shared Batch Team'});
+    const {template: a} = await createSampleTemplate(app, {
+      teamId: team._id,
+      name: 'batch-a',
+    });
+    const {template: b} = await createSampleTemplate(app, {
+      teamId: team._id,
+      name: 'batch-b',
+    });
+
+    const listed = await listTemplates(app);
+    for (const id of [a._id, b._id]) {
+      const row = listed.templates.find(t => t._id === id);
+      expect(row?.ownedByTeamDisplayName).to.equal('Shared Batch Team');
+    }
+
+    await setTemplateArchived(app, a._id, true);
+    await setTemplateArchived(app, b._id, true);
+    await deleteATemplate(app, a._id);
+    await deleteATemplate(app, b._id);
+  });
+
+  it('includeArchived list still injects ownedByTeamDisplayName', async () => {
+    const team = await createSampleTeam(app, {teamName: 'Archived Team Name'});
+    const {template} = await createSampleTemplate(app, {
+      teamId: team._id,
+      name: 'archived-with-team',
+    });
+    await setTemplateArchived(app, template._id, true);
+
+    const archivedOnly = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    const row = archivedOnly.templates.find(t => t._id === template._id);
+    expect(row?.ownedByTeamDisplayName).to.equal('Archived Team Name');
+
+    await deleteATemplate(app, template._id);
+  });
+
+  it('POST create and PUT update responses do not include ownedByTeamDisplayName', async () => {
+    const team = await createSampleTeam(app, {teamName: 'No Echo Team'});
+    const nb = getSampleNotebook();
+
+    const createRes = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...nb,
+          name: 'create-no-display-name-field',
+          teamId: team._id,
+        } satisfies PostCreateTemplateInput),
+      adminToken
+    ).expect(200);
+    expect(createRes.body).to.not.have.property('ownedByTeamDisplayName');
+    const created = PostCreateTemplateResponseSchema.parse(createRes.body);
+
+    const updated = await updateATemplate(
+      app,
+      created._id,
+      {name: 'updated-name-without-display-field'},
+      adminToken
+    );
+    expect(updated).to.not.have.property('ownedByTeamDisplayName');
+
+    await setTemplateArchived(app, created._id, true);
+    await deleteATemplate(app, created._id);
+  });
+
   it('updates team ownership', async () => {
     const team1 = await createSampleTeam(app, {teamName: 'team1'});
     const team2 = await createSampleTeam(app, {teamName: 'team2'});
@@ -551,6 +670,10 @@ describe('template API tests', () => {
     // create a template
     const {template} = await createSampleTemplate(app, {
       teamId: team1._id,
+    });
+
+    await getATemplate(app, template._id).then(initial => {
+      expect(initial.ownedByTeamDisplayName).to.equal('team1');
     });
 
     // update team ownership
@@ -569,6 +692,7 @@ describe('template API tests', () => {
       // Check the new properties
       expect(newTemplate.version).to.equal(2);
       expect(newTemplate.ownedByTeamId).to.equal(team2._id);
+      expect(newTemplate.ownedByTeamDisplayName).to.equal('team2');
     });
   });
 
@@ -926,6 +1050,118 @@ describe('template API tests', () => {
           name: '12345',
         } satisfies CreateNotebookFromTemplate),
       localUserToken
+    ).expect(401);
+  });
+
+  it('persists isPublic on create and exposes visibility', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'public-flag',
+      payloadExtras: {isPublic: true},
+    });
+    expect(template.isPublic).to.equal(true);
+
+    const listed = await listTemplates(app, localUserToken);
+    expect(listed.templates.some(t => t._id === template._id)).to.equal(true);
+
+    await getATemplate(app, template._id, localUserToken).then(t =>
+      expect(t.isPublic).to.equal(true)
+    );
+  });
+
+  it('POST create rejects isPublic true without CREATE_PUBLIC_TEMPLATE', async () => {
+    const nb = getSampleNotebook();
+    await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...nb,
+          name: 'no-public-without-ops',
+          isPublic: true,
+        } satisfies PostCreateTemplateInput),
+      notebookUserToken
+    )
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+
+  it('POST create allows omitting isPublic for general creator (private)', async () => {
+    const nb = getSampleNotebook();
+    const res = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...nb,
+          name: 'creator-private-template',
+        } satisfies PostCreateTemplateInput),
+      notebookUserToken
+    )
+      .set('Content-Type', 'application/json')
+      .expect(200);
+    const template = PostCreateTemplateResponseSchema.parse(res.body);
+    expect(template.isPublic !== true).to.equal(true);
+  });
+
+  it('general user cannot read private template by id', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'private-only',
+    });
+    expect(template.isPublic !== true).to.equal(true);
+
+    await requestAuthAndType(
+      request(app).get(`${TEMPLATE_API_BASE}/${template._id}`),
+      localUserToken
+    ).expect(401);
+  });
+
+  it('PUT full template update does not change isPublic via stray body field', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'no-inline-visibility',
+    });
+    await requestAuthAndType(
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
+        metadata: template.metadata,
+        'ui-specification': template['ui-specification'],
+        name: template.name,
+        isPublic: true,
+      } as PutUpdateTemplateInput & {isPublic: boolean})
+    ).expect(200);
+
+    const unchanged = await getATemplate(app, template._id);
+    expect(unchanged.isPublic !== true).to.equal(true);
+  });
+
+  it('PUT /visibility updates isPublic and is forbidden without operations admin', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'visibility-endpoint',
+    });
+
+    const updated = await putTemplateSetVisibility(app, template._id, true);
+    expect(updated.isPublic).to.equal(true);
+
+    await requestAuthAndType(
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}/visibility`)
+        .send({isPublic: false}),
+      localUserToken
+    ).expect(401);
+
+    const afterDenied = await getATemplate(app, template._id);
+    expect(afterDenied.isPublic).to.equal(true);
+  });
+
+  it('notebook creator cannot instantiate another users private template', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'owned-by-admin',
+    });
+
+    await requestAuthAndType(
+      request(app)
+        .post(`${NOTEBOOKS_API_BASE}`)
+        .send({
+          name: 'clone attempt',
+          template_id: template._id,
+        } satisfies CreateNotebookFromTemplate),
+      notebookUserToken
     ).expect(401);
   });
 });
