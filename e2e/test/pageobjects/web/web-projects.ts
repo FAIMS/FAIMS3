@@ -1,6 +1,8 @@
 import {$, $$, browser} from '@wdio/globals';
 import {Page} from '../page.ts';
 
+const WEB_URL = process.env.WEB_URL || 'http://localhost:3001';
+
 /**
  * Page object for the Projects list page (/_protected/projects/).
  *
@@ -16,9 +18,17 @@ class WebProjectsPage extends Page {
    * Uses a root-relative URL so wdio prepends the configured baseUrl.
    */
   public async open() {
-    await browser.url('/projects');
+    await browser.url(`${WEB_URL}/projects`);
     await this.setBrowserSize();
     await this.waitForPageLoad();
+    await this.waitForProjectsReady();
+  }
+
+  async waitForProjectsReady() {
+    await this.heading.waitForDisplayed({
+      timeout: 15000,
+      timeoutMsg: 'Expected projects list heading on /projects',
+    });
   }
 
   /** Page heading — text varies by deployment (e.g. "Notebooks"). */
@@ -47,7 +57,17 @@ class WebProjectsPage extends Page {
    * the page has loaded (regardless of whether any projects exist).
    */
   async isPageDisplayed(): Promise<boolean> {
-    return this.heading.isDisplayed();
+    try {
+      await this.waitForProjectsReady();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async waitForCreateButton() {
+    await this.createButton.scrollIntoView();
+    await this.createButton.waitForDisplayed({timeout: 10000});
   }
 
   /** Number of data rows in the projects table (excludes header row). */
@@ -57,7 +77,12 @@ class WebProjectsPage extends Page {
   }
 
   async isCreateButtonDisplayed(): Promise<boolean> {
-    return this.createButton.isDisplayed();
+    try {
+      await this.waitForCreateButton();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

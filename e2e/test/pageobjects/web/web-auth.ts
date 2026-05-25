@@ -24,7 +24,7 @@ class WebAuth extends Page {
   async login(email: string, password: string) {
     // Navigate to dashboard root; wdio prepends baseUrl automatically so '/'
     // resolves to http://localhost:3001/ regardless of which conf is active.
-    await browser.url('/');
+    await browser.url(WEB_URL);
     await this.setBrowserSize();
 
     // The protected route redirects unauthenticated users to the API login page.
@@ -61,14 +61,33 @@ class WebAuth extends Page {
     // Wait for the TanStack Router beforeLoad (token exchange) and React
     // render to complete.
     await this.waitForPageLoad();
+
+    // Mobile viewports use an off-canvas Sheet for the sidebar; data-sidebar="sidebar"
+    // is only in the DOM when that sheet is open. The protected layout <main> is
+    // always rendered once auth + token exchange complete.
+    await browser.waitUntil(
+      async () => {
+        const url = await browser.getUrl();
+        return (
+          url.startsWith(WEB_URL) &&
+          !url.includes('exchangeToken') &&
+          (await $('main').isExisting())
+        );
+      },
+      {
+        timeout: 15000,
+        timeoutMsg:
+          'Expected authenticated dashboard (main content) after login',
+      }
+    );
   }
 
   /**
-   * Returns true when the authenticated layout (sidebar) is visible.
-   * The ShadCN Sidebar component renders with data-sidebar="sidebar".
+   * Returns true when the authenticated dashboard shell is present.
    */
   async isAuthenticated(): Promise<boolean> {
-    return $('[data-sidebar="sidebar"]').isExisting();
+    const url = await browser.getUrl();
+    return url.startsWith(WEB_URL) && (await $('main').isExisting());
   }
 }
 

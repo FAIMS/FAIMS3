@@ -1,6 +1,5 @@
 import WebAuth from '../../pageobjects/web/web-auth.ts';
 import WebProfilePage from '../../pageobjects/web/web-profile.ts';
-
 /**
  * E2E tests for the User Profile page of the web management dashboard.
  *
@@ -33,15 +32,13 @@ describe('Web Dashboard - Profile', () => {
 
   it('should show the Change Password button', async () => {
     await WebProfilePage.open();
-    await WebProfilePage.changePasswordButton.waitForDisplayed({
-      timeout: 10000,
-    });
+    await WebProfilePage.waitForChangePasswordButton();
     expect(await WebProfilePage.isChangePasswordButtonDisplayed()).toBe(true);
   });
 
   it('should show the Manage Long-Lived Tokens button', async () => {
     await WebProfilePage.open();
-    await WebProfilePage.manageTokensButton.waitForDisplayed({timeout: 10000});
+    await WebProfilePage.waitForManageTokensButton();
     expect(await WebProfilePage.isManageTokensButtonDisplayed()).toBe(true);
     await WebProfilePage.takeScreenshot('web-profile', 'profile-controls');
   });

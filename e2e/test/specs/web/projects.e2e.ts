@@ -4,17 +4,16 @@ import WebProjectsPage from '../../pageobjects/web/web-projects.ts';
 /**
  * E2E tests for the Projects list page of the web management dashboard.
  *
- * Credentials: TEST_ADMIN_USERNAME / TEST_ADMIN_PASSWORD env vars.
- * Falls back to TEST_USERNAME / TEST_PASSWORD for backwards compatibility.
+ * Team member suite: TEST_USER_USERNAME / TEST_USER_PASSWORD (seed-member-both).
+ * Operations admin suite: TEST_OPERATIONS_ADMIN_USERNAME / TEST_OPERATIONS_ADMIN_PASSWORD.
  *
  * The tests do not assert on row count because no test-data pre-seeding is
  * performed at this stage — an empty list is a valid state.
  */
 describe('Web Dashboard - Projects Team Member', () => {
   const TEST_USERNAME =
-    process.env.TEST_PROJECT_CONTRIBUTOR_USERNAME || 'test@example.com';
-  const TEST_PASSWORD =
-    process.env.TEST_PROJECT_CONTRIBUTOR_PASSWORD || 'testpassword123';
+    process.env.TEST_USER_USERNAME || 'test@example.com';
+  const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'testpassword123';
 
   before(async () => {
     // Start each suite with a clean session to avoid state leaking from other
@@ -36,7 +35,7 @@ describe('Web Dashboard - Projects Team Member', () => {
     await WebProjectsPage.open();
     // Wait for the button to become visible (it is rendered after the data
     // fetch resolves, even when the list is empty).
-    await WebProjectsPage.createButton.waitForDisplayed({timeout: 10000});
+    await WebProjectsPage.waitForCreateButton();
     expect(await WebProjectsPage.isCreateButtonDisplayed()).toBe(true);
   });
 });

@@ -1,6 +1,8 @@
 import {$, browser} from '@wdio/globals';
 import {Page} from '../page.ts';
 
+const WEB_URL = process.env.WEB_URL || 'http://localhost:3001';
+
 /**
  * Page object for the User Profile page (/_protected/profile/).
  *
@@ -16,9 +18,18 @@ class WebProfilePage extends Page {
    * Uses a root-relative URL so wdio prepends the configured baseUrl.
    */
   public async open() {
-    await browser.url('/profile');
+    await browser.url(`${WEB_URL}/profile`);
     await this.setBrowserSize();
     await this.waitForPageLoad();
+    await this.waitForProfileReady();
+  }
+
+  /** Wait until the profile route has rendered (not login redirect). */
+  async waitForProfileReady() {
+    await this.heading.waitForDisplayed({
+      timeout: 15000,
+      timeoutMsg: 'Expected User Profile heading on /profile',
+    });
   }
 
   /** Page heading — always "User Profile". */
@@ -36,16 +47,20 @@ class WebProfilePage extends Page {
   }
 
   /**
-   * "Manage Long-Lived Tokens" button/link.
-   * Navigates to /profile/long-lived-tokens.
+   * Control for /profile/long-lived-tokens (TanStack Link wrapping a Button).
    */
   get manageTokensButton() {
-    return $('button=Manage Long-Lived Tokens');
+    return $('a[href*="long-lived-tokens"]');
   }
 
   /** Returns true when the profile heading is visible. */
   async isPageDisplayed(): Promise<boolean> {
-    return this.heading.isDisplayed();
+    try {
+      await this.waitForProfileReady();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -53,15 +68,38 @@ class WebProfilePage extends Page {
    * Used to verify the logged-in user's email is shown on the page.
    */
   async getPageText(): Promise<string> {
-    return $('main').getText();
+    await this.waitForProfileReady();
+    const main = await $('main');
+    await main.waitForExist({timeout: 10000});
+    return main.getText();
+  }
+
+  async waitForChangePasswordButton() {
+    await this.changePasswordButton.scrollIntoView();
+    await this.changePasswordButton.waitForDisplayed({timeout: 10000});
+  }
+
+  async waitForManageTokensButton() {
+    await this.manageTokensButton.scrollIntoView();
+    await this.manageTokensButton.waitForDisplayed({timeout: 10000});
   }
 
   async isChangePasswordButtonDisplayed(): Promise<boolean> {
-    return this.changePasswordButton.isDisplayed();
+    try {
+      await this.waitForChangePasswordButton();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async isManageTokensButtonDisplayed(): Promise<boolean> {
-    return this.manageTokensButton.isDisplayed();
+    try {
+      await this.waitForManageTokensButton();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

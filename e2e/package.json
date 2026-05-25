@@ -13,7 +13,17 @@
     "test:e2e:web": "wdio run wdio.web.conf.ts",
     "test:e2e:web:desktop": "VIEWPORT=desktop pnpm run test:e2e:web",
     "test:e2e:web:wide": "VIEWPORT=wide pnpm run test:e2e:web",
-    "test:e2e:web:all": "pnpm run test:e2e:web:desktop && pnpm run test:e2e:web:wide"
+    "test:e2e:web:all": "pnpm run test:e2e:web:desktop && pnpm run test:e2e:web:wide",
+    "test:e2e:headless": "wdio run wdio.headless.conf.ts",
+    "test:e2e:headless:mobile": "VIEWPORT=mobile pnpm run test:e2e:headless",
+    "test:e2e:headless:tablet": "VIEWPORT=tablet pnpm run test:e2e:headless",
+    "test:e2e:headless:desktop": "VIEWPORT=desktop pnpm run test:e2e:headless",
+    "test:e2e:headless:wide": "VIEWPORT=wide pnpm run test:e2e:headless",
+    "test:e2e:headless:all": "pnpm run test:e2e:headless:mobile && pnpm run test:e2e:headless:tablet && pnpm run test:e2e:headless:desktop && pnpm run test:e2e:headless:wide",
+    "test:e2e:headless:web": "wdio run wdio.headless.web.conf.ts",
+    "test:e2e:headless:web:desktop": "VIEWPORT=desktop pnpm run test:e2e:headless:web",
+    "test:e2e:headless:web:wide": "VIEWPORT=wide pnpm run test:e2e:headless:web",
+    "test:e2e:headless:web:all": "pnpm run test:e2e:headless:web:desktop && pnpm run test:e2e:headless:web:wide"
   },
   "devDependencies": {
     "@testing-library/webdriverio": "^3.2.1",
