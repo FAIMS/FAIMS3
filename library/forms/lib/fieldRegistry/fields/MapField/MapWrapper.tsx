@@ -20,6 +20,7 @@
 
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MapIcon from '@mui/icons-material/LocationOn';
 import {
   Alert,
@@ -455,48 +456,39 @@ function MapWrapper(props: MapProps) {
             </Toolbar>
           </AppBar>
 
-          <Grid container spacing={2} sx={{height: '100%'}}>
-            {/* Info Banner */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top:
-                  props.featureType === 'Point' && props.allowSetToCurrentPoint
-                    ? '70px' // align properly
-                    : '68px',
-                left: 8,
-                // Account for the "Use Current Location" button if present
-                right:
-                  props.featureType === 'Point' && props.allowSetToCurrentPoint
-                    ? 70 // Leave space for the control button
-                    : 8,
-                zIndex: 1000,
-                backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                backdropFilter: 'blur(4px)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-                pointerEvents: 'none', // Allow clicks to pass through to map
-              }}
+          {/* Inline info banner — sits below the toolbar, above the map.
+              Non-floating so it cannot be mistaken for a search input. */}
+          <Box
+            role="note"
+            aria-live="polite"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              backgroundColor: theme.palette.info.light + '22',
+              borderBottom: `1px solid ${theme.palette.info.light}`,
+              color: theme.palette.info.dark,
+              padding: '6px 12px',
+              width: '100%',
+            }}
+          >
+            <InfoOutlinedIcon
+              fontSize="small"
+              sx={{color: theme.palette.info.main}}
+            />
+            <Typography
+              variant="caption"
+              sx={{fontWeight: 500, lineHeight: 1.3}}
             >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.primary,
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                }}
-              >
-                {props.featureType === 'Point'
-                  ? 'Click on the map to select a point.'
-                  : props.featureType === 'LineString'
-                    ? 'Click on the map for each segment of your line. Click twice on the final segment to complete your line.'
-                    : 'Click on the map for each corner of your shape, finishing where you started.'}
-              </Typography>
-            </Box>
+              {props.featureType === 'Point'
+                ? 'Tap on the map to select a point.'
+                : props.featureType === 'LineString'
+                  ? 'Tap on the map for each segment of your line. Tap twice on the final segment to complete it.'
+                  : 'Tap on the map for each corner of your shape, finishing where you started.'}
+            </Typography>
+          </Box>
 
+          <Grid container spacing={2} sx={{flex: 1, minHeight: 0}}>
             <MapComponent
               config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
