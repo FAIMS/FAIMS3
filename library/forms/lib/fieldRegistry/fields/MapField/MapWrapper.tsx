@@ -130,6 +130,7 @@ function MapWrapper(props: MapProps) {
 
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
+  const [showConfirmClose, setShowConfirmClose] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
 
   // Has the user drawn features?
@@ -141,6 +142,21 @@ function MapWrapper(props: MapProps) {
   );
 
   const theme = useTheme();
+
+  // The bss theme exposes a maroon/red palette for destructive/secondary
+  // actions. Fall back gracefully on themes that don't define it.
+  const themeWithBss = theme as typeof theme & {
+    palette: {
+      highlightColor?: {main?: string; contrastText?: string};
+      dialogButton?: {confirm?: string; hoverBackground?: string};
+    };
+  };
+  const maroonMain =
+    themeWithBss.palette.highlightColor?.main ??
+    themeWithBss.palette.dialogButton?.confirm ??
+    '#B10000';
+  const maroonHover =
+    themeWithBss.palette.dialogButton?.hoverBackground ?? '#711111';
 
   // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
@@ -234,6 +250,16 @@ function MapWrapper(props: MapProps) {
     } else if (action === 'close') {
       setMapOpen(false);
     }
+  };
+
+  // Close attempt — if the user has drawn anything in this session, confirm
+  // before discarding. Otherwise close immediately.
+  const handleCloseAttempt = () => {
+    if (hasDrawnFeatures) {
+      setShowConfirmClose(true);
+      return;
+    }
+    setMapOpen(false);
   };
 
   // open map
@@ -378,29 +404,27 @@ function MapWrapper(props: MapProps) {
               >
                 <IconButton
                   edge="start"
-                  color="inherit"
-                  onClick={() => setMapOpen(false)}
+                  onClick={handleCloseAttempt}
                   aria-label="close"
                   sx={{
-                    backgroundColor: theme.palette.primary.dark,
-                    color: theme.palette.background.default,
-                    fontSize: '16px',
+                    backgroundColor: 'transparent',
+                    color: maroonMain,
+                    border: `1px solid ${maroonMain}`,
+                    fontSize: '14px',
                     gap: '4px',
-                    fontWeight: 'bold',
+                    fontWeight: 500,
                     borderRadius: '6px',
-                    padding: '6px 12px',
-                    transition:
-                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    padding: '4px 10px',
+                    transition: 'background-color 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: theme.palette.text.primary,
-                      transform: 'scale(1.05)',
+                      backgroundColor: maroonHover,
+                      color: theme.palette.background.default,
                     },
                   }}
                 >
                   <CloseIcon
                     sx={{
-                      stroke: theme.palette.background.default,
-                      strokeWidth: '1.5',
+                      fontSize: '18px',
                     }}
                   />
                   Close
@@ -572,6 +596,48 @@ function MapWrapper(props: MapProps) {
               }}
             >
               Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Confirm-on-close: shown when user closes the map dialog
+            after drawing/modifying so their work isn't silently discarded. */}
+        <Dialog
+          open={showConfirmClose}
+          onClose={() => setShowConfirmClose(false)}
+        >
+          <Alert severity="warning">
+            <AlertTitle>Discard unsaved location?</AlertTitle>
+            You have drawn a location but haven't saved it. Closing now will
+            discard your changes.
+          </Alert>
+          <DialogActions>
+            <Button
+              onClick={() => setShowConfirmClose(false)}
+              sx={{
+                color: theme.palette.text.primary,
+                fontWeight: 500,
+              }}
+            >
+              Keep editing
+            </Button>
+            <Button
+              onClick={() => {
+                setShowConfirmClose(false);
+                setHasDrawnFeatures(false);
+                featuresLayer?.getSource()?.clear();
+                setMapOpen(false);
+              }}
+              sx={{
+                color: maroonMain,
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: maroonHover,
+                  color: theme.palette.background.default,
+                },
+              }}
+            >
+              Discard
             </Button>
           </DialogActions>
         </Dialog>
