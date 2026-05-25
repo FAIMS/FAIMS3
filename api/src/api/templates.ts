@@ -52,10 +52,7 @@ import {
   withOwnedByTeamDisplayNames,
 } from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
-import {
-  isAllowedToMiddleware,
-  requireAuthenticationAPI,
-} from '../middleware';
+import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 
 import {saveExpressUser} from '../couchdb/users';
 import patch from '../utils/patchExpressAsync';
@@ -265,7 +262,10 @@ api.put(
     body: PutTemplateSetVisibilityInputSchema,
   }),
   async (req, res: Response<PutUpdateTemplateResponse>) => {
-    const updated = await setTemplateVisibility(req.params.id, req.body.isPublic);
+    const updated = await setTemplateVisibility(
+      req.params.id,
+      req.body.isPublic
+    );
     res.json(updated);
   }
 );

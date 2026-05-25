@@ -247,9 +247,7 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
     id: 'restore',
     enableSorting: false,
     enableGlobalFilter: false,
-    header: () => (
-      <span className="sr-only">Restore from archive</span>
-    ),
+    header: () => <span className="sr-only">Restore from archive</span>,
     meta: ARCHIVE_ACTION_COL_META,
     cell: ({row}) => <ArchivedProjectRestoreCell row={row.original} />,
   },
