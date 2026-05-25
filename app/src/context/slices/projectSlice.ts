@@ -7,6 +7,7 @@ import {
   ProjectUIModel,
   PublicServerInfo,
 } from '@faims3/data-model';
+import {DASS_MEASURES, perf} from '@faims3/instrumentation';
 import {
   createAsyncThunk,
   createSelector,
@@ -1530,6 +1531,8 @@ export const activateProject = createAsyncThunk<
   void,
   ProjectIdentity & DatabaseAuth
 >('projects/activateProject', async (payload, {dispatch, getState}) => {
+  return perf.wrap('survey.activate.total', async () => {
+  perf.mark(DASS_MEASURES.SURVEY_ACTIVATE_START);
   // First, activate the project, then add the design docs (synchronous)
   //dispatch(activateProjectSync(payload));
 
@@ -1629,6 +1632,8 @@ export const activateProject = createAsyncThunk<
     db: localDb,
     config: {forceWrite: true, applyPermissions: false},
     content: initDataDB({projectId: payload.projectId}),
+  });
+  perf.mark(DASS_MEASURES.SURVEY_ACTIVATE_SYNC_COMPLETE);
   });
 });
 
@@ -2356,9 +2361,12 @@ export function createSyncStateHandlers(
   projectId: string,
   serverId: string
 ): SyncEventHandlers {
+  let pushActive = false;
+  let pullActive = false;
   return {
     active: () => {
       syncStateService.setActive(serverId, projectId);
+      perf.mark(DASS_MEASURES.SYNC_RECONNECT);
     },
     change: info => {
       syncStateService.recordChange(serverId, projectId, {
@@ -2367,12 +2375,44 @@ export function createSyncStateHandlers(
         docsWritten: info.change.docs_written,
         direction: info.direction,
       });
+      if (info.direction === 'push') {
+        if (!pushActive) {
+          perf.mark(DASS_MEASURES.SYNC_PUSH_START);
+          pushActive = true;
+        }
+        if (info.change.pending === 0) {
+          perf.mark(DASS_MEASURES.SYNC_PUSH_COMPLETE);
+          perf.measure(
+            DASS_MEASURES.SYNC_PUSH_COMPLETE,
+            DASS_MEASURES.SYNC_PUSH_START,
+            DASS_MEASURES.SYNC_PUSH_COMPLETE
+          );
+          pushActive = false;
+        }
+      } else if (info.direction === 'pull') {
+        if (!pullActive) {
+          perf.mark(DASS_MEASURES.SYNC_PULL_START);
+          pullActive = true;
+        }
+        if (info.change.pending === 0) {
+          perf.mark(DASS_MEASURES.SYNC_PULL_COMPLETE);
+          perf.measure(
+            DASS_MEASURES.SYNC_PULL_COMPLETE,
+            DASS_MEASURES.SYNC_PULL_START,
+            DASS_MEASURES.SYNC_PULL_COMPLETE
+          );
+          pullActive = false;
+        }
+      }
     },
     paused: err => {
       syncStateService.setPaused(serverId, projectId, err);
     },
     denied: err => {
       syncStateService.setDenied(serverId, projectId, err);
+      perf.mark(DASS_MEASURES.SYNC_CONFLICT_DETECTED, {
+        message: err.message,
+      });
     },
     error: err => {
       syncStateService.setError(serverId, projectId, err);

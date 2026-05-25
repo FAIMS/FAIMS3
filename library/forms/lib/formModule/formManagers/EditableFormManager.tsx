@@ -6,6 +6,7 @@ import {
   getFormLabel,
   HydratedRecordDocument,
 } from '@faims3/data-model';
+import {DASS_MEASURES, perf} from '@faims3/instrumentation';
 import CheckIcon from '@mui/icons-material/Check';
 import {
   Alert,
@@ -227,6 +228,7 @@ export const EditableFormManager: React.FC<
 
     isSavingRef.current = true;
     setIsSaving(true);
+    perf.mark(`${DASS_MEASURES.RECORD_SAVE_UI}.start`);
 
     try {
       const revisionToUpdate = await ensureWorkingRevision();
@@ -246,6 +248,13 @@ export const EditableFormManager: React.FC<
         update: form.state.values ?? {},
         mode: props.mode,
       });
+      perf.mark(DASS_MEASURES.RECORD_SAVE_LOCAL);
+      perf.mark(`${DASS_MEASURES.RECORD_SAVE_UI}.end`);
+      perf.measure(
+        DASS_MEASURES.RECORD_SAVE_UI,
+        `${DASS_MEASURES.RECORD_SAVE_UI}.start`,
+        `${DASS_MEASURES.RECORD_SAVE_UI}.end`
+      );
 
       pendingValuesRef.current = false;
     } catch (error) {
@@ -724,7 +733,11 @@ export const EditableFormManager: React.FC<
             ) : (
               <>
                 <CheckIcon sx={{fontSize: 16, color: 'success.main'}} />
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  data-testid="save-record-indicator"
+                >
                   Saved
                 </Typography>
               </>

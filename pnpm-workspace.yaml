@@ -5,6 +5,10 @@ packages:
   - designer
   - library/data-model
   - library/forms
+  - library/instrumentation
+  - load-testing/shared
+  - load-testing/coordinator
+  - load-testing/agents
   - tests
   - infrastructure/aws-cdk
 onlyBuiltDependencies:

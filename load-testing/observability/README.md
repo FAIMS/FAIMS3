@@ -1,0 +1,33 @@
+# Load Test Observability
+
+Prometheus, Pushgateway, Grafana, and CouchDB exporter configuration for DASS load tests.
+
+## Stack
+
+| Service | Port (default) | Role |
+|---------|----------------|------|
+| Prometheus | 9090 | Scrapes coordinator, pushgateway, couchdb-exporter |
+| Pushgateway | 9091 | Agent metrics funnel via coordinator |
+| Grafana | 3030 | Dashboards (avoids clash with app on 3000) |
+| couchdb-exporter | 9984 | CouchDB internal metrics (`gesellix/couchdb-prometheus-exporter`, tag via `COUCHDB_EXPORTER_VERSION`, default `latest`) |
+
+## Dashboard
+
+Provisioned from `grafana/dashboards/json/dass-load-test.json` into folder **DASS Load Tests**.
+
+After editing panels in Grafana UI, export JSON back:
+
+1. Dashboard → Share → Export → Save to file
+2. Replace `grafana/dashboards/json/dass-load-test.json`
+3. Or run `make snapshot` before teardown
+
+## Adding metrics
+
+1. Define report type in `@faims3/load-testing-shared` (`MetricReportSchema`)
+2. Map to Prometheus name in `metrics.ts` (`metricReportToPrometheusName`)
+3. Coordinator `MetricsService.ingestReport` handles histogram/counter/gauge
+4. Add Grafana panel querying the new metric
+
+## Prometheus retention
+
+Default 48h in `docker-compose.yml` (`--storage.tsdb.retention.time=48h`).

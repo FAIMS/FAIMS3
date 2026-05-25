@@ -327,9 +327,15 @@ export default function SyncStatus() {
         variant="text"
         type="button"
         onClick={handleClick}
+        data-testid="sync-status-icon"
         sx={{p: 0, minWidth: 'auto'}}
       >
         <Box
+          data-testid={
+            isSyncingUp || isSyncingDown
+              ? 'sync-status-syncing'
+              : 'sync-status-idle'
+          }
           sx={{
             display: 'flex',
             justifyContent: 'center',

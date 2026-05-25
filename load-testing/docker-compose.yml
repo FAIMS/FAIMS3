@@ -1,0 +1,83 @@
+services:
+  coordinator:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: load-test-coordinator
+    ports:
+      - '${COORDINATOR_PORT:-4000}:4000'
+    env_file:
+      - .env
+    environment:
+      - PORT=4000
+      - PROMETHEUS_PUSHGATEWAY_URL=http://pushgateway:9091
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  agent:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: load-test-agent
+    env_file:
+      - .env
+    environment:
+      - COORDINATOR_URL=http://coordinator:4000
+    shm_size: 2gb
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      coordinator:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - '${PROMETHEUS_PORT:-9090}:9090'
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=48h'
+      - '--web.enable-remote-write-receiver'
+
+  pushgateway:
+    image: prom/pushgateway:v1.10.0
+    ports:
+      - '${PUSHGATEWAY_PORT:-9091}:9091'
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - '${GRAFANA_PORT:-3030}:3000'
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./observability/grafana/dashboards/json:/etc/grafana/provisioning/dashboards/json:ro
+
+  couchdb-exporter:
+    image: gesellix/couchdb-prometheus-exporter:${COUCHDB_EXPORTER_VERSION:-latest}
+    ports:
+      - '${COUCHDB_EXPORTER_PORT:-9984}:9984'
+    env_file:
+      - .env
+    command:
+      - --couchdb.uri=${COUCH_URL:-http://host.docker.internal:5984}
+      - --couchdb.username=${COUCH_USER:-admin}
+      - --couchdb.password=${COUCH_PASSWORD}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

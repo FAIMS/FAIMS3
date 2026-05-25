@@ -1,0 +1,9 @@
+# Optional properties-format config for gesellix/couchdb-prometheus-exporter.
+# The load-test stack configures the exporter via docker-compose `command` flags
+# (--couchdb.uri, --couchdb.username, --couchdb.password) instead of this file.
+#
+# See: https://github.com/gesellix/couchdb-prometheus-exporter
+
+couchdb.uri=http://host.docker.internal:5984
+couchdb.username=admin
+couchdb.password=change-me
