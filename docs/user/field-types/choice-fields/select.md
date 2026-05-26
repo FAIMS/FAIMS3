@@ -4,6 +4,12 @@ _How to add and configure a Select Field in the Notebook Editor._
 
 ---
 
+```{important}
+Select Field is **deprecated** for new form design.
+It remains fully supported for existing notebooks and existing Select fields are not removed.
+For new forms, prefer [Select one option](radio-group.md), which presents the choices as a visible list rather than a dropdown.
+```
+
 ## What This Field Does
 
 A Select Field lets users pick one option from a dropdown list. It is the
@@ -14,20 +20,11 @@ the full list of options accessible.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the **CHOICE**
-tab, and click the **Select Field** card. Then click the
-**ADD FIELD** button in the lower right.
+New Select Field fields are not available from the add-field chooser.
+Select Field remains supported for legacy notebooks where it already exists.
+For new forms, add **Select one option** instead.
 
-> **Note:** The CHOICE tab may not be visible in the tab bar initially —
-> click the **›** arrow button on the right side of the tab bar to scroll
-> until it appears.
-
-```{screenshot} field-types-design/select-01-add-field.png
-:alt: Adding a Select Field — the CHOICE tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit Select Field settings for existing fields.
 
 ## Configuring the Field
 
@@ -109,3 +106,9 @@ and Display in child records — see
   "tentative identification" or "poor visibility conditions".
   Annotation, combined with Uncertainty, is especially valuable
   for classification fields where confidence varies.
+
+## Migration Guidance
+
+- Existing Select Field fields can be left in place and will continue to work.
+- For new templates, replace Select Field with **Select one option** so that all choices are visible without an extra tap.
+- For very long lists (>20 items) or hierarchical structures, use **Select Field (Hierarchical)** instead.

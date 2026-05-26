@@ -4,6 +4,12 @@ _How to add and configure a Multi-line Text Field in the Notebook Editor._
 
 ---
 
+```{important}
+Multi-line Text Field is **deprecated** as a separate field type for new form design.
+It remains fully supported for existing notebooks and existing fields are not removed.
+For new forms, use the unified **Text field** entry in the add-field chooser and enable the **multi-line** option (with the desired number of Rows).
+```
+
 ## What This Field Does
 
 A Multiline Text Field provides an extended text area for narrative
@@ -15,16 +21,11 @@ and interpretative notes.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the **TEXT**
-tab, and click the **Multiline Text Field** card. Then click the
-**ADD FIELD** button in the lower right.
+New Multi-line Text Field fields are not available from the add-field chooser.
+The field type remains supported for legacy notebooks where it already exists.
+For new forms, add **Text field** instead and enable the **multi-line** option to get the same behaviour, then set **Rows to display** as needed.
 
-```{screenshot} field-types-design/multiline-text-field-01-add-field.png
-:alt: Adding a Multiline Text Field — the TEXT tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit Multi-line Text Field settings for existing fields.
 
 ## Configuring the Field
 
@@ -79,3 +80,9 @@ and Display in child records — see
 - **Enable Annotation** for multiline fields where the main
   text might need a qualifying note (e.g., "artefact
   analysis based on in-field observation only").
+
+## Migration Guidance
+
+- Existing Multi-line Text Field fields can be left in place and will continue to work.
+- For new templates, use the unified **Text field** chooser entry with the **multi-line** option enabled.
+- The same Text field entry also replaces **FAIMS Text Field**; leave the multi-line option off for short single-line entries.

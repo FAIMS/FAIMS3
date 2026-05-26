@@ -4,6 +4,12 @@ _How to add and configure a FAIMS Text Field in the Notebook Editor._
 
 ---
 
+```{important}
+FAIMS Text Field is **deprecated** as a separate field type for new form design.
+It remains fully supported for existing notebooks and existing fields are not removed.
+For new forms, use the unified **Text field** entry in the add-field chooser — it covers both single-line (default) and multi-line text via its settings.
+```
+
 ## What This Field Does
 
 A FAIMS Text Field provides a single-line input for brief, unconstrained
@@ -12,16 +18,11 @@ and other short-form text — typically accommodating around 50 characters.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the **TEXT**
-tab, and click the **FAIMS Text Field** card. Then click the **ADD FIELD**
-button in the lower right.
+New FAIMS Text Field fields are not available from the add-field chooser.
+The field type remains supported for legacy notebooks where it already exists.
+For new forms, add **Text field** instead — it produces a single-line input by default.
 
-```{screenshot} field-types-design/faims-text-field-01-add-field.png
-:alt: Adding a FAIMS Text Field — the TEXT tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit FAIMS Text Field settings for existing fields.
 
 ## Configuring the Field
 
@@ -72,3 +73,9 @@ and Display in child records — see
   conditions or unanticipated challenges. Such use complements
   Annotations (field-level metadata) and {{Notebook}} Details
   (project-level metadata).
+
+## Migration Guidance
+
+- Existing FAIMS Text Field fields can be left in place and will continue to work.
+- For new templates, use the unified **Text field** chooser entry. Leave the multi-line option off for short single-line text.
+- The same Text field entry also replaces **Multi-line Text Field**; enable the multi-line option (and set Rows) when you need extended narrative.
