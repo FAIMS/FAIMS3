@@ -19,6 +19,7 @@
  */
 
 import {colors, createTheme} from '@mui/material';
+import {fieldmarkBrand} from '@faims3/data-model';
 import typography from './typography';
 
 const theme = createTheme({
@@ -37,24 +38,24 @@ const theme = createTheme({
       tabsBackground: '#edeeeb',
     },
     primary: {
-      main: '#669911',
-      light: '#a7e938',
-      dark: '#141E03',
+      main: fieldmarkBrand.primaryMain,
+      light: fieldmarkBrand.primaryLight,
+      dark: fieldmarkBrand.primaryDark,
     },
 
     stepper: {
-      current: '#E18200',
-      visited: '#669911',
+      current: fieldmarkBrand.secondaryMain,
+      visited: fieldmarkBrand.primaryMain,
       error: '#D50C0CFF',
       notVisited: '#B7C1A6F1',
     },
     highlightColor: {
-      main: '#E18200',
-      contrastText: '#141E03',
+      main: fieldmarkBrand.secondaryMain,
+      contrastText: fieldmarkBrand.primaryDark,
     },
     secondary: {
-      main: '#E18200',
-      contrastText: '#E18200',
+      main: fieldmarkBrand.secondaryMain,
+      contrastText: fieldmarkBrand.secondaryMain,
     },
     text: {
       primary: colors.blueGrey[900],
@@ -66,22 +67,21 @@ const theme = createTheme({
       warningText: '#9C5711FF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
-      successBackground: '#669911',
+      successBackground: fieldmarkBrand.primaryMain,
     },
     dialogButton: {
-      cancel: '#E18200',
-      confirm: '#669911',
+      cancel: fieldmarkBrand.secondaryMain,
+      confirm: fieldmarkBrand.primaryMain,
       dialogText: '#FFFFFF',
       hoverBackground: '#50790DFF',
     },
     progressBar: {
-      background: '#edeeeb',
-      complete: '#669911',
+      background: fieldmarkBrand.appBarBackground,
+      complete: fieldmarkBrand.primaryMain,
     },
     icon: {
-      main: '#E18200',
-
-      light: '#edeeeb',
+      main: fieldmarkBrand.secondaryMain,
+      light: fieldmarkBrand.appBarBackground,
       required: '#890808FF',
       highlight: '#B10000',
     },
@@ -102,8 +102,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#edeeeb',
-          color: '#324C08', //tab text color
+          backgroundColor: fieldmarkBrand.appBarBackground,
+          color: fieldmarkBrand.appBarForeground,
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',

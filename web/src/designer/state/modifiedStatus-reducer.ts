@@ -24,6 +24,7 @@ import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
+  fieldReordered,
   fieldRenamed,
   fieldUpdated,
   formVisibilityUpdated,
@@ -62,6 +63,9 @@ const modifiedStatusReducer = createSlice({
         return true;
       })
       .addCase(fieldMoved, () => {
+        return true;
+      })
+      .addCase(fieldReordered, () => {
         return true;
       })
       .addCase(fieldRenamed, () => {
