@@ -21,7 +21,7 @@ import type {AppState} from '../state/initial';
 /** Root selector (identity); useful for typed hooks/tests. */
 export const selectDesignerState = (state: AppState) => state;
 
-/** Notebook slice: metadata + undoable `ui-specification`. */
+/** Notebook slice: metadata + undoable `uiSpec`. */
 export const selectNotebookState = (state: AppState) => state.notebook;
 
 /** Notebook metadata object. */
@@ -39,7 +39,7 @@ export const selectPresentUiSpec = (state: AppState) =>
 export const selectUiFields = (state: AppState) =>
   selectPresentUiSpec(state).fields;
 
-/** Section id → section definition map (`fviews`). */
+/** Section id → section definition map (`views`). */
 export const selectUiViews = (state: AppState) =>
   selectPresentUiSpec(state).views;
 

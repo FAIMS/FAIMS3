@@ -18,9 +18,9 @@ import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
 import {NotebookUISpec} from '../../../state/initial';
 import {ConditionType} from '../../../types/condition';
 
-/** Section (fview) RTK reducers merged into `uiSpecificationReducer`. */
+/** Section (view) RTK reducers merged into `uiSpecificationReducer`. */
 export const sectionReducers = {
-  /** Update human-readable `fviews[viewId].label`. */
+  /** Update human-readable `views[viewId].label`. */
   sectionRenamed: (
     state: NotebookUISpec,
     action: PayloadAction<{viewId: string; label: string}>
@@ -34,7 +34,7 @@ export const sectionReducers = {
       );
     }
   },
-  /** Append empty section `{viewSetId}-{slug(sectionLabel)}` to form and `fviews`. */
+  /** Append empty section `{viewSetId}-{slug(sectionLabel)}` to form and `views`. */
   sectionAdded: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; sectionLabel: string}>
@@ -187,7 +187,7 @@ export const sectionReducers = {
     }
     state.viewsets[viewSetId].views = viewList;
   },
-  /** Set or remove `fviews[viewId].condition` for section visibility. */
+  /** Set or remove `views[viewId].condition` for section visibility. */
   sectionConditionChanged: (
     state: NotebookUISpec,
     action: PayloadAction<{viewId: string; condition: ConditionType | null}>

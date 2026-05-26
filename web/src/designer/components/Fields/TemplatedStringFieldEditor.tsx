@@ -38,7 +38,7 @@ export const TemplatedStringFieldEditor = ({
   const viewSet = useAppSelector(
     state => state.notebook.uiSpec.present.viewsets[viewsetId]
   );
-  const fviews = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -46,13 +46,13 @@ export const TemplatedStringFieldEditor = ({
   const viewSetFields = useMemo(() => {
     const fieldSet = new Set<string>();
     viewSet.views.forEach(viewId => {
-      const view = fviews[viewId];
+      const view = views[viewId];
       if (view) {
         view.fields.forEach(fieldId => fieldSet.add(fieldId));
       }
     });
     return Array.from(fieldSet);
-  }, [viewSet.views, fviews]);
+  }, [viewSet.views, views]);
 
   // Define system variables
   const systemVariables = [
