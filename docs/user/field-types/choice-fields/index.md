@@ -17,9 +17,8 @@ radio-group.md
 
 ```
 
-- **[Select Field](select.md)** — Lets users pick one option from a dropdown
-  list, suitable for site types, artefact categories, condition assessments,
-  and similar single-selection questions.
+- **[Select Field](select.md)** — Deprecated for new forms; existing Select
+  fields remain supported. Prefer "Select one option" for new templates.
 - **[Checkbox](checkbox.md)** — Deprecated for new forms; existing Checkbox
   fields remain supported. Prefer "Select one option" for new templates.
 - **[Select Multiple](multi-select.md)** — Lets users pick multiple options
