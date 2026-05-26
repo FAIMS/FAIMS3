@@ -1,5 +1,6 @@
 import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
+import type {ProjectStatus} from '@faims3/data-model';
 
 /**
  * Creates a new project from a template
@@ -126,5 +127,74 @@ export const generateTestRecordsForProject = async ({
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Save failed: ${res.status} ${err}`);
+  }
+};
+
+async function messageFromFailedNotebookResponse(
+  response: Response
+): Promise<string> {
+  let message = response.statusText;
+  try {
+    const body = (await response.json()) as {error?: {message?: string}};
+    if (body?.error?.message) message = body.error.message;
+  } catch {
+    /* ignore */
+  }
+  return message;
+}
+
+/**
+ * PUT /api/notebooks/:projectId/status — set notebook lifecycle (OPEN, CLOSED, ARCHIVED).
+ */
+export const putNotebookStatus = async ({
+  user,
+  projectId,
+  status,
+}: {
+  user: User;
+  projectId: string;
+  status: ProjectStatus;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/status`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({status}),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
+  }
+};
+
+/**
+ * POST /api/notebooks/:projectId/delete — permanently delete an archived notebook.
+ */
+export const postDeleteArchivedNotebook = async ({
+  user,
+  projectId,
+  confirmName,
+}: {
+  user: User;
+  projectId: string;
+  confirmName: string;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/delete`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({confirmName}),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
   }
 };

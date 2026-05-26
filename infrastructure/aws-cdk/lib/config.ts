@@ -142,6 +142,19 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .optional()
     .default('/saml/callback')
     .describe('Callback path if callbackURL not specified'),
+  authnRequestBinding: z
+    .enum(['HTTP-Redirect', 'HTTP-POST'])
+    .optional()
+    .default('HTTP-POST')
+    .describe(
+      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
+    ),
+  skipRequestCompression: z
+    .boolean()
+    .optional()
+    .describe(
+      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
+    ),
   // If you want the metadata document signed using your PK
   signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
@@ -162,7 +175,13 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .enum(['sha1', 'sha256', 'sha512'])
     .optional()
     .default('sha256'),
-  digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+  digestAlgorithm: z
+    .enum(['sha1', 'sha256', 'sha512'])
+    .optional()
+    .default('sha256')
+    .describe(
+      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
+    ),
   wantAssertionsSigned: z.boolean().optional().default(true),
   // SAML behavior options
   identifierFormat: z
@@ -416,6 +435,9 @@ const ConductorConfigSchema = z.object({
   /** Allow localhost typical addresses in the redirects for conductor? NOT
    * recommended for production use cases (for security reasons). */
   localhostWhitelist: z.boolean().default(false),
+  /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
+   * migrations on startup. */
+  migrateNotebooksOnStartup: z.boolean().default(false),
 });
 
 const WebConfigSchema = z.object({
@@ -484,6 +506,16 @@ export const UiConfiguration = z
     addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
       source: 'NONE',
     }),
+    /**
+     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
+     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
+     */
+    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
+    /**
+     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
+     */
+    deleteOnDeactivation: z.boolean().optional(),
   })
   .refine(
     data => {

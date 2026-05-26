@@ -1,3 +1,4 @@
+import type {GetNotebookListResponse} from '@faims3/data-model';
 import {clsx, type ClassValue} from 'clsx';
 import {twMerge} from 'tailwind-merge';
 import {z} from 'zod';
@@ -137,3 +138,30 @@ export const getDaysDifference = (date: Date): number => {
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   return diffDays;
 };
+
+function notebookCreatedMs(row: GetNotebookListResponse[number]): number {
+  if (row.created) {
+    const t = Date.parse(row.created);
+    if (!Number.isNaN(t)) {
+      return t;
+    }
+  }
+  const head = row.project_id.split('-')[0] ?? '';
+  const n = parseInt(head, 10);
+  if (!Number.isNaN(n) && String(n) === head) {
+    return n;
+  }
+  return 0;
+}
+
+/**
+ * Returns a new array of notebook list rows sorted newest first (by `created`
+ * when present, else the millisecond prefix of standard `project_id` values).
+ */
+export function sortNotebookListNewestFirst(
+  notebooks: GetNotebookListResponse
+): GetNotebookListResponse {
+  return [...notebooks].sort(
+    (a, b) => notebookCreatedMs(b) - notebookCreatedMs(a)
+  );
+}

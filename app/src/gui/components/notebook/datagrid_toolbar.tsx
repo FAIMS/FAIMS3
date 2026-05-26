@@ -100,7 +100,7 @@ export function GridToolbarSearchRecordDataButton({
 
   return (
     <TextField
-      placeholder="Search record data (case sensitive)"
+      placeholder="Search record data"
       value={value}
       onChange={handleChange}
       onKeyDown={handleKeyPress}

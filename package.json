@@ -1,6 +1,6 @@
 {
   "name": "faims3",
-  "version": "1.4.4",
+  "version": "1.5.2",
   "description": "",
   "keywords": [],
   "license": "ISC",
@@ -48,7 +48,7 @@
     "knip": "^5.75.1",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
-    "turbo": "^2.0.11",
+    "turbo": "^2.9.14",
     "typescript": "^5.9.2"
   },
   "engines": {

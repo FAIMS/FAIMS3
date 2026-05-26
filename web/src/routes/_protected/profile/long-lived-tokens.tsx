@@ -107,166 +107,171 @@ function RouteComponent() {
   }, [data?.tokens, showRevoked, showExpired]);
 
   return (
-    <div className="space-y-4">
-      {/* Information Card */}
-      <Card className="border-slate-200 bg-slate-50/30 p-1">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-slate-800 text-lg">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Long-Lived API Tokens
-          </CardTitle>
-          <CardDescription className="text-slate-600 text-sm">
-            Secure authentication for automated system access
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-slate-700 space-y-3">
-            <p>
-              <span className="font-medium text-slate-800">Purpose:</span> These
-              tokens enable programmatic access to system APIs. They must be
-              exchanged for short-lived access tokens before use.
-            </p>
-            <p>
-              <span className="font-medium text-slate-800">Security:</span>{' '}
-              Long-lived tokens grant full account access. Store securely, never
-              share, and revoke immediately if compromised.
-            </p>
-          </div>
-          <div className="pt-3 border-t border-slate-200">
-            <a
-              href={LONG_LIVED_TOKEN_HELP_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline"
-            >
-              Learn more about implementation and security
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        Manage API Tokens
+      </h1>
+      <div className="space-y-4">
+        {/* Information Card */}
+        <Card className="border-slate-200 bg-slate-50/30 p-1">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-slate-800 text-lg">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Long-Lived API Tokens
+            </CardTitle>
+            <CardDescription className="text-slate-600 text-sm">
+              Secure authentication for automated system access
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-slate-700 space-y-3">
+              <p>
+                <span className="font-medium text-slate-800">Purpose:</span>{' '}
+                These tokens enable programmatic access to system APIs. They
+                must be exchanged for short-lived access tokens before use.
+              </p>
+              <p>
+                <span className="font-medium text-slate-800">Security:</span>{' '}
+                Long-lived tokens grant full account access. Store securely,
+                never share, and revoke immediately if compromised.
+              </p>
+            </div>
+            <div className="pt-3 border-t border-slate-200">
+              <a
+                href={LONG_LIVED_TOKEN_HELP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline"
+              >
+                Learn more about implementation and security
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Control Panel */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap items-center gap-6">
-            {/* Admin Mode Toggle switches */}
-            {canViewAllTokens && (
-              <>
+        {/* Control Panel */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex flex-wrap items-center gap-6">
+              {/* Admin Mode Toggle switches */}
+              {canViewAllTokens && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="admin-mode"
+                      checked={adminMode}
+                      onCheckedChange={setAdminMode}
+                      className="data-[state=checked]:bg-green-300"
+                    />
+                    <div>
+                      <Label
+                        htmlFor="admin-mode"
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Admin Mode
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        View all users' tokens
+                      </p>
+                    </div>
+                  </div>
+                  <Separator orientation="vertical" className="h-8" />
+                </>
+              )}
+
+              {/* Token Status Filters */}
+              <div className="flex items-center gap-6">
                 <div className="flex items-center gap-3">
                   <Switch
-                    id="admin-mode"
-                    checked={adminMode}
-                    onCheckedChange={setAdminMode}
+                    id="show-revoked"
+                    checked={showRevoked}
+                    onCheckedChange={setShowRevoked}
                     className="data-[state=checked]:bg-green-300"
                   />
                   <div>
                     <Label
-                      htmlFor="admin-mode"
+                      htmlFor="show-revoked"
                       className="text-sm font-medium cursor-pointer"
                     >
-                      Admin Mode
+                      Show Revoked
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      View all users' tokens
+                      Include disabled tokens
                     </p>
                   </div>
                 </div>
-                <Separator orientation="vertical" className="h-8" />
-              </>
-            )}
 
-            {/* Token Status Filters */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="show-revoked"
-                  checked={showRevoked}
-                  onCheckedChange={setShowRevoked}
-                  className="data-[state=checked]:bg-green-300"
-                />
-                <div>
-                  <Label
-                    htmlFor="show-revoked"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    Show Revoked
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Include disabled tokens
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="show-expired"
+                    checked={showExpired}
+                    onCheckedChange={setShowExpired}
+                    className="data-[state=checked]:bg-green-300"
+                  />
+                  <div>
+                    <Label
+                      htmlFor="show-expired"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Show Expired
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Include expired tokens
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="show-expired"
-                  checked={showExpired}
-                  onCheckedChange={setShowExpired}
-                  className="data-[state=checked]:bg-green-300"
+              {/* Refresh Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: ['long-lived-tokens'],
+                  });
+                }}
+                disabled={isPending}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${isPending ? 'animate-spin' : ''}`}
                 />
-                <div>
-                  <Label
-                    htmlFor="show-expired"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    Show Expired
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Include expired tokens
-                  </p>
-                </div>
-              </div>
+                Refresh
+              </Button>
             </div>
-            {/* Refresh Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                queryClient.invalidateQueries({
-                  queryKey: ['long-lived-tokens'],
-                });
-              }}
-              disabled={isPending}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${isPending ? 'animate-spin' : ''}`}
-              />
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Update Dialog */}
-      {selectedToken && (
-        <UpdateLongLivedTokenDialog
-          open={updateDialogOpen}
-          setOpen={setUpdateDialogOpen}
-          token={selectedToken}
+        {/* Update Dialog */}
+        {selectedToken && (
+          <UpdateLongLivedTokenDialog
+            open={updateDialogOpen}
+            setOpen={setUpdateDialogOpen}
+            token={selectedToken}
+          />
+        )}
+
+        {/* Data Table */}
+        <DataTable
+          columns={useGetLongLivedTokensColumns({
+            editTokenHandler: async tokenId => {
+              const token = (data?.tokens ?? []).find(t => t.id === tokenId);
+              if (token) {
+                setSelectedToken(token);
+                setUpdateDialogOpen(true);
+              }
+            },
+            revokeTokenHandler: async tokenId => {
+              await revokeLongLivedToken({user: authUser, tokenId});
+              queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
+            },
+          })}
+          data={filteredTokens}
+          loading={isPending}
+          defaultRowsPerPage={15}
+          button={canCreateToken && <CreateLongLivedTokenDialog />}
         />
-      )}
-
-      {/* Data Table */}
-      <DataTable
-        columns={useGetLongLivedTokensColumns({
-          editTokenHandler: async tokenId => {
-            const token = (data?.tokens ?? []).find(t => t.id === tokenId);
-            if (token) {
-              setSelectedToken(token);
-              setUpdateDialogOpen(true);
-            }
-          },
-          revokeTokenHandler: async tokenId => {
-            await revokeLongLivedToken({user: authUser, tokenId});
-            queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
-          },
-        })}
-        data={filteredTokens}
-        loading={isPending}
-        defaultRowsPerPage={15}
-        button={canCreateToken && <CreateLongLivedTokenDialog />}
-      />
+      </div>
     </div>
   );
 }

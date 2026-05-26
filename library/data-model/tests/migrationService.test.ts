@@ -150,15 +150,20 @@ describe('Migration System Tests', () => {
         migrationLog: [],
       };
 
-      // Should identify the migration from v1 to v2
+      // Should identify each step from v1 to PEOPLE target version
       const migrations = identifyMigrations({migrationDoc: mockMigrationDoc});
-      expect(migrations.length).toBe(3);
+      const peopleTarget =
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+      expect(migrations.length).toBe(peopleTarget - mockMigrationDoc.version);
       expect(migrations[0].dbType).toBe(DatabaseType.PEOPLE);
       expect(migrations[0].from).toBe(1);
       expect(migrations[0].to).toBe(2);
 
       // Should return empty array if already at target version
-      const upToDateDoc = {...mockMigrationDoc, version: 4};
+      const upToDateDoc = {
+        ...mockMigrationDoc,
+        version: DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion,
+      };
       expect(identifyMigrations({migrationDoc: upToDateDoc})).toEqual([]);
     });
 
@@ -168,7 +173,7 @@ describe('Migration System Tests', () => {
         _rev: '1-abc',
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
-        version: 20, // Higher than target (3)
+        version: 20, // Higher than PEOPLE target
         status: 'healthy' as const,
         migrationLog: [],
       };
@@ -589,10 +594,14 @@ describe('Migration System Tests', () => {
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
-      expect(migrationDoc.version).toBe(4); // Should be at target version
+      expect(migrationDoc.version).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion
+      );
       expect(migrationDoc.migrationLog.length).toBe(2); // Should have added a new log entry
       expect(migrationDoc.migrationLog[1].from).toBe(1);
-      expect(migrationDoc.migrationLog[1].to).toBe(4);
+      expect(migrationDoc.migrationLog[1].to).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion
+      );
       expect(migrationDoc.migrationLog[1].status).toBe('success');
     });
 
@@ -601,7 +610,7 @@ describe('Migration System Tests', () => {
       const upToDateMigrationDoc: MigrationsDBFields = {
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
-        version: 4, // Already at target version
+        version: DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion,
         status: 'healthy',
         migrationLog: [
           {
@@ -640,6 +649,15 @@ describe('Migration System Tests', () => {
             status: 'success',
             notes: 'Upgrade to v2',
           },
+          {
+            from: 4,
+            to: 5,
+            startedAtTimestampMs: Date.now() - 1000,
+            completedAtTimestampMs: Date.now() - 500,
+            launchedBy: 'system',
+            status: 'success',
+            notes: 'Upgrade to v5',
+          },
         ],
       };
 
@@ -673,7 +691,9 @@ describe('Migration System Tests', () => {
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
-      expect(migrationDoc.migrationLog.length).toBe(4); // Should still have just the original log entries
+      expect(migrationDoc.migrationLog.length).toBe(
+        upToDateMigrationDoc.migrationLog.length
+      ); // Should still have just the original log entries
 
       // Check that documents were not modified
       const currentDocs = await testPeopleDb.allDocs({include_docs: true});

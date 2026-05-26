@@ -3,7 +3,7 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplates} from '@/hooks/queries';
-import {Action, GetTemplateByIdResponse} from '@faims3/data-model';
+import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 import {Divider} from '../ui/word-divider';
@@ -54,7 +54,7 @@ export function CreateProjectForm({
     {
       name: 'template',
       label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template (optional)`,
-      options: templates?.map(({_id, name}: GetTemplateByIdResponse) => ({
+      options: templates?.map(({_id, name}: TemplateListItem) => ({
         label: name,
         value: _id,
       })),

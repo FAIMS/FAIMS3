@@ -74,7 +74,9 @@ export type ComponentParameters = {
   template?: string;
   num_digits?: number;
   form_id?: string;
+  isAutoPick?: boolean;
   is_auto_pick?: boolean;
+  show_now_button?: boolean;
   zoom?: number;
   featureType?: string;
   buttonLabelText?: string;
@@ -120,6 +122,8 @@ export type FieldType = {
   humanReadableDescription?: string;
   showInChooser?: boolean;
   order?: number;
+  deprecated?: boolean;
+  deprecationMessage?: string;
 
   meta?: {
     annotation: {
@@ -187,14 +191,13 @@ export const initialState: AppState = {
   notebook: {
     metadata: {
       notebook_version: '1.0',
-      schema_version: '2.0',
+      schema_version: '3.0',
       name: '',
       filenames: [],
       lead_institution: '',
       showQRCodeButton: false,
       pre_description: '',
       project_lead: '',
-      project_status: 'New',
       sections: {},
     },
     'ui-specification': {

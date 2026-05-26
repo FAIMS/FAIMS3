@@ -10,6 +10,7 @@ import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
+  TemplateListItemSchema,
 } from './data_storage/templatesDB/types';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
@@ -107,6 +108,7 @@ export const GetListAllUsersResponseSchema = z.array(
     name: true,
     user_id: true,
     profiles: true,
+    disabled: true,
   })
     // configure to strip not fail for extra fields
     .strip()
@@ -326,6 +328,14 @@ export type PutChangeNotebookTeamInput = z.infer<
   typeof PutChangeNotebookTeamInputSchema
 >;
 
+/** Body for POST /api/notebooks/:id/delete — must match project name exactly. */
+export const PostDestroyNotebookInputSchema = z.object({
+  confirmName: z.string().min(1),
+});
+export type PostDestroyNotebookInput = z.infer<
+  typeof PostDestroyNotebookInputSchema
+>;
+
 // POST create new notebook from template response
 export const PostCreateNotebookResponseSchema = z.object({
   notebook: z.string(),
@@ -416,6 +426,8 @@ export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
 }).extend({
   // prefer to use a nicer team ID input field
   teamId: z.string().trim().min(1).optional(),
+  /** When true, template is visible in the public list for all users */
+  isPublic: z.boolean().optional(),
 });
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
@@ -449,18 +461,63 @@ export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
+/** PUT /api/templates/:id/visibility */
+export const PutTemplateSetVisibilityInputSchema = z.object({
+  isPublic: z.boolean(),
+});
+export type PutTemplateSetVisibilityInput = z.infer<
+  typeof PutTemplateSetVisibilityInputSchema
+>;
+
+/**
+ * Full template document as returned by GET /templates/:id.
+ * Extends the stored document with optional server-injected fields (not persisted in CouchDB).
+ */
+export const TemplateApiDocumentSchema = ExistingTemplateDocumentSchema.extend({
+  /** Owning team's display name, looked up by the API when ownedByTeamId is set. */
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiDocument = z.infer<typeof TemplateApiDocumentSchema>;
+
+/**
+ * Template list row from GET /templates (summaries only; no ui-specification).
+ * Includes the same optional {@link TemplateApiDocument.ownedByTeamDisplayName} injection as the detail GET.
+ */
+export const TemplateApiListItemSchema = TemplateListItemSchema.extend({
+  ownedByTeamDisplayName: z.string().optional(),
+});
+export type TemplateApiListItem = z.infer<typeof TemplateApiListItemSchema>;
+
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(ExistingTemplateDocumentSchema),
+  templates: z.array(TemplateApiListItemSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
 
 // GET a specific template by _id response
-export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
+export const GetTemplateByIdResponseSchema = TemplateApiDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
+>;
+
+/** POST /api/templates/:id/restore — un-archive; body optional (empty JSON allowed). */
+export const PostRestoreTemplateRequestSchema = z.object({}).strict();
+export type PostRestoreTemplateRequest = z.infer<
+  typeof PostRestoreTemplateRequestSchema
+>;
+export const PostRestoreTemplateResponseSchema = ExistingTemplateDocumentSchema;
+export type PostRestoreTemplateResponse = z.infer<
+  typeof PostRestoreTemplateResponseSchema
+>;
+
+/** GET /api/templates/:id/references — how many surveys reference this template. */
+export const GetTemplateSurveyReferencesResponseSchema = z.object({
+  count: z.number().int().nonnegative(),
+});
+export type GetTemplateSurveyReferencesResponse = z.infer<
+  typeof GetTemplateSurveyReferencesResponseSchema
 >;
 
 // EMAIL RESET

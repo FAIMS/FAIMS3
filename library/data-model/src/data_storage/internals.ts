@@ -19,7 +19,7 @@
  */
 
 import {chunk} from 'lodash';
-import {v4 as uuidv4} from 'uuid';
+import {randomUuid} from '../utils';
 import {HRID_STRING} from '../datamodel/core';
 import {
   getAttachmentDumperForType,
@@ -85,11 +85,11 @@ export interface FormData {
 }
 
 export function generateFAIMSRevisionID(): RevisionID {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -227,9 +227,9 @@ export async function queryCouch<DocType extends {}>({
  * @throws Error if the specified record cannot be found in the database
  */
 export async function updateHeads({
-  newRevisionId: newRevisionId,
-  baseRevisionId: baseRevisionId,
-  recordId: recordId,
+  newRevisionId,
+  baseRevisionId,
+  recordId,
   dataDb,
 }: {
   dataDb: DataDbType;

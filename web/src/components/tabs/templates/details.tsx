@@ -4,6 +4,7 @@ import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
+import {GetTemplateByIdResponse} from '@faims3/data-model';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -13,12 +14,19 @@ const detailsFields = [
   {
     field: 'ownedByTeamId',
     label: 'Team',
-    render: (teamId: string | undefined) => {
+    render: (
+      teamId: string | undefined,
+      template: GetTemplateByIdResponse | undefined
+    ) => {
       if (!teamId) {
         return 'Not created in a team';
-      } else {
-        return <TeamCellComponent teamId={teamId} />;
       }
+      return (
+        <TeamCellComponent
+          teamId={teamId}
+          teamDisplayName={template?.ownedByTeamDisplayName}
+        />
+      );
     },
     isMetadata: false,
   },
@@ -55,7 +63,7 @@ const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
                 <Skeleton />
               ) : (
                 <ListDescription>
-                  {render ? render(cellData) : cellData}
+                  {render ? render(cellData, data) : cellData}
                 </ListDescription>
               )}
             </ListItem>

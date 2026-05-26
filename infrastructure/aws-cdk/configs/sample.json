@@ -31,7 +31,9 @@
     },
     "addressAutosuggest": {
       "source": "NONE"
-    }
+    },
+    "forceRemoteDeletion": "never",
+    "deleteOnDeactivation": false
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
@@ -107,7 +109,8 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false
+    "localhostWhitelist": false,
+    "migrateNotebooksOnStartup": false
   },
   "authProviders": {
     "disableLocalLogin": false,
@@ -140,8 +143,10 @@
         "scope": "profile email",
         "entryPoint": "https://idp.example.com/saml2/sso",
         "issuer": "https://faims.example.com",
+        "authnRequestBinding": "HTTP-POST",
         "callbackURL": "https://faims.example.com/auth/saml/callback",
         "signatureAlgorithm": "sha256",
+        "digestAlgorithm": "sha256",
         "wantAssertionsSigned": true
       }
     }

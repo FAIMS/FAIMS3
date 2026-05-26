@@ -26,11 +26,14 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
   Button,
   Card,
   Checkbox,
+  CircularProgress,
   createTheme,
   Dialog,
   DialogActions,
@@ -42,27 +45,47 @@ import {
   IconButton,
   InputAdornment,
   Stack,
-  Step,
-  StepButton,
-  Stepper,
-  Switch,
+  useMediaQuery,
+  useTheme,
   ThemeProvider,
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import {createPortal} from 'react-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import {useQueryClient} from '@tanstack/react-query';
 import {cloneDeep} from 'lodash';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {findFormExternalUsage} from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
-import FormSettingsPanel from './form-settings';
+import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
+import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
+import {
+  designerCancelButtonSx,
+  designerControlLabelSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
+  designerInlineEditActionIconSx,
+  designerInlineEditFocusOverlaySx,
+  designerInlineEditPanelSx,
+  designerInfoCalloutSx,
+  designerInfoIconSx,
+  designerIconControlButtonSx,
+  designerPipeSx,
+  designerPrimaryActionButtonSx,
+  designerResponsiveSectionSx,
+  designerScrollableControlRowSx,
+} from './designer-style';
+import {HeadingWithInfo} from './heading-with-info';
 import {
   formVisibilityUpdated,
   sectionAdded,
@@ -86,7 +109,8 @@ type Props = {
   handleSectionMoveCallback: (targetViewSetId: string) => void;
   handleFieldMoveCallback: (targetViewId: string) => void;
   previewForm: boolean;
-  setPreviewForm: (preview: boolean) => void;
+  /** DOM node to portal the form action row into (lives above the form tabs). */
+  toolbarPortal?: HTMLElement | null;
 };
 
 /** Single form (`viewSet`): sections stepper, CRUD, optional `PreviewFormManager`, settings panel. */
@@ -99,11 +123,13 @@ export const FormEditor = ({
   handleSectionMoveCallback,
   handleFieldMoveCallback,
   previewForm,
-  setPreviewForm,
+  toolbarPortal,
 }: Props) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
+  const createSectionParam = searchParams.get('createSection');
 
   const uiSpec = useAppSelector(
     state => state.notebook['ui-specification'].present
@@ -161,30 +187,54 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const theme = useTheme();
+  const settingsFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
-
-  // Refs for the scroll container and section steps.
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [showRightGradient, setShowRightGradient] = useState(true);
+  const sectionStripRef = useRef<HTMLDivElement | null>(null);
+  const [hasSectionOverflow, setHasSectionOverflow] = useState(false);
+  const [sectionToolbarSlot, setSectionToolbarSlot] =
+    useState<HTMLDivElement | null>(null);
+  const [isSectionAtStart, setIsSectionAtStart] = useState(true);
+  const [isSectionAtEnd, setIsSectionAtEnd] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [addSectionDialogOpen, setAddSectionDialogOpen] = useState(false);
+  const prevViewSetIdRef = useRef<string>(viewSetId);
+  const formEditInputRef = useRef<HTMLInputElement | null>(null);
 
   // needed for the form preview
   const queryClient = useQueryClient();
 
-  // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
-  const handleScroll = () => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const {scrollLeft, scrollWidth, clientWidth} = container;
-      setShowRightGradient(scrollLeft + clientWidth < scrollWidth - 1);
-    }
-  };
+  useEffect(() => {
+    const el = sectionStripRef.current;
+    if (!el) return;
+
+    const updateScrollState = () => {
+      const hasOverflow = el.scrollWidth > el.clientWidth + 2;
+      setHasSectionOverflow(hasOverflow);
+      setIsSectionAtStart(el.scrollLeft <= 2);
+      setIsSectionAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+    };
+
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, {passive: true});
+    window.addEventListener('resize', updateScrollState);
+
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [sections.length]);
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
   };
+
+  useEffect(() => {
+    setAlertMessage('');
+  }, [viewSetId]);
 
   const handleClose = () => {
     setOpen(false);
@@ -270,8 +320,24 @@ export const FormEditor = ({
   const addNewSection = (viewSetID: string, label: string) => {
     try {
       dispatch(sectionAdded({viewSetId: viewSetID, sectionLabel: label}));
-      // jump to the newly created section (i.e., to the end of the stepper)
-      setActiveStep(viewSet.views.length);
+      // Jump to and focus the newly created section (added to the end).
+      const newSectionIndex = viewSet.views.length;
+      setActiveStep(newSectionIndex);
+      const nextParams = new URLSearchParams(location.search);
+      nextParams.set('section', String(newSectionIndex));
+      nextParams.delete('createSection');
+      navigate(
+        `${location.pathname}?${nextParams.toString()}`,
+        {
+          replace: true,
+        }
+      );
+      window.requestAnimationFrame(() => {
+        sectionStripRef.current?.scrollTo({
+          left: sectionStripRef.current.scrollWidth,
+          behavior: 'smooth',
+        });
+      });
       setAddAlertMessage('');
       // let sectionEditor component know a section was addedd successfully
       return true;
@@ -374,31 +440,6 @@ export const FormEditor = ({
     handleFieldMoveCallback(targetViewId);
   };
 
-  // Scroll the active step into view.
-  const scrollActiveStepIntoView = useCallback(() => {
-    const container = scrollContainerRef.current;
-    const selected = stepRefs.current[activeStep];
-    if (container && selected) {
-      const containerRect = container.getBoundingClientRect();
-      const selectedRect = selected.getBoundingClientRect();
-      if (
-        selectedRect.left < containerRect.left ||
-        selectedRect.right > containerRect.right
-      ) {
-        selected.scrollIntoView({behavior: 'smooth', inline: 'center'});
-      }
-    }
-  }, [activeStep]);
-
-  useEffect(() => {
-    scrollActiveStepIntoView();
-  }, [activeStep, scrollActiveStepIntoView]);
-
-  useEffect(() => {
-    window.addEventListener('resize', scrollActiveStepIntoView);
-    return () => window.removeEventListener('resize', scrollActiveStepIntoView);
-  }, [scrollActiveStepIntoView]);
-
   useEffect(() => {
     // Set active step from URL parameter if available
     if (sectionParam !== null) {
@@ -413,299 +454,680 @@ export const FormEditor = ({
     }
   }, [sectionParam, sections.length]);
 
+  useEffect(() => {
+    if (sections.length === 0 && createSectionParam === '1') {
+      setAddSectionDialogOpen(true);
+    }
+  }, [createSectionParam, sections.length]);
+
+  const clearCreateSectionFlag = () => {
+    const nextParams = new URLSearchParams(location.search);
+    nextParams.delete('createSection');
+    const nextQuery = nextParams.toString();
+    navigate(
+      `${location.pathname}${nextQuery.length > 0 ? `?${nextQuery}` : ''}`,
+      {
+        replace: true,
+      }
+    );
+  };
+
+  const submitNewSection = () => {
+    const ok = addNewSection(viewSetId, newSectionName.trim());
+    if (ok) {
+      setAddSectionDialogOpen(false);
+      clearCreateSectionFlag();
+    }
+  };
+
+  // Show a brief loading spinner in the preview when the user switches form tabs
+  useEffect(() => {
+    if (prevViewSetIdRef.current === viewSetId) return;
+    prevViewSetIdRef.current = viewSetId;
+    if (!previewForm) return;
+    setPreviewLoading(true);
+    const tid = window.setTimeout(() => setPreviewLoading(false), 650);
+    return () => window.clearTimeout(tid);
+  }, [viewSetId, previewForm]);
+
+  useEffect(() => {
+    if (!editMode) return;
+    const raf = window.requestAnimationFrame(() => {
+      formEditInputRef.current?.focus();
+      formEditInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [editMode]);
+
+  const renderFormToolbar = (toolbarStack: React.ReactNode) =>
+    toolbarPortal ? createPortal(toolbarStack, toolbarPortal) : toolbarStack;
+
   return (
-    <Stack direction="row" spacing={2}>
-      <Grid container spacing={2} pt={3}>
-        <Grid container item xs={12} spacing={0}>
-          <Grid item xs={12} md={2} sm={2.8}>
-            <Button
-              variant="text"
-              color="error"
-              size="medium"
-              startIcon={<DeleteRoundedIcon />}
-              onClick={deleteConfirmation}
-            >
-              Delete form
-            </Button>
-            <Dialog
-              open={open}
-              onClose={handleClose}
-              aria-labelledby="alert-dialog-title"
-              aria-describedby="alert-dialog-description"
-            >
-              <DialogTitle id="alert-dialog-title">
-                {deleteAlertTitle}
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText id="alert-dialog-description">
-                  {deleteAlertMessage}
-                </DialogContentText>
-              </DialogContent>
-              {preventDeleteDialog ? (
-                <DialogActions>
-                  <Button onClick={handleClose}>OK</Button>
-                </DialogActions>
-              ) : (
-                <DialogActions>
-                  <Button onClick={deleteForm}>Yes</Button>
-                  <Button onClick={handleClose}>No</Button>
-                </DialogActions>
-              )}
-            </Dialog>
-            <DeletionWarningDialog
-              open={showConditionAlert}
-              title="Form cannot be deleted due to active references"
-              references={conditionReferences}
-              onClose={() => setShowConditionAlert(false)}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={2} sm={2.825}>
-            <Button
-              variant="text"
-              size="medium"
-              startIcon={<EditRoundedIcon />}
-              onClick={() => setEditMode(true)}
-            >
-              Edit form name
-            </Button>
-            {editMode && (
-              <form
-                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                  e.preventDefault();
-                  setEditMode(false);
-                }}
-              >
-                <DebouncedTextField
-                  size="small"
-                  margin="dense"
-                  label="Form Name"
-                  name="label"
-                  data-testid="label"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Done">
-                          <IconButton size="small" type="submit">
-                            <DoneRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Close">
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditMode(false)}
-                          >
-                            <CloseRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  }}
-                  value={viewSet.label}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    updateFormLabel(event.target.value);
-                  }}
-                  sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
-                />
-              </form>
-            )}
-          </Grid>
-
-          {moveButtonsDisabled ? (
-            <Grid item xs={12} md={2} sm={2.5}>
-              <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
-                <span>
-                  <IconButton disabled={true} aria-label="left" size="medium">
-                    <ArrowBackRoundedIcon />
-                  </IconButton>
-                  <IconButton disabled={true} aria-label="right" size="medium">
-                    <ArrowForwardRoundedIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Grid>
-          ) : (
-            <Grid item sx={{margin: 'auto'}} xs={12} md={2} sm={2.5}>
-              <Tooltip title="Move form left">
-                <span>
-                  <IconButton
-                    disabled={visibleTypes.indexOf(viewSetId) === 0}
-                    onClick={() => moveForm(viewSetId, 'left')}
-                    aria-label="left"
-                    size="medium"
-                  >
-                    <ArrowBackRoundedIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Move form right">
-                <span>
-                  <IconButton
-                    disabled={
-                      visibleTypes.indexOf(viewSetId) ===
-                      visibleTypes.length - 1
-                    }
-                    onClick={() => moveForm(viewSetId, 'right')}
-                    aria-label="right"
-                    size="medium"
-                  >
-                    <ArrowForwardRoundedIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Grid>
-          )}
-
-          <Grid item xs={12} md={2} sm={3.5}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={visibleTypes.includes(viewSetId)}
-                  size="small"
-                  onChange={e => handleChange(e.target.checked)}
-                />
-              }
-              label={'Include "Add New Record" button'}
-            />
-            {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
-          </Grid>
-
-          <Grid item xs={12} md={2} sm={2}>
-            <FormControlLabel
-              label={'Preview'}
-              control={
-                <Switch
-                  checked={previewForm}
-                  onChange={e => setPreviewForm(e.target.checked)}
-                />
-              }
-            />
-          </Grid>
-        </Grid>
-        <Grid container item xs={12}>
-          <FormSettingsPanel viewSetId={viewSetId} />
-        </Grid>
+    <Stack
+      direction="row"
+      spacing={2}
+      alignItems="stretch"
+      sx={[designerResponsiveSectionSx, {width: '100%', minWidth: 0, flexWrap: 'nowrap'}]}
+    >
+      <Grid
+        container
+        rowSpacing={1.25}
+        columnSpacing={0}
+        pt={1.25}
+        sx={{flex: '1 1 0%', minWidth: 0}}
+      >
         <Grid item xs={12}>
-          <Card variant="outlined">
-            <Grid container spacing={2} p={3}>
-              <Grid item xs={12}>
-                <Box sx={{position: 'relative'}}>
-                  {/* outer scroll container */}
-                  <Box
-                    ref={scrollContainerRef}
-                    sx={{
-                      overflowX: 'auto',
-                      display: 'flex',
-                      justifyContent: 'center',
-                    }}
-                    onScroll={handleScroll}
-                  >
-                    {/*
-                      inner scroll container:
-                      - min width of 70% of  available space.
-                      - uses flex layout.
-                      - if only a few steps, they expand to fill the space.
-                      - once  there are many steps each step shrinks only to its minimum width (120px)
-                        and the container’s total width exceeds the viewport so scrolling is enabled.
-                    */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        flexWrap: 'nowrap',
-                        minWidth: '70%',
-                        width: '100%',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <Stepper
-                        nonLinear
-                        activeStep={activeStep}
-                        alternativeLabel
-                        sx={{my: 3, width: '100%'}}
-                      >
-                        {sections.map((section: string, index: number) => (
-                          <Step
-                            key={section}
-                            // each step is flexible and has a minimum width.
-                            sx={{flex: '1 1 0', minWidth: '120px'}}
-                          >
-                            <StepButton
-                              color="inherit"
-                              onClick={handleStep(index)}
-                            >
-                              <Typography>{views[section].label}</Typography>
-                            </StepButton>
-                          </Step>
-                        ))}
-                      </Stepper>
-                    </Box>
-                  </Box>
-                  {showRightGradient && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        width: 40,
-                        height: '100%',
-                        pointerEvents: 'none',
-                        background: theme =>
-                          `linear-gradient(to left, ${theme.palette.background.paper}, transparent)`,
-                      }}
-                    />
-                  )}
-                </Box>
-              </Grid>
+          {renderFormToolbar(
+          <Stack spacing={1.5} py={0.75}>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              flexWrap="wrap"
+              columnGap={1}
+              sx={{...designerScrollableControlRowSx, color: 'text.secondary'}}
+            >
+              <Button
+                variant="text"
+                size="small"
+                color="inherit"
+                startIcon={<EditRoundedIcon />}
+                onClick={() => setEditMode(true)}
+                sx={designerControlLabelSx}
+              >
+                Edit name
+              </Button>
 
-              {sections.length === 0 ? (
-                <Grid item xs={12}>
-                  <Grid
-                    container
-                    justifyContent="center"
-                    alignItems="center"
-                    item
-                    xs={12}
-                    direction="column"
+              <Typography sx={designerPipeSx}> | </Typography>
+
+              <Stack direction="row" spacing={1} alignItems="center">
+                {moveButtonsDisabled ? (
+                  <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
+                    <span>
+                      <IconButton
+                        disabled
+                        aria-label="left"
+                        size="small"
+                        sx={designerIconControlButtonSx}
+                      >
+                        <ArrowBackRoundedIcon />
+                      </IconButton>
+                      <IconButton
+                        disabled
+                        aria-label="right"
+                        size="small"
+                        sx={designerIconControlButtonSx}
+                      >
+                        <ArrowForwardRoundedIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <>
+                    <Tooltip title="Move form left">
+                      <span>
+                        <IconButton
+                          disabled={visibleTypes.indexOf(viewSetId) === 0}
+                          onClick={() => moveForm(viewSetId, 'left')}
+                          aria-label="left"
+                          size="small"
+                          sx={designerIconControlButtonSx}
+                        >
+                          <ArrowBackRoundedIcon />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Move form right">
+                      <span>
+                        <IconButton
+                          disabled={
+                            visibleTypes.indexOf(viewSetId) ===
+                            visibleTypes.length - 1
+                          }
+                          onClick={() => moveForm(viewSetId, 'right')}
+                          aria-label="right"
+                          size="small"
+                          sx={designerIconControlButtonSx}
+                        >
+                          <ArrowForwardRoundedIcon />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </>
+                )}
+                <Typography variant="caption" sx={designerControlLabelSx}>
+                  Reorder
+                </Typography>
+              </Stack>
+
+              <Typography sx={designerPipeSx}> | </Typography>
+
+              <Button
+                variant="text"
+                size="small"
+                color="inherit"
+                startIcon={<SettingsRoundedIcon />}
+                onClick={() => setSettingsOpen(true)}
+                sx={designerControlLabelSx}
+              >
+                Settings
+              </Button>
+
+              <Typography sx={designerPipeSx}> | </Typography>
+
+              <FormControlLabel
+                sx={{
+                  ml: 0.25,
+                  whiteSpace: 'nowrap',
+                  '& .MuiFormControlLabel-label': {
+                    color: 'text.secondary',
+                    fontWeight: 700,
+                  },
+                }}
+                control={
+                  <Checkbox
+                    checked={visibleTypes.includes(viewSetId)}
+                    size="small"
+                    onChange={e => handleChange(e.target.checked)}
+                  />
+                }
+                label={
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body2" sx={{fontWeight: 700}}>
+                      Include "Add New Record" button
+                    </Typography>
+                    <Tooltip title='Controls whether users can create records from this form via "Add New Record".'>
+                      <InfoIcon sx={designerInfoIconSx} />
+                    </Tooltip>
+                  </Stack>
+                }
+              />
+
+              <Typography sx={designerPipeSx}> | </Typography>
+
+              <Button
+                variant="text"
+                color="error"
+                size="small"
+                startIcon={<DeleteRoundedIcon />}
+                onClick={deleteConfirmation}
+                sx={{...designerControlLabelSx, color: 'error.main'}}
+              >
+                Delete
+              </Button>
+            </Stack>
+
+            {editMode && (
+              <>
+                <Box
+                  onClick={() => setEditMode(false)}
+                  sx={designerInlineEditFocusOverlaySx}
+                />
+                <Box sx={designerInlineEditPanelSx}>
+                  <form
+                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                      e.preventDefault();
+                      setEditMode(false);
+                    }}
                   >
-                    <Alert severity="success">
-                      Form has been created. Add a section to get started.
-                    </Alert>
-                    <form
-                      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                        e.preventDefault();
-                        addNewSection(viewSetId, newSectionName);
-                      }}
-                    >
+                    <SimpleFieldWrapper heading="Form Name">
                       <DebouncedTextField
-                        required
-                        label="Section Name"
-                        name="sectionName"
-                        data-testid="sectionName"
-                        value={newSectionName}
-                        onChange={(
-                          event: React.ChangeEvent<HTMLInputElement>
-                        ) => {
-                          setNewSectionName(event.target.value);
-                        }}
-                        sx={{'& .MuiInputBase-root': {paddingRight: 1}, mt: 3}}
+                        size="small"
+                        margin="none"
+                        name="label"
+                        data-testid="label"
+                        placeholder="Form Name"
+                        inputRef={formEditInputRef}
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position="end">
-                              <Tooltip title="Add">
-                                <IconButton type="submit">
-                                  <AddRoundedIcon />
+                              <Tooltip title="Save form name">
+                                <IconButton
+                                  size="small"
+                                  type="submit"
+                                  sx={{
+                                    ...designerInlineEditActionIconSx,
+                                    color: 'success.main',
+                                  }}
+                                >
+                                  <DoneRoundedIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Cancel name edit">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => setEditMode(false)}
+                                  sx={{
+                                    ...designerInlineEditActionIconSx,
+                                    color: 'error.main',
+                                  }}
+                                >
+                                  <CloseRoundedIcon />
                                 </IconButton>
                               </Tooltip>
                             </InputAdornment>
                           ),
                         }}
+                        value={viewSet.label}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          updateFormLabel(event.target.value);
+                        }}
+                        sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
                       />
-                    </form>
+                    </SimpleFieldWrapper>
+                  </form>
+                </Box>
+              </>
+            )}
+
+            {alertMessage && (
+              <Alert
+                severity="error"
+                onClose={() => setAlertMessage('')}
+              >
+                {alertMessage}
+              </Alert>
+            )}
+          </Stack>
+          )}
+          <Dialog
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            maxWidth="sm"
+            fullWidth
+            fullScreen={settingsFullScreen}
+            PaperProps={{
+              sx: {
+                borderRadius: {xs: 0, sm: 2},
+                width: '100%',
+                m: {xs: 0, sm: 2},
+              },
+            }}
+          >
+            <DialogTitle sx={designerDialogTitleSx}>Form Settings</DialogTitle>
+            <DialogContent
+              dividers
+              sx={{display: 'flex', flexDirection: 'column', gap: 2}}
+            >
+              <FormSettingsContent viewSetId={viewSetId} />
+            </DialogContent>
+            <DialogActions sx={designerDialogActionsSx}>
+              <Button
+                sx={designerCancelButtonSx}
+                onClick={() => setSettingsOpen(false)}
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={open}
+            onClose={handleClose}
+            fullWidth
+            maxWidth="xs"
+            aria-labelledby="alert-dialog-title"
+          >
+            <DialogTitle id="alert-dialog-title" sx={designerDialogTitleSx}>
+              {deleteAlertTitle}
+            </DialogTitle>
+            <DialogContent sx={designerDialogContentSx}>
+              <DialogContentText
+                id="alert-dialog-description"
+                sx={designerDialogBodyTextSx}
+              >
+                {deleteAlertMessage}
+              </DialogContentText>
+            </DialogContent>
+            {preventDeleteDialog ? (
+              <DialogActions sx={designerDialogActionsSx}>
+                <Button sx={designerCancelButtonSx} onClick={handleClose}>
+                  OK
+                </Button>
+              </DialogActions>
+            ) : (
+              <DialogActions sx={designerDialogActionsSx}>
+                <Button sx={designerCancelButtonSx} onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={deleteForm}
+                >
+                  Delete
+                </Button>
+              </DialogActions>
+            )}
+          </Dialog>
+          <DeletionWarningDialog
+            open={showConditionAlert}
+            title="Form cannot be deleted due to active references"
+            references={conditionReferences}
+            onClose={() => setShowConditionAlert(false)}
+          />
+          <Dialog
+            open={addSectionDialogOpen}
+            onClose={() => {
+              setAddSectionDialogOpen(false);
+              clearCreateSectionFlag();
+            }}
+            fullWidth
+            maxWidth="sm"
+            PaperProps={{
+              sx: {
+                minHeight: {xs: 280, sm: 320},
+              },
+            }}
+          >
+            <DialogTitle sx={designerDialogTitleSx}>
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
+                <Typography variant="h6" sx={{fontWeight: 800}}>
+                  Add New Section
+                </Typography>
+                <Tooltip title="Create a clear section name so editors can find it quickly.">
+                  <InfoIcon sx={designerInfoIconSx} />
+                </Tooltip>
+              </Box>
+            </DialogTitle>
+            <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
+              <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
+                <SimpleFieldWrapper
+                  heading="Section Name"
+                  helperText={
+                    addAlertMessage || 'Name the section users will fill in first.'
+                  }
+                >
+                  <DebouncedTextField
+                    autoFocus
+                    fullWidth
+                    required
+                    label=""
+                    placeholder="Enter section name"
+                    name="sectionNameDialog"
+                    data-testid="sectionNameDialog"
+                    value={newSectionName}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      if (addAlertMessage) setAddAlertMessage('');
+                      setNewSectionName(event.target.value);
+                    }}
+                    error={Boolean(addAlertMessage)}
+                  />
+                </SimpleFieldWrapper>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={designerDialogActionsSx}>
+              <Button
+                sx={designerCancelButtonSx}
+                onClick={() => {
+                  setAddSectionDialogOpen(false);
+                  clearCreateSectionFlag();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                disabled={!newSectionName.trim()}
+                onClick={submitNewSection}
+              >
+                Add Section
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Box mt={2} mb={1.25}>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}>
+              <HeadingWithInfo
+                title="Sections"
+                tooltip="Sections break a form into logical groups of fields."
+              />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setAddSectionDialogOpen(true)}
+                sx={designerPrimaryActionButtonSx}
+              >
+                New Section
+              </Button>
+            </Box>
+          </Box>
+          <Box
+            ref={setSectionToolbarSlot}
+            sx={{
+              minHeight: 0,
+              '&:not(:empty)': {mb: 0.5},
+            }}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Box sx={{px: 0, pt: 1.5, pb: 2}}>
+            <Grid container spacing={2} p={0}>
+              <Grid item xs={12}>
+                <Box
+                  ref={sectionStripRef}
+                  sx={{
+                    position: 'relative',
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    gap: 0.75,
+                    alignItems: 'flex-start',
+                    mb: 1,
+                    overflowX: 'auto',
+                    pb: 1,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(78, 116, 138, 0.38) transparent',
+                    '&::-webkit-scrollbar': {height: hasSectionOverflow ? 8 : 0},
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                      borderRadius: 999,
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      borderRadius: 999,
+                      backgroundColor: 'rgba(78, 116, 138, 0.38)',
+                    },
+                    '&::before, &::after': hasSectionOverflow
+                      ? {
+                          content: '""',
+                          position: 'sticky',
+                          top: 0,
+                          width: 24,
+                          height: '100%',
+                          pointerEvents: 'none',
+                          zIndex: 2,
+                        }
+                      : {},
+                    '&::before': hasSectionOverflow
+                      ? {
+                          left: 0,
+                          display: isSectionAtStart ? 'none' : 'block',
+                          background: `linear-gradient(90deg, ${theme.palette.background.default} 40%, rgba(255,255,255,0))`,
+                        }
+                      : {},
+                    '&::after': hasSectionOverflow
+                      ? {
+                          right: 0,
+                          ml: 'auto',
+                          display: isSectionAtEnd ? 'none' : 'block',
+                          background: `linear-gradient(270deg, ${theme.palette.background.default} 40%, rgba(255,255,255,0))`,
+                        }
+                      : {},
+                  }}
+                >
+                  {sections.map((section: string, index: number) => {
+                    const isActive = index === activeStep;
+                    const isLast = index === sections.length - 1;
+                    return (
+                      <Button
+                        key={section}
+                        variant="text"
+                        onClick={handleStep(index)}
+                        sx={{
+                          justifyContent: 'flex-start',
+                          textTransform: 'none',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          px: 1,
+                          py: 0.8,
+                          minHeight: 70,
+                          width: {xs: 152, sm: 170, md: 184},
+                          minWidth: 148,
+                          maxWidth: 220,
+                          flexShrink: 0,
+                          borderRadius: 2,
+                          color: 'text.primary',
+                          border: '1px solid',
+                          borderColor: isActive
+                            ? 'divider'
+                            : 'transparent',
+                          backgroundColor: isActive ? 'rgba(17,24,39,0.08)' : 'transparent',
+                          transition:
+                            'background-color 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease',
+                          '& .section-step-dot': {
+                            transition:
+                              'transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease',
+                            boxShadow: isActive
+                              ? '0 2px 8px rgba(0,0,0,0.21)'
+                              : '0 1px 2px rgba(0,0,0,0.11)',
+                          },
+                          '&:hover': {
+                            backgroundColor: isActive ? 'rgba(17,24,39,0.11)' : 'rgba(17,24,39,0.02)',
+                            borderColor: isActive ? 'divider' : 'rgba(17,24,39,0.08)',
+                            boxShadow: '0 4px 10px rgba(15,23,32,0.10)',
+                            '& .section-step-dot': {
+                              transform: 'translateY(-1px) scale(1.02)',
+                              boxShadow: '0 4px 10px rgba(15,23,32,0.2)',
+                            },
+                          },
+                          '&:active': {
+                            boxShadow: '0 2px 7px rgba(15,23,32,0.12)',
+                            '& .section-step-dot': {
+                              transform: 'scale(0.98)',
+                            },
+                          },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            width: '100%',
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            className="section-step-dot"
+                            sx={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 700,
+                              fontSize: '0.88rem',
+                              bgcolor: isActive ? 'primary.main' : 'grey.400',
+                              color: 'common.white',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {index + 1}
+                          </Box>
+                          <Box
+                            sx={{
+                              height: 2,
+                              flex: 1,
+                              ml: 1,
+                              background: isActive
+                                ? `linear-gradient(90deg, ${theme.palette.primary.main}55 0%, ${theme.palette.primary.main}1A 100%)`
+                                : 'rgba(0,0,0,0.14)',
+                              borderRadius: 999,
+                              opacity: isLast || sections.length <= 1 ? 0 : 1,
+                              transition: 'background 0.2s ease, opacity 0.2s ease',
+                            }}
+                          />
+                        </Box>
+                        <Typography
+                          title={views[section].label}
+                          sx={{
+                            mt: 0.85,
+                            fontWeight: isActive ? 700 : 600,
+                            color: isActive ? 'text.primary' : 'text.secondary',
+                            fontSize: '0.95rem',
+                            lineHeight: 1.25,
+                            textAlign: 'left',
+                            width: '100%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {views[section].label}
+                        </Typography>
+                      </Button>
+                    );
+                  })}
+                </Box>
+              </Grid>
+
+              {sections.length === 0 ? (
+                addSectionDialogOpen ? null : (
+                  <Grid item xs={12}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        p: {xs: 2, sm: 2.5},
+                        borderColor: 'divider',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                        maxWidth: 640,
+                      }}
+                    >
+                      <Alert severity="success" sx={{mb: 2}}>
+                        Form created. Add your first section to continue.
+                      </Alert>
+                      <Stack
+                        direction={{xs: 'column', sm: 'row'}}
+                        spacing={1.25}
+                        alignItems={{xs: 'stretch', sm: 'flex-end'}}
+                      >
+                        <Box sx={{width: {xs: '100%', sm: 360}}}>
+                          <SimpleFieldWrapper heading="Section Name">
+                            <DebouncedTextField
+                              required
+                              label=""
+                              placeholder="Enter section name"
+                              name="sectionName"
+                              data-testid="sectionName"
+                              value={newSectionName}
+                              onChange={(
+                                event: React.ChangeEvent<HTMLInputElement>
+                              ) => {
+                                setNewSectionName(event.target.value);
+                              }}
+                              sx={{
+                                '& .MuiInputBase-root': {paddingRight: 1},
+                              }}
+                            />
+                          </SimpleFieldWrapper>
+                        </Box>
+                        <Button
+                          variant="contained"
+                          startIcon={<AddRoundedIcon />}
+                          onClick={() => setAddSectionDialogOpen(true)}
+                          sx={{height: 40, textTransform: 'none', whiteSpace: 'nowrap'}}
+                        >
+                          Add Section
+                        </Button>
+                      </Stack>
+                    </Card>
+                    {addAlertMessage && (
+                      <Alert severity="error" sx={{mt: 2}}>
+                        {addAlertMessage}
+                      </Alert>
+                    )}
                   </Grid>
-                  {addAlertMessage && (
-                    <Alert severity="error">{addAlertMessage}</Alert>
-                  )}
-                </Grid>
+                )
               ) : (
                 <Grid item xs={12}>
                   <SectionEditor
@@ -718,30 +1140,100 @@ export const FormEditor = ({
                     moveCallback={moveSection}
                     handleSectionMoveCallback={handleSectionMoveCallback}
                     moveFieldCallback={moveFieldToSection}
+                    toolbarPortal={sectionToolbarSlot}
                   />
                 </Grid>
               )}
             </Grid>
-          </Card>
+          </Box>
         </Grid>
       </Grid>
       {previewForm && uiSpecInternal && (
-        <Grid container item sx={{minWidth: '300px'}} xs={6}>
-          <Box sx={{width: '100%'}}>
-            <ThemeProvider theme={defaultTheme}>
-              {/* resets CSS baseline within this scope */}
-              <CssBaseline />
-              <PreviewFormManager
-                initialFormData={{}}
-                layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
-                formName={viewSetId}
-                uiSpec={uiSpecInternal}
-                queryClient={queryClient}
-                mapConfig={getMapConfig}
-              />
-            </ThemeProvider>
+        <Box
+          sx={{
+            width: {xs: '38%', md: '42%', xl: '40%'},
+            minWidth: {xs: 280, md: 320},
+            maxWidth: {xs: 540, md: 540},
+            flexShrink: 0,
+            alignSelf: 'flex-start',
+            position: 'sticky',
+            top: 12,
+            borderLeft: '2px solid',
+            borderColor: 'divider',
+            pl: 2.5,
+          }}
+        >
+          {/* Preview frame */}
+          <Box
+            sx={{
+              position: 'relative',
+              width: '100%',
+              border: '1.5px solid',
+              borderColor: theme => alpha(theme.palette.primary.main, 0.25),
+              borderRadius: 2,
+              overflow: 'hidden',
+              backgroundColor: 'background.paper',
+              boxShadow: theme => `0 2px 16px ${alpha(theme.palette.common.black, 0.07)}`,
+              maxHeight: {md: 'calc(100vh - 148px)'},
+            }}
+          >
+            {/* Accent bar */}
+            <Box
+              sx={{
+                height: 4,
+                background: theme =>
+                  `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${alpha(theme.palette.primary.light, 0.6)} 100%)`,
+              }}
+            />
+
+            {/* Loading overlay shown while switching form tabs */}
+            {previewLoading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1.5,
+                  bgcolor: theme => alpha(theme.palette.background.paper, 0.82),
+                  backdropFilter: 'blur(2px)',
+                }}
+              >
+                <CircularProgress size={32} thickness={4} />
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Loading preview…
+                </Typography>
+              </Box>
+            )}
+
+            {sections.length === 0 ? (
+              <Box sx={{p: 2}}>
+                <Alert severity="info" sx={designerInfoCalloutSx}>
+                  Add a section to see the live preview.
+                </Alert>
+              </Box>
+            ) : (
+              <Box key={viewSetId} sx={{maxHeight: {md: 'calc(100vh - 196px)'}, overflow: 'auto'}}>
+                <ThemeProvider theme={defaultTheme}>
+                  {/* resets CSS baseline within this scope */}
+                  <CssBaseline />
+                  <PreviewFormManager
+                    initialFormData={{}}
+                    layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
+                    formName={viewSetId}
+                    uiSpec={uiSpecInternal}
+                    queryClient={queryClient}
+                    mapConfig={getMapConfig}
+                    previewSectionId={sections[activeStep]}
+                  />
+                </ThemeProvider>
+              </Box>
+            )}
           </Box>
-        </Grid>
+        </Box>
       )}
     </Stack>
   );

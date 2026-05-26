@@ -16,7 +16,7 @@
  * @file Categorized grid of field templates for the add-field flow.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,6 +27,7 @@ import {
   Tabs,
   Tab,
   TextField,
+  InputAdornment,
   Grid,
   Card,
   CardActionArea,
@@ -35,8 +36,16 @@ import {
   useTheme,
   Box,
   Tooltip,
+  Chip,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import {
+  designerDialogActionsSx,
+  designerDialogTitleSx,
+} from './designer-style';
 
 import {getFieldNames, getFieldSpec} from '../fields';
 import {
@@ -48,7 +57,7 @@ import {
 type FieldChooserDialogProps = {
   open: boolean;
   onClose: () => void;
-  onConfirm: (fieldName: string, fieldType: string) => void;
+  onConfirm: (fieldType: string) => void;
 };
 
 type FieldOption = {
@@ -58,11 +67,13 @@ type FieldOption = {
   category: CategoryKey;
   order: number;
   showInChooser: boolean;
+  deprecated: boolean;
+  deprecationMessage: string;
 };
 
 const CARD_HEIGHT = 80;
 
-/** Modal to pick a field template type and display name before adding a field to a section. */
+/** Modal to pick a field template type and add it to a section in one click. */
 export default function FieldChooserDialog({
   open,
   onClose,
@@ -71,17 +82,15 @@ export default function FieldChooserDialog({
   const theme = useTheme();
 
   const [tooltipOpenKey, setTooltipOpenKey] = useState<string | false>(false);
-  const [fieldName, setFieldName] = useState('New Field');
   const [category, setCategory] = useState<CategoryKey>(CategoryKey.ALL);
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<string | null>(null);
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const [showTabsScrollHint, setShowTabsScrollHint] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setFieldName('New Field');
       setCategory(CategoryKey.ALL);
       setSearch('');
-      setSelected(null);
       setTooltipOpenKey(false);
     }
   }, [open]);
@@ -98,6 +107,8 @@ export default function FieldChooserDialog({
             category: (spec.category as CategoryKey) || CategoryKey.ALL,
             order: spec.order ?? Number.MAX_SAFE_INTEGER,
             showInChooser: spec.showInChooser !== false,
+            deprecated: spec.deprecated === true,
+            deprecationMessage: spec.deprecationMessage || '',
           };
         })
         .filter(o => o.showInChooser)
@@ -120,11 +131,20 @@ export default function FieldChooserDialog({
       });
   }, [allOptions, category, search]);
 
-  const handleConfirm = () => {
-    if (selected) {
-      onConfirm(fieldName.trim() || 'New Field', selected);
-    }
-  };
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!scroller) return;
+
+    const evaluate = () => {
+      setShowTabsScrollHint(scroller.scrollWidth > scroller.clientWidth + 4);
+    };
+
+    evaluate();
+    window.addEventListener('resize', evaluate);
+    return () => window.removeEventListener('resize', evaluate);
+  }, [open, categoryTabs.length]);
 
   return (
     <Dialog
@@ -135,10 +155,13 @@ export default function FieldChooserDialog({
       sx={{
         '& .MuiDialog-paper': {
           maxHeight: '75vh',
+          borderRadius: 2,
+          borderTop: `6px solid ${theme.palette.secondary.main}`,
+          backgroundImage: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
         },
       }}
     >
-      <DialogTitle>Add a field</DialogTitle>
+      <DialogTitle sx={designerDialogTitleSx}>Add a field</DialogTitle>
 
       <DialogContent
         dividers
@@ -150,17 +173,9 @@ export default function FieldChooserDialog({
           pb: 0,
         }}
       >
-        <TextField
-          label="Field name"
-          fullWidth
-          variant="outlined"
-          value={fieldName}
-          onChange={e => setFieldName(e.target.value)}
-          sx={{mb: 2, flexShrink: 0}}
-          autoFocus
-        />
-
+        <Box sx={{maxWidth: 1120, width: '100%', mx: 'auto'}}>
         <Tabs
+          ref={tabsRef}
           value={category}
           onChange={(_, v: CategoryKey) => setCategory(v)}
           variant="scrollable"
@@ -172,6 +187,20 @@ export default function FieldChooserDialog({
             top: 0,
             bgcolor: theme.palette.background.paper,
             zIndex: 1,
+            '& .MuiTab-root': {
+              borderRadius: 999,
+              minHeight: 36,
+              minWidth: 'fit-content',
+              px: 1.5,
+              textTransform: 'none',
+              fontWeight: 600,
+              color: 'text.secondary',
+              '& .MuiSvgIcon-root': {color: 'inherit'},
+            },
+            '& .MuiTab-root.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'common.white',
+            },
           }}
         >
           {categoryTabs.map(key => (
@@ -184,16 +213,73 @@ export default function FieldChooserDialog({
             />
           ))}
         </Tabs>
+        {showTabsScrollHint && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 1.2}}
+          >
+            Scroll left/right to view all field categories.
+          </Typography>
+        )}
 
         <TextField
           placeholder="Search field types"
           fullWidth
           variant="outlined"
           size="small"
-          sx={{mb: 2, flexShrink: 0}}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchRoundedIcon
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '1.35rem',
+                    strokeWidth: 1.8,
+                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))',
+                  }}
+                />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            mb: 2,
+            flexShrink: 0,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              bgcolor: theme.palette.common.white,
+              boxShadow:
+                '0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
+              transition: theme.transitions.create(
+                ['box-shadow', 'border-color', 'background-color'],
+                {duration: theme.transitions.duration.shorter}
+              ),
+              '&:hover': {
+                boxShadow:
+                  '0 4px 12px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255,255,255,0.85)',
+              },
+              '&.Mui-focused': {
+                boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 6px 14px rgba(15, 23, 42, 0.12)`,
+              },
+            },
+            '& .MuiOutlinedInput-input::placeholder': {
+              color: 'text.secondary',
+              opacity: 0.82,
+            },
+          }}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{...theme.typography.body2, mb: 1.75, display: 'block'}}
+        >
+          Click any field card to add it instantly, then name it in the field
+          editor.
+        </Typography>
+        </Box>
 
         <Box
           sx={{
@@ -212,7 +298,11 @@ export default function FieldChooserDialog({
             {filtered.map(opt => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
                 <Tooltip
-                  title={opt.description}
+                  title={
+                    opt.deprecated && opt.deprecationMessage
+                      ? `${opt.description} ${opt.deprecationMessage}`.trim()
+                      : opt.description
+                  }
                   arrow
                   placement="top-start"
                   disableHoverListener={!opt.description}
@@ -230,27 +320,30 @@ export default function FieldChooserDialog({
                     variant="outlined"
                     sx={{
                       minHeight: CARD_HEIGHT,
-                      borderWidth: 2,
-                      borderColor:
-                        selected === opt.key
-                          ? theme.palette.primary.main
-                          : theme.palette.divider,
-                      boxShadow: theme.shadows[1],
+                      borderWidth: 1,
+                      borderColor: theme => alpha(theme.palette.text.primary, 0.15),
+                      background: theme =>
+                        `linear-gradient(180deg, ${alpha(
+                          theme.palette.background.paper,
+                          0.96
+                        )} 0%, ${alpha(theme.palette.text.primary, 0.035)} 100%)`,
+                      boxShadow: '0 3px 8px rgba(15, 23, 42, 0.08)',
                       transition: theme.transitions.create(
-                        ['border-color', 'box-shadow'],
+                        ['border-color', 'box-shadow', 'transform'],
                         {duration: theme.transitions.duration.short}
                       ),
                       display: 'flex',
                       flexDirection: 'column',
+                      '&:hover': {
+                        borderColor: theme => alpha(theme.palette.primary.main, 0.35),
+                        boxShadow: '0 8px 18px rgba(15, 23, 42, 0.12)',
+                        transform: 'translateY(-1px)',
+                      },
                     }}
                   >
                     <CardActionArea
                       sx={{flexGrow: 1}}
-                      onClick={() => setSelected(opt.key)}
-                      onDoubleClick={() => {
-                        setSelected(opt.key);
-                        handleConfirm();
-                      }}
+                      onClick={() => onConfirm(opt.key)}
                     >
                       <CardContent
                         sx={{
@@ -273,6 +366,8 @@ export default function FieldChooserDialog({
                           <Typography
                             variant="subtitle2"
                             sx={{
+                              fontWeight: 700,
+                              color: 'text.primary',
                               display: '-webkit-box',
                               overflow: 'hidden',
                               WebkitBoxOrient: 'vertical',
@@ -282,6 +377,27 @@ export default function FieldChooserDialog({
                             {opt.label}
                           </Typography>
                         </Stack>
+                        {opt.deprecated && (
+                          <Box sx={{display: 'flex', justifyContent: 'flex-end', mt: 0.85}}>
+                            <Chip
+                              size="small"
+                              icon={<WarningAmberRoundedIcon />}
+                              label="Deprecated"
+                              sx={{
+                                height: 22,
+                                fontWeight: 800,
+                                borderRadius: '4px 10px 10px 4px',
+                                bgcolor: '#F4C542',
+                                color: '#111111',
+                                border: '1px solid',
+                                borderColor: '#C79A1D',
+                                '& .MuiChip-icon': {
+                                  color: 'inherit',
+                                },
+                              }}
+                            />
+                          </Box>
+                        )}
                       </CardContent>
                     </CardActionArea>
                   </Card>
@@ -304,14 +420,16 @@ export default function FieldChooserDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+      <DialogActions sx={designerDialogActionsSx}>
         <Button
-          onClick={handleConfirm}
-          disabled={!selected}
+          onClick={onClose}
           variant="contained"
+          sx={{
+            bgcolor: theme.palette.secondary.main,
+            '&:hover': {bgcolor: theme.palette.secondary.dark},
+          }}
         >
-          Add Field
+          Close
         </Button>
       </DialogActions>
     </Dialog>

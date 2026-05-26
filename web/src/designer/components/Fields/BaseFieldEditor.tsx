@@ -15,7 +15,8 @@
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
+import MicIcon from '@mui/icons-material/Mic';
 import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
@@ -23,14 +24,17 @@ import {
   Card,
   Checkbox,
   Collapse,
+  Divider,
   FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
+  Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
@@ -47,22 +51,29 @@ import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
-import SpeechSettingsEditor from './SpeechSettingsEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
+import {
+  getSpeechSettings,
+  updateSpeechSettings,
+} from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
+import {
+  designerCheckboxSx,
+  designerInfoCalloutSx,
+  designerInfoIconSx,
+  designerSoftPanelCardSx,
+} from '../designer-style';
 
 /** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
-export const SPEECH_ENABLED_FIELDS = [
-  'faims-custom::FAIMSTextField',
-  'formik-material-ui::MultipleTextField',
-];
+export const SPEECH_ENABLED_FIELDS = ['faims-custom::TextField'];
 
-/** True if {@link SPEECH_ENABLED_FIELDS} includes this field’s composite type key. */
+/** True if {@link SPEECH_ENABLED_FIELDS} includes this field's composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
   return SPEECH_ENABLED_FIELDS.includes(
     `${field['component-namespace']}::${field['component-name']}`
   );
 };
-
+const FIRST_AUTO_SYNC_DELAY_MS = 700;
 type Props = {
   fieldName: string;
   showExtraConfig?: boolean;
@@ -86,7 +97,8 @@ type StateType = {
   allowHiding: boolean;
 };
 
-/**
+/** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
+ /**
  * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
  * Type-specific panels pass extra controls as `children`.
  */
@@ -106,13 +118,35 @@ export const BaseFieldEditor = ({
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
 
   const idInputRef = useRef<HTMLInputElement>(null);
+  const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
+  // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
+  const autoSyncFieldIdEnabled = useRef(true);
+  const initialAutoSyncDone = useRef(false);
+  // Mark renames triggered by auto-sync (not by user changing selected field).
+  const internalRenameInFlight = useRef(false);
+  const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
+  const [localHelperText, setLocalHelperText] = useState(field['component-parameters'].helperText || '');
+
+  // Always-fresh ref so the debounce below never closes over a stale field
+  const fieldRef = useRef(field);
+  fieldRef.current = field;
+
+  const debouncedHelperTextDispatch = useCallback(
+    debounce((value: string) => {
+      const newField = JSON.parse(JSON.stringify(fieldRef.current)) as FieldType;
+      newField['component-parameters'].helperText = value;
+      dispatch(fieldUpdated({fieldName, newField}));
+    }, 300),
+    [dispatch, fieldName]
+  );
 
   const debouncedRename = useCallback(
     debounce((newFieldName: string) => {
       const viewId = getViewIDForField(uiSpec, fieldName);
       if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
+        internalRenameInFlight.current = true;
         dispatch(
           fieldRenamed({
             viewId,
@@ -126,30 +160,101 @@ export const BaseFieldEditor = ({
   );
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // User is explicitly controlling Field ID, so pause auto-sync from label.
+    autoSyncFieldIdEnabled.current = false;
+    initialAutoSyncDone.current = true;
     setLocalFieldName(e.target.value);
     debouncedRename(e.target.value);
   };
 
-  // Handler for the sync field id with name button
-  const syncFieldID = () => {
-    const desired = slugify(state.label || '');
+  const syncFieldIDToLabel = (label: string) => {
+    const desired = slugify(label || '');
     const viewId = getViewIDForField(uiSpec, fieldName);
     if (viewId && desired && desired !== fieldName) {
+      internalRenameInFlight.current = true;
       setLocalFieldName(desired);
       dispatch(fieldRenamed({viewId, fieldName, newFieldName: desired}));
     }
   };
 
-  // Restore focus on the ID input when the field id changes
+  const syncFieldID = () => {
+    // Manual sync is one-shot and should not re-enable continuous auto-sync.
+    autoSyncFieldIdEnabled.current = false;
+    initialAutoSyncDone.current = true;
+    syncFieldIDToLabel(state.label || '');
+  };
+
+  const handleLabelChange = (newLabel: string) => {
+    updateProperty('label', newLabel);
+
+    // - do one automatic Label -> Field ID sync for fresh fields
+    // - only after the user pauses typing
+    // - never keep re-syncing forever while they continue editing label text
+    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+      if (labelSyncTimerRef.current) {
+        clearTimeout(labelSyncTimerRef.current);
+      }
+      labelSyncTimerRef.current = setTimeout(() => {
+        syncFieldIDToLabel(newLabel);
+        initialAutoSyncDone.current = true;
+        autoSyncFieldIdEnabled.current = false;
+        labelSyncTimerRef.current = null;
+      }, FIRST_AUTO_SYNC_DELAY_MS);
+    }
+  };
+
+  const handleLabelBlur = () => {
+    // Flush pending one-time auto-sync immediately on blur.
+    if (labelSyncTimerRef.current) {
+      clearTimeout(labelSyncTimerRef.current);
+      labelSyncTimerRef.current = null;
+    }
+    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+      syncFieldIDToLabel(state.label || '');
+      initialAutoSyncDone.current = true;
+      autoSyncFieldIdEnabled.current = false;
+    }
+  };
+
   useEffect(() => {
-    if (isMounted.current) {
-      idInputRef.current?.focus();
+    const wasInternalRename = internalRenameInFlight.current;
+    internalRenameInFlight.current = false;
+
+    // "New-Field*" means this field was just created by designer scaffolding.
+    // We allow first-time auto-sync only for this new-field state.
+    const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
+    autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
+    initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+
+    setLocalFieldName(fieldName);
+    setLocalHelperText(field['component-parameters'].helperText || '');
+
+    if (isMounted.current && !wasInternalRename) {
+      // Focus policy:
+      // when user lands on a new field, keep them in Label first (fast naming flow);
+      // do not jump focus to Field ID because that interrupts editing.
+      window.setTimeout(() => {
+        labelInputRef.current?.focus();
+      }, 0);
     } else {
       isMounted.current = true;
     }
-
-    setLocalFieldName(fieldName);
   }, [fieldName]);
+
+  useEffect(() => {
+    return () => {
+      if (labelSyncTimerRef.current) {
+        clearTimeout(labelSyncTimerRef.current);
+      }
+      debouncedRename.cancel();
+    };
+  }, [debouncedRename]);
+
+  useEffect(() => {
+    return () => {
+      debouncedHelperTextDispatch.cancel();
+    };
+  }, [debouncedHelperTextDispatch]);
 
   const getFieldLabel = () => {
     return (
@@ -187,11 +292,8 @@ export const BaseFieldEditor = ({
     allowHiding: allowHidingEnabled,
   };
 
-  // We show the advanced helper text as long as the field generally supports
-  // helper text
   const hasAdvancedSupport = showHelperText;
 
-  // by default, we'll show the advanced help text form if the value is not empty
   const [showAdvanced, setShowAdvanced] = useState(
     hasAdvancedSupport &&
       !!cParams.advancedHelperText &&
@@ -200,7 +302,7 @@ export const BaseFieldEditor = ({
   const [expanded, setExpanded] = useState(true);
 
   const updateFieldFromState = (newState: StateType) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
     if (newState.label !== undefined) {
       setFieldLabel(newField, newState.label);
@@ -245,64 +347,196 @@ export const BaseFieldEditor = ({
     dispatch(fieldConditionChanged({fieldName, condition}));
   };
 
+  const isSpeechEnabled = checkSpeechEnabled(field);
+  const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
+  const isChoiceField =
+    field['component-name'] === 'Select' || field['component-name'] === 'MultiSelect';
+  // Always use the unified wrapper pattern so labels are rendered as headings
+  // above inputs (no floating labels), even for legacy/deprecated field types.
+  const useUnifiedFieldWrapper = true;
+
   return (
     <Grid container spacing={2}>
+      {/* ── Top card: Label / Field ID / Helper Text / type-specific children ── */}
       <Grid item xs={12}>
-        <Card variant="outlined" sx={{p: 2}}>
+        <Card
+          variant="outlined"
+          sx={
+            useUnifiedFieldWrapper
+              ? {
+                  p: 2,
+                  ...(designerSoftPanelCardSx as Record<string, unknown>),
+                }
+              : {p: 2}
+          }
+        >
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
               <Box display="flex" flexDirection="column" gap={2}>
-                <DebouncedTextField
-                  fullWidth
-                  label="Label"
-                  value={state.label}
-                  onChange={e => updateProperty('label', e.target.value)}
-                />
-                <TextField
-                  fullWidth
-                  label="Field ID"
-                  value={localFieldName}
-                  onChange={handleIdChange}
-                  inputRef={idInputRef}
-                  InputProps={{
-                    endAdornment:
-                      state.label && slugify(state.label) !== localFieldName ? (
-                        <InputAdornment position="end">
-                          <Tooltip title="Sync with field name">
-                            <IconButton
-                              size="small"
-                              onClick={syncFieldID}
-                              edge="end"
-                            >
-                              <SyncIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </InputAdornment>
-                      ) : undefined,
-                  }}
-                />
+                {isChoiceField ? (
+                  <>
+                    <SimpleFieldWrapper heading="Label">
+                      <DebouncedTextField
+                        fullWidth
+                        label=""
+                        placeholder="Enter field label"
+                        value={state.label}
+                        onChange={e => handleLabelChange(e.target.value)}
+                        onBlur={handleLabelBlur}
+                        inputRef={labelInputRef}
+                        inputProps={{'data-field-label-input': 'true'}}
+                      />
+                    </SimpleFieldWrapper>
+                    <SimpleFieldWrapper heading="Field ID">
+                      <TextField
+                        fullWidth
+                        label=""
+                        placeholder="Enter field ID"
+                        value={localFieldName}
+                        onChange={handleIdChange}
+                        inputRef={idInputRef}
+                        InputProps={{
+                          endAdornment:
+                            state.label && slugify(state.label) !== localFieldName ? (
+                              <InputAdornment position="end">
+                                <Tooltip title="Sync with field name">
+                                  <IconButton
+                                    size="small"
+                                    onClick={syncFieldID}
+                                    edge="end"
+                                  >
+                                    <SyncIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </InputAdornment>
+                            ) : undefined,
+                        }}
+                      />
+                    </SimpleFieldWrapper>
+                  </>
+                ) : (
+                  <>
+                    {useUnifiedFieldWrapper ? (
+                      <>
+                        <SimpleFieldWrapper heading="Label">
+                          <DebouncedTextField
+                            fullWidth
+                            label=""
+                            placeholder="Enter field label"
+                            value={state.label}
+                            onChange={e => handleLabelChange(e.target.value)}
+                            onBlur={handleLabelBlur}
+                            inputRef={labelInputRef}
+                            inputProps={{'data-field-label-input': 'true'}}
+                          />
+                        </SimpleFieldWrapper>
+                        <SimpleFieldWrapper heading="Field ID">
+                          <TextField
+                            fullWidth
+                            label=""
+                            placeholder="Enter field ID"
+                            value={localFieldName}
+                            onChange={handleIdChange}
+                            inputRef={idInputRef}
+                            InputProps={{
+                              endAdornment:
+                                state.label && slugify(state.label) !== localFieldName ? (
+                                  <InputAdornment position="end">
+                                    <Tooltip title="Sync with field name">
+                                      <IconButton
+                                        size="small"
+                                        onClick={syncFieldID}
+                                        edge="end"
+                                      >
+                                        <SyncIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </InputAdornment>
+                                ) : undefined,
+                            }}
+                          />
+                        </SimpleFieldWrapper>
+                      </>
+                    ) : (
+                      <>
+                        <DebouncedTextField
+                          fullWidth
+                          label="Label"
+                          value={state.label}
+                          onChange={e => handleLabelChange(e.target.value)}
+                          onBlur={handleLabelBlur}
+                          inputRef={labelInputRef}
+                          inputProps={{'data-field-label-input': 'true'}}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Field ID"
+                          value={localFieldName}
+                          onChange={handleIdChange}
+                          inputRef={idInputRef}
+                          InputProps={{
+                            endAdornment:
+                              state.label && slugify(state.label) !== localFieldName ? (
+                                <InputAdornment position="end">
+                                  <Tooltip title="Sync with field name">
+                                    <IconButton
+                                      size="small"
+                                      onClick={syncFieldID}
+                                      edge="end"
+                                    >
+                                      <SyncIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </InputAdornment>
+                              ) : undefined,
+                          }}
+                        />
+                      </>
+                    )}
+                  </>
+                )}
               </Box>
             </Grid>
             {showHelperText && (
               <Grid item xs={12} md={8}>
-                <DebouncedTextField
-                  fullWidth
-                  label="Helper Text"
-                  value={state.helperText}
-                  multiline
-                  rows={2}
-                  onChange={e => updateProperty('helperText', e.target.value)}
-                />
+                <Box display="flex" flexDirection="column" gap={2}>
+                  {useUnifiedFieldWrapper ? (
+                    <SimpleFieldWrapper heading="Helper Text">
+                      <TextField
+                        fullWidth
+                        label=""
+                        placeholder="Enter helper text"
+                        value={localHelperText}
+                        multiline
+                        rows={2}
+                        onChange={e => {
+                          setLocalHelperText(e.target.value);
+                          debouncedHelperTextDispatch(e.target.value);
+                        }}
+                      />
+                    </SimpleFieldWrapper>
+                  ) : (
+                    <TextField
+                      fullWidth
+                      label="Helper Text"
+                      value={localHelperText}
+                      multiline
+                      rows={2}
+                      onChange={e => {
+                        setLocalHelperText(e.target.value);
+                        debouncedHelperTextDispatch(e.target.value);
+                      }}
+                    />
+                  )}
                 {hasAdvancedSupport && (
                   <>
-                    <Box mt={2}>
+                    <Box>
                       <FormControlLabel
                         control={
                           <Checkbox
                             checked={showAdvanced}
-                            onChange={e => {
-                              setShowAdvanced(e.target.checked);
-                            }}
+                            onChange={e => setShowAdvanced(e.target.checked)}
+                            sx={designerCheckboxSx}
                           />
                         }
                         label="Include advanced helper text"
@@ -310,7 +544,26 @@ export const BaseFieldEditor = ({
                     </Box>
 
                     {showAdvanced && (
-                      <Card variant="outlined" sx={{mt: 2, p: 2}}>
+                      <Card
+                        variant="outlined"
+                        sx={
+                          useUnifiedFieldWrapper
+                            ? {
+                                p: 2,
+                                overflow: 'visible',
+                                borderColor: 'divider',
+                                boxShadow: theme =>
+                                  `0 1px 6px ${alpha(
+                                    theme.palette.common.black,
+                                    0.08
+                                  )}, inset 0 1px 2px ${alpha(
+                                    theme.palette.common.black,
+                                    0.04
+                                  )}`,
+                              }
+                            : {mt: 2, p: 2, overflow: 'visible'}
+                        }
+                      >
                         <Box
                           display="flex"
                           alignItems="center"
@@ -328,25 +581,33 @@ export const BaseFieldEditor = ({
                           </IconButton>
                         </Box>
 
-                        <Collapse in={expanded}>
-                          <Box mt={2}>
+                        <Collapse
+                          in={expanded}
+                          sx={{
+                            overflow: 'visible',
+                            '& .MuiCollapse-wrapper': {overflow: 'visible'},
+                            '& .MuiCollapse-wrapperInner': {overflow: 'visible'},
+                          }}
+                        >
+                          <Box mt={2} sx={{overflow: 'visible'}}>
                             <MdxEditor
                               initialMarkdown={state.advancedHelperText}
                               handleChange={debounce(
                                 markdown =>
-                                  updateProperty(
-                                    'advancedHelperText',
-                                    markdown
-                                  ),
+                                  updateProperty('advancedHelperText', markdown),
                                 500,
                                 {leading: false, trailing: true}
                               )}
                               editorRef={mdxEditorRef}
                             />
-                            <Alert severity="info" sx={{mt: 2}}>
+                            <Alert
+                              severity="info"
+                              sx={{...(designerInfoCalloutSx as Record<string, unknown>), mt: 2}}
+                            >
                               This markdown-based helper will appear in a dialog
                               when users click the info icon next to the field
-                              label in the app.
+                              label in the app. You can resize inserted images by
+                              dragging their resize handles.
                             </Alert>
                           </Box>
                         </Collapse>
@@ -354,6 +615,7 @@ export const BaseFieldEditor = ({
                     )}
                   </>
                 )}
+                </Box>
               </Grid>
             )}
 
@@ -366,132 +628,345 @@ export const BaseFieldEditor = ({
         </Card>
       </Grid>
 
-      {/* --- REMAINDER OF THE FORM CONFIG --- */}
+      {/* ── General field settings card ── */}
       {showExtraConfig && (
         <Grid item xs={12}>
-          <Card variant="outlined" sx={{p: 2}}>
-            <Grid container spacing={2}>
-              {/* Row 1: Required, Annotation, Uncertainty, Condition */}
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.required}
-                      onChange={e =>
-                        updateProperty('required', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Required"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.annotation}
-                      onChange={e =>
-                        updateProperty('annotation', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Annotation"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.uncertainty}
-                      onChange={e =>
-                        updateProperty('uncertainty', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Uncertainty"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <ConditionModal
-                  label={state.condition ? 'Update Condition' : 'Add Condition'}
-                  initial={state.condition}
-                  onChange={conditionChanged}
-                  field={fieldName}
-                />
-              </Grid>
+          <Card variant="outlined" sx={{overflow: 'hidden'}}>
+            <Grid container>
+              {/* LEFT: Required + Condition button + condition display.
+                  Narrower than the right side because it only ever holds two
+                  controls. We make the column itself a vertical flex
+                  container so its contents sit centered against the taller
+                  right column — the right side may grow when Voice-to-text
+                  is visible, and we don't want Required/Add condition to
+                  ride at the top of that empty space. */}
+              <Grid
+                item
+                xs={12}
+                md={4}
+                sx={{
+                  p: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  borderRight: {md: '1px solid'},
+                  borderColor: {md: 'divider'},
+                  borderBottom: {xs: '1px solid', md: 'none'},
+                }}
+              >
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-around"
+                  gap={2}
+                  flexWrap="wrap"
+                >
+                  <FormControlLabel
+                    sx={{mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.required}
+                        onChange={e =>
+                          updateProperty('required', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        Required
+                      </Typography>
+                    }
+                  />
+                  <ConditionModal
+                    label={
+                      state.condition ? 'Update condition' : 'Add condition'
+                    }
+                    initial={state.condition}
+                    onChange={conditionChanged}
+                    field={fieldName}
+                    buttonSx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                    }}
+                  />
+                </Stack>
 
-              {/* Row 2: Annotation and Uncertainty Labels */}
-              <Grid item container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  {state.annotation ? (
-                    <DebouncedTextField
-                      fullWidth
-                      label="Annotation Label"
-                      value={state.annotationLabel}
-                      onChange={e =>
-                        updateProperty('annotationLabel', e.target.value)
-                      }
-                    />
-                  ) : (
-                    <></>
-                  )}
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  {state.uncertainty ? (
-                    <DebouncedTextField
-                      fullWidth
-                      label="Uncertainty Label"
-                      value={state.uncertaintyLabel}
-                      onChange={e =>
-                        updateProperty('uncertaintyLabel', e.target.value)
-                      }
-                    />
-                  ) : (
-                    <></>
-                  )}
-                </Grid>
-              </Grid>
-
-              {/* Row 3: Condition Alert */}
-              <Grid item xs={12}>
                 {state.condition && (
-                  <Alert severity="info">
-                    <strong>Field Condition:</strong> Show this field if&nbsp;
-                    <ConditionTranslation condition={state.condition} />
-                  </Alert>
+                  <Box
+                    sx={{
+                      ...(designerInfoCalloutSx as Record<string, unknown>),
+                      p: 1.5,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{fontWeight: 600, color: 'text.secondary'}}
+                    >
+                      Show this field if{' '}
+                    </Typography>
+                    <Typography variant="caption" color="text.primary">
+                      <ConditionTranslation condition={state.condition} />
+                    </Typography>
+                  </Box>
                 )}
               </Grid>
 
-              {/* Row 4: Persistent, Display Parent, Protection, Allow Hiding */}
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.persistent}
-                      onChange={e =>
-                        updateProperty('persistent', e.target.checked)
+              {/* RIGHT: Advanced controls + voice-to-text. Takes the
+                  remaining two-thirds of the row since it has four toggles
+                  plus the speech section to lay out. */}
+              <Grid item xs={12} md={8} sx={{p: 2}}>
+                <Typography
+                  variant="body2"
+                  fontWeight={700}
+                  sx={{mb: 0.5, color: 'text.primary'}}
+                >
+                  Advanced controls
+                </Typography>
+
+                {/*
+                 * Pack the four advanced toggles as natural-width flex items so
+                 * the right pair sits immediately next to the left pair instead
+                 * of stretching to a 50/50 grid column. Wraps to 2x2 (or even
+                 * a single column on mobile) when the card is narrow.
+                 */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    columnGap: 3,
+                    rowGap: 1.25,
+                    mt: 0.5,
+                  }}
+                >
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.displayParent}
+                        onChange={e =>
+                          updateProperty('displayParent', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">
+                          Display in child records
+                        </Typography>
+                        <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
+
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.persistent}
+                        onChange={e =>
+                          updateProperty('persistent', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">
+                          Copy value to new records
+                        </Typography>
+                        <Tooltip title="When enabled, the value entered in this field will be automatically copied when creating new records.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
+
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.annotation}
+                        onChange={e =>
+                          updateProperty('annotation', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">Annotation</Typography>
+                        <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
+
+                  <FormControlLabel
+                    sx={{alignItems: 'center', mr: 0}}
+                    control={
+                      <Checkbox
+                        checked={state.uncertainty}
+                        onChange={e =>
+                          updateProperty('uncertainty', e.target.checked)
+                        }
+                        sx={designerCheckboxSx}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Typography variant="body2">Uncertainty</Typography>
+                        <Tooltip title="Allows users to indicate confidence in the entered value.">
+                          <InfoIcon sx={designerInfoIconSx} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                {/* Annotation / Uncertainty label inputs */}
+                {(state.annotation || state.uncertainty) && (
+                  <Grid container spacing={1.5} sx={{mt: 0.5}}>
+                    {state.annotation && (
+                      <Grid item xs={12} sm={6}>
+                        <SimpleFieldWrapper heading="Annotation Label">
+                          <DebouncedTextField
+                            fullWidth
+                            size="small"
+                            label=""
+                            placeholder="Annotation label"
+                            value={state.annotationLabel}
+                            onChange={e =>
+                              updateProperty('annotationLabel', e.target.value)
+                            }
+                          />
+                        </SimpleFieldWrapper>
+                      </Grid>
+                    )}
+                    {state.uncertainty && (
+                      <Grid item xs={12} sm={6}>
+                        <SimpleFieldWrapper heading="Uncertainty Label">
+                          <DebouncedTextField
+                            fullWidth
+                            size="small"
+                            label=""
+                            placeholder="Uncertainty label"
+                            value={state.uncertaintyLabel}
+                            onChange={e =>
+                              updateProperty('uncertaintyLabel', e.target.value)
+                            }
+                          />
+                        </SimpleFieldWrapper>
+                      </Grid>
+                    )}
+                  </Grid>
+                )}
+
+                {/* Voice-to-text inline (only for speech-enabled fields) */}
+                {isSpeechEnabled && speechSettings && (
+                  <Box
+                    sx={{
+                      mt: 2,
+                      pt: 2,
+                      borderTop: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        mb: 0.75,
+                      }}
+                    >
+                      <MicIcon sx={{fontSize: '1rem', color: 'text.secondary'}} />
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        color="text.primary"
+                      >
+                        Voice-to-text
+                      </Typography>
+                    </Box>
+
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={speechSettings.enableSpeech}
+                          onChange={e => {
+                            const newField = updateSpeechSettings(field, {
+                              enableSpeech: e.target.checked,
+                            });
+                            dispatch(fieldUpdated({fieldName, newField}));
+                          }}
+                          sx={designerCheckboxSx}
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                          <Typography variant="body2">
+                            Enable voice-to-text input for this field
+                          </Typography>
+                          <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
+                            <InfoIcon sx={designerInfoIconSx} />
+                          </Tooltip>
+                        </Box>
                       }
                     />
-                  }
-                  label="Copy value to new records"
-                />
+
+                    {speechSettings.enableSpeech && (
+                      <Box sx={{pl: 4}}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={speechSettings.speechAppendMode}
+                              onChange={e => {
+                                const newField = updateSpeechSettings(field, {
+                                  speechAppendMode: e.target.checked,
+                                });
+                                dispatch(fieldUpdated({fieldName, newField}));
+                              }}
+                              sx={designerCheckboxSx}
+                              size="small"
+                            />
+                          }
+                          label={
+                            <Box
+                              sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                            >
+                              <Typography variant="body2">
+                                Append text to the end of input instead of replacing
+                              </Typography>
+                              <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input replaces the current value.">
+                                <InfoIcon sx={designerInfoIconSx} />
+                              </Tooltip>
+                            </Box>
+                          }
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Grid>
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.displayParent}
-                      onChange={e =>
-                        updateProperty('displayParent', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Display in child records"
-                />
-              </Grid>
-              {VITE_TEMPLATE_PROTECTIONS && (
-                <>
-                  <Grid item xs={12} sm={3}>
+            </Grid>
+
+            {/* Template protection — bottom strip (only when VITE_TEMPLATE_PROTECTIONS is on) */}
+            {VITE_TEMPLATE_PROTECTIONS && (
+              <Box sx={{px: 2, pb: 2, pt: 0}}>
+                <Divider sx={{mb: 1.5}} />
+                <Grid container spacing={1}>
+                  <Grid item xs={12} sm={6}>
                     <Box display="flex" alignItems="center">
                       <FormControlLabel
                         control={
@@ -500,20 +975,21 @@ export const BaseFieldEditor = ({
                             onChange={e =>
                               updateProperty('protection', e.target.checked)
                             }
+                            sx={designerCheckboxSx}
+                            size="small"
                           />
                         }
                         label="Protected Field"
                       />
                       <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
-                        <InfoOutlinedIcon
-                          fontSize="small"
-                          sx={{marginLeft: 0, color: '#757575'}}
+                        <InfoIcon
+                          sx={designerInfoIconSx}
                         />
                       </Tooltip>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={3}>
-                    {state.protection ? (
+                  {state.protection && (
+                    <Grid item xs={12} sm={6}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -521,22 +997,19 @@ export const BaseFieldEditor = ({
                             onChange={e =>
                               updateProperty('allowHiding', e.target.checked)
                             }
+                            sx={designerCheckboxSx}
+                            size="small"
                           />
                         }
                         label="Allow Hiding"
                       />
-                    ) : (
-                      <></>
-                    )}
-                  </Grid>
-                </>
-              )}
-            </Grid>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            )}
           </Card>
         </Grid>
-      )}
-      {checkSpeechEnabled(field) && (
-        <SpeechSettingsEditor fieldName={fieldName} />
       )}
     </Grid>
   );

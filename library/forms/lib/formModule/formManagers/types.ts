@@ -1,6 +1,7 @@
 import {
   AvpUpdateMode,
   DataEngine,
+  DecodedTokenPermissions,
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
@@ -131,6 +132,10 @@ export interface FullFormConfig extends BaseFormConfig {
   mode: 'full';
   // What is the current record ID?
   recordId: string;
+  /** Notebook / project id (permission checks on records). */
+  projectId: string;
+  /** JWT-derived roles (global + resource) for record permission helpers. */
+  decodedToken: DecodedTokenPermissions;
   /** Function to get current data engine instance (function allows for DB updates) */
   dataEngine: () => DataEngine;
   /** Function to get attachment service instance */
@@ -187,6 +192,12 @@ export interface FullFormConfig extends BaseFormConfig {
  */
 export interface PreviewFormConfig extends BaseFormConfig {
   mode: 'preview';
+  /**
+   * Optional section id to focus when rendering tabbed preview.
+   * Used by Designer to keep the live preview aligned with the currently
+   * selected section tab.
+   */
+  previewSectionId?: string;
 }
 
 // Discriminated union

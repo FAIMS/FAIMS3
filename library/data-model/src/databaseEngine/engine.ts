@@ -1,8 +1,7 @@
-import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
-import {differenceSets} from '../utils';
+import {differenceSets, randomUuid} from '../utils';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
@@ -67,7 +66,7 @@ function getCurrentTimestamp(): string {
  * @returns A new UUID-based record ID
  */
 export function generateRecordID(): string {
-  return 'rec-' + uuidv4();
+  return 'rec-' + randomUuid();
 }
 
 /**
@@ -76,7 +75,7 @@ export function generateRecordID(): string {
  * @returns A new UUID-based revision ID
  */
 export function generateRevisionID(): string {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 /**
@@ -85,7 +84,7 @@ export function generateRevisionID(): string {
  * @returns A new UUID-based AVP ID
  */
 export function generateAvpID(): string {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -94,7 +93,7 @@ export function generateAvpID(): string {
  * @returns A new UUID-based Attachment ID
  */
 export function generateAttID(): string {
-  return 'att-' + uuidv4();
+  return 'att-' + randomUuid();
 }
 
 /**
@@ -205,6 +204,22 @@ export class DataEngine {
       this.query,
       this.uiSpec
     );
+  }
+
+  /**
+   * Deletes a record by appending a new head revision with {@link deleted} set.
+   * Existing field data and relationship are carried forward from {@link baseRevisionId}.
+   */
+  async deleteRecord({
+    recordId,
+    baseRevisionId,
+    userId,
+  }: {
+    recordId: string;
+    baseRevisionId: string;
+    userId: string;
+  }): Promise<string> {
+    return this.form.deleteRecord({recordId, baseRevisionId, userId});
   }
 }
 
@@ -906,6 +921,11 @@ class HydratedOperations {
   async updateRevision(
     revision: HydratedRevisionDocument
   ): Promise<HydratedRevisionDocument> {
+    const existing = await this.core.getRevision(revision._id);
+    if (existing.deleted === true) {
+      throw new Exceptions.RecordDeletedError(revision.recordId);
+    }
+
     // Map from hydrated -> DB format
     const dbRelationship = revision.relationship
       ? {
@@ -1132,6 +1152,10 @@ class FormOperations {
     // Fetch the revision
     const parentRevision = await this.core.getRevision(revisionId);
 
+    if (parentRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
+
     // Check that the revision record ID matches
     if (parentRevision.record_id !== recordId) {
       throw new Exceptions.RevisionMismatchError(recordId, revisionId);
@@ -1164,6 +1188,53 @@ class FormOperations {
 
     // All done
     return newRevision;
+  }
+
+  /**
+   * Deletes a record by appending a new head revision marked deleted. Copies
+   * AVPs, type, and relationship from {@link baseRevisionId}.
+   *
+   * @returns The new revision document id (head)
+   */
+  async deleteRecord({
+    recordId,
+    baseRevisionId,
+    userId,
+  }: {
+    recordId: string;
+    baseRevisionId: string;
+    userId: string;
+  }): Promise<string> {
+    const baseRevision = await this.core.getRevision(baseRevisionId);
+    if (baseRevision.record_id !== recordId) {
+      throw new Exceptions.RevisionMismatchError(recordId, baseRevisionId);
+    }
+    if (baseRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
+
+    const newRevisionId = generateRevisionID();
+    await this.core.createRevision({
+      _id: newRevisionId,
+      avps: baseRevision.avps,
+      created: getCurrentTimestamp(),
+      created_by: userId,
+      parents: [baseRevisionId],
+      record_id: recordId,
+      revision_format_version: 1,
+      type: baseRevision.type,
+      relationship: baseRevision.relationship,
+      ugc_comment: baseRevision.ugc_comment,
+      deleted: true,
+    });
+
+    await this.updateRecordHeads({
+      recordId,
+      oldHeadId: baseRevisionId,
+      newHeadId: newRevisionId,
+    });
+
+    return newRevisionId;
   }
 
   /**
@@ -1208,6 +1279,10 @@ class FormOperations {
   }): Promise<ExistingRevisionDBDocument> {
     // Step 1: Fetch the current revision
     const currentRevision = await this.core.getRevision(revisionId);
+
+    if (currentRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
 
     // What parents does the revision have?
     const parents = currentRevision.parents;
@@ -2138,6 +2213,7 @@ class QueryOperations {
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
    * @param options.filterFunction - Custom optional filter function e.g. permissions
    * @param options.batchSize - Batch size for AVP queries (default: 100)
+   * @param options.caseInsensitive - Whether the regex match is case insensitive (default: false)
    *
    * @returns Search results with minimal record metadata
    */
@@ -2147,12 +2223,14 @@ class QueryOperations {
     filterDeleted = false,
     filterFunction,
     batchSize = 100,
+    caseInsensitive = false,
   }: {
     projectId: string;
     regex: string;
     filterDeleted?: boolean;
     filterFunction?: (rec: MinimalRecordMetadata) => boolean;
     batchSize?: number;
+    caseInsensitive?: boolean;
   }): Promise<RecordSearchResult> {
     const startTime = performance.now();
 
@@ -2160,6 +2238,7 @@ class QueryOperations {
     const matchingRecordIds = await this.findAvpRecordIdsByRegex({
       regex,
       batchSize,
+      caseInsensitive,
     });
 
     console.log(
@@ -2200,20 +2279,25 @@ class QueryOperations {
    *
    * @param options.regex - Regular expression pattern to match
    * @param options.batchSize - Batch size for queries (default: 100)
+   * @param options.caseInsensitive - Compile the regex with the 'i' flag (default: false)
    *
    * @returns Deduplicated record IDs and match count
    */
   private async findAvpRecordIdsByRegex({
     regex,
     batchSize = 100,
+    caseInsensitive = false,
   }: {
     regex: string;
     batchSize?: number;
+    caseInsensitive?: boolean;
   }): Promise<{recordIds: string[]; avpMatchCount: number}> {
     const recordIdSet = new Set<string>();
     let skip = 0;
     let totalAvpMatches = 0;
     let batchCount: number;
+
+    const pattern = caseInsensitive ? new RegExp(regex, 'i') : regex;
 
     // Query in batches since find requires a limit argument
     do {
@@ -2223,7 +2307,10 @@ class QueryOperations {
         selector: {
           avp_format_version: 1,
           // Handle both scalar and array data values
-          $or: [{data: {$regex: regex}}, {data: {$elemMatch: {$regex: regex}}}],
+          $or: [
+            {data: {$regex: pattern}},
+            {data: {$elemMatch: {$regex: pattern}}},
+          ],
         },
         // Only fetch the field we need
         fields: ['record_id'],

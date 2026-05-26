@@ -322,6 +322,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")
   - `appId`: App identifier for mobile builds (e.g. "FAIMS" or reverse-domain)
   - `headingAppName`: (Optional) Override for the banner heading; defaults to `appName`
+  - `forceRemoteDeletion`: (Optional) `allow` or `never` — whether the mobile app removes local survey databases after sync when a survey is archived (must match app build). Passed to `VITE_FORCE_REMOTE_DELETION` for both `/app` and Control Centre web builds. Defaults to `never` when omitted.
   - `offlineMaps`: Map and tile configuration for the app.
     - `mapSource`: Map tile provider: `osm` or `maptiler`
     - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)

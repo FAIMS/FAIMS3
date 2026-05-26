@@ -9,22 +9,25 @@
  * @param {string} viewSetId - ID of the viewset being configured
  */
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Autocomplete,
+  Box,
   Card,
   CardContent,
   Collapse,
   IconButton,
   MenuItem,
   Select,
+  Tooltip,
   Typography,
-  SelectChangeEvent,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
+import {designerInfoIconSx} from './designer-style';
 import {
   viewSetHridUpdated,
   viewSetLayoutUpdated,
@@ -37,6 +40,7 @@ type ViewSetType = {
   summary_fields?: string[];
   layout?: 'inline' | 'tabs';
   hridField?: string;
+  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 };
 
 /**
@@ -57,16 +61,27 @@ const isValidHridField = (field: FieldType): boolean => {
 const SettingSection = ({
   title,
   description,
+  tooltipText = 'Configure how this form behaves and appears to data collectors.',
   children,
 }: {
   title: string;
   description: string;
+  tooltipText?: string;
   children: React.ReactNode;
 }) => (
   <div className="setting-section" style={{marginBottom: '2rem'}}>
-    <Typography variant="subtitle1" sx={{fontWeight: 'bold', mb: 1}}>
-      {title}
-    </Typography>
+    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+      <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
+        {title}
+      </Typography>
+      <Tooltip title={tooltipText}>
+        <InfoIcon
+          sx={{
+            ...(designerInfoIconSx as Record<string, unknown>),
+          }}
+        />
+      </Tooltip>
+    </Box>
     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
       {description}
     </Typography>
@@ -74,7 +89,7 @@ const SettingSection = ({
   </div>
 );
 
-export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
+export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
 
   const fields = useAppSelector(
@@ -88,7 +103,6 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const fviews = useAppSelector(
     state => state.notebook['ui-specification'].present.fviews
   );
-  const [expanded, setExpanded] = React.useState(false);
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -176,6 +190,89 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     : null;
 
   return (
+    <>
+      {/* Layout Style section  */}
+      <SettingSection
+        title="Layout Style"
+        description="Choose how form sections are displayed. The 'tabs' layout will display questions split up into their sections. The 'inline' layout will display all questions in a single scrollable form."
+        tooltipText="Tabs splits the form into one tab per section, so users move through sections step by step — best for long, multi-section forms. Inline shows every section's questions together on one scrollable page — best for short forms."
+      >
+        <Select
+          fullWidth
+          value={viewSet.layout || 'tabs'}
+          onChange={event =>
+            dispatch(
+              viewSetLayoutUpdated({
+                viewSetId,
+                layout: event.target.value as 'inline' | 'tabs' | undefined,
+              })
+            )
+          }
+        >
+          <MenuItem value="tabs">Tabs</MenuItem>
+          <MenuItem value="inline">Inline</MenuItem>
+        </Select>
+      </SettingSection>
+
+      {/* Summary fields section */}
+      <SettingSection
+        title="Summary Fields"
+        description="Select the field(s) you would like to display in the record list table."
+        tooltipText="These fields' values appear as columns when records are listed in a table. Pick the fields that best identify a record at a glance, such as a name or site code. Leave empty to use the default record display."
+      >
+        <Autocomplete
+          multiple
+          options={fieldOptions}
+          value={selectedFields}
+          onChange={handleSummaryFieldsChange}
+          getOptionLabel={option => option.label}
+          renderInput={params => (
+            <DebouncedTextField
+              onChange={function (): void {
+                throw new Error('Function not implemented.');
+              }}
+              {...params}
+              InputProps={{
+                ...params.InputProps,
+                sx: {'& .MuiInputLabel-root': {display: 'none'}},
+              }}
+            />
+          )}
+        />
+      </SettingSection>
+
+      {/* HRID  */}
+      <SettingSection
+        title="Human-Readable ID Field"
+        description="A HRID is a human readable label for the record, which will be displayed in the record table. Select a required string field to use as the human-readable ID. You can use a TemplatedStringField to construct complex HRIDs."
+        tooltipText="The Human-Readable ID labels each record in lists and exports. It must be a required string field. For composite IDs (e.g. site code + date), build a Templated String field and select it here."
+      >
+        <Autocomplete
+          fullWidth
+          options={hridFieldOptions}
+          value={selectedHridField}
+          onChange={handleHridFieldChange}
+          getOptionLabel={option => option.label}
+          renderInput={params => (
+            <DebouncedTextField
+              onChange={function (): void {}}
+              {...params}
+              InputProps={{
+                ...params.InputProps,
+                sx: {'& .MuiInputLabel-root': {display: 'none'}},
+              }}
+            />
+          )}
+        />
+      </SettingSection>
+    </>
+  );
+};
+
+export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
+  const [expanded, setExpanded] = React.useState(false);
+
+  return (
     <Card sx={{width: '100%', mt: 2}}>
       <CardContent
         sx={{
@@ -204,77 +301,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
 
       <Collapse in={expanded}>
         <CardContent>
-          {/* Layout Style section  */}
-          <SettingSection
-            title="Layout Style"
-            description="Choose how form sections are displayed. The 'tabs' layout will display questions split up into their sections. The 'inline' layout will display all questions in a single scrollable form."
-          >
-            <Select
-              fullWidth
-              value={viewSet.layout || 'tabs'}
-              onChange={event =>
-                dispatch(
-                  viewSetLayoutUpdated({
-                    viewSetId,
-                    layout: event.target.value as 'inline' | 'tabs' | undefined,
-                  })
-                )
-              }
-            >
-              <MenuItem value="tabs">Tabs</MenuItem>
-              <MenuItem value="inline">Inline</MenuItem>
-            </Select>
-          </SettingSection>
-
-          {/* Summary fields section */}
-          <SettingSection
-            title="Summary Fields"
-            description="Select the field(s) you would like to display in the record list table."
-          >
-            <Autocomplete
-              multiple
-              options={fieldOptions}
-              value={selectedFields}
-              onChange={handleSummaryFieldsChange}
-              getOptionLabel={option => option.label}
-              renderInput={params => (
-                <DebouncedTextField
-                  onChange={function (): void {
-                    throw new Error('Function not implemented.');
-                  }}
-                  {...params}
-                  InputProps={{
-                    ...params.InputProps,
-                    sx: {'& .MuiInputLabel-root': {display: 'none'}},
-                  }}
-                />
-              )}
-            />
-          </SettingSection>
-
-          {/* HRID  */}
-          <SettingSection
-            title="Human-Readable ID Field"
-            description="A HRID is a human readable label for the record, which will be displayed in the record table. Select a required string field to use as the human-readable ID. You can use a TemplatedStringField to construct complex HRIDs."
-          >
-            <Autocomplete
-              fullWidth
-              options={hridFieldOptions}
-              value={selectedHridField}
-              onChange={handleHridFieldChange}
-              getOptionLabel={option => option.label}
-              renderInput={params => (
-                <DebouncedTextField
-                  onChange={function (): void {}}
-                  {...params}
-                  InputProps={{
-                    ...params.InputProps,
-                    sx: {'& .MuiInputLabel-root': {display: 'none'}},
-                  }}
-                />
-              )}
-            />
-          </SettingSection>
+          <FormSettingsContent viewSetId={viewSetId} />
         </CardContent>
       </Collapse>
     </Card>

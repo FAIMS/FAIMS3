@@ -5,7 +5,7 @@ import TeamProjects from '@/components/tabs/teams/team-projects';
 import TeamTemplates from '@/components/tabs/teams/team-templates';
 import TeamUsers from '@/components/tabs/teams/team-users';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
@@ -87,7 +87,7 @@ function RouteComponent() {
   if (canViewTeamProjects) {
     tabs.push({
       id: 'Projects',
-      label: NOTEBOOK_NAME_CAPITALIZED + 's',
+      label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
       Component: TeamProjects,
     });
   }

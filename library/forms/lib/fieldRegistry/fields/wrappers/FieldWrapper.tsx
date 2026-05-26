@@ -25,6 +25,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import React, {ReactNode, useState} from 'react';
 import {RichTextContent} from '../../../components/RichText';
 
@@ -86,15 +87,28 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       sx={{
         marginBottom: 3,
         position: 'relative',
-        padding: 0.5,
+        padding: 0.9,
         borderRadius: 2,
         borderWidth: 1,
         borderStyle: 'solid',
-        borderColor: hasErrors ? 'error.main' : 'transparent',
-        backgroundColor: 'transparent',
+        borderColor: hasErrors
+          ? 'error.main'
+          : alpha(theme.palette.text.primary, 0.12),
+        background: hasErrors
+          ? `linear-gradient(180deg, ${alpha(theme.palette.error.light, 0.08)} 0%, ${alpha(
+              theme.palette.error.main,
+              0.03
+            )} 100%)`
+          : alpha(theme.palette.text.primary, 0.01),
         boxShadow: hasErrors
-          ? '0 0 8px 1px rgba(211, 47, 47, 0.05), inset 0 0 8px rgba(211, 47, 47, 0.02)'
-          : 'none',
+          ? `0 0 10px 1px ${alpha(theme.palette.error.main, 0.08)}, inset 0 0 8px ${alpha(
+              theme.palette.error.main,
+              0.03
+            )}`
+          : `0 1px 6px ${alpha(theme.palette.common.black, 0.05)}, inset 0 1px 0 ${alpha(
+              theme.palette.common.white,
+              0.72
+            )}`,
         transition: 'all 0.3s ease-in-out',
       }}
     >
@@ -165,6 +179,14 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           sx={{
             marginBottom: 1,
             fontSize: {xs: '0.9rem', md: '1rem'},
+            px: 1,
+            py: 0.45,
+            borderRadius: 1,
+            background: `linear-gradient(180deg, ${alpha(theme.palette.text.primary, 0.03)} 0%, ${alpha(
+              theme.palette.text.primary,
+              0.014
+            )} 100%)`,
+            boxShadow: `0 1px 4px ${alpha(theme.palette.common.black, 0.035)}`,
           }}
         >
           {subheading}
@@ -172,7 +194,20 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       )}
 
       {/* Input Field */}
-      <Box>{children}</Box>
+      <Box
+        sx={{
+          p: 0.45,
+          borderRadius: 1,
+          background: `linear-gradient(180deg, ${alpha(theme.palette.text.primary, 0.014)} 0%, ${alpha(
+            theme.palette.text.primary,
+            0.006
+          )} 100%)`,
+          border: 'none',
+          boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.66)}`,
+        }}
+      >
+        {children}
+      </Box>
 
       {/* Error Messages */}
       {hasErrors && (
@@ -274,7 +309,6 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               overflowY: 'auto',
               '& img': {
                 maxWidth: '100%',
-                height: 'auto',
                 marginTop: 1,
                 borderRadius: 1,
                 display: 'block',

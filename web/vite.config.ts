@@ -13,9 +13,8 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: {'@': path.resolve(__dirname, './src')},
+    dedupe: ['@mui/material', '@emotion/react', '@emotion/styled'],
   },
   server: {
     port: 3001,
@@ -25,6 +24,7 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       '@mui/material',
+      '@mui/material/styles',
       '@mui/icons-material',
       '@emotion/react',
       '@emotion/styled',

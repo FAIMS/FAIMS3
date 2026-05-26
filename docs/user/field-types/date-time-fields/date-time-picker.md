@@ -7,17 +7,17 @@ Editor._
 
 ## What This Field Does
 
-A Date Time Picker captures a date and time as a local datetime string
-without timezone information. It is functionally similar to Date/Time
-with Now but lacks timezone preservation, making timestamps ambiguous
-when teams span multiple timezones.
+A Date time picker captures a date and time. It accepts arbitrary date and
+time entry and can optionally show a **"Now" button** for one-tap capture of
+the current timestamp — covering both the everyday "record this moment" use
+case and the historical / scheduled "enter a specific date" case in a single
+field.
 
-> **Warning:** This field is **discouraged for new {{notebooks}}.** Because
-> it stores timestamps without timezone information, the same time value
-> (e.g., "14:30") represents different times in different
-> locations. Use [Date/Time with Now](date-time-now.md) instead for
-> timezone-safe dates. Date/Time with Now accepts arbitrary dates in
-> addition to "now" timestamps.
+> **Note:** Date time picker is the recommended date-and-time field for new
+> notebooks. The legacy
+> [Date and Time with Now button](date-time-now.md) field type is now
+> deprecated; enable **Show "Now" button** on this field to get the same
+> one-tap capture behaviour.
 
 ## Adding the Field
 
@@ -60,15 +60,14 @@ and Display in child records — see
 
 ## Tips
 
-- **Use Date/Time with Now instead** unless your project operates
-  entirely within a single timezone with no device travel. Date/Time
-  with Now stores UTC timestamps that survive timezone changes and
-  enable accurate cross-site synchronisation.
-- **If you must use this field**, add Helper Text documenting the
-  assumed timezone (e.g., "All times are AEST") so the assumption is
-  recorded alongside the data and can be applied during
-  post-processing.
+- **Enable Show "Now" button** when collectors will most often be capturing
+  the current moment (observation timestamps, record creation time). The
+  field still accepts manual entry, so historical or scheduled times remain
+  possible.
+- **Add Helper Text documenting the assumed timezone** (e.g., "All times are
+  recorded in AEST") so the assumption is captured alongside the data — this
+  is especially important when team members travel between timezones or
+  collaborate across regions.
 - **Consider the travel scenario** — a team based in Sydney conducting
-  fieldwork in Greece may have devices still showing Sydney time.
-  This field would record an ambiguous "14:30" with no way to know
-  which timezone was intended.
+  fieldwork in Greece may have devices still showing Sydney time. Be explicit
+  in the field's Helper Text about which clock the timestamp represents.

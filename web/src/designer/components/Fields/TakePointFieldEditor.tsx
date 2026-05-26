@@ -12,6 +12,7 @@ import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 /**
  * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
@@ -39,14 +40,18 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     <BaseFieldEditor fieldName={fieldName}>
       <Grid container>
         <Grid item sm={6} xs={12}>
-          <DebouncedTextField
-            variant="outlined"
-            label="Button Label Text"
-            value={buttonLabelText}
-            placeholder="Leave empty to use the field label"
-            onChange={e => updateButtonLabel(e.target.value)}
+          <SimpleFieldWrapper
+            heading="Button Label Text"
             helperText="Custom text for the button. If empty, the field label will be used."
-          />
+          >
+            <DebouncedTextField
+              variant="outlined"
+              label=""
+              value={buttonLabelText}
+              placeholder="Leave empty to use the field label"
+              onChange={e => updateButtonLabel(e.target.value)}
+            />
+          </SimpleFieldWrapper>
         </Grid>
       </Grid>
     </BaseFieldEditor>
