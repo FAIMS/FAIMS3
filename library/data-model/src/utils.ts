@@ -1,3 +1,8 @@
+/** RFC 4122 v4 UUID via the Web Crypto API (Node and browsers). */
+export function randomUuid(): string {
+  return crypto.randomUUID();
+}
+
 /**
  * Slugify a string, replacing special characters with less special ones
  * @param str input string

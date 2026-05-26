@@ -1,9 +1,8 @@
-import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface} from '../types';
 import {NotebookUiSpec} from '../uiSpecification';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
-import {differenceSets} from '../utils';
+import {differenceSets, randomUuid} from '../utils';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
@@ -68,7 +67,7 @@ function getCurrentTimestamp(): string {
  * @returns A new UUID-based record ID
  */
 export function generateRecordID(): string {
-  return 'rec-' + uuidv4();
+  return 'rec-' + randomUuid();
 }
 
 /**
@@ -77,7 +76,7 @@ export function generateRecordID(): string {
  * @returns A new UUID-based revision ID
  */
 export function generateRevisionID(): string {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 /**
@@ -86,7 +85,7 @@ export function generateRevisionID(): string {
  * @returns A new UUID-based AVP ID
  */
 export function generateAvpID(): string {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -95,7 +94,7 @@ export function generateAvpID(): string {
  * @returns A new UUID-based Attachment ID
  */
 export function generateAttID(): string {
-  return 'att-' + uuidv4();
+  return 'att-' + randomUuid();
 }
 
 /**
@@ -2215,6 +2214,7 @@ class QueryOperations {
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
    * @param options.filterFunction - Custom optional filter function e.g. permissions
    * @param options.batchSize - Batch size for AVP queries (default: 100)
+   * @param options.caseInsensitive - Whether the regex match is case insensitive (default: false)
    *
    * @returns Search results with minimal record metadata
    */
@@ -2224,12 +2224,14 @@ class QueryOperations {
     filterDeleted = false,
     filterFunction,
     batchSize = 100,
+    caseInsensitive = false,
   }: {
     projectId: string;
     regex: string;
     filterDeleted?: boolean;
     filterFunction?: (rec: MinimalRecordMetadata) => boolean;
     batchSize?: number;
+    caseInsensitive?: boolean;
   }): Promise<RecordSearchResult> {
     const startTime = performance.now();
 
@@ -2237,6 +2239,7 @@ class QueryOperations {
     const matchingRecordIds = await this.findAvpRecordIdsByRegex({
       regex,
       batchSize,
+      caseInsensitive,
     });
 
     console.log(
@@ -2277,20 +2280,25 @@ class QueryOperations {
    *
    * @param options.regex - Regular expression pattern to match
    * @param options.batchSize - Batch size for queries (default: 100)
+   * @param options.caseInsensitive - Compile the regex with the 'i' flag (default: false)
    *
    * @returns Deduplicated record IDs and match count
    */
   private async findAvpRecordIdsByRegex({
     regex,
     batchSize = 100,
+    caseInsensitive = false,
   }: {
     regex: string;
     batchSize?: number;
+    caseInsensitive?: boolean;
   }): Promise<{recordIds: string[]; avpMatchCount: number}> {
     const recordIdSet = new Set<string>();
     let skip = 0;
     let totalAvpMatches = 0;
     let batchCount: number;
+
+    const pattern = caseInsensitive ? new RegExp(regex, 'i') : regex;
 
     // Query in batches since find requires a limit argument
     do {
@@ -2300,7 +2308,10 @@ class QueryOperations {
         selector: {
           avp_format_version: 1,
           // Handle both scalar and array data values
-          $or: [{data: {$regex: regex}}, {data: {$elemMatch: {$regex: regex}}}],
+          $or: [
+            {data: {$regex: pattern}},
+            {data: {$elemMatch: {$regex: pattern}}},
+          ],
         },
         // Only fetch the field we need
         fields: ['record_id'],

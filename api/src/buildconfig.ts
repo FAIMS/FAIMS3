@@ -21,7 +21,6 @@
 
 import {slugify} from '@faims3/data-model';
 import {existsSync} from 'fs';
-import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
   EmailConfig,
@@ -238,7 +237,7 @@ function cookie_secret(): string {
   const cookie = process.env.FAIMS_COOKIE_SECRET;
   if (cookie === '' || cookie === undefined) {
     console.log('FAIMS_COOKIE_SECRET not set, using generated secret');
-    return uuidv4();
+    return crypto.randomUUID();
   } else {
     return cookie;
   }

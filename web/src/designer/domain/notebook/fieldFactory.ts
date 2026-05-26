@@ -16,7 +16,6 @@
  * @file Clone helpers for field specs and designer UUID assignment.
  */
 
-import {v4 as uuidv4} from 'uuid';
 import type {FieldType} from '../../state/initial';
 
 /**
@@ -38,6 +37,6 @@ export const cloneFieldWithDesignerIdentifier = (
   field: FieldType
 ): FieldType => {
   const cloned = cloneField(field);
-  cloned.designerIdentifier = uuidv4();
+  cloned.designerIdentifier = crypto.randomUUID();
   return cloned;
 };

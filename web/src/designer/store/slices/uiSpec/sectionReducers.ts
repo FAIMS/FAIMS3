@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import {PayloadAction} from '@reduxjs/toolkit';
-import {v4 as uuidv4} from 'uuid';
 import {cloneField} from '../../../domain/notebook/fieldFactory';
 import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
 import {NotebookUISpec} from '../../../state/initial';
@@ -112,7 +111,7 @@ export const sectionReducers = {
       const newField = cloneField(originalField);
       newField['component-parameters'].label = newFieldLabel;
       newField['component-parameters'].name = fieldSlug;
-      newField.designerIdentifier = uuidv4();
+      newField.designerIdentifier = crypto.randomUUID();
 
       state.fields[fieldSlug] = newField;
       newSection.fields.push(fieldSlug);

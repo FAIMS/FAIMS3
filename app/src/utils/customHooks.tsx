@@ -512,6 +512,7 @@ export const useRecordList = ({
           regex: query,
           projectId,
           filterDeleted,
+          caseInsensitive: true,
           filterFunction: rec => {
             return shouldDisplayRecordMinimalMetadata({
               contents: token,
