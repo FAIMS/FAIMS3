@@ -37,6 +37,8 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Listings public-template row and badge accent (HSL channels, no hsl() wrapper). */
+    --accented-row: 158 52% 34%;
   }
 
   :root,
@@ -52,6 +54,7 @@
     --primary-foreground: 0 0% 98%;
     --secondary: 173 58% 39%;
     --secondary-foreground: 0 0% 98%;
+    --accented-row: 180 50% 36%;
   }
 
   .dark {
@@ -87,6 +90,11 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --accented-row: 158 45% 58%;
+  }
+
+  .dark.theme-bss {
+    --accented-row: 173 40% 56%;
   }
 }
 

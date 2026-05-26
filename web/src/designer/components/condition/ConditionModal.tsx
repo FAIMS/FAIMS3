@@ -21,15 +21,25 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  SxProps,
   Stack,
+  Theme,
 } from '@mui/material';
+import type {ReactNode} from 'react';
 import {useCallback, useEffect, useState} from 'react';
 import {ConditionControl} from './ConditionControl';
 import {ConditionProps, ConditionType} from '../../types/condition';
 import QuizIcon from '@mui/icons-material/Quiz';
+import {designerCancelButtonSx, designerDialogContentSx} from '../designer-style';
 
 /** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
-export const ConditionModal = (props: ConditionProps & {label: string}) => {
+export const ConditionModal = (
+  props: ConditionProps & {
+    label: string;
+    icon?: ReactNode;
+    buttonSx?: SxProps<Theme>;
+  }
+) => {
   const [open, setOpen] = useState(false);
   // Local draft copy
   const [draft, setDraft] = useState<ConditionType | null>(
@@ -73,12 +83,17 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
 
   return (
     <>
-      <Button onClick={handleOpen} size="small" startIcon={<QuizIcon />}>
+      <Button
+        onClick={handleOpen}
+        size="small"
+        startIcon={props.icon ?? <QuizIcon />}
+        sx={props.buttonSx}
+      >
         {props.label}
       </Button>
 
       <Dialog open={open} fullWidth={true} maxWidth="lg" onClose={handleCancel}>
-        <DialogContent>
+        <DialogContent sx={designerDialogContentSx}>
           <ConditionControl
             initial={draft}
             onChange={setDraft}
@@ -92,6 +107,7 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
+                sx={designerCancelButtonSx}
                 onClick={() => setConfirmCancel(false)}
               >
                 Continue Editing
@@ -107,7 +123,7 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
           )}
           {!confirmCancel && (
             <Stack direction="row" spacing={2}>
-              <Button variant="outlined" onClick={handleCancel}>
+              <Button variant="outlined" sx={designerCancelButtonSx} onClick={handleCancel}>
                 Cancel Edit
               </Button>
               <Button variant="contained" onClick={handleSave}>

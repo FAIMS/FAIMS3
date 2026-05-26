@@ -22,10 +22,8 @@ import {AddressFieldEditor} from '../../components/Fields/AddressFieldEditor';
 import {AdvancedSelectEditor} from '../../components/Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from '../../components/Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from '../../components/Fields/BasicAutoIncrementer';
-import {ControlledNumberFieldEditor} from '../../components/Fields/ControlledNumberFieldEditor';
 import {DateTimeNowEditor} from '../../components/Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from '../../components/Fields/MapFormFieldEditor';
-import {MultipleTextFieldEditor} from '../../components/Fields/MultipleTextField';
 import {NumberFieldEditor} from '../../components/Fields/NumberFieldEditor';
 import {OptionsEditor} from '../../components/Fields/OptionsEditor';
 import {RelatedRecordEditor} from '../../components/Fields/RelatedRecordEditor';
@@ -48,7 +46,7 @@ export type FieldEditorRenderer = (
 ) => React.ReactElement;
 
 const selectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
-  <OptionsEditor fieldName={fieldName} />
+  <OptionsEditor fieldName={fieldName} showExpandedChecklist={true} />
 );
 
 const multiSelectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
@@ -60,12 +58,11 @@ const multiSelectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
 );
 
 export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
-  MultipleTextField: ({fieldName}) => (
-    <MultipleTextFieldEditor fieldName={fieldName} />
-  ),
-  TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   TextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
-  DateTimeNow: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
+  DateTimePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  DatePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  MonthPicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   Select: selectEditorRenderer,
   MultiSelect: multiSelectEditorRenderer,
   RadioGroup: selectEditorRenderer,
@@ -76,9 +73,6 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   AddressField: ({fieldName}) => <AddressFieldEditor fieldName={fieldName} />,
   TakePoint: ({fieldName}) => <TakePointFieldEditor fieldName={fieldName} />,
   NumberField: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
-  ControlledNumber: ({fieldName}) => (
-    <ControlledNumberFieldEditor fieldName={fieldName} />
-  ),
   RichText: ({fieldName}) => <RichTextEditor fieldName={fieldName} />,
   RelatedRecordSelector: ({fieldName}) => (
     <RelatedRecordEditor fieldName={fieldName} />

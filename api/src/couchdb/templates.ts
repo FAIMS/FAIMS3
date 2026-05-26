@@ -44,10 +44,13 @@ export const getTemplates = async ({
   const templatesDb = getTemplatesDb();
   try {
     const resultList = teamId
-      ? await templatesDb.query<TemplateListItem>(TEMPLATES_LISTING_BY_TEAM_ID, {
-          key: teamId,
-          include_docs: false,
-        })
+      ? await templatesDb.query<TemplateListItem>(
+          TEMPLATES_LISTING_BY_TEAM_ID,
+          {
+            key: teamId,
+            include_docs: false,
+          }
+        )
       : await templatesDb.query<TemplateListItem>(
           TEMPLATES_LISTING_BY_TEMPLATE_ID,
           {
@@ -114,7 +117,9 @@ export const getTemplate = async (
   }
 };
 
-async function teamDisplayNameForId(teamId: string): Promise<string | undefined> {
+async function teamDisplayNameForId(
+  teamId: string
+): Promise<string | undefined> {
   try {
     const team = await getTeamById(teamId);
     return team.name;

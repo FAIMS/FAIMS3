@@ -59,7 +59,8 @@ done
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-info()  { echo "[release] $*"; }
+# Log to stderr so stdout stays clean for $(...) captures (e.g. gather_pr_entries).
+info()  { echo "[release] $*" >&2; }
 warn()  { echo "[release] WARNING: $*" >&2; }
 error() { echo "[release] ERROR: $*" >&2; exit 1; }
 

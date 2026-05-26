@@ -435,6 +435,9 @@ const ConductorConfigSchema = z.object({
   /** Allow localhost typical addresses in the redirects for conductor? NOT
    * recommended for production use cases (for security reasons). */
   localhostWhitelist: z.boolean().default(false),
+  /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
+   * migrations on startup. */
+  migrateNotebooksOnStartup: z.boolean().default(false),
 });
 
 const WebConfigSchema = z.object({

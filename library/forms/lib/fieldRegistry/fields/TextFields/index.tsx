@@ -10,33 +10,68 @@ import {FieldInfo} from '../../types';
 import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
 
 /**
- * Extended props schema for fields with speech-to-text support.
+ * Props schema for the canonical "Text field" runtime.
+ *
+ * Single-line by default; set `multiline: true` (and optionally `rows`) to
+ * render as a textarea. This is the unified shape used by the chooser-level
+ * "Text field" with its Short / Long answer toggle.
+ *
+ * `InputProps.rows` is accepted for backward-compat with un-migrated notebooks
+ * that came in as the legacy `formik-material-ui::MultipleTextField`. The
+ * component below treats a `rows` value greater than 1 (from either source) as
+ * implicit multiline. The v4 notebook migration lifts the legacy `InputProps.rows`
+ * onto top-level `rows` and sets `multiline: true`, so once a notebook is
+ * migrated this back-compat path is dormant.
  */
 const TextFieldPropsSchema = BaseFieldPropsSchema.extend({
   /** Enable speech-to-text input (default: true) */
   enableSpeech: z.boolean().optional().default(true),
   /** Whether to append speech to existing text or replace */
   speechAppendMode: z.boolean().optional(),
+  /** Render as a multiline textarea (Long answer mode). */
+  multiline: z.boolean().optional(),
+  /** Number of rows shown when `multiline` is true (default: 4). */
+  rows: z.number().optional(),
+  /**
+   * Legacy `formik-material-ui::MultipleTextField` shape — `rows` nested under
+   * `InputProps`. Kept optional so un-migrated notebooks still parse; the
+   * component below normalises this onto the canonical top-level form.
+   */
+  InputProps: z
+    .object({rows: z.number().optional()})
+    .optional(),
 });
 
 type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;
 
 /**
- * Single-line text field component with optional speech-to-text.
- * Uses the base MUI text field with default single-line configuration.
+ * Unified text field component with optional speech-to-text.
+ *
+ * Resolves multiline mode and rows from either the canonical top-level
+ * `multiline`/`rows` props or the legacy nested `InputProps.rows` shape.
+ * Renders single-line by default, or a multi-line textarea when either is set.
  */
 const TextField: React.FC<TextFieldProps & FormFieldContextProps> = ({
   enableSpeech = true,
   speechAppendMode,
+  multiline,
+  rows,
+  InputProps,
   ...props
 }) => {
+  const legacyRows = InputProps?.rows;
+  const isMultiline = multiline === true || (legacyRows ?? 0) > 1;
+  const effectiveRows = isMultiline ? (rows ?? legacyRows ?? 4) : undefined;
+
   return (
     <BaseMuiTextField
       {...props}
-      multiline={false}
+      multiline={isMultiline}
+      rows={effectiveRows}
       inputType="text"
       enableSpeech={enableSpeech}
-      speechAppendMode={speechAppendMode ?? false} // Single-line defaults to replace
+      // Single-line replaces by default; multiline appends.
+      speechAppendMode={speechAppendMode ?? isMultiline}
     />
   );
 };
@@ -53,74 +88,25 @@ const textFieldValueSchema = (props: BaseFieldProps) => {
 };
 
 /**
- * Field specification for FAIMSTextField.
- * Single-line text input for free-form entries with optional speech-to-text.
+ * Canonical "Text field" spec — `faims-custom::TextField`.
+ *
+ * Replaces the historical `faims-custom::FAIMSTextField` and
+ * `formik-material-ui::MultipleTextField` registrations. Both legacy
+ * `component-name` values are routed to this same spec via registry aliases
+ * (see `LEGACY_FIELD_ALIASES` in `../../registry.ts`) so notebooks that have
+ * not yet been migrated to schema v4 continue to render. Once migration is
+ * confirmed-rolled-out, the aliases can be removed.
  */
 export const textFieldSpec: FieldInfo<TextFieldProps & FormFieldContextProps> =
   {
     namespace: 'faims-custom',
-    name: 'FAIMSTextField',
+    name: 'TextField',
     returns: 'faims-core::String',
     component: TextField,
     fieldPropsSchema: TextFieldPropsSchema,
     fieldDataSchemaFunction: textFieldValueSchema,
     view: {component: DefaultRenderer, config: {}},
   };
-
-/**
- * Extended props schema for MultilineTextField.
- * Includes configuration for the number of rows and speech support.
- */
-const MultilineTextFieldPropsSchema = TextFieldPropsSchema.extend({
-  InputProps: z
-    .object({
-      /** Number of rows to display (default: 4) */
-      rows: z.number().optional().default(4),
-    })
-    .optional()
-    .default({}),
-});
-
-type MultilineTextFieldProps = z.infer<typeof MultilineTextFieldPropsSchema>;
-type MultilineTextFieldFullProps = MultilineTextFieldProps &
-  FormFieldContextProps;
-
-/**
- * Multi-line text area component for longer text entries with optional speech-to-text.
- * Uses the base MUI text field with multiline configuration.
- */
-const MultilineTextField: React.FC<MultilineTextFieldFullProps> = ({
-  InputProps: {rows},
-  enableSpeech = true,
-  speechAppendMode,
-  ...baseProps
-}) => {
-  return (
-    <BaseMuiTextField
-      {...baseProps}
-      multiline={true}
-      rows={rows}
-      enableSpeech={enableSpeech}
-      speechAppendMode={speechAppendMode ?? true} // Multiline defaults to append
-    />
-  );
-};
-
-/**
- * Field specification for MultilineTextField.
- * Multi-line text area for longer notes and descriptions with optional speech-to-text.
- *
- * This replaces the legacy formik-material-ui::MultipleTextField
- */
-export const multilineTextFieldSpec: FieldInfo<MultilineTextFieldFullProps> = {
-  namespace: 'formik-material-ui',
-  name: 'MultipleTextField',
-  returns: 'faims-core::String',
-  component: MultilineTextField,
-  fieldPropsSchema: MultilineTextFieldPropsSchema,
-  fieldDataSchemaFunction: textFieldValueSchema,
-  view: {component: DefaultRenderer, config: {}},
-};
 
 /**
  * Email field component with built-in email validation.

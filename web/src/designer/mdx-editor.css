@@ -64,6 +64,105 @@ body > .image-dialog {
 }
 
 /*
+ * Image resize handles.
+ *
+ * MDXEditor's image resize controls are positioned at -6px outside the image
+ * node's wrapper div. The parent MUI Card has overflow:hidden by default which
+ * clips them. We work around this by setting overflow:visible on the Card (see
+ * mdx-editor.tsx), and additionally ensure the image wrapper itself and its
+ * immediate ancestors in the Lexical tree don't clip the handles.
+ */
+.mdxEditor [data-editor-block-type='image'] {
+  overflow: visible !important;
+}
+
+/*
+ * In @mdxeditor/editor v1, handle elements are tiny square nodes rendered in the
+ * 2nd child div of [data-editor-block-type='image']. Depending on surrounding
+ * theme/layout, they can be hard to see or hard to grab. We style and enlarge
+ * that stable DOM structure (without relying on hashed internal class names).
+ */
+.mdxEditor [data-editor-block-type='image'] {
+  position: relative;
+  display: inline-block;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) {
+  position: absolute;
+  inset: 0;
+  overflow: visible !important;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div {
+  position: absolute;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 999px;
+  border: 2px solid #ffffff !important;
+  background: #1f6feb !important;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2);
+  pointer-events: auto !important;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(1) {
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: n-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(2) {
+  top: -7px;
+  right: -7px;
+  cursor: ne-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(3) {
+  top: 50%;
+  right: -7px;
+  transform: translateY(-50%);
+  cursor: e-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(4) {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(5) {
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: s-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(6) {
+  bottom: -7px;
+  left: -7px;
+  cursor: sw-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(7) {
+  top: 50%;
+  left: -7px;
+  transform: translateY(-50%);
+  cursor: w-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(8) {
+  top: -7px;
+  left: -7px;
+  cursor: nw-resize;
+}
+
+.mdxEditor [data-editor-block-type='image'] > button {
+  z-index: 4;
+}
+
+/*
  * Restore list styles inside the MDXEditor content area.
  *
  * MDXEditor's Lexical theme assigns CSS classes to <li> but leaves <ul>/<ol>

@@ -38,27 +38,30 @@ describe('migrateToV3', () => {
   });
 });
 
-describe('migrateNotebook chains v2 then v3', () => {
-  test('single call upgrades 1.0 notebook to 3.0 without project_status', () => {
+describe('migrateNotebook chains v2 then v3 then v4', () => {
+  // The chain now runs through to v4; these tests verify project_status is
+  // removed by the v3 step regardless of where the chain starts.
+  test('single call upgrades 1.0 notebook through to 4.0 without project_status', () => {
     const {migrated, changed} = migrateNotebook(sampleNotebook);
     expect(changed).toBe(true);
-    expect(migrated.metadata.schema_version).toBe('3.0');
+    expect(migrated.metadata.schema_version).toBe('4.0');
     expect(migrated.metadata.project_status).toBeUndefined();
   });
 
-  test('only runs v3 when already at 2.0', () => {
+  test('runs v3 + v4 when starting at 2.0', () => {
     const v2Only = migrateToV2(sampleNotebook);
     const {migrated, changed} = migrateNotebook(v2Only);
     expect(changed).toBe(true);
-    expect(migrated.metadata.schema_version).toBe('3.0');
+    expect(migrated.metadata.schema_version).toBe('4.0');
     expect(migrated.metadata.project_status).toBeUndefined();
   });
 
-  test('no change when already at 3.0', () => {
+  test('runs v4 only when starting at 3.0', () => {
     const v2 = migrateToV2(sampleNotebook);
     const v3 = migrateToV3(v2);
     const {migrated, changed} = migrateNotebook(v3);
-    expect(changed).toBe(false);
-    expect(migrated.metadata.schema_version).toBe('3.0');
+    // v3 → v4 still bumps the schema_version, so `changed` is true.
+    expect(changed).toBe(true);
+    expect(migrated.metadata.schema_version).toBe('4.0');
   });
 });

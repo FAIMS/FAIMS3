@@ -5,6 +5,12 @@ Editor._
 
 ---
 
+```{important}
+Controlled Number is **deprecated** for new form design.
+It remains fully supported for existing notebooks and existing Controlled Number fields are not removed.
+For new forms, prefer [Number Input](number-input.md), which provides the same minimum and maximum bounds along with broader numeric support.
+```
+
 ## What This Field Does
 
 A Controlled Number field accepts bounded numeric values, enforcing
@@ -16,16 +22,11 @@ immediately rather than during post-processing.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the
-**NUMBERS** tab, and click the **Controlled Number** card. Then click
-the **ADD FIELD** button in the lower right.
+New Controlled Number fields are not available from the add-field chooser.
+Controlled Number remains supported for legacy notebooks where it already exists.
+For new forms, add **Number Input** instead and configure its minimum and maximum bounds.
 
-```{screenshot} field-types-design/controlled-number-01-add-field.png
-:alt: Adding a Controlled Number — the NUMBERS tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit Controlled Number settings for existing fields.
 
 ## Configuring the Field
 
@@ -78,3 +79,9 @@ and Display in child records — see
 - **Enable Annotation and Uncertainty** for measurement fields where
   collectors might need to note the instrument type, recording
   conditions, estimation method, or unexpected out-of-range values.
+
+## Migration Guidance
+
+- Existing Controlled Number fields can be left in place and will continue to work.
+- For new templates, use **Number Input** and set its minimum and maximum to enforce bounds.
+- Number Input also distinguishes empty (null) from zero, which Controlled Number cannot.
