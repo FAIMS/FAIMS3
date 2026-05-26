@@ -132,6 +132,8 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
     disabled,
   } = props;
 
+  const theme = useTheme();
+
   const {minVal, maxVal, step} = useMemo(
     () => resolveBounds(props),
     [props.min, props.max, props.stepSize]
@@ -216,13 +218,19 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
           onChangeCommitted={() => handleBlur()}
           sx={{
             mt: 0,
-            '& .MuiSlider-track': {backgroundColor: '#bdbdbd', border: 'none'},
-            '& .MuiSlider-rail': {opacity: 1, backgroundColor: '#e8e8e8'},
+            '& .MuiSlider-track': {
+              backgroundColor: theme.palette.grey[400],
+              border: 'none',
+            },
+            '& .MuiSlider-rail': {
+              opacity: 1,
+              backgroundColor: theme.palette.grey[200],
+            },
             '& .MuiSlider-thumb': {
               width: 16,
               height: 16,
-              backgroundColor: '#fff',
-              border: '1px solid #bdbdbd',
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.grey[400]}`,
             },
           }}
         />
@@ -253,7 +261,7 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
             alignItems: 'center',
             gap: 0.5,
             cursor: disabled ? 'default' : 'pointer',
-            color: 'success.dark',
+            color: theme.palette.primary.main,
             fontSize: 14,
             verticalAlign: 'middle',
           }}
