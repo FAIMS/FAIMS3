@@ -24,7 +24,11 @@ import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
 } from '../../../formModule/types';
-import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {
+  DataViewFieldRender,
+  EmptyResponsePlaceholder,
+  TextWrapper,
+} from '../../../rendering/fields';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -262,6 +266,26 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
   );
 };
 
+/** Formats a stored percentage value for the view-only (DataView) renderer. */
+export function formatPercentageViewValue(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return null;
+  }
+  return `${Math.round(numeric)}%`;
+}
+
+const PercentageSliderRenderer: DataViewFieldRender = props => {
+  const formatted = formatPercentageViewValue(props.value);
+  if (formatted === null) {
+    return <EmptyResponsePlaceholder />;
+  }
+  return <TextWrapper content={formatted} />;
+};
+
 const valueSchema = (props: PercentageSliderProps): z.ZodTypeAny => {
   const {minVal, maxVal, step} = resolveBounds(props);
 
@@ -289,5 +313,9 @@ export const percentageSliderFieldSpec: FieldInfo<PercentageSliderFullProps> = {
   component: PercentageSlider,
   fieldPropsSchema: PercentageSliderPropsSchema,
   fieldDataSchemaFunction: valueSchema,
-  view: {component: DefaultRenderer, config: {}},
+  view: {
+    component: PercentageSliderRenderer,
+    config: {},
+    attributes: {singleColumn: false},
+  },
 };

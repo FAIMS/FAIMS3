@@ -13,7 +13,24 @@
 // limitations under the License.
 
 import {describe, expect, it} from 'vitest';
-import {percentageSliderFieldSpec} from './index';
+import {formatPercentageViewValue, percentageSliderFieldSpec} from './index';
+
+describe('formatPercentageViewValue', () => {
+  it('appends a percent sign to rounded integer values', () => {
+    expect(formatPercentageViewValue(42)).toBe('42%');
+    expect(formatPercentageViewValue(42.6)).toBe('43%');
+  });
+
+  it('renders zero as 0%', () => {
+    expect(formatPercentageViewValue(0)).toBe('0%');
+  });
+
+  it('returns null for empty or non-numeric values', () => {
+    expect(formatPercentageViewValue(null)).toBeNull();
+    expect(formatPercentageViewValue(undefined)).toBeNull();
+    expect(formatPercentageViewValue('not-a-number')).toBeNull();
+  });
+});
 
 describe('PercentageSlider value schema', () => {
   const schema = (params: Record<string, unknown>) =>

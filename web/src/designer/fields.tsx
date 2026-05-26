@@ -522,7 +522,7 @@ const fields: {[key: string]: FieldType} = {
       'Slider for selecting a percentage with optional step size',
     category: CategoryKey.NUMBERS,
     showInChooser: true,
-    order: 7,
+    order: 27,
   },
 };
 
