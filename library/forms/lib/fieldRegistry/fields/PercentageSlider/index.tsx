@@ -38,7 +38,7 @@ const PercentageSliderPropsSchema = BaseFieldPropsSchema.extend({
   /** Inclusive upper bound (0–100). Defaults to 100. */
   max: z.number().int().min(0).max(100).optional(),
   /** Step between valid values along the slider. Defaults to 1. */
-  stepSize: z.number().int().positive().max(100).optional(),
+  step: z.number().int().positive().max(100).optional(),
 }).superRefine((data, ctx) => {
   const min = data.min ?? 0;
   const max = data.max ?? 100;
@@ -49,12 +49,12 @@ const PercentageSliderPropsSchema = BaseFieldPropsSchema.extend({
       path: ['min'],
     });
   }
-  const step = data.stepSize ?? 1;
+  const step = data.step ?? 1;
   if (max > min && step > max - min) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Step size cannot exceed the range between min and max',
-      path: ['stepSize'],
+      message: 'Step cannot exceed the range between min and max',
+      path: ['step'],
     });
   }
 });
@@ -69,7 +69,7 @@ function resolveBounds(props: PercentageSliderProps): {
 } {
   const minVal = props.min ?? 0;
   const maxVal = props.max ?? 100;
-  const rawStep = props.stepSize ?? 1;
+  const rawStep = props.step ?? 1;
   const step =
     Number.isFinite(rawStep) && rawStep >= 1
       ? Math.min(Math.floor(rawStep), 100)
@@ -136,7 +136,7 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
 
   const {minVal, maxVal, step} = useMemo(
     () => resolveBounds(props),
-    [props.min, props.max, props.stepSize]
+    [props.min, props.max, props.step]
   );
 
   const rawValue = state.value?.data;
@@ -307,7 +307,7 @@ const valueSchema = (props: PercentageSliderProps): z.ZodTypeAny => {
 
   if (maxVal > minVal && step >= 1) {
     schema = schema.refine(v => (v - minVal) % step === 0, {
-      message: `Must align with step size (${step})`,
+      message: `Must align with step (${step})`,
     });
   }
 

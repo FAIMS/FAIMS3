@@ -11,7 +11,7 @@ A Percentage Slider field lets people choose an integer percentage by moving
 a handle along a track, or by clicking the track to jump to a value. It is
 suited to canopy cover, completion estimates, and other 0–100 style measures
 where a visual control is clearer than typing numbers. Optional **minimum**,
-**maximum**, and **step size** keep values within the range you define and snap
+**maximum**, and **step** keep values within the range you define and snap
 to the increments you choose.
 
 ## Adding the Field
@@ -40,7 +40,7 @@ Below the identity fields, the Percentage Slider provides:
 | ------------- | ---------------------------------------------------------------------------- |
 | **Minimum (%)** | Smallest value on the slider (0–100). Defaults to **0** if left unset.     |
 | **Maximum (%)** | Largest value on the slider (0–100). Defaults to **100** if left unset.   |
-| **Step size**   | Increment between valid stops (e.g. **1** for every percent, **10** for tens). Defaults to **1** if left unset. Must fit within the min–max range. |
+| **Step**        | Increment between valid stops (e.g. **1** for every percent, **10** for tens). Defaults to **1** if left unset. Must fit within the min–max range. |
 
 The app enforces that the minimum is not greater than the maximum, and that
 stored values lie on the step grid (for example, with min 0, max 100, and step
@@ -57,7 +57,7 @@ and Display in child records — see
 
 ## Tips
 
-- **Use step size to match how precise the estimate should be.** Coarse steps
+- **Use step to match how precise the estimate should be.** Coarse steps
   (5 or 10) speed up entry for rough cover classes; step **1** when you need
   single-percent resolution.
 - **Reset clears the value** until the person moves the slider again — useful

@@ -31,9 +31,7 @@ export const PercentageSliderFieldEditor = ({
 
   const min = field['component-parameters'].min as number | undefined;
   const max = field['component-parameters'].max as number | undefined;
-  const stepSize = field['component-parameters'].stepSize as
-    | number
-    | undefined;
+  const step = field['component-parameters'].step as number | undefined;
 
   const handleMinChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newField = withUpdatedField(field, nextField => {
@@ -75,11 +73,11 @@ export const PercentageSliderFieldEditor = ({
     const newField = withUpdatedField(field, nextField => {
       const value = event.target.value;
       if (value === '') {
-        delete nextField['component-parameters'].stepSize;
+        delete nextField['component-parameters'].step;
       } else {
         const parsed = parseInt(value, 10);
         if (!isNaN(parsed) && parsed > 0) {
-          nextField['component-parameters'].stepSize = Math.min(100, parsed);
+          nextField['component-parameters'].step = Math.min(100, parsed);
         }
       }
     });
@@ -110,9 +108,9 @@ export const PercentageSliderFieldEditor = ({
           sx={{flex: '1 1 120px'}}
         />
         <TextField
-          label="Step size"
+          label="Step"
           type="number"
-          value={stepSize ?? ''}
+          value={step ?? ''}
           onChange={handleStepChange}
           variant="outlined"
           size="small"
@@ -122,7 +120,7 @@ export const PercentageSliderFieldEditor = ({
       </Box>
       <FormHelperText>
         Values are integers from 0–100. Minimum must not exceed maximum. Step
-        size must fit within the range (defaults: min 0, max 100, step 1).
+        must fit within the range (defaults: min 0, max 100, step 1).
       </FormHelperText>
     </BaseFieldEditor>
   );

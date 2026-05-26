@@ -37,19 +37,19 @@ describe('PercentageSlider value schema', () => {
     percentageSliderFieldSpec.fieldDataSchemaFunction!(params as any);
 
   it('accepts values on the step grid', () => {
-    const s = schema({min: 0, max: 100, stepSize: 10});
+    const s = schema({min: 0, max: 100, step: 10});
     expect(s.safeParse(30).success).toBe(true);
     expect(s.safeParse(0).success).toBe(true);
     expect(s.safeParse(100).success).toBe(true);
   });
 
   it('rejects values off the step grid', () => {
-    const s = schema({min: 0, max: 100, stepSize: 10});
+    const s = schema({min: 0, max: 100, step: 10});
     expect(s.safeParse(31).success).toBe(false);
   });
 
   it('enforces min and max from props', () => {
-    const s = schema({min: 10, max: 40, stepSize: 5});
+    const s = schema({min: 10, max: 40, step: 5});
     expect(s.safeParse(9).success).toBe(false);
     expect(s.safeParse(41).success).toBe(false);
     expect(s.safeParse(25).success).toBe(true);
