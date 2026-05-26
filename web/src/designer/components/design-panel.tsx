@@ -450,7 +450,7 @@ export const DesignPanel = () => {
               value={maxKeys.toString()}
               icon={<AddIcon />}
               iconPosition="start"
-              label={compactAddTab ? '' : 'New Form'}
+              label={compactAddTab ? '' : 'NEW FORM'}
               onClick={e => {
                 e.preventDefault();
                 openAddFormDialog();
