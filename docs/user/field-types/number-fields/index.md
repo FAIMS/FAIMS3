@@ -10,6 +10,7 @@ hidden: true
 
 number-input.md
 controlled-number.md
+percentage-slider.md
 auto-incrementing-field.md
 
 ```
@@ -20,5 +21,7 @@ auto-incrementing-field.md
 - **[Controlled Number](controlled-number.md)** — Deprecated for new forms;
   existing Controlled Number fields remain supported. Prefer "Number Input"
   with minimum and maximum bounds for new templates.
+- **[Percentage Slider](percentage-slider.md)** — A slider for integer
+  percentages (0–100 by default) with optional step size.
 - **[Auto Incrementing Field](auto-incrementing-field.md)** — Generates sequential string
   identifiers such as specimen numbers and catalogue IDs.

@@ -26,6 +26,7 @@ import {DateTimeNowEditor} from '../../components/Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from '../../components/Fields/MapFormFieldEditor';
 import {NumberFieldEditor} from '../../components/Fields/NumberFieldEditor';
 import {OptionsEditor} from '../../components/Fields/OptionsEditor';
+import {PercentageSliderFieldEditor} from '../../components/Fields/PercentageSliderFieldEditor';
 import {RelatedRecordEditor} from '../../components/Fields/RelatedRecordEditor';
 import {RichTextEditor} from '../../components/Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from '../../components/Fields/TakePhotoField';
@@ -73,6 +74,9 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   AddressField: ({fieldName}) => <AddressFieldEditor fieldName={fieldName} />,
   TakePoint: ({fieldName}) => <TakePointFieldEditor fieldName={fieldName} />,
   NumberField: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
+  PercentageSlider: ({fieldName}) => (
+    <PercentageSliderFieldEditor fieldName={fieldName} />
+  ),
   RichText: ({fieldName}) => <RichTextEditor fieldName={fieldName} />,
   RelatedRecordSelector: ({fieldName}) => (
     <RelatedRecordEditor fieldName={fieldName} />

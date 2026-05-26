@@ -11,6 +11,7 @@ import {fileUploaderFieldSpec} from './fields/FileUploader';
 import {mapFieldSpec} from './fields/MapField';
 import {multiSelectFieldSpec} from './fields/MultiSelect';
 import {numberFieldSpec} from './fields/NumberField';
+import {percentageSliderFieldSpec} from './fields/PercentageSlider';
 import {qrCodeFieldSpec} from './fields/QRCodeFormField';
 import {radioGroupFieldSpec} from './fields/RadioGroup';
 import {relatedRecordFieldSpec} from './fields/RelatedRecord';
@@ -43,6 +44,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
+  percentageSliderFieldSpec,
   numberFieldSpec,
   addressFieldSpec,
 ];
@@ -84,13 +86,20 @@ const LEGACY_FIELD_ALIASES: Array<{
   // optional `show_now_button` parameter. The DateTimePicker component reads
   // both the canonical `isAutoPick` and the legacy `is_auto_pick` keys, so
   // un-migrated DateTimeNow data renders correctly via this alias.
-  {namespace: 'faims-custom', name: 'DateTimeNow', spec: dateTimePickerFieldSpec},
+  {
+    namespace: 'faims-custom',
+    name: 'DateTimeNow',
+    spec: dateTimePickerFieldSpec,
+  },
 ];
 
 // Build the map from `namespace::name` to the field info, including legacy aliases.
 const FIELD_REGISTRY: Map<string, FieldInfo> = new Map();
 for (const spec of FieldSpecList) {
-  FIELD_REGISTRY.set(buildKey({namespace: spec.namespace, name: spec.name}), spec);
+  FIELD_REGISTRY.set(
+    buildKey({namespace: spec.namespace, name: spec.name}),
+    spec
+  );
 }
 for (const alias of LEGACY_FIELD_ALIASES) {
   FIELD_REGISTRY.set(
