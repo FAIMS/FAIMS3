@@ -14,7 +14,6 @@ import {
   GetEmailCodeIndex,
   safeWriteDocument,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {buildQueryString} from '../auth/helpers';
 import {CONDUCTOR_PUBLIC_URL, EMAIL_CODE_EXPIRY_MINUTES} from '../buildconfig';
@@ -171,7 +170,7 @@ export const createNewEmailCode = async ({
   const authDB = getAuthDB();
   const code = generateVerificationCode();
   const hash = hashChallengeCode(code);
-  const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + crypto.randomUUID();
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
   const currentTimestamp = Date.now();
 

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import {PayloadAction} from '@reduxjs/toolkit';
-import {v4 as uuidv4} from 'uuid';
 import {ConditionType} from '../../../types/condition';
 import {getFieldSpec} from '../../../fields';
 import {FieldType, NotebookUISpec} from '../../../state/initial';
@@ -251,7 +250,7 @@ export const fieldReducers = {
     const {fieldName, fieldType, viewId, viewSetId, addAfter} = action.payload;
 
     const newField: FieldType = getFieldSpec(fieldType);
-    newField.designerIdentifier = uuidv4();
+    newField.designerIdentifier = crypto.randomUUID();
 
     let fieldLabel = slugify(fieldName);
 
@@ -357,7 +356,7 @@ export const fieldReducers = {
 
     const originalField = state.fields[originalFieldName];
     const newField = cloneField(originalField);
-    newField.designerIdentifier = uuidv4();
+    newField.designerIdentifier = crypto.randomUUID();
 
     let fieldLabel = slugify(newFieldName);
     let N = 1;

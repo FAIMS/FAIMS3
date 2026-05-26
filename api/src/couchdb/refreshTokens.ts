@@ -15,7 +15,6 @@ import {
   RefreshRecordFields,
   safeWriteDocument,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
@@ -62,8 +61,8 @@ export const createNewRefreshToken = async ({
   const authDB = getAuthDB();
 
   // Generate a new UUID for the token
-  const token = uuidv4();
-  const dbId = AUTH_RECORD_ID_PREFIXES.refresh + uuidv4();
+  const token = crypto.randomUUID();
+  const dbId = AUTH_RECORD_ID_PREFIXES.refresh + crypto.randomUUID();
 
   // Set expiry to configured duration
   const refreshExpiry = generateExpiryTimestamp(refreshExpiryMs);

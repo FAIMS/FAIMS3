@@ -243,9 +243,7 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     id: 'restore',
     enableSorting: false,
     enableGlobalFilter: false,
-    header: () => (
-      <span className="sr-only">Restore from archive</span>
-    ),
+    header: () => <span className="sr-only">Restore from archive</span>,
     meta: ARCHIVE_ACTION_COL_META,
     cell: ({row}) => <ArchivedTemplateRestoreCell row={row.original} />,
   },

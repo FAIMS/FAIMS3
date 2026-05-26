@@ -1118,12 +1118,14 @@ describe('template API tests', () => {
       name: 'no-inline-visibility',
     });
     await requestAuthAndType(
-      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
-        metadata: template.metadata,
-        'ui-specification': template['ui-specification'],
-        name: template.name,
-        isPublic: true,
-      } as PutUpdateTemplateInput & {isPublic: boolean})
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}`)
+        .send({
+          metadata: template.metadata,
+          'ui-specification': template['ui-specification'],
+          name: template.name,
+          isPublic: true,
+        } as PutUpdateTemplateInput & {isPublic: boolean})
     ).expect(200);
 
     const unchanged = await getATemplate(app, template._id);

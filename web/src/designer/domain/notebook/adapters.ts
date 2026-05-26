@@ -16,7 +16,6 @@
  * @file Convert between flat notebooks, undo history shape, and designer id stripping.
  */
 
-import {v4 as uuidv4} from 'uuid';
 import type {Notebook, NotebookWithHistory} from '../../state/initial';
 
 /** Deep clone via JSON so exported notebooks stay plain serialisable objects. */
@@ -63,7 +62,7 @@ export const attachMissingDesignerIdentifiers = (
   const cloned = cloneNotebook(notebook);
   Object.values(cloned['ui-specification'].fields).forEach(field => {
     if (!field.designerIdentifier) {
-      field.designerIdentifier = uuidv4();
+      field.designerIdentifier = crypto.randomUUID();
     }
   });
   return cloned;

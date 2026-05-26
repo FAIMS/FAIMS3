@@ -50,8 +50,6 @@ import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 
-import {v4 as uuidv4} from 'uuid';
-
 /**
  * @file Full-screen designer shell: migrate notebook, Redux, memory router, export without internal ids.
  */
@@ -109,7 +107,7 @@ export function DesignerWidget({
     // Inject in-memory designerIdentifier if missing
     Object.values(migratedUiSpec.fields).forEach(field => {
       if (!field.designerIdentifier) {
-        field.designerIdentifier = uuidv4();
+        field.designerIdentifier = crypto.randomUUID();
       }
     });
 

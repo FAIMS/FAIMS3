@@ -245,7 +245,6 @@ describe('uiSpecificationReducer', () => {
       })
     );
     expect(hidden.visible_types).toEqual(['formA']);
-
   });
 
   it('deletes viewset with its sections and fields', () => {
