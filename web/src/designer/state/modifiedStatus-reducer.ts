@@ -28,6 +28,7 @@ import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
+  fieldReordered,
   fieldRenamed,
   fieldUpdated,
   formVisibilityUpdated,

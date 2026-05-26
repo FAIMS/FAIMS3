@@ -18,6 +18,7 @@ describe('field editor registry', () => {
     expect(getFieldEditorRenderer('TemplatedStringField')).toBeTypeOf(
       'function'
     );
+    expect(getFieldEditorRenderer('PercentageSlider')).toBeTypeOf('function');
   });
 
   it('returns undefined for unknown field components', () => {

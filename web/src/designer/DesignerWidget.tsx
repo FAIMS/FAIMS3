@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, {useMemo, useState, useEffect} from 'react';
+import React, {useMemo, useState, useEffect, useCallback} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
   ScopedCssBaseline,
   Box,
   Button,
+  IconButton,
   Typography,
   AppBar,
   Toolbar,
@@ -30,19 +31,18 @@ import {
   DialogActions,
   CircularProgress,
 } from '@mui/material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import {
   createMemoryRouter,
   RouterProvider,
   RouteObject,
   Navigate,
 } from 'react-router-dom';
-
 import {createDesignerStore} from './createDesignerStore';
-import globalTheme from './theme';
-import type {NotebookWithHistory} from './state/initial';
-import {stripDesignerIdentifiers} from './domain/notebook/adapters';
-import {designerHistoryToNotebookDefinition} from './integration/notebookAdapters';
-
+import {createDesignerTheme} from './theme';
+import type {Notebook, NotebookWithHistory} from './state/initial';
+import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
+import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
@@ -85,8 +85,12 @@ export function DesignerWidget({
   animationDuration = 300,
   animationScale = 0.95,
 }: DesignerWidgetProps) {
+  const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
+  const notebookIdentity = notebook?.metadata?.project_id ?? '__none__';
+
   // 1. Hydrate + inject designerIdentifiers + reset undo history on each new notebook
   // (schema migration runs in notebookAdapters before the parent passes `notebook` here)
+
   const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
     // check that we have an actual notebook
     if (!notebook?.metadata?.information || !notebook.uiSpec?.present) {
@@ -112,33 +116,14 @@ export function DesignerWidget({
     };
   }, [notebook]);
 
-  // 2. Create a fresh Redux store whenever processedNotebook or debug flag changes
-  const store = useMemo(
-    () => createDesignerStore(processedNotebook, debug),
-    [processedNotebook, debug]
+  // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
+  const [store, setStore] = useState(() =>
+    createDesignerStore(processedNotebook, debug)
   );
 
-  // 3. Build routes once
-  const routes: RouteObject[] = useMemo(
-    () => [
-      {
-        path: '/',
-        element: <NotebookEditor />,
-        children: [
-          {index: true, element: <Navigate to="/design/0" replace />},
-          {path: 'info', element: <InfoPanel />},
-          {path: 'design/*', element: <DesignPanel />},
-        ],
-      },
-    ],
-    []
-  );
-
-  // 4. Recreate router on notebook change to wipe any internal routing state
-  const memoryRouterInstance = useMemo(
-    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
-    [notebook]
-  );
+  useEffect(() => {
+    setStore(createDesignerStore(processedNotebook, debug));
+  }, [notebookIdentity, debug]);
 
   // Local UI state
   const [loading, setLoading] = useState(true);
@@ -158,18 +143,19 @@ export function DesignerWidget({
   // Merge external theme override
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
-      return themeOverride(globalTheme);
+      return themeOverride(baseTheme);
     }
-    return {...globalTheme, ...themeOverride};
-  }, [themeOverride]);
+    return {...baseTheme, ...themeOverride};
+  }, [baseTheme, themeOverride]);
 
-  const doClose = (file: File | undefined) => onClose(file);
+  const doClose = useCallback(
+    (file: File | undefined) => onClose(file),
+    [onClose]
+  );
 
   /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
-  const handleDone = () => {
-    const definition = designerHistoryToNotebookDefinition(
-      store.getState().notebook
-    );
+  const handleDone = useCallback(() => {
+    const definition: Notebook = toNotebook(store.getState().notebook);
 
     // Remove internal IDs before serialisation
     const exportNotebook = stripDesignerIdentifiers(definition);
@@ -186,15 +172,42 @@ export function DesignerWidget({
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(file), animationDuration);
-  };
+  }, [animationDuration, doClose, store]);
 
   /** Close without saving after user confirms cancel dialog. */
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setCancelDialogOpen(false);
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(undefined), animationDuration);
-  };
+  }, [animationDuration, doClose]);
+
+  // 3. Build routes once
+  const routes: RouteObject[] = useMemo(
+    () => [
+      {
+        path: '/',
+        element: (
+          <NotebookEditor
+            onSave={handleDone}
+            onCancelRequest={() => setCancelDialogOpen(true)}
+          />
+        ),
+        children: [
+          {index: true, element: <Navigate to="/design/0" replace />},
+          {path: 'info', element: <InfoPanel />},
+          {path: 'design/*', element: <DesignPanel />},
+        ],
+      },
+    ],
+    [handleDone, setCancelDialogOpen]
+  );
+
+  // 4. Recreate router on notebook change to wipe any internal routing state
+  const memoryRouterInstance = useMemo(
+    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
+    [notebookIdentity, routes]
+  );
 
   if (loading) {
     return (
@@ -235,14 +248,14 @@ export function DesignerWidget({
               <Typography variant="h6" fontWeight="bold">
                 Notebook Editor
               </Typography>
-              <Box>
-                <Button onClick={() => setCancelDialogOpen(true)} sx={{mr: 1}}>
-                  Cancel
-                </Button>
-                <Button variant="contained" onClick={handleDone}>
-                  Save
-                </Button>
-              </Box>
+              <IconButton
+                aria-label="close designer"
+                onClick={() => setCancelDialogOpen(true)}
+                size="small"
+                sx={{color: 'text.secondary', '&:hover': {color: 'text.primary'}}}
+              >
+                <CloseRoundedIcon />
+              </IconButton>
             </Toolbar>
           </AppBar>
 
@@ -265,10 +278,14 @@ export function DesignerWidget({
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setCancelDialogOpen(false)} autoFocus>
+              <Button
+                variant="contained"
+                onClick={() => setCancelDialogOpen(false)}
+                autoFocus
+              >
                 No, keep editing
               </Button>
-              <Button variant="contained" onClick={handleCancel}>
+              <Button onClick={handleCancel} color="inherit">
                 Yes, cancel
               </Button>
             </DialogActions>

@@ -39,6 +39,7 @@ The **NUMBERS** tab contains field types for numeric and sequential data.
   for integers, decimals, and scientific notation.
 - **[Controlled Number](../field-types/number-fields/controlled-number.md)** — A bounded numeric input
   for ratings, scores, and measurements with minimum and maximum constraints.
+- **[Percentage Slider](../field-types/number-fields/percentage-slider.md)** — A slider for choosing an integer percentage with optional step size.
 
 ### Special Number Fields
 

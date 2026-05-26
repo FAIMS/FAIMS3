@@ -12,201 +12,163 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  LegacyEncodedUISpecification,
-  LegacyEncodedUISpecificationSchema,
-} from '../../templatesDB/types';
 import {NotebookDefinitionV3} from './migrateV3';
 
 /**
- * @file Notebook migration to schema 4.0 — restructures wire `{ metadata, 'ui-specification' }`
- * into `{ uiSpec, metadata }` with typed `information` / `settings` / `custom` partitions.
+ * @file Notebook migration to schema 4.0 — rewrites legacy field shapes to their
+ * canonical names and bumps `schema_version` to `'4.0'`. Companion to the
+ * registry aliases in `library/forms/lib/fieldRegistry/registry.ts`.
  *
- * ## Design: self-contained migration (duplicated types and helpers)
+ * Migrations applied:
+ *   - MultipleTextField  → TextField     (multiline:true; rows lifted from InputProps)
+ *   - FAIMSTextField     → TextField     (rename only)
+ *   - ControlledNumber   → NumberField   (numberType:'integer'; type-returned bumped)
+ *   - DateTimeNow        → DateTimePicker (show_now_button:true; is_auto_pick → isAutoPick)
+ *   - Checkbox           → RadioGroup    (synth Yes/No options; bool → string)
+ *   - Select             → RadioGroup    (rename only)
  *
- * This module intentionally does **not** import application types such as
- * `NotebookDefinition` from `uiSpecification/types`, and it does not call shared
- * builders in `uiSpecificationMigration.ts`. Instead it duplicates the minimal
- * output interfaces (`NotebookDefinitionV4`, …) and the small helpers needed to
- * produce that shape (`decodeLegacyEncodedUiSpec`, legacy key sets, coercion, etc.).
- *
- * Rationale:
- * - **Frozen contract** — a migration is a historical transform; its input/output
- *   shape at ship time must stay stable even when the live `NotebookDefinition`
- *   schema evolves for new features.
- * - **No coupling to the app model** — refactors to zod schemas or field renames
- *   on `NotebookDefinition` must not force edits here or risk silent behaviour drift.
- * - **No circular imports** — `uiSpecificationMigration` already depends on
- *   `migrateNotebook`; pulling v4 logic back into that module would create a cycle.
- *
- * Callers that need the current application type (e.g. `buildSurveyNotebookDefinitionFromLegacy`)
- * cast the result at the boundary in `index.ts`. The duplicated types should mirror
- * the 4.0 layout in `NotebookDefinition.md` but remain owned by this file.
+ * Idempotent and pure (input is not mutated). `DatePicker`, `MonthPicker`,
+ * `MultiSelect`, and every non-legacy field pass through untouched.
  */
 
-/** UI behaviour toggles (schema 4.0). */
-export type NotebookSettingsV4 = {
-  showQrCodeButton: boolean;
-};
+export type NotebookDefinitionV4 = NotebookDefinitionV3;
 
-/** Non-functional design documentation (schema 4.0). */
-export type NotebookInformationV4 = {
-  notebookVersion: string;
-  purposeMarkdown: string;
-  projectLeadLabel: string;
-  leadInstitution: string;
-  derivedFromTemplateId?: string;
-};
-
-/** Design metadata partition (schema 4.0). */
-export type NotebookMetadataV4 = {
-  information: NotebookInformationV4;
-  custom?: Record<string, unknown>;
-};
-
-/** Decoded UI body + settings + schema version (schema 4.0). */
-export type NotebookUiSpecV4 = {
-  fields: Record<string, unknown>;
-  views: Record<string, unknown>;
-  viewsets: Record<string, unknown>;
-  visible_types: string[];
-  settings: NotebookSettingsV4;
-  schemaVersion: string;
-};
-
-/** Notebook shape produced by this migration (schema 4.0). */
-export type NotebookDefinitionV4 = {
-  uiSpec: NotebookUiSpecV4;
-  metadata: NotebookMetadataV4;
-};
-
-type LegacyNotebookMetadata = Record<string, unknown>;
-
-/** Keys mapped into structured metadata — not copied to `custom`. */
-const LEGACY_KEYS_MAPPED = new Set([
-  'pre_description',
-  'project_lead',
-  'lead_institution',
-  'notebook_version',
-  'schema_version',
-  'derived-from',
-  'showQRCodeButton',
-  'name',
-  'template_id',
-  'project_id',
-  'project_status',
-  'projectvalue',
-  'description',
-]);
-
-/** Legacy keys dropped entirely (not promoted to `metadata.custom`). */
-const LEGACY_KEYS_DROPPED = new Set([
-  'access',
-  'accesses',
-  'behaviours',
-  'filenames',
-  'forms',
-  'ispublic',
-  'isrequest',
-  'meta',
-  'sections',
-]);
-
-function emptyEncodedUiSpec(): LegacyEncodedUISpecification {
-  return {fields: {}, fviews: {}, viewsets: {}, visible_types: []};
-}
-
-function decodeLegacyEncodedUiSpec(rawUiSpec: LegacyEncodedUISpecification): {
-  fields: Record<string, unknown>;
-  views: Record<string, unknown>;
-  viewsets: Record<string, unknown>;
-  visible_types: string[];
-} {
-  return {
-    fields: rawUiSpec.fields,
-    views: rawUiSpec.fviews,
-    viewsets: rawUiSpec.viewsets,
-    visible_types: rawUiSpec.visible_types,
-  };
-}
-
-function stringOrEmpty(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (value === undefined || value === null) {
-    return '';
-  }
-  return String(value);
-}
-
-/** Coerce legacy `showQRCodeButton` to boolean (only `true` and `'true'` enable QR). */
-function coerceShowQrCodeButton(value: unknown): boolean {
-  return value === true || value === 'true';
-}
-
-function buildCustomMetadata(
-  legacyMetadata: LegacyNotebookMetadata
-): Record<string, unknown> | undefined {
-  const custom: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(legacyMetadata)) {
-    if (LEGACY_KEYS_MAPPED.has(key) || LEGACY_KEYS_DROPPED.has(key)) {
-      continue;
-    }
-    custom[key] = value;
-  }
-  return Object.keys(custom).length > 0 ? custom : undefined;
-}
+/** Fallback when a legacy MultipleTextField had no explicit InputProps.rows. */
+const DEFAULT_TEXTAREA_ROWS = 4;
 
 /**
  * Migrate a notebook from schema 3.0 to 4.0.
  *
- * @param notebook - v3 wire notebook (`metadata` + `ui-specification` with `fviews`)
- * @returns notebook with decoded `views`, typed metadata, and `uiSpec.schemaVersion` `'4.0'`
+ * @param notebook - v3 wire notebook (`metadata` + `ui-specification`)
+ * @returns deep-cloned notebook with canonical field names and `schema_version` `'4.0'`
  */
 export const migrateToV4 = (
   notebook: NotebookDefinitionV3
 ): NotebookDefinitionV4 => {
   const notebookCopy = JSON.parse(
     JSON.stringify(notebook)
-  ) as NotebookDefinitionV3;
+  ) as NotebookDefinitionV4;
 
-  const legacyMetadata = notebookCopy.metadata ?? {};
-  const migratedEncoded = LegacyEncodedUISpecificationSchema.parse(
-    notebookCopy['ui-specification'] ?? emptyEncodedUiSpec()
-  );
-  const decodedUiSpec = decodeLegacyEncodedUiSpec(migratedEncoded);
+  const fields = notebookCopy['ui-specification']?.fields ?? {};
 
-  const information: NotebookInformationV4 = {
-    notebookVersion: stringOrEmpty(legacyMetadata.notebook_version),
-    purposeMarkdown: stringOrEmpty(legacyMetadata.pre_description),
-    projectLeadLabel: stringOrEmpty(legacyMetadata.project_lead),
-    leadInstitution: stringOrEmpty(legacyMetadata.lead_institution),
-    ...(legacyMetadata['derived-from'] !== undefined &&
-    legacyMetadata['derived-from'] !== null &&
-    String(legacyMetadata['derived-from']).trim() !== ''
-      ? {derivedFromTemplateId: stringOrEmpty(legacyMetadata['derived-from'])}
-      : {}),
-  };
+  for (const fieldName of Object.keys(fields)) {
+    const field = fields[fieldName];
+    if (!field || typeof field !== 'object') continue;
 
-  const custom = buildCustomMetadata(legacyMetadata);
+    migrateTextField(field);
+    migrateNumberField(field);
+    migrateDateField(field);
+    migrateChoiceField(field);
+  }
 
-  const uiSpec: NotebookUiSpecV4 = {
-    fields: decodedUiSpec.fields,
-    views: decodedUiSpec.views,
-    viewsets: decodedUiSpec.viewsets,
-    visible_types: decodedUiSpec.visible_types,
-    settings: {
-      showQrCodeButton: coerceShowQrCodeButton(legacyMetadata.showQRCodeButton),
-    },
-    schemaVersion: '4.0',
-  };
+  notebookCopy.metadata.schema_version = '4.0';
 
-  return {
-    uiSpec,
-    metadata: {
-      information,
-      ...(custom !== undefined ? {custom} : {}),
-    },
-  };
+  return notebookCopy;
 };
+
+/** MultipleTextField + FAIMSTextField → TextField. */
+function migrateTextField(field: any): void {
+  const cn = field['component-name'];
+
+  if (cn === 'MultipleTextField') {
+    const params = field['component-parameters'] ?? {};
+    const rows = params.InputProps?.rows ?? DEFAULT_TEXTAREA_ROWS;
+    delete params.InputProps;
+    params.multiline = true;
+    params.rows = rows;
+
+    field['component-namespace'] = 'faims-custom';
+    field['component-name'] = 'TextField';
+    field['component-parameters'] = params;
+    return;
+  }
+
+  if (cn === 'FAIMSTextField') {
+    field['component-namespace'] = 'faims-custom';
+    field['component-name'] = 'TextField';
+    return;
+  }
+}
+
+/**
+ * ControlledNumber → NumberField. Defaults `numberType: 'integer'` (the only
+ * mode the legacy field supported); preserves `min`/`max`; bumps
+ * `type-returned` from `faims-core::Integer` to `::Number`.
+ */
+function migrateNumberField(field: any): void {
+  if (field['component-name'] !== 'ControlledNumber') return;
+
+  const params = field['component-parameters'] ?? {};
+  if (params.numberType === undefined) {
+    params.numberType = 'integer';
+  }
+
+  field['component-namespace'] = 'faims-custom';
+  field['component-name'] = 'NumberField';
+  field['type-returned'] = 'faims-core::Number';
+  field['component-parameters'] = params;
+}
+
+/**
+ * DateTimeNow → DateTimePicker with `show_now_button: true`. Also renames
+ * the legacy snake_case `is_auto_pick` parameter to camelCase `isAutoPick`.
+ */
+function migrateDateField(field: any): void {
+  if (field['component-name'] !== 'DateTimeNow') return;
+
+  const params = field['component-parameters'] ?? {};
+
+  if (params.isAutoPick === undefined && params.is_auto_pick !== undefined) {
+    params.isAutoPick = params.is_auto_pick;
+  }
+  delete params.is_auto_pick;
+
+  if (params.show_now_button === undefined) {
+    params.show_now_button = true;
+  }
+
+  field['component-namespace'] = 'faims-custom';
+  field['component-name'] = 'DateTimePicker';
+  field['component-parameters'] = params;
+}
+
+/**
+ * Checkbox + Select → RadioGroup ("Select single").
+ *   - Checkbox: synthesises Yes/No options; converts boolean initialValue
+ *     to a string (`true` → 'true', anything else → ''); bumps
+ *     `type-returned` to `::String`.
+ *   - Select: pure component-name swap; ElementProps preserved.
+ */
+function migrateChoiceField(field: any): void {
+  const cn = field['component-name'];
+
+  if (cn === 'Checkbox') {
+    const params = field['component-parameters'] ?? {};
+
+    const existing = params.ElementProps?.options;
+    if (!Array.isArray(existing) || existing.length === 0) {
+      params.ElementProps = {
+        ...(params.ElementProps ?? {}),
+        enableOtherOption: params.ElementProps?.enableOtherOption ?? false,
+        options: [
+          {value: 'true', label: 'Yes'},
+          {value: 'false', label: 'No'},
+        ],
+      };
+    }
+
+    field.initialValue = field.initialValue === true ? 'true' : '';
+    field['component-namespace'] = 'faims-custom';
+    field['component-name'] = 'RadioGroup';
+    field['type-returned'] = 'faims-core::String';
+    field['component-parameters'] = params;
+    return;
+  }
+
+  if (cn === 'Select') {
+    field['component-namespace'] = 'faims-custom';
+    field['component-name'] = 'RadioGroup';
+    field['type-returned'] = 'faims-core::String';
+    return;
+  }
+}

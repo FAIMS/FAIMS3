@@ -2,9 +2,10 @@ import type {NotebookDefinition} from '../../../uiSpecification/types';
 import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';
 import {migrateToV4} from './migrateV4';
+import {migrateToV5} from './migrateV5';
 
 /** Target schema version after {@link migrateNotebook} completes. */
-export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION = '4.0';
+export const CURRENT_NOTEBOOK_UI_SCHEMA_VERSION = '5.0';
 
 type NotebookWithSchemaVersion = {
   metadata?: {schema_version?: string | null};
@@ -12,7 +13,7 @@ type NotebookWithSchemaVersion = {
 };
 
 /**
- * Read schema version from legacy `metadata.schema_version` or v3+
+ * Read schema version from legacy `metadata.schema_version` or v5+
  * `uiSpec.schemaVersion` (see {@link NotebookUiSpec}).
  */
 export function getNotebookSchemaVersion(
@@ -28,6 +29,10 @@ export function getNotebookSchemaVersion(
   }
   return undefined;
 }
+
+export {migrateToV3} from './migrateV3';
+export {migrateToV4} from './migrateV4';
+export {migrateToV5} from './migrateV5';
 
 /**
  * Migrate a notebook to the latest version, validating as we go.
@@ -61,16 +66,17 @@ export const migrateNotebook = (
     changed = true;
   }
 
-  /**
-   * Write a migration here - it should restructure the metadata and uiSpec,
-   * following the broader refactor. See the project and template migration
-   * logic. But no need to do pulling from old metadataDB here - just use the
-   * notebook itself. It should also decode the notebook!
-   */
   if (getNotebookSchemaVersion(result) === '3.0') {
     // Input type is NotebookAfterV3
-    // Output type is NotebookDefinition (schema 4.0)
+    // Output type is NotebookAfterV4 (legacy wire, canonical field names)
     result = migrateToV4(result);
+    changed = true;
+  }
+
+  if (getNotebookSchemaVersion(result) === '4.0') {
+    // Input type is NotebookAfterV4
+    // Output type is NotebookDefinition (schema 5.0)
+    result = migrateToV5(result);
     changed = true;
   }
 

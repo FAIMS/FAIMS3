@@ -39,42 +39,136 @@ type ViewMap = Record<
   string,
   {label: string; condition?: ConditionType; fields: string[]}
 >;
+type ViewSetMap = Record<string, {label: string; views: string[]}>;
+
+export type FieldDependencyReference = {
+  type: 'section-condition' | 'field-condition' | 'templated-string';
+  formId?: string;
+  formLabel?: string;
+  sectionId?: string;
+  sectionLabel?: string;
+  fieldId?: string;
+  fieldLabel?: string;
+  templateUsage?: string;
+};
+
+const buildFieldLocationMaps = (allFviews: ViewMap, viewsets: ViewSetMap) => {
+  const sectionToForm = new Map<string, {formId: string; formLabel: string}>();
+  const fieldToSection = new Map<string, {sectionId: string; sectionLabel: string}>();
+
+  for (const [formId, viewset] of Object.entries(viewsets)) {
+    for (const sectionId of viewset.views) {
+      sectionToForm.set(sectionId, {formId, formLabel: viewset.label});
+    }
+  }
+
+  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+    for (const fieldId of sectionDef.fields) {
+      fieldToSection.set(fieldId, {
+        sectionId,
+        sectionLabel: sectionDef.label,
+      });
+    }
+  }
+
+  return {sectionToForm, fieldToSection};
+};
 
 /**
  * Lists sections/fields/templated strings that reference `fieldName` (conditions or `{{fieldName}}`).
+ * Scoped to the same form as `fieldName` — conditions cannot reference fields from other forms.
  */
-export const findFieldConditionUsage = (
+export const findFieldDependencyReferences = (
   fieldName: string,
   allFields: FieldMap,
-  allFviews: ViewMap
-): string[] => {
-  const affected: string[] = [];
+  allFviews: ViewMap,
+  viewsets: ViewSetMap
+): FieldDependencyReference[] => {
+  const affected: FieldDependencyReference[] = [];
+  const {sectionToForm, fieldToSection} = buildFieldLocationMaps(
+    allFviews,
+    viewsets
+  );
+
+  // Conditions can only reference fields within the same form, so scope scanning
+  // to the viewset that contains fieldName.
+  const fieldSection = fieldToSection.get(fieldName);
+  const fieldFormId = fieldSection
+    ? sectionToForm.get(fieldSection.sectionId)?.formId
+    : undefined;
+  const scopedViewset = fieldFormId ? viewsets[fieldFormId] : null;
+  const scopedSectionIds = scopedViewset ? new Set(scopedViewset.views) : null;
+
+  const scopedFviews = scopedSectionIds
+    ? Object.fromEntries(
+        Object.entries(allFviews).filter(([id]) => scopedSectionIds.has(id))
+      )
+    : allFviews;
+
+  const scopedFieldIds = new Set(
+    Object.values(scopedFviews).flatMap(s => s.fields)
+  );
+  const scopedFields = Object.fromEntries(
+    Object.entries(allFields).filter(([id]) => scopedFieldIds.has(id))
+  );
 
   // Check section-level conditions
-  for (const sectionId in allFviews) {
-    const condition = allFviews[sectionId].condition;
+  for (const [sectionId, sectionDef] of Object.entries(scopedFviews)) {
+    const condition = sectionDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
-      affected.push(`Section: ${allFviews[sectionId].label}`);
+      const form = sectionToForm.get(sectionId);
+      affected.push({
+        type: 'section-condition',
+        formId: form?.formId,
+        formLabel: form?.formLabel,
+        sectionId,
+        sectionLabel: sectionDef.label,
+      });
     }
   }
 
   // Check field-level conditions
-  for (const fId in allFields) {
-    const condition = allFields[fId].condition;
+  for (const [fId, fieldDef] of Object.entries(scopedFields)) {
+    const condition = fieldDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
-      const label = allFields[fId]['component-parameters']?.label ?? fId;
-      affected.push(`Field Condition: ${label}`);
+      const label = fieldDef['component-parameters']?.label ?? fId;
+      const section = fieldToSection.get(fId);
+      const form = section?.sectionId
+        ? sectionToForm.get(section.sectionId)
+        : undefined;
+      affected.push({
+        type: 'field-condition',
+        formId: form?.formId,
+        formLabel: form?.formLabel,
+        sectionId: section?.sectionId,
+        sectionLabel: section?.sectionLabel,
+        fieldId: fId,
+        fieldLabel: label,
+      });
     }
   }
 
   // Check for Templated String Fields using the deleted field
-  for (const fId in allFields) {
-    if (allFields[fId]['component-name'] === 'TemplatedStringField') {
-      const template = allFields[fId]['component-parameters']?.template || '';
+  for (const [fId, fieldDef] of Object.entries(scopedFields)) {
+    if (fieldDef['component-name'] === 'TemplatedStringField') {
+      const template = fieldDef['component-parameters']?.template || '';
 
       if (template.includes(`{{${fieldName}}}`)) {
-        const label = allFields[fId]['component-parameters']?.label ?? fId;
-        affected.push(`Templated String: ${label} (uses '{{${fieldName}}}')`);
+        const label = fieldDef['component-parameters']?.label ?? fId;
+        const section = fieldToSection.get(fId);
+        const form = section?.sectionId
+          ? sectionToForm.get(section.sectionId)
+          : undefined;
+        affected.push({
+          type: 'templated-string',
+          formId: form?.formId,
+          formLabel: form?.formLabel,
+          sectionId: section?.sectionId,
+          sectionLabel: section?.sectionLabel,
+          fieldId: fId,
+          fieldLabel: label,
+          templateUsage: `{{${fieldName}}}`,
+        });
       }
     }
   }

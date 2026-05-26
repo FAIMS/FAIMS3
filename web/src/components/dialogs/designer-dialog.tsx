@@ -23,10 +23,14 @@ export function DesignerDialog({
   const [mounted, setMounted] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
+  const [sessionNotebook, setSessionNotebook] = useState<
+    NotebookWithHistory | undefined
+  >(undefined);
 
   // Mount / unmount logic with animation
   useEffect(() => {
     if (open) {
+      setSessionNotebook(notebook);
       setMounted(true);
       const tid = window.setTimeout(() => setAnimateIn(true), 50);
       return () => window.clearTimeout(tid);
@@ -36,10 +40,21 @@ export function DesignerDialog({
       const tid = window.setTimeout(() => {
         setMounted(false);
         setAnimateOut(false);
+        setSessionNotebook(undefined);
       }, animationDuration);
       return () => window.clearTimeout(tid);
     }
-  }, [open, animationDuration, mounted]);
+  }, [open, animationDuration, mounted, notebook]);
+
+  // Lock body scroll while the designer dialog is open so the background page doesn't scroll through
+  useEffect(() => {
+    if (!mounted) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mounted]);
 
   // Warn on tab close/refresh while editing
   useEffect(() => {
@@ -60,7 +75,7 @@ export function DesignerDialog({
     onClose(file);
   };
 
-  if (!mounted || !notebook) return null;
+  if (!mounted || !sessionNotebook) return null;
 
   return (
     <div
@@ -82,7 +97,7 @@ export function DesignerDialog({
         }}
       >
         <DesignerWidget
-          notebook={notebook}
+          notebook={sessionNotebook}
           exportBaseName={exportBaseName}
           onClose={handleWidgetClose}
         />
