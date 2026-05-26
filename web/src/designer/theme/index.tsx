@@ -225,9 +225,12 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            background: `linear-gradient(180deg, #fff 0%, ${alpha(
+            // Predominantly white surface with a faint blueGrey wash that
+            // only surfaces in the bottom-right corner — keeps the input
+            // legible and conventional while preserving a subtle accent.
+            background: `linear-gradient(135deg, #fff 0%, #fff 85%, ${alpha(
               colors.blueGrey[100],
-              0.28
+              0.18
             )} 100%)`,
             transition:
               'box-shadow 160ms ease, background 160ms ease, border-color 160ms ease',
@@ -236,18 +239,18 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
               borderWidth: 1,
             },
             '&:hover': {
-              background: `linear-gradient(180deg, #fff 0%, ${alpha(
+              background: `linear-gradient(135deg, #fff 0%, #fff 80%, ${alpha(
                 colors.blueGrey[100],
-                0.36
+                0.22
               )} 100%)`,
               '& .MuiOutlinedInput-notchedOutline': {
                 borderColor: alpha(colors.blueGrey[900], 0.6),
               },
             },
             '&.Mui-focused': {
-              background: `linear-gradient(180deg, #fff 0%, ${alpha(
+              background: `linear-gradient(135deg, #fff 0%, #fff 90%, ${alpha(
                 colors.blueGrey[100],
-                0.22
+                0.14
               )} 100%)`,
               boxShadow: `0 0 0 3px ${alpha(
                 colors.blueGrey[900],
