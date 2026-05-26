@@ -13,27 +13,58 @@
 // limitations under the License.
 
 /**
- * @file Form tabs, add form, undo/redo, and routed `FormEditor` instances.
+ * @file Form tabs, add/move form controls, and routed `FormEditor` instances.
  */
 
-import {Alert, Box, Button, Grid, Tab, Tabs, Snackbar} from '@mui/material';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Tab,
+  Tabs,
+  Theme,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
-import UndoIcon from '@mui/icons-material/Undo';
-import RedoIcon from '@mui/icons-material/Redo';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import InfoIcon from '@mui/icons-material/Info';
 
 import {TabContext} from '@mui/lab';
-import {useState, useEffect, useCallback} from 'react';
-// eslint-disable-next-line n/no-extraneous-import
-import {ActionCreators} from 'redux-undo';
+import {useState, useEffect, useRef} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
+import {
+  designerCancelButtonSx,
+  designerDialogActionsSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
+  designerInfoIconSx,
+  designerPrimaryActionButtonSx,
+} from './designer-style';
+import {HeadingWithInfo} from './heading-with-info';
 import {shallowEqual} from 'react-redux';
-import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
-import {NOTEBOOK_NAME} from '@/constants';
+import {
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from 'react-router-dom';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
+import type {PreviewOutletContext} from './notebook-editor';
+import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
+import {NOTEBOOK_NAME} from '@/constants';
 
-/** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
+/** Main designer surface for form tabs and routed `FormEditor` instances. */
 export const DesignPanel = () => {
   const navigate = useNavigate();
   const {pathname} = useLocation();
@@ -56,37 +87,100 @@ export const DesignPanel = () => {
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
 
-  const [previewForm, setPreviewForm] = useState<boolean>(false);
+  const {previewForm} = useOutletContext<PreviewOutletContext>();
 
   const [newFormName, setNewFormName] = useState(
     () => `Form ${Object.keys(viewSets).length + 1}`
+  );
+  const [addFormDialogOpen, setAddFormDialogOpen] = useState(false);
+  const theme = useTheme();
+  const addFormDialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const compactAddTab = useMediaQuery(theme.breakpoints.down('md'));
+  const formTabsRef = useRef<HTMLDivElement | null>(null);
+  const [hasFormTabOverflow, setHasFormTabOverflow] = useState(false);
+  const [formToolbarSlot, setFormToolbarSlot] = useState<HTMLDivElement | null>(
+    null
   );
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
   }, [viewSets]);
 
+  useEffect(() => {
+    const el = formTabsRef.current;
+    if (!el) return;
+    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!scroller) return;
+
+    const updateOverflow = () => {
+      setHasFormTabOverflow(scroller.scrollWidth > scroller.clientWidth + 4);
+    };
+
+    updateOverflow();
+    scroller.addEventListener('scroll', updateOverflow, {passive: true});
+    window.addEventListener('resize', updateOverflow);
+    return () => {
+      scroller.removeEventListener('scroll', updateOverflow);
+      window.removeEventListener('resize', updateOverflow);
+    };
+  }, [visibleTypes.length, untickedForms.length, compactAddTab]);
+
   const maxKeys = Object.keys(viewSets).length;
 
-  // State for toast notifications
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const baseTabRootSx = {
+    '&.MuiTab-root': {
+      backgroundColor: 'grey.100',
+      borderStyle: 'solid',
+      borderWidth: '2px',
+      borderColor: 'divider',
+      borderBottom: 'none',
+      borderTopLeftRadius: '10px',
+      borderTopRightRadius: '10px',
+      marginRight: '0.5em',
+      minHeight: 48,
+      minWidth: {xs: 110, sm: 130, md: 150},
+      maxWidth: {xs: 200, sm: 220, md: 260},
+      paddingX: {xs: 1, sm: 1.5},
+      paddingY: 1,
+      textTransform: 'uppercase',
+      fontWeight: 600,
+      fontSize: '0.72rem',
+      lineHeight: 1.2,
+      whiteSpace: 'normal',
+      textAlign: 'center',
+      color: 'text.primary',
+      flexShrink: 0,
+    },
+  } as const;
 
-  // Use redux-undo state to determine if there is something to undo/redo
-  const undoableState = useAppSelector(
-    state => state.notebook['ui-specification']
-  );
-  const canUndo = undoableState.past.length > 0;
-  const canRedo = undoableState.future.length > 0;
+  // Selected tabs: solid primary fill, consistent across visible and unticked tabs.
+  const selectedTabSx = {
+    borderColor: 'primary.main',
+    color: 'primary.contrastText',
+    backgroundColor: 'primary.main',
+    fontWeight: 800,
+    boxShadow: (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
+  } as const;
 
-  const handleToastClose = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setToastOpen(false);
+  const visibleTabSx = {
+    ...baseTabRootSx,
+    '&.Mui-selected': selectedTabSx,
+    // Light tint on hover — never pitch-black regardless of primary.dark value.
+    '&:not(.Mui-selected):hover': {
+      color: 'primary.main',
+      backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.1),
+    },
+  };
+
+  // Unticked (hidden) forms use the same selected colour as visible forms so
+  // the active-indicator colour is always consistent across BSS/fieldmark/default.
+  const untickedTabSx = {
+    ...baseTabRootSx,
+    '&.Mui-selected': selectedTabSx,
+    '&:not(.Mui-selected):hover': {
+      color: 'primary.main',
+      backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.08),
+    },
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -153,12 +247,26 @@ export const DesignPanel = () => {
   const addNewForm = () => {
     setAlertMessage('');
     try {
-      dispatch(viewSetAdded({formName: newFormName}));
-      setIndexAndNavigate(`${visibleTypes.length}`);
+      const formName = newFormName.trim();
+      if (!formName) {
+        setAlertMessage('Please enter a form name.');
+        return false;
+      }
+      dispatch(viewSetAdded({formName}));
+      // Route directly to the new form and prompt section creation immediately.
+      setIndexAndNavigate(`${visibleTypes.length}`, '?createSection=1');
       setAlertMessage('');
+      return true;
     } catch (error: unknown) {
       error instanceof Error && setAlertMessage(error.message);
     }
+    return false;
+  };
+
+  const openAddFormDialog = () => {
+    setAlertMessage('');
+    setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
+    setAddFormDialogOpen(true);
   };
 
   const moveForm = (viewSetID: string, moveDirection: 'left' | 'right') => {
@@ -171,9 +279,9 @@ export const DesignPanel = () => {
     }
   };
 
-  const setIndexAndNavigate = (index: string) => {
+  const setIndexAndNavigate = (index: string, search = '') => {
     setTabIndex(index);
-    navigate(`${basePath}/${index}`);
+    navigate(`${basePath}/${index}${search}`);
   };
 
   const handleSectionMove = (targetViewSetId: string) => {
@@ -212,103 +320,105 @@ export const DesignPanel = () => {
     }
   };
 
-  function handleUndo(): void {
-    if (!canUndo) {
-      setToastMessage('Nothing to undo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.undo());
-    setToastMessage('Undo complete');
-    setToastOpen(true);
-  }
-
-  function handleRedo(): void {
-    if (!canRedo) {
-      setToastMessage('Nothing to redo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.redo());
-    setToastMessage('Redo complete');
-    setToastOpen(true);
-  }
-
-  // Keyboard shortcuts for undo/redo
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === 'z'
-      ) {
-        event.preventDefault();
-        handleUndo();
-      } else if (
-        (event.ctrlKey || event.metaKey) &&
-        (event.key.toLowerCase() === 'y' ||
-          (event.shiftKey && event.key.toLowerCase() === 'z'))
-      ) {
-        event.preventDefault();
-        handleRedo();
-      }
-    },
-    [canUndo, canRedo]
-  );
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown]);
-
   return (
     <>
-      <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 2}}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<UndoIcon />}
-          onClick={handleUndo}
-          disabled={!canUndo}
-          sx={{marginRight: 2}}
-        >
-          Undo
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<RedoIcon />}
-          onClick={handleRedo}
-          disabled={!canRedo}
-        >
-          Redo
-        </Button>
-      </Box>
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={3000}
-        onClose={handleToastClose}
-        message={toastMessage}
-      />
       <TabContext value={tabIndex}>
-        <Alert severity="info" sx={{marginBottom: 2}}>
-          {`Define the user interface for your ${NOTEBOOK_NAME} here. Add one or more forms to collect data from users. Each form can have one or more sections. Each section has one or more form fields.`}
-        </Alert>
+        <Box
+          sx={{
+            mb: 1.25,
+            mt: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+          }}
+        >
+          <HeadingWithInfo
+            title="Forms"
+            tooltip={
+              <Box sx={{p: 0.25, maxWidth: 320}}>
+                <Typography
+                  variant="body2"
+                  sx={{fontWeight: 700, mb: 0.5, lineHeight: 1.35}}
+                >
+                  Forms are top-level data entry pages in your {NOTEBOOK_NAME}.
+                </Typography>
+                <Typography variant="caption" sx={{display: 'block', lineHeight: 1.45}}>
+                  Define the user interface for your notebook here. Add one or
+                  more forms to collect data from users. Each form can have one
+                  or more sections, and each section can have one or more form
+                  fields.
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{display: 'block', mt: 0.75, lineHeight: 1.45}}
+                >
+                  Tip: Hold <Box component="span" sx={{fontFamily: 'monospace', fontWeight: 800}}>Shift</Box> and scroll your mouse wheel
+                  to move sideways through the form and section tabs.
+                </Typography>
+              </Box>
+            }
+          />
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddRoundedIcon />}
+            onClick={openAddFormDialog}
+            sx={{
+              ...designerPrimaryActionButtonSx,
+              boxShadow: 'none',
+              whiteSpace: 'nowrap',
+              textTransform: 'none',
+              fontWeight: 700,
+            }}
+          >
+            New Form
+          </Button>
+        </Box>
+
+        <Box
+          ref={setFormToolbarSlot}
+          sx={{
+            minHeight: 0,
+            '&:not(:empty)': {mb: 0.5},
+          }}
+        />
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
           <Tabs
+            ref={formTabsRef}
             value={tabIndex}
             onChange={handleTabChange}
             aria-label="form tabs"
             variant="scrollable"
             scrollButtons={false}
-            indicatorColor={
-              tabIndex >= `${visibleTypes.length}` && tabIndex < `${maxKeys}`
-                ? 'secondary'
-                : 'primary'
-            }
+            sx={{
+              minHeight: 48,
+              ml: 0,
+              pl: 0,
+              '& .MuiTabs-scroller': {
+                overflowX: 'auto !important',
+                scrollbarWidth: hasFormTabOverflow ? 'thin' : 'none',
+                scrollbarColor: hasFormTabOverflow
+                  ? 'rgba(78, 116, 138, 0.42) transparent'
+                  : 'transparent transparent',
+                '&::-webkit-scrollbar': {
+                  height: hasFormTabOverflow ? 8 : 0,
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                  borderRadius: 999,
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(78, 116, 138, 0.42)',
+                },
+              },
+              '& .MuiTabs-flexContainer': {
+                gap: 0,
+                alignItems: 'flex-end',
+              },
+            }}
           >
             {visibleTypes.map((form: string, index: number) => (
               <Tab
@@ -316,26 +426,9 @@ export const DesignPanel = () => {
                 to={`${basePath}/${index}`}
                 key={index}
                 value={`${index}`}
-                label={`Form: ${viewSets[form].label}`}
-                sx={{
-                  '&.MuiTab-root': {
-                    backgroundColor: '#F9FAFB',
-                    border: '0.75px solid #669911',
-                    borderBottom: 'none',
-                    borderTopLeftRadius: '10px',
-                    borderTopRightRadius: '10px',
-                    marginRight: '0.5em',
-                  },
-                  '&.Mui-selected': {
-                    border: '1px solid #669911',
-                    backgroundColor: '#F5FCE8',
-                  },
-                  '&:hover': {
-                    color: '#669911',
-                    opacity: 1,
-                    backgroundColor: '#F5FCE8',
-                  },
-                }}
+                label={viewSets[form].label.toUpperCase()}
+                wrapped
+                sx={visibleTabSx}
               />
             ))}
             {untickedForms.map((form: string, index: number) => {
@@ -346,54 +439,40 @@ export const DesignPanel = () => {
                   to={`${basePath}/${startIndex}`}
                   key={startIndex}
                   value={`${startIndex}`}
-                  label={`Form: ${viewSets[form].label}`}
-                  sx={{
-                    '&.MuiTab-root': {
-                      backgroundColor: '#F9FAFB',
-                      border: '0.75px solid #E18200',
-                      borderBottom: 'none',
-                      borderTopLeftRadius: '10px',
-                      borderTopRightRadius: '10px',
-                      marginX: '0.25em',
-                    },
-                    '&.Mui-selected': {
-                      color: '#E18200',
-                      border: '1px solid #E18200',
-                      backgroundColor: '#FFF4E5',
-                    },
-                    '&:hover': {
-                      color: '#E18200',
-                      opacity: 1,
-                      backgroundColor: '#FFF4E5',
-                    },
-                  }}
+                  label={viewSets[form].label.toUpperCase()}
+                  wrapped
+                  sx={untickedTabSx}
                 />
               );
             })}
             <Tab
-              component={Link}
-              to={`${basePath}/${maxKeys}`}
               key={maxKeys}
               value={maxKeys.toString()}
               icon={<AddIcon />}
+              iconPosition="start"
+              label={compactAddTab ? '' : 'NEW FORM'}
+              onClick={e => {
+                e.preventDefault();
+                openAddFormDialog();
+              }}
               sx={{
+                ...baseTabRootSx,
                 '&.MuiTab-root': {
-                  backgroundColor: '#F9FAFB',
-                  border: '0.75px solid #669911',
-                  borderBottom: 'none',
-                  borderTopLeftRadius: '10px',
-                  borderTopRightRadius: '10px',
-                  marginLeft: '0.5em',
-                },
-                '&.Mui-selected': {
-                  color: '#669911',
-                  border: '1px solid #669911',
-                  backgroundColor: '#F5FCE8',
+                  ...baseTabRootSx['&.MuiTab-root'],
+                  minWidth: compactAddTab ? 56 : 142,
+                  maxWidth: compactAddTab ? 56 : 142,
+                  marginLeft: 0,
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.main',
+                  textTransform: 'none',
+                  boxShadow: theme.shadows[2],
                 },
                 '&:hover': {
-                  color: '#669911',
+                  backgroundColor: 'primary.dark',
+                  borderColor: 'primary.dark',
+                  color: 'primary.contrastText',
                   opacity: 1,
-                  backgroundColor: '#F5FCE8',
                 },
               }}
             />
@@ -415,7 +494,7 @@ export const DesignPanel = () => {
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
                   previewForm={previewForm}
-                  setPreviewForm={setPreviewForm}
+                  toolbarPortal={formToolbarSlot}
                 />
               }
             />
@@ -428,68 +507,102 @@ export const DesignPanel = () => {
                 key={startIndex}
                 path={`${startIndex}`}
                 element={
-                  <FormEditor
-                    viewSetId={form}
-                    moveCallback={moveForm}
-                    moveButtonsDisabled={true}
-                    handleChangeCallback={handleCheckboxTabChange}
-                    handleDeleteCallback={handleDeleteFormTabChange}
-                    handleSectionMoveCallback={handleSectionMove}
-                    handleFieldMoveCallback={handleFieldMove}
-                    previewForm={previewForm}
-                    setPreviewForm={setPreviewForm}
-                  />
-                }
-              />
+                <FormEditor
+                  viewSetId={form}
+                  moveCallback={moveForm}
+                  moveButtonsDisabled={true}
+                  handleChangeCallback={handleCheckboxTabChange}
+                  handleDeleteCallback={handleDeleteFormTabChange}
+                  handleSectionMoveCallback={handleSectionMove}
+                  handleFieldMoveCallback={handleFieldMove}
+                  previewForm={previewForm}
+                  toolbarPortal={formToolbarSlot}
+                />
+              }
+            />
             );
           })}
 
-          <Route
-            path={maxKeys.toString()}
-            element={
-              <Grid container spacing={2} pt={3}>
-                <Grid item xs={12} sm={6}>
-                  <form
-                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                      e.preventDefault();
-                      addNewForm();
-                    }}
-                  >
-                    <DebouncedTextField
-                      fullWidth
-                      required
-                      label="Form Name"
-                      helperText="Enter a name for the form."
-                      name="formName"
-                      data-testid="formName"
-                      value={newFormName}
-                      onChange={(
-                        event: React.ChangeEvent<HTMLInputElement>
-                      ) => {
-                        setNewFormName(event.target.value);
-                      }}
-                    />
-                  </form>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={addNewForm}
-                  >
-                    Add New Form
-                  </Button>
-                </Grid>
-                <Grid item xs={12}>
-                  {alertMessage && (
-                    <Alert severity="error">{alertMessage}</Alert>
-                  )}
-                </Grid>
-              </Grid>
-            }
-          />
         </Routes>
       </TabContext>
+      <Dialog
+        open={addFormDialogOpen}
+        onClose={() => {
+          setAddFormDialogOpen(false);
+          setAlertMessage('');
+        }}
+        fullWidth
+        maxWidth="sm"
+        fullScreen={addFormDialogFullScreen}
+        PaperProps={{
+          sx: {
+            borderRadius: {xs: 0, sm: 2},
+            boxShadow: {xs: 'none', sm: theme.shadows[12]},
+            overflow: 'hidden',
+            minHeight: {xs: 300, sm: 340},
+          },
+        }}
+      >
+        <DialogTitle sx={designerDialogTitleSx}>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
+            <Typography variant="h6" sx={{fontWeight: 800}}>
+              Add New Form
+            </Typography>
+            <Tooltip title="Create a clear form name so editors can find it quickly.">
+              <InfoIcon sx={designerInfoIconSx} />
+            </Tooltip>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
+          <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
+            <SimpleFieldWrapper
+              heading="Form Name"
+              helperText={
+                alertMessage ||
+                'Use a short descriptive name, for example: Household Details.'
+              }
+            >
+              <DebouncedTextField
+                fullWidth
+                required
+                label=""
+                placeholder="Enter form name"
+                name="formNameDialog"
+                data-testid="formNameDialog"
+                value={newFormName}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  if (alertMessage) setAlertMessage('');
+                  setNewFormName(event.target.value);
+                }}
+                error={Boolean(alertMessage)}
+                sx={{mt: 0.85}}
+              />
+            </SimpleFieldWrapper>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button
+            onClick={() => {
+              setAddFormDialogOpen(false);
+              setAlertMessage('');
+            }}
+            sx={designerCancelButtonSx}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!newFormName.trim()}
+            onClick={() => {
+              if (addNewForm()) {
+                setAddFormDialogOpen(false);
+              }
+            }}
+          >
+            Add Form
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

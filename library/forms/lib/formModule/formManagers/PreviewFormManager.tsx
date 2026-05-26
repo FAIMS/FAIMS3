@@ -28,6 +28,8 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   uiSpec: ProjectUIModel;
   layout: 'tabs' | 'inline';
   mapConfig: () => MapConfig;
+  /** Optional section id to focus in tabbed preview mode. */
+  previewSectionId?: string;
 }
 
 /**
@@ -88,9 +90,8 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     },
   });
 
-  // Whenever the uiSpec changes, recompute the visible fields
+  // Whenever the uiSpec or formName changes, recompute the visible fields
   useEffect(() => {
-    // Updating visibility
     setVisibleMap(
       currentlyVisibleMap({
         values: formDataExtractor({fullData: form.state.values}),
@@ -98,7 +99,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
         viewsetId: props.formName,
       })
     );
-  }, [props.uiSpec]);
+  }, [props.uiSpec, props.formName]);
 
   // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {
@@ -106,6 +107,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     platform: 'web',
     layout: props.layout,
     mapConfig: props.mapConfig,
+    previewSectionId: props.previewSectionId,
   };
 
   return (

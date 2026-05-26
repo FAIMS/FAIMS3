@@ -16,6 +16,10 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 const NumberFieldPropsSchema = BaseFieldPropsSchema.extend({
   /** Number type: 'integer' uses stepper, 'floating' allows decimals */
   numberType: z.enum(['integer', 'floating']).optional().default('integer'),
+  /** Minimum allowed value (inclusive) */
+  min: z.number().optional(),
+  /** Maximum allowed value (inclusive) */
+  max: z.number().optional(),
 });
 
 type NumberFieldProps = z.infer<typeof NumberFieldPropsSchema>;
@@ -38,6 +42,8 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
     advancedHelperText,
     disabled,
     numberType = 'integer',
+    min,
+    max,
   } = props;
 
   // Value can be number or null
@@ -87,6 +93,8 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
         inputProps={{
           // Step controls decimal precision
           step: numberType === 'integer' ? 1 : 'any',
+          min,
+          max,
         }}
       />
     </FieldWrapper>
@@ -100,7 +108,7 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
 const valueSchema = (props: NumberFieldProps) => {
   const numberType = props.numberType ?? 'integer';
 
-  let schema;
+  let schema: z.ZodNumber;
 
   if (numberType === 'integer') {
     schema = z.number().int({
@@ -109,6 +117,18 @@ const valueSchema = (props: NumberFieldProps) => {
   } else {
     schema = z.number({
       message: 'Please enter a valid number',
+    });
+  }
+
+  if (props.min !== undefined) {
+    schema = schema.min(props.min, {
+      message: `Must be ${props.min} or more`,
+    });
+  }
+
+  if (props.max !== undefined) {
+    schema = schema.max(props.max, {
+      message: `Must be ${props.max} or less`,
     });
   }
 

@@ -19,11 +19,12 @@
  *   logo blue (#223883).
  */
 import {colors, createTheme} from '@mui/material';
+import {defaultBrand} from '@faims3/data-model';
 import typography from './typography';
 const theme = createTheme({
   stepperColors: {
     current: '#000000',
-    visited: '#223883',
+    visited: defaultBrand.primaryMain,
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
   },
@@ -36,23 +37,23 @@ const theme = createTheme({
       tabsBackground: '#E8EAF0',
     },
     primary: {
-      main: '#223883',
-      light: '#4A6BC5',
-      dark: '#141E4A',
+      main: defaultBrand.primaryMain,
+      light: defaultBrand.primaryLight,
+      dark: defaultBrand.primaryDark,
     },
     stepper: {
-      current: '#b5d3d5',
-      visited: '#223883',
+      current: defaultBrand.secondaryMain,
+      visited: defaultBrand.primaryMain,
       error: '#D50C0CFF',
       notVisited: '#A8B0C8',
     },
     highlightColor: {
-      main: '#b5d3d5',
-      contrastText: '#141E4A',
+      main: defaultBrand.secondaryMain,
+      contrastText: defaultBrand.primaryDark,
     },
     secondary: {
-      main: '#b5d3d5',
-      contrastText: '#b5d3d5',
+      main: defaultBrand.secondaryMain,
+      contrastText: defaultBrand.secondaryMain,
     },
     text: {
       primary: colors.blueGrey[900],
@@ -64,21 +65,21 @@ const theme = createTheme({
       warningText: '#9C5711FF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
-      successBackground: '#223883',
+      successBackground: defaultBrand.primaryMain,
     },
     dialogButton: {
-      cancel: '#b5d3d5',
-      confirm: '#223883',
+      cancel: defaultBrand.secondaryMain,
+      confirm: defaultBrand.primaryMain,
       dialogText: '#FFFFFF',
       hoverBackground: '#1A2C68',
     },
     progressBar: {
-      background: '#E8EAF0',
-      complete: '#223883',
+      background: defaultBrand.appBarBackground,
+      complete: defaultBrand.primaryMain,
     },
     icon: {
-      main: '#b5d3d5',
-      light: '#E8EAF0',
+      main: defaultBrand.secondaryMain,
+      light: defaultBrand.appBarBackground,
       required: '#890808FF',
       highlight: '#B10000',
     },
@@ -98,8 +99,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#E8EAF0',
-          color: '#141E4A',
+          backgroundColor: defaultBrand.appBarBackground,
+          color: defaultBrand.appBarForeground,
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
