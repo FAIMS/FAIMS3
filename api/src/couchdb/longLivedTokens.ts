@@ -15,7 +15,6 @@ import {
   LongLivedTokenFields,
   safeWriteDocument,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../buildconfig';
 import {
@@ -95,7 +94,7 @@ export const createNewLongLivedToken = async ({
   const authDB = getAuthDB();
   const token = generateVerificationCode(LONG_LIVED_TOKEN_LENGTH);
   const tokenHash = hashChallengeCode(token);
-  const dbId = AUTH_RECORD_ID_PREFIXES.longlived + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.longlived + crypto.randomUUID();
   const currentTimestamp = Date.now();
 
   const newLongLivedToken: LongLivedTokenFields = {

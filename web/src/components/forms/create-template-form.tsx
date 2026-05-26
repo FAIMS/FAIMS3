@@ -125,8 +125,7 @@ export function CreateTemplateForm({
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
     const {name, file, team, visibility} = values;
-    const isPublic =
-      canCreatePublicTemplate && visibility === 'public';
+    const isPublic = canCreatePublicTemplate && visibility === 'public';
     let jsonPayload: Record<string, any> = {};
 
     if (file) {
@@ -212,7 +211,9 @@ export function CreateTemplateForm({
           submitButtonText="Create Template"
           defaultValues={{
             team: defaultValues?.teamId,
-            ...(canCreatePublicTemplate ? {visibility: 'private' as const} : {}),
+            ...(canCreatePublicTemplate
+              ? {visibility: 'private' as const}
+              : {}),
           }}
         />
       </>

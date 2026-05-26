@@ -1,8 +1,7 @@
-import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
-import {differenceSets} from '../utils';
+import {differenceSets, randomUuid} from '../utils';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
@@ -67,7 +66,7 @@ function getCurrentTimestamp(): string {
  * @returns A new UUID-based record ID
  */
 export function generateRecordID(): string {
-  return 'rec-' + uuidv4();
+  return 'rec-' + randomUuid();
 }
 
 /**
@@ -76,7 +75,7 @@ export function generateRecordID(): string {
  * @returns A new UUID-based revision ID
  */
 export function generateRevisionID(): string {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 /**
@@ -85,7 +84,7 @@ export function generateRevisionID(): string {
  * @returns A new UUID-based AVP ID
  */
 export function generateAvpID(): string {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -94,7 +93,7 @@ export function generateAvpID(): string {
  * @returns A new UUID-based Attachment ID
  */
 export function generateAttID(): string {
-  return 'att-' + uuidv4();
+  return 'att-' + randomUuid();
 }
 
 /**
