@@ -64,8 +64,8 @@ importers:
         specifier: ^2.1664.0
         version: 2.1692.0
       axios:
-        specifier: ^1.12.2
-        version: 1.12.2
+        specifier: ^1.15.2
+        version: 1.16.1
       body-parser:
         specifier: 1.20.3
         version: 1.20.3
@@ -6226,8 +6226,8 @@ packages:
   axios@1.11.0:
     resolution: {integrity: sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA==}
 
-  axios@1.12.2:
-    resolution: {integrity: sha512-vMJzPewAlRyOgxV2dU0Cuz2O8zzzx9VYtbJOaBgXFeLc4IV/Eg50n4LowmehOOR61S8ZMpc2K5Sa7g6A4jfkUw==}
+  axios@1.16.1:
+    resolution: {integrity: sha512-caYkukvroVPO8KrzuJEb50Hm07KwfBZPEC3VeFHTsqWHvKTsy54hjJz9BS/cdaypROE2rH6xvm9mHX4fgWkr3A==}
 
   b4a@1.7.3:
     resolution: {integrity: sha512-5Q2mfq2WfGuFp3uS//0s6baOJLMoVduPYVeNmDYxu5OUA1/cBfvr2RIS7vi62LdNj/urk1hfmj867I3qt6uZ7Q==}
@@ -8020,8 +8020,8 @@ packages:
   fn.name@1.1.0:
     resolution: {integrity: sha512-GRnmB5gPyJpAhTQdSZTSp9uaPSvl09KoYcMQtsB9rQoOmzs9dH6ffeccH+Z+cv6P68Hu5bC6JjRh4Ah/mHSNRw==}
 
-  follow-redirects@1.15.11:
-    resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
+  follow-redirects@1.16.0:
+    resolution: {integrity: sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -8051,6 +8051,10 @@ packages:
 
   form-data@4.0.4:
     resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
+    engines: {node: '>= 6'}
+
+  form-data@4.0.5:
+    resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
     engines: {node: '>= 6'}
 
   format@0.2.2:
@@ -8416,6 +8420,10 @@ packages:
 
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
+    engines: {node: '>= 0.4'}
+
+  hasown@2.0.3:
+    resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
     engines: {node: '>= 0.4'}
 
   hast-util-from-parse5@7.1.2:
@@ -9875,9 +9883,9 @@ packages:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
 
-  mime-types@3.0.1:
-    resolution: {integrity: sha512-xRc4oEhT6eaBpU1XF7AjpOFD+xQmXNB5OVKwp4tqCuBpHLS/ZbBDrc07mYTDqVMg6PfxUjjNp85O6Cd2Z/5HWA==}
-    engines: {node: '>= 0.6'}
+  mime-types@3.0.2:
+    resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
+    engines: {node: '>=18'}
 
   mime@1.6.0:
     resolution: {integrity: sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==}
@@ -10982,6 +10990,10 @@ packages:
 
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
+
+  proxy-from-env@2.1.0:
+    resolution: {integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==}
+    engines: {node: '>=10'}
 
   prr@1.0.1:
     resolution: {integrity: sha512-yPw4Sng1gWghHQWj0B3ZggWUm4qVbPwPFcRG8KyxiU7J2OHFSoEHKS+EZ3fv5l1t9CyCiop6l/ZYeWbrgoQejw==}
@@ -14176,10 +14188,11 @@ snapshots:
 
   '@browserstack/ai-sdk-node@1.5.17':
     dependencies:
-      axios: 1.12.2
+      axios: 1.16.1
       uuid: 9.0.1
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   '@browserstack/wdio-browserstack-service@2.0.1':
     dependencies:
@@ -19207,7 +19220,7 @@ snapshots:
 
   accepts@2.0.0:
     dependencies:
-      mime-types: 3.0.1
+      mime-types: 3.0.2
       negotiator: 1.0.0
 
   acorn-jsx@5.3.2(acorn@8.15.0):
@@ -19341,7 +19354,7 @@ snapshots:
       appium-adb: 13.0.3
       appium-chromedriver: 8.0.10
       asyncbox: 3.0.0
-      axios: 1.12.2
+      axios: 1.16.1
       bluebird: 3.7.2
       io.appium.settings: 6.0.6
       lodash: 4.18.1
@@ -19367,7 +19380,7 @@ snapshots:
       '@xmldom/xmldom': 0.8.11
       appium-adb: 13.0.3
       asyncbox: 3.0.0
-      axios: 1.12.2
+      axios: 1.16.1
       bluebird: 3.7.2
       compare-versions: 6.1.1
       lodash: 4.18.1
@@ -19396,7 +19409,7 @@ snapshots:
     dependencies:
       '@appium/support': 7.0.1
       asyncbox: 3.0.0
-      axios: 1.12.2
+      axios: 1.16.1
       bluebird: 3.7.2
       bplist-creator: 0.1.1
       bplist-parser: 0.3.2
@@ -19406,6 +19419,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
       - react-native-b4a
+      - supports-color
 
   appium-ios-remotexpc@0.5.0:
     dependencies:
@@ -19414,11 +19428,12 @@ snapshots:
       '@types/node': 24.6.2
       '@xmldom/xmldom': 0.9.8
       appium-ios-tuntap: 0.1.0
-      axios: 1.12.2
+      axios: 1.16.1
       npm-run-all2: 8.0.4
     transitivePeerDependencies:
       - debug
       - react-native-b4a
+      - supports-color
     optional: true
 
   appium-ios-simulator@7.0.1:
@@ -19472,7 +19487,7 @@ snapshots:
       appium-android-driver: 11.0.4(appium@3.0.2)
       appium-uiautomator2-server: 8.1.1
       asyncbox: 3.0.0
-      axios: 1.12.2
+      axios: 1.16.1
       bluebird: 3.7.2
       css-selector-parser: 3.1.3
       io.appium.settings: 6.0.6
@@ -19498,7 +19513,7 @@ snapshots:
       appium-ios-simulator: 7.0.1
       async-lock: 1.4.1
       asyncbox: 3.0.0
-      axios: 1.12.2
+      axios: 1.16.1
       bluebird: 3.7.2
       lodash: 4.18.1
       source-map-support: 0.5.21
@@ -19779,19 +19794,21 @@ snapshots:
 
   axios@1.11.0:
     dependencies:
-      follow-redirects: 1.15.11
-      form-data: 4.0.4
+      follow-redirects: 1.16.0
+      form-data: 4.0.5
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
 
-  axios@1.12.2:
+  axios@1.16.1:
     dependencies:
-      follow-redirects: 1.15.11
-      form-data: 4.0.4
-      proxy-from-env: 1.1.0
+      follow-redirects: 1.16.0
+      form-data: 4.0.5
+      https-proxy-agent: 5.0.1
+      proxy-from-env: 2.1.0
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   b4a@1.7.3: {}
 
@@ -20272,7 +20289,7 @@ snapshots:
   chromedriver@119.0.1:
     dependencies:
       '@testim/chrome-version': 1.1.4
-      axios: 1.12.2
+      axios: 1.16.1
       compare-versions: 6.1.1
       extract-zip: 2.0.1
       https-proxy-agent: 5.0.1
@@ -21307,7 +21324,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.3
 
   es5-ext@0.10.64:
     dependencies:
@@ -21790,7 +21807,7 @@ snapshots:
       fresh: 2.0.0
       http-errors: 2.0.0
       merge-descriptors: 2.0.0
-      mime-types: 3.0.1
+      mime-types: 3.0.2
       on-finished: 2.4.1
       once: 1.4.0
       parseurl: 1.3.3
@@ -22015,7 +22032,7 @@ snapshots:
 
   fn.name@1.1.0: {}
 
-  follow-redirects@1.15.11: {}
+  follow-redirects@1.16.0: {}
 
   for-each@0.3.5:
     dependencies:
@@ -22047,6 +22064,14 @@ snapshots:
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
       hasown: 2.0.2
+      mime-types: 2.1.35
+
+  form-data@4.0.5:
+    dependencies:
+      asynckit: 0.4.0
+      combined-stream: 1.0.8
+      es-set-tostringtag: 2.1.0
+      hasown: 2.0.3
       mime-types: 2.1.35
 
   format@0.2.2: {}
@@ -22215,7 +22240,7 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.2
+      hasown: 2.0.3
       math-intrinsics: 1.1.0
 
   get-nonce@1.0.1: {}
@@ -22474,6 +22499,10 @@ snapshots:
       type-fest: 0.8.1
 
   hasown@2.0.2:
+    dependencies:
+      function-bind: 1.1.2
+
+  hasown@2.0.3:
     dependencies:
       function-bind: 1.1.2
 
@@ -22759,7 +22788,7 @@ snapshots:
   internal-slot@1.1.0:
     dependencies:
       es-errors: 1.3.0
-      hasown: 2.0.2
+      hasown: 2.0.3
       side-channel: 1.1.0
 
   intersection-observer@0.10.0: {}
@@ -22821,7 +22850,7 @@ snapshots:
 
   is-core-module@2.16.1:
     dependencies:
-      hasown: 2.0.2
+      hasown: 2.0.3
 
   is-date-object@1.1.0:
     dependencies:
@@ -22901,7 +22930,7 @@ snapshots:
       call-bound: 1.0.4
       gopd: 1.2.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.3
 
   is-regexp@1.0.0: {}
 
@@ -24588,7 +24617,7 @@ snapshots:
     dependencies:
       mime-db: 1.52.0
 
-  mime-types@3.0.1:
+  mime-types@3.0.2:
     dependencies:
       mime-db: 1.54.0
 
@@ -24844,11 +24873,12 @@ snapshots:
 
   nano@10.1.4:
     dependencies:
-      axios: 1.12.2
+      axios: 1.16.1
       node-abort-controller: 3.1.1
       qs: 6.14.0
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   nanoid@3.3.11: {}
 
@@ -25971,6 +26001,8 @@ snapshots:
 
   proxy-from-env@1.1.0: {}
 
+  proxy-from-env@2.1.0: {}
+
   prr@1.0.1: {}
 
   ps-tree@1.2.0:
@@ -26669,7 +26701,7 @@ snapshots:
       etag: 1.8.1
       fresh: 2.0.0
       http-errors: 2.0.0
-      mime-types: 3.0.1
+      mime-types: 3.0.2
       ms: 2.1.3
       on-finished: 2.4.1
       range-parser: 1.2.1
@@ -27197,7 +27229,7 @@ snapshots:
       cookiejar: 2.1.4
       debug: 4.4.3(supports-color@8.1.1)
       fast-safe-stringify: 2.1.1
-      form-data: 4.0.4
+      form-data: 4.0.5
       formidable: 3.5.4
       methods: 1.1.2
       mime: 2.6.0
@@ -27717,7 +27749,7 @@ snapshots:
     dependencies:
       content-type: 1.0.5
       media-typer: 1.1.0
-      mime-types: 3.0.1
+      mime-types: 3.0.2
 
   type@2.7.3: {}
 
