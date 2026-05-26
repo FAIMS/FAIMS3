@@ -592,12 +592,17 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         ownedByTeamId: 'team-z',
         uiSpecification: {
           uiSpec: {
-            fields: {f1: {'component-name': 'FAIMSTextField'}},
+            fields: {
+              f1: {
+                'component-namespace': 'faims-custom',
+                'component-name': 'TextField',
+              },
+            },
             views: {},
             viewsets: {},
             visible_types: [],
             settings: {showQrCodeButton: true},
-            schemaVersion: '4.0',
+            schemaVersion: '5.0',
           },
           metadata: {
             information: {
@@ -2149,9 +2154,11 @@ describe('Migration Specific Tests', () => {
       expect(result.updatedRecord.name).toBe('Survey from project row');
       expect(result.updatedRecord.description).toBe('Loaded from metadata DB');
       expect(result.updatedRecord.metadataDb).toBeUndefined();
-      expect(result.updatedRecord.uiSpecification.uiSpec.fields).toHaveProperty(
-        'field_a'
-      );
+      expect(
+        result.updatedRecord.uiSpecification.uiSpec.fields.field_a[
+          'component-name'
+        ]
+      ).toBe('TextField');
       expect(
         result.updatedRecord.uiSpecification.uiSpec.settings.showQrCodeButton
       ).toBe(false);

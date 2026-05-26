@@ -47,7 +47,7 @@ const createBaseUiSpec = (): NotebookUISpec => ({
   },
   visible_types: ['formA', 'formB'],
   settings: {showQrCodeButton: false},
-  schemaVersion: '4.0',
+  schemaVersion: '5.0',
 });
 
 describe('uiSpecificationReducer', () => {
@@ -58,7 +58,7 @@ describe('uiSpecificationReducer', () => {
       initial,
       fieldAdded({
         fieldName: 'Text Field',
-        fieldType: 'FAIMSTextField',
+        fieldType: 'TextField',
         viewId: 'sectionA',
         viewSetId: 'formA',
         addAfter: '',
@@ -142,14 +142,14 @@ describe('uiSpecificationReducer', () => {
     initial.fields['field-a'] = fieldA;
     initial.fields['field-b'] = fieldB;
     initial.fields['field-c'] = fieldC;
-    initial.fviews.sectionA.fields = ['field-a', 'field-b', 'field-c'];
+    initial.views.sectionA.fields = ['field-a', 'field-b', 'field-c'];
 
     const next = uiSpecificationReducer.reducer(
       initial,
       fieldReordered({viewId: 'sectionA', sourceIndex: 2, targetIndex: 0})
     );
 
-    expect(next.fviews.sectionA.fields).toEqual([
+    expect(next.views.sectionA.fields).toEqual([
       'field-c',
       'field-a',
       'field-b',

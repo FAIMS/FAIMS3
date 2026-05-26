@@ -118,7 +118,7 @@ export const fieldReducers = {
     }>
   ) => {
     const {viewId, sourceIndex, targetIndex} = action.payload;
-    const fieldList = state.fviews[viewId].fields;
+    const fieldList = state.views[viewId].fields;
 
     if (
       sourceIndex < 0 ||
@@ -132,7 +132,7 @@ export const fieldReducers = {
 
     const [movedField] = fieldList.splice(sourceIndex, 1);
     fieldList.splice(targetIndex, 0, movedField);
-    state.fviews[viewId].fields = fieldList;
+    state.views[viewId].fields = fieldList;
   },
   /** Remove field from `sourceViewId` and append to `targetViewId`; cleans cross-form summary fields. */
   fieldMovedToSection: (

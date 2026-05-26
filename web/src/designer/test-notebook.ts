@@ -5,7 +5,7 @@
 import {migrateNotebook} from '@faims3/data-model';
 import type {Notebook} from './state/initial';
 
-const legacyWireNotebook = {
+const legacyNotebook = {
   metadata: {
     notebook_version: '1.0',
     schema_version: '1.0',
@@ -337,6 +337,6 @@ const legacyWireNotebook = {
   },
 };
 
-/** Schema 4.0 notebook migrated from legacy wire JSON above. */
+/** Schema 5.0 notebook migrated from legacy wire JSON above. */
 export const sampleNotebook: Notebook =
-  migrateNotebook(legacyWireNotebook).migrated;
+  migrateNotebook(legacyNotebook).migrated;

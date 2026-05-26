@@ -275,7 +275,7 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(response.body.notebook);
-    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal('4.0');
+    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal('5.0');
     expect(project.uiSpecification.uiSpec.views).to.be.ok;
     expect(project.uiSpecification).to.not.have.property('ui-specification');
     expect(
@@ -303,7 +303,7 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(projectId);
-    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal('4.0');
+    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal('5.0');
     expect(project.uiSpecification.uiSpec.views).to.be.ok;
   });
 

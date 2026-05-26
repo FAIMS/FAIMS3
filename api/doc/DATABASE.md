@@ -67,7 +67,7 @@ Document `_design/permissions` implements a permissions check that restricts acc
       "viewsets": {},
       "visible_types": [],
       "settings": {"showQrCodeButton": false},
-      "schemaVersion": "4.0"
+      "schemaVersion": "5.0"
     },
     "metadata": {
       "information": {

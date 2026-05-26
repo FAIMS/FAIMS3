@@ -62,6 +62,7 @@ const modifiedStatusReducer = createSlice({
       .addCase(settingsUpdated, () => true)
       .addCase(fieldUpdated, () => true)
       .addCase(fieldMoved, () => true)
+      .addCase(fieldReordered, () => true)
       .addCase(fieldRenamed, () => true)
       .addCase(fieldAdded, () => true)
       .addCase(fieldDeleted, () => true)
