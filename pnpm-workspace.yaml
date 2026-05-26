@@ -1,0 +1,24 @@
+packages:
+  - api
+  - app
+  - web
+  - designer
+  - library/data-model
+  - library/forms
+  - tests
+  - infrastructure/aws-cdk
+onlyBuiltDependencies:
+  - '@scarf/scarf'
+  - '@swc/core'
+  - appium
+  - appium-ios-tuntap
+  - aws-sdk
+  - chromedriver
+  - edgedriver
+  - es5-ext
+  - esbuild
+  - geckodriver
+  - leveldown
+  - msw
+  - protobufjs
+  - sharp

@@ -49,19 +49,19 @@ running on your host and enter the appropriate addresses in the `.env` file.
 To run the Conductor server you first need to install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 You should then be able to run the server with:
 
 ```bash
-npm start
+pnpm start
 ```
 
 If you are developing, you may want to run:
 
 ```bash
-npm run watch
+pnpm run watch
 ```
 
 instead, which will monitor for changes with `nodemon`.
@@ -74,21 +74,21 @@ database.
 If you want to include pushing the keys (only recommended for local development):
 
 ```bash
-npm run migrate --keys
+pnpm run migrate --keys
 ```
 
 If you just want to migrate databases without applying any public key
 configuration, then exclude this flag
 
 ```bash
-npm run migrate
+pnpm run migrate
 ```
 
 **Note** If you are running inside a container, then the above command needs to be
 run in the container rather than from your local environment:
 
 ```bash
-docker compose exec conductor npm run migrate
+docker compose exec conductor pnpm run migrate
 ```
 
 This ensures that the correct CouchDB URL is used to access the database. The same
@@ -100,14 +100,14 @@ stored in the `notebooks` directory. There should be two sample notebooks in
 there but you can also create new ones.
 
 ```bash
-npm run load-projects
+pnpm run load-projects
 ```
 
 Similarly, there is a script to populate project templates which again reads
 all json files in the `notebooks` folder:
 
 ```bash
-npm run load-templates
+pnpm run load-templates
 ```
 
 ## Development
@@ -117,10 +117,10 @@ current working directory inside the container so that you can work on
 code in real time. To use this you also need a local `node_modules` folder
 since the current directory will shadow the one inside the container.
 
-To create `node_modules` run `npm ci` inside the container:
+To create `node_modules` run `pnpm install` inside the container:
 
 ```bash
-docker compose -f docker-compose.dev.yml run conductor npm ci
+docker compose -f docker-compose.dev.yml run conductor pnpm install
 ```
 
 Then start the services:
@@ -135,7 +135,7 @@ Run tests inside the conductor instance:
 
 ```bash
 
-docker compose exec conductor npm run test
+docker compose exec conductor pnpm run test
 ```
 
 ## Email Service

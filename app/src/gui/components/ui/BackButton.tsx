@@ -1,28 +1,11 @@
-import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {Box, IconButton, Typography} from '@mui/material';
 import {useNavigate} from 'react-router';
-import {ConfirmExitDialog} from '../record/confirmExitDialog';
-import {useState} from 'react';
-import {useAppSelector} from '../../../context/store';
 
-const BackButton = ({
-  link,
-  backIsParent = false,
-  confirm = true,
-}: {
-  link: string;
-  backIsParent?: boolean;
-  confirm?: boolean;
-}) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const formIsEdited = useAppSelector(state => state.records.edited);
-
-  const navigate = useNavigate();
+const BackButton = ({link}: {link: string}) => {
+  const nav = useNavigate();
   const goBack = () => {
-    if (confirm && formIsEdited) {
-      setDialogOpen(true);
-    } else if (link) navigate(link);
-    else history.back();
+    nav(link);
   };
 
   return (
@@ -51,12 +34,6 @@ const BackButton = ({
           Back
         </Typography>
       </Box>
-      <ConfirmExitDialog
-        open={dialogOpen}
-        setOpen={setDialogOpen}
-        backLink={link}
-        backIsParent={backIsParent}
-      />
     </>
   );
 };

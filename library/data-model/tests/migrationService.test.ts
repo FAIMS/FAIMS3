@@ -21,6 +21,7 @@ import {
   migrateDbs,
   performMigration,
 } from '../src/data_storage';
+import {DatabaseInterface} from '../src';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -149,15 +150,20 @@ describe('Migration System Tests', () => {
         migrationLog: [],
       };
 
-      // Should identify the migration from v1 to v2
+      // Should identify each step from v1 to PEOPLE target version
       const migrations = identifyMigrations({migrationDoc: mockMigrationDoc});
-      expect(migrations.length).toBe(3);
+      const peopleTarget =
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+      expect(migrations.length).toBe(peopleTarget - mockMigrationDoc.version);
       expect(migrations[0].dbType).toBe(DatabaseType.PEOPLE);
       expect(migrations[0].from).toBe(1);
       expect(migrations[0].to).toBe(2);
 
       // Should return empty array if already at target version
-      const upToDateDoc = {...mockMigrationDoc, version: 4};
+      const upToDateDoc = {
+        ...mockMigrationDoc,
+        version: DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion,
+      };
       expect(identifyMigrations({migrationDoc: upToDateDoc})).toEqual([]);
     });
 
@@ -167,7 +173,7 @@ describe('Migration System Tests', () => {
         _rev: '1-abc',
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
-        version: 20, // Higher than target (3)
+        version: 20, // Higher than PEOPLE target
         status: 'healthy' as const,
         migrationLog: [],
       };
@@ -208,11 +214,13 @@ describe('Migration System Tests', () => {
    * Test performMigration function with in-memory PouchDB
    */
   describe('performMigration', () => {
-    let testDb: PouchDB.Database;
+    let testDb: DatabaseInterface;
 
     beforeEach(async () => {
       // Create a fresh in-memory database for each test
-      testDb = new PouchDB('test-migration-db', {adapter: 'memory'});
+      testDb = new PouchDB('test-migration-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
 
       // Add some test documents
       await testDb.bulkDocs([
@@ -337,7 +345,9 @@ describe('Migration System Tests', () => {
 
     it('should handle database errors gracefully', async () => {
       // Create a broken database by closing and trying to use it
-      const brokenDb = new PouchDB('broken-db', {adapter: 'memory'});
+      const brokenDb = new PouchDB('broken-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
       await brokenDb.destroy(); // This makes the DB unusable
 
       // Try to perform migration on broken DB
@@ -399,13 +409,17 @@ describe('Migration System Tests', () => {
    * Test migrateDbs function with in-memory PouchDB
    */
   describe('migrateDbs', () => {
-    let testMigrationDb: PouchDB.Database;
-    let testPeopleDb: PouchDB.Database;
+    let testMigrationDb: DatabaseInterface;
+    let testPeopleDb: DatabaseInterface;
 
     beforeEach(async () => {
       // Create in-memory databases
-      testMigrationDb = new PouchDB('test-migrations-db', {adapter: 'memory'});
-      testPeopleDb = new PouchDB('test-people-db', {adapter: 'memory'});
+      testMigrationDb = new PouchDB('test-migrations-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      testPeopleDb = new PouchDB('test-people-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
 
       // Add design documents to migrations db
       await couchInitialiser({
@@ -467,7 +481,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
-            db: testPeopleDb as PouchDB.Database,
+            db: testPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -510,7 +524,9 @@ describe('Migration System Tests', () => {
     });
 
     it('should handle existing database with migration document', async () => {
-      const realPeopleDb = new PouchDB('real-people-db', {adapter: 'memory'});
+      const realPeopleDb = new PouchDB('real-people-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
 
       // Add design documents to migrations db
       await couchInitialiser({
@@ -561,7 +577,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'real-people-db',
-            db: realPeopleDb as PouchDB.Database,
+            db: realPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -578,10 +594,14 @@ describe('Migration System Tests', () => {
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
-      expect(migrationDoc.version).toBe(4); // Should be at target version
+      expect(migrationDoc.version).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion
+      );
       expect(migrationDoc.migrationLog.length).toBe(2); // Should have added a new log entry
       expect(migrationDoc.migrationLog[1].from).toBe(1);
-      expect(migrationDoc.migrationLog[1].to).toBe(4);
+      expect(migrationDoc.migrationLog[1].to).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion
+      );
       expect(migrationDoc.migrationLog[1].status).toBe('success');
     });
 
@@ -590,7 +610,7 @@ describe('Migration System Tests', () => {
       const upToDateMigrationDoc: MigrationsDBFields = {
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
-        version: 4, // Already at target version
+        version: DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion,
         status: 'healthy',
         migrationLog: [
           {
@@ -629,6 +649,15 @@ describe('Migration System Tests', () => {
             status: 'success',
             notes: 'Upgrade to v2',
           },
+          {
+            from: 4,
+            to: 5,
+            startedAtTimestampMs: Date.now() - 1000,
+            completedAtTimestampMs: Date.now() - 500,
+            launchedBy: 'system',
+            status: 'success',
+            notes: 'Upgrade to v5',
+          },
         ],
       };
 
@@ -646,7 +675,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
-            db: testPeopleDb as PouchDB.Database,
+            db: testPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -662,7 +691,9 @@ describe('Migration System Tests', () => {
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
-      expect(migrationDoc.migrationLog.length).toBe(4); // Should still have just the original log entries
+      expect(migrationDoc.migrationLog.length).toBe(
+        upToDateMigrationDoc.migrationLog.length
+      ); // Should still have just the original log entries
 
       // Check that documents were not modified
       const currentDocs = await testPeopleDb.allDocs({include_docs: true});
@@ -711,7 +742,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
-            db: testPeopleDb as PouchDB.Database,
+            db: testPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -743,7 +774,7 @@ describe('Migration System Tests', () => {
       // Create another test database
       const testProjectsDb = new PouchDB('test-projects-db', {
         adapter: 'memory',
-      });
+      }) as DatabaseInterface;
       await testProjectsDb.put({_id: 'project1', name: 'Test Project'});
 
       try {
@@ -774,12 +805,12 @@ describe('Migration System Tests', () => {
             {
               dbType: DatabaseType.PEOPLE,
               dbName: 'test-people-db',
-              db: testPeopleDb as PouchDB.Database,
+              db: testPeopleDb,
             },
             {
               dbType: DatabaseType.PROJECTS,
               dbName: 'test-projects-db',
-              db: testProjectsDb as PouchDB.Database,
+              db: testProjectsDb,
             },
           ],
           migrationDb: testMigrationDb as unknown as MigrationsDB,

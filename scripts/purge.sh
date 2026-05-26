@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Function to remove npm cache files and directories
-remove_npm_cache() {
+# Function to remove pnpm cache files and directories
+remove_pnpm_cache() {
     local dir="$1"
     local items_removed=0
 
@@ -28,5 +28,5 @@ if [ ! -d "$directory" ]; then
     exit 1
 fi
 
-echo "Starting to clean npm cache files from: $directory"
-remove_npm_cache "$directory"
+echo "Starting to clean pnpm cache files from: $directory"
+remove_pnpm_cache "$directory"

@@ -21,7 +21,7 @@ import {Directory, Encoding, Filesystem} from '@capacitor/filesystem';
 import {Share} from '@capacitor/share';
 import {databaseService} from '../context/slices/helpers/databaseService';
 // eslint-disable-next-line n/no-extraneous-import
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 
 /**
  * progressiveDump - dump a database in chunks
@@ -141,21 +141,11 @@ export async function progressiveSaveFiles(
   try {
     if (keepDumping)
       keepDumping = await progressiveDump(
-        databaseService.getLocalStateDatabase(),
+        databaseService.getLocalStateDatabase().db,
         writer(10, 12)
       );
   } catch {
     console.log('error dumping local state database');
-  }
-
-  try {
-    if (keepDumping)
-      keepDumping = await progressiveDump(
-        databaseService.getDraftDatabase(),
-        writer(15, 20)
-      );
-  } catch {
-    console.log('error dumping draft database');
   }
 
   // TODO dump the redux store projects here

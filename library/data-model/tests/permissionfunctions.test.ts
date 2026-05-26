@@ -1,6 +1,7 @@
 import {
   extendTokenWithVirtualRoles,
   generateVirtualResourceRoles,
+  getUserResourcesForAction,
   isTokenAuthorized,
   necessaryActionToCouchRoleList,
   ResourceAssociation,
@@ -396,6 +397,49 @@ describe('Authorization Helper Functions', () => {
   });
 });
 
+describe('getUserResourcesForAction', () => {
+  it('returns an array of resource IDs for a given action', () => {
+    const token: DecodedTokenPermissions = {
+      resourceRoles: [
+        {resourceId: 'template123', role: Role.TEAM_MANAGER},
+        {resourceId: 'project123', role: Role.PROJECT_MANAGER},
+      ],
+      globalRoles: [],
+    };
+
+    const resources = getUserResourcesForAction({
+      decodedToken: token,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toContain('project123');
+    expect(resources).not.toContain('template123');
+  });
+
+  it('returns an empty array if no resources are authorized', () => {
+    const token: DecodedTokenPermissions = {
+      resourceRoles: [{resourceId: 'template123', role: Role.TEAM_MANAGER}],
+      globalRoles: [],
+    };
+
+    const resources = getUserResourcesForAction({
+      decodedToken: token,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toHaveLength(0);
+  });
+
+  it('returns an empty array if token is undefined', () => {
+    const resources = getUserResourcesForAction({
+      decodedToken: undefined,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toHaveLength(0);
+  });
+});
+
 describe('isAuthorized', () => {
   describe('Non-resource specific actions', () => {
     it('returns true when a global role grants a non-resource specific action', () => {
@@ -584,7 +628,7 @@ describe('isAuthorized', () => {
         })
       ).toBe(false);
 
-      // From resource role PROJECT_ADMIN
+      // DELETE_PROJECT is granted to PROJECT_ADMIN for that resource only
       expect(
         isTokenAuthorized({
           token: token,
@@ -641,7 +685,7 @@ describe('isAuthorized', () => {
         })
       ).toBe(true);
 
-      // Not granted at any level
+      // Not granted (PROJECT_MANAGER does not include DELETE_PROJECT)
       expect(
         isTokenAuthorized({
           token: token,

@@ -24,8 +24,8 @@ export function AddProjectToTeamForm({
   projectId,
 }: AddProjectToTeamFormProps) {
   const {user} = useAuth();
-  const queryClient = useQueryClient();
-  const teams = useGetTeams(user);
+  const QueryClient = useQueryClient();
+  const teams = useGetTeams({user});
 
   // can we add a user to the team?
   const canAddProjectToTeam = useIsAuthorisedTo({
@@ -86,7 +86,7 @@ export function AddProjectToTeamForm({
         message: 'Error adding project to team: ' + response.statusText,
       };
 
-    queryClient.invalidateQueries({
+    QueryClient.invalidateQueries({
       queryKey: ['projectsbyteam', user.token, teamId],
     });
 

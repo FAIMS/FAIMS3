@@ -32,14 +32,6 @@ const MainLayout = (props: MainLayoutProps) => {
           },
         }}
       >
-        {/*<Breadcrumbs*/}
-        {/*  navigation={navigation}*/}
-        {/*  title*/}
-        {/*  titleBottom*/}
-        {/*  card={false}*/}
-        {/*  divider={false}*/}
-        {/*/>*/}
-
         <ErrorBoundary FallbackComponent={ErrorPage}>
           {props.children}
         </ErrorBoundary>

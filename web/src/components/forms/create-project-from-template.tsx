@@ -27,7 +27,7 @@ export function CreateProjectFromTemplateForm({
 
   const QueryClient = useQueryClient();
 
-  const {data: teams} = useGetTeams(user);
+  const {data: teams} = useGetTeams({user});
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const fields = useMemo(
@@ -41,7 +41,7 @@ export function CreateProjectFromTemplateForm({
       },
       {
         name: 'team',
-        label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
+        label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally ? ' (optional)' : ''}`,
         options: teams?.teams.map(({_id, name}) => ({
           label: name,
           value: _id,
@@ -77,7 +77,13 @@ export function CreateProjectFromTemplateForm({
     if (!response.ok)
       return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
 
-    QueryClient.invalidateQueries({queryKey: ['projects', undefined]});
+    // Invalidate projects list so the template’s notebook list and sidebar refresh
+    await QueryClient.invalidateQueries({queryKey: ['projects']});
+    if (team) {
+      await QueryClient.invalidateQueries({
+        queryKey: ['projectsbyteam', user.token, team],
+      });
+    }
 
     setDialogOpen(false);
   };

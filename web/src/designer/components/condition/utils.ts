@@ -13,8 +13,19 @@
 // limitations under the License.
 
 import {FieldType} from '../../state/initial';
-import {ConditionType} from './types';
+import {ConditionType, SelectableConditionOption} from '../../types/condition';
+import {isFieldUsedInCondition} from '../../domain/conditions/conditionReferences';
 
+/**
+ * @file Designer-facing helpers for condition references, delete safety, and option renames.
+ */
+
+/**
+ * Display label for a field (`InputLabelProps.label` overrides `component-parameters.label`).
+ *
+ * @param f - Field definition from the UI spec.
+ * @returns Human-readable label string.
+ */
 export const getFieldLabel = (f: FieldType) => {
   return (
     (f['component-parameters'].InputLabelProps &&
@@ -23,63 +34,141 @@ export const getFieldLabel = (f: FieldType) => {
   );
 };
 
-// Recursively checks if a field is used in a single condition
-export function isFieldUsedInCondition(
-  condition: ConditionType | null | undefined,
-  fieldName: string
-): boolean {
-  if (!condition) return false;
+type FieldMap = Record<string, FieldType>;
+type ViewMap = Record<
+  string,
+  {label: string; condition?: ConditionType; fields: string[]}
+>;
+type ViewSetMap = Record<string, {label: string; views: string[]}>;
 
-  const {operator, field, conditions} = condition;
+export type FieldDependencyReference = {
+  type: 'section-condition' | 'field-condition' | 'templated-string';
+  formId?: string;
+  formLabel?: string;
+  sectionId?: string;
+  sectionLabel?: string;
+  fieldId?: string;
+  fieldLabel?: string;
+  templateUsage?: string;
+};
 
-  // Base case
-  if (field === fieldName) {
-    return true;
+const buildFieldLocationMaps = (allFviews: ViewMap, viewsets: ViewSetMap) => {
+  const sectionToForm = new Map<string, {formId: string; formLabel: string}>();
+  const fieldToSection = new Map<string, {sectionId: string; sectionLabel: string}>();
+
+  for (const [formId, viewset] of Object.entries(viewsets)) {
+    for (const sectionId of viewset.views) {
+      sectionToForm.set(sectionId, {formId, formLabel: viewset.label});
+    }
   }
 
-  // If it's an AND/OR group, check subconditions
-  if ((operator === 'and' || operator === 'or') && conditions) {
-    return conditions.some(sub => isFieldUsedInCondition(sub, fieldName));
+  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+    for (const fieldId of sectionDef.fields) {
+      fieldToSection.set(fieldId, {
+        sectionId,
+        sectionLabel: sectionDef.label,
+      });
+    }
   }
 
-  return false;
-}
+  return {sectionToForm, fieldToSection};
+};
 
 /**
- * Finds where a field is used in conditions or templated string fields
+ * Lists sections/fields/templated strings that reference `fieldName` (conditions or `{{fieldName}}`).
+ * Scoped to the same form as `fieldName` — conditions cannot reference fields from other forms.
  */
-export const findFieldCondtionUsage = (
+export const findFieldDependencyReferences = (
   fieldName: string,
-  allFields: Record<string, any>,
-  allFviews: Record<string, any>
-): string[] => {
-  const affected: string[] = [];
+  allFields: FieldMap,
+  allFviews: ViewMap,
+  viewsets: ViewSetMap
+): FieldDependencyReference[] => {
+  const affected: FieldDependencyReference[] = [];
+  const {sectionToForm, fieldToSection} = buildFieldLocationMaps(
+    allFviews,
+    viewsets
+  );
+
+  // Conditions can only reference fields within the same form, so scope scanning
+  // to the viewset that contains fieldName.
+  const fieldSection = fieldToSection.get(fieldName);
+  const fieldFormId = fieldSection
+    ? sectionToForm.get(fieldSection.sectionId)?.formId
+    : undefined;
+  const scopedViewset = fieldFormId ? viewsets[fieldFormId] : null;
+  const scopedSectionIds = scopedViewset ? new Set(scopedViewset.views) : null;
+
+  const scopedFviews = scopedSectionIds
+    ? Object.fromEntries(
+        Object.entries(allFviews).filter(([id]) => scopedSectionIds.has(id))
+      )
+    : allFviews;
+
+  const scopedFieldIds = new Set(
+    Object.values(scopedFviews).flatMap(s => s.fields)
+  );
+  const scopedFields = Object.fromEntries(
+    Object.entries(allFields).filter(([id]) => scopedFieldIds.has(id))
+  );
 
   // Check section-level conditions
-  for (const sectionId in allFviews) {
-    const condition = allFviews[sectionId].condition;
+  for (const [sectionId, sectionDef] of Object.entries(scopedFviews)) {
+    const condition = sectionDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
-      affected.push(`Section: ${allFviews[sectionId].label}`);
+      const form = sectionToForm.get(sectionId);
+      affected.push({
+        type: 'section-condition',
+        formId: form?.formId,
+        formLabel: form?.formLabel,
+        sectionId,
+        sectionLabel: sectionDef.label,
+      });
     }
   }
 
   // Check field-level conditions
-  for (const fId in allFields) {
-    const condition = allFields[fId].condition;
+  for (const [fId, fieldDef] of Object.entries(scopedFields)) {
+    const condition = fieldDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
-      const label = allFields[fId]['component-parameters']?.label ?? fId;
-      affected.push(`Field Condition: ${label}`);
+      const label = fieldDef['component-parameters']?.label ?? fId;
+      const section = fieldToSection.get(fId);
+      const form = section?.sectionId
+        ? sectionToForm.get(section.sectionId)
+        : undefined;
+      affected.push({
+        type: 'field-condition',
+        formId: form?.formId,
+        formLabel: form?.formLabel,
+        sectionId: section?.sectionId,
+        sectionLabel: section?.sectionLabel,
+        fieldId: fId,
+        fieldLabel: label,
+      });
     }
   }
 
   // Check for Templated String Fields using the deleted field
-  for (const fId in allFields) {
-    if (allFields[fId]['component-name'] === 'TemplatedStringField') {
-      const template = allFields[fId]['component-parameters']?.template || '';
+  for (const [fId, fieldDef] of Object.entries(scopedFields)) {
+    if (fieldDef['component-name'] === 'TemplatedStringField') {
+      const template = fieldDef['component-parameters']?.template || '';
 
       if (template.includes(`{{${fieldName}}}`)) {
-        const label = allFields[fId]['component-parameters']?.label ?? fId;
-        affected.push(`Templated String: ${label} (uses '{{${fieldName}}}')`);
+        const label = fieldDef['component-parameters']?.label ?? fId;
+        const section = fieldToSection.get(fId);
+        const form = section?.sectionId
+          ? sectionToForm.get(section.sectionId)
+          : undefined;
+        affected.push({
+          type: 'templated-string',
+          formId: form?.formId,
+          formLabel: form?.formLabel,
+          sectionId: section?.sectionId,
+          sectionLabel: section?.sectionLabel,
+          fieldId: fId,
+          fieldLabel: label,
+          templateUsage: `{{${fieldName}}}`,
+        });
       }
     }
   }
@@ -99,11 +188,8 @@ export const findFieldCondtionUsage = (
  */
 export function findSectionExternalUsage(
   targetSectionId: string,
-  allFviews: Record<
-    string,
-    {label: string; condition?: ConditionType; fields: string[]}
-  >,
-  allFields: Record<string, any>
+  allFviews: ViewMap,
+  allFields: FieldMap
 ): string[] {
   const references: string[] = [];
 
@@ -155,11 +241,8 @@ export function findSectionExternalUsage(
 export function findFormExternalUsage(
   targetFormId: string,
   viewsets: Record<string, {label: string; views: string[]}>,
-  allFviews: Record<
-    string,
-    {label: string; condition?: ConditionType; fields: string[]}
-  >,
-  allFields: Record<string, any>
+  allFviews: ViewMap,
+  allFields: FieldMap
 ): string[] {
   const references: string[] = [];
 
@@ -235,10 +318,10 @@ export function findInvalidConditionReferences(
     return invalidConditions;
   }
 
-  const validOptions: string[] =
-    targetField['component-parameters'].ElementProps?.options?.map(
-      (opt: any) => opt.value
-    ) || [];
+  const validOptions: string[] = (
+    (targetField['component-parameters'].ElementProps?.options ??
+      []) as SelectableConditionOption[]
+  ).map(opt => opt.value);
 
   // Check if a condition is using a value that no longer exists
   const getInvalidExpectedValue = (condition: ConditionType): string[] => {
@@ -294,102 +377,4 @@ export function findInvalidConditionReferences(
   }
 
   return invalidConditions;
-}
-
-/**
- * Finds all conditions that reference the old option value in a specific field.
- */
-export function findOptionReferences(
-  allFields: Record<string, FieldType>,
-  allFviews: Record<string, {label: string; condition?: ConditionType}>,
-  fieldName: string,
-  oldValue: string
-): string[] {
-  const references: string[] = [];
-
-  // Check field conditions
-  for (const fieldId in allFields) {
-    const fieldCondition = allFields[fieldId].condition;
-    if (
-      fieldCondition &&
-      doesConditionContainValue(fieldCondition, fieldName, oldValue)
-    ) {
-      const label = allFields[fieldId]['component-parameters'].label ?? fieldId;
-      references.push(`Field: ${label}`);
-    }
-  }
-
-  // Check section conditions
-  for (const sectionId in allFviews) {
-    const sectionCondition = allFviews[sectionId].condition;
-    if (
-      sectionCondition &&
-      doesConditionContainValue(sectionCondition, fieldName, oldValue)
-    ) {
-      references.push(`Section: ${allFviews[sectionId].label}`);
-    }
-  }
-
-  return references;
-}
-
-/**
- * Checks if a condition contains a specific value for a given field.
- */
-function doesConditionContainValue(
-  condition: ConditionType,
-  fieldName: string,
-  oldValue: string
-): boolean {
-  const {operator, field, value, conditions} = condition;
-
-  if ((operator === 'and' || operator === 'or') && conditions) {
-    return conditions.some(c =>
-      doesConditionContainValue(c, fieldName, oldValue)
-    );
-  }
-
-  if (field === fieldName) {
-    if (Array.isArray(value)) {
-      return value.includes(oldValue);
-    } else {
-      return value === oldValue;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Updates all references of oldValue to newValue in a condition.
- */
-export function updateConditionReferences(
-  condition: ConditionType,
-  fieldName: string,
-  oldValue: string,
-  newValue: string
-): ConditionType {
-  const {operator, field, value, conditions} = condition;
-
-  if ((operator === 'and' || operator === 'or') && conditions) {
-    return {
-      ...condition,
-      conditions: conditions.map(c =>
-        updateConditionReferences(c, fieldName, oldValue, newValue)
-      ),
-    };
-  }
-
-  if (field === fieldName) {
-    if (Array.isArray(value)) {
-      return {
-        ...condition,
-        value: value.map(v => (v === oldValue ? newValue : v)),
-      };
-    } else if (value === oldValue) {
-      return {...condition, value: newValue};
-    }
-  }
-
-  return condition;
 }

@@ -111,6 +111,7 @@ dist
 .vscode
 
 build
+build-sourcemap
 active
 directory
 .DS_Store
@@ -121,7 +122,6 @@ __pycache__
 *~
 staging
 local_state
-draft-storage
 local_auth
 
 # generated documentation

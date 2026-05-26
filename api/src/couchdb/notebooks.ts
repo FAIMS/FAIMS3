@@ -28,11 +28,16 @@ import {
   Action,
   APINotebookList,
   CouchProjectUIModel,
+  DatabaseInterface,
+  decodeUiSpec,
   EncodedProjectUIModel,
   ExistingProjectDocument,
+  file_attachments_to_data,
+  file_data_to_attachments,
+  getDataDB,
   GetNotebookListResponse,
   logError,
-  notebookRecordIterator,
+  PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
@@ -42,34 +47,23 @@ import {
   Resource,
   resourceRoles,
   Role,
+  safeWriteDocument,
+  setAttachmentDumperForType,
+  setAttachmentLoaderForType,
+  slugify,
   userHasProjectRole,
-  PROJECT_METADATA_PREFIX,
-  Annotations,
+  migrateNotebook,
 } from '@faims3/data-model';
-import archiver from 'archiver';
-import {Stream} from 'stream';
 import {
-  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-
-import {
-  decodeUiSpec,
-  file_attachments_to_data,
-  file_data_to_attachments,
-  getDataDB,
-  setAttachmentDumperForType,
-  setAttachmentLoaderForType,
-} from '@faims3/data-model';
-import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
-import {slugify} from '../utils';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -133,6 +127,73 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
 };
 
 /**
+ * Returns project (survey) IDs whose directory document references the given
+ * template (`templateId` on the project document).
+ */
+export const getProjectIdsReferencingTemplate = async (
+  templateId: string
+): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  const res = await projectsDb.allDocs<ProjectDocument>({
+    include_docs: true,
+  });
+  const ids: string[] = [];
+  for (const row of res.rows) {
+    const doc = row.doc;
+    if (!doc || row.id.startsWith('_')) {
+      continue;
+    }
+    if (doc.templateId === templateId) {
+      ids.push(doc._id);
+    }
+  }
+  return ids;
+};
+
+/**
+ * Drops the per-field metadata doc for `template_id` if it exists (see
+ * `writeProjectMetadata`), so notebook details no longer cite the template.
+ */
+export const removeTemplateIdFromNotebookMetadata = async (
+  projectId: string
+): Promise<void> => {
+  try {
+    const metaDB = await getMetadataDb(projectId);
+    const docId = `${PROJECT_METADATA_PREFIX}-template_id`;
+    try {
+      const doc = await metaDB.get(docId);
+      await metaDB.remove(doc);
+    } catch {
+      // Field doc missing — nothing to do
+    }
+  } catch {
+    // Metadata DB unavailable
+  }
+};
+
+/**
+ * Clears `templateId` on all project documents that reference the template.
+ * Used when permanently deleting a template so surveys do not keep stale
+ * references.
+ */
+export const clearTemplateIdFromProjectsReferencingTemplate = async (
+  templateId: string
+): Promise<void> => {
+  const projectIds = await getProjectIdsReferencingTemplate(templateId);
+  const projectsDb = localGetProjectsDb();
+  for (const projectId of projectIds) {
+    const doc = await projectsDb.get(projectId);
+    if (doc.templateId !== templateId) {
+      continue;
+    }
+    const updated: ProjectDocument = {...doc};
+    delete updated.templateId;
+    await putProjectDoc(updated);
+    await removeTemplateIdFromNotebookMetadata(projectId);
+  }
+};
+
+/**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
@@ -163,15 +224,19 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
  * @param user - only return projects visible to this user
  */
 export const getUserProjectsDirectory = async (
-  user: Express.User
+  user: Express.User,
+  includeArchived = false
 ): Promise<ProjectDocument[]> => {
-  return (await getAllProjectsDirectory()).filter(p =>
-    userCanDo({
+  return (await getAllProjectsDirectory()).filter(p => {
+    if (!includeArchived && p.status === ProjectStatus.ARCHIVED) {
+      return false;
+    }
+    return userCanDo({
       user,
       action: Action.READ_PROJECT_METADATA,
       resourceId: p._id,
-    })
-  );
+    });
+  });
 };
 
 /**
@@ -181,7 +246,8 @@ export const getUserProjectsDirectory = async (
  */
 export const getUserProjectsDetailed = async (
   user: Express.User,
-  teamId: string | undefined = undefined
+  teamId: string | undefined = undefined,
+  includeArchived = false
 ): Promise<APINotebookList[]> => {
   // Get projects DB
   const projectsDb = localGetProjectsDb();
@@ -203,13 +269,16 @@ export const getUserProjectsDetailed = async (
   const userProjects = allDocs.rows
     .map(r => r.doc)
     .filter(d => d !== undefined && !d._id.startsWith('_'))
-    .filter(p =>
-      userCanDo({
+    .filter(p => {
+      if (!includeArchived && p!.status === ProjectStatus.ARCHIVED) {
+        return false;
+      }
+      return userCanDo({
         action: Action.READ_PROJECT_METADATA,
         resourceId: p!._id,
         user,
-      })
-    );
+      });
+    });
 
   // Process all projects in parallel using Promise.all
   const output = await Promise.all(
@@ -252,52 +321,6 @@ const generateProjectID = (projectName: string): ProjectID => {
   return `${Date.now().toFixed()}-${slugify(projectName)}`;
 };
 
-type AutoIncReference = {
-  form_id: string;
-  field_id: string;
-  label: string;
-};
-
-type AutoIncrementObject = {
-  _id: string;
-  references: AutoIncReference[];
-};
-
-/**
- * Derive an autoincrementers object from a UI Spec
- *   find all of the autoincrement fields in the UISpec and create an
- *   entry for each of them.
- * @param uiSpec a project UI Model
- * @returns an autoincrementers object suitable for insertion into the db or
- *          undefined if there are no such fields
- */
-const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
-  // Note that this relies on the name 'local-autoincrementers' being the same as that
-  // used in the front-end code (LOCAL_AUTOINCREMENTERS_NAME in src/local-data/autoincrementers.ts)
-  const autoinc: AutoIncrementObject = {
-    _id: 'local-autoincrementers',
-    references: [],
-  };
-
-  const fields = uiSpec.fields;
-  for (const field in fields) {
-    // TODO are there other names?
-    if (fields[field]['component-name'] === 'BasicAutoIncrementer') {
-      autoinc.references.push({
-        form_id: fields[field]['component-parameters'].form_id,
-        field_id: fields[field]['component-parameters'].name,
-        label: fields[field]['component-parameters'].label,
-      });
-    }
-  }
-
-  if (autoinc.references.length > 0) {
-    return autoinc;
-  } else {
-    return undefined;
-  }
-};
-
 /**
  * validateDatabases - check that all notebook databases are set up
  *  properly, add design documents if they are missing
@@ -320,6 +343,21 @@ export const validateDatabases = async () => {
           'No metadata DB setup for project with ID ' + projectId
         );
       }
+      if (MIGRATE_NOTEBOOKS_ON_STARTUP) {
+        // Get uiSpec for migration
+        const uiSpec = await getEncodedNotebookUISpec(projectId);
+        if (!uiSpec) {
+          throw new Exceptions.InternalSystemError(
+            'Cannot find UI specification for project with ID ' + projectId
+          );
+        }
+        await doNotebookMigration({
+          projectId,
+          metadata,
+          uiSpec: uiSpec,
+        });
+      }
+      // Initialise data db if required
       await initialiseDataDb({
         projectId,
         force: true,
@@ -328,6 +366,33 @@ export const validateDatabases = async () => {
     return report;
   } catch (e) {
     return {valid: false};
+  }
+};
+
+/**
+ * Perform notebook migration and save updated notebook
+ * if required.
+ */
+export const doNotebookMigration = async ({
+  projectId,
+  metadata,
+  uiSpec,
+}: {
+  projectId: string;
+  metadata: any;
+  uiSpec: EncodedProjectUIModel;
+}) => {
+  const {changed, migrated} = migrateNotebook({
+    metadata,
+    'ui-specification': uiSpec,
+  });
+  // update the notebook if it was changed by migration
+  if (changed) {
+    await updateNotebook(
+      projectId,
+      migrated['ui-specification'],
+      migrated.metadata
+    );
   }
 };
 
@@ -368,9 +433,7 @@ export const createNotebook = async (
     // first add an entry to the projects db about this project
     // this is used to find the other databases below
     const projectsDB = localGetProjectsDb();
-    if (projectsDB) {
-      await projectsDB.put(projectDoc);
-    }
+    await projectsDB.put(projectDoc);
   } catch (error) {
     console.log('Error creating project entry in projects database:', error);
     return undefined;
@@ -382,15 +445,11 @@ export const createNotebook = async (
     force: true,
   });
 
-  // derive autoincrementers from uispec
-  const autoIncrementers = getAutoIncrementers(uispec);
-  if (autoIncrementers) {
-    await metaDB.put(autoIncrementers);
-  }
   const payload = {_id: 'ui-specification', ...uispec};
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
+  await safeWriteDocument({
+    db: metaDB,
+    data: payload satisfies EncodedProjectUIModel,
+  });
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -427,22 +486,6 @@ export const updateNotebook = async (
     force: true,
   });
 
-  // derive autoincrementers from uispec
-  const autoIncrementers = getAutoIncrementers(uispec);
-  if (autoIncrementers) {
-    // need to update any existing autoincrementer document
-    // this should have the _rev property so that our update will work
-    const existingAutoInc = (await metaDB.get(
-      'local-autoincrementers'
-    )) as AutoIncrementObject;
-    if (existingAutoInc) {
-      existingAutoInc.references = autoIncrementers.references;
-      await metaDB.put(existingAutoInc);
-    } else {
-      await metaDB.put(autoIncrementers);
-    }
-  }
-
   // update the existing uispec document
   // need the revision id of the existing one to do this...
   const existingUISpec = await metaDB.get('ui-specification');
@@ -453,13 +496,11 @@ export const updateNotebook = async (
     ...uispec,
   };
   // now store it to update the spec
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
-
-  // ensure that the name is in the metadata
-  // metadata.name = projectName.trim();
+  await safeWriteDocument({db: metaDB, data: payload});
   await writeProjectMetadata(metaDB, metadata);
+
+  // update the name if required
+  await changeNotebookName({projectId, name: metadata.name});
 
   // no need to write design docs for existing projects
   return projectId;
@@ -468,21 +509,47 @@ export const updateNotebook = async (
 /**
  * Updates the notebook status to the targeted value
  */
-export const changeNotebookStatus = async ({
+export const changeNotebookName = async ({
   projectId,
-  status,
+  name,
 }: {
   projectId: string;
-  status: ProjectStatus;
+  name: string;
 }) => {
   // get existing project record
   const project = await getProjectById(projectId);
 
-  // update status
-  const updated = {...project, status};
+  if (project.name !== name) {
+    // update name
+    const updated = {...project, name};
 
-  // write it back
-  await putProjectDoc(updated);
+    // write it back
+    await putProjectDoc(updated);
+  }
+};
+
+/**
+ * Apply a lifecycle status change to an already-loaded project document.
+ * Used by PUT /api/notebooks/:id/status after authorization.
+ */
+export const applyNotebookLifecycleStatus = async (
+  project: ProjectDocument,
+  targetStatus: ProjectStatus
+): Promise<void> => {
+  if (
+    targetStatus === ProjectStatus.OPEN &&
+    project.status === ProjectStatus.ARCHIVED
+  ) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
+    );
+  }
+
+  if (project.status === targetStatus) {
+    return;
+  }
+
+  await putProjectDoc({...project, status: targetStatus});
 };
 
 /**
@@ -542,7 +609,7 @@ export const deleteNotebook = async (project_id: string) => {
 };
 
 export const writeProjectMetadata = async (
-  metaDB: PouchDB.Database,
+  metaDB: DatabaseInterface,
   metadata: any
 ) => {
   // add metadata, one document per attribute value pair
@@ -559,7 +626,8 @@ export const writeProjectMetadata = async (
     } catch {
       // no existing document, so don't set the rev
     }
-    await metaDB.put(doc);
+
+    await safeWriteDocument({db: metaDB, data: doc});
   }
   // also add the whole metadata as 'projectvalue'
   metadata._id = PROJECT_METADATA_PREFIX + '-projectvalue';
@@ -569,7 +637,7 @@ export const writeProjectMetadata = async (
   } catch {
     // no existing document, so don't set the rev
   }
-  await metaDB.put(metadata);
+  await safeWriteDocument({db: metaDB, data: metadata});
   return metadata;
 };
 
@@ -604,7 +672,7 @@ export const getNotebookMetadata = async (
         console.error('no metadata database found for', project_id);
       }
     } catch (error) {
-      console.log('unknown project', project_id);
+      console.error('error reading project metadata', project_id, error);
     }
   } else {
     console.log('unknown project', project_id);
@@ -632,7 +700,7 @@ export const getEncodedNotebookUISpec = async (
       console.error('no metadata database found for', projectId);
     }
   } catch (error) {
-    console.log('unknown project', projectId);
+    console.error('error reading metadata db for project', projectId, error);
   }
   return null;
 };
@@ -673,439 +741,6 @@ export const validateNotebookID = async (
     return false;
   }
   return false;
-};
-
-/**
- * generate a suitable value for the CSV export from a field
- * value.  Serialise filenames, gps coordinates, etc.
- */
-const csvFormatValue = (
-  fieldName: string,
-  fieldType: string,
-  value: any,
-  hrid: string,
-  filenames: string[]
-) => {
-  const result: {[key: string]: any} = {};
-  if (fieldType === 'faims-attachment::Files') {
-    if (value instanceof Array) {
-      if (value.length === 0) {
-        result[fieldName] = '';
-        return result;
-      }
-      const valueList = value.map((v: any) => {
-        if (v instanceof File) {
-          const filename = generateFilenameForAttachment(
-            v,
-            fieldName,
-            hrid,
-            filenames
-          );
-          filenames.push(filename);
-          return filename;
-        } else {
-          return v;
-        }
-      });
-      result[fieldName] = valueList.join(';');
-    } else {
-      result[fieldName] = value;
-    }
-    return result;
-  }
-
-  // gps locations
-  if (fieldType === 'faims-pos::Location') {
-    if (
-      value instanceof Object &&
-      'geometry' in value &&
-      value.geometry.coordinates.length === 2
-    ) {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = value.geometry.coordinates[1];
-      result[fieldName + '_longitude'] = value.geometry.coordinates[0];
-      result[fieldName + '_accuracy'] = value.properties.accuracy || '';
-    } else {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-      result[fieldName + '_accuracy'] = '';
-    }
-    return result;
-  }
-
-  if (fieldType === 'faims-core::JSON') {
-    // map location, if it's a point we can pull out lat/long
-    if (
-      value instanceof Object &&
-      'features' in value &&
-      value.features.length > 0 &&
-      value.features[0]?.geometry?.type === 'Point' &&
-      value.features[0].geometry.coordinates.length === 2
-    ) {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] =
-        value.features[0].geometry.coordinates[1];
-      result[fieldName + '_longitude'] =
-        value.features[0].geometry.coordinates[0];
-      return result;
-    } else {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-    }
-  }
-
-  if (fieldType === 'faims-core::Relationship') {
-    if (value instanceof Array) {
-      result[fieldName] = value
-        .map((v: any) => {
-          const relation_name = v.relation_type_vocabPair
-            ? v.relation_type_vocabPair[0]
-            : 'unknown relation';
-          return `${relation_name}/${v.record_id}`;
-        })
-        .join(';');
-    } else {
-      result[fieldName] = value;
-    }
-    return result;
-  }
-
-  // default to just the value
-  result[fieldName] = value;
-  return result;
-};
-
-type FieldSummary = {
-  name: string;
-  type: string;
-  annotation?: string;
-  uncertainty?: string;
-};
-
-/**
- * Convert annotations on a field to a format suitable for CSV export
- */
-const csvFormatAnnotation = (
-  field: FieldSummary,
-  {annotation, uncertainty}: Annotations
-) => {
-  const result: {[key: string]: any} = {};
-  if (field.annotation !== '')
-    result[field.name + '_' + field.annotation] = annotation;
-  if (field.uncertainty !== '')
-    result[field.name + '_' + field.uncertainty] = uncertainty
-      ? 'true'
-      : 'false';
-  return result;
-};
-
-/**
- * Format the data for a single record for CSV export
- *
- * @returns a map of column headings to values
- */
-const convertDataForOutput = (
-  fields: FieldSummary[],
-  data: any,
-  annotations: {[name: string]: Annotations},
-  hrid: string,
-  filenames: string[]
-) => {
-  let result: {[key: string]: any} = {};
-  fields.map((field: any) => {
-    if (field.name in data) {
-      const formattedValue = csvFormatValue(
-        field.name,
-        field.type,
-        data[field.name],
-        hrid,
-        filenames
-      );
-      const formattedAnnotation = csvFormatAnnotation(
-        field,
-        annotations[field.name] || {}
-      );
-      result = {...result, ...formattedValue, ...formattedAnnotation};
-    } else {
-      console.error('field missing in data', field.name, data);
-    }
-  });
-  return result;
-};
-
-/**
- * Get a list of fields for a notebook with relevant information
- * on each for the export
- *
- * @param project_id Project ID
- * @param viewID View ID
- * @returns an array of FieldSummary objects
- */
-const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
-  const uiSpec = await getEncodedNotebookUISpec(project_id);
-  if (!uiSpec) {
-    throw new Error("can't find project " + project_id);
-  }
-  if (!(viewID in uiSpec.viewsets)) {
-    throw new Error(`invalid form ${viewID} not found in notebook`);
-  }
-  const views = uiSpec.viewsets[viewID].views;
-  const fields: FieldSummary[] = [];
-  views.forEach((view: any) => {
-    uiSpec.fviews[view].fields.forEach((field: any) => {
-      const fieldInfo = uiSpec.fields[field];
-      fields.push({
-        name: field,
-        type: fieldInfo['type-returned'],
-        annotation: fieldInfo.meta.annotation.include
-          ? slugify(fieldInfo.meta.annotation.label)
-          : '',
-        uncertainty: fieldInfo.meta.uncertainty.include
-          ? slugify(fieldInfo.meta.uncertainty.label)
-          : '',
-      });
-    });
-  });
-  return fields;
-};
-
-/**
- * Stream the records in a notebook as a CSV file
- *
- * @param projectId Project ID
- * @param viewID View ID
- * @param res writeable stream
- */
-export const streamNotebookRecordsAsCSV = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const fields = await getNotebookFieldTypes(projectId, viewID);
-
-  let stringifier: Stringifier | null = null;
-  let {record, done} = await iterator.next();
-  let header_done = false;
-  const filenames: string[] = [];
-  while (!done) {
-    // record might be null if there was an invalid db entry
-    if (record) {
-      const hrid = record.hrid || record.record_id;
-      const row = [
-        hrid,
-        record.record_id,
-        record.revision_id,
-        record.type,
-        record.created_by,
-        record.created.toISOString(),
-        record.updated_by,
-        record.updated.toISOString(),
-      ];
-      const outputData = convertDataForOutput(
-        fields,
-        record.data,
-        record.annotations,
-        hrid,
-        filenames
-      );
-      Object.keys(outputData).forEach((property: string) => {
-        row.push(outputData[property]);
-      });
-
-      if (!header_done) {
-        const columns = [
-          'identifier',
-          'record_id',
-          'revision_id',
-          'type',
-          'created_by',
-          'created',
-          'updated_by',
-          'updated',
-        ];
-        // take the keys in the generated output data which may have more than
-        // the original data
-        Object.keys(outputData).forEach((key: string) => {
-          columns.push(key);
-        });
-        stringifier = stringify({columns, header: true, escape_formulas: true});
-        // pipe output to the respose
-        stringifier.pipe(res);
-        header_done = true;
-      }
-      if (stringifier) stringifier.write(row);
-    }
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
-  if (stringifier) {
-    stringifier.end();
-  } else {
-    // no records to export so just send the bare column headings
-    const columns = [
-      'identifier',
-      'record_id',
-      'revision_id',
-      'type',
-      'created_by',
-      'created',
-      'updated_by',
-      'updated',
-    ];
-    stringifier = stringify({columns, header: true});
-    // pipe output to the respose
-    stringifier.pipe(res);
-    stringifier.end();
-  }
-};
-
-export const streamNotebookFilesAsZip = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  let allFilesAdded = false;
-  let doneFinalize = false;
-
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const archive = archiver('zip', {zlib: {level: 9}});
-  // good practice to catch warnings (ie stat failures and other non-blocking errors)
-  archive.on('warning', err => {
-    if (err.code === 'ENOENT') {
-      // log warning
-    } else {
-      // throw error
-      throw err;
-    }
-  });
-
-  // good practice to catch this error explicitly
-  archive.on('error', err => {
-    throw err;
-  });
-
-  // check on progress, if we've finished adding files and they are
-  // all processed then we can finalize the archive
-  archive.on('progress', (ev: any) => {
-    if (
-      !doneFinalize &&
-      allFilesAdded &&
-      ev.entries.total === ev.entries.processed
-    ) {
-      try {
-        archive.finalize();
-        doneFinalize = true;
-      } catch {
-        // ignore ArchiveError
-      }
-    }
-  });
-
-  archive.pipe(res);
-  let dataWritten = false;
-  let {record, done} = await iterator.next();
-  const fileNames: string[] = [];
-  while (!done) {
-    // iterate over the fields, if it's a file, then
-    // append it to the archive
-    if (record !== null) {
-      const hrid = record.hrid || record.record_id;
-      Object.keys(record.data).forEach(async (key: string) => {
-        if (record && record.data[key] instanceof Array) {
-          if (record.data[key].length === 0) {
-            return;
-          }
-          if (record.data[key][0] instanceof File) {
-            const file_list = record.data[key] as File[];
-            file_list.forEach(async (file: File) => {
-              const buffer = await file.stream();
-              const reader = buffer.getReader();
-              // this is how we turn a File object into
-              // a Buffer to pass to the archiver, insane that
-              // we can't derive something from the file that will work
-              const chunks: Uint8Array[] = [];
-              while (true) {
-                const {done, value} = await reader.read();
-                if (done) {
-                  break;
-                }
-                chunks.push(value);
-              }
-              const stream = Stream.Readable.from(chunks);
-              const filename = generateFilenameForAttachment(
-                file,
-                key,
-                hrid,
-                fileNames
-              );
-              fileNames.push(filename);
-              await archive.append(stream, {
-                name: filename,
-              });
-              dataWritten = true;
-            });
-          }
-        }
-      });
-    }
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
-  // if we didn't write any data then finalise because that won't happen elsewhere
-  if (!dataWritten) {
-    console.log('no data written');
-    archive.abort();
-  }
-  allFilesAdded = true;
-  // fire a progress event here because short/empty zip files don't
-  // trigger it late enough for us to call finalize above
-  archive.emit('progress', {entries: {processed: 0, total: 0}});
-};
-
-export const generateFilenameForAttachment = (
-  file: File,
-  key: string,
-  hrid: string,
-  filenames: string[]
-) => {
-  const fileTypes: {[key: string]: string} = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/gif': 'gif',
-    'image/tiff': 'tif',
-    'text/plain': 'txt',
-    'application/pdf': 'pdf',
-    'application/json': 'json',
-  };
-
-  const type = file.type;
-  const extension = fileTypes[type] || 'dat';
-  let filename = `${key}/${hrid}-${key}.${extension}`;
-  let postfix = 1;
-  while (filenames.find(f => f.localeCompare(filename) === 0)) {
-    filename = `${key}/${hrid}-${key}_${postfix}.${extension}`;
-    postfix += 1;
-  }
-  return filename;
 };
 
 /**

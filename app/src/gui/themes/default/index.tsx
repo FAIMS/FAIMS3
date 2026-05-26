@@ -15,16 +15,16 @@
  *
  * Filename: index.tsx
  * Description:
- *   TODO
+ *   Default FAIMS open-source theme. Primary colour derived from the FAIMS
+ *   logo blue (#223883).
  */
-
 import {colors, createTheme} from '@mui/material';
+import {defaultBrand} from '@faims3/data-model';
 import typography from './typography';
-
 const theme = createTheme({
   stepperColors: {
     current: '#000000',
-    visited: '#07a907',
+    visited: defaultBrand.primaryMain,
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
   },
@@ -33,28 +33,27 @@ const theme = createTheme({
       default: '#FAFAFB',
       paper: '#FFFFFF',
       draftBackground: '#FFFFFFFF',
-      lightBackground: '#edeeeb',
-      tabsBackground: '#edeeeb',
+      lightBackground: '#E8EAF0',
+      tabsBackground: '#E8EAF0',
     },
     primary: {
-      main: '#669911',
-      light: '#a7e938',
-      dark: '#141E03',
+      main: defaultBrand.primaryMain,
+      light: defaultBrand.primaryLight,
+      dark: defaultBrand.primaryDark,
     },
-
     stepper: {
-      current: '#E18200',
-      visited: '#669911',
+      current: defaultBrand.secondaryMain,
+      visited: defaultBrand.primaryMain,
       error: '#D50C0CFF',
-      notVisited: '#B7C1A6F1',
+      notVisited: '#A8B0C8',
     },
     highlightColor: {
-      main: '#E18200',
-      contrastText: '#141E03',
+      main: defaultBrand.secondaryMain,
+      contrastText: defaultBrand.primaryDark,
     },
     secondary: {
-      main: '#E18200',
-      contrastText: '#E18200',
+      main: defaultBrand.secondaryMain,
+      contrastText: defaultBrand.secondaryMain,
     },
     text: {
       primary: colors.blueGrey[900],
@@ -66,22 +65,21 @@ const theme = createTheme({
       warningText: '#9C5711FF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
-      successBackground: '#669911',
+      successBackground: defaultBrand.primaryMain,
     },
     dialogButton: {
-      cancel: '#E18200',
-      confirm: '#669911',
+      cancel: defaultBrand.secondaryMain,
+      confirm: defaultBrand.primaryMain,
       dialogText: '#FFFFFF',
-      hoverBackground: '#50790DFF',
+      hoverBackground: '#1A2C68',
     },
     progressBar: {
-      background: '#edeeeb',
-      complete: '#669911',
+      background: defaultBrand.appBarBackground,
+      complete: defaultBrand.primaryMain,
     },
     icon: {
-      main: '#E18200',
-
-      light: '#edeeeb',
+      main: defaultBrand.secondaryMain,
+      light: defaultBrand.appBarBackground,
       required: '#890808FF',
       highlight: '#B10000',
     },
@@ -90,7 +88,6 @@ const theme = createTheme({
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
-    // stepperGradient: generateStepperColors(10, 'default'),
   },
   typography,
   components: {
@@ -102,8 +99,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#edeeeb',
-          color: '#324C08', //tab text color
+          backgroundColor: defaultBrand.appBarBackground,
+          color: defaultBrand.appBarForeground,
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
@@ -126,7 +123,7 @@ const theme = createTheme({
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
-            backgroundColor: '#DA9449',
+            backgroundColor: '#b5d3d5',
           },
         },
       },
@@ -142,5 +139,4 @@ const theme = createTheme({
     },
   },
 });
-
 export default theme;

@@ -20,13 +20,18 @@ import {useState, ReactNode} from 'react';
 import {DataTablePagination} from './pagination';
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
+import {cn} from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data?: TData[];
   loading?: boolean;
   button?: ReactNode;
+  /** Renders after the global filter input (e.g. secondary filters). */
+  toolbarExtra?: ReactNode;
   onRowClick?: (row: TData) => void;
+  /** Merged into each body row; use for conditional row styling. */
+  getRowClassName?: (row: TData) => string | undefined;
   defaultRowsPerPage?: number;
 }
 
@@ -41,7 +46,9 @@ export function DataTable<TData, TValue>({
   data,
   loading,
   button,
+  toolbarExtra,
   onRowClick,
+  getRowClassName,
   defaultRowsPerPage = 10,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -72,11 +79,12 @@ export function DataTable<TData, TValue>({
     <div className="flex flex-col gap-2">
       <div className="flex justify-start items-center gap-4">
         <Input
-          placeholder="Filter results..."
+          placeholder="Search..."
           value={table.getState().globalFilter || ''}
           onChange={event => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
+        {toolbarExtra}
         {button}
       </div>
 
@@ -86,8 +94,14 @@ export function DataTable<TData, TValue>({
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
+                  const headerMeta = header.column.columnDef.meta as
+                    | {headerClassName?: string}
+                    | undefined;
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={headerMeta?.headerClassName}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -104,29 +118,48 @@ export function DataTable<TData, TValue>({
             {loading ? (
               [...Array(1).keys()].map(key => (
                 <TableRow key={key}>
-                  {table.getAllColumns().map(column => (
-                    <TableCell key={column.id}>
-                      <Skeleton className="w-full h-[20px] rounded-full" />
-                    </TableCell>
-                  ))}
+                  {table.getAllColumns().map(column => {
+                    const cellMeta = column.columnDef.meta as
+                      | {cellClassName?: string}
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={column.id}
+                        className={cellMeta?.cellClassName}
+                      >
+                        <Skeleton className="w-full h-[20px] rounded-full" />
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
                 <TableRow
                   key={row.id}
-                  className={onRowClick ? 'cursor-pointer' : ''}
+                  className={cn(
+                    onRowClick && 'cursor-pointer',
+                    getRowClassName?.(row.original)
+                  )}
                   data-state={row.getIsSelected() && 'selected'}
                   onClick={() => onRowClick && onRowClick(row.original)}
                 >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map(cell => {
+                    const cellMeta = cell.column.columnDef.meta as
+                      | {cellClassName?: string}
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cellMeta?.cellClassName}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (

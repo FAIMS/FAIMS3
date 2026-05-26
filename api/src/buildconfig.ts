@@ -19,8 +19,8 @@
  *   which server to use and whether to include test data
  */
 
+import {slugify} from '@faims3/data-model';
 import {existsSync} from 'fs';
-import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
   EmailConfig,
@@ -29,7 +29,15 @@ import {
   SMTPEmailServiceConfig,
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
-import {slugify} from './utils';
+
+// Get the package version directly from package.json
+import {version as packageVersion} from '../package.json';
+import {
+  ProvisionSSOUsersPolicy,
+  ProvisionSSOUsersPolicySchema,
+} from './auth/types';
+console.log(`Using API version from package.json: ${packageVersion}`);
+export const API_VERSION = packageVersion;
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -229,63 +237,10 @@ function cookie_secret(): string {
   const cookie = process.env.FAIMS_COOKIE_SECRET;
   if (cookie === '' || cookie === undefined) {
     console.log('FAIMS_COOKIE_SECRET not set, using generated secret');
-    return uuidv4();
+    return crypto.randomUUID();
   } else {
     return cookie;
   }
-}
-
-function google_client_id(): string {
-  const s = process.env.GOOGLE_CLIENT_ID;
-  if (s === '' || s === undefined) {
-    console.log('GOOGLE_CLIENT_ID not set, setting empty');
-    return '';
-  } else {
-    return s;
-  }
-}
-
-function google_client_secret(): string {
-  const s = process.env.GOOGLE_CLIENT_SECRET;
-  if (s === '' || s === undefined) {
-    console.log('GOOGLE_CLIENT_SECRET not set, setting empty');
-    return '';
-  } else {
-    return s;
-  }
-}
-
-// What providers are available?
-export enum AuthProvider {
-  GOOGLE = 'GOOGLE',
-}
-
-/**
- * Determines which authentication providers to use based on environment configuration.
- *
- * Parses the CONDUCTOR_AUTH_PROVIDERS environment variable, which should contain
- * a semicolon-separated list of provider IDs that match the AuthProvider enum values.
- *
- * @returns {AuthProvider[]} Array of enabled authentication providers
- */
-function getConfiguredProviders(): AuthProvider[] {
-  // expects ; separated list of provider IDs as above
-  const providers = process.env.CONDUCTOR_AUTH_PROVIDERS;
-  if (providers === '' || providers === undefined) {
-    console.log('CONDUCTOR_AUTH_PROVIDERS not set, defaulting to empty');
-    return [];
-  }
-
-  // Get all valid enum keys (e.g., ["GOOGLE"])
-  const validKeys = Object.keys(AuthProvider);
-
-  // split, trim, filter and coerce
-  return providers
-    .split(';')
-    .map(v => v.trim().toUpperCase())
-    .filter(v => v.length !== 0)
-    .filter(v => validKeys.includes(v))
-    .map(v => AuthProvider[v as keyof typeof AuthProvider]);
 }
 
 function conductor_internal_port(): number {
@@ -303,6 +258,21 @@ function developer_mode(): any {
   } else {
     return false;
   }
+}
+
+function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
+  const policy = process.env.PROVISION_SSO_USERS_POLICY;
+  if (policy) {
+    try {
+      return ProvisionSSOUsersPolicySchema.parse(policy); // validate the value and throw if it's invalid
+    } catch (err) {
+      console.error(
+        `Invalid PROVISION_SSO_USERS_POLICY value: ${policy}, defaulting to 'reject'`
+      );
+    }
+  }
+  // default policy is 'reject' which rejects unknown users via SSO
+  return 'reject';
 }
 
 // 5 minute access token expiry by default
@@ -451,6 +421,27 @@ function newConductorUrl(): string {
   }
 }
 
+// Config variable is DISABLE_LOCAL_LOGIN for ease of use,
+// but we will export LOCAL_LOGIN_ENABLED for clarity in the rest of the codebase
+function enable_local_login(): boolean {
+  const disableLocalLogin = process.env.DISABLE_LOCAL_LOGIN;
+  if (disableLocalLogin === undefined) {
+    return true;
+  } else {
+    return disableLocalLogin.toLowerCase() !== 'true';
+  }
+}
+
+// Configure migration of notebooks on startup
+function migrateNotebooks(): boolean {
+  const migrate = process.env.MIGRATE_NOTEBOOKS_ON_STARTUP;
+  if (migrate === undefined) {
+    return false;
+  } else {
+    return migrate.toLowerCase() === 'true';
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -463,9 +454,6 @@ export const CONDUCTOR_INSTANCE_NAME = instance_name();
 export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
-export const GOOGLE_CLIENT_ID = google_client_id();
-export const GOOGLE_CLIENT_SECRET = google_client_secret();
-export const CONDUCTOR_AUTH_PROVIDERS = getConfiguredProviders();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
@@ -477,6 +465,9 @@ export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
 export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
 export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
+export const LOCAL_LOGIN_ENABLED = enable_local_login();
+export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
+export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
@@ -736,3 +727,18 @@ function maximumLongLivedDurationDays(): number | undefined {
 }
 
 export const MAXIMUM_LONG_LIVED_DURATION_DAYS = maximumLongLivedDurationDays();
+
+/**
+ * Gets the Bugsnag API key from environment variables.
+ * @returns The Bugsnag API key, or undefined if not configured.
+ */
+function bugsnagApiKey(): string | undefined {
+  const apiKey = process.env.BUGSNAG_API_KEY;
+  if (apiKey === '' || apiKey === undefined) {
+    console.log('BUGSNAG_API_KEY not set, error reporting disabled');
+    return undefined;
+  }
+  return apiKey;
+}
+
+export const BUGSNAG_API_KEY = bugsnagApiKey();

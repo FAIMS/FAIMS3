@@ -26,7 +26,7 @@ import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
-import {ConductorConfig} from '../config';
+import {AuthProvidersConfig, ConductorConfig} from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
 
@@ -57,13 +57,6 @@ export interface SMTPGeneralConfig {
   testEmailAddress: string;
   /** Cache expiry in seconds (optional) */
   cacheExpirySeconds?: number;
-}
-
-export interface SocialProvidersConfig {
-  google?: {
-    // must contain CLIENT_ID and CLIENT_SECRET
-    secretArn: string;
-  };
 }
 
 /**
@@ -107,12 +100,19 @@ export interface FaimsConductorProps {
   /** SMTP general configuration */
   smtpConfig: SMTPGeneralConfig;
   /** Social providers info (if enabled) */
-  socialProviders?: SocialProvidersConfig;
+  authProviders?: AuthProvidersConfig;
+  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+  provisionSSOUsersPolicy?: 'own-team' | 'general-user' | 'reject';
   /** If true, adds typical localhost addresses to the allowable redirect
    * whitelist (DEV ONLY) */
   localhostWhitelist: boolean;
   /** Maximum long-lived token duration in days (undefined = infinite) */
   maximumLongLivedDurationDays?: number;
+  /** Bugsnag config */
+  /** Version e.g. v1.2.3 */
+  apiVersion?: string;
+  /** Bugsnag API key */
+  bugsnagApiKey?: string;
 }
 
 /**
@@ -175,32 +175,64 @@ export class FaimsConductor extends Construct {
       props.smtpCredsArn
     );
 
-    const socialProviderList: string[] = [];
-    if (props.socialProviders?.google) {
-      socialProviderList.push('google');
-    }
-    const renderedProviderList = socialProviderList.join(';');
+    // Configure auth providers
+    // Based on the configuration we generate two sets of environment variables
+    // for secret and non-secret settings for each provider.
+    const authSecrets: Record<string, ecs.Secret> = {};
+    const authEnvironment: Record<string, string> = {};
+    if (props.authProviders && props.authProviders.providers.length > 0) {
+      const authSecret = sm.Secret.fromSecretCompleteArn(
+        this,
+        'AuthSecret',
+        props.authProviders.secretArn
+      );
+      props.authProviders.providers.forEach(provider => {
+        const config = props.authProviders!.config[provider];
 
-    const googleSecretArn = props.socialProviders?.google?.secretArn;
-    const googleSecret = googleSecretArn
-      ? sm.Secret.fromSecretCompleteArn(
-          this,
-          'GoogleOAuthSecret',
-          googleSecretArn
-        )
-      : undefined;
-    const googleConfigSecrets = googleSecret
-      ? {
-          GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
-            googleSecret,
-            'CLIENT_ID'
-          ),
-          GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
-            googleSecret,
-            'CLIENT_SECRET'
-          ),
+        // Handle secrets based on provider type
+        if (config.type === 'saml') {
+          // SAML uses privateKey and publicKey (certificate) instead of clientID/clientSecret
+          authSecrets[`AUTH_${provider.toUpperCase()}_PRIVATE_KEY`] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-privateKey`);
+          authSecrets[`AUTH_${provider.toUpperCase()}_PUBLIC_KEY`] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-publicKey`);
+        } else {
+          // Google and OIDC use clientID and clientSecret
+          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_ID`] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientID`);
+          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`] =
+            ecs.Secret.fromSecretsManager(
+              authSecret,
+              `${provider}-clientSecret`
+            );
         }
-      : undefined;
+
+        // For each key in config, convert to an env variable
+        // (AUTH_ + provider + _ + key in uppercase) and add to the environment
+
+        for (const [key, value] of Object.entries(config)) {
+          // Skip undefined/null values
+          if (value === undefined || value === null) {
+            continue;
+          }
+
+          const envName = `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(key)}`;
+
+          // Handle different value types appropriately
+          if (Array.isArray(value)) {
+            // For arrays (e.g., authnContext), join with commas
+            authEnvironment[envName] = value.join(',');
+          } else if (typeof value === 'object') {
+            // For objects, stringify to JSON
+            authEnvironment[envName] = JSON.stringify(value);
+          } else {
+            authEnvironment[envName] = String(value);
+          }
+
+          console.log('ENV', envName, authEnvironment[envName]);
+        }
+      });
+    }
 
     conductorTaskDfn.addContainer('conductor-container-dfn', {
       image: conductorContainerImage,
@@ -228,6 +260,24 @@ export class FaimsConductor extends Construct {
         KEY_SOURCE: 'AWS_SM',
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
+        PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
+        MIGRATE_NOTEBOOKS_ON_STARTUP: props.config.migrateNotebooksOnStartup
+          ? 'true'
+          : 'false',
+
+        // Bugsnag (optional)
+        ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
+
+        // add any auth environment variables
+        ...authEnvironment,
+
+        // disable local login if specified in config (for SSO only deployments)
+        // defaults to false if not provided in config
+        DISABLE_LOCAL_LOGIN: props.authProviders
+          ? props.authProviders.disableLocalLogin
+            ? 'true'
+            : 'false'
+          : 'false',
 
         // Security configurations
         MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
@@ -242,7 +292,7 @@ export class FaimsConductor extends Construct {
         TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
         SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
 
-        // Whitelising for redirects - should include API, APP, WEB and APP_ID://
+        // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
         REDIRECT_WHITELIST: [
           this.conductorEndpoint,
           props.webAppPublicUrl,
@@ -257,13 +307,6 @@ export class FaimsConductor extends Construct {
               ]
             : []),
         ].join(','),
-
-        // social providers (if at least one configured)
-        ...(socialProviderList.length > 0
-          ? {
-              CONDUCTOR_AUTH_PROVIDERS: renderedProviderList,
-            }
-          : {}),
       },
       secrets: {
         COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
@@ -283,8 +326,8 @@ export class FaimsConductor extends Construct {
         SMTP_USER: ecs.Secret.fromSecretsManager(smtpSecret, 'user'),
         SMTP_PASSWORD: ecs.Secret.fromSecretsManager(smtpSecret, 'pass'),
 
-        // Include google config if provided
-        ...(googleConfigSecrets ?? {}),
+        // Include any auth config secrets
+        ...authSecrets,
       },
       logging: ecs.LogDriver.awsLogs({
         streamPrefix: 'faims-conductor',
@@ -298,6 +341,13 @@ export class FaimsConductor extends Construct {
     // Create the ECS Cluster
     const cluster = new ecs.Cluster(this, 'ConductorCluster', {
       vpc: props.vpc,
+      // Enable enhanced metrics - this gives container/task level insights and
+      // more metrics
+      ...(props.config.enhancedObservability
+        ? {
+            containerInsightsV2: ecs.ContainerInsights.ENHANCED,
+          }
+        : {}),
     });
 
     // Create Security Group for the Fargate service
@@ -315,7 +365,8 @@ export class FaimsConductor extends Construct {
     this.fargateService = new ecs.FargateService(this, 'conductor-service', {
       cluster: cluster,
       taskDefinition: conductorTaskDfn,
-      desiredCount: 1,
+      // Target number of tasks to run
+      desiredCount: props.config.autoScaling.desiredCapacity,
       securityGroups: [serviceSecurityGroup],
       assignPublicIp: true, // TODO Change this if using private subnets with NAT
     });
@@ -419,3 +470,10 @@ export class FaimsConductor extends Construct {
     );
   }
 }
+
+const camelToSnakeCase = (str: string): string => {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .replace(/[\s-]+/g, '_')
+    .toUpperCase();
+};

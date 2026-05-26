@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {TestWrapper} from '../fields/utils';
+import {TestWrapper} from '../testUtils';
 import {act, cleanup, render, screen} from '@testing-library/react';
 import Notebook from './notebook';
 import {expect, vi, afterEach, it, describe} from 'vitest';

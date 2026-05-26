@@ -37,12 +37,25 @@ import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 type PairList = [string, string][];
+
 type Props = {
   fieldName: string;
 };
 
+type RelatedRecordConfig = {
+  multiple: boolean;
+  relatedType: string;
+  relatedTypeLabel: string;
+  relationType: string;
+  relationLinkedPair: PairList;
+  allowLinkToExisting: boolean;
+  hideCreateAnotherButton: boolean;
+};
+
+/** Related record selector: target form, cardinality, relation type, linked vocab pairs. */
 export const RelatedRecordEditor = ({fieldName}: Props) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -56,51 +69,35 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
   const [newOption2, setNewOption2] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // returns array of key-value pairs (entries) with format: [[string, {}]]
-  const arrOfEntries = Object.entries(viewsets);
+  const viewsetEntries = Object.entries(viewsets);
 
-  const getPairs = () => {
-    let pairs: PairList = [];
-    if (field['component-parameters'].relation_linked_vocabPair) {
-      pairs = field['component-parameters'].relation_linked_vocabPair;
-    }
-    return pairs;
+  const componentParams = field['component-parameters'];
+
+  const getLinkedPairs = (): PairList => {
+    return componentParams.relation_linked_vocabPair ?? [];
   };
 
-  const pairs = getPairs();
+  const pairs = getLinkedPairs();
 
-  // initial value of each property
-  const state = {
-    multiple: (field['component-parameters'].multiple as boolean) || false,
-    relatedType: (field['component-parameters'].related_type as string) || '',
-    relatedTypeLabel:
-      (field['component-parameters'].related_type_label as string) || '',
-    relationType: (field['component-parameters'].relation_type as string) || '',
+  const state: RelatedRecordConfig = {
+    multiple: (componentParams.multiple as boolean) ?? false,
+    relatedType: (componentParams.related_type as string) ?? '',
+    relatedTypeLabel: (componentParams.related_type_label as string) ?? '',
+    relationType: (componentParams.relation_type as string) ?? '',
     relationLinkedPair:
-      (field['component-parameters'].relation_linked_vocabPair as PairList) ||
-      [],
+      (componentParams.relation_linked_vocabPair as PairList) ?? [],
     allowLinkToExisting:
-      (field['component-parameters'].allowLinkToExisting as boolean) ?? false,
+      (componentParams.allowLinkToExisting as boolean) ?? false,
+    hideCreateAnotherButton:
+      (componentParams.hideCreateAnotherButton as boolean) ?? false,
   };
 
-  type newState = {
-    multiple: boolean;
-    relatedType: string;
-    relatedTypeLabel: string;
-    relationType: string;
-    relationLinkedPair: PairList;
-    allowLinkToExisting: boolean;
+  const updateField = (name: string, newField: FieldType) => {
+    dispatch(fieldUpdated({fieldName: name, newField}));
   };
 
-  const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-  };
-
-  const updateFieldFromState = (newState: newState) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+  const updateFieldFromState = (newState: RelatedRecordConfig) => {
+    const newField: FieldType = JSON.parse(JSON.stringify(field));
 
     newField['component-parameters'].multiple = newState.multiple;
     newField['component-parameters'].related_type = newState.relatedType;
@@ -110,29 +107,29 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
     newField['component-parameters'].relation_linked_vocabPair =
       newState.relationLinkedPair;
     newField['component-parameters'].allowLinkToExisting =
-      newState.allowLinkToExisting ?? false;
+      newState.allowLinkToExisting;
+    newField['component-parameters'].hideCreateAnotherButton =
+      newState.hideCreateAnotherButton;
 
     updateField(fieldName, newField);
   };
 
   const updateProperty = (
-    prop: string,
-    value: string | boolean | string[] | PairList
+    prop: keyof RelatedRecordConfig,
+    value: string | boolean | PairList
   ) => {
     if (prop === 'relatedType') {
-      arrOfEntries.forEach(key => {
-        if (key.indexOf(value as string) === 0) {
-          // update the related_type prop along with the related_type_label prop
-          const newState: newState = {
-            ...state,
-            relatedType: value as string,
-            relatedTypeLabel: key[1].label,
-          };
-          updateFieldFromState(newState);
-        }
-      });
+      const matchingEntry = viewsetEntries.find(([key]) => key === value);
+      if (matchingEntry) {
+        const newState: RelatedRecordConfig = {
+          ...state,
+          relatedType: value as string,
+          relatedTypeLabel: matchingEntry[1].label,
+        };
+        updateFieldFromState(newState);
+      }
     } else {
-      const newState: newState = {...state, [prop]: value};
+      const newState: RelatedRecordConfig = {...state, [prop]: value};
       updateFieldFromState(newState);
     }
   };
@@ -140,36 +137,37 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
   const addPair = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const empty = () => {
-      if (newOption1.trim().length === 0 || newOption2.trim().length === 0) {
-        return true;
-      } else return false;
-    };
+    const trimmedOption1 = newOption1.trim();
+    const trimmedOption2 = newOption2.trim();
 
-    // TO DO: duplicates check, both between other sub-arrays and within own pair
-
-    if (empty()) {
+    if (trimmedOption1.length === 0 || trimmedOption2.length === 0) {
       setErrorMessage('Cannot add an empty option!');
-    } else {
-      const newPairs: PairList = [...pairs, [newOption1, newOption2]];
-      updateProperty('relationLinkedPair', newPairs);
-      setErrorMessage('');
+      return;
     }
+
+    // Check for duplicate pairs
+    const isDuplicate = pairs.some(
+      ([first, second]) => first === trimmedOption1 && second === trimmedOption2
+    );
+
+    if (isDuplicate) {
+      setErrorMessage('This pair already exists!');
+      return;
+    }
+
+    const newPairs: PairList = [...pairs, [trimmedOption1, trimmedOption2]];
+    updateProperty('relationLinkedPair', newPairs);
+    setErrorMessage('');
     setNewOption1('');
     setNewOption2('');
   };
 
-  const removePair = (pair: string[]) => {
-    // inspired by https://stackoverflow.com/questions/62629289/remove-subarray-from-array-in-javascript
-    const newPairs = [];
-    for (let i = 0; i < pairs.length; i++) {
-      if (
-        pairs[i].length !== pair.length ||
-        !pair.every((item, j) => item === pairs[i][j])
-      ) {
-        newPairs.push(pairs[i]);
-      }
-    }
+  const removePair = (pairToRemove: string[]) => {
+    const newPairs = pairs.filter(
+      pair =>
+        pair.length !== pairToRemove.length ||
+        !pairToRemove.every((item, index) => item === pair[index])
+    );
     updateProperty('relationLinkedPair', newPairs);
   };
 
@@ -180,7 +178,6 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
           <Grid container p={2} rowSpacing={3}>
             <Grid item xs={12} sm={3}>
               <FormControlLabel
-                required
                 control={
                   <Checkbox
                     checked={state.multiple}
@@ -198,9 +195,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={
-                      field['component-parameters'].allowLinkToExisting ?? false
-                    }
+                    checked={state.allowLinkToExisting}
                     onChange={e =>
                       updateProperty('allowLinkToExisting', e.target.checked)
                     }
@@ -216,12 +211,33 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
             </Grid>
 
             <Grid item xs={12} sm={3}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={state.hideCreateAnotherButton}
+                    onChange={e =>
+                      updateProperty(
+                        'hideCreateAnotherButton',
+                        e.target.checked
+                      )
+                    }
+                  />
+                }
+                label="Hide the 'Create Another' Button"
+              />
+              <FormHelperText>
+                If <b>unchecked</b>, displays a button allowing users to quickly
+                create another related record after saving one.
+              </FormHelperText>
+            </Grid>
+
+            <Grid item xs={12} sm={3}>
               <FormControl required sx={{minWidth: 150}}>
-                <InputLabel id="featureType-label">
+                <InputLabel id="relationType-label">
                   Select Relation Type
                 </InputLabel>
                 <Select
-                  labelId="featureType-label"
+                  labelId="relationType-label"
                   label="Select Relation Type *"
                   value={state.relationType}
                   onChange={e => updateProperty('relationType', e.target.value)}
@@ -243,13 +259,11 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                   value={state.relatedType}
                   onChange={e => updateProperty('relatedType', e.target.value)}
                 >
-                  {arrOfEntries.map(entry => {
-                    return (
-                      <MenuItem key={entry[0]} value={entry[0]}>
-                        {entry[1].label}
-                      </MenuItem>
-                    );
-                  })}
+                  {viewsetEntries.map(([key, viewset]) => (
+                    <MenuItem key={key} value={key}>
+                      {viewset.label}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -273,7 +287,6 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
       </Grid>
 
       {state.relationType === 'faims-core::Linked' && (
-        // TO DO: fix layout (I think it's confusing as it is right now, needs more user guidance)
         <Grid item xs={12}>
           <Card variant="outlined" sx={{display: 'flex'}}>
             <Grid container p={2} columnSpacing={3} rowSpacing={3}>
@@ -307,7 +320,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                       type="submit"
                       sx={{my: 1.5}}
                     >
-                      ADD{' '}
+                      ADD
                     </Button>
                   </Grid>
                 </form>
@@ -315,26 +328,24 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <List>
-                  {pairs.map((outer: string[], idx: number) => {
-                    return (
-                      <ListItem
-                        key={idx}
-                        secondaryAction={
-                          <IconButton
-                            edge="end"
-                            aria-label="delete"
-                            onClick={() => removePair(outer)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        }
-                      >
-                        {pairs[idx].map((inner: string, idx: number) => {
-                          return <ListItemText key={idx} primary={inner} />;
-                        })}
-                      </ListItem>
-                    );
-                  })}
+                  {pairs.map((pair, index) => (
+                    <ListItem
+                      key={index}
+                      secondaryAction={
+                        <IconButton
+                          edge="end"
+                          aria-label="delete"
+                          onClick={() => removePair(pair)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      }
+                    >
+                      {pair.map((item, itemIndex) => (
+                        <ListItemText key={itemIndex} primary={item} />
+                      ))}
+                    </ListItem>
+                  ))}
                 </List>
               </Grid>
             </Grid>

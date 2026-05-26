@@ -46,6 +46,8 @@ source_suffix = {
 
 master_doc = 'index'
 
+myst_heading_anchors = 3
+
 # TOC Tree builder - finds all markdown files and builds them into top level toc
 # tree
 

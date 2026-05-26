@@ -92,7 +92,7 @@ export const createRandomRecord = async (
 
   const annotations: {[key: string]: any} = {};
   fields.map((field: string) => {
-    annotations[field] = {annotations: '', uncertainty: false};
+    annotations[field] = {annotation: '', uncertainty: false};
   });
 
   const newRecord: Record = {
@@ -142,8 +142,8 @@ const generateValue = (field: any) => {
     case 'faims-core::String':
       return 'Bobalooba';
     case 'faims-attachment::Files': {
-      const image = readFileSync(SAMPLE_IMAGE_FILE);
-      const buffer = Buffer.from(image);
+      const buffer = readFileSync(SAMPLE_IMAGE_FILE);
+      //const buffer = Buffer.from(image);
       return [{type: 'image/jpeg', data: buffer}];
     }
     case 'faims-core::Integer':
@@ -261,17 +261,25 @@ export const validateProjectDatabase = async (project_id: ProjectID) => {
 
   if (revisionIDs.size > 0)
     errors.push(
-      `found ${revisionIDs.size} revisions not referenced in any record: ${Array.from(revisionIDs)}`
+      `found ${
+        revisionIDs.size
+      } revisions not referenced in any record: ${Array.from(revisionIDs)}`
     );
 
   if (avpIDs.size > 0)
     errors.push(
-      `found ${avpIDs.size} AVP documents not referenced in any revision: ${Array.from(avpIDs)}`
+      `found ${
+        avpIDs.size
+      } AVP documents not referenced in any revision: ${Array.from(avpIDs)}`
     );
 
   if (attIDs.size > 0)
     errors.push(
-      `found ${attIDs.size} attachment documents not referenced in any revision: ${Array.from(attIDs)}`
+      `found ${
+        attIDs.size
+      } attachment documents not referenced in any revision: ${Array.from(
+        attIDs
+      )}`
     );
 
   return {errors: errors};

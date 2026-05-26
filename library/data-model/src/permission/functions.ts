@@ -113,6 +113,136 @@ export function isAuthorized({
 }
 
 /**
+ * True if any **global** role (including inherited actions) grants the action.
+ * Use when there is no resource id (e.g. list/table UI), including for actions
+ * that are resource-specific but granted only via global roles.
+ */
+export function globalRolesGrantAction(
+  decodedToken: DecodedTokenPermissions,
+  action: Action
+): boolean {
+  return roleGrantsAction({roles: decodedToken.globalRoles, action});
+}
+
+/**
+ * Whether the user may read a template (via private roles or the public list).
+ */
+export function userCanReadTemplateDocument({
+  decodedToken,
+  template,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  template: {_id: string; isPublic?: boolean};
+}): boolean {
+  if (
+    isAuthorized({
+      decodedToken,
+      action: Action.READ_TEMPLATE_DETAILS,
+      resourceId: template._id,
+    })
+  ) {
+    return true;
+  }
+  if (
+    template.isPublic === true &&
+    isAuthorized({
+      decodedToken,
+      action: Action.READ_PUBLIC_TEMPLATE_DETAILS,
+    })
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Record owner comes from the record document's `created_by` / hydrated `createdBy`
+ * — same identifier space as API `user_id` and JWT `sub` / app username.
+ */
+export function canReadProjectRecord({
+  decodedToken,
+  projectId,
+  recordCreatedBy,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  projectId: string;
+  recordCreatedBy: string;
+  actingUserId: string;
+}): boolean {
+  const isMine = recordCreatedBy === actingUserId;
+  const action = isMine
+    ? Action.READ_MY_PROJECT_RECORDS
+    : Action.READ_ALL_PROJECT_RECORDS;
+  return isAuthorized({decodedToken, action, resourceId: projectId});
+}
+
+export function canEditProjectRecord({
+  decodedToken,
+  projectId,
+  recordCreatedBy,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  projectId: string;
+  recordCreatedBy: string;
+  actingUserId: string;
+}): boolean {
+  const isMine = recordCreatedBy === actingUserId;
+  const action = isMine
+    ? Action.EDIT_MY_PROJECT_RECORDS
+    : Action.EDIT_ALL_PROJECT_RECORDS;
+  return isAuthorized({decodedToken, action, resourceId: projectId});
+}
+
+export function canDeleteProjectRecord({
+  decodedToken,
+  projectId,
+  recordCreatedBy,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  projectId: string;
+  recordCreatedBy: string;
+  actingUserId: string;
+}): boolean {
+  const isMine = recordCreatedBy === actingUserId;
+  const action = isMine
+    ? Action.DELETE_MY_PROJECT_RECORDS
+    : Action.DELETE_ALL_PROJECT_RECORDS;
+  return isAuthorized({decodedToken, action, resourceId: projectId});
+}
+
+/**
+ * What resources does this user have permission for with a resource-specific
+ * action?
+ */
+export function getUserResourcesForAction({
+  decodedToken,
+  action,
+}: {
+  decodedToken?: DecodedTokenPermissions | null;
+  action: Action;
+}): Array<string> {
+  const authorizedResources: Array<string> = [];
+
+  // if token is not there, we can't access any resources
+  if (!decodedToken) return authorizedResources;
+
+  // Check resource-specific roles for access
+  for (const resourceRole of decodedToken.resourceRoles) {
+    if (
+      resourceRole.resourceId &&
+      roleGrantsAction({roles: [resourceRole.role], action})
+    ) {
+      authorizedResources.push(resourceRole.resourceId);
+    }
+  }
+
+  return authorizedResources;
+}
+
+/**
  * Maps a add/remove role operation to the corresponding action needed
  * @param add Whether this is an add operation (true) or remove operation (false)
  * @param role The role being added or removed
@@ -236,7 +366,7 @@ export function teamInviteToAction({
     } else {
       actionNeeded = Action.DELETE_MANAGER_TEAM_INVITE;
     }
-  } else if (role === Role.TEAM_MEMBER) {
+  } else if (role === Role.TEAM_MEMBER || role === Role.TEAM_MEMBER_CREATOR) {
     if (action === 'create') {
       actionNeeded = Action.CREATE_MEMBER_TEAM_INVITE;
     } else {
@@ -258,12 +388,15 @@ export function teamInviteToAction({
  * @returns The corresponding permission action
  */
 export function getTeamMembershipAction(role: Role, add: boolean): Action {
+  console.log('getTeamMembershipAction', role, add);
   switch (role) {
     case Role.TEAM_ADMIN:
       return add ? Action.ADD_ADMIN_TO_TEAM : Action.REMOVE_ADMIN_FROM_TEAM;
     case Role.TEAM_MANAGER:
       return add ? Action.ADD_MANAGER_TO_TEAM : Action.REMOVE_MANAGER_FROM_TEAM;
     case Role.TEAM_MEMBER:
+      return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
+    case Role.TEAM_MEMBER_CREATOR:
       return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
     default:
       throw new Error(`Invalid team role: ${role}`);

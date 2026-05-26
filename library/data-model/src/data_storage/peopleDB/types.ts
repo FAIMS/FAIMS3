@@ -21,6 +21,7 @@ import {z} from 'zod';
 import {Role} from '../../permission/model';
 import {resourceRoleSchema} from '../../permission/types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
+import {DatabaseInterface} from '../../types';
 
 // Basic types defined as Zod schemas
 export const ServiceIDSchema = z.string();
@@ -134,8 +135,15 @@ export type VerifiableEmail = z.infer<typeof VerifiableEmailSchema>;
 export type PeopleV4Fields = z.infer<typeof PeopleV4FieldsSchema>;
 export type PeopleV4Document = PouchDB.Core.ExistingDocument<PeopleV4Fields>;
 
-// Current Version (V3)
-export const PeopleDBFieldsSchema = PeopleV4FieldsSchema;
+// V5: account can be disabled (soft-off) without deleting the document
+export const PeopleV5FieldsSchema = PeopleV4FieldsSchema.extend({
+  disabled: z.boolean().optional(),
+});
+export type PeopleV5Fields = z.infer<typeof PeopleV5FieldsSchema>;
+export type PeopleV5Document = PouchDB.Core.ExistingDocument<PeopleV5Fields>;
+
+// Current version
+export const PeopleDBFieldsSchema = PeopleV5FieldsSchema;
 export type PeopleDBFields = z.infer<typeof PeopleDBFieldsSchema>;
 
 // Document
@@ -152,4 +160,4 @@ export type ExistingPeopleDBDocument = z.infer<
 >;
 
 // Database
-export type PeopleDB = PouchDB.Database<PeopleDBFields>;
+export type PeopleDB = DatabaseInterface<PeopleDBFields>;

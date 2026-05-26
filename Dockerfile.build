@@ -1,10 +1,9 @@
 # syntax=docker/dockerfile:1
-
 # BASED ON https://turbo.build/repo/docs/guides/tools/docker
 # AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
 
-# Use Node 20 base
-FROM node:20-alpine AS alpine
+# Use Node 22 base
+FROM node:22-alpine AS alpine
 
 # What is the @faims3/... name of the package to build
 ARG PACKAGE_NAME
@@ -15,23 +14,24 @@ ENV PACKAGE_NAME=${PACKAGE_NAME}
 ARG NODE_RUN_DIR
 ENV NODE_RUN_DIR=${NODE_RUN_DIR}
 
+# Setup pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
+RUN corepack enable
+
 # install some dependencies
-RUN apk update && apk add --no-cache libc6-compat
+# RUN apk update && apk add --no-cache libc6-compat
 
 # create this layer to use to avoid repeatedly installing
 FROM alpine AS base
 
 # PRUNE TO GET DEPENDENCIES [pruner]
 # ===================================
-
 # Use turbo to prune package dependencies
 FROM base AS pruner
 
 # work in /app folder
 WORKDIR /app
-
-# install turbo global
-RUN npm install turbo@^2.0.11 -g
 
 # copy everything into pruner
 COPY . .
@@ -39,12 +39,11 @@ COPY . .
 # prune using turbo for only faims3 and it's dependencies. This produces an
 # /app/out folder which has /full (all needed deps) or /json (package*.json
 # only)
-RUN turbo prune ${PACKAGE_NAME} --docker
-
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm dlx turbo@^2.0.11 prune ${PACKAGE_NAME} --docker
 
 # INSTALL PACKAGES [builder]
 # ============================
-
 # add lockfiles dependencies
 FROM base AS builder
 
@@ -52,19 +51,19 @@ WORKDIR /app
 
 # Install dependencies
 COPY .gitignore .gitignore
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
-# install turbo global
-RUN npm install turbo@^2.0.11 -g
-RUN npm install
-
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Build the project 
 COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/out/json/ json
 
 # build packages using turbo
-RUN turbo run build --filter=${PACKAGE_NAME}
+RUN pnpm exec turbo run build --filter=${PACKAGE_NAME}
 
 # Package all necessary files to run app into pruner out
 COPY bundle.sh .
@@ -72,8 +71,8 @@ RUN sh bundle.sh json . out && cp -R json/* /app/out/
 
 # PRODUCTION RUNNER [runner]
 # ==========================
-
 FROM alpine AS runner
+
 WORKDIR /app
 
 # Don't run production as root
@@ -86,8 +85,4 @@ COPY --from=builder /app/out .
 
 # Run the node app
 WORKDIR /app/${NODE_RUN_DIR}
-
 CMD ["node", "index.js"]
-
-
-

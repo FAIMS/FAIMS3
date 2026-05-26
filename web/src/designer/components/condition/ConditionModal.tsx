@@ -6,39 +6,132 @@
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law-abiding by applicable law or agreed to in writing, software
+// Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Button, Dialog} from '@mui/material';
-import {useState} from 'react';
-import {ConditionControl} from './ConditionControl';
-import {ConditionProps} from './types';
-import QuizIcon from '@mui/icons-material/Quiz';
+/**
+ * @file Modal entry point for editing a visibility condition with save/cancel.
+ */
 
-export const ConditionModal = (props: ConditionProps & {label: string}) => {
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  SxProps,
+  Stack,
+  Theme,
+} from '@mui/material';
+import type {ReactNode} from 'react';
+import {useCallback, useEffect, useState} from 'react';
+import {ConditionControl} from './ConditionControl';
+import {ConditionProps, ConditionType} from '../../types/condition';
+import QuizIcon from '@mui/icons-material/Quiz';
+import {designerCancelButtonSx, designerDialogContentSx} from '../designer-style';
+
+/** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
+export const ConditionModal = (
+  props: ConditionProps & {
+    label: string;
+    icon?: ReactNode;
+    buttonSx?: SxProps<Theme>;
+  }
+) => {
   const [open, setOpen] = useState(false);
+  // Local draft copy
+  const [draft, setDraft] = useState<ConditionType | null>(
+    props.initial ?? null
+  );
+
+  // Reset the draft whenever the parent value changes while closed
+  // Doing it this way because the modal exists even when closed
+  useEffect(() => {
+    if (!open) setDraft(props.initial ?? null);
+  }, [props.initial, open]);
+
+  // Open the dialog and refresh draft from parent prop
+  const handleOpen = () => {
+    setDraft(props.initial ?? null);
+    setOpen(true);
+  };
+
+  const close = () => setOpen(false);
+
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  // Warn when cancelling
+  const handleCancel = useCallback(() => {
+    const changed =
+      JSON.stringify(draft) !== JSON.stringify(props.initial || null);
+    if (changed) setConfirmCancel(true);
+    else close();
+  }, [draft, props.initial]);
+
+  const handleCancelConfirm = () => {
+    setConfirmCancel(false);
+    close();
+  };
+
+  // Commit draft
+  const handleSave = () => {
+    if (props.onChange) props.onChange(draft);
+    close();
+  };
 
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
         size="small"
-        startIcon={<QuizIcon />}
+        startIcon={props.icon ?? <QuizIcon />}
+        sx={props.buttonSx}
       >
         {props.label}
       </Button>
-      <Dialog open={open} fullWidth={true} maxWidth="lg">
-        <ConditionControl
-          initial={props.initial}
-          onChange={props.onChange}
-          field={props.field}
-          view={props.view}
-        />
 
-        <Button onClick={() => setOpen(false)}>Close</Button>
+      <Dialog open={open} fullWidth={true} maxWidth="lg" onClose={handleCancel}>
+        <DialogContent sx={designerDialogContentSx}>
+          <ConditionControl
+            initial={draft}
+            onChange={setDraft}
+            field={props.field}
+            view={props.view}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          {confirmCancel && (
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                sx={designerCancelButtonSx}
+                onClick={() => setConfirmCancel(false)}
+              >
+                Continue Editing
+              </Button>
+              <Button
+                color="warning"
+                variant="contained"
+                onClick={handleCancelConfirm}
+              >
+                Confirm discard changes
+              </Button>
+            </Stack>
+          )}
+          {!confirmCancel && (
+            <Stack direction="row" spacing={2}>
+              <Button variant="outlined" sx={designerCancelButtonSx} onClick={handleCancel}>
+                Cancel Edit
+              </Button>
+              <Button variant="contained" onClick={handleSave}>
+                Save Changes
+              </Button>
+            </Stack>
+          )}
+        </DialogActions>
       </Dialog>
     </>
   );

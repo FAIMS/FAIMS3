@@ -9,9 +9,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {Project} from '../../../context/slices/projectSlice';
 import MetadataRenderer from '../metadataRenderer';
-import RangeHeader from './range_header';
 
 interface MetadataDisplayComponentProps {
   project: Project;
@@ -46,7 +46,7 @@ export const MetadataDisplayComponent = (
             flexGrow: 1,
           }}
         >
-          Survey Details
+          {NOTEBOOK_NAME_CAPITALIZED} Details
         </Typography>
       </Box>
 
@@ -125,18 +125,6 @@ export const MetadataDisplayComponent = (
               <TableBody>
                 <TableRow>
                   <TableCell>
-                    <Typography variant={'overline'}>Status</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <MetadataRenderer
-                      project_id={props.project.projectId}
-                      metadata_key={'project_status'}
-                      chips={false}
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
                     <Typography variant={'overline'}>
                       Lead Institution
                     </Typography>
@@ -176,12 +164,6 @@ export const MetadataDisplayComponent = (
               </TableBody>
             </Table>
           </TableContainer>
-        </Grid>
-        <Grid item xs={12} sm={12} md={12} lg={4}>
-          <RangeHeader
-            project={props.project}
-            handleAIEdit={props.handleTabChange}
-          />
         </Grid>
       </Grid>
     </>

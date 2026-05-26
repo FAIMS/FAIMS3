@@ -21,6 +21,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import {
+  arrayMove,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
@@ -29,7 +30,6 @@ import {CSS} from '@dnd-kit/utilities';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import {
@@ -41,10 +41,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   FormControlLabel,
+  FormLabel,
   Grid,
   IconButton,
-  Paper,
+  Radio,
+  RadioGroup,
   Stack,
   Table,
   TableBody,
@@ -56,19 +59,25 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useState} from 'react';
+import {alpha} from '@mui/material/styles';
+import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
+import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
+import {
+  designerCancelButtonSx,
+  designerCheckboxSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
+  designerInfoIconSx,
+} from '../designer-style';
+import {DragHandle} from '../drag-handle';
 import {
   findOptionReferences,
   updateConditionReferences,
-} from '../condition/utils';
-
-import {
-  fieldUpdated,
-  sectionConditionChanged,
-} from '../../state/uiSpec-reducer';
+} from '../../domain/conditions/conditionReferences';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -121,6 +130,133 @@ interface SortableItemProps {
   totalItems: number;
 }
 
+const OTHER_OPTION_ID = '__other__';
+
+interface OtherOptionRowProps {
+  id: string;
+  showExclusiveOptions?: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}
+
+/**
+ * "Other" option row — drags via shared drag handle and also offers up/down
+ * arrows to nudge its position, exactly like normal option rows. Not pinned.
+ */
+const SortableOtherOptionRow = ({
+  id,
+  showExclusiveOptions,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: OtherOptionRowProps) => {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id});
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      sx={optionRowSx}
+    >
+      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
+        <DragHandle
+          compact
+          label="Drag Other option to reorder"
+          dragAttributes={attributes}
+          dragListeners={listeners}
+        />
+      </TableCell>
+
+      <TableCell sx={{py: 1, minWidth: 0}}>
+        <Tooltip title="Allows custom text input">
+          <Typography
+            sx={{
+              maxWidth: '100%',
+              fontSize: '0.875rem',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            Other{' '}
+            <Typography
+              component="span"
+              sx={{
+                fontSize: '0.75rem',
+                color: 'rgba(0, 0, 0, 0.6)',
+              }}
+            >
+              (allows custom text input)
+            </Typography>
+          </Typography>
+        </Tooltip>
+      </TableCell>
+
+      {/* Empty exclusive checkbox column for alignment */}
+      {showExclusiveOptions && (
+        <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}} />
+      )}
+
+      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
+        <Tooltip title="Move up">
+          <span>
+            <IconButton
+              size="small"
+              disabled={isFirst}
+              onClick={onMoveUp}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
+            >
+              <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Move down">
+          <span>
+            <IconButton
+              size="small"
+              disabled={isLast}
+              onClick={onMoveDown}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
+            >
+              <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Remove 'Other' option">
+          <IconButton
+            size="small"
+            onClick={onRemove}
+            sx={{p: {xs: 0.25, sm: 0.5}, color: 'error.main'}}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+/** Shared row styling: subtle background + clear hover state + row divider. */
+const optionRowSx = {
+  backgroundColor: alpha('#000', 0.015),
+  borderBottom: '1px solid',
+  borderColor: alpha('#000', 0.08),
+  transition: 'background-color 140ms ease',
+  '&:last-of-type': {borderBottom: 'none'},
+  '&:hover': {
+    backgroundColor: alpha('#1976d2', 0.06),
+  },
+} as const;
+
 /**
  * Individual sortable item row component for the options table
  * Handles drag-and-drop functionality and row actions
@@ -148,31 +284,33 @@ const SortableItem = ({
     <TableRow
       ref={setNodeRef}
       style={{
-        // transform the row based on the drag state
         transform: CSS.Transform.toString(transform),
-        // use sortable provides transition information
         transition,
-        // make it less opacity when draggin
         opacity: isDragging ? 0.5 : 1,
       }}
+      sx={optionRowSx}
     >
       {/* Drag handle column */}
-      <TableCell sx={{width: '40px', py: 1}}>
-        <IconButton
-          size="small"
-          sx={{cursor: 'grab', p: 0.5}}
-          // attach all the use draggable stuff
-          {...attributes}
-          {...listeners}
-        >
-          <DragIndicatorIcon />
-        </IconButton>
+      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
+        <DragHandle
+          compact
+          label="Drag option to reorder"
+          dragAttributes={attributes}
+          dragListeners={listeners}
+        />
       </TableCell>
 
       {/* Option text column with tooltip */}
-      <TableCell sx={{py: 1}}>
+      <TableCell sx={{py: 1, minWidth: 0}}>
         <Tooltip title={option.label}>
-          <Typography noWrap sx={{maxWidth: 400, fontSize: '0.875rem'}}>
+          <Typography
+            sx={{
+              maxWidth: '100%',
+              fontSize: '0.875rem',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
+            }}
+          >
             {option.label}
           </Typography>
         </Tooltip>
@@ -180,52 +318,72 @@ const SortableItem = ({
 
       {/* Optional exclusive checkbox column */}
       {showExclusiveOptions && (
-        <TableCell align="center" sx={{py: 1}}>
+        <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}}>
           <Checkbox
             checked={exclusiveOptions.includes(option.value)}
             onChange={() => onExclusiveToggle(option.value)}
             size="small"
+            sx={designerCheckboxSx}
           />
         </TableCell>
       )}
 
       {/* Action buttons column */}
-      <TableCell align="right" sx={{py: 1}}>
+      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
         <Tooltip title="Move up">
-          <IconButton
-            size="small"
-            disabled={index === 0}
-            onClick={() => onMove(index, 'up')}
-            sx={{p: 0.5}}
-          >
-            <ArrowDropUpRoundedIcon fontSize="large" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              disabled={index === 0}
+              onClick={() => onMove(index, 'up')}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
+            >
+              <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+            </IconButton>
+          </span>
         </Tooltip>
         <Tooltip title="Move down">
+          <span>
+            <IconButton
+              size="small"
+              disabled={index === totalItems - 1}
+              onClick={() => onMove(index, 'down')}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
+            >
+              <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Edit option">
           <IconButton
             size="small"
-            disabled={index === totalItems - 1}
-            onClick={() => onMove(index, 'down')}
-            sx={{p: 0.5}}
+            onClick={() => onEdit(option.label, index)}
+            sx={{p: {xs: 0.25, sm: 0.5}, color: 'success.main'}}
           >
-            <ArrowDropDownRoundedIcon fontSize="large" />
+            <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <IconButton
-          size="small"
-          onClick={() => onEdit(option.label, index)}
-          sx={{p: 0.5}}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-        <IconButton size="small" onClick={() => onRemove(option)} sx={{p: 0.5}}>
-          <DeleteIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title="Delete option">
+          <IconButton
+            size="small"
+            onClick={() => onRemove(option)}
+            sx={{p: {xs: 0.25, sm: 0.5}, color: 'error.main'}}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </TableCell>
     </TableRow>
   );
 };
 
+type CombinedRow =
+  | {id: string; type: 'option'; option: {label: string; value: string}}
+  | {id: string; type: 'other'};
+
+/**
+ * Select / MultiSelect / Radio options table: reorder (dnd), edit, exclusive sets, condition ref updates.
+ */
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
@@ -256,8 +414,11 @@ export const OptionsEditor = ({
 
   // Component state
   const isShowExpandedList =
-    field['component-parameters'].ElementProps?.expandedChecklist ?? false;
+    field['component-parameters'].ElementProps?.expandedChecklist ?? true;
+  const isDropdownMode = !isShowExpandedList;
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
+  const fieldComponent = field['component-name'];
+  const isMultiSelectField = fieldComponent === 'MultiSelect';
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
@@ -268,6 +429,7 @@ export const OptionsEditor = ({
   } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
+  const addOptionHasError = Boolean(errorMessage) && !editingOption;
 
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
@@ -275,9 +437,49 @@ export const OptionsEditor = ({
     updateConditions: boolean;
   } | null>(null);
 
-  const options = field['component-parameters'].ElementProps?.options || [];
-  const exclusiveOptions =
+  const options: Array<{label: string; value: string}> =
+    field['component-parameters'].ElementProps?.options || [];
+  const exclusiveOptions: string[] =
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
+  const enableOther: boolean =
+    field['component-parameters'].ElementProps?.enableOtherOption ?? false;
+  const otherOptionPosition: number =
+    field['component-parameters'].ElementProps?.otherOptionPosition ??
+    options.length;
+
+  /**
+   * made a combined list (options + other) in visual order.
+   * This combined list is thee source of truth for sortable order.
+   */
+  const combinedRows: CombinedRow[] = useMemo(() => {
+    const rows: CombinedRow[] = [];
+    let insertedOther = false;
+
+    if (!enableOther) {
+      return options.map(o => ({id: o.value, type: 'option', option: o}));
+    }
+
+    const safeOtherPos = Math.max(
+      0,
+      Math.min(otherOptionPosition, options.length)
+    );
+
+    for (let i = 0; i <= options.length; i++) {
+      if (i === safeOtherPos && !insertedOther) {
+        rows.push({id: OTHER_OPTION_ID, type: 'other'});
+        insertedOther = true;
+      }
+      if (i < options.length) {
+        rows.push({id: options[i].value, type: 'option', option: options[i]});
+      }
+    }
+
+    if (!insertedOther) {
+      rows.push({id: OTHER_OPTION_ID, type: 'other'});
+    }
+
+    return rows;
+  }, [enableOther, options, otherOptionPosition]);
 
   /**
    * Validates option text for duplicates and empty values
@@ -308,7 +510,8 @@ export const OptionsEditor = ({
    */
   const updateField = (
     updatedOptions: Array<{label: string; value: string}>,
-    updatedExclusiveOptions: string[]
+    updatedExclusiveOptions: string[],
+    updatedOtherOptionPosition?: number
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
@@ -325,12 +528,19 @@ export const OptionsEditor = ({
         return o;
       }),
       exclusiveOptions: updatedExclusiveOptions,
+      ...(enableOther
+        ? {
+            otherOptionPosition:
+              updatedOtherOptionPosition !== undefined
+                ? updatedOtherOptionPosition
+                : otherOptionPosition,
+          }
+        : updatedOtherOptionPosition !== undefined
+          ? {otherOptionPosition: updatedOtherOptionPosition}
+          : {}),
     };
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -380,24 +590,44 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Handles drag-and-drop reordering
+   * Handles drag-and-drop reordering for regular options only.
+   * "Other" option uses arrow buttons for positioning (not drag-and-drop).
    */
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
 
-    // if we are over something - and the over id is not equal to the active id
-    // (i.e. we have moved)
-    if (over && active.id !== over.id) {
-      const oldIndex = options.findIndex(item => item.value === active.id);
-      const newIndex = options.findIndex(item => item.value === over.id);
+    if (!over) return;
 
-      // Reorder options array
-      const newOptions = [...options];
-      const [movedItem] = newOptions.splice(oldIndex, 1);
-      newOptions.splice(newIndex, 0, movedItem);
+    if (active.id === over.id) return;
 
-      updateField(newOptions, exclusiveOptions);
-    }
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Only handle drag if we have a valid drop target and it's different from source
+    // if (!over || active.id === over.id) return;
+
+    const oldIndex = combinedRows.findIndex(r => r.id === activeId);
+    const newIndex = combinedRows.findIndex(r => r.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newCombined = arrayMove(combinedRows, oldIndex, newIndex);
+
+    // Rebuild options array from the combined order (excluding Other)
+    const optionMap = new Map(options.map(o => [o.value, o]));
+    const newOptions = newCombined
+      .filter(r => r.type === 'option')
+      .map(r => optionMap.get(r.id))
+      .filter(Boolean) as Array<{label: string; value: string}>;
+
+    // Safety: if mapping failed, do nothing
+    if (newOptions.length !== options.length) return;
+
+    const newOtherOptionPosition = enableOther
+      ? newCombined.findIndex(r => r.type === 'other')
+      : undefined;
+
+    updateField(newOptions, exclusiveOptions, newOtherOptionPosition);
   };
 
   /**
@@ -414,6 +644,21 @@ export const OptionsEditor = ({
       ];
       updateField(newOptions, exclusiveOptions);
     }
+  };
+
+  /**
+   * Nudges the "Other" row up/down in the combined list. Other is never pinned —
+   * its position is tracked independently via otherOptionPosition.
+   */
+  const moveOtherOption = (direction: 'up' | 'down') => {
+    if (!enableOther) return;
+    const current = Math.max(0, Math.min(otherOptionPosition, options.length));
+    const next =
+      direction === 'up'
+        ? Math.max(0, current - 1)
+        : Math.min(options.length, current + 1);
+    if (next === current) return;
+    updateField(options, exclusiveOptions, next);
   };
 
   /**
@@ -545,214 +790,338 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Toggles expanded checklist view
+   * Switches between expanded checklist and dropdown display modes.
    */
-  const toggleShowExpanded = () => {
+  const setDisplayMode = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    _value: string
+  ) => {
+    const selectedMode = event.target.value;
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const newValue =
-      !field['component-parameters'].ElementProps?.expandedChecklist;
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
-      expandedChecklist: newValue,
+      expandedChecklist: selectedMode === 'expanded',
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
+  };
+
+  /**
+   * "Other" option feature
+   */
+  const toggleEnableOtherOption = () => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newValue =
+      !field['component-parameters'].ElementProps?.enableOtherOption;
+
+    newField['component-parameters'].ElementProps = {
+      ...(newField['component-parameters'].ElementProps ?? {}),
+      enableOtherOption: newValue,
+      otherOptionPosition: undefined,
+    };
+
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
-        <Grid container spacing={2}>
-          {/* Info alert and add option form */}
-          <Grid item xs={12}>
-            <Alert
-              severity="info"
-              sx={{
-                mb: 2,
-                backgroundColor: 'rgb(229, 246, 253)',
-                '& .MuiAlert-icon': {
-                  color: 'rgb(1, 67, 97)',
-                },
-              }}
-            >
-              You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
-              <code>**bold**</code> or <code>*italic*</code>).
-              <br />
-              Add and remove options as needed. Drag items or use arrows to
-              reorder them.
-            </Alert>
-
-            <Box sx={{mb: 2}}>
-              <form onSubmit={addOption}>
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item xs>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Add Option"
-                      value={newOption}
-                      onChange={e => setNewOption(e.target.value)}
-                    />
-                  </Grid>
-
-                  <Grid item>
-                    <Button
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      type="submit"
-                      sx={{
-                        height: '40px',
-                        backgroundColor: '#fff',
-                        textTransform: 'none',
-                        '&:hover': {
-                          backgroundColor: '#f5f5f5',
-                        },
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </Grid>
-                </Grid>
-              </form>
-            </Box>
-
-            {/* Error message display */}
-            {errorMessage && (
-              <Alert severity="error" sx={{mt: 2, mb: 2}}>
-                {errorMessage}
-              </Alert>
-            )}
-
-            {/* Expanded checklist toggle (restored usage of isShowExpandedList/showExpandedCheckListControl) */}
-            {showExpandedCheckListControl && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isShowExpandedList}
-                    onChange={toggleShowExpanded}
+      <Box sx={{width: '100%', mt: 1.5}}>
+        <Typography
+          component="h4"
+          sx={{
+            fontSize: '1rem',
+            fontWeight: 700,
+            color: 'text.primary',
+            lineHeight: 1.25,
+            letterSpacing: '0.012em',
+            mb: 0.75,
+          }}
+        >
+          Options
+        </Typography>
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1.25,
+            p: {xs: 1.25, sm: 1.75},
+            backgroundColor: '#fff',
+          }}
+        >
+          <Grid container spacing={1.5}>
+            {/* Options table */}
+            <Grid item xs={12}>
+              {options.length === 0 && !enableOther ? (
+                <Typography
+                  variant="body2"
+                  sx={{color: 'text.secondary', py: 1.25, px: 0.5}}
+                >
+                  No options yet — add one below to get started.
+                </Typography>
+              ) : (
+                <TableContainer
+                  component={Box}
+                  sx={{
+                    border: 'none',
+                    boxShadow: 'none',
+                    borderRadius: 0,
+                    maxHeight: '1000px',
+                    overflow: 'auto',
+                  }}
+                >
+                  <Table
                     size="small"
-                  />
-                }
-                label={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <p>Display multi-select as an expanded checklist?</p>
-                    <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
-                      <InfoIcon color="action" fontSize="small" />
-                    </Tooltip>
-                  </Stack>
-                }
-                sx={{mb: 2}}
-              />
-            )}
-          </Grid>
-
-          {/* Options table */}
-          <Grid item xs={12}>
-            <TableContainer
-              component={Paper}
-              variant="outlined"
-              sx={{
-                border: '1px solid rgba(0, 0, 0, 0.12)',
-                boxShadow: 'none',
-                borderRadius: 1,
-                maxHeight: '1000px',
-                overflow: 'auto',
-              }}
-            >
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        width: '40px',
-                        backgroundColor: '#fafafa',
-                        fontWeight: 500,
-                        py: 1.5,
-                      }}
-                    />
-                    <TableCell
-                      sx={{
-                        backgroundColor: '#fafafa',
-                        fontWeight: 500,
-                        py: 1.5,
-                      }}
-                    >
-                      Option Text
-                    </TableCell>
-                    {showExclusiveOptions && (
-                      <TableCell
-                        align="center"
+                    sx={{tableLayout: 'fixed', width: '100%'}}
+                  >
+                    <TableHead>
+                      <TableRow
                         sx={{
-                          width: 140,
-                          backgroundColor: '#fafafa',
-                          fontWeight: 500,
-                          py: 1.5,
+                          backgroundColor: alpha('#000', 0.025),
+                          '& .MuiTableCell-root': {
+                            borderBottom: '1px solid',
+                            borderColor: alpha('#000', 0.12),
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.03em',
+                            py: 0.9,
+                          },
                         }}
                       >
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 0.5,
-                          }}
+                        {/* drag-handle column — empty header */}
+                        <TableCell sx={{width: {xs: 32, sm: 40}}} />
+                        <TableCell>Option text</TableCell>
+                        {showExclusiveOptions && (
+                          <TableCell
+                            align="center"
+                            sx={{width: {xs: 96, sm: 140}}}
+                          >
+                            <Box
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.4,
+                              }}
+                            >
+                              Exclusive
+                              <Tooltip title="Marks the option as exclusive — selecting it clears any other selections in this field. Useful for choices like 'None of the above'.">
+                                <InfoIcon
+                                  sx={{...designerInfoIconSx, fontSize: '1.1rem'}}
+                                />
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        )}
+                        <TableCell
+                          align="right"
+                          sx={{width: {xs: 120, sm: 180}}}
                         >
-                          Exclusive
-                          <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
-                            <InfoIcon color="action" fontSize="small" />
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                    )}
-                    <TableCell
-                      align="right"
+                          Actions
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={combinedRows.map(r => r.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {combinedRows.map((row, rowIdx) => {
+                            if (row.type === 'other') {
+                              return (
+                                <SortableOtherOptionRow
+                                  key={OTHER_OPTION_ID}
+                                  id={OTHER_OPTION_ID}
+                                  showExclusiveOptions={showExclusiveOptions}
+                                  isFirst={rowIdx === 0}
+                                  isLast={rowIdx === combinedRows.length - 1}
+                                  onMoveUp={() => moveOtherOption('up')}
+                                  onMoveDown={() => moveOtherOption('down')}
+                                  onRemove={toggleEnableOtherOption}
+                                />
+                              );
+                            }
+
+                            const optionIndex = options.findIndex(
+                              o => o.value === row.option.value
+                            );
+
+                            return (
+                              <SortableItem
+                                key={row.option.value}
+                                id={row.option.value}
+                                option={row.option}
+                                index={optionIndex}
+                                showExclusiveOptions={showExclusiveOptions}
+                                exclusiveOptions={exclusiveOptions}
+                                onExclusiveToggle={handleExclusiveToggle}
+                                onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
+                                onRemove={removeOption}
+                                onMove={moveOption}
+                                totalItems={options.length}
+                              />
+                            );
+                          })}
+                        </SortableContext>
+                      </DndContext>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Grid>
+
+            {/* Controls under table */}
+            <Grid item xs={12}>
+              <Box sx={{mt: 0.5}}>
+              <form onSubmit={addOption}>
+                <Stack
+                  direction={{xs: 'column', sm: 'row'}}
+                  spacing={1}
+                  alignItems={{xs: 'stretch', sm: 'flex-end'}}
+                  sx={{mb: 1.5}}
+                >
+                  <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
+                    <SimpleFieldWrapper
+                      heading="Add option"
+                      helperText={undefined}
+                    >
+                      <TextField
+                        size="small"
+                        placeholder="Add option"
+                        value={newOption}
+                        onChange={e => setNewOption(e.target.value)}
+                        error={addOptionHasError}
+                        focused={addOptionHasError}
+                        fullWidth
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            ...(addOptionHasError && {
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'error.main',
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline':
+                                {
+                                  borderColor: 'error.main',
+                                  borderWidth: 2,
+                                },
+                            }),
+                          },
+                        }}
+                      />
+                    </SimpleFieldWrapper>
+                  </Box>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    size="small"
+                    type="submit"
+                    sx={{
+                      width: {xs: '100%', sm: 'auto'},
+                      minWidth: 56,
+                      height: 40,
+                      backgroundColor: '#fff',
+                      borderColor: 'divider',
+                      px: 2,
+                      textTransform: 'none',
+                      '&:hover': {
+                        backgroundColor: '#f5f5f5',
+                      },
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Stack direction="row" spacing={0.65} alignItems="center">
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      onClick={toggleEnableOtherOption}
+                      disabled={enableOther}
                       sx={{
-                        width: 180,
-                        backgroundColor: '#fafafa',
-                        fontWeight: 500,
-                        py: 1.5,
+                        width: {xs: '100%', sm: 'auto'},
+                        minWidth: 56,
+                        height: 40,
+                        px: 2,
                       }}
                     >
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* Drag and drop context wrapper */}
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={options.map(o => o.value)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {options.map((option, index) => (
-                        <SortableItem
-                          key={option.value}
-                          id={option.value}
-                          option={option}
-                          index={index}
-                          showExclusiveOptions={showExclusiveOptions}
-                          exclusiveOptions={exclusiveOptions}
-                          onExclusiveToggle={handleExclusiveToggle}
-                          onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
-                          onRemove={removeOption}
-                          onMove={moveOption}
-                          totalItems={options.length}
+                      Add "Other" Option
+                    </Button>
+                    <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
+                      <InfoIcon
+                        sx={{
+                          ...(designerInfoIconSx as Record<string, unknown>),
+                          ml: 0,
+                        }}
+                      />
+                    </Tooltip>
+                  </Stack>
+                </Stack>
+              </form>
+
+              {showExpandedCheckListControl && (
+                <FormControl sx={{mb: 0}}>
+                  <FormLabel>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography component="span">
+                        {isMultiSelectField
+                          ? 'Multi-select display mode'
+                          : 'Select-one display mode'}
+                      </Typography>
+                      <Tooltip
+                        title={
+                          isMultiSelectField
+                            ? 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
+                            : 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
+                        }
+                      >
+                        <InfoIcon
+                          sx={{
+                            ...(designerInfoIconSx as Record<string, unknown>),
+                          }}
                         />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                </TableBody>
-              </Table>
-            </TableContainer>
+                      </Tooltip>
+                    </Stack>
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    value={isDropdownMode ? 'dropdown' : 'expanded'}
+                    onChange={setDisplayMode}
+                  >
+                    <FormControlLabel
+                      value="expanded"
+                      control={<Radio size="small" />}
+                      label="Expanded checklist"
+                    />
+                    <FormControlLabel
+                      value="dropdown"
+                      control={<Radio size="small" />}
+                      label="Dropdown list"
+                    />
+                  </RadioGroup>
+                </FormControl>
+              )}
+
+              {errorMessage && (
+                <Alert
+                  severity="error"
+                  sx={{
+                    mt: 2,
+                    width: {xs: '100%', sm: '52%', md: '48%'},
+                  }}
+                >
+                  {errorMessage}
+                </Alert>
+              )}
+            </Box>
           </Grid>
-        </Grid>
+          </Grid>
+        </Box>
+      </Box>
 
         {/* Edit option dialog */}
         <Dialog
@@ -765,8 +1134,8 @@ export const OptionsEditor = ({
             },
           }}
         >
-          <DialogTitle>Edit Option</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
+          <DialogContent sx={designerDialogContentSx}>
             <TextField
               autoFocus
               margin="dense"
@@ -811,7 +1180,12 @@ export const OptionsEditor = ({
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEditingOption(null)}>Cancel</Button>
+            <Button
+              sx={designerCancelButtonSx}
+              onClick={() => setEditingOption(null)}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleEditSubmit} color="primary">
               Save
             </Button>
@@ -827,8 +1201,8 @@ export const OptionsEditor = ({
             },
           }}
         >
-          <DialogTitle>Cannot Delete Option</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Option</DialogTitle>
+          <DialogContent sx={designerDialogContentSx}>
             <Alert severity="warning">
               This option is used in the following conditions:
               <ul>
@@ -840,10 +1214,14 @@ export const OptionsEditor = ({
             </Alert>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsDeleteDialogOpen(false)}>Close</Button>
+            <Button
+              sx={designerCancelButtonSx}
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Close
+            </Button>
           </DialogActions>
         </Dialog>
-      </Paper>
     </BaseFieldEditor>
   );
 };

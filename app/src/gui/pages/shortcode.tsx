@@ -35,16 +35,18 @@ import {
 import React, {useState} from 'react';
 import {
   APP_ID,
+  IS_WEB_PLATFORM,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../buildconfig';
 import {useNotification} from '../../context/popup';
 import {addAlert} from '../../context/slices/alertSlice';
 import {Server} from '../../context/slices/projectSlice';
 import {useAppDispatch} from '../../context/store';
-import {isWeb, replaceOrAppendRedirect} from '../../utils/helpers';
+import {replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
-import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
+import {QRCodeButton} from '@faims3/forms';
 
 type ShortCodeProps = {
   servers: Server[];
@@ -130,7 +132,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
 
     showSuccess('Initiating registration...');
 
-    if (isWeb()) {
+    if (IS_WEB_PLATFORM) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href = url + '&redirect=' + redirect;
     } else {
@@ -144,16 +146,20 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
   const showPrefixSelector = props.servers.length > 1;
 
   return (
-    <MainCard>
+    <MainCard
+      title={
+        <>
+          <Typography variant="h6" gutterBottom>
+            Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Enter the short code which was shared with you to get access to a{' '}
+            {NOTEBOOK_NAME_CAPITALIZED}.
+          </Typography>
+        </>
+      }
+    >
       <Stack spacing={2} sx={{p: 2}}>
-        <Typography variant="h6" gutterBottom>
-          Register for {NOTEBOOK_NAME_CAPITALIZED}s
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          Enter the short code which was shared with you to get access to a{' '}
-          {NOTEBOOK_NAME_CAPITALIZED}.
-        </Typography>
-
         <Stack direction="row" spacing={1} alignItems="center">
           {
             // Only show selector if condition is true i.e. more than one listing
@@ -262,7 +268,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         <Grid container>
           <Grid item xs>
             <Typography variant={'overline'}>
-              Register for {NOTEBOOK_NAME_CAPITALIZED}s
+              Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
             </Typography>
             <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
               Scan a QRCode to get access to a {NOTEBOOK_NAME}.

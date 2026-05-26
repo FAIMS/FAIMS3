@@ -19,8 +19,15 @@
  *   which server to use and whether to include test data
  */
 
-import {MapStylesheetNameType} from './gui/components/map/styles';
-import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
+import {Capacitor} from '@capacitor/core';
+import {
+  type IAutosuggestAddressService,
+  MapboxAutosuggestAddressService,
+  MapTilerAutosuggestAddressService,
+  MapStylesheetNameType,
+  MapConfig,
+} from '@faims3/forms';
+import pluralize from 'pluralize';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -32,30 +39,6 @@ export const DEFAULT_CONDUCTOR_URL = 'http://localhost:8154';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
-
-/*
- * This is designed to get useful commit information data from
- * environment variables for the testing server. While more sophisticated
- * iterations of this can use extra node modules to get git data directly,
- * passing environment variables seems like the safest first path.
- */
-
-function commit_version(): string {
-  // BUILD_VERSION is updated by the 'set-version' script in package.json
-  // use that if it's not just the default
-  if (BUILD_VERSION !== BUILD_VERSION_DEFAULT) return BUILD_VERSION;
-  // otherwise look in the environment
-  const commitVersion = import.meta.env.VITE_COMMIT_VERSION;
-  if (
-    commitVersion === '' ||
-    commitVersion === undefined ||
-    FALSEY_STRINGS.includes(commitVersion.toLowerCase())
-  ) {
-    return 'unknown dev';
-  } else {
-    return commitVersion;
-  }
-}
 
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = import.meta.env.VITE_DEBUG_POUCHDB;
@@ -87,8 +70,8 @@ function include_app_debugging(): boolean {
   }
 }
 
-function show_minifauxton(): boolean {
-  const debug_app = import.meta.env.VITE_SHOW_MINIFAUXTON;
+function show_pouchdb_browser(): boolean {
+  const debug_app = import.meta.env.VITE_SHOW_POUCHDB_BROWSER;
   if (debug_app === '' || debug_app === undefined) {
     return true;
   }
@@ -97,7 +80,7 @@ function show_minifauxton(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('VITE_SHOW_MINIFAUXTON badly defined, assuming true');
+    logError('VITE_SHOW_POUCHDB_BROWSER badly defined, assuming true');
     return true;
   }
 }
@@ -138,13 +121,13 @@ function show_new_notebook(): boolean {
 function pouch_batch_size(): number {
   const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
   if (pouch_batch_size === '' || pouch_batch_size === undefined) {
-    return 1000;
+    return 10;
   }
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
     logError(err);
-    return 1000;
+    return 10;
   }
 }
 
@@ -195,14 +178,14 @@ function cluster_admin_group_name(): string {
 }
 
 // If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
-function get_bugsnag_key(): string | false {
+function get_bugsnag_key(): string | undefined {
   const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
   if (
     bugsnag_key === '' ||
     bugsnag_key === undefined ||
     bugsnag_key === 'false'
   ) {
-    return false;
+    return undefined;
   }
   return bugsnag_key;
 }
@@ -291,6 +274,25 @@ function get_notebook_name_capitalized(): string {
   const notebook_name = get_notebook_name();
 
   return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
+}
+
+/**
+ * Retrieves the plural form of the notebook name.
+ *
+ * @returns {string} - The pluralised notebook name.
+ */
+function get_notebook_name_plural(): string {
+  return pluralize(get_notebook_name());
+}
+
+/**
+ * Retrieves the plural form of the notebook name with the first letter capitalised.
+ *
+ * @returns {string} - The capitalised pluralised notebook name.
+ */
+function get_notebook_name_plural_capitalized(): string {
+  const plural = get_notebook_name_plural();
+  return plural.charAt(0).toUpperCase() + plural.slice(1);
 }
 
 /**
@@ -389,6 +391,26 @@ function tokenRefreshWindowMs(): number {
   }
 }
 
+// Grace period before showing the logged-out banner after app initialisation
+const DEFAULT_LOGIN_BANNER_GRACE_MS = 10000;
+
+/**
+ * @returns The grace period in milliseconds before showing the login banner
+ * after the app has initialised.
+ */
+function loginBannerGraceMs(): number {
+  const loginBannerGraceMs = import.meta.env.VITE_LOGIN_BANNER_GRACE_MS;
+  if (loginBannerGraceMs === '' || loginBannerGraceMs === undefined) {
+    return DEFAULT_LOGIN_BANNER_GRACE_MS;
+  }
+  try {
+    return parseInt(loginBannerGraceMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_LOGIN_BANNER_GRACE_MS;
+  }
+}
+
 // Ignore the expiry from the JWT - use 1 year expiry instead - disables token
 // refreshing - debug/compat usage only!
 const DEFAULT_IGNORE_TOKEN_EXP = false;
@@ -427,6 +449,27 @@ function get_map_style(): MapStylesheetNameType {
   return map_style || 'basic';
 }
 
+function get_satellite_source(): 'esri' | 'maptiler' | undefined {
+  const satellite_source = import.meta.env.VITE_SATELLITE_SOURCE;
+  return satellite_source || undefined;
+}
+
+// get the map configuration
+export function getMapConfig(): MapConfig {
+  const config: MapConfig = {
+    mapSource: get_map_source(),
+    mapSourceKey: get_map_key(),
+    mapStyle: get_map_style(),
+  };
+
+  const satelliteSource = get_satellite_source();
+  if (satelliteSource) {
+    config.satelliteSource = satelliteSource;
+  }
+
+  return config;
+}
+
 function offline_maps(): boolean {
   const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
   const map_source = get_map_source();
@@ -459,37 +502,334 @@ function migrateOldDatabases(): boolean {
   );
 }
 
-// this should disappear once we have listing activation set up
+/**
+ * When the directory lists a notebook as archived or the id is absent, the app
+ * may drop that notebook from the device after successful directory responses.
+ * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
+ *   (IndexedDB) so no local notebook data remains — security.
+ * - `never` (default): same teardown as manual deactivate (sync off, remote and
+ *   local Pouch **closed** but not destroyed), then remove from the app list so
+ *   on-disk data can be recovered if needed.
+ * Absent ids: the app confirms deletion with several consecutive successful
+ * directory responses (automatic re-polls); archived rows need one response.
+ * Set via VITE_FORCE_REMOTE_DELETION in .env / CDK; default is never.
+ */
+export type ForceRemoteDeletionMode = 'allow' | 'never';
+
+function forceRemoteDeletion(): ForceRemoteDeletionMode {
+  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
+  if (v === 'allow') {
+    return 'allow';
+  }
+  if (v !== undefined && v !== '' && v !== 'never') {
+    logError(
+      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+    );
+  }
+  return 'never';
+}
+
+/**
+ * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+ * When false or unset, deactivation only closes sync and DB handles (IndexedDB may remain).
+ * Set via VITE_DELETE_ON_DEACTIVATION; default is false.
+ */
+function deleteOnDeactivation(): boolean {
+  const v = import.meta.env.VITE_DELETE_ON_DEACTIVATION;
+  if (v === '' || v === undefined) {
+    return false;
+  }
+  if (FALSEY_STRINGS.includes(v.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(v.toLowerCase())) {
+    return true;
+  } else {
+    logError('VITE_DELETE_ON_DEACTIVATION badly defined, assuming false');
+    return false;
+  }
+}
+
+// Attachment service configuration
+
+/**
+ * Retrieves the configured attachment service type from environment variables.
+ * @returns {string} - The attachment service type (defaults to 'COUCH')
+ */
+function getAttachmentServiceType(): string {
+  const serviceType = import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE;
+  return serviceType || 'COUCH';
+}
+
+/**
+ * Retrieves the attachment document ID prefix from environment variables.
+ * @returns {string | undefined} - Optional prefix for attachment document IDs
+ */
+function getAttachmentDocumentIdPrefix(): string | undefined {
+  const prefix = import.meta.env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX;
+  return prefix || undefined;
+}
+
+// Address autosuggest configuration (KEY_SOURCE-style dispatch)
+
+/**
+ * Source for address autosuggest service. NONE disables autocomplete; MAPBOX
+ * uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY); MAPTILER
+ * uses MapTiler Search and Geocoding API (VITE_AUTOSUGGEST_MAPTILER_KEY, or
+ * VITE_MAP_SOURCE_KEY when map source is maptiler).
+ */
+export enum AutosuggestSource {
+  /** No address autosuggest; AddressField uses manual entry only. */
+  NONE = 'NONE',
+  /** Mapbox Search Box API (suggest + retrieve). */
+  MAPBOX = 'MAPBOX',
+  /** MapTiler Search and Geocoding API (forward + by-id). */
+  MAPTILER = 'MAPTILER',
+}
+
+/**
+ * Resolves VITE_AUTOSUGGEST_SOURCE to AutosuggestSource. Invalid or unset
+ * defaults to NONE.
+ */
+function getAutosuggestSourceConfig(): AutosuggestSource {
+  const raw = import.meta.env.VITE_AUTOSUGGEST_SOURCE as string | undefined;
+  if (raw === undefined || raw === '') {
+    return AutosuggestSource.NONE;
+  }
+  const upper = raw.toUpperCase();
+  if (upper in AutosuggestSource) {
+    return AutosuggestSource[upper as keyof typeof AutosuggestSource];
+  }
+  logError(
+    `VITE_AUTOSUGGEST_SOURCE invalid (${raw}), using NONE. Valid: NONE, MAPBOX, MAPTILER.`
+  );
+  return AutosuggestSource.NONE;
+}
+
+/**
+ * Returns Mapbox access token when AUTOSUGGEST_SOURCE is MAPBOX.
+ * Required for MAPBOX; if missing, address autosuggest is effectively disabled.
+ */
+function getMapboxAccessToken(): string | undefined {
+  const token = import.meta.env.VITE_AUTOSUGGEST_MAPBOX_KEY as
+    | string
+    | undefined;
+  if (token === undefined || token.trim() === '') {
+    return undefined;
+  }
+  return token.trim();
+}
+
+const DEFAULT_MAPBOX_ADDRESS_COUNTRY = ['AU'];
+
+/**
+ * Returns Mapbox address search country filter (ISO 3166-1 alpha-2).
+ * Optional env VITE_MAPBOX_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
+ * Defaults to Australia when unset.
+ */
+function getMapboxAddressCountry(): string[] {
+  const raw = import.meta.env.VITE_MAPBOX_ADDRESS_COUNTRY as string | undefined;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+  }
+  return raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+/**
+ * Returns MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER. Uses
+ * VITE_AUTOSUGGEST_MAPTILER_KEY if set; otherwise when map source is maptiler
+ * uses VITE_MAP_SOURCE_KEY so a single key can serve both tiles and geocoding.
+ * If neither is set, returns undefined and autosuggest is disabled.
+ */
+function getMapTilerApiKey(): string | undefined {
+  const dedicated = import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY as
+    | string
+    | undefined;
+  if (dedicated !== undefined && dedicated.trim() !== '') {
+    return dedicated.trim();
+  }
+  const mapSource = import.meta.env.VITE_MAP_SOURCE as string | undefined;
+  const mapKey = import.meta.env.VITE_MAP_SOURCE_KEY as string | undefined;
+  if (
+    mapSource === 'maptiler' &&
+    mapKey !== undefined &&
+    mapKey.trim() !== ''
+  ) {
+    return mapKey.trim();
+  }
+  return undefined;
+}
+
+/**
+ * Returns MapTiler address search country filter (ISO 3166-1 alpha-2).
+ * Optional env VITE_MAPTILER_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
+ * Defaults to Australia when unset.
+ */
+function getMapTilerAddressCountry(): string[] {
+  const raw = import.meta.env.VITE_MAPTILER_ADDRESS_COUNTRY as
+    | string
+    | undefined;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+  }
+  return raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
+
+function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService | null {
+  if (addressAutosuggestServiceInstance !== null) {
+    return addressAutosuggestServiceInstance;
+  }
+  const source = getAutosuggestSourceConfig();
+  if (source === AutosuggestSource.NONE) {
+    return null;
+  }
+  if (source === AutosuggestSource.MAPBOX) {
+    const apiKey = getMapboxAccessToken();
+    if (!apiKey) {
+      logError(
+        'VITE_AUTOSUGGEST_SOURCE is MAPBOX but VITE_AUTOSUGGEST_MAPBOX_KEY is not set; address autosuggest disabled.'
+      );
+      return null;
+    }
+    addressAutosuggestServiceInstance = new MapboxAutosuggestAddressService({
+      apiKey,
+      language: 'en',
+      limit: 10,
+      types: 'address',
+      country: getMapboxAddressCountry(),
+    });
+    return addressAutosuggestServiceInstance;
+  }
+  if (source === AutosuggestSource.MAPTILER) {
+    const apiKey = getMapTilerApiKey();
+    if (!apiKey) {
+      logError(
+        'VITE_AUTOSUGGEST_SOURCE is MAPTILER but no MapTiler API key available (set VITE_AUTOSUGGEST_MAPTILER_KEY or, when using MapTiler for maps, VITE_MAP_SOURCE_KEY); address autosuggest disabled.'
+      );
+      return null;
+    }
+    addressAutosuggestServiceInstance = new MapTilerAutosuggestAddressService({
+      apiKey,
+      language: 'en',
+      limit: 10,
+      types: ['address'],
+      country: getMapTilerAddressCountry(),
+    });
+    return addressAutosuggestServiceInstance;
+  }
+  return null;
+}
+
+/**
+ * Returns a factory for the address autosuggest service based on
+ * VITE_AUTOSUGGEST_SOURCE and provider-specific env (VITE_AUTOSUGGEST_MAPBOX_KEY or VITE_AUTOSUGGEST_MAPTILER_KEY / VITE_MAP_SOURCE_KEY for MapTiler).
+ * Use as FullFormConfig.addressAutosuggestService. When NONE or config missing,
+ * the factory returns undefined so AddressField skips autocomplete.
+ */
+export function getAddressAutosuggestService():
+  | (() => IAutosuggestAddressService)
+  | undefined {
+  const instance = createAddressAutosuggestServiceInstance();
+  if (instance === null) {
+    return undefined;
+  }
+  return () => instance;
+}
+
+export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
+export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
+export const AUTOSUGGEST_SOURCE = getAutosuggestSourceConfig();
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
-export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
-export const SHOW_MINIFAUXTON = show_minifauxton();
+export const SHOW_POUCHDB_BROWSER = show_pouchdb_browser();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
+export const NOTEBOOK_NAME_PLURAL = get_notebook_name_plural();
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
+  get_notebook_name_plural_capitalized();
 export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
 export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
+export const LOGIN_BANNER_GRACE_MS = loginBannerGraceMs();
 export const IGNORE_TOKEN_EXP = ignoreTokenExp();
 export const OFFLINE_MAPS = offline_maps();
-export const MAP_SOURCE_KEY = get_map_key();
-export const MAP_SOURCE = get_map_source();
-export const MAP_STYLE = get_map_style();
 export const NAVIGATION_STYLE = navigation_style();
 export const SHOW_RECORD_LINKS = showRecordLinks();
 export const SUPPORT_EMAIL = get_support_email();
 export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
 export const CONTACT_URL = get_app_contact_url();
 export const MIGRATE_OLD_DATABASES = migrateOldDatabases();
+export const FORCE_REMOTE_DELETION = forceRemoteDeletion();
+export const DELETE_ON_DEACTIVATION = deleteOnDeactivation();
+export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
+  | 'ios'
+  | 'android'
+  | 'web';
+export const IS_MOBILE_PLATFORM =
+  CAPACITOR_PLATFORM === 'ios' || CAPACITOR_PLATFORM === 'android';
+export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';
+
+// ==================
+// Version management
+// ==================
+/*
+
+/**
+ * Gets the application version from Vite's __APP_VERSION__ replacement.
+ * This should be defined in vite.config and filled at build time.
+ * @returns The application version.
+ */
+function appVersion(): string {
+  const version = __APP_VERSION__;
+  if (version) {
+    console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
+    return version;
+  }
+
+  console.error('__APP_VERSION__ not defined in build. Using "unknown"');
+  return 'unknown';
+}
+
+/**
+ * Gets the commit hash from environment variables if available.
+ * This is optional and may not be provided in all environments.
+ * @returns The commit hash, or undefined if not provided.
+ */
+function commitHash(): string | undefined {
+  const hash = import.meta.env.VITE_COMMIT_VERSION;
+
+  if (
+    hash === '' ||
+    hash === undefined ||
+    FALSEY_STRINGS.includes(hash.toLowerCase())
+  ) {
+    console.info('VITE_COMMIT_VERSION not provided');
+    return undefined;
+  }
+
+  console.info(`Using VITE_COMMIT_VERSION: ${hash}`);
+  return hash;
+}
+
+export const APP_VERSION = appVersion();
+export const COMMIT_HASH = commitHash();

@@ -2,20 +2,20 @@
 
 ## Preconditions
 
-* Fill User Fixture with your own Login and Password, choose isLocal(true,false) for 
-local and browserstack run .env file (create in root project)
+- Fill User Fixture with your own Login and Password, choose isLocal(true,false) for
+  local and browserstack run .env file (create in root project)
 
-* Fill BrowserStack Credential Android [bs.conf.ts](test%2Ffirst.conf.ts)
-* Fill BrowserStack Credential iOs [bsiOs.conf.ts](test%2FbsiOs.conf.ts)
-* Run tests BrowserStack Android - `npm run testBrowserStack`
-* Run tests BrowserStack iOs - `npm run testBsIos`
-* Go to [BrowserStack](https://www.browserstack.com/) Dashboard
+- Fill BrowserStack Credential Android [bs.conf.ts](test%2Ffirst.conf.ts)
+- Fill BrowserStack Credential iOs [bsiOs.conf.ts](test%2FbsiOs.conf.ts)
+- Run tests BrowserStack Android - `pnpm run testBrowserStack`
+- Run tests BrowserStack iOs - `pnpm run testBsIos`
+- Go to [BrowserStack](https://www.browserstack.com/) Dashboard
 
 ## Device list
 
 ### Android
 
-Can be managed on [bs.conf.ts](test%2Fbs.conf.ts) just add  
+Can be managed on [bs.conf.ts](test%2Fbs.conf.ts) just add
 
 ```javascript
 'bstack:options': {
@@ -31,7 +31,8 @@ in the capabilities array.
 
 ### iOs
 
-Can be managed on [.env](.env) just add 
+Can be managed on [.env](.env) just add
+
 ```javascript
 DEVICE_NAME="iPad Pro 11 2022" or DEVICE_NAME="iPhone 14"
 ```
@@ -45,24 +46,24 @@ For local run you need to be sure appium was run, appium-doctor doesn't have any
 ### Install `appium-doctor`
 
 ```bash
-npm install @appium/doctor --location=global
+pnpm install @appium/doctor --location=global
 ```
 
-Running `appium-doctor` will check that your machine is set up properly for appium. 
+Running `appium-doctor` will check that your machine is set up properly for appium.
 
 ### Run Appium
 
-Appium - run `npm run appium`.
+Appium - run `pnpm run appium`.
 
 File for run was described in [wdio.conf.ts](wdio.conf.ts) `appium:app`
 
 Open Android Studio and run emulator (Freeform not supported now, use
 like Nexus 9 or another tablet or phone). iOs not implemented yet for local testing.
 
-* Run tests local emulator - `npm run test`
-* Be sure you have one screenshot or image on emulator
-* Appium versions 2.0
-* Node version 18
+- Run tests local emulator - `pnpm run test`
+- Be sure you have one screenshot or image on emulator
+- Appium versions 2.0
+- Node version 18
 
 ## To resolve issues with appium android_home, java_home
 
@@ -87,6 +88,6 @@ User Tests Suite - [UserTests.ts](test%2Fspecs%2FUserTests.ts)
 
 WorkSpaceSuite - [WorkSpaceTests.ts](test%2Fspecs%2FWorkSpaceTests.ts)
 
-## Locators 
+## Locators
 
 Described by Pages [pages](pages).

@@ -50,6 +50,8 @@ export interface ExpirySelectorProps {
   neverExpiresWarningMessage?: string;
   /** Show maximum duration info */
   showMaxDurationInfo?: boolean;
+  /** Maximum token duration message prefix {message}: {days} days */
+  maximumDurationPrefix?: string;
 }
 
 type SelectionMode = 'hints' | 'custom';
@@ -69,6 +71,7 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
   neverExpiresText = 'Never expires',
   currentSelectionPrefix = 'Current Selection:',
   neverExpiresWarningTitle = 'Security Warning',
+  maximumDurationPrefix = 'Maximum token duration',
   neverExpiresWarningMessage = "This token will never expire automatically. Make sure to revoke it manually when it's no longer needed.",
   showMaxDurationInfo = true,
 }) => {
@@ -272,7 +275,7 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
       {/* Maximum duration info */}
       {showMaxDurationInfo && maxDurationDays && (
         <div className="text-xs text-muted-foreground">
-          Maximum token duration: {maxDurationDays} days
+          {maximumDurationPrefix}: {maxDurationDays} days
         </div>
       )}
     </div>

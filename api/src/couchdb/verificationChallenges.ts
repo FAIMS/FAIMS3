@@ -9,10 +9,10 @@
 import {
   AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
+  safeWriteDocument,
   VerificationChallengeExistingDocument,
   VerificationChallengeFields,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
@@ -64,7 +64,7 @@ export const createVerificationChallenge = async ({
   const hash = hashChallengeCode(code);
 
   // Create a unique document ID with the verification prefix
-  const dbId = AUTH_RECORD_ID_PREFIXES.verification + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.verification + crypto.randomUUID();
 
   // Calculate expiry timestamp
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
@@ -298,7 +298,7 @@ export const consumeVerificationChallenge = async ({
 
   // Update the document in the database
   const authDB = getAuthDB();
-  await authDB.put(challenge);
+  await safeWriteDocument({db: authDB, data: challenge});
 
   return challenge;
 };

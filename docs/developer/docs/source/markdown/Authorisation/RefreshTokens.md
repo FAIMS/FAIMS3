@@ -59,8 +59,8 @@ export const createNewRefreshToken = async (
   const authDB = getAuthDB();
 
   // Generate a new UUID for the token
-  const token = uuidv4();
-  const dbId = AuthRecordIdPrefixMap.get('refresh') + uuidv4();
+  const token = crypto.randomUUID();
+  const dbId = AuthRecordIdPrefixMap.get('refresh') + crypto.randomUUID();
 
   // Set expiry to configured duration
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);

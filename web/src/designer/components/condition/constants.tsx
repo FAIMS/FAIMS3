@@ -12,18 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ConditionType} from './types';
+/**
+ * @file Empty condition templates and operator label map for the builder UI.
+ */
 
+import {ConditionType} from '../../types/condition';
+
+/** Default leaf: equal operator, empty field/value (starting point in the builder). */
 export const EMPTY_FIELD_CONDITION: ConditionType = {
   operator: 'equal',
   field: '',
   value: '',
 };
+
+/** Default group: AND with no children yet. */
 export const EMPTY_BOOLEAN_CONDITION: ConditionType = {
   operator: 'and',
   conditions: [],
 };
 
+/** UI labels for condition operators (keys match persisted `operator` strings). */
 export const allOperators = new Map([
   ['equal', 'Equal to'],
   ['not-equal', 'Not equal to'],
@@ -32,12 +40,14 @@ export const allOperators = new Map([
   ['less', 'Less than'],
   ['less-equal', 'Less than or equal'],
   ['regex', 'Matches regular expression'],
+  ['string-contains', 'String contains'],
+  ['string-does-not-contain', 'String does not contain'],
   ['contains', 'List contains this value'],
-  ['does-not-contain', 'List does not contain this value'],
-  ['contains-regex', 'List contains a value matching this regex'],
+  ['does-not-contain', 'List does not contain'],
+  ['contains-regex', 'List contains a value matching the regular expression'],
   [
     'does-not-contain-regex',
-    'List does not contain any value matching this regex',
+    'List does not contain any value matching the regular expression',
   ],
   ['contains-one-of', 'List contains one of these values'],
   ['does-not-contain-any-of', 'List does not contain any of these values'],

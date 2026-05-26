@@ -1,11 +1,11 @@
 name: Build & Lint
- 
+
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   pull_request:
     types: [opened, synchronize]
- 
+
 jobs:
   build:
     name: Build and Test
@@ -14,30 +14,27 @@ jobs:
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
- 
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
- 
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20.9.0
-          cache: 'npm'
- 
-      - name: Setup node cache
-        id: node-cache
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
-          restore-keys: npm-
+          node-version: 22.18.0
+          cache: 'pnpm'
 
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
-        run: npm i
+        run: |
+          pnpm install --frozen-lockfile
 
       - name: Configure Turborepo Remote Cache
         run: |
@@ -53,12 +50,12 @@ jobs:
           else
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
-      
+
       - name: Lint
-        run: npm run lint
-        
+        run: pnpm run lint
+
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: API Unit tests
         run: |
@@ -68,5 +65,4 @@ jobs:
           cd ../app
           cp .env.dist .env
           cd ../
-          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model  --filter=@faims3/app
- 
+          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model --filter=@faims3/app --filter=@faims3/forms --filter=@faims3/infra-aws-cdk

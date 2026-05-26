@@ -30,10 +30,20 @@ export type DBTargetVersions = {
   [key in DatabaseType]: {defaultVersion: number; targetVersion: number};
 };
 
-export type MigrationFuncReturn = {
-  action: 'none' | 'update' | 'delete';
-  updatedRecord?: PouchDB.Core.ExistingDocument<any>;
+// update function requires an updated record
+type MigrationUpdateFuncReturn = {
+  action: 'update';
+  updatedRecord: PouchDB.Core.ExistingDocument<any>;
 };
+
+type MigrationOtherFuncReturn = {
+  action: 'delete' | 'none';
+};
+
+export type MigrationFuncReturn =
+  | MigrationOtherFuncReturn
+  | MigrationUpdateFuncReturn;
+
 export type MigrationFuncRecordInput = PouchDB.Core.ExistingDocument<any>;
 
 export type MigrationFunc = (

@@ -18,24 +18,23 @@
  *   Helper functions to handle converting data between the GUI and pouchdb.
  */
 
-import {v4 as uuidv4} from 'uuid';
+import {chunk} from 'lodash';
+import {randomUuid} from '../utils';
 import {HRID_STRING} from '../datamodel/core';
 import {
   getAttachmentDumperForType,
   getAttachmentLoaderForType,
   getEqualityFunctionForType,
 } from '../datamodel/typesystem';
-import {
-  getHridFieldMap,
-  getHridFieldNameForViewset,
-  getIdsByFieldName,
-  HridFieldMap,
-} from '../utils';
+import {logError} from '../logging';
 import {
   Annotations,
+  AttachmentDbType,
   AttributeValuePair,
   AttributeValuePairID,
   AttributeValuePairIDMap,
+  AvpDbType,
+  DatabaseInterface,
   DataDbType,
   EncodedRecord,
   FAIMSAttachment,
@@ -43,14 +42,21 @@ import {
   ProjectID,
   ProjectUIModel,
   Record,
+  RecordDbType,
   RecordID,
   RecordMetadata,
   Revision,
+  RevisionDbType,
   RevisionID,
   UnhydratedRecord,
 } from '../types';
+import {
+  getHridFieldMap,
+  getHridFieldNameForViewset,
+  getIdsByFieldName,
+  HridFieldMap,
+} from '../uiSpecification';
 import {createHash} from './utils';
-import {chunk} from 'lodash';
 
 // INDEX NAMES
 
@@ -70,6 +76,7 @@ export const RECORD_AUDIT_INDEX = 'record_audit/by_record_id';
 export const REVISION_TYPE_FIELD = 'revision_format_version';
 export const RECORD_TYPE_FIELD = 'record_format_version';
 export const AVP_TYPE_FIELD = 'avp_format_version';
+export const ATT_TYPE_FIELD = 'attach_format_version';
 
 export interface FormData {
   data: {[field_name: string]: any};
@@ -78,11 +85,11 @@ export interface FormData {
 }
 
 export function generateFAIMSRevisionID(): RevisionID {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -91,7 +98,7 @@ export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
  * Uses the direct get() method which is more efficient than queries for single
  * document retrieval.
  *
- * @param db PouchDB.Database to query
+ * @param db DatabaseInterface to query
  * @param id The document ID to retrieve
  * @param typeField? field name that contains type information
  * @param conflicts? Whether to include conflict information (defaults to false)
@@ -104,16 +111,19 @@ export async function getCouchDocument<DocType extends {[key: string]: any}>({
   id,
   typeField = undefined,
   conflicts = false,
+  includeAttachments = false,
 }: {
-  db: PouchDB.Database;
+  db: DatabaseInterface;
   id: string;
   typeField?: string;
   conflicts?: boolean;
+  includeAttachments?: boolean;
 }): Promise<PouchDB.Core.ExistingDocument<DocType> | undefined> {
   try {
     // Get is the most efficient method for single document retrieval
     const doc = (await db.get(id, {
       conflicts,
+      attachments: includeAttachments,
     })) as PouchDB.Core.ExistingDocument<DocType>;
 
     // Validate the document type if expectedType is provided
@@ -142,7 +152,7 @@ export async function getCouchDocument<DocType extends {[key: string]: any}>({
  * configuration of the keys to filter on (if any), as well as the index and
  * conflicts.
  *
- * @param db PouchDB.Database to query
+ * @param db DatabaseInterface to query
  * @param index? index name e.g. index/recordRevisions
  * @param keys? list of keys to filter if any - if not provided gets all records in index
  * @param conflicts? include conflict info in query
@@ -157,7 +167,7 @@ export async function queryCouch<DocType extends {}>({
   binary = false,
   attachments = false,
 }: {
-  db: PouchDB.Database;
+  db: DatabaseInterface<DocType>; // DatabaseInterface;
   index?: string;
   keys?: string[];
   conflicts?: boolean;
@@ -217,9 +227,9 @@ export async function queryCouch<DocType extends {}>({
  * @throws Error if the specified record cannot be found in the database
  */
 export async function updateHeads({
-  newRevisionId: newRevisionId,
-  baseRevisionId: baseRevisionId,
-  recordId: recordId,
+  newRevisionId,
+  baseRevisionId,
+  recordId,
   dataDb,
 }: {
   dataDb: DataDbType;
@@ -386,6 +396,38 @@ export async function getAvp({
 }
 
 /**
+ * Finds the attachment (att-)
+ * @returns Attachment document
+ */
+export async function getAtt({
+  dataDb,
+  attId,
+  includeAttachments = false,
+}: {
+  dataDb: DataDbType;
+  attId: AttributeValuePairID;
+  includeAttachments?: boolean;
+}): Promise<FAIMSAttachment> {
+  try {
+    const result = await getCouchDocument<FAIMSAttachment>({
+      db: dataDb,
+      id: attId,
+      typeField: ATT_TYPE_FIELD,
+      includeAttachments,
+    });
+    if (result) {
+      return result;
+    } else {
+      throw Error('AVP not found.');
+    }
+  } catch (e) {
+    throw Error(
+      `Could not find the attachment record with ID ${attId}. Error: {e}.`
+    );
+  }
+}
+
+/**
  * Returns the recommended HRID for this record (which is a revision) - this is
  * achieved by a) get the ui spec for the project b) look at fields in the
  * revision (via avp keys) c) determine which viewset these fields are in d)
@@ -451,7 +493,6 @@ export async function getHRID({
   }
   const hridAvpId = revision.avps[hridFieldName];
   if (hridAvpId === undefined) {
-    console.warn('No HRID field set for revision');
     return null;
   }
   try {
@@ -518,6 +559,90 @@ export async function getDataForRevision({
 }
 
 /**
+ * A convenient entrypoint for the app.
+ *
+ * Given a project, record, data DB, UI spec (all things known in the app), will
+ * return a fully hydrated record.
+ *
+ * This is an expensive operation, so consider caching.
+ */
+export async function fetchAndHydrateRecord({
+  projectId,
+  recordId,
+  dataDb,
+  uiSpecification,
+  revisionId = undefined,
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId?: string;
+  dataDb: DataDbType;
+  uiSpecification: ProjectUIModel;
+}): Promise<RecordMetadata | undefined> {
+  // Grab field map for HRID
+  const hridFieldMap = getHridFieldMap(uiSpecification);
+
+  // Get the individual record
+  const record = await getRecord({recordId, dataDb});
+  if (!record) {
+    return undefined;
+  }
+  const revId = revisionId ?? record.heads[0];
+
+  // Abort if revision not found
+  if (!revId) {
+    console.warn(
+      `There exists a record in the data DB with no heads[0]. Id: ${record._id}`
+    );
+    return undefined;
+  }
+
+  const revision = await getRevision({dataDb: dataDb, revisionId: revId});
+
+  // Abort if revision not found
+  if (!revision) {
+    logError(
+      `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
+    );
+    return undefined;
+  }
+
+  // Get data for the revision and hrid
+
+  // Hydrate with data by fetching AVPs
+  const data = await getDataForRevision({dataDb, revision});
+
+  // Ensure it's defined
+  if (!data) {
+    logError(
+      `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
+    );
+    return undefined;
+  }
+
+  // Determine HRID based on field mapping or fall back to record ID
+  const hridFieldName = hridFieldMap[revision.type];
+  const hrid = (hridFieldName ? data[hridFieldName] : record._id) ?? record._id;
+
+  // Return record metadata
+  return {
+    project_id: projectId,
+    record_id: record._id,
+    revision_id: revId,
+    created: new Date(record.created),
+    created_by: record.created_by,
+    updated: new Date(revision.created),
+    updated_by: revision.created_by,
+    conflicts: record.heads.length > 1,
+    deleted: revision.deleted ? true : false,
+    type: record.type,
+    relationship: revision.relationship,
+    avps: revision.avps,
+    data: data,
+    hrid: hrid,
+  } satisfies RecordMetadata;
+}
+/**
  * Retrieves a list of non-deleted record metadata.
  *
  *
@@ -566,8 +691,20 @@ export async function listRecordMetadata({
     // Get records - either allDocs or query from index based on provision of
     // recordIds filter
     const rawRecords = await getRecords({
+      // this is typically not used - this means the keys field in the DB query
+      // is not used
       recordIds,
       dataDb,
+    });
+
+    const rawRevisions = await getRevisions({dataDb: dataDb});
+
+    const revMap: Map<
+      string,
+      PouchDB.Core.ExistingDocument<Revision>
+    > = new Map();
+    rawRevisions.forEach(rev => {
+      revMap.set(rev._id, rev);
     });
 
     // Process records in parallel using Promise.all with map. Each record is
@@ -584,11 +721,11 @@ export async function listRecordMetadata({
           return null;
         }
 
-        const revision = await getRevision({dataDb: dataDb, revisionId: revId});
+        const revision = revMap.get(revId);
 
         // Skip if revision not found
         if (!revision) {
-          console.warn(
+          logError(
             `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
           );
           return null;
@@ -603,7 +740,7 @@ export async function listRecordMetadata({
 
           // Ensure it's defined
           if (!data) {
-            console.warn(
+            logError(
               `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
             );
             return null;
@@ -635,7 +772,7 @@ export async function listRecordMetadata({
           hrid: hrid,
         } satisfies RecordMetadata;
       } catch (e) {
-        console.error(
+        logError(
           `Failed to get record information. Record ID ${record._id}. Project ID ${projectId}. Due to error: ${e}.`
         );
         return null;
@@ -646,7 +783,7 @@ export async function listRecordMetadata({
     const results = await Promise.all(recordMetadataPromises);
     return results.filter(item => item !== null);
   } catch (err) {
-    console.log(err);
+    logError(err);
     throw Error(`failed to get metadata. ${err}`);
   }
 }
@@ -717,9 +854,11 @@ export async function hydrateIndividualRecord({
 export async function getAttributeValuePairs({
   dataDb,
   avpIds,
+  includeAttachments = true,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | AvpDbType;
   avpIds: AttributeValuePairID[];
+  includeAttachments?: boolean;
 }): Promise<{
   [id: string]: PouchDB.Core.ExistingDocument<AttributeValuePair>;
 }> {
@@ -732,14 +871,16 @@ export async function getAttributeValuePairs({
     // Query the database for AVP documents
     const avpDocs = await queryCouch<AttributeValuePair>({
       keys: avpIds,
-      db: dataDb,
+      db: dataDb as AvpDbType,
       index: AVP_INDEX,
       conflicts: false,
     });
 
     // Process all attachment loading operations in parallel
     await Promise.all(
-      avpDocs.map(avp => loadAttributeValuePair({avp, dataDb}))
+      avpDocs.map(avp =>
+        loadAttributeValuePair({avp, dataDb, includeAttachments})
+      )
     );
 
     // Build and return the document map
@@ -757,11 +898,11 @@ export async function getRevisions({
   revisionIds,
   dataDb,
 }: {
-  revisionIds: RevisionID[];
-  dataDb: DataDbType;
+  revisionIds?: RevisionID[];
+  dataDb: DataDbType | RevisionDbType;
 }): Promise<PouchDB.Core.ExistingDocument<Revision>[]> {
   return await queryCouch<Revision>({
-    db: dataDb,
+    db: dataDb as RevisionDbType,
     conflicts: false,
     index: REVISIONS_INDEX,
     keys: revisionIds,
@@ -829,7 +970,6 @@ async function createAuditHash(
     .map(item => `${item.id}:${item.rev}`)
     .join('|');
 
-  // console.log('canonical json', canonicalString);
   // Return SHA-256 hash
   return await createHash(canonicalString);
 }
@@ -938,10 +1078,10 @@ export async function getRecords({
   dataDb,
 }: {
   recordIds?: RecordID[];
-  dataDb: DataDbType;
+  dataDb: DataDbType | RecordDbType;
 }): Promise<PouchDB.Core.ExistingDocument<EncodedRecord>[]> {
   return await queryCouch<EncodedRecord>({
-    db: dataDb,
+    db: dataDb as RecordDbType,
     conflicts: false,
     index: RECORDS_INDEX,
     keys: recordIds,
@@ -956,9 +1096,11 @@ export async function getRecords({
 export async function getFormDataFromRevision({
   revision,
   dataDb,
+  includeAttachments = true,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
   revision: Revision;
+  includeAttachments?: boolean;
 }): Promise<FormData> {
   // Scaffold
   const form_data: FormData = {
@@ -969,7 +1111,11 @@ export async function getFormDataFromRevision({
 
   // Get relevant avps and then populate (including fetching attachments)
   const avp_ids = Object.values(revision.avps);
-  const avps = await getAttributeValuePairs({avpIds: avp_ids, dataDb});
+  const avps = await getAttributeValuePairs({
+    avpIds: avp_ids,
+    dataDb,
+    includeAttachments,
+  });
 
   for (const [name, avp_id] of Object.entries(revision.avps)) {
     form_data.data[name] = avps[avp_id].data;
@@ -995,7 +1141,7 @@ export async function addNewRevisionFromForm({
   dataDb,
   newRevId,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
   record: Record;
   newRevId: RevisionID;
 }) {
@@ -1032,7 +1178,7 @@ async function addNewAttributeValuePairs({
   record,
   newRevId,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | AvpDbType | AttachmentDbType;
   record: Record;
   newRevId: RevisionID;
 }): Promise<AttributeValuePairIDMap> {
@@ -1121,7 +1267,7 @@ async function addNewAttributeValuePairs({
     }
   }
   // Write all updates
-  await dataDb.bulkDocs(documentsToWrite);
+  await (dataDb as DataDbType).bulkDocs(documentsToWrite);
   return avpMap;
 }
 
@@ -1140,7 +1286,7 @@ export async function initialiseRecordForNewRevision({
   revision_id,
   dataDb,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RecordDbType;
   record: Record;
   revision_id: RevisionID;
 }) {
@@ -1155,7 +1301,7 @@ export async function initialiseRecordForNewRevision({
     type: record.type,
   } satisfies EncodedRecord;
   try {
-    await dataDb.put(new_encoded_record);
+    await (dataDb as RecordDbType).put(new_encoded_record);
   } catch (err) {
     // if there was an error then the document exists
     // already which is fine
@@ -1169,15 +1315,27 @@ export async function initialiseRecordForNewRevision({
 async function loadAttributeValuePair({
   avp,
   dataDb,
+  includeAttachments = true,
 }: {
   avp: AttributeValuePair;
   dataDb: DataDbType;
+  includeAttachments: boolean;
 }): Promise<AttributeValuePair> {
+  // Proceed with attachment loading where applicable
   const attachmentRefs = avp.faims_attachments;
   if (attachmentRefs === null || attachmentRefs === undefined) {
     // No attachments
     return avp;
   }
+
+  // This forcefully ignores loading attachments - this is important for
+  // performance when streaming lots of AVPs due to memory buffering issues
+  if (!includeAttachments) {
+    // Here we populate data with the 'unresolved' attachments
+    avp.data = avp.faims_attachments;
+    return avp;
+  }
+
   // Work out how to load the attachment
   const loader = getAttachmentLoaderForType(avp.type);
 

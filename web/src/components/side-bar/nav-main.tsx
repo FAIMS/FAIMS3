@@ -14,7 +14,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import {Link, useLocation} from '@tanstack/react-router';
+import {Link, useLocation, useRouterState} from '@tanstack/react-router';
 import {cn} from '@/lib/utils';
 
 export interface NavItem {
@@ -22,10 +22,13 @@ export interface NavItem {
   url: string;
   icon?: LucideIcon;
   isActive?: boolean;
+  /** Optional search params for the primary nav link (e.g. Archive default tab). */
+  linkSearch?: Record<string, string>;
   items?: {
     id: string;
     title: string;
     url?: string;
+    search?: Record<string, string>;
   }[];
 }
 
@@ -42,8 +45,40 @@ interface NavMainProps {
  * @param {NavItem[]} props.items - The navigation items to display.
  * @returns {JSX.Element} The rendered navigation component.
  */
+function subItemIsActive(
+  pathname: string,
+  locationSearch: Record<string, unknown>,
+  subItem: NonNullable<NavItem['items']>[number]
+) {
+  if (!subItem.url) return false;
+  if (subItem.search) {
+    if (pathname !== subItem.url) return false;
+    for (const [k, expected] of Object.entries(subItem.search)) {
+      if (String(locationSearch[k] ?? '') !== expected) return false;
+    }
+    return true;
+  }
+  return pathname.startsWith(subItem.url);
+}
+
 export function NavMain({title, items}: NavMainProps) {
   const {pathname} = useLocation();
+  const locationSearch = useRouterState({
+    select: s => {
+      const raw = s.location.search as unknown;
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        return raw as Record<string, unknown>;
+      }
+      if (typeof raw === 'string' && raw.length > 0) {
+        const qs = raw.startsWith('?') ? raw.slice(1) : raw;
+        return Object.fromEntries(new URLSearchParams(qs)) as Record<
+          string,
+          unknown
+        >;
+      }
+      return {};
+    },
+  });
 
   return (
     <SidebarGroup>
@@ -64,6 +99,7 @@ export function NavMain({title, items}: NavMainProps) {
                     <SidebarMenuButton asChild tooltip={item.title}>
                       <Link
                         to={item.url}
+                        {...(item.linkSearch ? {search: item.linkSearch} : {})}
                         className={cn(
                           'flex items-center gap-2',
                           isActive && 'bg-sidebar-accent'
@@ -77,7 +113,11 @@ export function NavMain({title, items}: NavMainProps) {
                   </CollapsibleTrigger>
                 ) : (
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
+                    <Link
+                      to={item.url}
+                      {...(item.linkSearch ? {search: item.linkSearch} : {})}
+                      className="flex items-center gap-2"
+                    >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
                     </Link>
@@ -91,8 +131,15 @@ export function NavMain({title, items}: NavMainProps) {
                           {subItem.url ? (
                             <Link
                               to={subItem.url}
+                              {...(subItem.search
+                                ? {search: subItem.search}
+                                : {})}
                               className={
-                                pathname.startsWith(subItem.url)
+                                subItemIsActive(
+                                  pathname,
+                                  locationSearch,
+                                  subItem
+                                )
                                   ? 'bg-sidebar-accent'
                                   : ''
                               }

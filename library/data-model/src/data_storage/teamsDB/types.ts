@@ -18,6 +18,8 @@
  *   Data models related to users.
  */
 
+import {DatabaseInterface} from '../../types';
+
 export type TeamsV1Document = PouchDB.Core.ExistingDocument<TeamsV1Fields>;
 
 export interface TeamsV1Fields {
@@ -42,4 +44,4 @@ export type TeamsDBFields = TeamsV1Fields;
 export type ExistingTeamsDBDocument =
   PouchDB.Core.ExistingDocument<TeamsDBFields>;
 export type TeamsDBDocument = PouchDB.Core.Document<TeamsDBFields>;
-export type TeamsDB = PouchDB.Database<TeamsDBFields>;
+export type TeamsDB = DatabaseInterface<TeamsDBFields>;

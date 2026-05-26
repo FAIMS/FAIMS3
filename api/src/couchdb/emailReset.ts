@@ -12,8 +12,8 @@ import {
   EmailCodeFields,
   ExistingPeopleDBDocument,
   GetEmailCodeIndex,
+  safeWriteDocument,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {buildQueryString} from '../auth/helpers';
 import {CONDUCTOR_PUBLIC_URL, EMAIL_CODE_EXPIRY_MINUTES} from '../buildconfig';
@@ -170,7 +170,7 @@ export const createNewEmailCode = async ({
   const authDB = getAuthDB();
   const code = generateVerificationCode();
   const hash = hashChallengeCode(code);
-  const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + crypto.randomUUID();
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
   const currentTimestamp = Date.now();
 
@@ -275,7 +275,8 @@ export const markCodeAsUsed = async (
   codeDoc.used = true;
 
   const authDB = getAuthDB();
-  await authDB.put(codeDoc);
+  // Update safely
+  await safeWriteDocument({db: authDB, data: codeDoc, writeOnClash: true});
   return codeDoc;
 };
 
@@ -384,7 +385,7 @@ export const deleteEmailCode = async (
   }
 
   try {
-    await authDB.remove(codeDoc!._id, codeDoc!._rev);
+    if (codeDoc) await authDB.remove(codeDoc);
   } catch (error) {
     throw new Error(`Failed to delete email code: ${(error as Error).message}`);
   }

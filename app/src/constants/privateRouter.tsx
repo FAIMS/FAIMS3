@@ -11,6 +11,7 @@ import {useEffect, useRef, useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
 import {useAppSelector} from '../context/store';
 import {useIsOnline} from '../utils/customHooks';
+import {LOGIN_BANNER_GRACE_MS} from '../buildconfig';
 import * as ROUTES from './routes';
 
 interface PrivateRouteProps {
@@ -243,7 +244,22 @@ export const TolerantPrivateRoute = (
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const isToken = useAppSelector(state => !!state.auth.activeUser?.token);
   const {isOnline} = useIsOnline();
-  const bannerVisible = !isAuthenticated && isToken && isOnline;
+  const [isGracePeriodOver, setIsGracePeriodOver] = useState(false);
+
+  // Hide the login banner for a short grace period after app initialisation
+  // so that background token refreshes can complete without alarming the user.
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setIsGracePeriodOver(true);
+    }, LOGIN_BANNER_GRACE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+
+  const bannerVisible =
+    !isAuthenticated && isToken && isOnline && isGracePeriodOver;
 
   // Good case - all good
   if (!isAuthenticated && !isToken) {

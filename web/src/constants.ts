@@ -1,3 +1,5 @@
+import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
+import pluralize from 'pluralize';
 import {capitalize} from './lib/utils';
 
 const getConfigValue = (key: string) => {
@@ -12,16 +14,70 @@ export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
 export const WEBSITE_TITLE =
   import.meta.env.VITE_WEBSITE_TITLE || 'Control Centre';
 export const APP_NAME = getConfigValue('VITE_APP_NAME');
+export const APP_SHORT_NAME = import.meta.env.VITE_APP_SHORT_NAME || APP_NAME;
 export const WEB_URL = getConfigValue('VITE_WEB_URL');
 export const API_URL = getConfigValue('VITE_API_URL');
 export const APP_URL = getConfigValue('VITE_APP_URL');
+export const DOCS_URL = import.meta.env.VITE_DOCS_URL || '';
 export const APP_THEME = import.meta.env.VITE_APP_THEME || 'default';
 
 export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
   ? capitalize(import.meta.env.VITE_NOTEBOOK_NAME)
   : 'Project';
 
+/** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */
+export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
+
+/** Plural with first letter capitalised — use for headings and labels. */
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
+  capitalize(NOTEBOOK_NAME_PLURAL);
+
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
+
+/**
+ * When the directory lists a notebook as archived (or id absent), the mobile app
+ * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
+ * Set via VITE_FORCE_REMOTE_DELETION; must match the Field Mark app build for accurate web copy.
+ */
+export type ForceRemoteDeletionMode = 'allow' | 'never';
+
+function parseForceRemoteDeletion(): ForceRemoteDeletionMode {
+  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
+  if (v === 'allow') {
+    return 'allow';
+  }
+  if (v !== undefined && v !== '' && v !== 'never') {
+    console.warn(
+      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+    );
+  }
+  return 'never';
+}
+
+export const FORCE_REMOTE_DELETION = parseForceRemoteDeletion();
+
+/**
+ * When true, the mobile app destroys local Pouch data on manual notebook deactivation.
+ * Baked at build time; must match the Field Mark app build for accurate copy.
+ */
+function parseDeleteOnDeactivation(): boolean {
+  const v = import.meta.env.VITE_DELETE_ON_DEACTIVATION as string | undefined;
+  if (v === '' || v === undefined) {
+    return false;
+  }
+  if (['true', '1', 'on', 'yes'].includes(v.toLowerCase())) {
+    return true;
+  }
+  if (['false', '0', 'off', 'no'].includes(v.toLowerCase())) {
+    return false;
+  }
+  console.warn(
+    `VITE_DELETE_ON_DEACTIVATION invalid (${v}); assuming false. Use true or false.`
+  );
+  return false;
+}
+
+export const DELETE_ON_DEACTIVATION = parseDeleteOnDeactivation();
 
 export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
 
@@ -145,7 +201,80 @@ function getLongLivedTokenDurationHints(): number[] {
 }
 
 export const LONG_LIVED_TOKEN_DURATION_HINTS = getLongLivedTokenDurationHints();
+export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 
 // Help link to use for the long lived token docs
 export const LONG_LIVED_TOKEN_HELP_LINK =
   'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
+
+/**
+ * Map source configuration.  Define the map source
+ * (see src/gui/components/map/tile_source.ts for options)
+ * and the map key if required.
+ */
+
+function get_map_source(): string {
+  const map_source = import.meta.env.VITE_MAP_SOURCE;
+  return map_source || 'osm';
+}
+
+function get_satellite_source(): 'esri' | 'maptiler' | undefined {
+  const map_source = import.meta.env.VITE_SATELLITE_SOURCE;
+  return map_source !== 'esri' && map_source !== 'maptiler'
+    ? undefined
+    : map_source;
+}
+
+function get_map_key(): string {
+  const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
+  return map_key || '';
+}
+
+function get_map_style(): MapStylesheetNameType {
+  const map_style = import.meta.env.VITE_MAP_STYLE;
+  return map_style || 'basic';
+}
+
+// get the map configuration
+export function getMapConfig(): MapConfig {
+  return {
+    mapSource: get_map_source(),
+    mapSourceKey: get_map_key(),
+    mapStyle: get_map_style(),
+    satelliteSource: get_satellite_source(),
+  };
+}
+
+/**
+ * Gets the Bugsnag API key from environment variables.
+ * @returns The Bugsnag API key, or undefined if not configured.
+ */
+function getBugsnagApiKey(): string | undefined {
+  const apiKey = import.meta.env.VITE_BUGSNAG_API_KEY as string | undefined;
+  if (apiKey === '' || apiKey === undefined) {
+    console.log('VITE_BUGSNAG_API_KEY not set, error reporting disabled');
+    return undefined;
+  }
+  return apiKey;
+}
+
+export const BUGSNAG_API_KEY = getBugsnagApiKey();
+
+/**
+ * Gets the app version from Vite's __APP_VERSION__ replacement or environment variables.
+ * Falls back to 'unknown' if not configured.
+ * @returns The app version.
+ */
+function getVersion(): string {
+  // First try the Vite define replacement (set at build time)
+  const version = __APP_VERSION__;
+  if (version) {
+    console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
+    return version;
+  }
+
+  console.warn('__APP_VERSION__ not set in build. Using "unknown"');
+  return 'unknown';
+}
+
+export const APP_VERSION = getVersion();

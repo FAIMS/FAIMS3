@@ -35,8 +35,12 @@ import passport from 'passport';
 import flash from 'req-flash';
 import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
-import {applyPassportStrategies} from './auth/strategies/applyStrategies';
-import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
+import {registerAuthProviders} from './auth/strategies/applyStrategies';
+import {
+  API_VERSION,
+  BUGSNAG_API_KEY,
+  COUCHDB_INTERNAL_URL,
+} from './buildconfig';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -62,8 +66,8 @@ const indexContent = readFileSync(
 
 import markdownit from 'markdown-it';
 import {api as resetPasswordApi} from './api/emailReset';
-import {api as longLivedApi} from './api/longLivedTokens';
 import {api as invitesApi} from './api/invites';
+import {api as longLivedApi} from './api/longLivedTokens';
 import {api as notebookApi} from './api/notebooks';
 import {api as teamsApi} from './api/teams';
 import {api as templatesApi} from './api/templates';
@@ -82,12 +86,40 @@ import patch from './utils/patchExpressAsync';
 // This must occur before express app is used
 patch();
 
-export const app = express();
-app.use(morgan('combined'));
-
 const IS_TEST = process.env.NODE_ENV === 'test';
 
-// Setup rate limiter
+// Bugsnag setup
+import Bugsnag from '@bugsnag/js';
+import BugsnagPluginExpress from '@bugsnag/plugin-express';
+
+const bugsnagEnabled = !!BUGSNAG_API_KEY;
+
+if (bugsnagEnabled) {
+  Bugsnag.start({
+    apiKey: BUGSNAG_API_KEY!,
+    plugins: [BugsnagPluginExpress],
+    appVersion: API_VERSION,
+  });
+  console.log('Bugsnag enabled');
+} else {
+  console.log('Bugsnag not enabled (no API key set)');
+}
+
+export const app: express.Express = express();
+
+// Bugsnag comes first - passes through
+let bugsnagMiddleware = undefined;
+if (bugsnagEnabled) {
+  bugsnagMiddleware = Bugsnag.getPlugin('express');
+  if (!bugsnagMiddleware) {
+    throw new Error(
+      'Bugsnag middleware could not be retrieved! Despite it being started.'
+    );
+  }
+  app.use(bugsnagMiddleware.requestHandler);
+}
+
+// Setup rate limiter (first - as we want to limit all requests)
 export const RATE_LIMITER = RateLimit({
   windowMs: RATE_LIMITER_WINDOW_MS,
   max: RATE_LIMITER_PER_WINDOW,
@@ -111,14 +143,17 @@ if (!IS_TEST && RATE_LIMITER_ENABLED) {
   }
 }
 
+app.use(morgan('combined'));
+
 // Only parse query parameters into strings, not objects
 app.set('query parser', 'simple');
 app.use(
   cookieSession({
     name: 'session',
     secret: COOKIE_SECRET,
-    // TODO ascertain appropriate max age
-    maxAge: 24 * 60 * 60 * 1000 * 365, // BBS 20220831 changed to 1 year
+    // cookie is used for login flow, only short lifetime needed
+    // and reduces risk of stale sessions lingering around
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
   })
 );
 
@@ -177,30 +212,6 @@ app.use('/api/long-lived-tokens', longLivedApi);
 app.use('/api/invites', invitesApi);
 app.use('/api', utilityApi);
 
-// Custom error handler which returns a JSON description of error
-// TODO specify this interface in data models
-const errorHandler: ErrorRequestHandler = (
-  err: Error & {status?: number},
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  req: Request,
-  res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction
-) => {
-  // Set the response status code
-  const statusCode = err.status || 500;
-  res.status(statusCode).json({
-    error: {
-      message: err.message,
-      status: statusCode,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    },
-  });
-};
-
-// Use custom error handler which intercepts with JSON
-app.use(errorHandler);
-
 // Swagger-UI Routes
 app.get('/apidoc/swagger-initializer.js', (req, res) => res.send(indexContent));
 app.use('/apidoc/', express.static(pathToSwaggerUi));
@@ -212,15 +223,13 @@ app.get('/up/', (req, res) => {
 
 // AUTH
 // ====
-
-// This sets up passport to use the social strategies
-applyPassportStrategies(CONDUCTOR_AUTH_PROVIDERS);
+const socialProviders = registerAuthProviders();
 
 // This adds the views/pages related to auth (/login, /register)
-addAuthPages(app, CONDUCTOR_AUTH_PROVIDERS);
+addAuthPages(app, socialProviders);
 
 // This adds the endpoints for auth (/auth/local, [/auth/<handler>])
-addAuthRoutes(app, CONDUCTOR_AUTH_PROVIDERS);
+addAuthRoutes(app, socialProviders);
 
 // HANDLEBARS ROUTES
 // =================
@@ -257,3 +266,38 @@ app.post('/fallback-initialise', async (req, res) => {
   }
   res.redirect('/');
 });
+
+// Add the bugsnag error middleware (first - prior to other error middleware)
+if (bugsnagEnabled) {
+  if (bugsnagMiddleware) {
+    app.use(bugsnagMiddleware.errorHandler);
+  } else {
+    console.error(
+      'Bugsnag middleware not applied - express plugin could not be retrieved!'
+    );
+  }
+}
+
+// Custom error handler which returns a JSON description of error
+// TODO specify this interface in data models
+const errorHandler: ErrorRequestHandler = (
+  err: Error & {status?: number},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction
+) => {
+  // Set the response status code
+  const statusCode = err.status || 500;
+  res.status(statusCode).json({
+    error: {
+      message: err.message,
+      status: statusCode,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    },
+  });
+};
+
+// Use custom error handler which intercepts with JSON
+app.use(errorHandler);

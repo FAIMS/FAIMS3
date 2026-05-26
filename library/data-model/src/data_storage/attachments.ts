@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {v4 as uuidv4} from 'uuid';
+import {randomUuid} from '../utils';
 import {
   FAIMSAttachmentID,
   AttributeValuePair,
@@ -30,11 +30,11 @@ interface FullAttachments {
 }
 
 export function generate_file_name(): string {
-  return 'file-' + uuidv4();
+  return 'file-' + randomUuid();
 }
 
 export function generateFAIMSAttachmentID(): FAIMSAttachmentID {
-  return 'att-' + uuidv4();
+  return 'att-' + randomUuid();
 }
 
 export function file_data_to_attachments(
@@ -115,7 +115,7 @@ export function attachment_to_file(
   attachment: PouchDB.Core.Attachment
 ): File {
   const content_type = attachment.content_type;
-  const data = (attachment as PouchDB.Core.FullAttachment).data;
+  const data = (attachment as PouchDB.Core.FullAttachment).data as Blob;
   return new File([data], name, {type: content_type});
 }
 

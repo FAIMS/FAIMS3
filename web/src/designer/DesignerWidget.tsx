@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, {useMemo, useState, useEffect} from 'react';
+import React, {useMemo, useState, useEffect, useCallback} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
   ScopedCssBaseline,
   Box,
   Button,
+  IconButton,
   Typography,
   AppBar,
   Toolbar,
@@ -30,47 +31,51 @@ import {
   DialogActions,
   CircularProgress,
 } from '@mui/material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import {
   createMemoryRouter,
   RouterProvider,
   RouteObject,
   Navigate,
 } from 'react-router-dom';
+import {migrateNotebook} from '@faims3/data-model';
 
 import {createDesignerStore} from './createDesignerStore';
-import globalTheme from './theme';
+import {createDesignerTheme} from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
-import {migrateNotebook} from './state/migrateNotebook';
+import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
+import {THEME} from '../lib/theme';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 
-import {v4 as uuidv4} from 'uuid';
+/**
+ * @file Full-screen designer shell: migrate notebook, Redux, memory router, export without internal ids.
+ */
 
+/** Props for the full-screen notebook designer embedded in the main app. */
 export interface DesignerWidgetProps {
+  /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
+  /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
+  /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
+  /** Log Redux actions to the console. */
   debug?: boolean;
+  /** Milliseconds to show the loading spinner before revealing the editor shell. */
   loadingDuration?: number;
+  /** Fade/scale transition duration for enter and exit (ms). */
   animationDuration?: number;
+  /** Scale factor when hidden (`scale(animationScale)` before fade-in). */
   animationScale?: number;
 }
 
 /**
- * Remove designerIdentifier keys just before export,
- * so the external schema remains clean.
+ * Standalone designer shell: migrates notebook data, mounts Redux + router, and
+ * serialises without `designerIdentifier` on save.
  */
-const stripDesignerIdentifiers = (notebook: Notebook): Notebook => {
-  const clone = JSON.parse(JSON.stringify(notebook)) as Notebook;
-  const fields = clone['ui-specification']?.fields ?? {};
-  Object.keys(fields).forEach(fieldName => {
-    delete fields[fieldName].designerIdentifier;
-  });
-  return clone;
-};
-
 export function DesignerWidget({
   notebook,
   onClose,
@@ -80,61 +85,50 @@ export function DesignerWidget({
   animationDuration = 300,
   animationScale = 0.95,
 }: DesignerWidgetProps) {
+  const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
+  const notebookIdentity = notebook?.metadata?.project_id ?? '__none__';
+
   // 1. Migrate + inject designerIdentifiers + reset undo history on each new notebook
   const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    if (!notebook) return undefined;
+    // check that we have an actual notebook
+    if (!notebook?.metadata) return undefined;
 
     const flat: Notebook = {
       metadata: notebook.metadata,
       'ui-specification': notebook['ui-specification'].present,
     };
-
-    const migrated: Notebook = migrateNotebook(flat);
+    // migrate the notebook - update any out of date fields or structures
+    const {migrated} = migrateNotebook(flat);
+    const migratedUiSpec = migrated[
+      'ui-specification'
+    ] as Notebook['ui-specification'];
+    const migratedMetadata = migrated.metadata as Notebook['metadata'];
 
     // Inject in-memory designerIdentifier if missing
-    Object.values(migrated['ui-specification'].fields).forEach(field => {
+    Object.values(migratedUiSpec.fields).forEach(field => {
       if (!field.designerIdentifier) {
-        field.designerIdentifier = uuidv4();
+        field.designerIdentifier = crypto.randomUUID();
       }
     });
 
     return {
-      metadata: migrated.metadata,
+      metadata: migratedMetadata,
       'ui-specification': {
-        present: migrated['ui-specification'],
+        present: migratedUiSpec,
         past: [],
         future: [],
       },
     };
   }, [notebook]);
 
-  // 2. Create a fresh Redux store whenever processedNotebook or debug flag changes
-  const store = useMemo(
-    () => createDesignerStore(processedNotebook),
-    [processedNotebook, debug]
+  // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
+  const [store, setStore] = useState(() =>
+    createDesignerStore(processedNotebook, debug)
   );
 
-  // 3. Build routes once
-  const routes: RouteObject[] = useMemo(
-    () => [
-      {
-        path: '/',
-        element: <NotebookEditor />,
-        children: [
-          {index: true, element: <Navigate to="/design/0" replace />},
-          {path: 'info', element: <InfoPanel />},
-          {path: 'design/*', element: <DesignPanel />},
-        ],
-      },
-    ],
-    []
-  );
-
-  // 4. Recreate router on notebook change to wipe any internal routing state
-  const memoryRouterInstance = useMemo(
-    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
-    [notebook]
-  );
+  useEffect(() => {
+    setStore(createDesignerStore(processedNotebook, debug));
+  }, [notebookIdentity, debug]);
 
   // Local UI state
   const [loading, setLoading] = useState(true);
@@ -154,21 +148,19 @@ export function DesignerWidget({
   // Merge external theme override
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
-      return themeOverride(globalTheme);
+      return themeOverride(baseTheme);
     }
-    return {...globalTheme, ...themeOverride};
-  }, [themeOverride]);
+    return {...baseTheme, ...themeOverride};
+  }, [baseTheme, themeOverride]);
 
-  const doClose = (file: File | undefined) => onClose(file);
+  const doClose = useCallback(
+    (file: File | undefined) => onClose(file),
+    [onClose]
+  );
 
-  const handleDone = () => {
-    const {metadata, 'ui-specification': historyState} =
-      store.getState().notebook;
-
-    const actualNotebook: Notebook = {
-      metadata,
-      'ui-specification': historyState.present,
-    };
+  /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
+  const handleDone = useCallback(() => {
+    const actualNotebook: Notebook = toNotebook(store.getState().notebook);
 
     // Remove internal IDs before serialisation
     const exportNotebook = stripDesignerIdentifiers(actualNotebook);
@@ -186,14 +178,42 @@ export function DesignerWidget({
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(file), animationDuration);
-  };
+  }, [animationDuration, doClose, store]);
 
-  const handleCancel = () => {
+  /** Close without saving after user confirms cancel dialog. */
+  const handleCancel = useCallback(() => {
     setCancelDialogOpen(false);
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(undefined), animationDuration);
-  };
+  }, [animationDuration, doClose]);
+
+  // 3. Build routes once
+  const routes: RouteObject[] = useMemo(
+    () => [
+      {
+        path: '/',
+        element: (
+          <NotebookEditor
+            onSave={handleDone}
+            onCancelRequest={() => setCancelDialogOpen(true)}
+          />
+        ),
+        children: [
+          {index: true, element: <Navigate to="/design/0" replace />},
+          {path: 'info', element: <InfoPanel />},
+          {path: 'design/*', element: <DesignPanel />},
+        ],
+      },
+    ],
+    [handleDone, setCancelDialogOpen]
+  );
+
+  // 4. Recreate router on notebook change to wipe any internal routing state
+  const memoryRouterInstance = useMemo(
+    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
+    [notebookIdentity, routes]
+  );
 
   if (loading) {
     return (
@@ -234,14 +254,14 @@ export function DesignerWidget({
               <Typography variant="h6" fontWeight="bold">
                 Notebook Editor
               </Typography>
-              <Box>
-                <Button onClick={() => setCancelDialogOpen(true)} sx={{mr: 1}}>
-                  Cancel
-                </Button>
-                <Button variant="contained" onClick={handleDone}>
-                  Save
-                </Button>
-              </Box>
+              <IconButton
+                aria-label="close designer"
+                onClick={() => setCancelDialogOpen(true)}
+                size="small"
+                sx={{color: 'text.secondary', '&:hover': {color: 'text.primary'}}}
+              >
+                <CloseRoundedIcon />
+              </IconButton>
             </Toolbar>
           </AppBar>
 
@@ -264,10 +284,14 @@ export function DesignerWidget({
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setCancelDialogOpen(false)} autoFocus>
+              <Button
+                variant="contained"
+                onClick={() => setCancelDialogOpen(false)}
+                autoFocus
+              >
                 No, keep editing
               </Button>
-              <Button variant="contained" onClick={handleCancel}>
+              <Button onClick={handleCancel} color="inherit">
                 Yes, cancel
               </Button>
             </DialogActions>

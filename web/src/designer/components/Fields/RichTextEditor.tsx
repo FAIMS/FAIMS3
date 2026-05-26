@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {NOTEBOOK_NAME} from '@/constants';
 import {Grid, FormHelperText} from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {useRef} from 'react';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
+/** RichText display field: MDX body stored in `component-parameters.content`. */
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -29,10 +32,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const ref = useRef<MDXEditorMethods>(null);
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state = {
@@ -65,7 +65,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
           }
         />
         <FormHelperText>
-          Use this editor to add rich text to your notebook.
+          {`Use this editor to add rich text to your ${NOTEBOOK_NAME}.`}
         </FormHelperText>
       </Grid>
     </Grid>

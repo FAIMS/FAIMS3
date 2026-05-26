@@ -24,7 +24,6 @@ PouchDB.plugin(PouchDBFind);
 
 import {addGlobalRole, Role} from '@faims3/data-model';
 import {expect} from 'chai';
-import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {
   generateJwtFromUser,
@@ -37,6 +36,7 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
+import supertest from 'supertest';
 
 export let adminToken = '';
 export let localUserToken = '';
@@ -124,7 +124,7 @@ export const beforeApiTests = async () => {
  * @returns The wrapped request object
  */
 export const requestAuthAndType = (
-  request: request.Test,
+  request: supertest.Test,
   token: string = adminToken
 ) => {
   return request

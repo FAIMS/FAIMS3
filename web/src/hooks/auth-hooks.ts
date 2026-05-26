@@ -45,9 +45,15 @@ export const useIsAuthorisedTo = ({
   action: Action;
   resourceId?: string;
 }): boolean => {
-  const {user} = useAuth();
+  const {user, isExpired} = useAuth();
 
-  if (!user || !user.decodedToken) {
+  if (
+    // Checks for lack of authentication
+    !user ||
+    isExpired() ||
+    user.decodedToken === null ||
+    user.decodedToken === undefined
+  ) {
     return false;
   }
 

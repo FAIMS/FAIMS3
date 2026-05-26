@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Core Redux state types for the notebook designer: metadata, UI specification,
+ * field definitions, and the undo-wrapped notebook shape used by the store.
+ */
+
 // eslint-disable-next-line n/no-extraneous-import
 import {StateWithHistory} from 'redux-undo';
-import {ConditionType} from '../components/condition/types';
+import {ConditionType} from '../types/condition';
 
+/** Top-level notebook metadata bag (name, descriptions, access, custom keys). */
 export type NotebookMetadata = PropertyMap;
 
+/** Arbitrary string-keyed metadata values (serialised with the notebook). */
 export type PropertyMap = {
   [key: string]: unknown;
 };
 
+/** Merged props for FAIMS form components (`component-parameters` in notebook JSON). */
 export type ComponentParameters = {
   fullWidth?: boolean;
   name?: string;
@@ -39,6 +47,8 @@ export type ComponentParameters = {
     // These items must correspond to values in the options[]. Only one of such
     // can be selecting, greying out/excluding other options
     exclusiveOptions?: string[];
+    enableOtherOption?: boolean;
+    otherOptionPosition?: number;
     options?: {
       value: string;
       label: string;
@@ -51,18 +61,25 @@ export type ComponentParameters = {
   FormLabelProps?: {children?: string};
   FormHelperTextProps?: {children?: string};
   FormControlLabelProps?: {label: string};
+  // default false
+  allowSetToCurrentPoint?: boolean;
   initialValue?: unknown;
   related_type?: string;
+  hideCreateAnotherButton?: boolean;
   relation_type?: string;
   related_type_label?: string;
   relation_linked_vocabPair?: [string, string][];
+  numberType?: 'integer' | 'floating';
   required?: boolean;
   template?: string;
   num_digits?: number;
   form_id?: string;
+  isAutoPick?: boolean;
   is_auto_pick?: boolean;
+  show_now_button?: boolean;
   zoom?: number;
   featureType?: string;
+  buttonLabelText?: string;
   variant_style?: string;
   html_tag?: string;
   content?: string;
@@ -70,20 +87,29 @@ export type ComponentParameters = {
   select?: boolean;
   geoTiff?: string;
   type?: string;
+  min?: number;
+  max?: number;
+  rows?: number;
   valuetype?: string;
   protection?: 'protected' | 'allow-hiding' | 'none';
   hidden?: boolean;
   allowLinkToExisting?: boolean;
+  /** Enable speech-to-text input (default: true) */
+  enableSpeech?: boolean;
+  /** Whether to append speech to existing text or replace */
+  speechAppendMode?: boolean;
+  /** Enable online address auto-suggestion providers */
+  enableAutoSuggestion?: boolean;
+  /** Allow manual structured address entry as fallback */
+  allowFullAddressManualEntry?: boolean;
 };
 
-export type ValidationSchemaElement = (string | number | unknown[])[];
-
+/** Single field definition: component binding, parameters, optional visibility condition. */
 export type FieldType = {
   'component-namespace': string;
   'component-name': string;
   'type-returned': string;
   'component-parameters': ComponentParameters;
-  validationSchema?: ValidationSchemaElement[];
   initialValue?: unknown;
   access?: string[];
   condition?: ConditionType | null;
@@ -96,6 +122,8 @@ export type FieldType = {
   humanReadableDescription?: string;
   showInChooser?: boolean;
   order?: number;
+  deprecated?: boolean;
+  deprecationMessage?: string;
 
   meta?: {
     annotation: {
@@ -109,6 +137,7 @@ export type FieldType = {
   };
 };
 
+/** Editable notebook structure: fields map, sections (`fviews`), forms (`viewsets`), tab order. */
 export type NotebookUISpec = {
   fields: {[key: string]: FieldType};
   fviews: {
@@ -128,48 +157,47 @@ export type NotebookUISpec = {
       summary_fields?: string[];
       layout?: 'inline' | 'tabs';
       hridField?: string;
-      publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
     };
   };
   visible_types: string[];
 };
 
+/** Legacy shape (unused in current store; `modified` is a top-level boolean). */
 export type NotebookModified = {
   flag: boolean;
 };
 
+/** Root designer store: notebook slice + dirty flag for save prompts. */
 export type AppState = {
   modified: boolean;
   notebook: NotebookWithHistory;
 };
 
+/** Flat notebook as persisted/exported (no redux-undo wrapper). */
 export type Notebook = {
   metadata: NotebookMetadata;
   'ui-specification': NotebookUISpec;
 };
 
+/** Notebook with `ui-specification` wrapped for undo/redo in the designer. */
 export type NotebookWithHistory = {
   metadata: NotebookMetadata;
   'ui-specification': StateWithHistory<NotebookUISpec>;
 };
 
-// an empty notebook
+/** Default empty designer state — an empty notebook (blank metadata and UI spec, empty undo stacks). */
 export const initialState: AppState = {
   modified: false,
   notebook: {
     metadata: {
       notebook_version: '1.0',
-      schema_version: '1.0',
+      schema_version: '3.0',
       name: '',
-      accesses: ['admin', 'moderator', 'team'],
       filenames: [],
-      ispublic: false,
-      isrequest: false,
       lead_institution: '',
       showQRCodeButton: false,
       pre_description: '',
       project_lead: '',
-      project_status: 'New',
       sections: {},
     },
     'ui-specification': {

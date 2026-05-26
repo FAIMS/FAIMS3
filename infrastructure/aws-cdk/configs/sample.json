@@ -25,14 +25,21 @@
     "offlineMaps": {
       "mapSource": "maptiler",
       "mapSourceKey": "your-maptiler-api-key",
+      "satelliteSource": "esri",
       "offlineMaps": true,
       "mapStyle": "basic"
-    }
+    },
+    "addressAutosuggest": {
+      "source": "NONE"
+    },
+    "forceRemoteDeletion": "never",
+    "deleteOnDeactivation": false
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
     "contactUrl": "https://your-domain.com/contact",
+    "docsUrl": "https://docs.your-domain.com"
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -85,13 +92,16 @@
   },
   "conductor": {
     "name": "FAIMS Server",
+    "enhancedObservability": true,
     "description": "FAIMS Conductor instance deployment.",
-    "conductorDockerImage": "org/faims3-api",
+    "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
     "shortCodePrefix": "FAIMS",
+    "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
+      "desiredCapacity": 2,
       "minCapacity": 1,
       "maxCapacity": 10,
       "targetCpuUtilization": 70,
@@ -99,20 +109,64 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist" : "false"
+    "localhostWhitelist": false,
+    "migrateNotebooksOnStartup": false
+  },
+  "authProviders": {
+    "disableLocalLogin": false,
+    "providers": ["google", "someOidcProvider", "someSamlProvider"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
+    "config": {
+      "google": {
+        "type": "google",
+        "index": 1,
+        "displayName": "Google",
+        "scope": "profile email"
+      },
+      "someOidcProvider": {
+        "type": "oidc",
+        "index": 2,
+        "displayName": "OIDC Provider",
+        "helperText": "Log in with your organization's OIDC provider.",
+        "issuer": "https://your-oidc-provider.com",
+        "authorizationURL": "https://your-oidc-provider.com/authorize",
+        "tokenURL": "https://your-oidc-provider.com/token",
+        "userInfoURL": "https://your-oidc-provider.com/userinfo",
+        "scope": "openid profile email"
+      },
+      "someSamlProvider": {
+        "type": "saml",
+        "index": 3,
+        "displayName": "Enterprise SSO",
+        "signMetadata": true,
+        "helperText": "Log in with your organization's identity provider.",
+        "scope": "profile email",
+        "entryPoint": "https://idp.example.com/saml2/sso",
+        "issuer": "https://faims.example.com",
+        "authnRequestBinding": "HTTP-POST",
+        "callbackURL": "https://faims.example.com/auth/saml/callback",
+        "signatureAlgorithm": "sha256",
+        "digestAlgorithm": "sha256",
+        "wantAssertionsSigned": true
+      }
+    }
   },
   "domains": {
     "baseDomain": "your-domain.com",
     "conductor": "conductor",
     "couch": "couchdb",
     "faims": "faims",
-    "web": "web"
+    "web": "web",
+    "docs": "docs"
   },
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
-  "web": {},
+  "web": {
+    "title": "Control Centre"
+  },
+  "docs": {},
   "smtp": {
     "emailServiceType": "SMTP",
     "fromEmail": "notifications@your-domain.com",
@@ -121,5 +175,11 @@
     "testEmailAddress": "admin@your-domain.com",
     "cacheExpirySeconds": 300,
     "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
+  },
+  "security": {
+    "maximumLongLivedTokenDurationDays": 90
+  },
+  "bugMonitoring": {
+    "bugsnagKey": "1234-your-key"
   }
 }

@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Typed Redux hooks for the designer store (`AppState` + `DesignerDispatch`).
+ */
+
 import {TypedUseSelectorHook, useDispatch, useSelector} from 'react-redux';
-import type {AppDispatch} from './store';
+import type {DesignerDispatch} from '../createDesignerStore';
 import {AppState} from './initial';
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch: () => AppDispatch = useDispatch;
+/** Dispatch with correct typing for designer actions (use instead of raw `useDispatch`). */
+export const useAppDispatch = () => useDispatch<DesignerDispatch>();
+
+/** `useSelector` constrained to {@link AppState}. */
 export const useAppSelector: TypedUseSelectorHook<AppState> = useSelector;

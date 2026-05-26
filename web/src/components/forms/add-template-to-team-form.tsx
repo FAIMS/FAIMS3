@@ -1,0 +1,90 @@
+import {Field, Form} from '@/components/form';
+import {useAuth} from '@/context/auth-provider';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useGetTeams} from '@/hooks/queries';
+import {updateTemplateRequest} from '@/hooks/template-hooks';
+import {Action} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
+import {z} from 'zod';
+
+interface AddTemplateToTeamFormProps {
+  setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  templateId: string;
+}
+
+/**
+ * A form component that allows assigning a template to a team (updates
+ * {@link ownedByTeamId} via PUT /api/templates/:id).
+ *
+ * @param setDialogOpen - A function to control the dialog's open state.
+ * @param templateId - The ID of the template to assign to a team.
+ */
+export function AddTemplateToTeamForm({
+  setDialogOpen,
+  templateId,
+}: AddTemplateToTeamFormProps) {
+  const {user} = useAuth();
+  const QueryClient = useQueryClient();
+  const teams = useGetTeams({user});
+
+  /** Matches PUT /api/templates/:id (metadata update including teamId). */
+  const canAddTemplateToTeam = useIsAuthorisedTo({
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    resourceId: templateId,
+  });
+
+  const teamsAvailable = teams.data?.teams;
+
+  if (!canAddTemplateToTeam || !teamsAvailable) {
+    return <></>;
+  }
+
+  const fields: Field[] = [
+    {
+      name: 'teamId',
+      label: 'Team',
+      options: teamsAvailable.map(t => ({
+        label: t.name,
+        value: t._id,
+      })),
+      schema: z.string(),
+    },
+  ];
+
+  interface onSubmitProps {
+    teamId: string;
+  }
+
+  /**
+   * Handles the form submission
+   */
+  const onSubmit = async ({teamId}: onSubmitProps) => {
+    if (!user) return {type: 'submit', message: 'User not authenticated'};
+
+    const response = await updateTemplateRequest({
+      templateId,
+      teamId,
+      user,
+    });
+
+    if (!response.ok)
+      return {
+        type: 'submit',
+        message: 'Error assigning template to team: ' + response.statusText,
+      };
+
+    QueryClient.invalidateQueries({
+      queryKey: ['templatesbyteam', user.token, teamId],
+    });
+
+    setDialogOpen(false);
+  };
+
+  return (
+    <Form
+      fields={fields}
+      onSubmit={onSubmit}
+      submitButtonText={'Assign to Team'}
+    />
+  );
+}

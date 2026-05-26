@@ -1,21 +1,38 @@
 import {
+  addEmails,
+  addGlobalRole,
+  addTeamRole,
   AuthContext,
   ExistingPeopleDBDocument,
+  isPeopleUserAccountDisabled,
   PeopleDBDocument,
+  Role,
+  TeamsDBFields,
+  VerifiableEmail,
 } from '@faims3/data-model';
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
 import {
-  AuthProvider,
   CONDUCTOR_SERVER_ID,
+  PROVISION_SSO_USERS_POLICY,
   REDIRECT_WHITELIST,
 } from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
-import {createUser, saveCouchUser} from '../couchdb/users';
-import {AuthAction, CustomRequest} from '../types';
-import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
+import {
+  createUser,
+  getCouchUserFromEmailOrUserId,
+  saveCouchUser,
+} from '../couchdb/users';
+import {AuthAction, CustomRequest, CustomSessionData} from '../types';
+import {RegisteredAuthProviders} from './strategies/applyStrategies';
+import {
+  validatePasswordStrength,
+  getPasswordErrorMessage,
+} from './passwordStrength';
+import {upgradeCouchUserToExpressUser} from './keySigning/create';
+import {createTeamDocument} from '../couchdb/teams';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -35,7 +52,7 @@ export const handleZodErrors = ({
   redirect,
 }: {
   error: unknown;
-  req: Request;
+  req: CustomRequest;
   res: Response;
   formData: Record<string, string>;
   redirect: string;
@@ -50,12 +67,12 @@ export const handleZodErrors = ({
       formattedErrors[field] = {msg: err.message};
     });
 
-    (req as unknown as CustomRequest).flash('error', formattedErrors);
+    req.flash('error', formattedErrors);
 
     // Flash back the form data to repopulate the form
     Object.entries(formData).forEach(([key, value]) => {
       if (value) {
-        (req as unknown as CustomRequest).flash(key, value);
+        req.flash(key, value);
       }
     });
 
@@ -206,18 +223,19 @@ export function providersToRenderDetails({
   inviteId = undefined,
   action,
 }: {
-  handlers: AuthProvider[];
+  handlers: RegisteredAuthProviders | null;
   redirectUrl: string;
   inviteId?: string;
   action: AuthAction;
 }) {
   const providers = [];
-  for (const handler of handlers) {
-    const details = AUTH_PROVIDER_DETAILS[handler];
+  for (const id in handlers) {
     providers.push({
-      id: details.id,
-      name: details.displayName,
-      targetUrl: `/auth/${details.id}${buildQueryString({
+      id: id,
+      index: handlers[id].config.index ?? 100,
+      name: handlers[id].config.displayName,
+      helperText: handlers[id].config.helperText,
+      targetUrl: `/auth/${id}${buildQueryString({
         values: {
           redirect: redirectUrl,
           inviteId,
@@ -226,6 +244,10 @@ export function providersToRenderDetails({
       })}`,
     });
   }
+  // sort providers by the index property
+  providers.sort((a, b) => {
+    return a.index - b.index;
+  });
   return providers;
 }
 
@@ -273,6 +295,9 @@ export async function lookupAndValidateInvite({
  * The user generation function (if provided) will only be used if the invite
  * appears valid, just in case it has side effects.
  *
+ * If the user object is provided, it will be updated in place and returned but will
+ * not be saved.
+ *
  * The resulting user will NOT be saved. Call saveCouchUser()
  *
  * @param dbUser - Optional. An existing user in the database. Either this or
@@ -317,7 +342,7 @@ export async function validateAndApplyInviteToUser({
     targetDbUser = await createUser!();
   }
 
-  // let's add the permission from the invite as well as the prof
+  // Comsume the invite to add the permission to the user
   try {
     await consumeInvite({invite, user: targetDbUser});
   } catch (e) {
@@ -375,3 +400,460 @@ export const addLocalPasswordForUser = async (
     throw Error('Error hashing password');
   }
 };
+
+/**
+ * Validates a password and throws an error with helpful feedback if invalid
+ *
+ * @param password - The password to validate
+ * @param userInputs - Array of user-specific inputs (email, name) to check against
+ * @throws Error with detailed feedback if password is too weak
+ */
+export function validatePasswordOrThrow(
+  password: string,
+  userInputs: string[] = []
+): void {
+  const result = validatePasswordStrength(password, userInputs);
+
+  if (!result.isValid) {
+    throw new Error(getPasswordErrorMessage(result));
+  }
+}
+
+/**
+ * Identify an existing user from a list of email addresses from an SSO user profile
+ *
+ * @param userEmails - A list of verified email addresses associated with a user's profile
+ * @throws Error if there are no verified email addresses, or if multiple accounts match the provided emails
+ * @returns The matching user account, or undefined if no match is found
+ */
+export async function identifyUser(
+  userEmails: string[],
+  strategyName: string
+): Promise<ExistingPeopleDBDocument | undefined> {
+  if (userEmails.length === 0) {
+    // indicate error since there are no valid email addresses!
+    throw new Error(
+      `The ${strategyName} user does not have any verified email addresses, and therefore cannot be logged in.`
+    );
+  }
+
+  // so they have at least one valid email address - let's see if we can find
+  // precisely ONE profile that matches
+  const userLookups: {[email: string]: ExistingPeopleDBDocument | null} = {};
+
+  for (const targetEmail of userEmails) {
+    // Try to get the user based on the target email
+    userLookups[targetEmail] = await getCouchUserFromEmailOrUserId(targetEmail);
+  }
+
+  const matchingEmails = Object.entries(userLookups)
+    .filter(([, potentialUser]) => !!potentialUser)
+    .map(([email]) => email);
+
+  // create a list of unique matched accounts - this way if you match on
+  // multiple email addresses, but already merged into a single account, this is
+  // managed properly
+  const matchingAccounts: ExistingPeopleDBDocument[] = [];
+  for (const email of matchingEmails) {
+    const user = userLookups[email]!;
+    if (!matchingAccounts.map(acc => acc._id).includes(user._id)) {
+      matchingAccounts.push(user);
+    }
+  }
+
+  // So they have some existing match - is it more than one, this is an error
+  // state - we shouldn't have a google profile linking to multiple accounts!
+  // Confusing situation let's not allow this.
+  if (matchingAccounts.length > 1) {
+    throw new Error(
+      `The ${strategyName} user's profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.`
+    );
+  }
+  // return either the matching account or undefined if there were no matches
+  if (matchingAccounts.length === 0) {
+    return undefined;
+  } else {
+    return matchingAccounts[0];
+  }
+}
+
+/**
+ * Completes a post-authentication flow by optionally applying an invite,
+ * saving the user, and redirecting with a token.
+ *
+ * This is the single shared post-auth step used by all login and register
+ * paths (local and SSO). Invite semantics differ by action:
+ *   - 'register': invite is mandatory; an invalid or missing invite is a hard
+ *     error that blocks the redirect.
+ *   - 'login': invite is optional; an invalid invite is logged and flashed as a
+ *     warning but does NOT block the login.
+ *
+ * @param dbUser - The authenticated/newly-created user document
+ * @param action - 'login' or 'register'
+ * @param inviteId - Optional invite code to consume
+ * @param redirect - Validated URL to redirect to on success
+ * @param res - Express response object
+ * @param errorRedirect - URL to redirect to on hard error (register only)
+ * @param flashFn - req.flash compatible function for flashing messages
+ * @returns The express response (either a redirect or error redirect)
+ */
+export async function completePostAuth({
+  dbUser,
+  action,
+  inviteId,
+  redirect,
+  req,
+  res,
+  errorRedirect,
+  flashFn,
+}: {
+  dbUser: PeopleDBDocument;
+  action: AuthAction;
+  inviteId: string | undefined;
+  redirect: string;
+  req: CustomRequest;
+  res: Response;
+  errorRedirect: string;
+  flashFn: (type: string, message: any) => void;
+}) {
+  // Register always requires an invite
+  if (action === 'register' && !inviteId) {
+    flashFn('error', {
+      registrationError: {msg: 'No invite provided for registration.'},
+    });
+    return res.status(400).redirect(errorRedirect);
+  }
+
+  // Apply the invite if one was provided
+  if (inviteId) {
+    try {
+      const updatedUser = await validateAndApplyInviteToUser({
+        inviteCode: inviteId,
+        dbUser,
+      });
+      await saveCouchUser(updatedUser);
+      dbUser = updatedUser;
+    } catch (e) {
+      if (action === 'register') {
+        // Hard error for register — a bad invite must block registration
+        flashFn('error', {
+          registrationError: {
+            msg: 'Invite is not valid. Is it expired or has it been used too many times?',
+          },
+        });
+        return res.status(400).redirect(errorRedirect);
+      } else {
+        // Soft warning for login — do not block the user from logging in
+        console.warn(
+          `Invite '${inviteId}' could not be applied for user '${dbUser._id}' during login: ${e}`
+        );
+        flashFn('warning', {
+          inviteWarning: {
+            msg: 'The invite code could not be applied (it may be expired or already used), but you have been logged in.',
+          },
+        });
+      }
+    }
+  }
+
+  // Clear one-time auth-flow fields from the session before redirecting.
+  // cookieSession serialises req.session into the Set-Cookie header of
+  // this response, so deleting here removes them from the browser cookie
+  // and prevents them persisting across future (unrelated) auth flows.
+  const sessionData = req.session as CustomSessionData;
+  delete sessionData.inviteId;
+  delete sessionData.action;
+
+  // Upgrade to express user (resolves resource roles) and redirect with token
+  return redirectWithToken({
+    res,
+    user: await upgradeCouchUserToExpressUser({dbUser}),
+    redirect,
+  });
+}
+
+// A type describing the things we expect to see in a generic
+// SSO profile for the purposes of our authentication helpers
+type GenericProfile = {
+  [key: string]: any;
+};
+
+/**
+ * A generic SSO verify function that finds or creates a user from an SSO
+ * provider profile. Used in OIDC/Google/SAML strategies.
+ *
+ * This function's sole responsibility is identity resolution: given a set of
+ * verified emails and a provider profile, return the matching or newly created
+ * PeopleDBDocument via `done`. Invite consumption and the final redirect are
+ * handled by `completePostAuth` in the route callback layer.
+ *
+ * @param req - The Express request object containing session information
+ * @param strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
+ * @param strategyName - The display name for the strategy (used in error messages)
+ * @param profile - The user profile returned from the SSO provider
+ * @param emails - Verified email addresses extracted from the SSO profile
+ * @param userDisplayName - Function to derive a display name from the profile
+ * @param done - Passport callback to signal success or failure
+ */
+export async function ssoVerify({
+  req,
+  strategyId,
+  strategyName,
+  profile,
+  emails,
+  userDisplayName,
+  done,
+}: {
+  req: Express.Request;
+  strategyId: string;
+  strategyName: string;
+  profile: GenericProfile;
+  emails: string[];
+  userDisplayName: (profile: GenericProfile) => string;
+  done: (error: any, user?: any, info?: any) => void;
+}): Promise<void> {
+  const {action} = req.session as CustomSessionData;
+
+  // Action should always be defined — it is written to session before the
+  // browser is redirected to the identity provider
+  if (!action) {
+    return done(
+      new Error(
+        'No action provided during identity provider redirection - cannot proceed. Contact system administrator.'
+      ),
+      undefined
+    );
+  }
+
+  // Early return if we don't have an invite for registration (although this should
+  // be caught sooner in the route callback, this is an extra guard just in case).
+  if (action === 'register' && !(req.session as CustomSessionData).inviteId) {
+    return done(
+      new Error('No invite present for registration - cannot proceed'),
+      undefined
+    );
+  }
+
+  // Identify whether this SSO user already has an account
+  let matchedSingleUser: PeopleDBDocument | undefined;
+  try {
+    matchedSingleUser = await identifyUser(emails, strategyName);
+  } catch (e) {
+    return done(e as Error, undefined);
+  }
+
+  if (action === 'login') {
+    // LOGIN — find or provision the user; invite is applied by completePostAuth
+    if (
+      matchedSingleUser !== undefined &&
+      isPeopleUserAccountDisabled(matchedSingleUser)
+    ) {
+      return done(
+        new Error(
+          'This account has been disabled. Contact your administrator.'
+        ),
+        undefined
+      );
+    }
+
+    if (matchedSingleUser === undefined) {
+      // No existing account — apply the server's provision policy for unknown
+      // SSO users (reject / general-user / own-team)
+      try {
+        const newDbUser = await applyProvisionPolicy({
+          emails,
+          profile,
+          strategyId,
+          userDisplayName,
+        });
+        // persist the new user and return it
+        await saveCouchUser(newDbUser);
+        return done(null, newDbUser);
+      } catch (e) {
+        return done(e as Error, undefined);
+      }
+    }
+
+    // Existing user — ensure the SSO profile is attached, then return
+    if (!(strategyId in matchedSingleUser.profiles)) {
+      matchedSingleUser.profiles[strategyId] = profile;
+      await saveCouchUser(matchedSingleUser);
+    }
+
+    return done(null, matchedSingleUser);
+  } else {
+    // REGISTER — find or create the user; invite is applied by completePostAuth
+
+    if (
+      matchedSingleUser !== undefined &&
+      isPeopleUserAccountDisabled(matchedSingleUser)
+    ) {
+      return done(
+        new Error(
+          'This account has been disabled. Contact your administrator.'
+        ),
+        undefined
+      );
+    }
+
+    let targetUser: PeopleDBDocument;
+
+    if (matchedSingleUser === undefined) {
+      // No existing account — create one from the SSO profile
+      targetUser = await createAndAddNewUser({
+        emails,
+        profile,
+        strategyId,
+        userDisplayName,
+      });
+      await saveCouchUser(targetUser);
+    } else {
+      // Account already exists with a matching email — treat as the target
+      // (completePostAuth will apply the invite to grant additional roles)
+      targetUser = matchedSingleUser;
+    }
+
+    // NOTE: This is the situation where you are trying to 'register' a new
+    // account but one already exists with SSO with matching email - we
+    // decide here to instead log them in - upgrading the potentially
+    // unconnected account
+
+    // We have precisely one matching email address, let's ensure that this
+    // account has the linked SSO profile, then return it (We can safely assert
+    // non-null here due to our previous filtering)
+
+    // Firstly - ensure they have the SSO profile linked
+    if (!(strategyId in targetUser.profiles)) {
+      targetUser.profiles[strategyId] = profile;
+    }
+
+    // Merge any additional verified emails from the provider
+    addEmails({
+      user: targetUser,
+      emails: emails.map(
+        vEmail => ({email: vEmail, verified: true}) satisfies VerifiableEmail
+      ),
+    });
+
+    // Persist profile/email changes (invite consumption is done by completePostAuth)
+    await saveCouchUser(targetUser);
+
+    return done(null, targetUser);
+  }
+}
+
+/**
+ * Create a new user from a profile that has come back from an SSO provider,
+ * and add the relevant profile
+ *
+ * @param emails - A list of verified email addresses associated with the user's profile
+ * @param profile - The full profile object returned from the SSO provider
+ * @param strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
+ * @param userDisplayName - A function to extract the display name from the profile
+ * @returns The newly created user document - need to call saveCouchUser() to persist
+ */
+async function createAndAddNewUser({
+  emails,
+  profile,
+  strategyId,
+  userDisplayName,
+}: {
+  emails: string[];
+  profile: any;
+  strategyId: string;
+  userDisplayName: (profile: any) => string;
+}) {
+  const [newDbUser] = await createUser({
+    // Use the first email (assumed okay to be primary lookup email)
+    email: emails[0],
+    username: emails[0],
+    name: userDisplayName(profile),
+    verified: true,
+  });
+
+  // something went wrong here
+  if (!newDbUser) {
+    throw Error(
+      'Internal system error: unable to create new user! Contact a system administrator.'
+    );
+  }
+
+  // add the profile info
+  newDbUser.profiles[strategyId] = profile;
+
+  // add the other emails to the user emails array if necessary
+  addEmails({
+    user: newDbUser,
+    emails: emails.map(vEmail => {
+      // Mark as verified!
+      return {email: vEmail, verified: true} satisfies VerifiableEmail;
+    }),
+  });
+
+  return newDbUser;
+}
+
+/**
+ * Apply the configured provisioning policy for this unknown user
+ * Either reject the login (throws an error) or create a new user and add the configured roles
+ *
+ * @param emails - array of valid emails for this user
+ * @param profile - SSO profile
+ * @param strategyId - the strategy the user was authenticated with
+ * @param userDisplayName - function to generate a display name for the user from the profile
+ * @returns a new database user document - need to call saveDbUser to persist
+ */
+export async function applyProvisionPolicy({
+  emails,
+  profile,
+  strategyId,
+  userDisplayName,
+}: {
+  emails: string[];
+  profile: any;
+  strategyId: string;
+  userDisplayName: (profile: any) => string;
+}) {
+  // default option is to reject the login, throw an error to indicate this
+  if (PROVISION_SSO_USERS_POLICY === 'reject') {
+    throw new Error(
+      'This account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.'
+    );
+  }
+
+  const newDbUser = await createAndAddNewUser({
+    emails,
+    profile,
+    strategyId,
+    userDisplayName,
+  });
+
+  if (PROVISION_SSO_USERS_POLICY === 'own-team') {
+    // Create a new team
+    // Give the user the team manager role on the team
+
+    const teamData: TeamsDBFields = {
+      name: `Personal: ${newDbUser.name}`,
+      description: `Personal team for ${newDbUser.name}.`,
+      createdBy: newDbUser._id,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    const newTeam = await createTeamDocument(teamData);
+
+    // Add the team manager role for this user
+    addTeamRole({
+      user: newDbUser,
+      teamId: newTeam._id,
+      role: Role.TEAM_MANAGER,
+    });
+  } else if (PROVISION_SSO_USERS_POLICY === 'general-user') {
+    // Give the user a general user role
+    addGlobalRole({
+      user: newDbUser,
+      role: Role.GENERAL_USER,
+    });
+  }
+  return newDbUser;
+}

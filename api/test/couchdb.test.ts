@@ -31,16 +31,11 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import {fail} from 'assert';
 import {expect} from 'chai';
 import * as fs from 'fs';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {
-  getDirectoryDB,
-  getMetadataDb,
-  initialiseDbAndKeys,
-} from '../src/couchdb';
+import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
   getEncodedNotebookUISpec,
@@ -165,6 +160,7 @@ describe('notebook api', () => {
         })
       ).to.equal(false);
 
+      // Permanent survey destroy: survey administrators (PROJECT_ADMIN) may delete.
       expect(
         userCanDo({
           user: bobalooba,
@@ -199,7 +195,7 @@ describe('notebook api', () => {
         })
       ).to.equal(false);
 
-      // but still...
+      // but still has admin on nb2
       expect(
         userCanDo({
           user: bobalooba,
@@ -265,16 +261,6 @@ describe('notebook api', () => {
 
       const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getMetadataDb(projectID);
-      if (db) {
-        try {
-          const autoInc = (await db.get('local-autoincrementers')) as any;
-          expect(autoInc.references.length).to.equal(2);
-          expect(autoInc.references[0].form_id).to.equal('FORM1SECTION1');
-        } catch (err) {
-          fail('could not get autoincrementers' + err);
-        }
-      }
     }
   });
 
@@ -436,11 +422,6 @@ describe('notebook api', () => {
       if (newMetadata) {
         expect(newMetadata['name']).to.equal('Updated Test Notebook');
         expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
-      }
-      const metaDB = await getMetadataDb(projectID);
-      if (metaDB) {
-        const autoInc = (await metaDB.get('local-autoincrementers')) as any;
-        expect(autoInc.references.length).to.equal(3);
       }
     }
   });

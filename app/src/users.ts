@@ -27,6 +27,7 @@ import {
   Action,
   decodeAndValidateToken,
   isAuthorized,
+  MinimalRecordMetadata,
   RecordMetadata,
   TokenContents,
   TokenPermissions,
@@ -97,6 +98,32 @@ export async function shouldDisplayRecord({
   const userId = contents.username;
   // Always display your own records
   if (record_metadata.created_by === userId) {
+    return isAuthorized({
+      decodedToken: contents,
+      action: Action.READ_MY_PROJECT_RECORDS,
+      resourceId: projectId,
+    });
+  } else {
+    return isAuthorized({
+      decodedToken: contents,
+      action: Action.READ_ALL_PROJECT_RECORDS,
+      resourceId: projectId,
+    });
+  }
+}
+
+export function shouldDisplayRecordMinimalMetadata({
+  contents,
+  recordMetadata,
+  projectId,
+}: {
+  contents: TokenContents;
+  projectId: string;
+  recordMetadata: MinimalRecordMetadata;
+}): boolean {
+  const userId = contents.username;
+  // Always display your own records
+  if (recordMetadata.createdBy === userId) {
     return isAuthorized({
       decodedToken: contents,
       action: Action.READ_MY_PROJECT_RECORDS,

@@ -356,6 +356,69 @@ describe('API tests', () => {
         const body = content.body as GetNotebookResponse;
         expect(body.status).to.eq(ProjectStatus.OPEN);
       });
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.CLOSED,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.ARCHIVED,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.ARCHIVED);
+      });
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.OPEN,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(400);
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.CLOSED,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.OPEN,
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.OPEN);
+      });
   });
 
   it('get notebook', async () => {
@@ -397,6 +460,7 @@ describe('API tests', () => {
       .post('/api/notebooks/' + project_id + '/delete')
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
+      .send({confirmName: 'test-notebook'})
       .expect(200);
     notebooks = await getUserProjectsDetailed(adminUser);
     expect(notebooks).to.be.empty;
@@ -427,9 +491,9 @@ describe('API tests', () => {
         // there are a couple of users
         expect(res.length).to.eq(3);
 
-        // ensure they don't have profile info!!
+        // ensure that profiles.local info is boolean only
         for (const user of res) {
-          expect((user as any).profiles).to.be.undefined;
+          expect((user as any).profiles.local).to.be.a('boolean');
 
           // but other properties should be valid
           expect(user.name).to.not.be.undefined;
@@ -670,95 +734,79 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup({filename: 'test/backup.jsonl'});
 
-    const url =
-      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
-    const adminUser = await getExpressUserFromEmailOrUserId('admin');
-    if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
-      expect(notebooks).to.have.lengthOf(2);
+    // new method
+    const testCases = [
+      // @deprecated
+      {
+        type: 'redirect',
+        url: '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv',
+      },
+      // new method
+      {
+        type: 'url',
+        url: '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv',
+      },
+    ];
+    for (const testCase of testCases) {
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
+      if (adminUser) {
+        const notebooks = await getUserProjectsDetailed(adminUser);
+        expect(notebooks).to.have.lengthOf(2);
 
-      let redirectURL = '';
-      await request(app)
-        .get(url)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect(response => {
-          expect(response.headers.location).to.match(/\/download\/.*/);
-          redirectURL = response.headers.location;
-        });
+        let redirectURL = '';
 
-      if (redirectURL)
-        await request(app)
-          .get(redirectURL)
-          .expect('Content-Type', 'text/csv')
-          .expect(response => {
-            // response body should be csv data
-            expect(response.text).to.contain('identifier');
-            expect(response.text).to.contain('take-photo');
-            // uncertainty label on asset number
-            expect(response.text).to.contain('asset-number_questionable');
-            // annotation label for asset number
-            expect(response.text).to.contain('asset-number_difficulties');
-
-            const lines = response.text.split('\n');
-            lines.forEach(line => {
-              if (line !== '' && !line.startsWith('identifier')) {
-                expect(line).to.contain('rec');
-                expect(line).to.contain('FORM2');
-                expect(line).to.contain('frev');
-              }
+        if (testCase.type === 'redirect') {
+          await request(app)
+            .get(testCase.url)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Content-Type', 'application/json')
+            .expect(302)
+            .expect(response => {
+              expect(response.headers.location).to.match(/\/download\/.*/);
+              redirectURL = response.headers.location;
             });
-            // one more newline than the number of records + header
-            expect(lines).to.have.lengthOf(19);
-          });
-    }
-  });
+        } else {
+          await request(app)
+            .get(testCase.url)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Content-Type', 'application/json')
+            .expect(200)
+            .expect(response => {
+              redirectURL = (response.body as {url: string}).url;
+            });
+        }
 
-  //identifier,record_id,revision_id,type,created_by,created,updated_by,updated,
-  // hridFORM2,hridFORM2_uncertainty,autoincrementer,autoincrementer_uncertainty,
-  // asset-number,asset-number_Questionable,element-type,
-  // take-gps-point,take-gps-point_latitude,take-gps-point_longitude,take-gps-point_accuracy,
-  // nearest-building,nearest-building_Uncertain,
-  // checkbox,condition,
-  // take-photo,element-notes,element-notes_uncertainty
+        if (redirectURL) {
+          // Handle both relative paths and full URLs
+          const urlPath = redirectURL.startsWith('http')
+            ? new URL(redirectURL).pathname
+            : redirectURL;
 
-  it('can download files as zip', async () => {
-    // pull in some test data
-    await restoreFromBackup({filename: 'test/backup.jsonl'});
+          await request(app)
+            .get(urlPath)
+            .expect('Content-Type', 'text/csv')
+            .expect(response => {
+              // response body should be csv data
+              expect(response.text).to.contain('identifier');
+              expect(response.text).to.contain('take-photo');
+              // uncertainty label on asset number
+              expect(response.text).to.contain('asset-number_questionable');
+              // annotation label for asset number
+              expect(response.text).to.contain('asset-number_difficulties');
 
-    const adminUser = await getExpressUserFromEmailOrUserId('admin');
-    if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
-      expect(notebooks).to.have.lengthOf(2);
-
-      const url =
-        '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip';
-      let redirectURL = '';
-      await request(app)
-        .get(url)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect(response => {
-          expect(response.headers.location).to.match(/\/download\/.*/);
-          redirectURL = response.headers.location;
-        });
-
-      if (redirectURL)
-        await request(app)
-          .get(redirectURL)
-          .set('Authorization', `Bearer ${adminToken}`)
-          .expect(200)
-          .expect('Content-Type', 'application/zip')
-          .expect(response => {
-            const zipContent = response.text;
-            // check for _1 filename which should be there because of
-            // a clash of names
-            expect(zipContent).to.contain(
-              'take-photo/DuplicateHRID-take-photo_1.png'
-            );
-          });
+              const lines = response.text.split('\n');
+              lines.forEach(line => {
+                if (line !== '' && !line.startsWith('identifier')) {
+                  expect(line).to.contain('rec');
+                  expect(line).to.contain('FORM2');
+                  expect(line).to.contain('frev');
+                }
+              });
+              // one more newline than the number of records + header
+              expect(lines).to.have.lengthOf(19);
+            });
+        }
+      }
     }
   });
 

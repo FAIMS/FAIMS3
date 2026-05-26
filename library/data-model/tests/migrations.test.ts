@@ -13,9 +13,12 @@ import {
   PeopleV2Document,
   PeopleV3Document,
   PeopleV4Document,
+  PeopleV5Document,
   ProjectStatus,
+  ProjectStatusV2,
   ProjectV1Fields,
   ProjectV2Fields,
+  ProjectV3Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
   RefreshRecordV3ExistingDocument,
@@ -27,6 +30,8 @@ import {
 import {
   TemplateV1Fields,
   TemplateV2Fields,
+  TemplateV3Fields,
+  TemplateV4Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
 
@@ -47,14 +52,12 @@ type MigrationTestCase = {
   to: number;
   // Input document to feed into migration function
   inputDoc: PouchDB.Core.ExistingDocument<any>;
-  // Expected output document
-  expectedOutputDoc: PouchDB.Core.ExistingDocument<any>;
   // Expected result type
   expectedResult: MigrationFuncReturn;
   // Custom equality function to compare docs - recommend using areDocsEqual
   equalityFunction?: (
     inputDoc: PouchDB.Core.ExistingDocument<any>,
-    expectedOutputDoc: PouchDB.Core.ExistingDocument<any>
+    expectedUpdatedRecord: PouchDB.Core.ExistingDocument<any>
   ) => boolean;
 };
 
@@ -84,26 +87,28 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       } satisfies EncodedProjectUIModel,
       ownedByTeamId: 'team_456',
     } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
-    expectedOutputDoc: {
-      _id: 'template_123',
-      _rev: '1-abc123',
-      version: 1,
-      name: 'Survey Template',
-      metadata: {
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'template_123',
+        _rev: '1-abc123',
+        version: 1,
         name: 'Survey Template',
-        description: 'A template for creating surveys',
-        version: '1.0',
-        author: 'Test User',
-      },
-      'ui-specification': {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
-      ownedByTeamId: 'team_456',
-    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
-    expectedResult: {action: 'update'},
+        metadata: {
+          name: 'Survey Template',
+          description: 'A template for creating surveys',
+          version: '1.0',
+          author: 'Test User',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: ['text', 'number', 'select'],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team_456',
+      } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -129,24 +134,26 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         visible_types: ['text', 'number'],
       } satisfies EncodedProjectUIModel,
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
-    expectedOutputDoc: {
-      _id: 'template_456',
-      _rev: '1-def456',
-      name: 'template-template_456', // Should use the ID-based fallback
-      version: 1,
-      metadata: {
-        description: 'A template without a name',
-        version: '1.0',
-      },
-      'ui-specification': {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: ['text', 'number'],
-      } satisfies EncodedProjectUIModel,
-      ownedByTeamId: undefined,
-    } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'template_456',
+        _rev: '1-def456',
+        name: 'template-template_456', // Should use the ID-based fallback
+        version: 1,
+        metadata: {
+          description: 'A template without a name',
+          version: '1.0',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: ['text', 'number'],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: undefined,
+      } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -168,21 +175,23 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         visible_types: ['text'],
       } satisfies EncodedProjectUIModel,
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
-    expectedOutputDoc: {
-      _id: 'template_789',
-      _rev: '1-ghi789',
-      version: 1,
-      name: 'template-template_789', // Should use the ID-based fallback
-      metadata: {}, // Empty metadata should be preserved
-      'ui-specification': {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: ['text'],
-      } satisfies EncodedProjectUIModel,
-      ownedByTeamId: undefined,
-    } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'template_789',
+        _rev: '1-ghi789',
+        version: 1,
+        name: 'template-template_789', // Should use the ID-based fallback
+        metadata: {}, // Empty metadata should be preserved
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: ['text'],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: undefined,
+      } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -222,38 +231,40 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       } satisfies EncodedProjectUIModel,
       ownedByTeamId: 'team_complex',
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
-    expectedOutputDoc: {
-      _id: 'template_complex',
-      _rev: '1-complex',
-      version: 1,
-      name: 'Complex Template',
-      metadata: {
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'template_complex',
+        _rev: '1-complex',
+        version: 1,
         name: 'Complex Template',
-        configuration: {
-          fields: ['name', 'age', 'address'],
-          validators: {
-            age: {min: 18, max: 99},
-            name: {minLength: 2, maxLength: 50},
-          },
-          advanced: {
-            settings: {
-              display: 'grid',
-              pagination: true,
-              itemsPerPage: 10,
+        metadata: {
+          name: 'Complex Template',
+          configuration: {
+            fields: ['name', 'age', 'address'],
+            validators: {
+              age: {min: 18, max: 99},
+              name: {minLength: 2, maxLength: 50},
+            },
+            advanced: {
+              settings: {
+                display: 'grid',
+                pagination: true,
+                itemsPerPage: 10,
+              },
             },
           },
+          tags: ['survey', 'complex', 'nested'],
         },
-        tags: ['survey', 'complex', 'nested'],
-      },
-      'ui-specification': {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
-      ownedByTeamId: 'team_complex',
-    } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
-    expectedResult: {action: 'update'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: ['text', 'number', 'select'],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team_complex',
+      } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -275,21 +286,23 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         visible_types: ['text', 'number', 'select'],
       } satisfies EncodedProjectUIModel,
     } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
-    expectedOutputDoc: {
-      _id: 'template_null_meta',
-      _rev: '1-nullmeta',
-      version: 1,
-      name: 'template-template_null_meta', // Should use the ID-based fallback
-      metadata: {}, // Null metadata should be converted to {}
-      'ui-specification': {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
-      ownedByTeamId: undefined,
-    } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'template_null_meta',
+        _rev: '1-nullmeta',
+        version: 1,
+        name: 'template-template_null_meta', // Should use the ID-based fallback
+        metadata: {}, // Null metadata should be converted to {}
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: ['text', 'number', 'select'],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: undefined,
+      } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -316,24 +329,26 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       customField1: 'This should be dropped',
       customField2: 42,
     } as unknown as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
-    expectedOutputDoc: {
-      _id: 'template_additional',
-      _rev: '1-additional',
-      version: 1,
-      name: 'Template with Additional Fields',
-      metadata: {
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'template_additional',
+        _rev: '1-additional',
+        version: 1,
         name: 'Template with Additional Fields',
-      },
-      'ui-specification': {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
-      ownedByTeamId: 'team_add',
-      // Additional fields should be dropped
-    } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
-    expectedResult: {action: 'update'},
+        metadata: {
+          name: 'Template with Additional Fields',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: ['text', 'number', 'select'],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team_add',
+        // Additional fields should be dropped
+      } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    },
     // Custom equality function to ensure extra fields are dropped
     equalityFunction: (actual, expected) => {
       // Check that all expected keys are present with correct values
@@ -350,6 +365,169 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         }
       }
       return true;
+    },
+  },
+];
+
+const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV2toV3Migration - archived sentinel to top-level flag',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-arch',
+      _rev: '1-rev',
+      version: 3,
+      name: 'Archived tpl',
+      metadata: {
+        name: 'Archived tpl',
+        project_status: 'archived',
+        pre_description: 'x',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team-a',
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-arch',
+        _rev: '1-rev',
+        version: 3,
+        name: 'Archived tpl',
+        metadata: {
+          name: 'Archived tpl',
+          pre_description: 'x',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team-a',
+        archived: true,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - active sentinel stripped',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-act',
+      _rev: '2-rev',
+      version: 1,
+      name: 'Active',
+      metadata: {project_status: 'active', notebook_version: '1'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-act',
+        _rev: '2-rev',
+        version: 1,
+        name: 'Active',
+        metadata: {notebook_version: '1'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - legacy New (and any non-archived) stripped from metadata',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-new',
+      _rev: '3-rev',
+      version: 1,
+      name: 'Demo',
+      metadata: {name: 'Demo', project_status: 'New'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-new',
+        _rev: '3-rev',
+        version: 1,
+        name: 'Demo',
+        metadata: {name: 'Demo'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+];
+
+const TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV3toV4Migration - adds isPublic false',
+    dbType: DatabaseType.TEMPLATES,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'tpl-v4',
+      _rev: '4-rev',
+      version: 2,
+      name: 'My tpl',
+      metadata: {pre_description: 'x'},
+      archived: false,
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team-z',
+    } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-v4',
+        _rev: '4-rev',
+        version: 2,
+        name: 'My tpl',
+        metadata: {pre_description: 'x'},
+        archived: false,
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team-z',
+        isPublic: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
     },
   },
 ];
@@ -385,27 +563,29 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       status: 'active',
       ownedByTeamId: 'team_456',
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
-    expectedOutputDoc: {
-      _id: 'project_123',
-      _rev: '1-abc123',
-      name: 'Research Project Alpha',
-      status: ProjectStatus.OPEN,
-      dataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'data_123',
-        port: 443,
-      },
-      metadataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'meta_123',
-        port: 443,
-      },
-      templateId: 'template_xyz',
-      ownedByTeamId: 'team_456',
-    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_123',
+        _rev: '1-abc123',
+        name: 'Research Project Alpha',
+        status: ProjectStatusV2.OPEN,
+        dataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'data_123',
+          port: 443,
+        },
+        metadataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'meta_123',
+          port: 443,
+        },
+        templateId: 'template_xyz',
+        ownedByTeamId: 'team_456',
+      } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -432,27 +612,29 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         port: 443,
       },
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
-    expectedOutputDoc: {
-      _id: 'project_456',
-      _rev: '1-def456',
-      name: 'Minimal Project',
-      status: ProjectStatus.OPEN,
-      dataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'data_456',
-        port: 443,
-      },
-      metadataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'meta_456',
-        port: 443,
-      },
-      ownedByTeamId: undefined,
-      templateId: undefined,
-    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_456',
+        _rev: '1-def456',
+        name: 'Minimal Project',
+        status: ProjectStatusV2.OPEN,
+        dataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'data_456',
+          port: 443,
+        },
+        metadataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'meta_456',
+          port: 443,
+        },
+        ownedByTeamId: undefined,
+        templateId: undefined,
+      } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -481,28 +663,30 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       template_id: 'template_abc',
       // No ownedByTeamId field
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
-    expectedOutputDoc: {
-      _id: 'project_789',
-      _rev: '1-ghi789',
-      name: 'Personal Project',
-      status: ProjectStatus.OPEN,
-      dataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'data_789',
-        port: 443,
-      },
-      metadataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'meta_789',
-        port: 443,
-      },
-      templateId: 'template_abc',
-      ownedByTeamId: undefined,
-      // No ownedByTeamId field expected
-    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_789',
+        _rev: '1-ghi789',
+        name: 'Personal Project',
+        status: ProjectStatusV2.OPEN,
+        dataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'data_789',
+          port: 443,
+        },
+        metadataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'meta_789',
+          port: 443,
+        },
+        templateId: 'template_abc',
+        ownedByTeamId: undefined,
+        // No ownedByTeamId field expected
+      } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -534,32 +718,34 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         jwt_token: 'abc123xyz',
       },
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
-    expectedOutputDoc: {
-      _id: 'project_complex',
-      _rev: '1-complex',
-      name: 'Complex Connection Project',
-      status: ProjectStatus.OPEN,
-      dataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'data_complex',
-        port: 443,
-        auth: {
-          username: 'datauser',
-          password: 'datapass',
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_complex',
+        _rev: '1-complex',
+        name: 'Complex Connection Project',
+        status: ProjectStatusV2.OPEN,
+        dataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'data_complex',
+          port: 443,
+          auth: {
+            username: 'datauser',
+            password: 'datapass',
+          },
         },
-      },
-      metadataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'meta_complex',
-        port: 443,
-        jwt_token: 'abc123xyz',
-      },
-      ownedByTeamId: undefined,
-      templateId: undefined,
-    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+        metadataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'meta_complex',
+          port: 443,
+          jwt_token: 'abc123xyz',
+        },
+        ownedByTeamId: undefined,
+        templateId: undefined,
+      } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -585,29 +771,31 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         db_name: 'meta_status',
         port: 443,
       },
-      status: 'archived', // This should be replaced by ProjectStatus.OPEN
+      status: 'archived', // Replaced by ProjectStatusV2.OPEN regardless of v1 string
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
-    expectedOutputDoc: {
-      _id: 'project_status',
-      _rev: '1-status',
-      name: 'Status Override Project',
-      status: ProjectStatus.OPEN, // The status should always be set to OPEN regardless of previous value
-      dataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'data_status',
-        port: 443,
-      },
-      metadataDb: {
-        host: 'example.com',
-        proto: 'https',
-        db_name: 'meta_status',
-        port: 443,
-      },
-      ownedByTeamId: undefined,
-      templateId: undefined,
-    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_status',
+        _rev: '1-status',
+        name: 'Status Override Project',
+        status: ProjectStatusV2.OPEN, // Always OPEN from v1 migration regardless of previous value
+        dataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'data_status',
+          port: 443,
+        },
+        metadataDb: {
+          host: 'example.com',
+          proto: 'https',
+          db_name: 'meta_status',
+          port: 443,
+        },
+        ownedByTeamId: undefined,
+        templateId: undefined,
+      } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -624,17 +812,19 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       name: 'Project With Missing DBs',
       // Missing data_db and metadata_db fields
     } satisfies PouchDB.Core.ExistingDocument<ProjectV1Fields>,
-    expectedOutputDoc: {
-      _id: 'project_missing_dbs',
-      _rev: '1-missing',
-      name: 'Project With Missing DBs',
-      status: ProjectStatus.OPEN,
-      dataDb: undefined, // Migration preserves undefined values
-      metadataDb: undefined,
-      ownedByTeamId: undefined,
-      templateId: undefined,
-    } as unknown as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_missing_dbs',
+        _rev: '1-missing',
+        name: 'Project With Missing DBs',
+        status: ProjectStatusV2.OPEN,
+        dataDb: undefined, // Migration preserves undefined values
+        metadataDb: undefined,
+        ownedByTeamId: undefined,
+        templateId: undefined,
+      } as unknown as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -656,18 +846,20 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       extra_field1: 'Should be dropped',
       extra_field2: 42, // Should be dropped
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields> & Record<string, any>,
-    expectedOutputDoc: {
-      _id: 'project_extra',
-      _rev: '1-extra',
-      name: 'Project With Extra Fields',
-      status: ProjectStatus.OPEN,
-      dataDb: {url: 'https://example.com/db/data_extra'},
-      metadataDb: {url: 'https://example.com/db/meta_extra'},
-      templateId: undefined,
-      ownedByTeamId: undefined,
-      // All extra fields should be dropped
-    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'project_extra',
+        _rev: '1-extra',
+        name: 'Project With Extra Fields',
+        status: ProjectStatusV2.OPEN,
+        dataDb: {url: 'https://example.com/db/data_extra'},
+        metadataDb: {url: 'https://example.com/db/meta_extra'},
+        templateId: undefined,
+        ownedByTeamId: undefined,
+        // All extra fields should be dropped
+      } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    },
     // Custom equality function to ensure extra fields are dropped
     equalityFunction: (actual, expected) => {
       // Check that all expected keys are present with correct values
@@ -688,6 +880,61 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+const PROJECT_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'projectsV2toV3Migration - OPEN to v3 OPEN',
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'proj_v3_1',
+      _rev: '1-a',
+      name: 'Survey A',
+      status: ProjectStatusV2.OPEN,
+      dataDb: {db_name: 'data-proj_v3_1'},
+      metadataDb: {db_name: 'metadata-proj_v3_1'},
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v3_1',
+        _rev: '1-a',
+        name: 'Survey A',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_v3_1'},
+        metadataDb: {db_name: 'metadata-proj_v3_1'},
+      } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
+  },
+  {
+    name: 'projectsV2toV3Migration - CLOSED to v3 CLOSED',
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'proj_v3_2',
+      _rev: '1-b',
+      name: 'Survey B',
+      status: ProjectStatusV2.CLOSED,
+      dataDb: {db_name: 'data-proj_v3_2'},
+      metadataDb: {db_name: 'metadata-proj_v3_2'},
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v3_2',
+        _rev: '1-b',
+        name: 'Survey B',
+        status: ProjectStatus.CLOSED,
+        dataDb: {db_name: 'data-proj_v3_2'},
+        metadataDb: {db_name: 'metadata-proj_v3_2'},
+      } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
 // Test cases for invitesV2toV3Migration
 const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Basic migration test - Admin role
@@ -702,20 +949,22 @@ const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       projectId: 'project_xyz',
       role: Role.PROJECT_ADMIN,
     } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_123',
-      _rev: '1-abc123',
-      name: `${Role.PROJECT_ADMIN} invite for project_xyz`,
-      resourceId: 'project_xyz',
-      resourceType: Resource.PROJECT,
-      role: Role.PROJECT_ADMIN,
-      expiry: expect.any(Number), // Test will use a matcher for timestamp
-      createdAt: expect.any(Number),
-      createdBy: 'admin',
-      usesConsumed: 0,
-      uses: [],
-    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_123',
+        _rev: '1-abc123',
+        name: `${Role.PROJECT_ADMIN} invite for project_xyz`,
+        resourceId: 'project_xyz',
+        resourceType: Resource.PROJECT,
+        role: Role.PROJECT_ADMIN,
+        expiry: expect.any(Number), // Test will use a matcher for timestamp
+        createdAt: expect.any(Number),
+        createdBy: 'admin',
+        usesConsumed: 0,
+        uses: [],
+      } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    },
     equalityFunction: (actual, expected) => {
       // Custom equality function to handle timestamps
       return (
@@ -747,20 +996,22 @@ const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       projectId: 'project_abc',
       role: Role.PROJECT_CONTRIBUTOR,
     } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_456',
-      _rev: '1-def456',
-      name: `${Role.PROJECT_CONTRIBUTOR} invite for project_abc`,
-      resourceId: 'project_abc',
-      resourceType: Resource.PROJECT,
-      role: Role.PROJECT_CONTRIBUTOR,
-      expiry: expect.any(Number),
-      createdAt: expect.any(Number),
-      createdBy: 'admin',
-      usesConsumed: 0,
-      uses: [],
-    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_456',
+        _rev: '1-def456',
+        name: `${Role.PROJECT_CONTRIBUTOR} invite for project_abc`,
+        resourceId: 'project_abc',
+        resourceType: Resource.PROJECT,
+        role: Role.PROJECT_CONTRIBUTOR,
+        expiry: expect.any(Number),
+        createdAt: expect.any(Number),
+        createdBy: 'admin',
+        usesConsumed: 0,
+        uses: [],
+      } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    },
     equalityFunction: (actual, expected) => {
       return (
         actual._id === expected._id &&
@@ -793,20 +1044,22 @@ const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       extraField1: 'should be ignored',
       extraField2: 123,
     } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_789',
-      _rev: '1-ghi789',
-      name: `${Role.PROJECT_ADMIN} invite for project_def`,
-      resourceId: 'project_def',
-      resourceType: Resource.PROJECT,
-      role: Role.PROJECT_ADMIN,
-      expiry: expect.any(Number),
-      createdAt: expect.any(Number),
-      createdBy: 'admin',
-      usesConsumed: 0,
-      uses: [],
-    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_789',
+        _rev: '1-ghi789',
+        name: `${Role.PROJECT_ADMIN} invite for project_def`,
+        resourceId: 'project_def',
+        resourceType: Resource.PROJECT,
+        role: Role.PROJECT_ADMIN,
+        expiry: expect.any(Number),
+        createdAt: expect.any(Number),
+        createdBy: 'admin',
+        usesConsumed: 0,
+        uses: [],
+      } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    },
     equalityFunction: (actual, expected) => {
       // Ensure extra fields are not carried over
       return (
@@ -840,9 +1093,7 @@ const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       role: Role.PROJECT_CONTRIBUTOR,
       // projectId is missing
     } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedOutputDoc: null, // No output expected for deletion
     expectedResult: {action: 'delete'},
-    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
   },
 
   // Edge case - Missing role
@@ -857,9 +1108,7 @@ const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       projectId: 'project_ghi',
       // role is missing
     } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedOutputDoc: null, // No output expected for deletion
     expectedResult: {action: 'delete'},
-    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
   },
 ];
 
@@ -884,20 +1133,22 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       enabled: true,
       expiryTimestampMs,
     } as RefreshRecordV1ExistingDocument,
-    expectedOutputDoc: {
-      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}123456`,
-      _rev: '1-abc123',
-      documentType: 'refresh',
-      userId: 'user123',
-      token: 'token123456',
-      enabled: true,
-      expiryTimestampMs,
-      // New fields added by migration
-      exchangeTokenHash: 'fake',
-      exchangeTokenUsed: true,
-      exchangeTokenExpiryTimestampMs: 0,
-    } as RefreshRecordV2ExistingDocument,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: `${AUTH_RECORD_ID_PREFIXES.refresh}123456`,
+        _rev: '1-abc123',
+        documentType: 'refresh',
+        userId: 'user123',
+        token: 'token123456',
+        enabled: true,
+        expiryTimestampMs,
+        // New fields added by migration
+        exchangeTokenHash: 'fake',
+        exchangeTokenUsed: true,
+        exchangeTokenExpiryTimestampMs: 0,
+      } as RefreshRecordV2ExistingDocument,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -916,7 +1167,6 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       used: false,
       expiryTimestampMs,
     } as EmailCodeV1ExistingDocument,
-    expectedOutputDoc: null, // No changes expected
     expectedResult: {action: 'none'},
   },
 
@@ -935,21 +1185,23 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       enabled: false, // Disabled token
       expiryTimestampMs, // 1 hour ago (expired)
     } as RefreshRecordV1ExistingDocument,
-    expectedOutputDoc: {
-      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}654321`,
-      _rev: '1-ghi789',
-      documentType: 'refresh',
-      userId: 'user789',
-      token: 'expiredtoken',
-      enabled: false,
-      expiryTimestampMs,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: `${AUTH_RECORD_ID_PREFIXES.refresh}654321`,
+        _rev: '1-ghi789',
+        documentType: 'refresh',
+        userId: 'user789',
+        token: 'expiredtoken',
+        enabled: false,
+        expiryTimestampMs,
 
-      // New fields added by migration
-      exchangeTokenHash: 'fake',
-      exchangeTokenUsed: true,
-      exchangeTokenExpiryTimestampMs: 0,
-    } as RefreshRecordV2ExistingDocument,
-    expectedResult: {action: 'update'},
+        // New fields added by migration
+        exchangeTokenHash: 'fake',
+        exchangeTokenUsed: true,
+        exchangeTokenExpiryTimestampMs: 0,
+      } as RefreshRecordV2ExistingDocument,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -970,23 +1222,25 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       createdAt, // Extra field not in schema
       lastUsed, // Extra field not in schema
     } as RefreshRecordV1ExistingDocument & Record<string, any>,
-    expectedOutputDoc: {
-      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}789123`,
-      _rev: '1-jkl012',
-      documentType: 'refresh',
-      userId: 'user321',
-      token: 'tokenxyz',
-      enabled: true,
-      expiryTimestampMs,
-      // New fields added by migration
-      exchangeTokenHash: 'fake',
-      exchangeTokenUsed: true,
-      exchangeTokenExpiryTimestampMs: 0,
-      // Extra fields should be dropped
-      // createdAt,
-      // lastUsed,
-    } as RefreshRecordV2ExistingDocument & Record<string, any>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: `${AUTH_RECORD_ID_PREFIXES.refresh}789123`,
+        _rev: '1-jkl012',
+        documentType: 'refresh',
+        userId: 'user321',
+        token: 'tokenxyz',
+        enabled: true,
+        expiryTimestampMs,
+        // New fields added by migration
+        exchangeTokenHash: 'fake',
+        exchangeTokenUsed: true,
+        exchangeTokenExpiryTimestampMs: 0,
+        // Extra fields should be dropped
+        // createdAt,
+        // lastUsed,
+      } as RefreshRecordV2ExistingDocument & Record<string, any>,
+    },
     equalityFunction: areDocsEqual,
   },
 ];
@@ -1025,30 +1279,32 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
         },
       },
     } satisfies PeopleV1Document,
-    expectedOutputDoc: {
-      _id: 'abcd123456',
-      _rev: '1234',
-      user_id: 'abcd123456',
-      name: 'George Costanza',
-      emails: ['george.costanza@gmail.com'],
-      resourceRoles: [
-        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
-        {resourceId: 'survey2', role: Role.PROJECT_ADMIN},
-        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
-      ],
-      globalRoles: [
-        Role.GENERAL_ADMIN,
-        Role.GENERAL_CREATOR,
-        Role.GENERAL_USER,
-      ],
-      profiles: {
-        local: {
-          password: '1234',
-          salt: '123456',
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'abcd123456',
+        _rev: '1234',
+        user_id: 'abcd123456',
+        name: 'George Costanza',
+        emails: ['george.costanza@gmail.com'],
+        resourceRoles: [
+          {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+          {resourceId: 'survey2', role: Role.PROJECT_ADMIN},
+          {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+        ],
+        globalRoles: [
+          Role.GENERAL_ADMIN,
+          Role.GENERAL_CREATOR,
+          Role.GENERAL_USER,
+        ],
+        profiles: {
+          local: {
+            password: '1234',
+            salt: '123456',
+          },
         },
-      },
-    } satisfies PeopleV2Document,
-    expectedResult: {action: 'update'},
+      } satisfies PeopleV2Document,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1066,13 +1322,15 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       project_id: 'project_xyz',
       role: 'admin',
     } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_123',
-      _rev: '1-abc123',
-      projectId: 'project_xyz',
-      role: Role.PROJECT_ADMIN,
-    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_123',
+        _rev: '1-abc123',
+        projectId: 'project_xyz',
+        role: Role.PROJECT_ADMIN,
+      } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1088,13 +1346,15 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       project_id: 'project_xyz',
       role: 'moderator',
     } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_456',
-      _rev: '1-def456',
-      projectId: 'project_xyz',
-      role: Role.PROJECT_CONTRIBUTOR,
-    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_456',
+        _rev: '1-def456',
+        projectId: 'project_xyz',
+        role: Role.PROJECT_CONTRIBUTOR,
+      } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1110,13 +1370,15 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       project_id: 'project_xyz',
       role: 'team',
     } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_789',
-      _rev: '1-ghi789',
-      projectId: 'project_xyz',
-      role: Role.PROJECT_CONTRIBUTOR,
-    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_789',
+        _rev: '1-ghi789',
+        projectId: 'project_xyz',
+        role: Role.PROJECT_CONTRIBUTOR,
+      } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1132,13 +1394,15 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       project_id: 'project_xyz',
       role: 'user',
     } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_012',
-      _rev: '1-jkl012',
-      projectId: 'project_xyz',
-      role: Role.PROJECT_CONTRIBUTOR,
-    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_012',
+        _rev: '1-jkl012',
+        projectId: 'project_xyz',
+        role: Role.PROJECT_CONTRIBUTOR,
+      } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1154,9 +1418,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       project_id: 'project_xyz',
       role: 'unknown_role',
     } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: null, // No output expected for deletion
     expectedResult: {action: 'delete'},
-    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
   },
 
   // Test case for empty role (should delete the document)
@@ -1171,9 +1433,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       project_id: 'project_xyz',
       role: '',
     } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: null, // No output expected for deletion
     expectedResult: {action: 'delete'},
-    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
   },
 
   // Test case with additional fields (should preserve only the mapped fields)
@@ -1191,14 +1451,16 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       created_by: 'user_123',
       extra_field: 'should be removed',
     } as unknown as PouchDB.Core.ExistingDocument<V1InviteDBFields>,
-    expectedOutputDoc: {
-      _id: 'invite_901',
-      _rev: '1-stu901',
-      projectId: 'project_xyz',
-      role: Role.PROJECT_ADMIN,
-      // Other fields should not be present
-    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'invite_901',
+        _rev: '1-stu901',
+        projectId: 'project_xyz',
+        role: Role.PROJECT_ADMIN,
+        // Other fields should not be present
+      } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    },
     equalityFunction: (actual, expected) => {
       // Custom equality function to check only the required fields
       return (
@@ -1238,32 +1500,34 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
         },
       },
     } satisfies PeopleV2Document,
-    expectedOutputDoc: {
-      _id: 'abcd123456',
-      _rev: '1234',
-      user_id: 'abcd123456',
-      name: 'George Costanza',
-      emails: ['george.costanza@gmail.com'],
-      projectRoles: [
-        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
-        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
-      ],
-      globalRoles: [
-        Role.GENERAL_ADMIN,
-        Role.GENERAL_CREATOR,
-        Role.GENERAL_USER,
-      ],
-      // added empty team roles
-      teamRoles: [],
-      templateRoles: [],
-      profiles: {
-        local: {
-          password: '1234',
-          salt: '123456',
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'abcd123456',
+        _rev: '1234',
+        user_id: 'abcd123456',
+        name: 'George Costanza',
+        emails: ['george.costanza@gmail.com'],
+        projectRoles: [
+          {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+          {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+        ],
+        globalRoles: [
+          Role.GENERAL_ADMIN,
+          Role.GENERAL_CREATOR,
+          Role.GENERAL_USER,
+        ],
+        // added empty team roles
+        teamRoles: [],
+        templateRoles: [],
+        profiles: {
+          local: {
+            password: '1234',
+            salt: '123456',
+          },
         },
-      },
-    } satisfies PeopleV3Document,
-    expectedResult: {action: 'update'},
+      } satisfies PeopleV3Document,
+    },
     equalityFunction: areDocsEqual,
   },
 ];
@@ -1293,24 +1557,26 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       templateRoles: [],
       globalRoles: [Role.GENERAL_USER],
     } satisfies PeopleV3Document,
-    expectedOutputDoc: {
-      _id: 'user_single_email',
-      _rev: '1-abc123',
-      user_id: 'user_single_email',
-      name: 'Jerry Seinfeld',
-      emails: [{email: 'jerry@seinfeld.com', verified: false}],
-      profiles: {
-        google: {
-          id: '12345',
-          email: 'jerry@seinfeld.com',
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_single_email',
+        _rev: '1-abc123',
+        user_id: 'user_single_email',
+        name: 'Jerry Seinfeld',
+        emails: [{email: 'jerry@seinfeld.com', verified: false}],
+        profiles: {
+          google: {
+            id: '12345',
+            email: 'jerry@seinfeld.com',
+          },
         },
-      },
-      projectRoles: [{resourceId: 'comedy_show', role: Role.PROJECT_ADMIN}],
-      teamRoles: [],
-      templateRoles: [],
-      globalRoles: [Role.GENERAL_USER],
-    } satisfies PeopleV4Document,
-    expectedResult: {action: 'update'},
+        projectRoles: [{resourceId: 'comedy_show', role: Role.PROJECT_ADMIN}],
+        teamRoles: [],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER],
+      } satisfies PeopleV4Document,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1344,31 +1610,33 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       templateRoles: [],
       globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
     } satisfies PeopleV3Document,
-    expectedOutputDoc: {
-      _id: 'user_multiple_emails',
-      _rev: '1-def456',
-      user_id: 'user_multiple_emails',
-      name: 'Elaine Benes',
-      emails: [
-        {email: 'elaine@pendant.com', verified: false},
-        {email: 'elaine.benes@gmail.com', verified: false},
-        {email: 'ebenes@hotmail.com', verified: false},
-      ],
-      profiles: {
-        local: {
-          password: 'hashed_password',
-          salt: 'salt123',
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_multiple_emails',
+        _rev: '1-def456',
+        user_id: 'user_multiple_emails',
+        name: 'Elaine Benes',
+        emails: [
+          {email: 'elaine@pendant.com', verified: false},
+          {email: 'elaine.benes@gmail.com', verified: false},
+          {email: 'ebenes@hotmail.com', verified: false},
+        ],
+        profiles: {
+          local: {
+            password: 'hashed_password',
+            salt: 'salt123',
+          },
         },
-      },
-      projectRoles: [
-        {resourceId: 'pendant_publishing', role: Role.PROJECT_ADMIN},
-        {resourceId: 'j_peterman', role: Role.PROJECT_CONTRIBUTOR},
-      ],
-      teamRoles: [{resourceId: 'seinfeld_gang', role: Role.TEAM_MEMBER}],
-      templateRoles: [],
-      globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
-    } satisfies PeopleV4Document,
-    expectedResult: {action: 'update'},
+        projectRoles: [
+          {resourceId: 'pendant_publishing', role: Role.PROJECT_ADMIN},
+          {resourceId: 'j_peterman', role: Role.PROJECT_CONTRIBUTOR},
+        ],
+        teamRoles: [{resourceId: 'seinfeld_gang', role: Role.TEAM_MEMBER}],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
+      } satisfies PeopleV4Document,
+    },
     equalityFunction: areDocsEqual,
   },
 
@@ -1390,19 +1658,59 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       templateRoles: [],
       globalRoles: [Role.GENERAL_USER],
     } satisfies PeopleV3Document,
-    expectedOutputDoc: {
-      _id: 'user_no_emails',
-      _rev: '1-ghi789',
-      user_id: 'user_no_emails',
-      name: 'Newman',
-      emails: [], // Should still be an empty array
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_no_emails',
+        _rev: '1-ghi789',
+        user_id: 'user_no_emails',
+        name: 'Newman',
+        emails: [], // Should still be an empty array
+        profiles: {},
+        projectRoles: [],
+        teamRoles: [],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER],
+      } satisfies PeopleV4Document,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
+const PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'peopleV4toV5Migration - adds disabled false',
+    dbType: DatabaseType.PEOPLE,
+    from: 4,
+    to: 5,
+    inputDoc: {
+      _id: 'user_v4',
+      _rev: '1-abc',
+      user_id: 'user_v4',
+      name: 'Test User',
+      emails: [{email: 't@example.com', verified: true}],
       profiles: {},
       projectRoles: [],
       teamRoles: [],
       templateRoles: [],
       globalRoles: [Role.GENERAL_USER],
     } satisfies PeopleV4Document,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_v4',
+        _rev: '1-abc',
+        user_id: 'user_v4',
+        name: 'Test User',
+        emails: [{email: 't@example.com', verified: true}],
+        profiles: {},
+        projectRoles: [],
+        teamRoles: [],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER],
+        disabled: false,
+      } satisfies PeopleV5Document,
+    },
     equalityFunction: areDocsEqual,
   },
 ];
@@ -1427,7 +1735,6 @@ const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       exchangeTokenUsed: false,
       exchangeTokenExpiryTimestampMs: Date.now() + 1800000, // 30 minutes from now
     } satisfies RefreshRecordV2ExistingDocument,
-    expectedOutputDoc: undefined, // No changes expected
     expectedResult: {action: 'none'},
   },
 
@@ -1449,7 +1756,6 @@ const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       exchangeTokenUsed: true,
       exchangeTokenExpiryTimestampMs: Date.now() - 7200000, // 2 hours ago (expired)
     } satisfies RefreshRecordV2ExistingDocument,
-    expectedOutputDoc: undefined,
     expectedResult: {action: 'none'},
   },
 
@@ -1468,7 +1774,6 @@ const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       used: false,
       expiryTimestampMs: Date.now() + 1800000, // 30 minutes from now
     } satisfies EmailCodeV1ExistingDocument, // V2 email code is same as V1
-    expectedOutputDoc: undefined,
     expectedResult: {action: 'none'},
   },
 
@@ -1487,7 +1792,6 @@ const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       used: true,
       expiryTimestampMs: Date.now() - 3600000, // 1 hour ago (expired)
     } satisfies EmailCodeV1ExistingDocument, // V2 email code is same as V1
-    expectedOutputDoc: undefined,
     expectedResult: {action: 'none'},
   },
 
@@ -1516,7 +1820,6 @@ const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         deviceId: 'device123',
       },
     } satisfies RefreshRecordV2ExistingDocument & Record<string, any>,
-    expectedOutputDoc: undefined,
     expectedResult: {action: 'none'},
   },
 ];
@@ -1538,17 +1841,19 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       used: false,
       expiryTimestampMs: Date.now() + 3600000, // 1 hour from now
     } satisfies EmailCodeV3ExistingDocument,
-    expectedOutputDoc: {
-      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}123456`,
-      _rev: '3-abc123',
-      documentType: 'emailcode',
-      userId: 'user123',
-      code: 'hashed_code_abc',
-      used: false,
-      expiryTimestampMs: Date.now() + 3600000,
-      createdTimestampMs: Date.now(),
-    } satisfies Partial<EmailCodeV4ExistingDocument>,
-    expectedResult: {action: 'update'},
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}123456`,
+        _rev: '3-abc123',
+        documentType: 'emailcode',
+        userId: 'user123',
+        code: 'hashed_code_abc',
+        used: false,
+        expiryTimestampMs: Date.now() + 3600000,
+        createdTimestampMs: Date.now(),
+      } satisfies Partial<EmailCodeV4ExistingDocument>,
+    },
     equalityFunction: (a, b) => {
       const {createdTimestampMs: createdA, ...otherA} = a;
       const {createdTimestampMs: createdB, ...otherB} = b;
@@ -1578,7 +1883,6 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       exchangeTokenUsed: false,
       exchangeTokenExpiryTimestampMs: Date.now() + 3600000, // 1 hour from now
     } satisfies RefreshRecordV3ExistingDocument,
-    expectedOutputDoc: undefined, // No changes expected
     expectedResult: {action: 'none'},
   },
 
@@ -1599,7 +1903,6 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       createdTimestampMs: Date.now() - 3600000, // 1 hour ago
       expiryTimestampMs: Date.now() + 86400000, // 24 hours from now
     } satisfies VerificationChallengeV3ExistingDocument,
-    expectedOutputDoc: undefined, // No changes expected
     expectedResult: {action: 'none'},
   },
 ];
@@ -1608,10 +1911,14 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
 MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PROJECT_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**
@@ -1636,10 +1943,16 @@ describe('Migration Specific Tests', () => {
         // Check that the result matches expected
         expect(result.action).toBe(testCase.expectedResult.action);
 
-        if (result.action === 'update' && result.updatedRecord) {
+        if (result.action === 'update') {
           // Preserve _id and _rev for comparison
           const updatedWithMetadata = {
             ...result.updatedRecord,
+            _id: testCase.inputDoc._id,
+            _rev: testCase.inputDoc._rev,
+          };
+
+          const expectedUpdatedRecord = {
+            ...(testCase.expectedResult as any).updatedRecord,
             _id: testCase.inputDoc._id,
             _rev: testCase.inputDoc._rev,
           };
@@ -1649,12 +1962,14 @@ describe('Migration Specific Tests', () => {
             expect(
               testCase.equalityFunction(
                 updatedWithMetadata,
-                testCase.expectedOutputDoc
+                expectedUpdatedRecord
               )
             ).toBeTruthy();
           } else {
-            expect(updatedWithMetadata).toEqual(testCase.expectedOutputDoc);
+            expect(updatedWithMetadata).toEqual(expectedUpdatedRecord);
           }
+        } else {
+          expect(result).toEqual(testCase.expectedResult);
         }
       });
     });

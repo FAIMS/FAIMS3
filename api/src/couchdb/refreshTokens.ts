@@ -10,10 +10,11 @@ import {
   AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
   GetRefreshTokenIndex,
+  isPeopleUserAccountDisabled,
   RefreshRecordExistingDocument,
   RefreshRecordFields,
+  safeWriteDocument,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
@@ -60,8 +61,8 @@ export const createNewRefreshToken = async ({
   const authDB = getAuthDB();
 
   // Generate a new UUID for the token
-  const token = uuidv4();
-  const dbId = AUTH_RECORD_ID_PREFIXES.refresh + uuidv4();
+  const token = crypto.randomUUID();
+  const dbId = AUTH_RECORD_ID_PREFIXES.refresh + crypto.randomUUID();
 
   // Set expiry to configured duration
   const refreshExpiry = generateExpiryTimestamp(refreshExpiryMs);
@@ -170,6 +171,13 @@ export const consumeExchangeTokenForRefreshToken = async ({
       };
     }
 
+    if (isPeopleUserAccountDisabled(user)) {
+      return {
+        valid: false,
+        validationError: 'User account is disabled.',
+      };
+    }
+
     // consume the exchange token
     tokenDoc.exchangeTokenUsed = true;
     await getAuthDB().put(tokenDoc);
@@ -238,6 +246,13 @@ export const validateRefreshToken = async (
         valid: false,
         validationError:
           'While token appears valid, could not find associated user.',
+      };
+    }
+
+    if (isPeopleUserAccountDisabled(user)) {
+      return {
+        valid: false,
+        validationError: 'User account is disabled.',
       };
     }
 
@@ -339,7 +354,7 @@ export const invalidateToken = async (
 
   // put back with enabled as false
   try {
-    await authDB.put(existingTokenDoc);
+    await safeWriteDocument({db: authDB, data: existingTokenDoc});
   } catch (e) {
     throw new InternalSystemError(
       'Failed to update existing auth DB refresh token record during invalidation. Error: ' +
@@ -452,7 +467,7 @@ export const deleteRefreshToken = async (
 
   // If we've reached this point, we have a valid tokenDoc
   try {
-    await authDB.remove(tokenDoc._id, tokenDoc._rev);
+    await authDB.remove(tokenDoc);
   } catch (error) {
     throw new Error(
       `Failed to delete refresh token: ${(error as Error).message}`

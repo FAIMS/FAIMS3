@@ -3,7 +3,11 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
-import {DBCallbackObject, ProjectID} from '@faims3/data-model';
+import {
+  DatabaseInterface,
+  DBCallbackObject,
+  ProjectID,
+} from '@faims3/data-model';
 import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 import {
   getAuthDB,
@@ -12,6 +16,7 @@ import {
   getUsersDB,
   initialiseDbAndKeys,
   getTeamsDB,
+  getInvitesDB,
 } from '../src/couchdb';
 import {registerAdminUser} from '../src/couchdb/users';
 
@@ -38,7 +43,7 @@ const mockShouldDisplayRecord = async () => {
   return true;
 };
 
-const clearDB = async (db: PouchDB.Database) => {
+const clearDB = async (db: DatabaseInterface) => {
   const docs = await db.allDocs();
   for (let index = 0; index < docs.rows.length; index++) {
     const doc = docs.rows[index];
@@ -56,6 +61,9 @@ export const resetDatabases = async () => {
 
   const projectsDB = localGetProjectsDb();
   await clearDB(projectsDB);
+
+  const invitesDB = getInvitesDB();
+  await clearDB(invitesDB);
 
   const templatesDB = getTemplatesDb();
   await clearDB(templatesDB);
@@ -75,7 +83,7 @@ export const resetDatabases = async () => {
 };
 
 export const cleanDataDBS = async () => {
-  let db: PouchDB.Database;
+  let db: DatabaseInterface;
   for (const name in databaseList) {
     db = databaseList[name];
     delete databaseList[name];

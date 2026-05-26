@@ -3,7 +3,7 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplates} from '@/hooks/queries';
-import {Action, GetTemplateByIdResponse} from '@faims3/data-model';
+import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 import {Divider} from '../ui/word-divider';
@@ -39,8 +39,8 @@ export function CreateProjectForm({
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const {data: templates} = useGetTemplates(user);
-  const {data: teams} = useGetTeams(user);
+  const {data: templates} = useGetTemplates({user});
+  const {data: teams} = useGetTeams({user});
 
   const fields: Field[] = [
     {
@@ -54,12 +54,12 @@ export function CreateProjectForm({
     {
       name: 'template',
       label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template (optional)`,
-      options: templates?.map(({_id, name}: GetTemplateByIdResponse) => ({
+      options: templates?.map(({_id, name}: TemplateListItem) => ({
         label: name,
         value: _id,
       })),
       schema: z.any().optional(),
-      excludes: 'file',
+      excludedBy: 'file',
     },
     {
       name: 'file',
@@ -69,7 +69,7 @@ export function CreateProjectForm({
         .instanceof(File)
         .refine(file => file.type === 'application/json')
         .optional(),
-      excludes: 'template',
+      excludedBy: 'template',
     },
   ];
 

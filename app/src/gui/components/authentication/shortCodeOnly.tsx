@@ -14,13 +14,19 @@ import {
   useTheme,
 } from '@mui/material';
 import React, {useState} from 'react';
-import {APP_ID} from '../../../buildconfig';
+import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
-import {isWeb, replaceOrAppendRedirect} from '../../../utils/helpers';
-import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {replaceOrAppendRedirect} from '../../../utils/helpers';
 import {Server} from '../../../context/slices/projectSlice';
+import {QRCodeButton} from '@faims3/forms';
+
+interface QRCodeButtonOnlyProps {
+  servers: Server[];
+  /** Called when scan is initiated (e.g. to close a parent dialog) */
+  onScanStart?: () => void;
+}
 
 /**
  * Component to register a button for scanning a QR code to register
@@ -28,7 +34,7 @@ import {Server} from '../../../context/slices/projectSlice';
  * @param props Component properties include only `servers`
  * @returns component content
  */
-export function QRCodeButtonOnly(props: {servers: Server[]}) {
+export function QRCodeButtonOnly(props: QRCodeButtonOnlyProps) {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const handleRegister = async (url: string) => {
@@ -63,6 +69,7 @@ export function QRCodeButtonOnly(props: {servers: Server[]}) {
     <QRCodeButton
       label={'Scan QR Code'}
       onScanResult={handleRegister}
+      onScanStart={props.onScanStart}
       buttonProps={{
         variant: 'outlined',
         fullWidth: true,
@@ -166,7 +173,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
     const inviteCode = serverInfo.shortCodePrefix + '-' + shortCode;
     const url = `${serverInfo.serverUrl}/register?inviteId=${inviteCode}`;
 
-    if (isWeb()) {
+    if (IS_WEB_PLATFORM) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href = url + '&redirect=' + redirect;
     } else {

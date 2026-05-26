@@ -1,0 +1,8 @@
+sphinx>=4.0
+sphinx-rtd-theme
+myst-parser
+sphinx
+sphinx-autobuild
+sphinx-book-theme
+sphinxcontrib-mermaid
+sphinx-wagtail-theme

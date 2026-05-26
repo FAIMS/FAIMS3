@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Tracks whether the notebook has unsaved edits. Set `true` by metadata/UI-spec actions;
+ * reset via {@link resetFlag} after save.
+ */
+
 import {createSlice} from '@reduxjs/toolkit';
 import {initialState} from './initial';
 import {propertyUpdated, rolesUpdated} from './metadata-reducer';
@@ -19,6 +24,7 @@ import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
+  fieldReordered,
   fieldRenamed,
   fieldUpdated,
   formVisibilityUpdated,
@@ -31,12 +37,13 @@ import {
   viewSetDeleted,
   viewSetMoved,
   viewSetRenamed,
-} from './uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 const modifiedStatusReducer = createSlice({
   name: 'modifiedStatus',
   initialState: initialState.modified,
   reducers: {
+    /** Set dirty flag explicitly (typically `false` after persisting). */
     resetFlag: (_state, action) => {
       const newStatus = action.payload as boolean;
       return newStatus;
@@ -56,6 +63,9 @@ const modifiedStatusReducer = createSlice({
         return true;
       })
       .addCase(fieldMoved, () => {
+        return true;
+      })
+      .addCase(fieldReordered, () => {
         return true;
       })
       .addCase(fieldRenamed, () => {

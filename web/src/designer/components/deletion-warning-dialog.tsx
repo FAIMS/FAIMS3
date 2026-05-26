@@ -1,3 +1,7 @@
+/**
+ * @file Modal listing condition references that block delete until the user fixes them.
+ */
+
 import {
   Dialog,
   DialogTitle,
@@ -6,6 +10,12 @@ import {
   Alert,
   Button,
 } from '@mui/material';
+import {
+  designerCancelButtonSx,
+  designerDialogActionsSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
+} from './designer-style';
 
 type DeletionWarningDialogProps = {
   open: boolean;
@@ -14,6 +24,7 @@ type DeletionWarningDialogProps = {
   onClose: () => void;
 };
 
+/** Read-only warning when delete is blocked by visibility conditions elsewhere. */
 export const DeletionWarningDialog = ({
   open,
   title,
@@ -21,9 +32,9 @@ export const DeletionWarningDialog = ({
   onClose,
 }: DeletionWarningDialogProps) => {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle sx={designerDialogTitleSx}>{title}</DialogTitle>
+      <DialogContent sx={designerDialogContentSx}>
         <Alert severity="warning">
           This item is referenced in the following conditions:
           <ul style={{marginTop: 8}}>
@@ -34,8 +45,10 @@ export const DeletionWarningDialog = ({
           Please remove or update these references before deleting.
         </Alert>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>OK</Button>
+      <DialogActions sx={designerDialogActionsSx}>
+        <Button sx={designerCancelButtonSx} onClick={onClose}>
+          OK
+        </Button>
       </DialogActions>
     </Dialog>
   );
