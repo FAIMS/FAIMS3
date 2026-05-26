@@ -6,10 +6,7 @@ import {useAttachments} from '../../../../hooks/useAttachment';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
-const AudioClip: React.FC<{url: string; label: string}> = ({
-  url,
-  label,
-}) => (
+const AudioClip: React.FC<{url: string; label: string}> = ({url, label}) => (
   <Paper
     elevation={0}
     sx={{
@@ -30,7 +27,13 @@ const AudioClip: React.FC<{url: string; label: string}> = ({
         {label}
       </Typography>
     </Box>
-    <audio controls src={url} style={{width: '100%'}} preload="metadata">
+    <audio
+      controls
+      controlsList="nodownload"
+      src={url}
+      style={{width: '100%'}}
+      preload="metadata"
+    >
       Your browser does not support the audio element.
     </audio>
   </Paper>

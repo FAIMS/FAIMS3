@@ -479,8 +479,8 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
 
         {/* Recording controls — fixed to bottom when actively recording */}
         <Box
-          sx={{
-            ...(isRecording
+          sx={
+            isRecording
               ? {
                   position: 'fixed',
                   bottom: 0,
@@ -494,8 +494,8 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
                   px: 3,
                   boxShadow: 6,
                 }
-              : {}),
-          }}
+              : {}
+          }
         >
           <Stack
             direction="row"
@@ -613,6 +613,7 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
                 {file.data?.url && (
                   <audio
                     controls
+                    controlsList="nodownload"
                     src={file.data.url}
                     style={{width: '100%'}}
                     preload="metadata"
@@ -668,8 +669,8 @@ export const audioRecorderFieldSpec: FieldInfo<AudioRecorderFieldProps> = {
         message: 'At least one audio recording is required.',
       });
     }
-    if (props. maximumNumberOfRecordings > 0) {
-      const max = props. maximumNumberOfRecordings;
+    if (props.maximumNumberOfRecordings > 0) {
+      const max = props.maximumNumberOfRecordings;
       base = base.refine(val => val.length <= max, {
         message: `Maximum ${max} recording${max === 1 ? '' : 's'} allowed.`,
       });
