@@ -16,11 +16,13 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import {ConfirmDialog} from '../../components/ConfirmDialog';
 import {useForm} from '@tanstack/react-form';
 import {debounce, DebouncedFunc} from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {logError, logInfo, logWarn} from '../../logging';
 import {formDataExtractor} from '../../utils';
+import {getFieldId} from '../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
@@ -575,31 +577,111 @@ export const EditableFormManager: React.FC<
   });
 
   // ---------------------------------------------------------------------------
+  // Warn the user before finishing if required fields or errors remain.
+  // ---------------------------------------------------------------------------
+  const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
+  const pendingFinishRef = useRef<null | (() => void | Promise<void>)>(null);
+  const firstIssueFieldRef = useRef<string | null>(null);
+  const [issueCount, setIssueCount] = useState(0);
+
+  const formLabel = useMemo(
+    () =>
+      getFormLabel({uiSpec: dataEngine.uiSpec, formId: props.formId}) ||
+      'record',
+    [dataEngine.uiSpec, props.formId]
+  );
+
+  // Count unique fields that are still problematic (missing required OR
+  // validation error) and remember the first one so we can scroll to it.
+  const collectFinishIssues = useCallback(() => {
+    const problematic = new Set<string>();
+    const values: Record<string, unknown> = form.state.values ?? {};
+    const fieldMeta = form.state.fieldMeta ?? {};
+
+    // Missing required: walk the same field set the live progress bar uses.
+    for (const [sectionId, fieldNames] of Object.entries(visibleMap)) {
+      void sectionId;
+      for (const fieldName of fieldNames) {
+        const fieldSpec = dataEngine.uiSpec.fields[fieldName];
+        if (!fieldSpec?.['component-parameters']?.required) continue;
+        const v = values[fieldName];
+        const isEmpty =
+          v === null ||
+          v === undefined ||
+          v === '' ||
+          (Array.isArray(v) && v.length === 0);
+        if (isEmpty) problematic.add(fieldName);
+      }
+    }
+
+    // Validation errors from react-form's per-field meta.
+    for (const [name, meta] of Object.entries(fieldMeta)) {
+      if ((meta?.errors as unknown[] | undefined)?.length) {
+        problematic.add(name);
+      }
+    }
+
+    const firstField = problematic.values().next().value ?? null;
+    return {count: problematic.size, firstField};
+  }, [dataEngine.uiSpec, form, visibleMap]);
+
+  // Scroll the form to the first problematic field — same DOM id pattern
+  // used by TabbedSections's own scroll-to-field helper.
+  const scrollToFirstIssue = useCallback(() => {
+    const name = firstIssueFieldRef.current;
+    if (!name) return;
+    const el = document.getElementById(getFieldId({fieldId: name}));
+    el?.scrollIntoView({behavior: 'smooth', block: 'center'});
+  }, []);
+
+  // ---------------------------------------------------------------------------
   // Attachment saving lock (prevent navigation until attachment in PouchDB)
   // ---------------------------------------------------------------------------
   const isAttachmentSaving = attachmentSavingCounts.size > 0;
 
-  // Disable top/bottom navigation buttons (Finish, etc) while attachments save,
-  // so users can't bypass section navigation blocking.
+  // Show the dialog if there are issues, otherwise finish straight away.
+  const guardFinish = useCallback(
+    (onClick: () => void | Promise<void>) => async () => {
+      const {count, firstField} = collectFinishIssues();
+      if (count === 0) {
+        return onClick();
+      }
+      setIssueCount(count);
+      firstIssueFieldRef.current = firstField;
+      pendingFinishRef.current = onClick;
+      setConfirmFinishOpen(true);
+    },
+    [collectFinishIssues]
+  );
+
+  // Disable nav buttons while attachments save, and route Finish through the warning dialog.
   const navigationButtonsWithAttachmentLock = useMemo(() => {
-    if (!isAttachmentSaving) return navigationButtons;
-    return navigationButtons.map(b => ({
-      ...b,
-      disabled: true,
-      loading: true,
-      statusText: 'saving attachment…',
-    }));
-  }, [navigationButtons, isAttachmentSaving]);
+    const isFinishButton = (id: string) =>
+      id === 'finish-to-parent' || id === 'finish-to-list';
+    return navigationButtons.map(b => {
+      const base = isAttachmentSaving
+        ? {...b, disabled: true, loading: true, statusText: 'saving attachment…'}
+        : b;
+      return isFinishButton(b.id)
+        ? {...base, onClick: guardFinish(b.onClick)}
+        : base;
+    });
+  }, [navigationButtons, isAttachmentSaving, guardFinish]);
 
   const onCompleteHandlerWithAttachmentLock = useMemo(() => {
-    if (!isAttachmentSaving) return onCompleteHandler;
+    if (isAttachmentSaving) {
+      return {
+        ...onCompleteHandler,
+        onClick: async () => {
+          // no-op: completion is blocked until attachment stored
+        },
+      };
+    }
     return {
       ...onCompleteHandler,
-      onClick: async () => {
-        // no-op: completion is blocked until attachment stored
-      },
+      onClick: guardFinish(onCompleteHandler.onClick),
     };
-  }, [onCompleteHandler, isAttachmentSaving]);
+  }, [onCompleteHandler, isAttachmentSaving, guardFinish]);
 
   // ---------------------------------------------------------------------------
   // Form Manager Config
@@ -761,6 +843,44 @@ export const EditableFormManager: React.FC<
 
       {/* Navigation Buttons (Bottom) */}
       <NavigationButtonsDisplay buttons={navigationButtonsWithAttachmentLock} />
+
+      {/* Warning dialog when Finish is pressed with issues still open. */}
+      <ConfirmDialog
+        open={confirmFinishOpen}
+        onClose={() => {
+          // "Go back and review" — close + scroll the form to the first issue.
+          pendingFinishRef.current = null;
+          setConfirmFinishOpen(false);
+          // Wait a tick so the dialog has unmounted before scrolling.
+          setTimeout(scrollToFirstIssue, 0);
+        }}
+        onConfirm={async () => {
+          setConfirmFinishOpen(false);
+          const fn = pendingFinishRef.current;
+          pendingFinishRef.current = null;
+          if (fn) await fn();
+        }}
+        title={`Are you sure you want to finish ${formLabel}?`}
+        cancelLabel="Go back and review"
+        confirmLabel="Finish anyway"
+      >
+        <Typography
+          variant="body2"
+          onClick={() => {
+            pendingFinishRef.current = null;
+            setConfirmFinishOpen(false);
+            setTimeout(scrollToFirstIssue, 0);
+          }}
+          sx={{
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            color: 'text.primary',
+          }}
+        >
+          <strong>{issueCount}</strong> field{issueCount === 1 ? '' : 's'} still{' '}
+          {issueCount === 1 ? 'has' : 'have'} errors.
+        </Typography>
+      </ConfirmDialog>
     </Stack>
   );
 };
