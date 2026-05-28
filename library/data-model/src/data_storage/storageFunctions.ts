@@ -9,7 +9,7 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
-import {v4 as uuidv4} from 'uuid';
+import {randomUuid} from '../utils';
 import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
 import {getDataDB, shouldDisplayRecord} from '../callbacks';
 import {TokenContents} from '../permission/types';
@@ -51,7 +51,7 @@ import {
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
 
 export function generateFAIMSDataID(): RecordID {
-  return 'rec-' + uuidv4();
+  return 'rec-' + randomUuid();
 }
 
 /**
@@ -245,8 +245,8 @@ export async function listFAIMSProjectRevisions({
 }
 
 export async function deleteFAIMSDataForID({
-  recordId: recordId,
-  userId: userId,
+  recordId,
+  userId,
   dataDb,
 }: {
   dataDb: DataDbType;

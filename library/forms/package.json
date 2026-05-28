@@ -43,7 +43,7 @@
     "@tanstack/react-query": "^5.62.16",
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
-    "dompurify": "^3.2.4",
+    "dompurify": "^3.4.0",
     "lodash": "^4.18.1",
     "markdown-it": "^14.1.1",
     "mustache": "^4.2.0",

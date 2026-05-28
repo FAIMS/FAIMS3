@@ -61,7 +61,10 @@ export const AddTeamRolePopover = ({
           <Plus />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex flex-col gap-1 p-2 w-80 text-sm" align="start">
+      <PopoverContent
+        className="flex flex-col gap-1 p-2 w-80 text-sm"
+        align="start"
+      >
         {roles.map(role => {
           const detail = roleDetails[role];
           return (

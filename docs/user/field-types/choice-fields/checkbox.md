@@ -4,6 +4,12 @@ _How to add and configure a Checkbox field in the Notebook Editor._
 
 ---
 
+```{important}
+Checkbox is **deprecated** for new form design.
+It remains fully supported for existing notebooks and existing Checkbox fields are not removed.
+For new forms, prefer [Select one option](radio-group.md) with explicit choices such as "Yes" and "No".
+```
+
 ## What This Field Does
 
 A Checkbox Field provides a toggle that stores a boolean
@@ -15,20 +21,11 @@ single yes/no state rather than a selection from a list.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the **CHOICE**
-tab, and click the **Checkbox** card. Then click the **ADD FIELD**
-button in the lower right.
+New Checkbox fields are not available from the add-field chooser.
+Checkbox remains supported for legacy notebooks where it already exists.
+For new forms, add **Select one option** instead.
 
-> **Note:** The CHOICE tab may not be visible in the tab bar initially —
-> click the **›** arrow button on the right side of the tab bar to scroll
-> until it appears.
-
-```{screenshot} field-types-design/checkbox-01-add-field.png
-:alt: Adding a Checkbox — the CHOICE tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit Checkbox settings for existing fields.
 
 ## Configuring the Field
 
@@ -68,3 +65,9 @@ and Display in child records — see
   presence/absence of charcoal, bioturbation observed, safety check completed.
 - **Enable Annotation and Uncertainty** if collectors might need to qualify
   their answer, such as noting "could not confirm — poor visibility".
+
+## Migration Guidance
+
+- Existing Checkbox fields can be left in place and will continue to work.
+- For new templates, replace Checkbox with **Select one option** to make choices explicit.
+- If you need three or more states (for example "yes / no / unknown"), use **Select one option** or **Select Field**.

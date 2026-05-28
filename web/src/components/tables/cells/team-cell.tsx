@@ -24,7 +24,11 @@ export const TeamCellComponent = ({
   const hasInjectedName =
     teamDisplayName !== undefined && teamDisplayName.length > 0;
 
-  const {data: team, isLoading, isError} = useGetTeam({
+  const {
+    data: team,
+    isLoading,
+    isError,
+  } = useGetTeam({
     user,
     teamId,
     enabled: !hasInjectedName,

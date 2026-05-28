@@ -1,5 +1,8 @@
 import {useAuth} from '@/context/auth-provider';
-import {postDeleteArchivedNotebook, putNotebookStatus} from '@/hooks/project-hooks';
+import {
+  postDeleteArchivedNotebook,
+  putNotebookStatus,
+} from '@/hooks/project-hooks';
 import {ProjectStatus} from '@faims3/data-model';
 import {postDeleteArchivedTemplate} from '@/hooks/template-hooks';
 import {

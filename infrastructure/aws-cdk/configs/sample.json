@@ -109,7 +109,8 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false
+    "localhostWhitelist": false,
+    "migrateNotebooksOnStartup": false
   },
   "authProviders": {
     "disableLocalLogin": false,

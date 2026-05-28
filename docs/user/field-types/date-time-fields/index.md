@@ -16,13 +16,13 @@ date-time-now.md
 
 ```
 
-- **[Date time picker](date-time-picker.md)** — Captures date and time
-  values. Consider **Date and Time with Now button** instead for timezone
-  support.
+- **[Date time picker](date-time-picker.md)** — The recommended date-and-time
+  field. Captures date and time, and can optionally show a "Now" button for
+  one-tap capture of the current timestamp.
 - **[Date picker](date-picker.md)** — Date-only selection for administrative
   records, permits, and excavation dates.
 - **[Month picker](month-picker.md)** — Month-and-year selection for records
   where exact dates are unknown or unnecessary.
-- **[Date and Time with Now button](date-time-now.md)** — Timezone-aware
-  timestamp capture with an automatic current-time button; the recommended
-  date-time field.
+- **[Date and Time with Now button](date-time-now.md)** — Deprecated as a
+  separate field type; existing fields remain supported. Use **Date time
+  picker** with **Show "Now" button** enabled for new forms.

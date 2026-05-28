@@ -192,6 +192,12 @@ export interface FullFormConfig extends BaseFormConfig {
  */
 export interface PreviewFormConfig extends BaseFormConfig {
   mode: 'preview';
+  /**
+   * Optional section id to focus when rendering tabbed preview.
+   * Used by Designer to keep the live preview aligned with the currently
+   * selected section tab.
+   */
+  previewSectionId?: string;
 }
 
 // Discriminated union

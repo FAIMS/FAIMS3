@@ -113,8 +113,8 @@ const ExpandedChecklist = ({
   hasOtherSelected,
   onBlur,
 }: ExpandedChecklistProps) => {
-  // Calculate actual position - default to end of list
-  const otherPosition = otherOptionPosition ?? options.length;
+  // Keep "Other" pinned to the bottom.
+  const otherPosition = options.length;
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   const handleChange = (optionValue: string) => {
@@ -284,8 +284,8 @@ const MuiMultiSelect = ({
   onOtherTextChange,
   hasOtherSelected,
 }: MuiMultiSelectProps) => {
-  // Calculate actual position - default to end of list
-  const otherPosition = otherOptionPosition ?? options.length;
+  // Keep "Other" pinned to the bottom.
+  const otherPosition = options.length;
   // state to control dropdown open/close
   const [isOpen, setIsOpen] = useState(false);
 

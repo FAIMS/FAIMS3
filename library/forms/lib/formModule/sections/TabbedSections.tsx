@@ -796,6 +796,19 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
     }
   }, [visibleSections, activeSection]);
 
+  // kkeep section in sync with an externally selected section id
+  // from Designer (when provided).
+  const previewSectionId =
+    config.mode === 'preview' ? config.previewSectionId : undefined;
+  useEffect(() => {
+    if (config.mode !== 'preview') return;
+    const targetSection = previewSectionId;
+    if (!targetSection) return;
+    if (!visibleSections.includes(targetSection)) return;
+    if (targetSection === activeSection) return;
+    setActiveSection(targetSection);
+  }, [config.mode, previewSectionId, visibleSections, activeSection]);
+
   /**
    * Optionally marks all fields in the current section as touched and triggers validation.
    *

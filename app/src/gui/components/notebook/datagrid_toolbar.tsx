@@ -95,21 +95,42 @@ export function GridToolbarSearchRecordDataButton({
   };
 
   return (
-    <FormControl fullWidth size="small">
-      <OutlinedInput
-        className={
-          value === ''
-            ? 'record-grid-searchField'
-            : 'record-grid-searchField record-grid-searchField--active'
-        }
-        placeholder="Search record data (case sensitive)"
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyPress}
-        inputProps={{
-          'data-testid': 'record-search-input',
-        }}
-        startAdornment={
+    <TextField
+      placeholder="Search record data"
+      value={value}
+      onChange={handleChange}
+      onKeyDown={handleKeyPress}
+      data-testid="record-search-input"
+      variant="outlined"
+      size="small"
+      fullWidth
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          backgroundColor: '#ffffff',
+          transition: 'all 0.3s ease-in-out',
+          borderRadius: '8px',
+          boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+          border: '1px solid #e0e0e0',
+          '&:hover': {
+            borderColor: '#bdbdbd',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+          },
+          '&.Mui-focused': {
+            borderColor: '#e0e0e0',
+            boxShadow: 'none',
+          },
+        },
+        '& .MuiOutlinedInput-input': {
+          padding: '10px 14px',
+          fontSize: '0.9rem',
+          '&::placeholder': {
+            color: '#757575',
+            opacity: 0.8,
+          },
+        },
+      }}
+      InputProps={{
+        startAdornment: (
           <InputAdornment position="start">
             <IconButton
               className="record-grid-searchButton"

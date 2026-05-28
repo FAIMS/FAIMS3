@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import {PayloadAction} from '@reduxjs/toolkit';
-import {v4 as uuidv4} from 'uuid';
 import {ConditionType} from '../../../types/condition';
 import {getFieldSpec} from '../../../fields';
 import {FieldType, NotebookUISpec} from '../../../state/initial';
@@ -28,7 +27,7 @@ import {cloneField} from '../../../domain/notebook/fieldFactory';
 
 /** Field-level RTK reducers merged into `uiSpecificationReducer`. */
 export const fieldReducers = {
-  /** Replace an existing field spec; throws if `fieldName` is not in `state.fields`. */
+  /** Replace an existing field spec; ignores stale updates when field was renamed/deleted. */
   fieldUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{fieldName: string; newField: FieldType}>
@@ -38,9 +37,9 @@ export const fieldReducers = {
     if (fieldName in fields) {
       fields[fieldName] = newField;
     } else {
-      throw new Error(
-        `Cannot update unknown field ${fieldName} via fieldUpdated action`
-      );
+      // Can happen during quick typing + debounced updates after a field rename.
+      // Ignore stale action to keep the editor responsive and non-fatal.
+      return;
     }
   },
   /** Set `component-parameters.protection`; un-hides field when switching to `protected`. */
@@ -107,6 +106,32 @@ export const fieldReducers = {
         break;
       }
     }
+    state.fviews[viewId].fields = fieldList;
+  },
+  /** Move a field directly to an index position in a section (`viewId`). */
+  fieldReordered: (
+    state: NotebookUISpec,
+    action: PayloadAction<{
+      viewId: string;
+      sourceIndex: number;
+      targetIndex: number;
+    }>
+  ) => {
+    const {viewId, sourceIndex, targetIndex} = action.payload;
+    const fieldList = state.fviews[viewId].fields;
+
+    if (
+      sourceIndex < 0 ||
+      targetIndex < 0 ||
+      sourceIndex >= fieldList.length ||
+      targetIndex >= fieldList.length ||
+      sourceIndex === targetIndex
+    ) {
+      return;
+    }
+
+    const [movedField] = fieldList.splice(sourceIndex, 1);
+    fieldList.splice(targetIndex, 0, movedField);
     state.fviews[viewId].fields = fieldList;
   },
   /** Remove field from `sourceViewId` and append to `targetViewId`; cleans cross-form summary fields. */
@@ -225,7 +250,7 @@ export const fieldReducers = {
     const {fieldName, fieldType, viewId, viewSetId, addAfter} = action.payload;
 
     const newField: FieldType = getFieldSpec(fieldType);
-    newField.designerIdentifier = uuidv4();
+    newField.designerIdentifier = crypto.randomUUID();
 
     let fieldLabel = slugify(fieldName);
 
@@ -331,7 +356,7 @@ export const fieldReducers = {
 
     const originalField = state.fields[originalFieldName];
     const newField = cloneField(originalField);
-    newField.designerIdentifier = uuidv4();
+    newField.designerIdentifier = crypto.randomUUID();
 
     let fieldLabel = slugify(newFieldName);
     let N = 1;
