@@ -9,7 +9,7 @@ There are **two migration layers** — run both in order:
 | Layer              | What moves                                                     | How                                                                                  |
 | ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | **Couch document** | Project/template rows: inline former metadata, adds new fields | `pnpm run migrate` in `api/` (`projectsV3toV4Migration`, `templatesV4toV5Migration`) |
-| **Notebook JSON**  | Design bundle → schema **`5.0`** (`uiSpec` + typed `metadata`) | `migrateNotebook` via API normalisation, optional startup pass, clients on load      |
+| **Notebook JSON**  | Design bundle → current schema (`uiSpec` + typed `metadata`) | `migrateNotebook` via API normalisation, optional startup pass, clients on load      |
 
 ---
 
@@ -25,7 +25,7 @@ Attempt to coordinate step 1/2 below.
    MIGRATE_NOTEBOOKS_ON_STARTUP=true   # default when unset
    ```
 
-   When `true`, each API startup runs `validateDatabases`, which migrates any project whose inlined `uiSpecification` is still below schema `5.0` (see §5 below).
+   When `true`, each API startup runs `validateDatabases`, which migrates any project whose inlined `uiSpecification` is still below the current notebook schema version (see §5 below).
 
 4. **Do not delete `metadata-*` Couch databases** until Couch document migration has completed and you have validated samples (see §3).
 
@@ -49,7 +49,7 @@ This calls `initialiseAndMigrateDBs` (`api/src/couchdb/index.ts`), which:
 
 - Ensures global DBs exist (directory, people, projects, templates, …).
 - Runs `migrateDbs` until **projects** reach version **4** and **templates** version **5**.
-- For each v3 project, **`projectsV3toV4Migration`** opens the legacy **`metadata-{projectId}`** database, merges `ui-specification` + `project-metadata-*` docs, runs **`migrateNotebook`** to schema `5.0`, and writes **`uiSpecification`** on the project document (and removes **`metadataDb`**).
+- For each v3 project, **`projectsV3toV4Migration`** opens the legacy **`metadata-{projectId}`** database, merges `ui-specification` + `project-metadata-*` docs, runs **`migrateNotebook`** to the current schema version, and writes **`uiSpecification`** on the project document (and removes **`metadataDb`**).
 
 **Migration audit fields:** `createdBy` / `createdAt` / `updatedAt` on projects and templates may be filled from migration context when legacy data has no creator (`MigrationContext.migrationCreatedBy` / `DEFAULT_MIGRATION_CREATED_BY`). Historical surveys still have no trustworthy creator in old metadata; do not treat `metadata.information.projectLeadLabel` as `createdBy`.
 
@@ -76,13 +76,13 @@ For each sampled project in the **`projects`** database:
 
 Templates: same for **`uiSpecification`**, plus `version`, `archived`, `isPublic`; no `dataDb`.
 
-### 3.2 Notebook definition shape (schema 5.0)
+### 3.2 Notebook definition shape (current schema)
 
 Inside `uiSpecification`:
 
 | Path                                         | Expected                                                                                                 |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `uiSpec.schemaVersion`                       | **`"5.0"`**                                                                                              |
+| `uiSpec.schemaVersion`                       | Matches **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**                                                         |
 | `uiSpec.views`                               | Object (decoded from legacy `fviews`; not `fviews` on persisted doc)                                     |
 | `uiSpec.settings.showQrCodeButton`           | **boolean**                                                                                              |
 | `metadata.information`                       | Object with `notebookVersion`, `purposeMarkdown`, `projectLeadLabel`, `leadInstitution` (camelCase keys) |
@@ -128,7 +128,7 @@ Per-project **data** databases (`data-{projectId}`) are **not** removed.
 
 ## 5. Notebook JSON migration — when it runs
 
-Schema **`5.0`** is applied by `migrateNotebook` (often wrapped in `normalizeNotebookUiSpecification`). Below is where that runs in this branch.
+The current notebook schema version is applied by `migrateNotebook` (often wrapped in `normalizeNotebookUiSpecification`). Below is where that runs in this branch.
 
 ### Server — persists to Couch
 
@@ -141,7 +141,7 @@ Schema **`5.0`** is applied by `migrateNotebook` (often wrapped in `normalizeNot
 | **POST** create template                     | `createTemplate`                                        | Body `name`, optional `description` (max 250), `uiSpecification`                       |
 | **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                               | Reads metadata DB + `migrateNotebook`                                                  |
 | **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                              | Same pattern for templates                                                             |
-| **API startup** (optional)                   | `validateDatabases` when `MIGRATE_NOTEBOOKS_ON_STARTUP` | Re-writes projects whose inlined spec version is still behind `5.0`                    |
+| **API startup** (optional)                   | `validateDatabases` when `MIGRATE_NOTEBOOKS_ON_STARTUP` | Re-writes projects whose inlined spec version is still behind the current schema version |
 
 **Does not migrate on server:**
 

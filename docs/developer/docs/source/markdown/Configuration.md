@@ -54,7 +54,7 @@ The form graph uses **`uiSpec.fields`**, **`uiSpec.viewsets`**, and **`uiSpec.vi
 
 **When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title and optional short root description are updated via **`PUT /api/notebooks/:id`** (partial body) without replacing the whole design.
 
-**Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }`; the server migrates to schema **`5.0`** before persistence. See [Notebook migrations](./NotebookMigrations.md).
+**Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }`; the server migrates to the most recent notebook schema version before persistence. See [Notebook migrations](./NotebookMigrations.md).
 
 ```mermaid
 graph TD

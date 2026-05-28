@@ -1,4 +1,4 @@
-import {migrateNotebook} from './index';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION, migrateNotebook} from './index';
 import {migrateToV4} from './migrateV4';
 
 /** Minimal v3-shaped notebook with the fields we want to test against. */
@@ -454,12 +454,14 @@ describe('migrateNotebook chains v2 → v3 → v4 → v5', () => {
 
     const {changed, migrated} = migrateNotebook(nb);
     expect(changed).toBe(true);
-    expect(migrated.uiSpec.schemaVersion).toBe('5.0');
+    expect(migrated.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
     expect(migrated.uiSpec.fields.Notes['component-name']).toBe('TextField');
     expect(migrated).not.toHaveProperty('ui-specification');
   });
 
-  test('already at 5.0 → no change', () => {
+  test('already at current schema → no change', () => {
     const nb = v3Notebook({});
     const v5 = migrateNotebook(migrateNotebook(nb).migrated).migrated;
     const {changed} = migrateNotebook(v5);

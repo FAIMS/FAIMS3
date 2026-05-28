@@ -43,6 +43,7 @@ import {
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
 import {NotebookDefinitionV1} from '../src/data_storage/migrations/notebookMigrations/migrateV2';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification/normalize';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -602,7 +603,7 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
             viewsets: {},
             visible_types: [],
             settings: {showQrCodeButton: true},
-            schemaVersion: '5.0',
+            schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
           },
           metadata: {
             information: {

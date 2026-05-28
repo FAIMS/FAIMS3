@@ -6,7 +6,7 @@
 
 ## Schema version
 
-The active version is **`5.0`** (`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION` in `notebookMigrations/index.ts`).
+The active version is **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`** in `notebookMigrations/index.ts` (single source of truth for the latest notebook schema).
 
 Version is read from, in order:
 
@@ -24,13 +24,13 @@ After migration, **`schemaVersion` is stored on `uiSpec`** (not under `metadata.
 | `3.0`                    | `migrateToV4` | Rewrite legacy field component names to canonical registry names; set `schema_version` to `4.0`                                                                                  |
 | `4.0`                    | `migrateToV5` | Split wire `{ metadata, 'ui-specification' }` into `{ uiSpec, metadata }` with typed `information` / `settings` / `custom`; decode `fviews` → `views`; set `schemaVersion` `5.0` |
 
-`migrateNotebook` runs the chain until the document reaches `5.0`.
+`migrateNotebook` runs the chain until the document reaches the current schema version.
 
 ## When migrations run
 
 - **API** — `PUT /api/notebooks/:id/uiSpecification` and template equivalent: body is normalised via `normalizeNotebookUiSpecification` (`library/data-model/src/uiSpecification/normalize.ts`), which calls `migrateNotebook` when the version is behind.
 - **Optional startup** — `MIGRATE_NOTEBOOKS_ON_STARTUP` still triggers notebook migration during `validateDatabases` when enabled.
-- **Designer** — saves through the uiSpecification PUT path; exported JSON should target schema `5.0`.
+- **Designer** — saves through the uiSpecification PUT path; exported JSON should use the current schema version.
 
 ## Projects / templates DB migrations
 

@@ -5,6 +5,7 @@
 import {describe, expect, it} from 'vitest';
 import {getFieldSpec} from '../../../fields';
 import type {NotebookUISpec} from '../../../state/initial';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../../../state/initial';
 import {
   fieldAdded,
   fieldDeleted,
@@ -47,7 +48,7 @@ const createBaseUiSpec = (): NotebookUISpec => ({
   },
   visible_types: ['formA', 'formB'],
   settings: {showQrCodeButton: false},
-  schemaVersion: '5.0',
+  schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
 });
 
 describe('uiSpecificationReducer', () => {

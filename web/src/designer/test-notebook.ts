@@ -3,8 +3,9 @@
  */
 
 import type {Notebook} from './state/initial';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from './state/initial';
 
-/** Schema 5.0 notebook (RSpace IGSN demo design). */
+/** Current-schema notebook (RSpace IGSN demo design). */
 export const sampleNotebook: Notebook = {
   uiSpec: {
     fields: {
@@ -249,7 +250,7 @@ export const sampleNotebook: Notebook = {
     },
     visible_types: ['Primary'],
     settings: {showQrCodeButton: true},
-    schemaVersion: '5.0',
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   },
   metadata: {
     information: {

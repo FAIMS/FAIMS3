@@ -50,7 +50,7 @@ export const CreateTemplateFromProjectDialog = ({
             {specifiedTeam && <> in “{team?.name ?? 'Team'}”</>}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Create a template from this survey&apos;s form layout.{' '}
+            Create a template from this {NOTEBOOK_NAME}&apos;s form layout.
           </DialogDescription>
         </DialogHeader>
 

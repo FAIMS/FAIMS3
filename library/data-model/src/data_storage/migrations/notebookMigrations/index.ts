@@ -13,7 +13,7 @@ type NotebookWithSchemaVersion = {
 };
 
 /**
- * Read schema version from legacy `metadata.schema_version` or v5+
+ * Read schema version from legacy `metadata.schema_version` or current
  * `uiSpec.schemaVersion` (see {@link NotebookUiSpec}).
  */
 export function getNotebookSchemaVersion(
@@ -75,7 +75,7 @@ export const migrateNotebook = (
 
   if (getNotebookSchemaVersion(result) === '4.0') {
     // Input type is NotebookAfterV4
-    // Output type is NotebookDefinition (schema 5.0)
+    // Output type is NotebookDefinition (current schema)
     result = migrateToV5(result);
     changed = true;
   }

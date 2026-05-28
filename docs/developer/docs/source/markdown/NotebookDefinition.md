@@ -57,10 +57,10 @@ interface NotebookDefinition {
 
 ### `uiSpec` (form graph + settings)
 
-- **`fields`**, **`views`**, **`viewsets`**, **`visible_types`** — same logical content as the legacy Couch `ui-specification` document, but **`fviews` is decoded to `views`** when persisted (schema 5.0+).
+- **`fields`**, **`views`**, **`viewsets`**, **`visible_types`** — same logical content as the legacy Couch `ui-specification` document, but **`fviews` is decoded to `views`** when persisted (current schema).
 - Inner field keys remain **legacy-shaped** (`component-namespace`, `type-returned`, …) — not renamed in this pass.
 - **`settings`** — functional toggles (camelCase), e.g. `showQrCodeButton` (former loose `metadata.showQRCodeButton`).
-- **`schemaVersion`** — notebook JSON schema version (currently **`5.0`**); drives `migrateNotebook`. Lives on **`uiSpec`**, not under `metadata.information`.
+- **`schemaVersion`** — notebook JSON schema version (`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`); drives `migrateNotebook`. Lives on **`uiSpec`**, not under `metadata.information`.
 
 ### `metadata` partition
 
@@ -106,7 +106,7 @@ Downloaded and uploaded definition files use a **flat** wire shape at the JSON r
     "viewsets": {},
     "visible_types": [],
     "settings": {"showQrCodeButton": false},
-    "schemaVersion": "5.0"
+    "schemaVersion": "<CURRENT_NOTEBOOK_UI_SCHEMA_VERSION>"
   },
   "metadata": {
     "information": {
@@ -125,7 +125,7 @@ Legacy exports with top-level `metadata` + `ui-specification` (kebab-case, `fvie
 
 ## Migrations
 
-1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/index.ts`): `1.0` → v2 → v3 → v4 → **5.0** (`migrateV5.ts`). Target version: `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`.
+1. **Notebook JSON** (`migrateNotebook` in `notebookMigrations/index.ts`): sequential steps through historical versions until **`CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`**. See the pipeline table in [Notebook migrations](./NotebookMigrations.md).
 2. **Projects DB** (`projectsV3toV4Migration`): reads legacy metadata DB + project doc, builds `uiSpecification`, adds root `description` (when derivable from legacy metadata) / audit fields, removes `metadataDb`.
 3. **Templates DB** — analogous template v4 → v5 migration.
 

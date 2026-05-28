@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {migrateNotebook} from './index';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION, migrateNotebook} from './index';
 import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';
 import {sampleNotebook} from './test-notebook-V1';
@@ -38,11 +38,13 @@ describe('migrateToV3', () => {
   });
 });
 
-describe('migrateNotebook chains v2 then v3 then v4 then v5', () => {
-  test('single call upgrades 1.0 notebook through to 5.0 without project_status', () => {
+describe('migrateNotebook chains v2 then v3 then v4 then current schema', () => {
+  test('single call upgrades 1.0 notebook through to current schema without project_status', () => {
     const {migrated, changed} = migrateNotebook(sampleNotebook);
     expect(changed).toBe(true);
-    expect(migrated.uiSpec.schemaVersion).toBe('5.0');
+    expect(migrated.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
     expect(migrated.metadata.information).toBeDefined();
     expect(migrated).not.toHaveProperty('ui-specification');
   });
@@ -53,7 +55,9 @@ describe('migrateNotebook chains v2 then v3 then v4 then v5', () => {
 
     const {migrated, changed} = migrateNotebook(v2Only);
     expect(changed).toBe(true);
-    expect(migrated.uiSpec.schemaVersion).toBe('5.0');
+    expect(migrated.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
     expect(migrated).not.toHaveProperty('ui-specification');
   });
 
@@ -62,6 +66,8 @@ describe('migrateNotebook chains v2 then v3 then v4 then v5', () => {
     const v3 = migrateToV3(v2);
     const {migrated, changed} = migrateNotebook(v3);
     expect(changed).toBe(true);
-    expect(migrated.uiSpec.schemaVersion).toBe('5.0');
+    expect(migrated.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
   });
 });

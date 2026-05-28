@@ -4,6 +4,7 @@ import {
   buildSurveyNotebookDefinitionFromLegacy,
   OLD_DESCRIPTION_MAX_LENGTH,
 } from '../src/data_storage/migrations/uiSpecificationMigration';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification/normalize';
 
 /** Legacy wire-format fixture: `api/notebooks/sample_notebook.legacy.json` */
 
@@ -69,7 +70,7 @@ describe('uiSpecificationMigration helpers', () => {
       expect(def.metadata.custom).not.toHaveProperty('template_id');
       expect(def.uiSpec.views).toEqual({});
       expect(def.uiSpec).not.toHaveProperty('fviews');
-      expect(def.uiSpec.schemaVersion).toBe('5.0');
+      expect(def.uiSpec.schemaVersion).toBe(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
     });
   });
 });

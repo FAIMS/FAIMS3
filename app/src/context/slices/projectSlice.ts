@@ -205,7 +205,7 @@ export interface ProjectInformation {
   description?: string;
   /** Source template when created from a template. */
   templateId?: string;
-  /** Inlined uiSpecification from GET /api/notebooks/:id (schema 4+). */
+  /** Inlined uiSpecification from GET /api/notebooks/:id (current notebook schema). */
   uiDefinition: NotebookDefinition;
   /** Survey lifecycle. */
   status: ProjectStatus;
