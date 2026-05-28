@@ -30,8 +30,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "Clear DB: $CLEAR_DB"
-
 # Function to check and set Node.js version
 setup_node_version() {
   local required_major_version=22
