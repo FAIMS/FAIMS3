@@ -12,8 +12,9 @@ import WebProjectsPage from '../../pageobjects/web/web-projects.ts';
  */
 describe('Web Dashboard - Projects Team Member', () => {
   const TEST_USERNAME =
-    process.env.TEST_USER_USERNAME || 'test@example.com';
-  const TEST_PASSWORD = process.env.TEST_USER_PASSWORD || 'testpassword123';
+    process.env.TEST_MEMBER_BOTH_USERNAME || 'test@example.com';
+  const TEST_PASSWORD =
+    process.env.TEST_MEMBER_BOTH_PASSWORD || 'testpassword123';
 
   before(async () => {
     // Start each suite with a clean session to avoid state leaking from other

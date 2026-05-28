@@ -76,6 +76,7 @@ interface SeedContext {
 interface UserSpec {
   email: string;
   name: string;
+  tag: string; // short identifier for summary output
   /** Global roles to assign (beyond the default GENERAL_USER). */
   globalRoles?: Role[];
   /** Called once team/template/notebook IDs are available. */
@@ -101,6 +102,7 @@ const USER_SPECS: UserSpec[] = [
   // Operations Admin user with no team memberships
   {
     email: 'seed-admin@faims.test',
+    tag: 'OPERATIONS_ADMIN',
     name: 'Seed Administrator',
     globalRoles: [Role.OPERATIONS_ADMIN],
     // no resource roles, purely admin role
@@ -112,6 +114,7 @@ const USER_SPECS: UserSpec[] = [
   // Exercises visibility differences across teams for the same user.
   {
     email: 'seed-manager-blue@faims.test',
+    tag: 'MANAGER_BLUE',
     name: 'Blue Team Manager',
     assignResourceRoles(user, ctx) {
       addTeamRole({user, role: Role.TEAM_MANAGER, teamId: ctx.blueTeamId});
@@ -124,6 +127,7 @@ const USER_SPECS: UserSpec[] = [
   {
     email: 'seed-manager-cross@faims.test',
     name: 'Cross-Team Manager',
+    tag: 'MANAGER_CROSS',
     assignResourceRoles(user, ctx) {
       addTeamRole({user, role: Role.TEAM_MANAGER, teamId: ctx.redTeamId});
       addTeamRole({user, role: Role.TEAM_MEMBER, teamId: ctx.blueTeamId});
@@ -136,6 +140,7 @@ const USER_SPECS: UserSpec[] = [
   {
     email: 'seed-member-both@faims.test',
     name: 'Dual Team Member',
+    tag: 'MEMBER_BOTH',
     assignResourceRoles(user, ctx) {
       addTeamRole({user, role: Role.TEAM_MEMBER, teamId: ctx.redTeamId});
       addTeamRole({user, role: Role.TEAM_MEMBER, teamId: ctx.blueTeamId});
@@ -147,6 +152,7 @@ const USER_SPECS: UserSpec[] = [
   // Exercises member-creator role
   {
     email: 'seed-red-member-creator@faims.test',
+    tag: 'RED_MEMBER_CREATOR',
     name: 'Red Team Member-Creator',
     assignResourceRoles(user, ctx) {
       addTeamRole({
@@ -162,6 +168,7 @@ const USER_SPECS: UserSpec[] = [
   {
     email: 'seed-user@faims.test',
     name: 'General User',
+    tag: 'USER',
     globalRoles: [],
     assignResourceRoles() {},
   },
@@ -171,6 +178,7 @@ const USER_SPECS: UserSpec[] = [
   {
     email: 'seed-project-contributor@faims.test',
     name: 'Project Contributor',
+    tag: 'PROJECT_CONTRIBUTOR',
     assignResourceRoles(user, ctx) {
       addProjectRole({
         user,
@@ -184,6 +192,7 @@ const USER_SPECS: UserSpec[] = [
   // Project guest on Blue Team notebook only — restricted visibility.
   {
     email: 'seed-project-guest@faims.test',
+    tag: 'PROJECT_GUEST',
     name: 'Project Guest',
     assignResourceRoles(user, ctx) {
       addProjectRole({
@@ -254,11 +263,13 @@ function printSummary(
   console.log('\nCREDENTIALS (all seeded users share this password)');
   console.log(`  Password : ${SEED_PASSWORD}`);
 
-  console.log('\nSUGGESTED ENV VARS FOR E2E TESTS');
-  console.log(`  export TEST_ADMIN_USERNAME="seed-admin@faims.test"`);
-  console.log(`  export TEST_ADMIN_PASSWORD="${SEED_PASSWORD}"`);
-  console.log(`  export TEST_USER_USERNAME="seed-member-both@faims.test"`);
-  console.log(`  export TEST_USER_PASSWORD="${SEED_PASSWORD}"`);
+  console.log('\nENV VARS FOR E2E TESTS\n');
+
+  for (const user of USER_SPECS) {
+    console.log(`TEST_${user.tag}_USERNAME=${user.email}`);
+    console.log(`TEST_${user.tag}_PASSWORD=${SEED_PASSWORD}`);
+  }
+
   console.log('');
 }
 
