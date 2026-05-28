@@ -42,10 +42,11 @@ export const PhotoLightbox: React.FC<{
     setPos({x: 0, y: 0});
   }, []);
 
-  // Mouse-wheel zoom (desktop).
+  // Mouse-wheel zoom (desktop). Small step so trackpads and fast wheels
+  // don't jump the zoom several levels at once.
   const onWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    const delta = e.deltaY < 0 ? 1.08 : 1 / 1.08;
     setScale(s => clamp(s * delta, MIN_SCALE, MAX_SCALE));
   }, []);
 
@@ -209,9 +210,15 @@ export const PhotoLightbox: React.FC<{
             maxHeight: '100%',
             objectFit: 'contain',
             display: 'block',
-            transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+            // translate3d + willChange keeps the image on the GPU so pinch
+            // and drag updates don't go through layout each frame.
+            transform: `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${scale})`,
             transformOrigin: 'center center',
-            transition: scale === MIN_SCALE ? 'transform 200ms ease' : 'none',
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
+            // Transitions during gestures cause the boundary between
+            // "animated" and "live" frames to flicker — keep it instant.
+            transition: 'none',
             userSelect: 'none',
             // Gestures are handled on the dark container behind the image.
             pointerEvents: 'none',
