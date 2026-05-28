@@ -106,9 +106,7 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
       {isPublic ? (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline">
-              Make private
-            </Button>
+            <Button variant="outline">Make private</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -129,9 +127,7 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline">
-              Make public
-            </Button>
+            <Button variant="outline">Make public</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>

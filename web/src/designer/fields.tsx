@@ -21,24 +21,29 @@ import {CategoryKey} from './field-categories';
 import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
-  FAIMSTextField: {
+  // Canonical "Text field" entry — new notebooks emit `faims-custom::TextField`.
+  // Existing notebooks that still reference `FAIMSTextField` (or the legacy
+  // `formik-material-ui::MultipleTextField`) are migrated to this canonical
+  // name by `migrateToV4`; the runtime keeps a backward-compat alias for
+  // un-migrated notebooks.
+  TextField: {
     'component-namespace': 'faims-custom',
-    'component-name': 'FAIMSTextField',
+    'component-name': 'TextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Text Field',
+      label: 'Text field',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
-      // Default speech settings
       speechAppendMode: false,
       enableSpeech: true,
     },
     initialValue: '',
-    humanReadableName: 'FAIMS Text Field',
-    humanReadableDescription: 'Single-line text input for free-form entries',
+    humanReadableName: 'Text field',
+    humanReadableDescription:
+      'Single or multi-line text input (short or long answer) with optional speech-to-text',
     category: CategoryKey.TEXT,
     showInChooser: true,
     order: 1,
@@ -49,15 +54,17 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'DateTimePicker',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Date time picker',
+      label: 'Date and time picker',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
+      isAutoPick: false,
+      show_now_button: false,
     },
     initialValue: '',
-    humanReadableName: 'Date time picker',
+    humanReadableName: 'Date and time picker',
     humanReadableDescription: 'Select a calendar date and precise time',
     category: CategoryKey.DATETIME,
     showInChooser: true,
@@ -69,15 +76,16 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'DatePicker',
     'type-returned': 'faims-core::Date',
     'component-parameters': {
-      label: 'Date picker',
+      label: 'Date only picker',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
+      show_now_button: false,
     },
     initialValue: '',
-    humanReadableName: 'Date picker',
+    humanReadableName: 'Date only picker',
     humanReadableDescription: 'Choose a calendar date (no time)',
     category: CategoryKey.DATETIME,
     showInChooser: true,
@@ -89,39 +97,20 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'MonthPicker',
     'type-returned': 'faims-core::Date',
     'component-parameters': {
-      label: 'Month picker',
+      label: 'Month only picker',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
+      show_now_button: false,
     },
     initialValue: '',
-    humanReadableName: 'Month picker',
+    humanReadableName: 'Month only picker',
     humanReadableDescription: 'Pick a month and year only',
     category: CategoryKey.DATETIME,
     showInChooser: true,
     order: 4,
-  },
-
-  DateTimeNow: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'DateTimeNow',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Date and Time with Now button',
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-      is_auto_pick: false,
-    },
-    initialValue: '',
-    humanReadableName: 'Date and Time with Now button',
-    humanReadableDescription: 'Date-time input with “Now” quick-fill',
-    category: CategoryKey.DATETIME,
-    showInChooser: true,
-    order: 5,
   },
 
   BasicAutoIncrementer: {
@@ -146,6 +135,10 @@ const fields: {[key: string]: FieldType} = {
   },
 
   Checkbox: {
+    // Hidden legacy chooser entry. v4 notebook migration rewrites every
+    // `faims-custom::Checkbox` field to `faims-custom::RadioGroup` with
+    // synthesised Yes/No options, so this template is only retained so
+    // pre-migration field-spec lookups still resolve.
     'component-namespace': 'faims-custom',
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool',
@@ -160,9 +153,13 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: false,
     humanReadableName: 'Checkbox',
-    humanReadableDescription: 'Boolean yes/no toggle box',
+    humanReadableDescription:
+      'Deprecated boolean yes/no toggle — replaced by Select single with Yes/No options.',
     category: CategoryKey.CHOICE,
-    showInChooser: true,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: existing Checkbox fields are migrated to "Select single" with Yes/No options automatically.',
+    showInChooser: false,
     order: 11,
   },
 
@@ -223,6 +220,7 @@ const fields: {[key: string]: FieldType} = {
         multiple: true,
       },
       ElementProps: {
+        // Default to expanded checklist mode; users can opt into compact dropdown.
         expandedChecklist: true,
         enableOtherOption: false,
         options: [
@@ -232,19 +230,21 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: [],
-    humanReadableName: 'Select Multiple',
-    humanReadableDescription: 'Pick several options from a list',
+    humanReadableName: 'Select multiple',
+    humanReadableDescription:
+      'Pick several options from a list (expanded checklist by default, optional dropdown)',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 14,
   },
 
   RadioGroup: {
+    // This is the new primary "Select one" experience in field chooser.
     'component-namespace': 'faims-custom',
     'component-name': 'RadioGroup',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Select one option',
+      label: 'Select one',
       name: 'radio-group-field',
       id: 'radio-group-field',
       advancedHelperText: '',
@@ -259,8 +259,9 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
     },
     initialValue: '',
-    humanReadableName: 'Select one option',
-    humanReadableDescription: 'Single-choice radio button set',
+    humanReadableName: 'Select single',
+    humanReadableDescription:
+      'Single-choice list (expanded checklist by default, optional dropdown display)',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 15,
@@ -305,11 +306,15 @@ const fields: {[key: string]: FieldType} = {
   },
 
   Select: {
+    // Hidden legacy chooser entry. v4 notebook migration rewrites every
+    // `faims-custom::Select` field to `faims-custom::RadioGroup` (Select
+    // single), preserving the existing options. Retained only so pre-
+    // migration field-spec lookups still resolve.
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Select Field',
+      label: 'Select one',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
@@ -320,10 +325,14 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: '',
-    humanReadableName: 'Select Field',
-    humanReadableDescription: 'Dropdown list allowing one selection',
+    humanReadableName: 'Select single (legacy dropdown)',
+    humanReadableDescription:
+      'Deprecated MUI-dropdown variant — replaced by Select single (radio).',
     category: CategoryKey.CHOICE,
-    showInChooser: true,
+    showInChooser: false,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: existing Select fields are migrated to "Select single" automatically.',
     order: 19,
   },
 
@@ -443,25 +452,31 @@ const fields: {[key: string]: FieldType} = {
     order: 25,
   },
 
+  // Canonical "Number field" entry — new notebooks emit `faims-custom::NumberField`.
+  // Existing notebooks that still reference `ControlledNumber` are migrated to
+  // this canonical name by `migrateToV4`; the runtime keeps a backward-compat
+  // alias for un-migrated notebooks.
   NumberField: {
     'component-namespace': 'faims-custom',
     'component-name': 'NumberField',
     'type-returned': 'faims-core::Number',
     'component-parameters': {
-      label: 'Number Input',
+      label: 'Number field',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       required: false,
-      // Defaults to integer (can be floating)
       numberType: 'integer',
+      min: 0,
+      max: 100,
       InputProps: {
         type: 'number',
       },
     },
     initialValue: null,
-    humanReadableName: 'Number Input',
-    humanReadableDescription: 'Floating-point or integer number entry field',
+    humanReadableName: 'Number field',
+    humanReadableDescription:
+      'Numeric input with integer/decimal mode and optional minimum/maximum limits',
     category: CategoryKey.NUMBERS,
     showInChooser: true,
     order: 26,
@@ -487,52 +502,27 @@ const fields: {[key: string]: FieldType} = {
     order: 6,
   },
 
-  ControlledNumberField: {
+  PercentageSlider: {
     'component-namespace': 'faims-custom',
-    'component-name': 'ControlledNumber',
+    'component-name': 'PercentageSlider',
     'type-returned': 'faims-core::Integer',
     'component-parameters': {
-      label: 'Controlled Number',
-      fullWidth: true,
+      label: 'Percentage',
+      name: 'percentage-slider-field',
       helperText: '',
       advancedHelperText: '',
-      variant: 'outlined',
       required: false,
       min: 0,
       max: 100,
+      step: 1,
     },
     initialValue: null,
-    humanReadableName: 'Controlled Number',
-    humanReadableDescription: 'Numeric input with min/max validation',
+    humanReadableName: 'Percentage Slider',
+    humanReadableDescription:
+      'Slider for selecting a percentage with optional step',
     category: CategoryKey.NUMBERS,
     showInChooser: true,
-    order: 8,
-  },
-
-  MultipleTextField: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'MultipleTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Multi-line Text Field',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        rows: 4,
-      },
-      // Default speech settings
-      speechAppendMode: false,
-      enableSpeech: true,
-    },
-    initialValue: '',
-    humanReadableName: 'Multi-line Text Field',
-    humanReadableDescription: 'Multi-line text area for longer notes',
-    category: CategoryKey.TEXT,
-    showInChooser: true,
-    order: 10,
+    order: 27,
   },
 };
 

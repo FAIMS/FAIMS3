@@ -9,6 +9,7 @@ import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
+  fieldReordered,
   formVisibilityUpdated,
   fieldRenamed,
   sectionDeleted,
@@ -69,7 +70,7 @@ describe('uiSpecificationReducer', () => {
 
   it('renames field and updates summary/hrid references', () => {
     const initial = createBaseUiSpec();
-    const existingField = getFieldSpec('FAIMSTextField');
+    const existingField = getFieldSpec('TextField');
     existingField['component-parameters'].name = 'old-field';
     existingField['component-parameters'].label = 'Old Field';
 
@@ -96,8 +97,8 @@ describe('uiSpecificationReducer', () => {
 
   it('moves then deletes fields and removes summary references', () => {
     const initial = createBaseUiSpec();
-    const fieldA = getFieldSpec('FAIMSTextField');
-    const fieldB = getFieldSpec('FAIMSTextField');
+    const fieldA = getFieldSpec('TextField');
+    const fieldB = getFieldSpec('TextField');
 
     fieldA['component-parameters'].name = 'field-a';
     fieldB['component-parameters'].name = 'field-b';
@@ -126,9 +127,36 @@ describe('uiSpecificationReducer', () => {
     expect(deleted.viewsets.formA.summary_fields).toEqual([]);
   });
 
+  it('reorders fields by absolute index within a section', () => {
+    const initial = createBaseUiSpec();
+    const fieldA = getFieldSpec('TextField');
+    const fieldB = getFieldSpec('TextField');
+    const fieldC = getFieldSpec('TextField');
+
+    fieldA['component-parameters'].name = 'field-a';
+    fieldB['component-parameters'].name = 'field-b';
+    fieldC['component-parameters'].name = 'field-c';
+
+    initial.fields['field-a'] = fieldA;
+    initial.fields['field-b'] = fieldB;
+    initial.fields['field-c'] = fieldC;
+    initial.fviews.sectionA.fields = ['field-a', 'field-b', 'field-c'];
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldReordered({viewId: 'sectionA', sourceIndex: 2, targetIndex: 0})
+    );
+
+    expect(next.fviews.sectionA.fields).toEqual([
+      'field-c',
+      'field-a',
+      'field-b',
+    ]);
+  });
+
   it('duplicates, moves, and deletes sections with field lifecycle updates', () => {
     const initial = createBaseUiSpec();
-    const sourceField = getFieldSpec('FAIMSTextField');
+    const sourceField = getFieldSpec('TextField');
     sourceField['component-parameters'].name = 'field-a';
     sourceField['component-parameters'].label = 'Field A';
     initial.fields['field-a'] = sourceField;
@@ -217,12 +245,11 @@ describe('uiSpecificationReducer', () => {
       })
     );
     expect(hidden.visible_types).toEqual(['formA']);
-
   });
 
   it('deletes viewset with its sections and fields', () => {
     const initial = createBaseUiSpec();
-    const fieldA = getFieldSpec('FAIMSTextField');
+    const fieldA = getFieldSpec('TextField');
     fieldA['component-parameters'].name = 'field-a';
     initial.fields['field-a'] = fieldA;
     initial.fviews.sectionA.fields = ['field-a'];

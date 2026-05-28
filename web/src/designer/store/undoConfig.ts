@@ -26,6 +26,7 @@ export const UNDOABLE_UI_SPEC_ACTIONS = [
   'ui-specification/fieldUpdated',
   'ui-specification/fieldDuplicated',
   'ui-specification/fieldMoved',
+  'ui-specification/fieldReordered',
   'ui-specification/fieldConditionChanged',
   'ui-specification/fieldMovedToSection',
   'ui-specification/fieldRenamed',

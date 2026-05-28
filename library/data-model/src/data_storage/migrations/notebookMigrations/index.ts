@@ -1,8 +1,10 @@
 import {EncodedNotebook} from '../../../types';
 import {migrateToV2} from './migrateV2';
 import {migrateToV3} from './migrateV3';
+import {migrateToV4} from './migrateV4';
 
 export {migrateToV3} from './migrateV3';
+export {migrateToV4} from './migrateV4';
 
 /**
  * Migrate a notebook to the latest version, validating as we go.
@@ -27,6 +29,11 @@ export const migrateNotebook = (notebook: any) => {
 
   if (result?.metadata?.schema_version === '2.0') {
     result = migrateToV3(result);
+    changed = true;
+  }
+
+  if (result?.metadata?.schema_version === '3.0') {
+    result = migrateToV4(result);
     changed = true;
   }
 

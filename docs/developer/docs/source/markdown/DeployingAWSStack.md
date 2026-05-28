@@ -555,20 +555,20 @@ schema documentation available in `SAMLAuthProviderConfigSchema` in the CDK conf
 
 **Optional SAML fields:**
 
-| Field                          | Description                                                                                                              |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `signMetadata`                 | Sign the metadata endpoint document using the provided privateKey? 'true' or 'false'. Default false.                     |
-| `callbackURL`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically.                          |
+| Field                          | Description                                                                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signMetadata`                 | Sign the metadata endpoint document using the provided privateKey? 'true' or 'false'. Default false.                                            |
+| `callbackURL`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically.                                                 |
 | `callbackMethods`              | HTTP methods for the ACS callback route: `GET`, `POST`, or both as `["GET","POST"]` in JSON (CDK) / comma-separated env (default in CDK: POST). |
 | `authnRequestBinding`          | Outbound sign-in request: `HTTP-Redirect` (default, 302 + query) or `HTTP-POST` (auto-submit form to IdP; passport-saml `authnRequestBinding`). |
-| `metadataErrorURL`             | Optional absolute URL for SPSSODescriptor `errorURL` in SAML metadata (default: Conductor `/auth/{provider}/sso-error`). |
-| `ssoErrorPageReturnURL`        | Primary button URL on the per-provider SSO error page (default: web app public URL).                                     |
-| `disableRequestedAuthnContext` | Set to `true` for ADFS compatibility                                                                                     |
-| `forceAuthn`                   | Set to `true` to force re-authentication even with a valid IdP session                                                   |
-| `acceptedClockSkewMs`          | Allowed clock drift in milliseconds between SP and IdP (default: `0`, use `-1` to disable)                               |
-| `logoutURL`                    | IdP's logout URL for single logout support                                                                               |
-| `audience`                     | Expected audience value in SAML responses (for additional validation)                                                    |
-| `idpIssuer`                    | Expected issuer value from IdP (for logout validation)                                                                   |
+| `metadataErrorURL`             | Optional absolute URL for SPSSODescriptor `errorURL` in SAML metadata (default: Conductor `/auth/{provider}/sso-error`).                        |
+| `ssoErrorPageReturnURL`        | Primary button URL on the per-provider SSO error page (default: web app public URL).                                                            |
+| `disableRequestedAuthnContext` | Set to `true` for ADFS compatibility                                                                                                            |
+| `forceAuthn`                   | Set to `true` to force re-authentication even with a valid IdP session                                                                          |
+| `acceptedClockSkewMs`          | Allowed clock drift in milliseconds between SP and IdP (default: `0`, use `-1` to disable)                                                      |
+| `logoutURL`                    | IdP's logout URL for single logout support                                                                                                      |
+| `audience`                     | Expected audience value in SAML responses (for additional validation)                                                                           |
+| `idpIssuer`                    | Expected issuer value from IdP (for logout validation)                                                                                          |
 
 **SAML secrets:**
 

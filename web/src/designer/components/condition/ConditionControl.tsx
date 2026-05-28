@@ -266,6 +266,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
     // note that dates are stored as strings but we can still do greater/less comparisons on them
     return [
       'NumberField',
+      'PercentageSlider',
       'DateTimePicker',
       'DatePicker',
       'MonthPicker',
