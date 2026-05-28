@@ -582,9 +582,6 @@ function MapWrapper(props: MapProps) {
               </Typography>
             </Stack>
           </DialogContent>
-          {/* Destructive action (Discard) on the left, continue action
-              (Keep editing) on the right — the right-hand button is the one
-              we want the user to head back to. */}
           <DialogActions sx={{justifyContent: 'space-between', px: 3, pb: 2}}>
             <Button
               onClick={() => {
