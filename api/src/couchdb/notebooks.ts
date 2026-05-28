@@ -32,6 +32,8 @@ import {
   file_data_to_attachments,
   getDataDB,
   GetNotebookListResponse,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  getNotebookSchemaVersion,
   notebookUiSpecificationNeedsMigration,
   NotebookDefinition,
   NotebookUiSpecificationInput,
@@ -301,38 +303,133 @@ const generateProjectID = (projectName: string): ProjectID => {
   return `${Date.now().toFixed()}-${slugify(projectName)}`;
 };
 
+const NOTEBOOK_STARTUP_LOG = '[notebook-startup]';
+
+type NotebookStartupUiSpecOutcome =
+  | 'migrated'
+  | 'up_to_date'
+  | 'skipped_no_ui_spec'
+  | 'skipped_invalid_ui_spec';
+
+function logNotebookStartup(
+  event: string,
+  fields: Record<string, string | number | boolean | undefined>
+): void {
+  const detail = Object.entries(fields)
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(' ');
+  console.log(
+    detail.length > 0
+      ? `${NOTEBOOK_STARTUP_LOG} ${event} ${detail}`
+      : `${NOTEBOOK_STARTUP_LOG} ${event}`
+  );
+}
+
+function isUiSpecificationObject(
+  raw: unknown
+): raw is Record<string, unknown> {
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw);
+}
+
+function schemaVersionLabel(raw: Record<string, unknown>): string {
+  return getNotebookSchemaVersion(raw) ?? 'none';
+}
+
 /**
  * validateDatabases - check that all notebook databases are set up
  *  properly, add design documents if they are missing
  */
 export const validateDatabases = async () => {
+  const uiSpecCounts: Record<NotebookStartupUiSpecOutcome, number> = {
+    migrated: 0,
+    up_to_date: 0,
+    skipped_no_ui_spec: 0,
+    skipped_invalid_ui_spec: 0,
+  };
+
   try {
+    logNotebookStartup('begin', {
+      migrateNotebooksOnStartup: MIGRATE_NOTEBOOKS_ON_STARTUP,
+      targetSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    });
+
     const report = await verifyCouchDBConnection();
 
     if (!report.valid) {
+      logNotebookStartup('aborted', {reason: 'couchdb_connection_invalid'});
       return report;
     }
 
     const projects = await getAllProjectsDirectory();
+    logNotebookStartup('projects_loaded', {count: projects.length});
+
+    if (!MIGRATE_NOTEBOOKS_ON_STARTUP) {
+      logNotebookStartup('ui_spec_migration_skipped', {
+        reason: 'MIGRATE_NOTEBOOKS_ON_STARTUP=false',
+      });
+    }
 
     for (const project of projects) {
       const projectId = project._id;
-      if (MIGRATE_NOTEBOOKS_ON_STARTUP && project.uiSpecification != null) {
+      const projectName = project.name;
+
+      if (MIGRATE_NOTEBOOKS_ON_STARTUP) {
         const raw = project.uiSpecification;
-        if (
-          typeof raw === 'object' &&
-          notebookUiSpecificationNeedsMigration(raw)
-        ) {
+        if (raw == null) {
+          uiSpecCounts.skipped_no_ui_spec++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'skipped_no_ui_spec',
+            projectId,
+            projectName,
+          });
+        } else if (!isUiSpecificationObject(raw)) {
+          uiSpecCounts.skipped_invalid_ui_spec++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'skipped_invalid_ui_spec',
+            projectId,
+            projectName,
+          });
+        } else if (notebookUiSpecificationNeedsMigration(raw)) {
+          const fromSchemaVersion = schemaVersionLabel(raw);
           await updateProjectUiSpecification(projectId, raw);
+          uiSpecCounts.migrated++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'migrated',
+            projectId,
+            projectName,
+            fromSchemaVersion,
+            toSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          });
+        } else {
+          uiSpecCounts.up_to_date++;
+          logNotebookStartup('ui_spec', {
+            outcome: 'up_to_date',
+            projectId,
+            projectName,
+            schemaVersion: schemaVersionLabel(raw),
+          });
         }
       }
+
       await initialiseDataDb({
         projectId,
         force: true,
       });
     }
+
+    logNotebookStartup('complete', {
+      projects: projects.length,
+      migrateNotebooksOnStartup: MIGRATE_NOTEBOOKS_ON_STARTUP,
+      uiSpecMigrated: uiSpecCounts.migrated,
+      uiSpecUpToDate: uiSpecCounts.up_to_date,
+      uiSpecSkippedNoUiSpec: uiSpecCounts.skipped_no_ui_spec,
+      uiSpecSkippedInvalidUiSpec: uiSpecCounts.skipped_invalid_ui_spec,
+    });
+
     return report;
   } catch (e) {
+    console.error(`${NOTEBOOK_STARTUP_LOG} failed`, e);
     return {valid: false};
   }
 };
