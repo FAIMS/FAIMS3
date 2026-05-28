@@ -272,7 +272,7 @@
       },
       "put": {
         "summary": "Update notebook name and description",
-        "description": "Merges inconsequential root fields (`name`, `description`) on the project document. Does not change `uiSpecification`; use `PUT /notebooks/{id}/uiSpecification` for the design bundle. Team ownership uses `PUT /notebooks/{id}/team`. Requires `UPDATE_PROJECT_UISPEC` on the project.",
+        "description": "Merges inconsequential root fields (`name`, `description`) on the project document. Does not change `uiSpecification`; use `PUT /notebooks/{id}/uiSpecification` for the design bundle. Team ownership uses `PUT /notebooks/{id}/team`. Requires `UPDATE_PROJECT_DETAILS` on the project.",
         "tags": ["Notebooks"],
         "parameters": [
           {

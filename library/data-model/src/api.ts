@@ -333,7 +333,10 @@ export type GetNotebookUsersResponse = z.infer<
   typeof GetNotebookUsersResponseSchema
 >;
 
-/** PUT /api/notebooks/:id — merge inconsequential root fields only. */
+/**
+ * PUT /api/notebooks/:id — merge inconsequential root fields only.
+ * Requires `UPDATE_PROJECT_DETAILS` on the project.
+ */
 export const PutUpdateNotebookMetadataInputSchema = ProjectDBFieldsSchema.pick({
   name: true,
   description: true,
@@ -347,7 +350,10 @@ export const PutUpdateNotebookInputSchema =
   PutUpdateNotebookMetadataInputSchema;
 export type PutUpdateNotebookInput = PutUpdateNotebookMetadataInput;
 
-/** PUT /api/notebooks/:id/uiSpecification — full replace of the design bundle (loose input; migrated server-side). */
+/**
+ * PUT /api/notebooks/:id/uiSpecification — full replace of the design bundle (loose input; migrated server-side).
+ * Requires `UPDATE_PROJECT_UISPEC` on the project.
+ */
 export const PutUpdateNotebookUiSpecificationInputSchema =
   NotebookUiSpecificationInputSchema;
 /** Normalized notebook definition after migrate + strict validation. */

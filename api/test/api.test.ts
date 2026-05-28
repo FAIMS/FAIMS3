@@ -236,6 +236,77 @@ describe('API tests', () => {
     ).to.equal('Bob Bobalooba');
   });
 
+  it('PUT /notebooks/:id requires UPDATE_PROJECT_DETAILS, not UISPEC alone', async () => {
+    const projectId = await createNotebook({
+      projectName: 'metadata-perm-test',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: 'initial',
+      createdBy: 'admin',
+    });
+    if (!projectId) {
+      throw new Error('could not create test notebook');
+    }
+
+    await request(app)
+      .post(`/api/notebooks/${projectId}/users/`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .send({
+        username: localUserName,
+        role: Role.PROJECT_CONTRIBUTOR,
+        addrole: true,
+      })
+      .expect(200);
+
+    const signingKey = await KEY_SERVICE.getSigningKey();
+    const contributorUser =
+      await getExpressUserFromEmailOrUserId(localUserName);
+    if (!contributorUser) {
+      throw new Error('Local user not found');
+    }
+    const contributorToken = await generateJwtFromUser({
+      user: contributorUser,
+      signingKey,
+    });
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({name: 'Contributor rename attempt'})
+      .set('Authorization', `Bearer ${contributorToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(401);
+
+    await request(app)
+      .post(`/api/notebooks/${projectId}/users/`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .send({
+        username: localUserName,
+        role: Role.PROJECT_MANAGER,
+        addrole: true,
+      })
+      .expect(200);
+
+    const managerUser = await getExpressUserFromEmailOrUserId(localUserName);
+    if (!managerUser) {
+      throw new Error('Local user not found');
+    }
+    const managerToken = await generateJwtFromUser({
+      user: managerUser,
+      signingKey,
+    });
+
+    await request(app)
+      .put(`/api/notebooks/${projectId}`)
+      .send({name: 'Manager rename'})
+      .set('Authorization', `Bearer ${managerToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const project = await getProjectById(projectId);
+    expect(project.name).to.equal('Manager rename');
+  });
+
   it('creates a notebook without description', async () => {
     const payload = sampleCreateNotebookPayload('test notebook');
     const {description: _removed, ...withoutDescription} = payload;

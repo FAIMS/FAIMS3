@@ -558,7 +558,7 @@ api.put(
   '/:id',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    action: Action.UPDATE_PROJECT_UISPEC,
+    action: Action.UPDATE_PROJECT_DETAILS,
     getResourceId(req) {
       return req.params.id;
     },

@@ -81,8 +81,8 @@ Step-by-step rollout (Couch migrate, validation, deleting `metadata-*` DBs, when
 | -------------------- | ---------------------------------------- | ------------------------------------------------------------- |
 | Get full survey      | `GET /api/notebooks/:id`                 | Full `ProjectDocument` (+ optional `recordCount`)             |
 | List surveys         | `GET /api/notebooks`                     | `ProjectListItem` (no `uiSpecification`)                      |
-| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description? }` partial                             |
-| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation |
+| Update title / blurb | `PUT /api/notebooks/:id`                 | `{ name?, description? }` partial; `UPDATE_PROJECT_DETAILS`   |
+| Replace design       | `PUT /api/notebooks/:id/uiSpecification` | Loose JSON; server runs `migrateNotebook` + strict validation; `UPDATE_PROJECT_UISPEC` |
 | Create from scratch  | `POST /api/notebooks`                    | `{ name, description?, uiSpecification, teamId? }`            |
 | Create from template | `POST /api/notebooks`                    | `{ name, description?, template_id, teamId? }`                |
 
