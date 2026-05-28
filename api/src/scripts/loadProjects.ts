@@ -12,10 +12,18 @@ const extension = (filename: string) => {
 const loadProject = async (filename: string) => {
   try {
     const jsonText = readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-    const projectName = metadata.name;
+    const body = JSON.parse(jsonText) as {
+      name: string;
+      description?: string;
+      uiSpecification: Parameters<typeof createNotebook>[0]['uiSpecification'];
+    };
 
-    const projectID = await createNotebook(projectName, uiSpec, metadata);
+    const projectID = await createNotebook({
+      projectName: body.name,
+      uiSpecification: body.uiSpecification,
+      description: body.description ?? '',
+      createdBy: 'admin',
+    });
     console.log('created project', projectID);
     process.exit(0);
   } catch (error) {

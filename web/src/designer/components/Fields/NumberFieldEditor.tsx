@@ -18,7 +18,7 @@ import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 /** Integer vs floating `numberType` and HTML input binding for `NumberField`. */
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 

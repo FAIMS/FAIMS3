@@ -35,13 +35,15 @@ The {{Notebook}} will then be available to members of the new team.
 
 ## Download your {{Notebook}} definition file
 
-Click to download a copy of your {{Notebook}}'s definition file in JSON format.
+Click to download a copy of your {{Notebook}}'s design bundle in JSON format (`uiSpec` and `metadata` at the top level).
 
 Downloaded JSON files can be uploaded to a different {{FAIMS}} Server at a future time.
 
 ## Replace the JSON file for the {{Notebook}}
 
-Use this option to replace the {{Notebook}}'s definition file with a new JSON file.
+Use this option to replace the form design via **PUT uiSpecification** (legacy `{ metadata, 'ui-specification' }` files are still accepted and migrated on upload).
+
+To change only the survey **name** or optional short **description** (up to 250 characters), use **Edit project details** on the Details tab instead of replacing the full JSON file.
 
 > **Caution!** Errors in the new JSON file may cause loss to data already captured in the {{Notebook}}.
 

@@ -10,10 +10,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  getDaysDifference,
+  dateDaysFromNow,
+  dateToIso,
   formatDisplayDate,
   formatDateTimeLocal,
-} from '@/lib/utils';
+  getDaysDifference,
+  nowMs,
+} from '@/lib/time';
 import {AlertTriangle, Calendar, Clock} from 'lucide-react';
 import React, {useState} from 'react';
 
@@ -85,9 +88,9 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
   const neverExpiryAllowed = maxDurationDays === undefined;
 
   // Calculate min and max dates for the datetime input
-  const minDate = new Date(now.getTime() + 60 * 1000); // 1 minute from now
+  const minDate = new Date(nowMs() + 60 * 1000); // 1 minute from now
   const maxDate = maxDurationDays
-    ? new Date(now.getTime() + maxDurationDays * 24 * 60 * 60 * 1000)
+    ? dateDaysFromNow(maxDurationDays, now)
     : undefined;
 
   // Get current expiry date based on selection
@@ -142,8 +145,7 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
       setSelectedDateTime('never');
     } else {
       const days = parseInt(value, 10);
-      const expiryDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-      setSelectedDateTime(expiryDate.toISOString());
+      setSelectedDateTime(dateToIso(dateDaysFromNow(days, now)));
     }
   };
 
@@ -151,7 +153,7 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
   const handleCustomDateTimeChange = (value: string) => {
     if (value) {
       const date = new Date(value);
-      setSelectedDateTime(date.toISOString());
+      setSelectedDateTime(dateToIso(date));
     } else {
       setSelectedDateTime(undefined);
     }
@@ -162,8 +164,7 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
     setMode('custom');
     if (!selectedDateTime || selectedDateTime === 'never') {
       // Set default to 7 days from now if no custom value is set
-      const defaultDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      setSelectedDateTime(defaultDate.toISOString());
+      setSelectedDateTime(dateToIso(dateDaysFromNow(7, now)));
     }
   };
 

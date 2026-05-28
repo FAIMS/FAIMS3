@@ -8,6 +8,8 @@ FAIMS3 Developer Documentation
    markdown/Drafts.md
    markdown/CouchMigrations.md
    markdown/PermissionModel.md
+   markdown/NotebookDefinition.md
+   markdown/MetadataMigrationGuide.md
    markdown/NotebookMigrations.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md

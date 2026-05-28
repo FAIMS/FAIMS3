@@ -31,7 +31,7 @@ import {designerInfoIconSx} from '../designer-style';
 /** Shared date-time editor: auto-pick current time and optional "Now" button display. */
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
   const fieldComponent = field['component-name'];

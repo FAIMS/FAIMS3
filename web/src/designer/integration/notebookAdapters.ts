@@ -13,41 +13,60 @@
 // limitations under the License.
 
 /**
- * @file Map API/template notebook JSON into the designer’s `NotebookWithHistory` shape.
+ * @file Map API/template records into the designer's `NotebookWithHistory` shape.
  */
 
+import type {NotebookDefinition} from '@faims3/data-model';
 import type {
-  NotebookMetadata,
+  Notebook,
   NotebookUISpec,
   NotebookWithHistory,
 } from '../state/initial';
+import {
+  normalizeApiUiSpecification,
+  type NormalizeApiUiSpecificationResult,
+  tryNormalizeApiUiSpecification,
+} from './legacyNotebook';
 
-/** API/template payload shape: flat `ui-specification` object (not undo history). */
-type EncodedNotebookLike = {
-  metadata?: NotebookMetadata;
-  'ui-specification'?: unknown;
+export type {NormalizeApiUiSpecificationResult};
+export {tryNormalizeApiUiSpecification};
+
+/** Project or template GET payload carrying an inlined design bundle. */
+type ApiRecordWithUiSpecification = {
+  uiSpecification?: unknown;
 };
 
 /**
  * Maps a project or template record from the main app into the designer's
  * `NotebookWithHistory` shape (present-only undo stack).
- *
- * @param notebook - Raw record with `metadata` and `ui-specification`, or undefined.
- * @returns Designer state wrapper, or undefined if either top-level part is missing.
  */
 export const toDesignerNotebookWithHistory = (
-  notebook?: EncodedNotebookLike
+  record?: ApiRecordWithUiSpecification
 ): NotebookWithHistory | undefined => {
-  if (!notebook?.metadata || !notebook['ui-specification']) {
+  if (!record?.uiSpecification) {
     return undefined;
   }
 
-  return {
-    metadata: notebook.metadata,
-    'ui-specification': {
-      present: notebook['ui-specification'] as NotebookUISpec,
-      past: [],
-      future: [],
-    },
-  };
+  const definition = normalizeApiUiSpecification(record.uiSpecification);
+  return notebookDefinitionToDesignerHistory(definition);
 };
+
+/** Wrap a normalized definition for Redux (empty undo stacks). */
+export const notebookDefinitionToDesignerHistory = (
+  definition: NotebookDefinition
+): NotebookWithHistory => ({
+  metadata: definition.metadata,
+  uiSpec: {
+    present: definition.uiSpec as NotebookUISpec,
+    past: [],
+    future: [],
+  },
+});
+
+/** Flat definition for API PUT / export (present UI spec only). */
+export const designerHistoryToNotebookDefinition = (
+  notebook: NotebookWithHistory
+): Notebook => ({
+  metadata: notebook.metadata,
+  uiSpec: notebook.uiSpec.present,
+});

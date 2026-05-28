@@ -5,7 +5,6 @@ import {
   FormUpdateData,
   HydratedRecordDocument,
   IAttachmentService,
-  ProjectUIModel,
   UISpecification,
 } from '@faims3/data-model';
 import {MapConfig} from '../components/maps/types';
@@ -82,7 +81,7 @@ export type DataViewFieldRenderContext = {
   // The full RecordMetadata object, which may help with more advanced types
   record: HydratedRecordDocument;
   // UI specification
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UISpecification;
   // The form render trace (to help build new entries)
   trace: DataViewTraceEntry[];
   // Controls/triggers

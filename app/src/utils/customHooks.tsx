@@ -7,8 +7,8 @@ import {
   fetchAndHydrateRecord,
   isAuthorized,
   MinimalRecordMetadata,
+  NotebookUiSpec,
   ProjectUIModel,
-  UISpecification,
 } from '@faims3/data-model';
 import {QueryClient, useQuery} from '@tanstack/react-query';
 import _ from 'lodash';
@@ -429,7 +429,7 @@ export const useRecordList = ({
   projectId: string;
   filterDeleted: boolean;
   metadataRefreshIntervalMs?: number | undefined | false;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: NotebookUiSpec;
   enableProfiling?: boolean;
 }) => {
   // Profiling helper
@@ -785,7 +785,7 @@ export const useUiSpecLayout = ({
   dataDb,
 }: {
   recordId: string;
-  uiSpec: UISpecification;
+  uiSpec: NotebookUiSpec;
   dataDb: DataDbType;
 }) => {
   // Query to fetch the relevant viewset

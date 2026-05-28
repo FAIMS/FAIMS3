@@ -1,9 +1,8 @@
 import {
   compileUiSpecConditionals,
   currentlyVisibleFields,
-  decodeUiSpec,
-  EncodedUISpecification,
   getFieldNamesForViewset,
+  normalizeNotebookUiSpecification,
 } from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {z} from 'zod';
@@ -14,9 +13,9 @@ import {
   FormValidation,
 } from './validation';
 
-const uiSpec = decodeUiSpec(
-  sampleNotebook['ui-specification'] as EncodedUISpecification
-);
+// Sample fixture is a v4 {@link NotebookDefinition}; normalize is idempotent and
+// still accepts legacy uploads during the metadata migration window.
+const {uiSpec} = normalizeNotebookUiSpecification(sampleNotebook);
 compileUiSpecConditionals(uiSpec);
 
 const SAMPLE_VALID_DATA = {

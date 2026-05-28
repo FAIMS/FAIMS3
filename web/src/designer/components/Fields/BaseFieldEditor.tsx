@@ -109,11 +109,9 @@ export const BaseFieldEditor = ({
   children,
 }: Props) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
-  const uiSpec = useAppSelector(
-    state => state.notebook['ui-specification'].present
-  );
+  const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   const dispatch = useAppDispatch();
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
 

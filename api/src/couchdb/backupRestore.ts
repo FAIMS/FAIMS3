@@ -19,7 +19,7 @@
  */
 import {batchWriteDocuments} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
-import {initialiseDataDb, initialiseMetadataDb, localGetProjectsDb} from '.';
+import {initialiseDataDb, localGetProjectsDb} from '.';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -103,13 +103,6 @@ export const restoreFromBackup = async ({
             // conductor instance id
             // we'll put all projects into our projectsDB
             db = localGetProjectsDb();
-          } else if (!skipping && dbName.startsWith('metadata')) {
-            const projectName = dbName.split('||')[1];
-            // TODO: set up permissions for the databases
-            db = await initialiseMetadataDb({
-              projectId: projectName,
-              force: true,
-            });
           } else if (!skipping && dbName.startsWith('data')) {
             const projectName = dbName.split('||')[1];
             // TODO: set up permissions for the databases

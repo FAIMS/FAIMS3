@@ -24,12 +24,19 @@ import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {RichTextContent} from '@faims3/forms';
 
+/** Typed design-metadata fields under uiDefinition.metadata.information. */
+export type NotebookInformationField =
+  | 'purposeMarkdown'
+  | 'projectLeadLabel'
+  | 'leadInstitution'
+  | 'notebookVersion';
+
 type MetadataProps = {
   project_id: ProjectID;
   // You can force through an explicit value
   explicitValue?: string;
-  // OR you can ask for a value by key from the metadata
-  metadata_key?: string;
+  // OR read from uiDefinition.metadata.information
+  informationField?: NotebookInformationField;
   metadata_label?: string;
   chips?: boolean;
 };
@@ -37,23 +44,21 @@ type MetadataProps = {
 export default function MetadataRenderer(props: MetadataProps) {
   const {
     project_id,
-    metadata_key,
+    informationField,
     metadata_label,
     chips = true,
     explicitValue,
   } = props;
-  const metadata = useAppSelector(
-    state => selectProjectById(state, project_id)?.metadata
-  );
-  const possibleValue = explicitValue
-    ? explicitValue
-    : metadata_key
-      ? metadata?.[metadata_key]
-      : 'Error';
-  const value = possibleValue ? (possibleValue as string) : '';
+  const project = useAppSelector(state => selectProjectById(state, project_id));
+  const fromInformation =
+    informationField && project
+      ? project.uiDefinition.metadata.information[informationField]
+      : undefined;
+  const possibleValue = explicitValue ?? fromInformation ?? '';
+  const value = possibleValue ? String(possibleValue) : '';
 
-  // Use RichTextField for 'pre_description' field
-  if (metadata_key === 'pre_description' && value !== '') {
+  // Design purpose markdown is rich text
+  if (informationField === 'purposeMarkdown' && value !== '') {
     return <RichTextContent content={value} />;
   }
 

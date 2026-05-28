@@ -28,10 +28,11 @@ import {
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
-  PostRestoreTemplateResponse,
+  PutChangeTemplateTeamInputSchema,
   PutTemplateSetVisibilityInputSchema,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
+  PutUpdateTemplateUiSpecificationInputSchema,
   Role,
   userCanReadTemplateDocument,
 } from '@faims3/data-model';
@@ -41,6 +42,7 @@ import {processRequest} from 'zod-express-middleware';
 import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
+  changeTemplateTeam,
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
@@ -48,6 +50,7 @@ import {
   restoreTemplateFromArchive,
   setTemplateVisibility,
   updateExistingTemplate,
+  updateTemplateUiSpecification,
   withOwnedByTeamDisplayName,
   withOwnedByTeamDisplayNames,
 } from '../couchdb/templates';
@@ -231,6 +234,7 @@ api.post(
     // Now we can create the new template and return it
     const newTemplate = await createTemplate({
       payload: body,
+      createdBy: req.user.user_id,
     });
 
     // Make the creator the admin
@@ -271,18 +275,34 @@ api.put(
 );
 
 /**
- * PUT update existing template Updates an existing template. The payload is
- * validated by Zod before reaching this function. Expects a document as the
- * response JSON. Requires {@link Action.UPDATE_TEMPLATE_DETAILS} on the template.
- *
- * TODO distinguish between the different types of template updates permission
- * wise. Right now we look for just the update content action.
+ * PUT change template owning team.
+ */
+api.put(
+  '/:id/team',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_TEAM,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutChangeTemplateTeamInputSchema,
+  }),
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
+    const updatedTemplate = await changeTemplateTeam(req.params.id, req.body);
+    res.json(await withOwnedByTeamDisplayName(updatedTemplate));
+  }
+);
+
+/**
+ * PUT update existing template — merge inconsequential root fields only.
  */
 api.put(
   '/:id',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update (i.e. ui spec or not)
     action: Action.UPDATE_TEMPLATE_DETAILS,
     getResourceId(req) {
       return req.params.id;
@@ -293,33 +313,34 @@ api.put(
     body: PutUpdateTemplateInputSchema,
   }),
   async (req, res: Response<PutUpdateTemplateResponse>) => {
-    // pull out template Id
     const templateId = req.params.id;
-
-    // And respond with fulfilled document after updating
     const updatedTemplate = await updateExistingTemplate(templateId, req.body);
-    res.json(updatedTemplate);
+    res.json(await withOwnedByTeamDisplayName(updatedTemplate));
   }
 );
 
 /**
- * POST restore archived template (clears top-level archived flag).
+ * PUT replace template uiSpecification (designer / full JSON export).
  */
-api.post(
-  '/:id/restore',
+api.put(
+  '/:id/uiSpecification',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    action: Action.CHANGE_TEMPLATE_STATUS,
+    action: Action.UPDATE_TEMPLATE_DETAILS,
     getResourceId(req) {
       return req.params.id;
     },
   }),
   processRequest({
     params: z.object({id: z.string()}),
+    body: PutUpdateTemplateUiSpecificationInputSchema,
   }),
-  async (req, res: Response<PostRestoreTemplateResponse>) => {
-    const updated = await restoreTemplateFromArchive(req.params.id);
-    res.json(updated);
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
+    const updatedTemplate = await updateTemplateUiSpecification(
+      req.params.id,
+      req.body
+    );
+    res.json(await withOwnedByTeamDisplayName(updatedTemplate));
   }
 );
 
@@ -367,11 +388,12 @@ api.put(
     params: z.object({id: z.string()}),
     body: z.object({archive: z.boolean()}),
   }),
-  async (
-    {params: {id}, body: {archive}},
-    res: Response<PutUpdateTemplateResponse>
-  ) => {
-    await archiveTemplate(id, archive);
+  async ({params: {id}, body: {archive}}, res: Response) => {
+    if (archive) {
+      await archiveTemplate(id, true);
+    } else {
+      await restoreTemplateFromArchive(id);
+    }
     res.sendStatus(200);
   }
 );

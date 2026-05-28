@@ -127,17 +127,17 @@ const FieldEditorComponent = ({
   onLabelFocused,
 }: FieldEditorProps) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
 
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
 
   const invalidRefs = useMemo(() => {
@@ -217,7 +217,8 @@ const FieldEditorComponent = ({
   const notebookMetadata = useAppSelector(state => state.notebook.metadata);
 
   const isDerivedFromSet =
-    VITE_TEMPLATE_PROTECTIONS && Boolean(notebookMetadata['derived-from']);
+    VITE_TEMPLATE_PROTECTIONS &&
+    Boolean(notebookMetadata.information?.derivedFromTemplateId);
 
   const disableEditing =
     isDerivedFromSet &&

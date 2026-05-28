@@ -111,15 +111,11 @@ export const EditRecordPage = () => {
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
   if (!serverId || !projectId) return <></>;
-  const uiSpecificationId = useAppSelector(
-    state => selectProjectById(state, projectId)?.uiSpecificationId
-  );
-  if (!uiSpecificationId) return <></>;
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const uiSpec = uiSpecificationId
-    ? compiledSpecService.getSpec(uiSpecificationId)
-    : undefined;
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
   if (!uiSpec) return <div>UI Specification not found</div>;
 
   // These are handlers passed back from the editable form to assist with
@@ -203,7 +199,11 @@ export const EditRecordPage = () => {
   });
 
   // Query to fetch the relevant viewset
-  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
+  const relevantUiSpec = useUiSpecLayout({
+    dataDb,
+    recordId,
+    uiSpec,
+  });
 
   // Generate attachment service for this project
   const attachmentEngine = () => {

@@ -19,7 +19,7 @@ import {
   initDataDB,
   ProjectDataObject,
   ProjectID,
-  ProjectUIModel,
+  NotebookUiSpec,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {processRecordForSpatial} from '../src/couchdb/export/geospatialExport';
@@ -40,7 +40,7 @@ function fieldMeta() {
   } as const;
 }
 
-function testUiSpec(): ProjectUIModel {
+function testUiSpec(): NotebookUiSpec {
   return {
     fields: {
       relF: {
@@ -90,6 +90,8 @@ function testUiSpec(): ProjectUIModel {
       },
     },
     visible_types: ['VA', 'VB'],
+    schemaVersion: '3.0',
+    settings: {showQrCodeButton: false},
   };
 }
 
@@ -145,7 +147,7 @@ describe('export deleted relationship stripping', () => {
   let db: DatabaseInterface<DataDocument>;
   let engine: DataEngine;
   const projectId = 'proj-export-test';
-  let uiSpec: ProjectUIModel;
+  let uiSpec: NotebookUiSpec;
 
   beforeEach(async () => {
     uiSpec = testUiSpec();
@@ -330,7 +332,9 @@ describe('export deleted relationship stripping', () => {
       recordId: parentId,
     });
     const record = toHydratedDataRecord(parentHydrated, projectId);
-    const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification: uiSpec});
+    const viewFieldsMap = buildViewsetFieldSummaries({
+      uiSpecification: uiSpec,
+    });
 
     const processed = await processRecordForSpatial(
       record,

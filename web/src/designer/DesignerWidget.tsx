@@ -38,26 +38,25 @@ import {
   RouteObject,
   Navigate,
 } from 'react-router-dom';
-import {migrateNotebook} from '@faims3/data-model';
-
 import {createDesignerStore} from './createDesignerStore';
 import {createDesignerTheme} from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
 import {THEME} from '../lib/theme';
-
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 
 /**
- * @file Full-screen designer shell: migrate notebook, Redux, memory router, export without internal ids.
+ * @file Full-screen designer shell: hydrate notebook, Redux, memory router, export without internal ids.
  */
 
 /** Props for the full-screen notebook designer embedded in the main app. */
 export interface DesignerWidgetProps {
   /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
+  /** Used for the exported JSON filename (survey/template display name). */
+  exportBaseName?: string;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
   /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
@@ -73,11 +72,12 @@ export interface DesignerWidgetProps {
 }
 
 /**
- * Standalone designer shell: migrates notebook data, mounts Redux + router, and
+ * Standalone designer shell: hydrates notebook data, mounts Redux + router, and
  * serialises without `designerIdentifier` on save.
  */
 export function DesignerWidget({
   notebook,
+  exportBaseName,
   onClose,
   themeOverride,
   debug = false,
@@ -88,33 +88,28 @@ export function DesignerWidget({
   const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
   const notebookIdentity = notebook?.metadata?.project_id ?? '__none__';
 
-  // 1. Migrate + inject designerIdentifiers + reset undo history on each new notebook
+  // 1. Hydrate + inject designerIdentifiers + reset undo history on each new notebook
+  // (schema migration runs in notebookAdapters before the parent passes `notebook` here)
+
   const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
     // check that we have an actual notebook
-    if (!notebook?.metadata) return undefined;
+    if (!notebook?.metadata?.information || !notebook.uiSpec?.present) {
+      return undefined;
+    }
 
-    const flat: Notebook = {
-      metadata: notebook.metadata,
-      'ui-specification': notebook['ui-specification'].present,
-    };
-    // migrate the notebook - update any out of date fields or structures
-    const {migrated} = migrateNotebook(flat);
-    const migratedUiSpec = migrated[
-      'ui-specification'
-    ] as Notebook['ui-specification'];
-    const migratedMetadata = migrated.metadata as Notebook['metadata'];
+    const present = structuredClone(notebook.uiSpec.present);
 
     // Inject in-memory designerIdentifier if missing
-    Object.values(migratedUiSpec.fields).forEach(field => {
+    Object.values(present.fields).forEach(field => {
       if (!field.designerIdentifier) {
         field.designerIdentifier = crypto.randomUUID();
       }
     });
 
     return {
-      metadata: migratedMetadata,
-      'ui-specification': {
-        present: migratedUiSpec,
+      metadata: notebook.metadata,
+      uiSpec: {
+        present,
         past: [],
         future: [],
       },
@@ -160,17 +155,16 @@ export function DesignerWidget({
 
   /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
   const handleDone = useCallback(() => {
-    const actualNotebook: Notebook = toNotebook(store.getState().notebook);
+    const definition: Notebook = toNotebook(store.getState().notebook);
 
     // Remove internal IDs before serialisation
-    const exportNotebook = stripDesignerIdentifiers(actualNotebook);
+    const exportNotebook = stripDesignerIdentifiers(definition);
 
     const blob = new Blob([JSON.stringify(exportNotebook, null, 2)], {
       type: 'application/json',
     });
     const filename =
-      String(exportNotebook.metadata.name ?? 'notebook').replace(/\s+/g, '_') +
-      '.json';
+      String(exportBaseName ?? 'notebook').replace(/\s+/g, '_') + '.json';
     const file = new File([blob], filename, {
       type: 'application/json',
     });
@@ -279,8 +273,8 @@ export function DesignerWidget({
             </DialogTitle>
             <DialogContent>
               <DialogContentText id="cancel-dialog-description">
-                Any changes you’ve made will be lost. If you’re sure, hit “Yes,
-                cancel”. Otherwise, choose “No, keep editing”.
+                Any changes you've made will be lost. If you're sure, hit "Yes,
+                cancel". Otherwise, choose "No, keep editing".
               </DialogContentText>
             </DialogContent>
             <DialogActions>

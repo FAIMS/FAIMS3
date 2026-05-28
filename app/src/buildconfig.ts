@@ -760,6 +760,10 @@ export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
+
+/** Max characters shown for root description on the notebook listing page. */
+export const NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH = 50;
+
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
 export const NOTEBOOK_NAME_PLURAL = get_notebook_name_plural();

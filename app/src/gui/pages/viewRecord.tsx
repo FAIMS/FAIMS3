@@ -383,14 +383,12 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const uiSpecId = useAppSelector(
-    state => selectProjectById(state, projectId)?.uiSpecificationId
-  );
-  if (!uiSpecId) {
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) {
     return null;
   }
 
-  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
   if (!uiSpec) {
     return <div>UI Specification not found</div>;
   }
@@ -496,7 +494,8 @@ export const ViewRecordPage: React.FC = () => {
     );
   }
 
-  const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
+  const formLabel =
+    uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 

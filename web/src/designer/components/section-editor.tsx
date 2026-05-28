@@ -114,16 +114,16 @@ export const SectionEditor = ({
   toolbarPortal,
 }: Props) => {
   const fView = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews[viewId]
+    state => state.notebook.uiSpec.present.views[viewId]
   );
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
 
   const dispatch = useAppDispatch();

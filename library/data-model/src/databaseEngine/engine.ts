@@ -1,5 +1,6 @@
 import {isEqualFAIMS} from '../datamodel';
-import {DatabaseInterface, UISpecification} from '../types';
+import {DatabaseInterface} from '../types';
+import {NotebookUiSpec} from '../uiSpecification';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
 import {differenceSets, randomUuid} from '../utils';
 import * as Exceptions from './exceptions';
@@ -138,7 +139,7 @@ export interface DataEngineConfig {
   // The name of the PouchDB database
   dataDb: DatabaseInterface<DataDocument>;
   // UI Specification related to this project
-  uiSpec: UISpecification;
+  uiSpec: NotebookUiSpec;
 }
 
 // What options for conflict?
@@ -180,7 +181,7 @@ export class DataEngine {
    * UI Specification
    * NOTE: Currently unused, but placeholder for future where we may validate.
    */
-  public readonly uiSpec: UISpecification;
+  public readonly uiSpec: NotebookUiSpec;
 
   /**
    * Query operations - optimised bulk data retrieval using views
@@ -717,7 +718,7 @@ class HydratedOperations {
 
   constructor(
     private readonly core: CoreOperations,
-    private readonly uiSpec: UISpecification
+    private readonly uiSpec: NotebookUiSpec
   ) {
     this.hridFieldMap = getHridFieldMap(this.uiSpec);
   }
@@ -1029,7 +1030,7 @@ class FormOperations {
     private readonly core: CoreOperations,
     private readonly hydrated: HydratedOperations,
     private readonly query: QueryOperations,
-    private readonly uiSpec: UISpecification
+    private readonly uiSpec: NotebookUiSpec
   ) {}
 
   /**
