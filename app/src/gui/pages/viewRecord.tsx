@@ -55,7 +55,6 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {dataEngineUiSpecFromCompiled} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -389,14 +388,10 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const compiledUiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
-  if (!compiledUiSpec) {
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
+  if (!uiSpec) {
     return <div>UI Specification not found</div>;
   }
-  const engineUiSpec = dataEngineUiSpecFromCompiled(
-    compiledUiSpec,
-    project.uiDefinition.uiSpec
-  );
 
   const dataDb = localGetDataDb(projectId);
 
@@ -404,9 +399,9 @@ export const ViewRecordPage: React.FC = () => {
     () =>
       new DataEngine({
         dataDb: dataDb as DatabaseInterface<DataDocument>,
-        uiSpec: engineUiSpec,
+        uiSpec,
       }),
-    [dataDb, engineUiSpec]
+    [dataDb, uiSpec]
   );
 
   const getAttachmentService = useCallback(
@@ -451,7 +446,7 @@ export const ViewRecordPage: React.FC = () => {
       return getImpliedNavigationRelationships(
         formData.context.revision,
         getDataEngine(),
-        compiledUiSpec
+        uiSpec
       );
     },
     enabled: !!formData,
@@ -500,7 +495,7 @@ export const ViewRecordPage: React.FC = () => {
   }
 
   const formLabel =
-    compiledUiSpec.viewsets[formData.formId]?.label ?? formData.formId;
+    uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
@@ -553,7 +548,7 @@ export const ViewRecordPage: React.FC = () => {
                 })
               );
             }}
-            uiSpec={compiledUiSpec}
+            uiSpec={uiSpec}
             projectId={projectId}
             serverId={serverId}
             impliedRelationships={impliedRelationships}

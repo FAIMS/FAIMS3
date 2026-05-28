@@ -23,7 +23,6 @@ import type {
 } from './projectSlice';
 import {
   notebookDefinitionFromLegacyPersistedProject,
-  projectUiModelFromUiDefinition,
 } from './helpers/notebookDefinition';
 
 const emptyProjectsState: ProjectsState = {
@@ -167,11 +166,6 @@ function migrateOnePersistedProject(
       (typeof legacy.metadata?.template_id === 'string'
         ? legacy.metadata.template_id
         : undefined);
-
-    // Verify uiDefinition.uiSpec is present and can be split into ProjectUIModel
-    // (same helper used at runtime before DataEngine / compiledSpecService). Invalid
-    // specs throw here and the project is skipped in the catch below.
-    projectUiModelFromUiDefinition(uiDefinition);
 
     stats.legacyMigrated++;
     logMigrationInfo('project_migrated', {

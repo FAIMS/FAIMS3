@@ -2,46 +2,10 @@ import {
   GetNotebookResponse,
   migrateNotebook,
   NotebookDefinition,
-  NotebookUiSpec,
   normalizeNotebookUiSpecification,
   ProjectUIModel,
 } from '@faims3/data-model';
 import type {ProjectInformation} from '../projectSlice';
-
-/** uiSpec shape expected by {@link DataEngine} (settings + schemaVersion included). */
-export function dataEngineUiSpecFromProject(project: {
-  uiDefinition: NotebookDefinition;
-}): NotebookUiSpec {
-  return project.uiDefinition.uiSpec;
-}
-
-/**
- * {@link DataEngine} and form visibility need compiled `conditionFn` on fields/views.
- * Merge the compiled {@link ProjectUIModel} from {@link compiledSpecService} with
- * persisted `settings` / `schemaVersion` from the store.
- */
-export function dataEngineUiSpecFromCompiled(
-  compiled: ProjectUIModel,
-  persistedUiSpec: NotebookUiSpec
-): NotebookUiSpec {
-  return {
-    ...compiled,
-    settings: persistedUiSpec.settings,
-    schemaVersion: persistedUiSpec.schemaVersion,
-  };
-}
-
-/** Runtime UI model: {@link NotebookUiSpec} without settings / schemaVersion. */
-export function projectUiModelFromUiDefinition(
-  uiDefinition: NotebookDefinition
-): ProjectUIModel {
-  const {
-    settings: _settings,
-    schemaVersion: _schemaVersion,
-    ...uiModel
-  } = uiDefinition.uiSpec;
-  return uiModel as ProjectUIModel;
-}
 
 /**
  * Build a {@link NotebookDefinition} from persisted legacy redux fields

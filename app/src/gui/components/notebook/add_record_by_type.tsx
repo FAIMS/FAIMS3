@@ -14,7 +14,6 @@ import {useState} from 'react';
 import {Navigate, useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {dataEngineUiSpecFromCompiled} from '../../../context/slices/helpers/notebookDefinition';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
@@ -28,7 +27,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, serverId, uiSpecificationId, uiDefinition},
+  project: {projectId, serverId, uiSpecificationId},
   refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
@@ -40,12 +39,12 @@ export default function AddRecordButtons({
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-  const showQRButton = uiDefinition.uiSpec.settings.showQrCodeButton;
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
   }
+  const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
   const visibleTypes = uiSpec.visible_types;
 
@@ -53,7 +52,7 @@ export default function AddRecordButtons({
   const dataEngine = () => {
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: dataEngineUiSpecFromCompiled(uiSpec, uiDefinition.uiSpec),
+      uiSpec,
     });
   };
 

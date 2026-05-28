@@ -2,12 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import {describe, expect, it} from 'vitest';
 import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '@faims3/data-model';
-import {compileUiSpecConditionals} from '@faims3/data-model';
-import {
-  dataEngineUiSpecFromCompiled,
-  notebookDefinitionFromLegacyPersistedProject,
-  projectUiModelFromUiDefinition,
-} from './notebookDefinition';
+import {notebookDefinitionFromLegacyPersistedProject} from './notebookDefinition';
+import {compiledSpecService} from './compiledSpecService';
 
 const legacyNotebookPath = path.join(
   __dirname,
@@ -46,32 +42,21 @@ describe('notebookDefinitionFromLegacyPersistedProject', () => {
   });
 });
 
-describe('projectUiModelFromUiDefinition', () => {
-  it('strips settings and schemaVersion from uiSpec', () => {
+describe('compiledSpecService', () => {
+  it('keeps settings and schemaVersion and compiles conditionFns', () => {
     const def = notebookDefinitionFromLegacyPersistedProject({
       metadata: legacyNotebook.metadata,
     });
-    const model = projectUiModelFromUiDefinition(def);
-    expect(model).not.toHaveProperty('settings');
-    expect(model).not.toHaveProperty('schemaVersion');
-    expect(model.views).toBeDefined();
-  });
-});
-
-describe('dataEngineUiSpecFromCompiled', () => {
-  it('merges compiled conditionFns with persisted settings', () => {
-    const def = notebookDefinitionFromLegacyPersistedProject({
-      metadata: legacyNotebook.metadata,
-    });
-    const compiled = projectUiModelFromUiDefinition(def);
-    compileUiSpecConditionals(compiled);
-    const engineSpec = dataEngineUiSpecFromCompiled(compiled, def.uiSpec);
-    const fieldNames = Object.keys(engineSpec.fields);
+    const id = 'test-compiled-spec';
+    compiledSpecService.compileAndRegisterSpec(id, def.uiSpec);
+    const compiled = compiledSpecService.getSpec(id)!;
+    const fieldNames = Object.keys(compiled.fields);
     if (fieldNames.length > 0) {
-      const first = engineSpec.fields[fieldNames[0]];
+      const first = compiled.fields[fieldNames[0]];
       expect(typeof first.conditionFn).toBe('function');
     }
-    expect(engineSpec.settings).toEqual(def.uiSpec.settings);
-    expect(engineSpec.schemaVersion).toBe(def.uiSpec.schemaVersion);
+    expect(compiled.settings).toEqual(def.uiSpec.settings);
+    expect(compiled.schemaVersion).toBe(def.uiSpec.schemaVersion);
+    compiledSpecService.removeSpec(id);
   });
 });

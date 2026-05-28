@@ -48,7 +48,6 @@ import {
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {dataEngineUiSpecFromCompiled} from '../../context/slices/helpers/notebookDefinition';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
@@ -116,12 +115,8 @@ export const EditRecordPage = () => {
   if (!project) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const compiledUiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
-  if (!compiledUiSpec) return <div>UI Specification not found</div>;
-  const engineUiSpec = dataEngineUiSpecFromCompiled(
-    compiledUiSpec,
-    project.uiDefinition.uiSpec
-  );
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
+  if (!uiSpec) return <div>UI Specification not found</div>;
 
   // These are handlers passed back from the editable form to assist with
   // navigation management
@@ -175,7 +170,7 @@ export const EditRecordPage = () => {
   const dataEngine = () => {
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: engineUiSpec,
+      uiSpec,
     });
   };
 
@@ -207,7 +202,7 @@ export const EditRecordPage = () => {
   const relevantUiSpec = useUiSpecLayout({
     dataDb,
     recordId,
-    uiSpec: engineUiSpec,
+    uiSpec,
   });
 
   // Generate attachment service for this project
@@ -353,7 +348,7 @@ export const EditRecordPage = () => {
   );
 
   const formLabel = formData
-    ? compiledUiSpec.viewsets[formData.formId]?.label
+    ? uiSpec.viewsets[formData.formId]?.label
     : undefined;
 
   const headingSlot: React.ReactNode | undefined = useMemo(() => {

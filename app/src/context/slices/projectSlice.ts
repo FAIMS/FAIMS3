@@ -32,7 +32,6 @@ import {
   getRemoteDatabaseNameFromId,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
-import {projectUiModelFromUiDefinition} from './helpers/notebookDefinition';
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
 import {syncStateService} from './helpers/syncStateService';
@@ -440,7 +439,7 @@ const projectsSlice = createSlice({
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
-        projectUiModelFromUiDefinition(payload.uiDefinition)
+        payload.uiDefinition.uiSpec
       );
 
       // Update the couch DB URL (since we presume this to be an
@@ -622,7 +621,7 @@ const projectsSlice = createSlice({
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
-        projectUiModelFromUiDefinition(payload.uiDefinition)
+        payload.uiDefinition.uiSpec
       );
 
       server.couchDbUrl = payload.couchDbUrl;
@@ -2347,7 +2346,7 @@ export const compileSpecs = (state: Readonly<ProjectsState>): void => {
     for (const project of Object.values(server.projects)) {
       compiledSpecService.compileAndRegisterSpec(
         project.uiSpecificationId,
-        projectUiModelFromUiDefinition(project.uiDefinition)
+        project.uiDefinition.uiSpec
       );
     }
   }

@@ -25,7 +25,6 @@ import {
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
-  ProjectUIModel,
 } from '@faims3/data-model';
 import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
 import {
@@ -60,10 +59,8 @@ import {localGetDataDb} from '../../../utils/database';
 import {formatTimestamp} from '../../../utils/formUtilities';
 
 interface OverviewMapProps {
-  /** Compiled UI model for GIS field discovery and display. */
-  uiSpec: ProjectUIModel;
-  /** Full uiSpec for {@link DataEngine} (includes settings / schemaVersion). */
-  engineUiSpec: NotebookUiSpec;
+  /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
+  uiSpec: NotebookUiSpec;
   project_id: ProjectID;
   serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};
@@ -104,7 +101,7 @@ interface FeatureCollection {
 /**
  * Get the names of all GIS fields in a UI Specification
  */
-const getGISFields = (uiSpec: ProjectUIModel): string[] => {
+const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
   const fields = Object.getOwnPropertyNames(uiSpec.fields);
   return fields.filter(
     (field: string) =>
@@ -124,7 +121,7 @@ interface SelectedRecordPopoverContentProps {
   feature: FeatureProps;
   project_id: ProjectID;
   serverId: string;
-  uiSpec: ProjectUIModel;
+  uiSpec: NotebookUiSpec;
   dataEngine: DataEngine;
 }
 
@@ -337,7 +334,7 @@ const createResetNorthControl = (map: Map): Control => {
  * Create an overview map of the records in the notebook.
  */
 export const OverviewMap = (props: OverviewMapProps) => {
-  const {uiSpec, engineUiSpec, project_id, serverId, records} = props;
+  const {uiSpec, project_id, serverId, records} = props;
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
@@ -388,9 +385,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const dataDb = localGetDataDb(project_id);
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: engineUiSpec,
+      uiSpec,
     });
-  }, [project_id, engineUiSpec]);
+  }, [project_id, uiSpec]);
 
   // Memoize GIS fields
   const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);

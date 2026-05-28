@@ -22,7 +22,6 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {dataEngineUiSpecFromCompiled} from '../../../context/slices/helpers/notebookDefinition';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
@@ -190,7 +189,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     metadataRefreshIntervalMs: 10000,
-    uiSpecification: project.uiDefinition.uiSpec,
+    uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.initialQuery.refetch;
 
@@ -372,18 +371,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         </TabPanel>
 
         <TabPanel value={tabIndex} index={2} id={'map'}>
-          {uiSpecification !== null && (
-            <OverviewMap
-              serverId={project.serverId}
-              records={records}
-              project_id={project.projectId}
-              uiSpec={uiSpecification}
-              engineUiSpec={dataEngineUiSpecFromCompiled(
-                uiSpecification,
-                project.uiDefinition.uiSpec
-              )}
-            />
-          )}
+          <OverviewMap
+            serverId={project.serverId}
+            records={records}
+            project_id={project.projectId}
+            uiSpec={uiSpecification}
+          />
         </TabPanel>
 
         <TabPanel value={tabIndex} index={3} id={'details'}>
