@@ -22,7 +22,7 @@ import {debounce, DebouncedFunc} from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {logError, logInfo, logWarn} from '../../logging';
 import {formDataExtractor} from '../../utils';
-import {getFieldId} from '../utils';
+import {completion, getFieldId} from '../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
@@ -582,6 +582,8 @@ export const EditableFormManager: React.FC<
   const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
   const pendingFinishRef = useRef<null | (() => void | Promise<void>)>(null);
   const firstIssueFieldRef = useRef<string | null>(null);
+  // Prevents a double-click from running the guard twice while flushSave is awaiting.
+  const guardInFlightRef = useRef(false);
   const [issueCount, setIssueCount] = useState(0);
 
   const formLabel = useMemo(
@@ -591,42 +593,7 @@ export const EditableFormManager: React.FC<
     [dataEngine.uiSpec, props.formId]
   );
 
-  // Count unique fields that are still problematic (missing required OR
-  // validation error) and remember the first one so we can scroll to it.
-  const collectFinishIssues = useCallback(() => {
-    const problematic = new Set<string>();
-    const values: Record<string, unknown> = form.state.values ?? {};
-    const fieldMeta = form.state.fieldMeta ?? {};
-
-    // Missing required: walk the same field set the live progress bar uses.
-    for (const [sectionId, fieldNames] of Object.entries(visibleMap)) {
-      void sectionId;
-      for (const fieldName of fieldNames) {
-        const fieldSpec = dataEngine.uiSpec.fields[fieldName];
-        if (!fieldSpec?.['component-parameters']?.required) continue;
-        const v = values[fieldName];
-        const isEmpty =
-          v === null ||
-          v === undefined ||
-          v === '' ||
-          (Array.isArray(v) && v.length === 0);
-        if (isEmpty) problematic.add(fieldName);
-      }
-    }
-
-    // Validation errors from react-form's per-field meta.
-    for (const [name, meta] of Object.entries(fieldMeta)) {
-      if ((meta?.errors as unknown[] | undefined)?.length) {
-        problematic.add(name);
-      }
-    }
-
-    const firstField = problematic.values().next().value ?? null;
-    return {count: problematic.size, firstField};
-  }, [dataEngine.uiSpec, form, visibleMap]);
-
-  // Scroll the form to the first problematic field — same DOM id pattern
-  // used by TabbedSections's own scroll-to-field helper.
+  // Scroll to the first field that still has an issue.
   const scrollToFirstIssue = useCallback(() => {
     const name = firstIssueFieldRef.current;
     if (!name) return;
@@ -639,19 +606,49 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const isAttachmentSaving = attachmentSavingCounts.size > 0;
 
-  // Show the dialog if there are issues, otherwise finish straight away.
+  // On Finish: flush pending saves, then check for unresolved issues.
+  // If nothing's outstanding, finish straight away; otherwise open the dialog.
   const guardFinish = useCallback(
     (onClick: () => void | Promise<void>) => async () => {
-      const {count, firstField} = collectFinishIssues();
-      if (count === 0) {
-        return onClick();
+      if (guardInFlightRef.current) return;
+      guardInFlightRef.current = true;
+      try {
+        try {
+          await flushSave();
+        } catch (err) {
+          // Best-effort flush — in-memory state is still good enough to check against.
+          logWarn('[guardFinish] flushSave failed before issue check', {err});
+        }
+
+        const progress = completion({
+          uiSpec: dataEngine.uiSpec,
+          formId: props.formId,
+          data: form.state.values ?? {},
+          visibilityMap: visibleMap,
+        });
+
+        const problematic = new Set<string>(progress.incompleteRequired);
+        for (const [name, meta] of Object.entries(form.state.fieldMeta ?? {})) {
+          if ((meta?.errors as unknown[] | undefined)?.length) {
+            problematic.add(name);
+          }
+        }
+
+        if (problematic.size === 0) {
+          await onClick();
+          return;
+        }
+
+        const [firstField] = problematic;
+        setIssueCount(problematic.size);
+        firstIssueFieldRef.current = firstField ?? null;
+        pendingFinishRef.current = onClick;
+        setConfirmFinishOpen(true);
+      } finally {
+        guardInFlightRef.current = false;
       }
-      setIssueCount(count);
-      firstIssueFieldRef.current = firstField;
-      pendingFinishRef.current = onClick;
-      setConfirmFinishOpen(true);
     },
-    [collectFinishIssues]
+    [flushSave, dataEngine.uiSpec, props.formId, form, visibleMap]
   );
 
   // Disable nav buttons while attachments save, and route Finish through the warning dialog.
