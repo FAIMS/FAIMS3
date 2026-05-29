@@ -560,50 +560,64 @@ function MapWrapper(props: MapProps) {
           </DialogActions>
         </Dialog>
 
-        <Dialog
-          open={showCloseConfirm}
-          onClose={() => setShowCloseConfirm(false)}
-          aria-labelledby="map-close-confirm-title"
-          aria-describedby="map-close-confirm-description"
-          fullWidth
-          maxWidth="sm"
-        >
-          <DialogTitle
-            id="map-close-confirm-title"
-            sx={{textAlign: 'center', fontSize: '1.35rem', fontWeight: 600}}
-          >
-            Are you sure you want to discard the location?
-          </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} id="map-close-confirm-description">
-              <Typography variant="body2">
-                You have selected a location on the map but haven't saved it.
-                If you close now, your selection will be lost.
-              </Typography>
-            </Stack>
-          </DialogContent>
-          <DialogActions sx={{justifyContent: 'space-between', px: 3, pb: 2}}>
-            <Button
-              onClick={() => {
-                setShowCloseConfirm(false);
-                setMapOpen(false);
-              }}
-              color="error"
-              variant="contained"
-              disableElevation
+        {(() => {
+          // Use the right noun for the shape the user is drawing
+          // ("location" for points, "polygon" for polygons, "line" for lines).
+          const shapeNoun =
+            props.featureType === 'Polygon'
+              ? 'polygon'
+              : props.featureType === 'LineString'
+                ? 'line'
+                : 'location';
+          return (
+            <Dialog
+              open={showCloseConfirm}
+              onClose={() => setShowCloseConfirm(false)}
+              aria-labelledby="map-close-confirm-title"
+              aria-describedby="map-close-confirm-description"
+              fullWidth
+              maxWidth="sm"
             >
-              Discard
-            </Button>
-            <Button
-              onClick={() => setShowCloseConfirm(false)}
-              color="primary"
-              variant="contained"
-              disableElevation
-            >
-              Keep editing
-            </Button>
-          </DialogActions>
-        </Dialog>
+              <DialogTitle
+                id="map-close-confirm-title"
+                sx={{textAlign: 'center', fontSize: '1.35rem', fontWeight: 600}}
+              >
+                Are you sure you want to discard the {shapeNoun}?
+              </DialogTitle>
+              <DialogContent>
+                <Stack spacing={2} id="map-close-confirm-description">
+                  <Typography variant="body2">
+                    You have selected a {shapeNoun} on the map but haven't
+                    saved it. If you close now, your selection will be lost.
+                  </Typography>
+                </Stack>
+              </DialogContent>
+              <DialogActions
+                sx={{justifyContent: 'space-between', px: 3, pb: 2}}
+              >
+                <Button
+                  onClick={() => {
+                    setShowCloseConfirm(false);
+                    setMapOpen(false);
+                  }}
+                  color="error"
+                  variant="contained"
+                  disableElevation
+                >
+                  Discard
+                </Button>
+                <Button
+                  onClick={() => setShowCloseConfirm(false)}
+                  color="primary"
+                  variant="contained"
+                  disableElevation
+                >
+                  Keep editing
+                </Button>
+              </DialogActions>
+            </Dialog>
+          );
+        })()}
       </div>
       <style>
         {`
