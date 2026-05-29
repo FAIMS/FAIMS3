@@ -131,6 +131,10 @@ const RelatedRecordListItem = ({
     return null;
   }
 
+  // True when we have a real HRID (templated string), false when we're
+  // falling back to the raw record id because no HRID was configured.
+  const isHumanReadableHrid = data.hrid !== link.record_id;
+
   // 3. Success State: Hydrated Data
   return (
     <ListItem
@@ -163,8 +167,11 @@ const RelatedRecordListItem = ({
           primary={data.hrid}
           primaryTypographyProps={{
             variant: 'body2',
-            fontFamily: 'monospace',
-            fontWeight: data.hrid !== link.record_id ? 'bold' : 'normal',
+            fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+            // Monospace only as a fallback when no real HRID was configured
+            // (i.e. we're showing the opaque record id). Real HRIDs use the
+            // theme's default font.
+            ...(isHumanReadableHrid ? {} : {fontFamily: 'monospace'}),
           }}
         />
       </ListItemButton>
@@ -367,40 +374,44 @@ const LinkExistingDialog = ({
             <List dense disablePadding sx={{maxHeight: 300, overflow: 'auto'}}>
               {filteredRecords
                 .filter(r => r.success)
-                .map(recordResult => (
-                  <ListItem
-                    key={recordResult.record.record._id}
-                    disablePadding
-                    divider
-                  >
-                    <ListItemButton
-                      onClick={async () => {
-                        await handleSelect(recordResult.record);
-                      }}
+                .map(recordResult => {
+                  const isHumanReadableHrid =
+                    recordResult.record.hrid !== recordResult.record.record._id;
+                  return (
+                    <ListItem
+                      key={recordResult.record.record._id}
+                      disablePadding
+                      divider
                     >
-                      <ListItemIcon sx={{minWidth: 40}}>
-                        <LinkIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={recordResult.record.hrid}
-                        secondary={recordResult.record.record._id}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          fontFamily: 'monospace',
-                          fontWeight:
-                            recordResult.record.hrid !==
-                            recordResult.record.record._id
-                              ? 'bold'
-                              : 'normal',
+                      <ListItemButton
+                        onClick={async () => {
+                          await handleSelect(recordResult.record);
                         }}
-                        secondaryTypographyProps={{
-                          variant: 'caption',
-                          fontFamily: 'monospace',
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
+                      >
+                        <ListItemIcon sx={{minWidth: 40}}>
+                          <LinkIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={recordResult.record.hrid}
+                          secondary={recordResult.record.record._id}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+                            ...(isHumanReadableHrid
+                              ? {}
+                              : {fontFamily: 'monospace'}),
+                          }}
+                          secondaryTypographyProps={{
+                            variant: 'caption',
+                            // Secondary is always the raw record id, kept
+                            // monospace so it reads as an opaque identifier.
+                            fontFamily: 'monospace',
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
 
               {/* Load More Button */}
               {hasNextPage && (
