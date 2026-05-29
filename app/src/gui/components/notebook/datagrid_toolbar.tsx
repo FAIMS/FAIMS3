@@ -20,13 +20,8 @@
 
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import {Box, IconButton, InputAdornment, Stack, TextField} from '@mui/material';
-import {
-  FilterPanelTrigger,
-  GridToolbarFilterButton,
-  Toolbar,
-  ToolbarButton,
-} from '@mui/x-data-grid';
+import {IconButton, InputAdornment, Stack, TextField} from '@mui/material';
+import {Toolbar} from '@mui/x-data-grid';
 import React, {ReactNode, useEffect} from 'react';
 import {usePrevious} from '../../../utils/customHooks';
 
@@ -36,8 +31,6 @@ interface ToolbarProps {
   /** Optional additional controls to render (e.g., sort dropdown) */
   additionalControls?: ReactNode;
 }
-
-const enableFilters = import.meta.env.VITE_ENABLE_RECORD_FILTERS !== 'false';
 
 /**
  * Custom search button with improved layout handling.
@@ -180,17 +173,6 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
 
         {/* Additional controls (e.g., sort dropdown) */}
         {additionalControls && additionalControls}
-
-        {/* Filter button */}
-        {enableFilters && (
-          <Box className="record-grid-filterItem">
-            <Box className="record-grid-filterButton">
-              <FilterPanelTrigger render={<ToolbarButton />}>
-                XX
-              </FilterPanelTrigger>
-            </Box>
-          </Box>
-        )}
       </Stack>
     </Toolbar>
   );
