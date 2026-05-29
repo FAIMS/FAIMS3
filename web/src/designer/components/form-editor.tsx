@@ -1154,7 +1154,7 @@ export const FormEditor = ({
                   </Grid>
                 )
               ) : (
-                <Box>
+                <Box sx={{width: '100%'}}>
                   <SectionEditor
                     viewSetId={viewSetId}
                     viewId={viewSet.views[activeStep] || viewSet.views[0]}
