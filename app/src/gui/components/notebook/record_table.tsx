@@ -1217,6 +1217,8 @@ export function RecordsTable(props: RecordsTableProps) {
     [history, project_id, serverId]
   );
 
+  console.log('RecordsTable render');
+
   return (
     <Box component={Paper} elevation={3} sx={styles.wrapper}>
       <DataGrid
@@ -1241,6 +1243,7 @@ export function RecordsTable(props: RecordsTableProps) {
         onRowClick={handleRowClick}
         getRowClassName={params => (params.row.conflicts ? 'conflict-row' : '')}
         // Custom toolbar with sort control
+        showToolbar={true}
         slots={{toolbar: NotebookDataGridToolbar as any}}
         slotProps={{
           filterPanel: {sx: {maxWidth: '96vw'}},

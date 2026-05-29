@@ -3,7 +3,7 @@ import {bssBrand} from '@faims3/data-model';
 import typography from '../fieldmark/typography';
 import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
 
-const theme = createTheme({
+const baseTheme = createTheme({
   stepperColors: {
     current: bssBrand.primaryMain,
     visited: '#07a907',

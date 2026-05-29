@@ -68,7 +68,9 @@ const resolveTokens = (
   return {tokens: defaultTokens, isDass: false};
 };
 
-export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
+export const createDesignerTheme = (
+  themeName: DesignerThemeName = 'default'
+) => {
   const {tokens, isDass} = resolveTokens(themeName);
 
   return createTheme({
@@ -216,7 +218,7 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
             border: '1px solid transparent',
             boxShadow: '0 1px 6px rgba(15, 23, 32, 0.06)',
           },
-          standardInfo: {
+          standard: {
             borderColor: alpha(colors.blueGrey[700], 0.18),
             backgroundColor: alpha(colors.blueGrey[700], 0.06),
           },
@@ -337,7 +339,6 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         },
       },
 
-      
       MuiDialogContent: {
         styleOverrides: {
           root: {

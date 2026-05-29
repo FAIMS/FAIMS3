@@ -100,14 +100,16 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12} md={8}>
+      <Grid size={{xs: 12, md: 8}}>
         <Card variant="outlined">
           <Box sx={{px: 2, py: 2}}>
             <FormControl>
               <RadioGroup
                 row
                 value={isLongAnswer ? 'long' : 'short'}
-                onChange={e => setAnswerMode(e.target.value as 'short' | 'long')}
+                onChange={e =>
+                  setAnswerMode(e.target.value as 'short' | 'long')
+                }
               >
                 <FormControlLabel
                   value="short"
@@ -126,7 +128,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
       </Grid>
 
       {isLongAnswer && (
-        <Grid item xs={12} md={6}>
+        <Grid size={{xs: 12, md: 6}}>
           <Card variant="outlined">
             <Box sx={{px: 2, py: 2}}>
               <SimpleFieldWrapper
@@ -147,7 +149,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
         </Grid>
       )}
 
-      <Grid item xs={12} md={isLongAnswer ? 6 : 12}>
+      <Grid size={{xs: 12, md: isLongAnswer ? 6 : 12}}>
         <Card variant="outlined">
           <Box sx={{px: 2, py: 2}}>
             <SimpleFieldWrapper

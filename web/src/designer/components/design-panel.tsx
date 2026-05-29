@@ -546,12 +546,14 @@ export const DesignPanel = () => {
         fullWidth
         maxWidth="sm"
         fullScreen={addFormDialogFullScreen}
-        PaperProps={{
-          sx: {
-            borderRadius: {xs: 0, sm: 2},
-            boxShadow: {xs: 'none', sm: theme.shadows[12]},
-            overflow: 'hidden',
-            minHeight: {xs: 300, sm: 340},
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: {xs: 0, sm: 2},
+              boxShadow: {xs: 'none', sm: theme.shadows[12]},
+              overflow: 'hidden',
+              minHeight: {xs: 300, sm: 340},
+            },
           },
         }}
       >

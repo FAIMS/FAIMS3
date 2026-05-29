@@ -42,10 +42,7 @@ import {alpha} from '@mui/material/styles';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import {
-  designerDialogActionsSx,
-  designerDialogTitleSx,
-} from './designer-style';
+import {designerDialogActionsSx, designerDialogTitleSx} from './designer-style';
 
 import {getFieldNames, getFieldSpec} from '../fields';
 import {
@@ -134,7 +131,9 @@ export default function FieldChooserDialog({
   useEffect(() => {
     const el = tabsRef.current;
     if (!el) return;
-    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    const scroller = el.querySelector(
+      '.MuiTabs-scroller'
+    ) as HTMLElement | null;
     if (!scroller) return;
 
     const evaluate = () => {
@@ -174,111 +173,113 @@ export default function FieldChooserDialog({
         }}
       >
         <Box sx={{maxWidth: 1120, width: '100%', mx: 'auto'}}>
-        <Tabs
-          ref={tabsRef}
-          value={category}
-          onChange={(_, v: CategoryKey) => setCategory(v)}
-          variant="scrollable"
-          allowScrollButtonsMobile
-          sx={{
-            mb: 2,
-            flexShrink: 0,
-            position: 'sticky',
-            top: 0,
-            bgcolor: theme.palette.background.paper,
-            zIndex: 1,
-            '& .MuiTab-root': {
-              borderRadius: 999,
-              minHeight: 36,
-              minWidth: 'fit-content',
-              px: 1.5,
-              textTransform: 'none',
-              fontWeight: 600,
-              color: 'text.secondary',
-              '& .MuiSvgIcon-root': {color: 'inherit'},
-            },
-            '& .MuiTab-root.Mui-selected': {
-              bgcolor: 'primary.main',
-              color: 'common.white',
-            },
-          }}
-        >
-          {categoryTabs.map(key => (
-            <Tab
-              key={key}
-              value={key}
-              icon={CategoryConfigMap[key]?.icon ?? <ViewModuleRoundedIcon />}
-              label={CategoryConfigMap[key]?.displayName ?? key}
-              iconPosition="start"
-            />
-          ))}
-        </Tabs>
-        {showTabsScrollHint && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{display: 'block', mb: 1.2}}
+          <Tabs
+            ref={tabsRef}
+            value={category}
+            onChange={(_, v: CategoryKey) => setCategory(v)}
+            variant="scrollable"
+            allowScrollButtonsMobile
+            sx={{
+              mb: 2,
+              flexShrink: 0,
+              position: 'sticky',
+              top: 0,
+              bgcolor: theme.palette.background.paper,
+              zIndex: 1,
+              '& .MuiTab-root': {
+                borderRadius: 999,
+                minHeight: 36,
+                minWidth: 'fit-content',
+                px: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
+                color: 'text.secondary',
+                '& .MuiSvgIcon-root': {color: 'inherit'},
+              },
+              '& .MuiTab-root.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'common.white',
+              },
+            }}
           >
-            Scroll left/right to view all field categories.
-          </Typography>
-        )}
+            {categoryTabs.map(key => (
+              <Tab
+                key={key}
+                value={key}
+                icon={CategoryConfigMap[key]?.icon ?? <ViewModuleRoundedIcon />}
+                label={CategoryConfigMap[key]?.displayName ?? key}
+                iconPosition="start"
+              />
+            ))}
+          </Tabs>
+          {showTabsScrollHint && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{display: 'block', mb: 1.2}}
+            >
+              Scroll left/right to view all field categories.
+            </Typography>
+          )}
 
-        <TextField
-          placeholder="Search field types"
-          fullWidth
-          variant="outlined"
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchRoundedIcon
-                  sx={{
-                    color: 'text.secondary',
-                    fontSize: '1.35rem',
-                    strokeWidth: 1.8,
-                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))',
-                  }}
-                />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            mb: 2,
-            flexShrink: 0,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-              bgcolor: theme.palette.common.white,
-              boxShadow:
-                '0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
-              transition: theme.transitions.create(
-                ['box-shadow', 'border-color', 'background-color'],
-                {duration: theme.transitions.duration.shorter}
-              ),
-              '&:hover': {
+          <TextField
+            placeholder="Search field types"
+            fullWidth
+            variant="outlined"
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon
+                      sx={{
+                        color: 'text.secondary',
+                        fontSize: '1.35rem',
+                        strokeWidth: 1.8,
+                        filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))',
+                      }}
+                    />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              mb: 2,
+              flexShrink: 0,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: theme.palette.common.white,
                 boxShadow:
-                  '0 4px 12px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255,255,255,0.85)',
+                  '0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
+                transition: theme.transitions.create(
+                  ['box-shadow', 'border-color', 'background-color'],
+                  {duration: theme.transitions.duration.shorter}
+                ),
+                '&:hover': {
+                  boxShadow:
+                    '0 4px 12px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255,255,255,0.85)',
+                },
+                '&.Mui-focused': {
+                  boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 6px 14px rgba(15, 23, 42, 0.12)`,
+                },
               },
-              '&.Mui-focused': {
-                boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}, 0 6px 14px rgba(15, 23, 42, 0.12)`,
+              '& .MuiOutlinedInput-input::placeholder': {
+                color: 'text.secondary',
+                opacity: 0.82,
               },
-            },
-            '& .MuiOutlinedInput-input::placeholder': {
-              color: 'text.secondary',
-              opacity: 0.82,
-            },
-          }}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+            }}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{...theme.typography.body2, mb: 1.75, display: 'block'}}
-        >
-          Click any field card to add it instantly, then name it in the field
-          editor.
-        </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{...theme.typography.body2, mb: 1.75, display: 'block'}}
+          >
+            Click any field card to add it instantly, then name it in the field
+            editor.
+          </Typography>
         </Box>
 
         <Box
@@ -296,7 +297,7 @@ export default function FieldChooserDialog({
         >
           <Grid container spacing={2}>
             {filtered.map(opt => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
+              <Grid size={{xs: 12, sm: 6, md: 4, lg: 3}} key={opt.key}>
                 <Tooltip
                   title={
                     opt.deprecated && opt.deprecationMessage
@@ -321,7 +322,8 @@ export default function FieldChooserDialog({
                     sx={{
                       minHeight: CARD_HEIGHT,
                       borderWidth: 1,
-                      borderColor: theme => alpha(theme.palette.text.primary, 0.15),
+                      borderColor: theme =>
+                        alpha(theme.palette.text.primary, 0.15),
                       background: theme =>
                         `linear-gradient(180deg, ${alpha(
                           theme.palette.background.paper,
@@ -335,7 +337,8 @@ export default function FieldChooserDialog({
                       display: 'flex',
                       flexDirection: 'column',
                       '&:hover': {
-                        borderColor: theme => alpha(theme.palette.primary.main, 0.35),
+                        borderColor: theme =>
+                          alpha(theme.palette.primary.main, 0.35),
                         boxShadow: '0 8px 18px rgba(15, 23, 42, 0.12)',
                         transform: 'translateY(-1px)',
                       },
@@ -357,8 +360,7 @@ export default function FieldChooserDialog({
                         <Stack
                           direction="row"
                           spacing={1}
-                          alignItems="center"
-                          sx={{minHeight: 24}}
+                          sx={{minHeight: 24, alignItems: 'center'}}
                         >
                           {CategoryConfigMap[opt.category]?.icon ?? (
                             <ViewModuleRoundedIcon />
@@ -378,7 +380,13 @@ export default function FieldChooserDialog({
                           </Typography>
                         </Stack>
                         {opt.deprecated && (
-                          <Box sx={{display: 'flex', justifyContent: 'flex-end', mt: 0.85}}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                              mt: 0.85,
+                            }}
+                          >
                             <Chip
                               size="small"
                               icon={<WarningAmberRoundedIcon />}
@@ -406,7 +414,7 @@ export default function FieldChooserDialog({
             ))}
 
             {filtered.length === 0 && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography
                   variant="body2"
                   color="text.secondary"

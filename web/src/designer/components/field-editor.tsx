@@ -52,7 +52,14 @@ import {
 import {alpha} from '@mui/material/styles';
 import {useSortable} from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
-import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   findFieldDependencyReferences,
@@ -236,13 +243,19 @@ const FieldEditorComponent = ({
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    if (isLastField) { setShakingDown(true); return; }
+    if (isLastField) {
+      setShakingDown(true);
+      return;
+    }
     dispatch(fieldMoved({fieldName, viewId, direction: 'down'}));
   };
 
   const moveFieldUp = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    if (isFirstField) { setShakingUp(true); return; }
+    if (isFirstField) {
+      setShakingUp(true);
+      return;
+    }
     dispatch(fieldMoved({fieldName, viewId, direction: 'up'}));
   };
 
@@ -383,7 +396,8 @@ const FieldEditorComponent = ({
   );
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id: fieldName, disabled: dragDisabled});
-  const baseTransform = CSS.Transform.toString(transform) || 'translate3d(0, 0, 0)';
+  const baseTransform =
+    CSS.Transform.toString(transform) || 'translate3d(0, 0, 0)';
   const canDragField = !expanded && !dragDisabled;
 
   useEffect(() => {
@@ -408,7 +422,7 @@ const FieldEditorComponent = ({
       ref={setNodeRef}
       expanded={expanded}
       onChange={handleAccordionChange}
-      TransitionProps={{unmountOnExit: true}}
+      slotProps={{transition: {unmountOnExit: true}}}
       disableGutters
       square
       elevation={0}
@@ -512,9 +526,9 @@ const FieldEditorComponent = ({
           },
         }}
       >
-        <Grid container rowGap={1} alignItems={'center'}>
-          <Grid item xs={12} sm={8}>
-            <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
+        <Grid container sx={{rowGap: 1, alignItems: 'center'}}>
+          <Grid size={{xs: 12, sm: 8}}>
+            <Stack direction="column" spacing={1} sx={{pr: {xs: 0, sm: 2}}}>
               <Typography
                 variant="subtitle2"
                 sx={{
@@ -536,13 +550,13 @@ const FieldEditorComponent = ({
               {field['component-parameters'].helperText && (
                 <Typography
                   variant="body2"
-                  fontSize={13}
-                  fontWeight={450}
-                  fontStyle="italic"
                   sx={{
                     mt: 0.65,
                     px: 1,
                     py: 0.5,
+                    fontSize: 13,
+                    fontWeight: 450,
+                    fontStyle: 'italic',
                     color: 'text.secondary',
                     background: theme =>
                       `linear-gradient(100deg, ${alpha(theme.palette.grey[400], 0.15)} 0%, ${alpha(
@@ -569,7 +583,7 @@ const FieldEditorComponent = ({
                 </Typography>
               )}
               {/* Chips below question + helper text */}
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{flexWrap: 'wrap'}}>
                 <Chip
                   label={fieldComponentDisplayName}
                   size="small"
@@ -588,7 +602,8 @@ const FieldEditorComponent = ({
                           0.14
                         )} 100%)`,
                       color: theme => theme.palette.grey[800],
-                      borderColor: theme => alpha(theme.palette.grey[700], 0.38),
+                      borderColor: theme =>
+                        alpha(theme.palette.grey[700], 0.38),
                     },
                   }}
                 />
@@ -604,7 +619,8 @@ const FieldEditorComponent = ({
                       '& .MuiChip-label': {
                         px: 1,
                       },
-                      borderColor: theme => alpha(theme.palette.error.main, 0.82),
+                      borderColor: theme =>
+                        alpha(theme.palette.error.main, 0.82),
                       color: 'error.main',
                       backgroundColor: theme =>
                         alpha(theme.palette.error.main, 0.06),
@@ -614,15 +630,16 @@ const FieldEditorComponent = ({
               </Stack>
             </Stack>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{xs: 12, sm: 4}}>
             <Stack
               direction="row"
-              justifyContent={{sm: 'right', xs: 'left'}}
               spacing={0.25}
               sx={{
                 p: 0.35,
+                justifyContent: {sm: 'right', xs: 'left'},
                 borderRadius: 1,
-                backgroundColor: theme => alpha(theme.palette.common.black, 0.02),
+                backgroundColor: theme =>
+                  alpha(theme.palette.common.black, 0.02),
               }}
             >
               <Tooltip title="Delete Field">
@@ -633,7 +650,8 @@ const FieldEditorComponent = ({
                   sx={{
                     color: 'error.main',
                     '&:hover': {
-                      backgroundColor: theme => alpha(theme.palette.error.main, 0.14),
+                      backgroundColor: theme =>
+                        alpha(theme.palette.error.main, 0.14),
                       color: 'error.dark',
                     },
                   }}
@@ -702,23 +720,23 @@ const FieldEditorComponent = ({
                   }
                 >
                   <span>
-                      <IconButton
-                        onClick={toggleHiddenState}
-                        aria-label="unhide field"
-                        size="small"
-                        disabled={
-                          protection === 'protected' || requiredBlocksHiding
-                        }
-                        sx={{
-                          color: theme => alpha(theme.palette.success.dark, 0.76),
-                          '&:hover': {
-                            backgroundColor: theme =>
-                              alpha(theme.palette.success.main, 0.09),
-                          },
-                        }}
-                      >
-                        <VisibilityIcon />
-                      </IconButton>
+                    <IconButton
+                      onClick={toggleHiddenState}
+                      aria-label="unhide field"
+                      size="small"
+                      disabled={
+                        protection === 'protected' || requiredBlocksHiding
+                      }
+                      sx={{
+                        color: theme => alpha(theme.palette.success.dark, 0.76),
+                        '&:hover': {
+                          backgroundColor: theme =>
+                            alpha(theme.palette.success.main, 0.09),
+                        },
+                      }}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
                   </span>
                 </Tooltip>
               ) : (
@@ -761,9 +779,7 @@ const FieldEditorComponent = ({
                   size="small"
                   onAnimationEnd={() => setShakingUp(false)}
                   sx={{
-                    color: isFirstField
-                      ? 'text.disabled'
-                      : 'text.primary',
+                    color: isFirstField ? 'text.disabled' : 'text.primary',
                     animation: shakingUp
                       ? `${shakeAnim} 0.35s ease`
                       : undefined,
@@ -777,16 +793,16 @@ const FieldEditorComponent = ({
                   <ArrowDropUpRoundedIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title={isLastField ? 'Already at the bottom' : 'Move down'}>
+              <Tooltip
+                title={isLastField ? 'Already at the bottom' : 'Move down'}
+              >
                 <IconButton
                   onClick={moveFieldDown}
                   aria-label="down"
                   size="small"
                   onAnimationEnd={() => setShakingDown(false)}
                   sx={{
-                    color: isLastField
-                      ? 'text.disabled'
-                      : 'text.primary',
+                    color: isLastField ? 'text.disabled' : 'text.primary',
                     animation: shakingDown
                       ? `${shakeAnim} 0.35s ease`
                       : undefined,
@@ -808,13 +824,17 @@ const FieldEditorComponent = ({
           onClose={() => setDeleteWarningOpen(false)}
           fullWidth
           maxWidth="sm"
-          TransitionProps={{
-            onExited: () => {
-              setConditionsAffected([]);
+          slotProps={{
+            transition: {
+              onExited: () => {
+                setConditionsAffected([]);
+              },
             },
           }}
         >
-          <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
+          <DialogTitle sx={designerDialogTitleSx}>
+            Cannot Delete Field
+          </DialogTitle>
           <DialogContent sx={designerDialogContentSx}>
             <Box
               sx={{
@@ -822,14 +842,20 @@ const FieldEditorComponent = ({
                 borderColor: 'warning.light',
                 borderRadius: 1.5,
                 p: 2,
-                backgroundColor: theme => alpha(theme.palette.warning.main, 0.08),
+                backgroundColor: theme =>
+                  alpha(theme.palette.warning.main, 0.08),
                 mb: 2,
               }}
             >
               <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 0.75}}>
                 Referenced From
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{flexWrap: 'wrap'}}
+              >
                 <Chip
                   size="small"
                   label={`Form: ${viewsets[viewSetId]?.label ?? viewSetId}`}
@@ -851,7 +877,8 @@ const FieldEditorComponent = ({
                   key={`${dependency.type}-${dependency.fieldId ?? dependency.sectionId ?? index}`}
                   sx={{
                     border: '1px solid',
-                    borderColor: theme => alpha(theme.palette.warning.main, 0.22),
+                    borderColor: theme =>
+                      alpha(theme.palette.warning.main, 0.22),
                     borderRadius: 1.25,
                     p: 1.25,
                     backgroundColor: theme =>
@@ -866,9 +893,16 @@ const FieldEditorComponent = ({
                         : 'Field Condition'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {dependency.fieldLabel ?? dependency.sectionLabel ?? 'Unknown reference'}
+                    {dependency.fieldLabel ??
+                      dependency.sectionLabel ??
+                      'Unknown reference'}
                   </Typography>
-                  <Stack direction="row" spacing={0.75} mt={0.75} flexWrap="wrap" useFlexGap>
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    useFlexGap
+                    sx={{mt: 0.75, flexWrap: 'wrap'}}
+                  >
                     {dependency.formLabel && (
                       <Chip
                         size="small"
@@ -1040,7 +1074,10 @@ const FieldEditorComponent = ({
           />
         </DialogContent>
         <DialogActions sx={designerDialogActionsSx}>
-          <Button sx={designerCancelButtonSx} onClick={handleCloseDuplicateDialog}>
+          <Button
+            sx={designerCancelButtonSx}
+            onClick={handleCloseDuplicateDialog}
+          >
             Cancel
           </Button>
           <Button
@@ -1063,13 +1100,13 @@ const FieldEditorComponent = ({
           {(protection === 'protected' || protection === 'allow-hiding') && (
             <Stack
               direction="column"
-              alignItems="center"
-              justifyContent="center"
               spacing={1}
               sx={{
                 width: '100%',
                 padding: 2,
                 marginBottom: 2,
+                alignItems: 'center',
+                justifyContent: 'center',
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 borderRadius: 1,
                 border: '1px solid',
@@ -1094,15 +1131,13 @@ const FieldEditorComponent = ({
               opacity: disableEditing ? 0.5 : 1,
             }}
           >
-            <Grid
-              container
-              sx={designerResponsiveFieldEditorSx}
-            >
+            <Grid container sx={designerResponsiveFieldEditorSx}>
               {invalidRefs.length > 0 && (
-                <Grid item xs={12} sx={{marginBottom: 3.5}}>
+                <Grid size={12} sx={{marginBottom: 3.5}}>
                   <Alert severity="warning">
-                    The following fields/sections have visibility conditions that
-                    depend on this field having a specific option available:
+                    The following fields/sections have visibility conditions
+                    that depend on this field having a specific option
+                    available:
                     <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
                       {invalidRefs.map((msg, idx) => (
                         <li key={idx}>{msg}</li>
@@ -1114,7 +1149,7 @@ const FieldEditorComponent = ({
                 </Grid>
               )}
 
-              <Grid item xs={12}>
+              <Grid size={12}>
                 {renderFieldEditor({
                   fieldComponent,
                   context: {fieldName, viewId, viewSetId},

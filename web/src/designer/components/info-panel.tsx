@@ -126,9 +126,9 @@ export const InfoPanel = () => {
       )}
 
       <Card variant="outlined" sx={{mt: 2}}>
-        <Grid container spacing={5} p={3}>
-          <Grid container item xs={12} spacing={2.5}>
-            <Grid item xs={12} sm={4}>
+        <Grid container spacing={5} sx={{p: 3}}>
+          <Grid container size={12} spacing={2.5}>
+            <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
                 required
@@ -145,7 +145,7 @@ export const InfoPanel = () => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
                 label="Project Lead"
@@ -157,7 +157,7 @@ export const InfoPanel = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
                 label="Lead Institution"
@@ -170,7 +170,7 @@ export const InfoPanel = () => {
             </Grid>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <MdxEditor
               initialMarkdown={metadata.pre_description as string}
               editorRef={ref}
@@ -187,13 +187,12 @@ export const InfoPanel = () => {
 
           <Grid
             container
-            item
-            xs={12}
+            size={12}
             spacing={2.5}
-            justifyContent="space-between"
+            sx={{justifyContent: 'space-between'}}
           >
-            <Grid container item xs={12} sm={4} spacing={5}>
-              <Grid item xs={12}>
+            <Grid container size={{xs: 12, sm: 4}} spacing={5}>
+              <Grid size={12}>
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -212,8 +211,8 @@ export const InfoPanel = () => {
                   Useful if your form includes a QR code field.
                 </FormHelperText>
               </Grid>
-              <Grid item xs={12}>
-                <Grid item xs={12} sm={10}>
+              <Grid size={12}>
+                <Grid size={{xs: 12, sm: 10}}>
                   <DebouncedTextField
                     fullWidth
                     label={`${NOTEBOOK_NAME_CAPITALIZED} version`}
@@ -231,17 +230,17 @@ export const InfoPanel = () => {
               </Grid>
             </Grid>
 
-            <Grid item xs={12} sm={8}>
+            <Grid size={{xs: 12, sm: 8}}>
               <Card variant="outlined">
-                <Grid container p={2.5} spacing={3}>
+                <Grid container spacing={3} sx={{p: 2.5}}>
                   <Grid
                     container
-                    item
-                    xs={12}
-                    sm={5}
-                    direction="column"
-                    justifyContent="flex-start"
-                    alignItems="flex-start"
+                    size={{xs: 12, sm: 5}}
+                    sx={{
+                      flexDirection: 'column',
+                      justifyContent: 'flex-start',
+                      alignItems: 'flex-start',
+                    }}
                   >
                     <form
                       onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
@@ -288,10 +287,10 @@ export const InfoPanel = () => {
                     </form>
                   </Grid>
 
-                  <Grid container item xs={12} sm={7} rowGap={1}>
+                  <Grid container size={{xs: 12, sm: 7}} sx={{rowGap: 1}}>
                     {Object.keys(extraFields).map(key => {
                       return (
-                        <Grid item xs={12} key={key}>
+                        <Grid size={12} key={key}>
                           <DebouncedTextField
                             fullWidth
                             label={key}

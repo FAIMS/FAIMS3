@@ -62,7 +62,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
     <BaseFieldEditor fieldName={fieldName}>
       <Grid size={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid container p={2} rowGap={1}>
+          <Grid container sx={{p: 2, rowGap: 1}}>
             <Grid size={12}>
               <FormControlLabel
                 control={

@@ -55,8 +55,8 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   };
 
   return (
-    <Grid container item xs={12} sm={8} sx={{m: 'auto'}}>
-      <Grid item xs={12}>
+    <Grid container size={{xs: 12, sm: 8}} sx={{m: 'auto'}}>
+      <Grid size={12}>
         <MdxEditor
           initialMarkdown={initContent}
           editorRef={ref}

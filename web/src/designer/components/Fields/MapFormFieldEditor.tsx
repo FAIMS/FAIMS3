@@ -112,7 +112,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               label=""
               type="number"
               value={initZoom}
-              inputProps={{min: 0}}
+              slotProps={{htmlInput: {min: 0}}}
               onChange={e => updateProperty('zoom', parseFloat(e.target.value))}
             />
           </SimpleFieldWrapper>

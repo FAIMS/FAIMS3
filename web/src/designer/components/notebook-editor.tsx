@@ -71,9 +71,7 @@ export const NotebookEditor = ({
     setToastOpen(true);
   }, []);
 
-  const {canUndo, canRedo, undo, redo} = useDesignerUndoRedo(
-    onUndoRedoMessage
-  );
+  const {canUndo, canRedo, undo, redo} = useDesignerUndoRedo(onUndoRedoMessage);
 
   const handleToastClose = (
     _event?: React.SyntheticEvent | Event,
@@ -145,7 +143,8 @@ export const NotebookEditor = ({
             bgcolor: 'background.paper',
             borderBottom: '1px solid',
             borderColor: 'divider',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.025)',
+            boxShadow:
+              '0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.025)',
           }}
         >
           <Box>
@@ -166,7 +165,7 @@ export const NotebookEditor = ({
             </TabList>
           </Box>
           <Box sx={toolbarSx}>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
               {isDesignRoute && (
                 <>
                   <Button
@@ -200,7 +199,9 @@ export const NotebookEditor = ({
                   </Button>
                   <Tooltip
                     title={
-                      canUndo ? 'Undo last change (Ctrl/Cmd+Z)' : 'No changes to undo'
+                      canUndo
+                        ? 'Undo last change (Ctrl/Cmd+Z)'
+                        : 'No changes to undo'
                     }
                   >
                     <span>
@@ -208,7 +209,9 @@ export const NotebookEditor = ({
                         variant={canUndo ? 'contained' : 'outlined'}
                         color="primary"
                         size="small"
-                        startIcon={<UndoIcon sx={{fontSize: '1rem !important'}} />}
+                        startIcon={
+                          <UndoIcon sx={{fontSize: '1rem !important'}} />
+                        }
                         onClick={undo}
                         disabled={!canUndo}
                         sx={{minWidth: 84, fontSize: '0.78rem', py: 0.4}}
@@ -229,7 +232,9 @@ export const NotebookEditor = ({
                         variant={canRedo ? 'contained' : 'outlined'}
                         color="primary"
                         size="small"
-                        startIcon={<RedoIcon sx={{fontSize: '1rem !important'}} />}
+                        startIcon={
+                          <RedoIcon sx={{fontSize: '1rem !important'}} />
+                        }
                         onClick={redo}
                         disabled={!canRedo}
                         sx={{minWidth: 84, fontSize: '0.78rem', py: 0.4}}
@@ -253,9 +258,8 @@ export const NotebookEditor = ({
                     label={
                       <Stack
                         direction="row"
-                        alignItems="center"
                         spacing={0.5}
-                        sx={{userSelect: 'none'}}
+                        sx={{userSelect: 'none', alignItems: 'center'}}
                       >
                         <Typography variant="body2" sx={{fontWeight: 600}}>
                           Preview

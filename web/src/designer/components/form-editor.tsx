@@ -503,31 +503,29 @@ export const FormEditor = ({
     <Stack
       direction="row"
       spacing={2}
-      alignItems="stretch"
       sx={[
         designerResponsiveSectionSx,
-        {width: '100%', minWidth: 0, flexWrap: 'nowrap'},
+        {width: '100%', minWidth: 0, flexWrap: 'nowrap', alignItems: 'stretch'},
       ]}
     >
       <Grid
         container
         rowSpacing={1.25}
         columnSpacing={0}
-        pt={1.25}
-        sx={{flex: '1 1 0%', minWidth: 0}}
+        sx={{flex: '1 1 0%', minWidth: 0, pt: 1.25}}
       >
-        <Grid item xs={12}>
+        <Grid size={12}>
           {renderFormToolbar(
-            <Stack spacing={1.5} py={0.75}>
+            <Stack spacing={1.5} sx={{py: 0.75}}>
               <Stack
                 direction="row"
                 spacing={1}
-                alignItems="center"
-                flexWrap="wrap"
-                columnGap={1}
                 sx={{
                   ...designerScrollableControlRowSx,
                   color: 'text.secondary',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  columnGap: 1,
                 }}
               >
                 <Button
@@ -543,7 +541,7 @@ export const FormEditor = ({
 
                 <Typography sx={designerPipeSx}> | </Typography>
 
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
                   {moveButtonsDisabled ? (
                     <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
                       <span>
@@ -635,7 +633,11 @@ export const FormEditor = ({
                     />
                   }
                   label={
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{alignItems: 'center'}}
+                    >
                       <Typography variant="body2" sx={{fontWeight: 700}}>
                         Include "Add New Record" button
                       </Typography>
@@ -681,35 +683,37 @@ export const FormEditor = ({
                           data-testid="label"
                           placeholder="Form Name"
                           inputRef={formEditInputRef}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <Tooltip title="Save form name">
-                                  <IconButton
-                                    size="small"
-                                    type="submit"
-                                    sx={{
-                                      ...designerInlineEditActionIconSx,
-                                      color: 'success.main',
-                                    }}
-                                  >
-                                    <DoneRoundedIcon />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Cancel name edit">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => setEditMode(false)}
-                                    sx={{
-                                      ...designerInlineEditActionIconSx,
-                                      color: 'error.main',
-                                    }}
-                                  >
-                                    <CloseRoundedIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Tooltip title="Save form name">
+                                    <IconButton
+                                      size="small"
+                                      type="submit"
+                                      sx={{
+                                        ...designerInlineEditActionIconSx,
+                                        color: 'success.main',
+                                      }}
+                                    >
+                                      <DoneRoundedIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Cancel name edit">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => setEditMode(false)}
+                                      sx={{
+                                        ...designerInlineEditActionIconSx,
+                                        color: 'error.main',
+                                      }}
+                                    >
+                                      <CloseRoundedIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                           value={viewSet.label}
                           onChange={(
@@ -738,11 +742,13 @@ export const FormEditor = ({
             maxWidth="sm"
             fullWidth
             fullScreen={settingsFullScreen}
-            PaperProps={{
-              sx: {
-                borderRadius: {xs: 0, sm: 2},
-                width: '100%',
-                m: {xs: 0, sm: 2},
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: {xs: 0, sm: 2},
+                  width: '100%',
+                  m: {xs: 0, sm: 2},
+                },
               },
             }}
           >
@@ -812,9 +818,11 @@ export const FormEditor = ({
             }}
             fullWidth
             maxWidth="sm"
-            PaperProps={{
-              sx: {
-                minHeight: {xs: 280, sm: 320},
+            slotProps={{
+              paper: {
+                sx: {
+                  minHeight: {xs: 280, sm: 320},
+                },
               },
             }}
           >
@@ -875,7 +883,7 @@ export const FormEditor = ({
             </DialogActions>
           </Dialog>
 
-          <Box mt={2} mb={1.25}>
+          <Box sx={{mt: 2, mb: 1.25}}>
             <Box
               sx={{
                 display: 'flex',
@@ -907,10 +915,10 @@ export const FormEditor = ({
             }}
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Box sx={{px: 0, pt: 1.5, pb: 2}}>
-            <Grid container spacing={2} p={0}>
-              <Grid item xs={12}>
+            <Grid container spacing={2} sx={{p: 0}}>
+              <Grid size={12}>
                 <Box
                   ref={sectionStripRef}
                   sx={{
@@ -1086,7 +1094,7 @@ export const FormEditor = ({
 
               {sections.length === 0 ? (
                 addSectionDialogOpen ? null : (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <Card
                       variant="outlined"
                       sx={{
@@ -1102,7 +1110,7 @@ export const FormEditor = ({
                       <Stack
                         direction={{xs: 'column', sm: 'row'}}
                         spacing={1.25}
-                        alignItems={{xs: 'stretch', sm: 'flex-end'}}
+                        sx={{alignItems: {xs: 'stretch', sm: 'flex-end'}}}
                       >
                         <Box sx={{width: {xs: '100%', sm: 360}}}>
                           <SimpleFieldWrapper heading="Section Name">
@@ -1146,7 +1154,7 @@ export const FormEditor = ({
                   </Grid>
                 )
               ) : (
-                <Box xs={12}>
+                <Box>
                   <SectionEditor
                     viewSetId={viewSetId}
                     viewId={viewSet.views[activeStep] || viewSet.views[0]}
@@ -1224,7 +1232,7 @@ export const FormEditor = ({
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  fontWeight={600}
+                  sx={{fontWeight: 600}}
                 >
                   Loading preview…
                 </Typography>

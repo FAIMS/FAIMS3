@@ -20,14 +20,13 @@
 
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
+import {Box, IconButton, InputAdornment, Stack, TextField} from '@mui/material';
 import {
-  Box,
-  FormControl,
-  IconButton,
-  InputAdornment,
-  OutlinedInput,
-} from '@mui/material';
-import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
+  FilterPanelTrigger,
+  GridToolbarFilterButton,
+  Toolbar,
+  ToolbarButton,
+} from '@mui/x-data-grid';
 import React, {ReactNode, useEffect} from 'react';
 import {usePrevious} from '../../../utils/customHooks';
 
@@ -129,21 +128,21 @@ export function GridToolbarSearchRecordDataButton({
           },
         },
       }}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <IconButton
-              className="record-grid-searchButton"
-              onClick={handleSubmit}
-              size="medium"
-              data-testid="searchButton"
-            >
-              <SearchIcon className="record-grid-searchButtonIcon" />
-            </IconButton>
-          </InputAdornment>
-        }
-        endAdornment={
-          value ? (
+      slotProps={{
+        htmlInput: {
+          startAdornment: (
+            <InputAdornment position="start">
+              <IconButton
+                className="record-grid-searchButton"
+                onClick={handleSubmit}
+                size="medium"
+                data-testid="searchButton"
+              >
+                <SearchIcon className="record-grid-searchButtonIcon" />
+              </IconButton>
+            </InputAdornment>
+          ),
+          endAdornment: value ? (
             <InputAdornment position="end">
               <IconButton
                 className="record-grid-clearButton"
@@ -153,10 +152,10 @@ export function GridToolbarSearchRecordDataButton({
                 <ClearIcon className="record-grid-clearButtonIcon" />
               </IconButton>
             </InputAdornment>
-          ) : undefined
-        }
-      />
-    </FormControl>
+          ) : undefined,
+        },
+      }}
+    />
   );
 }
 
@@ -172,27 +171,27 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
   const {handleQueryFunction, additionalControls} = props;
 
   return (
-    <GridToolbarContainer>
-      <Box className="record-grid-toolbarContent">
-        <Box className="record-grid-toolbarLayout">
-          {/* Search input - takes remaining space */}
-          <GridToolbarSearchRecordDataButton
-            handleQueryFunction={handleQueryFunction}
-          />
+    <Toolbar>
+      <Stack direction="row" spacing={2}>
+        {/* Search input - takes remaining space */}
+        <GridToolbarSearchRecordDataButton
+          handleQueryFunction={handleQueryFunction}
+        />
 
-          {/* Additional controls (e.g., sort dropdown) */}
-          {additionalControls && additionalControls}
+        {/* Additional controls (e.g., sort dropdown) */}
+        {additionalControls && additionalControls}
 
-          {/* Filter button */}
-          {enableFilters && (
-            <Box className="record-grid-filterItem">
-              <Box className="record-grid-filterButton">
-                <GridToolbarFilterButton />
-              </Box>
+        {/* Filter button */}
+        {enableFilters && (
+          <Box className="record-grid-filterItem">
+            <Box className="record-grid-filterButton">
+              <FilterPanelTrigger render={<ToolbarButton />}>
+                XX
+              </FilterPanelTrigger>
             </Box>
-          )}
-        </Box>
-      </Box>
-    </GridToolbarContainer>
+          </Box>
+        )}
+      </Stack>
+    </Toolbar>
   );
 }

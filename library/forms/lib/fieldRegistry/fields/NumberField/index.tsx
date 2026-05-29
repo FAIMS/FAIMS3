@@ -92,8 +92,9 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
         type="number"
         slotProps={{
           htmlInput: {
-            // Step controls decimal precision
             step: numberType === 'integer' ? 1 : 'any',
+            min: min !== undefined ? min : undefined,
+            max: max !== undefined ? max : undefined,
           },
         }}
       />
