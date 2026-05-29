@@ -20,16 +20,16 @@
 
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import {IconButton, InputAdornment, Stack, TextField} from '@mui/material';
-import {Toolbar} from '@mui/x-data-grid';
-import React, {ReactNode, useEffect} from 'react';
+import {IconButton, InputAdornment, TextField} from '@mui/material';
+import {Toolbar, ToolbarButton} from '@mui/x-data-grid';
+import React, {ReactElement, useEffect} from 'react';
 import {usePrevious} from '../../../utils/customHooks';
 
 interface ToolbarProps {
   /** Function to handle search query changes */
   handleQueryFunction: (query: string) => void;
-  /** Optional additional controls to render (e.g., sort dropdown) */
-  additionalControls?: ReactNode;
+  /** additional controls to render (e.g., sort dropdown) */
+  additionalControls: ReactElement;
 }
 
 /**
@@ -165,15 +165,17 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
 
   return (
     <Toolbar>
-      <Stack direction="row" spacing={2}>
-        {/* Search input - takes remaining space */}
-        <GridToolbarSearchRecordDataButton
-          handleQueryFunction={handleQueryFunction}
-        />
+      {/* Search input - takes remaining space */}
+      <ToolbarButton
+        render={() => (
+          <GridToolbarSearchRecordDataButton
+            handleQueryFunction={handleQueryFunction}
+          />
+        )}
+      />
 
-        {/* Additional controls (e.g., sort dropdown) */}
-        {additionalControls && additionalControls}
-      </Stack>
+      {/* Additional controls (e.g., sort dropdown) */}
+      <ToolbarButton render={() => additionalControls} />
     </Toolbar>
   );
 }
