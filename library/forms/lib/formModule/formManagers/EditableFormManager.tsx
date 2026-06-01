@@ -651,15 +651,13 @@ export const EditableFormManager: React.FC<
     [flushSave, dataEngine.uiSpec, props.formId, form, visibleMap]
   );
 
-  // Disable nav buttons while attachments save, and route Finish through the warning dialog.
+  // Lock nav buttons while an attachment saves; finish buttons go via guardFinish.
   const navigationButtonsWithAttachmentLock = useMemo(() => {
-    const isFinishButton = (id: string) =>
-      id === 'finish-to-parent' || id === 'finish-to-list';
     return navigationButtons.map(b => {
       const base = isAttachmentSaving
         ? {...b, disabled: true, loading: true, statusText: 'saving attachment…'}
         : b;
-      return isFinishButton(b.id)
+      return b.requiresFinishGuard
         ? {...base, onClick: guardFinish(b.onClick)}
         : base;
     });
