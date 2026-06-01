@@ -216,14 +216,10 @@
     "viewsets": {
       "New-Form": {
         "label": "Protection Test",
-        "views": [
-          "New-Form-New-Section"
-        ]
+        "views": ["New-Form-New-Section"]
       }
     },
-    "visible_types": [
-      "New-Form"
-    ],
+    "visible_types": ["New-Form"],
     "settings": {
       "showQrCodeButton": false
     },

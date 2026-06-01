@@ -107,7 +107,9 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
               <RadioGroup
                 row
                 value={isLongAnswer ? 'long' : 'short'}
-                onChange={e => setAnswerMode(e.target.value as 'short' | 'long')}
+                onChange={e =>
+                  setAnswerMode(e.target.value as 'short' | 'long')
+                }
               >
                 <FormControlLabel
                   value="short"

@@ -302,125 +302,127 @@ export const SectionEditor = ({
   return (
     <>
       {renderSectionToolbar(
-      <Stack spacing={1.5} mt={0.75} mb={2}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          flexWrap="wrap"
-          columnGap={1}
-          sx={designerControlActionRowSx}
-        >
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<EditRoundedIcon />}
-            onClick={() => setEditMode(true)}
-            sx={designerControlLabelSx}
+        <Stack spacing={1.5} mt={0.75} mb={2}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            flexWrap="wrap"
+            columnGap={1}
+            sx={designerControlActionRowSx}
           >
-            Edit name
-          </Button>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<EditRoundedIcon />}
+              onClick={() => setEditMode(true)}
+              sx={designerControlLabelSx}
+            >
+              Edit name
+            </Button>
 
-          <Typography sx={designerPipeSx}> | </Typography>
+            <Typography sx={designerPipeSx}> | </Typography>
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title="Move section left">
-              <span>
-                <IconButton
-                  disabled={viewSet.views.indexOf(viewId) === 0}
-                  onClick={() => moveSection('left')}
-                  aria-label="left"
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Tooltip title="Move section left">
+                <span>
+                  <IconButton
+                    disabled={viewSet.views.indexOf(viewId) === 0}
+                    onClick={() => moveSection('left')}
+                    aria-label="left"
+                    size="small"
+                    sx={designerIconControlButtonSx}
+                  >
+                    <ArrowBackRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Move section right">
+                <span>
+                  <IconButton
+                    disabled={
+                      viewSet.views.indexOf(viewId) === viewSet.views.length - 1
+                    }
+                    onClick={() => moveSection('right')}
+                    aria-label="right"
+                    size="small"
+                    sx={designerIconControlButtonSx}
+                  >
+                    <ArrowForwardRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Typography variant="caption" sx={designerControlLabelSx}>
+                Reorder
+              </Typography>
+            </Stack>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<ContentCopyRoundedIcon />}
+              onClick={() => setOpenDuplicateDialog(true)}
+              sx={designerControlLabelSx}
+            >
+              Duplicate
+            </Button>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<MoveRoundedIcon />}
+              onClick={() => setOpenMoveDialog(true)}
+              sx={designerControlLabelSx}
+            >
+              Move section to another Form
+            </Button>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <ConditionModal
+              label="Add conditions to section"
+              initial={fView.condition}
+              onChange={conditionChanged}
+              view={viewId}
+              buttonSx={designerControlLabelSx}
+            />
+
+            {fView.condition && (
+              <>
+                <Typography sx={designerPipeSx}> | </Typography>
+                <Button
+                  variant="text"
                   size="small"
-                  sx={designerIconControlButtonSx}
+                  startIcon={<ClearRoundedIcon />}
+                  onClick={() => conditionChanged(null)}
+                  sx={designerControlLabelSx}
                 >
-                  <ArrowBackRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Move section right">
-              <span>
-                <IconButton
-                  disabled={viewSet.views.indexOf(viewId) === viewSet.views.length - 1}
-                  onClick={() => moveSection('right')}
-                  aria-label="right"
-                  size="small"
-                  sx={designerIconControlButtonSx}
-                >
-                  <ArrowForwardRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Typography variant="caption" sx={designerControlLabelSx}>
-              Reorder
-            </Typography>
+                  Clear condition
+                </Button>
+              </>
+            )}
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Button
+              variant="text"
+              color="error"
+              size="small"
+              startIcon={<DeleteRoundedIcon />}
+              onClick={deleteConfirmation}
+              sx={{
+                ...designerControlLabelSx,
+                color: 'error.main',
+                '& .MuiButton-startIcon': {color: 'error.main'},
+              }}
+            >
+              Delete
+            </Button>
           </Stack>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<ContentCopyRoundedIcon />}
-            onClick={() => setOpenDuplicateDialog(true)}
-            sx={designerControlLabelSx}
-          >
-            Duplicate
-          </Button>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<MoveRoundedIcon />}
-            onClick={() => setOpenMoveDialog(true)}
-            sx={designerControlLabelSx}
-          >
-            Move section to another Form
-          </Button>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <ConditionModal
-            label="Add conditions to section"
-            initial={fView.condition}
-            onChange={conditionChanged}
-            view={viewId}
-            buttonSx={designerControlLabelSx}
-          />
-
-          {fView.condition && (
-            <>
-              <Typography sx={designerPipeSx}> | </Typography>
-              <Button
-                variant="text"
-                size="small"
-                startIcon={<ClearRoundedIcon />}
-                onClick={() => conditionChanged(null)}
-                sx={designerControlLabelSx}
-              >
-                Clear condition
-              </Button>
-            </>
-          )}
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Button
-            variant="text"
-            color="error"
-            size="small"
-            startIcon={<DeleteRoundedIcon />}
-            onClick={deleteConfirmation}
-            sx={{
-              ...designerControlLabelSx,
-              color: 'error.main',
-              '& .MuiButton-startIcon': {color: 'error.main'},
-            }}
-          >
-            Delete
-          </Button>
         </Stack>
-      </Stack>
       )}
       {editMode && (
         <>
@@ -550,11 +552,7 @@ export const SectionEditor = ({
           <Button sx={designerCancelButtonSx} onClick={handleCloseDeleteDialog}>
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={deleteSection}
-          >
+          <Button variant="contained" color="error" onClick={deleteSection}>
             Delete
           </Button>
         </DialogActions>

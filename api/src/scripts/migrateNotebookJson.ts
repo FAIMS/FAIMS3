@@ -19,9 +19,10 @@ type ProjectWrapper = {
   uiSpecification: ReturnType<typeof normalizeNotebookUiSpecification>;
 };
 
-function isProjectWrapper(
-  raw: Record<string, unknown>
-): raw is Record<string, unknown> & {
+function isProjectWrapper(raw: Record<string, unknown>): raw is Record<
+  string,
+  unknown
+> & {
   name: string;
   description?: string;
   uiSpecification: unknown;
@@ -76,7 +77,10 @@ function migrateToNotebookDefinition(
   );
 }
 
-function migrateFile(absPath: string, format: 'notebookDefinition' | 'projectWrapper'): void {
+function migrateFile(
+  absPath: string,
+  format: 'notebookDefinition' | 'projectWrapper'
+): void {
   const raw = JSON.parse(fs.readFileSync(absPath, 'utf-8')) as Record<
     string,
     unknown
@@ -87,7 +91,8 @@ function migrateFile(absPath: string, format: 'notebookDefinition' | 'projectWra
   if (format === 'projectWrapper') {
     const name =
       (typeof raw.name === 'string' && raw.name) ||
-      (typeof (raw.metadata as {name?: string} | undefined)?.name === 'string' &&
+      (typeof (raw.metadata as {name?: string} | undefined)?.name ===
+        'string' &&
         (raw.metadata as {name: string}).name) ||
       'Untitled';
     const description =
@@ -154,7 +159,9 @@ function main(): void {
   }
   const format = wrapper ? 'projectWrapper' : 'notebookDefinition';
   for (const file of files) {
-    const abs = path.isAbsolute(file) ? file : path.resolve(process.cwd(), file);
+    const abs = path.isAbsolute(file)
+      ? file
+      : path.resolve(process.cwd(), file);
     migrateFile(abs, format);
   }
 }

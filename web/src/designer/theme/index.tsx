@@ -68,7 +68,9 @@ const resolveTokens = (
   return {tokens: defaultTokens, isDass: false};
 };
 
-export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
+export const createDesignerTheme = (
+  themeName: DesignerThemeName = 'default'
+) => {
   const {tokens, isDass} = resolveTokens(themeName);
 
   return createTheme({
@@ -337,7 +339,6 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         },
       },
 
-      
       MuiDialogContent: {
         styleOverrides: {
           root: {

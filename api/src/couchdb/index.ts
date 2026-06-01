@@ -709,9 +709,6 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   return _nanoInstance;
 };
 
-/** Default Couch metadata database name prefix (`metadata-{projectId}`). */
-export const METADATA_DATABASE_NAME_PREFIX = 'metadata-';
-
 /** Lists all database names on the configured CouchDB server. */
 export const listCouchDatabaseNames = async (): Promise<string[]> => {
   const nano = await getNanoInstance();

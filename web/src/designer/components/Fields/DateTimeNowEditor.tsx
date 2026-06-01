@@ -121,8 +121,8 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                           {isDatePicker
                             ? "Select today's date"
                             : isMonthPicker
-                            ? 'Select current month'
-                            : 'Select current date and time'}
+                              ? 'Select current month'
+                              : 'Select current date and time'}
                         </strong>
                         " button
                       </Typography>
@@ -131,8 +131,8 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                           isDatePicker
                             ? 'Adds a quick button to set this field to today’s date.'
                             : isMonthPicker
-                            ? 'Adds a quick button to set this field to the current month.'
-                            : 'Adds a quick button to set this field to the current date and time.'
+                              ? 'Adds a quick button to set this field to the current month.'
+                              : 'Adds a quick button to set this field to the current date and time.'
                         }
                       >
                         <InfoIcon

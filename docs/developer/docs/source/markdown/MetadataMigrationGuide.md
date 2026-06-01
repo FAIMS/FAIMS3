@@ -9,7 +9,7 @@ There are **two migration layers** — run both in order:
 | Layer              | What moves                                                     | How                                                                                  |
 | ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | **Couch document** | Project/template rows: inline former metadata, adds new fields | `pnpm run migrate` in `api/` (`projectsV3toV4Migration`, `templatesV4toV5Migration`) |
-| **Notebook JSON**  | Design bundle → current schema (`uiSpec` + typed `metadata`) | `migrateNotebook` via API normalisation, optional startup pass, clients on load      |
+| **Notebook JSON**  | Design bundle → current schema (`uiSpec` + typed `metadata`)   | `migrateNotebook` via API normalisation, optional startup pass, clients on load      |
 
 ---
 
@@ -132,15 +132,15 @@ The current notebook schema version is applied by `migrateNotebook` (often wrapp
 
 ### Server — persists to Couch
 
-| Trigger                                      | Location                                                | Notes                                                                                  |
-| -------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts`      | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted |
-| **POST** create survey (from template)       | Copies `template.uiSpecification` only                  | Optional `description` on POST is **not** taken from the template                      |
-| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                          | Designer save, full JSON replace                                                       |
-| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                     |                                                                                        |
-| **POST** create template                     | `createTemplate`                                        | Body `name`, optional `description` (max 250), `uiSpecification`                       |
-| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                               | Reads metadata DB + `migrateNotebook`                                                  |
-| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                              | Same pattern for templates                                                             |
+| Trigger                                      | Location                                                | Notes                                                                                    |
+| -------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **POST** create survey (from scratch)        | `createNotebook` in `api/src/couchdb/notebooks.ts`      | Body `name`, optional `description` (max 250), `uiSpecification`; legacy wire accepted   |
+| **POST** create survey (from template)       | Copies `template.uiSpecification` only                  | Optional `description` on POST is **not** taken from the template                        |
+| **PUT** `/api/notebooks/:id/uiSpecification` | `updateProjectUiSpecification`                          | Designer save, full JSON replace                                                         |
+| **PUT** `/api/templates/:id/uiSpecification` | Template equivalent                                     |                                                                                          |
+| **POST** create template                     | `createTemplate`                                        | Body `name`, optional `description` (max 250), `uiSpecification`                         |
+| **Projects DB v3 → v4**                      | `projectsV3toV4Migration`                               | Reads metadata DB + `migrateNotebook`                                                    |
+| **Templates DB v4 → v5**                     | `templatesV4toV5Migration`                              | Same pattern for templates                                                               |
 | **API startup** (optional)                   | `validateDatabases` when `MIGRATE_NOTEBOOKS_ON_STARTUP` | Re-writes projects whose inlined spec version is still behind the current schema version |
 
 **Does not migrate on server:**

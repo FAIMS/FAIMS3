@@ -12,10 +12,7 @@
  * function which takes the server and project and combines them to form an ID.
  */
 
-import {
-  compileUiSpecConditionals,
-  NotebookUiSpec,
-} from '@faims3/data-model';
+import {compileUiSpecConditionals, NotebookUiSpec} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);

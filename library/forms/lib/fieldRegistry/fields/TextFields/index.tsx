@@ -37,9 +37,7 @@ const TextFieldPropsSchema = BaseFieldPropsSchema.extend({
    * `InputProps`. Kept optional so un-migrated notebooks still parse; the
    * component below normalises this onto the canonical top-level form.
    */
-  InputProps: z
-    .object({rows: z.number().optional()})
-    .optional(),
+  InputProps: z.object({rows: z.number().optional()}).optional(),
 });
 
 type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;

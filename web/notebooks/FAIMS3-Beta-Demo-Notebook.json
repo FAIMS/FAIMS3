@@ -2,9 +2,7 @@
   "uiSpec": {
     "fields": {
       "colour-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -27,9 +25,7 @@
         "type-returned": "faims-core::Colour"
       },
       "date-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -52,9 +48,7 @@
         "type-returned": "faims-core::Date"
       },
       "date-and-time-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -77,9 +71,7 @@
         "type-returned": "faims-core::Datetime"
       },
       "hridFORM1": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -114,9 +106,7 @@
         "type-returned": "faims-core::String"
       },
       "hridFORM2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -151,9 +141,7 @@
         "type-returned": "faims-core::String"
       },
       "month-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -176,9 +164,7 @@
         "type-returned": "faims-core::Date"
       },
       "html-text": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -200,9 +186,7 @@
         "type-returned": "faims-core::String"
       },
       "radio-with-option-for-other": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -252,9 +236,7 @@
         "type-returned": "faims-core::String"
       },
       "radio-button": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -297,9 +279,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -321,9 +301,7 @@
         "type-returned": "faims-core::String"
       },
       "controlled-number": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -346,9 +324,7 @@
         "type-returned": "faims-core::String"
       },
       "multi-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultiSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -395,9 +371,7 @@
         "type-returned": "faims-core::Array"
       },
       "thing-2-human-identifier": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -431,9 +405,7 @@
         "type-returned": "faims-core::String"
       },
       "select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -478,9 +450,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-3": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -502,9 +472,7 @@
         "type-returned": "faims-core::String"
       },
       "mapformfield": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MapFormField",
         "component-namespace": "mapping-plugin",
         "component-parameters": {
@@ -533,9 +501,7 @@
         "type-returned": "faims-core::JSON"
       },
       "controlled-text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -558,9 +524,7 @@
         "type-returned": "faims-core::String"
       },
       "required-text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -583,9 +547,7 @@
         "type-returned": "faims-core::String"
       },
       "hierarchical-picker-full-path": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "AdvancedSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -659,9 +621,7 @@
         "type-returned": "faims-core::String"
       },
       "hierarchical-picker-full-path-only": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "AdvancedSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -735,9 +695,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-4": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -759,9 +717,7 @@
         "type-returned": "faims-core::String"
       },
       "thing-1-unique-id": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -795,9 +751,7 @@
         "type-returned": "faims-core::String"
       },
       "thing-2-name": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -820,9 +774,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-5": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -844,9 +796,7 @@
         "type-returned": "faims-core::String"
       },
       "fileuploader": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "FileUploader",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -869,9 +819,7 @@
         "type-returned": "faims-attachment::Files"
       },
       "thing-2-incrementer": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "BasicAutoIncrementer",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -897,9 +845,7 @@
         "type-returned": "faims-core::String"
       },
       "take-point": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePoint",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -924,9 +870,7 @@
         "type-returned": "faims-pos::Location"
       },
       "html-text-6": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -948,9 +892,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-7": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -972,9 +914,7 @@
         "type-returned": "faims-core::String"
       },
       "is-related-to": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -992,14 +932,8 @@
           "related_type": "FORM2",
           "related_type_label": "Thing 2",
           "relation_linked_vocabPair": [
-            [
-              "is_above",
-              "is below"
-            ],
-            [
-              "is related",
-              "is related to"
-            ]
+            ["is_above", "is below"],
+            ["is related", "is related to"]
           ],
           "relation_type": "faims-core::Linked",
           "required": false,
@@ -1020,9 +954,7 @@
         "type-returned": "faims-core::Relationship"
       },
       "take-photo": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePhoto",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1047,9 +979,7 @@
         "type-returned": "faims-attachment::Files"
       },
       "multi-line-text": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1078,9 +1008,7 @@
         "type-returned": "faims-core::String"
       },
       "date-and-time-now": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "DateTimePicker",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1108,9 +1036,7 @@
         "type-returned": "faims-core::String"
       },
       "related-thing": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1143,9 +1069,7 @@
         "type-returned": "faims-core::Relationship"
       },
       "html-text-8": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1167,9 +1091,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-9": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1191,9 +1113,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-10": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1215,9 +1135,7 @@
         "type-returned": "faims-core::String"
       },
       "take-photo-2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePhoto",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1242,9 +1160,7 @@
         "type-returned": "faims-attachment::Files"
       },
       "linking-relationships": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1262,14 +1178,8 @@
           "related_type": "FORM2",
           "related_type_label": "Thing 2",
           "relation_linked_vocabPair": [
-            [
-              "is_above",
-              "is below"
-            ],
-            [
-              "is related",
-              "is related to"
-            ]
+            ["is_above", "is below"],
+            ["is related", "is related to"]
           ],
           "relation_type": "faims-core::Linked",
           "required": true,
@@ -1290,9 +1200,7 @@
         "type-returned": "faims-core::Relationship"
       },
       "checkbox": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1330,9 +1238,7 @@
         "type-returned": "faims-core::String"
       },
       "uncertain-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1377,9 +1283,7 @@
         "type-returned": "faims-core::String"
       },
       "email": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Email",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1406,9 +1310,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-11": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1430,9 +1332,7 @@
         "type-returned": "faims-core::String"
       },
       "text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1455,9 +1355,7 @@
         "type-returned": "faims-core::String"
       },
       "text-field-prepop": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1480,9 +1378,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-12": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1504,9 +1400,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-13": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1528,9 +1422,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-14": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1552,9 +1444,7 @@
         "type-returned": "faims-core::String"
       },
       "parent-child-relationships": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1591,9 +1481,7 @@
         "type-returned": "faims-core::Relationship"
       },
       "new-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultiSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1640,9 +1528,7 @@
         "type-returned": "faims-core::Array"
       },
       "html-text-15": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1664,9 +1550,7 @@
         "type-returned": "faims-core::String"
       },
       "html-text-16": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RichText",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1688,9 +1572,7 @@
         "type-returned": "faims-core::String"
       },
       "number-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "NumberField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1718,9 +1600,7 @@
         "type-returned": "faims-core::Number"
       },
       "number-field-val": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "NumberField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1750,9 +1630,7 @@
         "type-returned": "faims-core::Number"
       },
       "qr-code-demonstration-button-mobile-device-only": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "QRCodeFormField",
         "component-namespace": "qrcode",
         "component-parameters": {
@@ -1833,11 +1711,7 @@
         "uidesign": "form"
       },
       "FORM1SECTION7": {
-        "fields": [
-          "html-text-2",
-          "html-text-6",
-          "html-text-9"
-        ],
+        "fields": ["html-text-2", "html-text-6", "html-text-9"],
         "label": "Views",
         "uidesign": "form"
       },
@@ -1870,10 +1744,7 @@
         "uidesign": "form"
       },
       "FORM2SECTION2": {
-        "fields": [
-          "parent-child-relationships",
-          "linking-relationships"
-        ],
+        "fields": ["parent-child-relationships", "linking-relationships"],
         "label": "Relationships",
         "uidesign": "form"
       }
@@ -1894,17 +1765,11 @@
       },
       "FORM2": {
         "label": "Thing 2",
-        "views": [
-          "FORM2SECTION1",
-          "FORM2SECTION2"
-        ],
+        "views": ["FORM2SECTION1", "FORM2SECTION2"],
         "hridField": "hridFORM2"
       }
     },
-    "visible_types": [
-      "FORM1",
-      "FORM2"
-    ],
+    "visible_types": ["FORM1", "FORM2"],
     "settings": {
       "showQrCodeButton": false
     },

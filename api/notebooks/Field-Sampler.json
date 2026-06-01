@@ -426,16 +426,11 @@
       "viewsets": {
         "Main": {
           "label": "Main",
-          "views": [
-            "Main-New-Section",
-            "Main-Section2"
-          ],
+          "views": ["Main-New-Section", "Main-Section2"],
           "hridField": "hridMain-New-Section"
         }
       },
-      "visible_types": [
-        "Main"
-      ],
+      "visible_types": ["Main"],
       "settings": {
         "showQrCodeButton": false
       },

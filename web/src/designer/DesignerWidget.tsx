@@ -252,7 +252,10 @@ export function DesignerWidget({
                 aria-label="close designer"
                 onClick={() => setCancelDialogOpen(true)}
                 size="small"
-                sx={{color: 'text.secondary', '&:hover': {color: 'text.primary'}}}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {color: 'text.primary'},
+                }}
               >
                 <CloseRoundedIcon />
               </IconButton>

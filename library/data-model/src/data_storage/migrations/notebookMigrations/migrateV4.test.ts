@@ -266,7 +266,9 @@ describe('migrateToV4 — choice fields', () => {
       {value: 'true', label: 'Yes'},
       {value: 'false', label: 'No'},
     ]);
-    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(false);
+    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(
+      false
+    );
     expect(out.initialValue).toBe('true');
     expect(out['component-parameters'].label).toBe('Agree?');
   });
@@ -330,7 +332,9 @@ describe('migrateToV4 — choice fields', () => {
     expect(out['component-namespace']).toBe('faims-custom');
     expect(out['component-name']).toBe('RadioGroup');
     expect(out['type-returned']).toBe('faims-core::String');
-    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(true);
+    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(
+      true
+    );
     expect(out['component-parameters'].ElementProps.options).toHaveLength(2);
     expect(out['component-parameters'].ElementProps.options[0]).toEqual({
       value: 'a',

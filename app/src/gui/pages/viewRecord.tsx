@@ -494,8 +494,7 @@ export const ViewRecordPage: React.FC = () => {
     );
   }
 
-  const formLabel =
-    uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
+  const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 

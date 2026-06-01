@@ -21,9 +21,7 @@ import type {
   ProjectsState,
   ProjectIdToProjectMap,
 } from './projectSlice';
-import {
-  notebookDefinitionFromLegacyPersistedProject,
-} from './helpers/notebookDefinition';
+import {notebookDefinitionFromLegacyPersistedProject} from './helpers/notebookDefinition';
 
 const emptyProjectsState: ProjectsState = {
   servers: {},

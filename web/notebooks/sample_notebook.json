@@ -14,9 +14,7 @@
           "label": "Take Photo"
         },
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -41,9 +39,7 @@
           "label": "Take GPS Point"
         },
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -100,9 +96,7 @@
           "label": "Feature Type"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -131,9 +125,7 @@
           "rows": 4
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -166,9 +158,7 @@
           "label": "Artefacts"
         },
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -201,9 +191,7 @@
           "label": "Measurements"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -276,9 +264,7 @@
           "label": "Dimension"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -307,9 +293,7 @@
           "numberType": "integer"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -366,9 +350,7 @@
           "label": "Material"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -393,9 +375,7 @@
           "label": "Take Photo"
         },
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -429,9 +409,7 @@
           "label": "ArtefactID"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -466,9 +444,7 @@
           "label": "ArtefactID"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -497,9 +473,7 @@
           "rows": 4
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -528,9 +502,7 @@
           "rows": 4
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -556,9 +528,7 @@
           "label": "FeatureIDincrementor"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -584,9 +554,7 @@
           "label": "ArtefactID_counter"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -620,9 +588,7 @@
           "label": "FeatureID"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -657,9 +623,7 @@
           "label": "FeatureID"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -681,9 +645,7 @@
           "content": "Artefact"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -720,9 +682,7 @@
           "label": "newfield44fdbc12"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -760,9 +720,7 @@
           "label": "hridFORM3"
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -791,9 +749,7 @@
           "rows": 4
         },
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation": {
             "include": true,
@@ -824,11 +780,7 @@
         "label": "SECTION1"
       },
       "FORM3SECTION1": {
-        "fields": [
-          "hridFORM3",
-          "newfield4bfc3c26",
-          "newfield0b21d3e2"
-        ],
+        "fields": ["hridFORM3", "newfield4bfc3c26", "newfield0b21d3e2"],
         "uidesign": "form",
         "label": "Dimension"
       },
@@ -847,32 +799,22 @@
     },
     "viewsets": {
       "FORM1": {
-        "views": [
-          "FORM1SECTION1"
-        ],
+        "views": ["FORM1SECTION1"],
         "label": "Feature",
         "hridField": "hridFORM1"
       },
       "FORM2": {
-        "views": [
-          "FORM2SECTION1"
-        ],
+        "views": ["FORM2SECTION1"],
         "label": "Artefact",
         "hridField": "hridFORM2"
       },
       "FORM3": {
-        "views": [
-          "FORM3SECTION1"
-        ],
+        "views": ["FORM3SECTION1"],
         "label": "Measurements",
         "hridField": "hridFORM3"
       }
     },
-    "visible_types": [
-      "FORM1",
-      "FORM2",
-      "FORM3"
-    ],
+    "visible_types": ["FORM1", "FORM2", "FORM3"],
     "settings": {
       "showQrCodeButton": false
     },

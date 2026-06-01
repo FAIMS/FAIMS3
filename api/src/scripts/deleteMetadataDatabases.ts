@@ -13,10 +13,12 @@ import {COUCHDB_INTERNAL_URL} from '../buildconfig';
 import {
   destroyCouchDatabase,
   listCouchDatabaseNames,
-  METADATA_DATABASE_NAME_PREFIX,
   verifyCouchDBConnection,
 } from '../couchdb';
 import {getAllProjectsDirectory} from '../couchdb/notebooks';
+
+/** Default Couch metadata database name prefix (`metadata-{projectId}`). */
+const METADATA_DATABASE_NAME_PREFIX = 'metadata-';
 
 export type MetadataDatabaseCandidate = {
   dbName: string;

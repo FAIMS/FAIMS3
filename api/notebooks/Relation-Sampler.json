@@ -158,14 +158,8 @@
             "related_type_label": "Factory",
             "name": "Factories",
             "relation_linked_vocabPair": [
-              [
-                "exports to",
-                "imports from"
-              ],
-              [
-                "supplies",
-                "is supplied by"
-              ]
+              ["exports to", "imports from"],
+              ["supplies", "is supplied by"]
             ]
           },
           "initialValue": "",
@@ -186,41 +180,26 @@
       "views": {
         "Form-Section": {
           "label": "Section",
-          "fields": [
-            "hridForm-Section",
-            "Name",
-            "Widgets",
-            "Factories"
-          ]
+          "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]
         },
         "Widget-Main": {
           "label": "Main",
-          "fields": [
-            "hridWidget-Main",
-            "Name-2"
-          ]
+          "fields": ["hridWidget-Main", "Name-2"]
         }
       },
       "viewsets": {
         "Form": {
           "label": "Factory",
-          "views": [
-            "Form-Section"
-          ],
+          "views": ["Form-Section"],
           "hridField": "hridForm-Section"
         },
         "Widget": {
           "label": "Widget",
-          "views": [
-            "Widget-Main"
-          ],
+          "views": ["Widget-Main"],
           "hridField": "hridWidget-Main"
         }
       },
-      "visible_types": [
-        "Form",
-        "Widget"
-      ],
+      "visible_types": ["Form", "Widget"],
       "settings": {
         "showQrCodeButton": false
       },

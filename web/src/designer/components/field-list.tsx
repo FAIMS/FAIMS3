@@ -192,10 +192,15 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       const {active, over} = event;
       if (!over || active.id === over.id) return;
 
-      const sourceIndex = fView.fields.findIndex(fieldName => fieldName === active.id);
-      const targetIndex = fView.fields.findIndex(fieldName => fieldName === over.id);
+      const sourceIndex = fView.fields.findIndex(
+        fieldName => fieldName === active.id
+      );
+      const targetIndex = fView.fields.findIndex(
+        fieldName => fieldName === over.id
+      );
 
-      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex)
+        return;
 
       dispatch(fieldReordered({viewId, sourceIndex, targetIndex}));
     },
@@ -259,7 +264,12 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           textAlign: 'left',
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.75}
+          flexWrap="wrap"
+        >
           <HeadingWithInfo
             title="Visible fields"
             variant="subtitle1"
@@ -281,7 +291,9 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             variant="text"
             size="small"
             onClick={() => setIsExpanded(allOpen)}
-            startIcon={<ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />}
+            startIcon={
+              <ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />
+            }
             sx={{
               ...designerControlLabelSx,
               minWidth: 'auto',
@@ -355,7 +367,12 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       </DndContext>
 
       <Box mt={2}>
-        <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.75}
+          flexWrap="wrap"
+        >
           <HeadingWithInfo
             title="Hidden fields"
             variant="subtitle1"
@@ -376,7 +393,9 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             variant="text"
             size="small"
             onClick={() => setIsExpanded(allOpen)}
-            startIcon={<ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />}
+            startIcon={
+              <ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />
+            }
             sx={{
               ...designerControlLabelSx,
               minWidth: 'auto',

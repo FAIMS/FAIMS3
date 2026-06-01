@@ -54,7 +54,10 @@ export type FieldDependencyReference = {
 
 const buildFieldLocationMaps = (allViews: ViewMap, viewsets: ViewSetMap) => {
   const sectionToForm = new Map<string, {formId: string; formLabel: string}>();
-  const fieldToSection = new Map<string, {sectionId: string; sectionLabel: string}>();
+  const fieldToSection = new Map<
+    string,
+    {sectionId: string; sectionLabel: string}
+  >();
 
   for (const [formId, viewset] of Object.entries(viewsets)) {
     for (const sectionId of viewset.views) {
