@@ -18,7 +18,7 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {CheckCircleOutlined} from '@mui/icons-material';
+import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import {Alert, Box, Button, Paper, Typography, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
