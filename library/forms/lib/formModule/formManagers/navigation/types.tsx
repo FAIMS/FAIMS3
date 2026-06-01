@@ -119,6 +119,17 @@ export interface NavigationButtonConfig {
   icon: ReactNode;
   /** Visual variant */
   variant: ButtonVariant;
+  /**
+   * When true, clicking this button should run through the "finish record"
+   * warning guard — the dialog that checks for missing required fields and
+   * validation errors before allowing the record to close.
+   *
+   * Set this at button construction time (in useNavigationLogic) so that
+   * downstream consumers don't have to string-match on `id` to recognise
+   * finish actions. Renaming an id or adding a new finish variant then
+   * just means flagging it here.
+   */
+  requiresFinishGuard?: boolean;
 }
 
 /**
