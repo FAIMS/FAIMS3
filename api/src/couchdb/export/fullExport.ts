@@ -87,6 +87,19 @@ export const streamFullExport = async ({
     // Create the archive
     const archive = createConfiguredArchive(res);
 
+    // Abort the archive if the client disconnects mid-download.  Without this,
+    // open CouchDB source streams are left dangling, exhausting the connection
+    // pool and causing all subsequent download requests to hang as well.
+    const onResClose = () => {
+      console.log('[FULL] Client disconnected mid-export, aborting archive');
+      // Emitting an archive error triggers archiveErrorSignal inside
+      // appendAttachmentsToArchive, which destroys open CouchDB streams and
+      // unblocks the concurrency loop.
+      archive.emit('error', new Error('Client disconnected mid-download'));
+      archive.abort();
+    };
+    (res as NodeJS.EventEmitter).once('close', onResClose);
+
     // Get project UI spec to enumerate views
     const uiSpec = await getProjectUIModel(projectId);
     const viewIds = Object.keys(uiSpec.viewsets);
@@ -354,6 +367,9 @@ export const streamFullExport = async ({
     // =========================================================================
     // Finalize
     // =========================================================================
+    // Remove the disconnect listener before finalizing — from this point the
+    // archive handles its own write errors internally.
+    (res as NodeJS.EventEmitter).removeListener('close', onResClose);
     console.log('[FULL] Finalizing archive...');
     await archive.finalize();
 
