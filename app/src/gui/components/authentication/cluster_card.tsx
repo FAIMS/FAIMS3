@@ -189,7 +189,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                     },
                   }}
                 >
-                  Add New User
+                  Add another account
                 </Button>
               </Box>
               <Divider sx={{my: 2}} />
