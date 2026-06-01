@@ -1,8 +1,38 @@
 # Metadata overhaul — deployment and migration guide
 
-This guide is for operators upgrading an existing FAIMS3 deployment to the branch that **inlines notebook definitions** on project/template Couch documents (projects DB **v4**, templates DB **v5**) and retires per-project **`metadata-{projectId}`** databases.
+This guide is for operators upgrading an existing FAIMS3 deployment to the release that **inlines notebook definitions** on project/template Couch documents (projects DB **v4**, templates DB **v5**) and retires per-project **`metadata-{projectId}`** databases.
 
 For the target data model, see [Notebook definition](./NotebookDefinition.md). For schema-version mechanics, see [Notebook migrations](./NotebookMigrations.md) and [Couch migrations](./CouchMigrations.md).
+
+## Which versions does this apply to?
+
+| | |
+| --- | --- |
+| **From** | Any deployment on **v1.5.2 or earlier** — i.e. projects DB **≤ v3** and templates DB **≤ v4**. |
+| **To** | The first release containing the metadata overhaul (the **metadata-overhaul** release; **v1.6.0**). |
+
+If your deployment is already on a release whose projects DB is at **v4** and templates DB is at **v5**, this migration has already run and you can skip it. You can confirm the schema versions in the per-DB migration documents (see [Couch migrations](./CouchMigrations.md)) or in `DB_TARGET_VERSIONS` in `library/data-model/src/data_storage/migrations/migrations.ts`.
+
+## Background — the model this replaces
+
+Knowing the previous shape helps when validating the migration and reading older code/data.
+
+**Before this change (projects DB ≤ v3, templates DB ≤ v4):**
+
+- Each survey/project had its **own dedicated Couch database** named `metadata-{projectId}`, separate from its `data-{projectId}` records database.
+- That metadata DB held the notebook design split across multiple documents: a single **`ui-specification`** document (encoded form/view spec) plus one **`project-metadata-{key}`** document per metadata key (name, description, lead institution, etc.).
+- The **project document** in the `projects` DB only *referenced* that database via a **`metadataDb`** pointer (historically `metadata_db`); it did **not** contain the notebook definition itself.
+- **Templates** stored their design differently again — as two fields on the template document: a `ui-specification` object and a loosely-typed `metadata` object.
+
+**After this change (projects DB v4, templates DB v5):**
+
+- The whole notebook definition (decoded `uiSpec` + typed `metadata`) is **inlined** into a single **`uiSpecification`** object on the project/template document.
+- The `metadataDb` pointer is dropped, the split `project-metadata-*` / `ui-specification` docs are merged and normalised to the current notebook schema, and the per-project **`metadata-{projectId}`** databases are retired (deleted in step 4).
+- Projects/templates gain root-level audit fields (`createdBy`, `createdAt`, `updatedAt`) and an optional root `description`.
+
+This consolidation is what the two migration layers below carry out.
+
+---
 
 There are **two migration layers** — run both in order:
 
@@ -17,7 +47,16 @@ There are **two migration layers** — run both in order:
 
 Attempt to coordinate step 1/2 below.
 
-1. **Deploy Conductor (API)** and **Control Centre (web)** from this branch together. The web designer and JSON upload paths expect the new API routes (`PUT …/uiSpecification`, partial `PUT …/:id` for name/description).
+**Note** There is a risk of incompatibilities if the app and API release are not synchronised. There are various breaking changes
+
+- notebook listing API shapes
+- notebook listing API field names (e.g. uiSpecification instead of 'ui-specification')
+- field name changes and deprecations
+- encoded notebook version changes (`fviews` vs `views`)
+
+The app behaviour is likely to be unstable or completely broken when the app is on v1.5.2 or prior while the backend is ahead, and vice versa.
+
+1. **Deploy Conductor (API)** and **Control Centre (web)** together. The web designer and JSON upload paths expect the new API routes (`PUT …/uiSpecification`, partial `PUT …/:id` for name/description).
 2. **Release mobile app builds** that include this branch (or newer).
 3. Confirm environment for optional notebook re-migration on API boot (defaults **on**):
 
