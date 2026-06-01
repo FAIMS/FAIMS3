@@ -7,6 +7,7 @@ packages:
   - library/forms
   - tests
   - infrastructure/aws-cdk
+  - e2e
 onlyBuiltDependencies:
   - '@scarf/scarf'
   - '@swc/core'
