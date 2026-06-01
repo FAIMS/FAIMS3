@@ -128,6 +128,8 @@ function MapWrapper(props: MapProps) {
   >(undefined);
   const mapRef = useRef<Map | undefined>(undefined);
 
+  const drawRef = useRef<Draw | null>(null);
+
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
@@ -160,6 +162,8 @@ function MapWrapper(props: MapProps) {
         source: source,
         type: props.featureType || 'Point',
       });
+      // Expose the Draw to handleClose so Clear can abort an in-progress sketch.
+      drawRef.current = draw;
 
       const modify = new Modify({source: source});
 
@@ -208,6 +212,8 @@ function MapWrapper(props: MapProps) {
 
     if (action === 'clear') {
       setHasDrawnFeatures(false);
+
+      drawRef.current?.abortDrawing();
       source?.clear();
       return;
     }
