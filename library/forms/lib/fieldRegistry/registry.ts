@@ -1,6 +1,7 @@
 import {FullFieldProps} from '../formModule/types';
 import {addressFieldSpec} from './fields/AddressField';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
+import {audioRecorderFieldSpec} from './fields/AudioRecorder';
 import {checkboxFieldSpec} from './fields/CheckboxField';
 import {
   datePickerFieldSpec,
@@ -47,6 +48,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   percentageSliderFieldSpec,
   numberFieldSpec,
   addressFieldSpec,
+  audioRecorderFieldSpec,
 ];
 
 /**
