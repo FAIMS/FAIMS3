@@ -1,7 +1,7 @@
 import type {Field} from '@/components/form';
 import {
   ROOT_DESCRIPTION_MAX_LENGTH,
-  RootDescriptionInputSchema,
+  PersistedRootDescriptionSchema,
 } from '@faims3/data-model';
 
 /** Optional description field for create/edit survey or template forms. */
@@ -15,7 +15,9 @@ export function optionalRootDescriptionField(options?: {
     description:
       options?.helperText ??
       `Optional (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
-    schema: RootDescriptionInputSchema,
+    // Optional schema: an untouched field is `undefined`, which must validate
+    // so the description is not treated as required.
+    schema: PersistedRootDescriptionSchema,
     maxLength: ROOT_DESCRIPTION_MAX_LENGTH,
   };
 }
