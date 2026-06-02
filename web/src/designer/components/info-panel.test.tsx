@@ -49,7 +49,7 @@ describe('Info Panel', () => {
       </WithProviders>
     );
 
-    expect(screen.getByText('General Information')).toBeDefined();
+    expect(screen.getByText('Design information')).toBeDefined();
     //const name = screen.getByTestId('name').querySelector('input');
     // TODO: this is unreliable - fails on first run but passes on repeat...
     // if (name) {
@@ -57,7 +57,7 @@ describe('Info Panel', () => {
     //   expect(store.getState().notebook.metadata.name).toBe('Different Name');
     // }
     // check some content
-    screen.getByText('Enable QR Code Search of Records');
+    screen.getByText('Enable QR code search of records');
     // TODO: fix this test
     // // try adding some metadata
     // act(() => {

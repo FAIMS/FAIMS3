@@ -25,26 +25,30 @@ PouchDB.plugin(PouchDBFind);
 import {
   Action,
   addProjectRole,
-  EncodedProjectUIModel,
   removeProjectRole,
   resourceRoles,
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
-import * as fs from 'fs';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
-  getEncodedNotebookUISpec,
-  getNotebookMetadata,
+  getProjectUIModel,
+  getProjectById,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  updateNotebook,
+  updateProjectMetadata,
+  updateProjectUiSpecification,
   validateNotebookID,
 } from '../src/couchdb/notebooks';
+import {
+  createNotebookFromSampleFile,
+  EMPTY_UI_SPECIFICATION,
+  readSampleNotebookFile,
+} from './sampleNotebook';
 import {
   createUser,
   getExpressUserFromEmailOrUserId,
@@ -53,13 +57,6 @@ import {
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
 import {resetDatabases} from './mocks';
-
-const uispec: EncodedProjectUIModel = {
-  fields: [],
-  fviews: {},
-  viewsets: {},
-  visible_types: [],
-};
 
 const username = 'bobalooba';
 let bobalooba: Express.User;
@@ -98,8 +95,18 @@ describe('notebook api', () => {
 
   it('project roles', async () => {
     // make some notebooks
-    const nb1 = await createNotebook('NB1', uispec, {});
-    const nb2 = await createNotebook('NB2', uispec, {});
+    const nb1 = await createNotebook({
+      projectName: 'NB1',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    const nb2 = await createNotebook({
+      projectName: 'NB2',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
 
     if (nb1 && nb2) {
       // give user access to two of them
@@ -208,10 +215,30 @@ describe('notebook api', () => {
 
   it('getNotebooks', async () => {
     // make some notebooks
-    const nb1 = await createNotebook('NB1', uispec, {});
-    const nb2 = await createNotebook('NB2', uispec, {});
-    const nb3 = await createNotebook('NB3', uispec, {});
-    const nb4 = await createNotebook('NB4', uispec, {});
+    const nb1 = await createNotebook({
+      projectName: 'NB1',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    const nb2 = await createNotebook({
+      projectName: 'NB2',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    const nb3 = await createNotebook({
+      projectName: 'NB3',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
+    const nb4 = await createNotebook({
+      projectName: 'NB4',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
 
     if (nb1 && nb2 && nb3 && nb4) {
       // give user access to two of them
@@ -232,6 +259,9 @@ describe('notebook api', () => {
 
       const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);
+      for (const notebook of notebooks) {
+        expect(notebook).to.not.have.property('uiSpecification');
+      }
     } else {
       throw new Error('could not make test notebooks');
     }
@@ -241,17 +271,7 @@ describe('notebook api', () => {
     await initialiseDbAndKeys({});
     const user = await getExpressUserFromEmailOrUserId('admin');
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const projectID = await createNotebook(
-      ' Test   Nõtebõõk',
-      uiSpec,
-      metadata
-    );
+    const projectID = await createNotebookFromSampleFile(' Test   Nõtebõõk');
 
     expect(projectID).not.to.equal(undefined);
     expect(user).not.to.be.null;
@@ -264,38 +284,36 @@ describe('notebook api', () => {
     }
   });
 
-  it('getNotebookMetadata', async () => {
+  it('getProject stores design metadata on uiSpecification', async () => {
     await initialiseDbAndKeys({});
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+    const sample = readSampleNotebookFile();
     const name = 'Test Notebook';
-    const projectID = await createNotebook(name, uiSpec, metadata);
+    const projectID = await createNotebook({
+      projectName: name,
+      uiSpecification: sample.uiSpecification,
+      description: sample.description,
+      createdBy: 'admin',
+    });
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrievedMetadata = await getNotebookMetadata(projectID);
-
-      expect(retrievedMetadata).not.to.be.null;
-      if (retrievedMetadata) {
-        expect(retrievedMetadata['lead_institution']).to.equal(
-          metadata['lead_institution']
-        );
-        expect(retrievedMetadata['name']).to.equal(name);
-      }
+      const project = await getProjectById(projectID);
+      expect(
+        project.uiSpecification.metadata.information.leadInstitution
+      ).to.equal(sample.uiSpecification.metadata.information.leadInstitution);
+      expect(project.name).to.equal(name);
     }
   });
 
   it('can validate a notebook id', async () => {
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+    const sample = readSampleNotebookFile();
     const name = 'Test Notebook';
-    const projectID = await createNotebook(name, uiSpec, metadata);
+    const projectID = await createNotebook({
+      projectName: name,
+      uiSpecification: sample.uiSpecification,
+      description: sample.description,
+      createdBy: 'admin',
+    });
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
       const valid = await validateNotebookID(projectID);
@@ -309,22 +327,25 @@ describe('notebook api', () => {
   it('getNotebookUISpec', async () => {
     await initialiseDbAndKeys({});
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+    const sample = readSampleNotebookFile();
     const name = 'Test Notebook';
-    const projectID = await createNotebook(name, uiSpec, metadata);
+    const projectID = await createNotebook({
+      projectName: name,
+      uiSpecification: sample.uiSpecification,
+      description: sample.description,
+      createdBy: 'admin',
+    });
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getEncodedNotebookUISpec(projectID);
+      const retrieved = await getProjectUIModel(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
-        expect(retrieved['fviews'].length).to.equal(uiSpec.fviews.length);
-        expect(retrieved['fields']).not.to.equal(undefined);
+        expect(Object.keys(retrieved.views).length).to.equal(
+          Object.keys(sample.uiSpecification.uiSpec.views).length
+        );
+        expect(retrieved.fields).not.to.equal(undefined);
       }
     }
   });
@@ -332,13 +353,14 @@ describe('notebook api', () => {
   it('get notebook roles', async () => {
     await initialiseDbAndKeys({});
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+    const sample = readSampleNotebookFile();
     const name = 'Test Notebook';
-    const projectID = await createNotebook(name, uiSpec, metadata);
+    const projectID = await createNotebook({
+      projectName: name,
+      uiSpecification: sample.uiSpecification,
+      description: sample.description,
+      createdBy: 'admin',
+    });
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
@@ -347,34 +369,22 @@ describe('notebook api', () => {
     }
   });
 
-  it('updateNotebook', async () => {
+  it('updateProjectUiSpecification and metadata', async () => {
     await initialiseDbAndKeys({});
     const user = await getExpressUserFromEmailOrUserId('admin');
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+    const sample = readSampleNotebookFile();
+    const uiSpecification = structuredClone(sample.uiSpecification);
 
-    const projectID = await createNotebook(
-      ' Test   Nõtebõõk',
-      uiSpec,
-      metadata
-    );
+    const projectID = await createNotebookFromSampleFile(' Test   Nõtebõõk');
 
     expect(projectID).not.to.equal(undefined);
     expect(user).not.to.be.null;
 
     if (projectID && user) {
-      // now update it with a minor change
+      uiSpecification.metadata.information.projectLeadLabel = 'Bob Bobalooba';
+      uiSpecification.uiSpec.views['FORM1SECTION1'].label = 'Updated Label';
 
-      metadata['name'] = 'Updated Test Notebook';
-      metadata['project_lead'] = 'Bob Bobalooba';
-
-      uiSpec.fviews['FORM1SECTION1']['label'] = 'Updated Label';
-
-      // add a new autoincrementer field
       const newField = {
         'component-namespace': 'faims-custom',
         'component-name': 'BasicAutoIncrementer',
@@ -400,29 +410,29 @@ describe('notebook api', () => {
         },
       };
 
-      uiSpec.fields['newincrementor'] = newField;
-      uiSpec.fviews['FORM1SECTION1']['fields'].push('newincrementor');
+      uiSpecification.uiSpec.fields['newincrementor'] = newField;
+      uiSpecification.uiSpec.views['FORM1SECTION1'].fields.push(
+        'newincrementor'
+      );
 
-      // now update the notebook
-      const newProjectID = await updateNotebook(projectID, uiSpec, metadata);
-
-      expect(newProjectID).to.equal(projectID);
+      await updateProjectUiSpecification(projectID, uiSpecification);
+      await updateProjectMetadata(projectID, {name: 'Updated Test Notebook'});
 
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
       const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const newUISpec = await getEncodedNotebookUISpec(projectID);
+      const newUISpec = await getProjectUIModel(projectID);
       if (newUISpec) {
-        expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
+        expect(newUISpec.views['FORM1SECTION1'].label).to.equal(
           'Updated Label'
         );
       }
-      const newMetadata = await getNotebookMetadata(projectID);
-      if (newMetadata) {
-        expect(newMetadata['name']).to.equal('Updated Test Notebook');
-        expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
-      }
+      const project = await getProjectById(projectID);
+      expect(project.name).to.equal('Updated Test Notebook');
+      expect(
+        project.uiSpecification.metadata.information.projectLeadLabel
+      ).to.equal('Bob Bobalooba');
     }
   });
 });

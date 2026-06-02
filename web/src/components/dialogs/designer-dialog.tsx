@@ -5,6 +5,8 @@ import type {NotebookWithHistory} from '../../designer/state/initial';
 interface DesignerDialogProps {
   open: boolean;
   notebook?: NotebookWithHistory;
+  /** Survey/template display name for the exported JSON filename. */
+  exportBaseName?: string;
   onClose: (file?: File) => void;
   animationDuration?: number;
   animationScale?: number;
@@ -13,6 +15,7 @@ interface DesignerDialogProps {
 export function DesignerDialog({
   open,
   notebook,
+  exportBaseName,
   onClose,
   animationDuration = 300,
   animationScale = 0.95,
@@ -93,7 +96,11 @@ export function DesignerDialog({
           transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
         }}
       >
-        <DesignerWidget notebook={sessionNotebook} onClose={handleWidgetClose} />
+        <DesignerWidget
+          notebook={sessionNotebook}
+          exportBaseName={exportBaseName}
+          onClose={handleWidgetClose}
+        />
       </div>
     </div>
   );

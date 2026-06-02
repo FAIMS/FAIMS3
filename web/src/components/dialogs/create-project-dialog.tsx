@@ -49,9 +49,9 @@ export const CreateProjectDialog = ({
             {specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
           </DialogTitle>
           <DialogDescription>
-            Create a new {NOTEBOOK_NAME_CAPITALIZED} by selecting an existing
-            template, uploading a JSON {NOTEBOOK_NAME} file, or leaving both
-            blank to use a blank notebook you can edit.
+            Create a new {NOTEBOOK_NAME_CAPITALIZED} with a name. Start from an
+            existing template, upload a JSON {NOTEBOOK_NAME} design file, or
+            leave blank to start from scratch.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectForm

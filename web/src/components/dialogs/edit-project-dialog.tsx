@@ -35,8 +35,9 @@ export const EditProjectDialog = ({onSuccess}: {onSuccess: () => void}) => {
         <DialogHeader>
           <DialogTitle>Replace Project File</DialogTitle>
           <DialogDescription>
-            Upload a new {NOTEBOOK_NAME} file to replace the current one. The
-            new file must be a valid JSON file.
+            Upload a JSON file with top-level metadata and uiSpec (same shape as
+            Download JSON). This replaces the {NOTEBOOK_NAME} design only; it
+            does not change title, description, or team.
           </DialogDescription>
         </DialogHeader>
         <UpdateProjectForm setDialogOpen={setOpen} onSuccess={onSuccess} />

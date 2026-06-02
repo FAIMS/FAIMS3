@@ -1041,7 +1041,7 @@ Content-Type: application/json
         }
       }
     },
-    "fviews": {
+    "views": {
       "FORM1SECTION1": {
         "fields": [
           "hridFORM1",

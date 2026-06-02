@@ -65,6 +65,7 @@ import {
 } from '../middleware';
 import patch from '../utils/patchExpressAsync';
 import {validateLongLivedToken} from '../couchdb/longLivedTokens';
+import {nowIso} from '../time';
 import {hashChallengeCode} from '../utils';
 
 // TODO: configure this directory
@@ -274,7 +275,7 @@ api.post(
     // Log the token usage for security auditing
     if (!RUNNING_UNDER_TEST) {
       console.log(
-        `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${new Date().toISOString()}`
+        `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${nowIso()}`
       );
     }
 
@@ -352,7 +353,7 @@ api.post(
             <li><strong>From Address:</strong> ${EMAIL_CONFIG.fromEmail}</li>
             <li><strong>From Name:</strong> ${EMAIL_CONFIG.fromName}</li>
             <li><strong>Test Address:</strong> ${TEST_EMAIL_ADDRESS}</li>
-            <li><strong>Time Generated:</strong> ${new Date().toISOString()}</li>
+            <li><strong>Time Generated:</strong> ${nowIso()}</li>
             <li><strong>Requested by:</strong> ${req.user._id}</li>
           </ul>
           <p>If you received this email, the email service is configured correctly.</p>
@@ -369,7 +370,7 @@ Service Information:
 - From Address: ${EMAIL_CONFIG.fromEmail}
 - From Name: ${EMAIL_CONFIG.fromName}
 - Test Address: ${TEST_EMAIL_ADDRESS}
-- Time Generated: ${new Date().toISOString()}
+- Time Generated: ${nowIso()}
 - Requested by: ${req.user._id}
 
 If you received this email, the email service is configured correctly.

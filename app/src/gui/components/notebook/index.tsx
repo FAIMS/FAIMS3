@@ -196,10 +196,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const viewsets = uiSpecification.viewsets;
 
   const templateId = useAppSelector(
-    state =>
-      selectProjectById(state, project.projectId)?.metadata?.['template_id'] as
-        | string
-        | undefined
+    state => selectProjectById(state, project.projectId)?.templateId
   );
 
   /**
@@ -374,14 +371,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         </TabPanel>
 
         <TabPanel value={tabIndex} index={2} id={'map'}>
-          {uiSpecification !== null && (
-            <OverviewMap
-              serverId={project.serverId}
-              records={records}
-              project_id={project.projectId}
-              uiSpec={uiSpecification}
-            />
-          )}
+          <OverviewMap
+            serverId={project.serverId}
+            records={records}
+            project_id={project.projectId}
+            uiSpec={uiSpecification}
+          />
         </TabPanel>
 
         <TabPanel value={tabIndex} index={3} id={'details'}>

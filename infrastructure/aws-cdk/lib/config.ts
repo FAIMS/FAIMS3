@@ -437,7 +437,7 @@ const ConductorConfigSchema = z.object({
   localhostWhitelist: z.boolean().default(false),
   /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
    * migrations on startup. */
-  migrateNotebooksOnStartup: z.boolean().default(false),
+  migrateNotebooksOnStartup: z.boolean().default(true),
 });
 
 const WebConfigSchema = z.object({

@@ -19,7 +19,9 @@ This module contains the embedded notebook designer used by the web app.
 - `components/`
   - React UI for form/section/field editing, conditions, and dialogs.
 - `state/`
-  - Core state types (`initial.ts`), hooks (`hooks.ts`), metadata/modified reducers, and helper utilities.
+  - Core state types (`initial.ts`): Redux holds a typed `NotebookDefinition` (`uiSpec` + `metadata.information` + `metadata.custom`), hooks, metadata/modified reducers, and helper utilities.
+- `integration/legacyNotebook.ts`
+  - Adapters for legacy `{ metadata, 'ui-specification' }` wire JSON on load/save boundaries.
 - `store/`
   - Canonical ui-spec slice reducers under `store/slices/uiSpec/*`
   - undo config and selector utilities.

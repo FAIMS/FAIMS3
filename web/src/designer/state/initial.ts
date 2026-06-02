@@ -13,20 +13,27 @@
 // limitations under the License.
 
 /**
- * @file Core Redux state types for the notebook designer: metadata, UI specification,
- * field definitions, and the undo-wrapped notebook shape used by the store.
+ * @file Core Redux state types for the notebook designer: typed metadata partition,
+ * UI specification (fields/views/viewsets), and the undo-wrapped notebook shape.
  */
 
 // eslint-disable-next-line n/no-extraneous-import
 import {StateWithHistory} from 'redux-undo';
+import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  type NotebookDefinition,
+  type NotebookInformation,
+  type NotebookMetadata,
+  type NotebookSettings,
+} from '@faims3/data-model';
 import {ConditionType} from '../types/condition';
 
-/** Top-level notebook metadata bag (name, descriptions, access, custom keys). */
-export type NotebookMetadata = PropertyMap;
-
-/** Arbitrary string-keyed metadata values (serialised with the notebook). */
-export type PropertyMap = {
-  [key: string]: unknown;
+export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
+export type {
+  NotebookDefinition,
+  NotebookInformation,
+  NotebookMetadata,
+  NotebookSettings,
 };
 
 /** Merged props for FAIMS form components (`component-parameters` in notebook JSON). */
@@ -137,10 +144,10 @@ export type FieldType = {
   };
 };
 
-/** Editable notebook structure: fields map, sections (`fviews`), forms (`viewsets`), tab order. */
+/** Editable UI spec body: fields, sections (`views`), forms (`viewsets`), settings, schema version. */
 export type NotebookUISpec = {
   fields: {[key: string]: FieldType};
-  fviews: {
+  views: {
     [key: string]: {
       fields: string[];
       description?: string;
@@ -153,18 +160,14 @@ export type NotebookUISpec = {
     [key: string]: {
       views: string[];
       label: string;
-      // New optional settings
       summary_fields?: string[];
       layout?: 'inline' | 'tabs';
       hridField?: string;
     };
   };
   visible_types: string[];
-};
-
-/** Legacy shape (unused in current store; `modified` is a top-level boolean). */
-export type NotebookModified = {
-  flag: boolean;
+  settings: NotebookSettings;
+  schemaVersion: string;
 };
 
 /** Root designer store: notebook slice + dirty flag for save prompts. */
@@ -173,40 +176,42 @@ export type AppState = {
   notebook: NotebookWithHistory;
 };
 
-/** Flat notebook as persisted/exported (no redux-undo wrapper). */
-export type Notebook = {
-  metadata: NotebookMetadata;
-  'ui-specification': NotebookUISpec;
-};
+/** Flat notebook definition as persisted via PUT /uiSpecification. */
+export type Notebook = NotebookDefinition;
 
-/** Notebook with `ui-specification` wrapped for undo/redo in the designer. */
+/** Notebook with `uiSpec` wrapped for undo/redo in the designer. */
 export type NotebookWithHistory = {
   metadata: NotebookMetadata;
-  'ui-specification': StateWithHistory<NotebookUISpec>;
+  uiSpec: StateWithHistory<NotebookUISpec>;
 };
 
-/** Default empty designer state — an empty notebook (blank metadata and UI spec, empty undo stacks). */
+export const defaultNotebookInformation = (): NotebookInformation => ({
+  notebookVersion: '1.0',
+  purposeMarkdown: '',
+  projectLeadLabel: '',
+  leadInstitution: '',
+});
+
+export const defaultNotebookMetadata = (): NotebookMetadata => ({
+  information: defaultNotebookInformation(),
+});
+
+export const defaultNotebookUISpec = (): NotebookUISpec => ({
+  fields: {},
+  views: {},
+  viewsets: {},
+  visible_types: [],
+  settings: {showQrCodeButton: false},
+  schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+});
+
+/** Default empty designer state. */
 export const initialState: AppState = {
   modified: false,
   notebook: {
-    metadata: {
-      notebook_version: '1.0',
-      schema_version: '3.0',
-      name: '',
-      filenames: [],
-      lead_institution: '',
-      showQRCodeButton: false,
-      pre_description: '',
-      project_lead: '',
-      sections: {},
-    },
-    'ui-specification': {
-      present: {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: [],
-      },
+    metadata: defaultNotebookMetadata(),
+    uiSpec: {
+      present: defaultNotebookUISpec(),
       past: [],
       future: [],
     },

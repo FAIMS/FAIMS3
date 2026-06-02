@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import {Box, FormHelperText, TextField} from '@mui/material';
-import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
@@ -25,7 +25,7 @@ export const PercentageSliderFieldEditor = ({
   fieldName: string;
 }) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 

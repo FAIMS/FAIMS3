@@ -21,7 +21,7 @@ import type {AppState} from '../state/initial';
 /** Root selector (identity); useful for typed hooks/tests. */
 export const selectDesignerState = (state: AppState) => state;
 
-/** Notebook slice: metadata + undoable `ui-specification`. */
+/** Notebook slice: metadata + undoable `uiSpec`. */
 export const selectNotebookState = (state: AppState) => state.notebook;
 
 /** Notebook metadata object. */
@@ -29,20 +29,19 @@ export const selectNotebookMetadata = (state: AppState) =>
   state.notebook.metadata;
 
 /** Full redux-undo wrapper `{ present, past, future }` for the UI spec. */
-export const selectNotebookHistory = (state: AppState) =>
-  state.notebook['ui-specification'];
+export const selectNotebookHistory = (state: AppState) => state.notebook.uiSpec;
 
 /** Current editable UI specification (not historical states). */
 export const selectPresentUiSpec = (state: AppState) =>
-  state.notebook['ui-specification'].present;
+  state.notebook.uiSpec.present;
 
 /** Field id → field spec map. */
 export const selectUiFields = (state: AppState) =>
   selectPresentUiSpec(state).fields;
 
-/** Section id → section definition map (`fviews`). */
+/** Section id → section definition map (`views`). */
 export const selectUiViews = (state: AppState) =>
-  selectPresentUiSpec(state).fviews;
+  selectPresentUiSpec(state).views;
 
 /** Form id → viewset map. */
 export const selectUiViewSets = (state: AppState) =>

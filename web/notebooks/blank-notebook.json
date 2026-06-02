@@ -1,19 +1,20 @@
 {
-  "ui-specification": {
+  "uiSpec": {
     "fields": {},
-    "fviews": {},
+    "views": {},
     "viewsets": {},
-    "visible_types": []
+    "visible_types": [],
+    "settings": {
+      "showQrCodeButton": false
+    },
+    "schemaVersion": "5.0"
   },
   "metadata": {
-    "filenames": [],
-    "lead_institution": "",
-    "meta": {},
-    "name": "New Notebook",
-    "pre_description": "",
-    "project_id": "1747740593269-blank",
-    "project_lead": "",
-    "project_status": "New",
-    "sections": {}
+    "information": {
+      "notebookVersion": "1.0",
+      "purposeMarkdown": "",
+      "projectLeadLabel": "",
+      "leadInstitution": ""
+    }
   }
 }

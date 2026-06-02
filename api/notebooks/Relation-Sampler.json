@@ -1,236 +1,217 @@
 {
-  "metadata": {
-    "notebook_version": "1.0",
-    "schema_version": "1.0",
-    "name": "Relation Sampler",
-    "accesses": ["admin", "moderator", "team"],
-    "filenames": [],
-    "ispublic": false,
-    "isrequest": false,
-    "lead_institution": "Steve's House",
-    "showQRCodeButton": false,
-    "pre_description": "Just a sample notebook to test a new field.",
-    "project_lead": "Steve",
-    "project_status": "New"
-  },
-  "ui-specification": {
-    "fields": {
-      "Name": {
-        "component-namespace": "formik-material-ui",
-        "component-name": "TextField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "fullWidth": true,
-          "helperText": "Helper Text",
-          "variant": "outlined",
-          "required": false,
-          "InputProps": {
-            "type": "text"
+  "name": "Relation Sampler",
+  "description": "Just a sample notebook to test a new field.",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {
+        "Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Factory Name",
+            "name": "Name",
+            "helperText": "Helper Text",
+            "required": false
           },
-          "SelectProps": {},
-          "name": "Name",
-          "label": "Factory Name"
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false,
+          "displayParent": false
         },
-        "validationSchema": [["yup.string"]],
-        "initialValue": "",
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
+        "hridForm-Section": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "hridField",
+            "fullWidth": true,
+            "name": "hridForm-Section",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Name}}",
+            "InputProps": {
+              "type": "text"
+            },
+            "InputLabelProps": {
+              "label": "hridField"
+            }
           },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": true,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": true,
+              "label": "uncertainty"
+            }
           }
         },
-        "condition": null,
-        "persistent": false,
-        "displayParent": false
-      },
-      "hridForm-Section": {
-        "component-namespace": "faims-custom",
-        "component-name": "TemplatedStringField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "hridField",
-          "fullWidth": true,
-          "name": "hridForm-Section",
-          "helperText": "Human Readable ID",
-          "required": true,
-          "template": "{{Name}}",
-          "InputProps": {
-            "type": "text"
+        "Name-2": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Name",
+            "name": "Name-2",
+            "helperText": "Enter text",
+            "required": false
           },
-          "hrid": true,
-          "InputLabelProps": {
-            "label": "hridField"
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false,
+          "displayParent": false
+        },
+        "hridWidget-Main": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "ID",
+            "fullWidth": true,
+            "name": "hridWidget-Main",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Name-2}}",
+            "InputProps": {
+              "type": "text"
+            },
+            "InputLabelProps": {
+              "label": "ID"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": true,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": true,
+              "label": "uncertainty"
+            }
           }
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
-        "initialValue": "",
-        "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
+        "Widgets": {
+          "component-namespace": "faims-custom",
+          "component-name": "RelatedRecordSelector",
+          "type-returned": "faims-core::Relationship",
+          "component-parameters": {
+            "label": "Widgets in Company",
+            "fullWidth": true,
+            "helperText": "Add widgets to this thing.",
+            "required": false,
+            "related_type": "Widget",
+            "relation_type": "faims-core::Child",
+            "multiple": true,
+            "related_type_label": "Widget",
+            "name": "Widgets",
+            "relation_linked_vocabPair": [],
+            "relation_preferred_label": "Preferred"
           },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false,
+          "displayParent": false
+        },
+        "Factories": {
+          "component-namespace": "faims-custom",
+          "component-name": "RelatedRecordSelector",
+          "type-returned": "faims-core::Relationship",
+          "component-parameters": {
+            "label": "Factories",
+            "fullWidth": true,
+            "helperText": "Add one or more related factories",
+            "required": false,
+            "related_type": "Form",
+            "relation_type": "faims-core::Linked",
+            "multiple": true,
+            "related_type_label": "Factory",
+            "name": "Factories",
+            "relation_linked_vocabPair": [
+              ["exports to", "imports from"],
+              ["supplies", "is supplied by"]
+            ]
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": true,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": true,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false,
+          "displayParent": false
         }
       },
-      "Name-2": {
-        "component-namespace": "formik-material-ui",
-        "component-name": "TextField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "Name",
-          "fullWidth": true,
-          "helperText": "Enter text",
-          "variant": "outlined",
-          "required": false,
-          "InputProps": {
-            "type": "text"
-          },
-          "name": "Name-2"
+      "views": {
+        "Form-Section": {
+          "label": "Section",
+          "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]
         },
-        "validationSchema": [["yup.string"]],
-        "initialValue": "",
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        },
-        "condition": null,
-        "persistent": false,
-        "displayParent": false
-      },
-      "hridWidget-Main": {
-        "component-namespace": "faims-custom",
-        "component-name": "TemplatedStringField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "ID",
-          "fullWidth": true,
-          "name": "hridWidget-Main",
-          "helperText": "Human Readable ID",
-          "required": true,
-          "template": "{{Name-2}}",
-          "InputProps": {
-            "type": "text"
-          },
-          "hrid": true,
-          "InputLabelProps": {
-            "label": "ID"
-          }
-        },
-        "validationSchema": [["yup.string"], ["yup.required"]],
-        "initialValue": "",
-        "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+        "Widget-Main": {
+          "label": "Main",
+          "fields": ["hridWidget-Main", "Name-2"]
         }
       },
-      "Widgets": {
-        "component-namespace": "faims-custom",
-        "component-name": "RelatedRecordSelector",
-        "type-returned": "faims-core::Relationship",
-        "component-parameters": {
-          "label": "Widgets in Company",
-          "fullWidth": true,
-          "helperText": "Add widgets to this thing.",
-          "required": false,
-          "related_type": "Widget",
-          "relation_type": "faims-core::Child",
-          "multiple": true,
-          "related_type_label": "Widget",
-          "name": "Widgets",
-          "relation_linked_vocabPair": [],
-          "relation_preferred_label": "Preferred"
+      "viewsets": {
+        "Form": {
+          "label": "Factory",
+          "views": ["Form-Section"],
+          "hridField": "hridForm-Section"
         },
-        "validationSchema": [["yup.string"]],
-        "initialValue": "",
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        },
-        "condition": null,
-        "persistent": false,
-        "displayParent": false
+        "Widget": {
+          "label": "Widget",
+          "views": ["Widget-Main"],
+          "hridField": "hridWidget-Main"
+        }
       },
-      "Factories": {
-        "component-namespace": "faims-custom",
-        "component-name": "RelatedRecordSelector",
-        "type-returned": "faims-core::Relationship",
-        "component-parameters": {
-          "label": "Factories",
-          "fullWidth": true,
-          "helperText": "Add one or more related factories",
-          "required": false,
-          "related_type": "Form",
-          "relation_type": "faims-core::Linked",
-          "multiple": true,
-          "related_type_label": "Factory",
-          "name": "Factories",
-          "relation_linked_vocabPair": [
-            ["exports to", "imports from"],
-            ["supplies", "is supplied by"]
-          ]
-        },
-        "validationSchema": [["yup.string"]],
-        "initialValue": "",
-        "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
-        },
-        "condition": null,
-        "persistent": false,
-        "displayParent": false
-      }
-    },
-    "fviews": {
-      "Form-Section": {
-        "label": "Section",
-        "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]
+      "visible_types": ["Form", "Widget"],
+      "settings": {
+        "showQrCodeButton": false
       },
-      "Widget-Main": {
-        "label": "Main",
-        "fields": ["hridWidget-Main", "Name-2"]
-      }
+      "schemaVersion": "5.0"
     },
-    "viewsets": {
-      "Form": {
-        "label": "Factory",
-        "views": ["Form-Section"]
-      },
-      "Widget": {
-        "label": "Widget",
-        "views": ["Widget-Main"]
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0",
+        "purposeMarkdown": "Just a sample notebook to test a new field.",
+        "projectLeadLabel": "Steve",
+        "leadInstitution": "Steve's House"
       }
-    },
-    "visible_types": ["Form", "Widget"]
+    }
   }
 }

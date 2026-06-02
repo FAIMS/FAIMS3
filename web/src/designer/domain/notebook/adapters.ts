@@ -16,7 +16,12 @@
  * @file Convert between flat notebooks, undo history shape, and designer id stripping.
  */
 
-import type {Notebook, NotebookWithHistory} from '../../state/initial';
+import type {
+  Notebook,
+  NotebookUISpec,
+  NotebookWithHistory,
+} from '../../state/initial';
+import {designerHistoryToNotebookDefinition} from '../../integration/notebookAdapters';
 
 /** Deep clone via JSON so exported notebooks stay plain serialisable objects. */
 const cloneNotebook = (notebook: Notebook): Notebook =>
@@ -25,15 +30,15 @@ const cloneNotebook = (notebook: Notebook): Notebook =>
 /**
  * Wraps a flat notebook in redux-undo's present/past/future structure.
  *
- * @param notebook - Notebook with flat `ui-specification`.
+ * @param notebook - Notebook with flat `uiSpec`.
  * @returns Same data in `NotebookWithHistory` form with empty undo stacks.
  */
 export const toNotebookWithHistory = (
   notebook: Notebook
 ): NotebookWithHistory => ({
   metadata: notebook.metadata,
-  'ui-specification': {
-    present: notebook['ui-specification'],
+  uiSpec: {
+    present: notebook.uiSpec as NotebookUISpec,
     past: [],
     future: [],
   },
@@ -43,12 +48,10 @@ export const toNotebookWithHistory = (
  * Strips undo history for export or API payloads.
  *
  * @param notebook - Designer store slice shape.
- * @returns Flat `Notebook` (present UI spec only).
+ * @returns Flat `Notebook` (`NotebookDefinition`: present `uiSpec` and `metadata` only).
  */
-export const toNotebook = (notebook: NotebookWithHistory): Notebook => ({
-  metadata: notebook.metadata,
-  'ui-specification': notebook['ui-specification'].present,
-});
+export const toNotebook = (notebook: NotebookWithHistory): Notebook =>
+  designerHistoryToNotebookDefinition(notebook);
 
 /**
  * Ensures every field has a stable in-memory `designerIdentifier` (for React keys).
@@ -60,7 +63,7 @@ export const attachMissingDesignerIdentifiers = (
   notebook: Notebook
 ): Notebook => {
   const cloned = cloneNotebook(notebook);
-  Object.values(cloned['ui-specification'].fields).forEach(field => {
+  Object.values(cloned.uiSpec.fields).forEach(field => {
     if (!field.designerIdentifier) {
       field.designerIdentifier = crypto.randomUUID();
     }
@@ -76,7 +79,7 @@ export const attachMissingDesignerIdentifiers = (
  */
 export const stripDesignerIdentifiers = (notebook: Notebook): Notebook => {
   const cloned = cloneNotebook(notebook);
-  Object.values(cloned['ui-specification'].fields).forEach(field => {
+  Object.values(cloned.uiSpec.fields).forEach(field => {
     delete field.designerIdentifier;
   });
   return cloned;

@@ -31,7 +31,7 @@ import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 /** Inspector for single-line text fields (initial value, HTML input type, wraps {@link BaseFieldEditor}). */
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -107,7 +107,9 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
               <RadioGroup
                 row
                 value={isLongAnswer ? 'long' : 'short'}
-                onChange={e => setAnswerMode(e.target.value as 'short' | 'long')}
+                onChange={e =>
+                  setAnswerMode(e.target.value as 'short' | 'long')
+                }
               >
                 <FormControlLabel
                   value="short"

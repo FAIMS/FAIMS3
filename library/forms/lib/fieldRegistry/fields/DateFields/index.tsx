@@ -368,4 +368,3 @@ export const monthPickerFieldSpec: FieldInfo<DateTimeFieldFullProps> = {
   fieldPropsSchema: dateTimePropsSchema,
   fieldDataSchemaFunction: dateTimeDataSchemaFunction,
 };
-

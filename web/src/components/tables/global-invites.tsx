@@ -8,7 +8,7 @@ import {
   GetGlobalInvitesResponse,
   roleDetails,
 } from '@faims3/data-model';
-import {displayUnixTimestampMs} from '@/lib/utils';
+import {displayUnixTimestampMs} from '@/lib/time';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';

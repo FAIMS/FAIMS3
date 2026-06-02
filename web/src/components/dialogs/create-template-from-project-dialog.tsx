@@ -50,8 +50,7 @@ export const CreateTemplateFromProjectDialog = ({
             {specifiedTeam && <> in “{team?.name ?? 'Team'}”</>}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            This will create a template using the current {NOTEBOOK_NAME}
-            structure.
+            Create a template from this {NOTEBOOK_NAME}&apos;s form layout.
           </DialogDescription>
         </DialogHeader>
 
