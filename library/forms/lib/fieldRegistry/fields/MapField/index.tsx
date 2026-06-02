@@ -18,8 +18,7 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {CheckCircleOutline} from '@mui/icons-material';
-import {Alert, Box, Button, Paper, Typography, useTheme} from '@mui/material';
+import {Alert, Box, Button} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
@@ -69,8 +68,6 @@ const createPointFeature = (
 
 export function MapFormField(props: FieldProps): JSX.Element {
   const [canShowMap, setCanShowMap] = useState(true);
-
-  const theme = useTheme();
 
   const mapConfig = props.config.mapConfig();
 
@@ -246,48 +243,8 @@ export function MapFormField(props: FieldProps): JSX.Element {
             allowSetToCurrentPoint={props.allowSetToCurrentPoint}
           />
         )}
-        <Box
-          sx={{
-            alignItems: 'center',
-            marginTop: 0.8,
-            display: 'inline-flex',
-            gap: theme.spacing(1),
-          }}
-        >
-          {isLocationSelected && (
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                backgroundColor: theme.palette.success.light + '20',
-                borderColor: theme.palette.success.main,
-              }}
-            >
-              <CheckCircleOutline color="success" fontSize="small" />
-              <Typography variant="body2" color="text.secondary">
-                {featureType === 'Point' &&
-                drawnFeatures?.features?.[0]?.geometry
-                  ? `Location selected: ${(
-                      drawnFeatures.features[0].geometry as {
-                        coordinates: number[];
-                      }
-                    ).coordinates[1].toFixed(5)}, ${(
-                      drawnFeatures.features[0].geometry as {
-                        coordinates: number[];
-                      }
-                    ).coordinates[0].toFixed(5)}`
-                  : `${featureType} captured (${
-                      drawnFeatures?.features?.length ?? 0
-                    } feature${
-                      (drawnFeatures?.features?.length ?? 0) !== 1 ? 's' : ''
-                    })`}
-              </Typography>
-            </Paper>
-          )}
-        </Box>
+        {/* The "Location selected" chip + small edit icon are rendered by
+            MapWrapper itself (BSS-1117) so they share one flex container. */}
       </Box>
 
       {/*  Show error if no permission */}

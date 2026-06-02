@@ -18,6 +18,7 @@
  *   Internals of map generation for MapFormField
  */
 
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import MapIcon from '@mui/icons-material/LocationOn';
@@ -31,6 +32,8 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  IconButton,
+  Paper,
   Stack,
   Toolbar,
   Tooltip,
@@ -316,39 +319,78 @@ function MapWrapper(props: MapProps) {
             {props.label}
           </Button>
         ) : (
-          <Box>
+          <Stack
+            direction={{xs: 'column', sm: 'row'}}
+            spacing={1}
+            // Keep both children at their natural content width — the chip
+            // should stay compact (as it was before BSS-1117), not stretch
+            // across the field.
+            alignItems="flex-start"
+            sx={{mt: 0.5}}
+          >
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 1.5,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+                // Force the chip to its natural content width on every
+                // viewport — without this, the column Stack on mobile
+                // stretches it to the full card width.
+                width: 'fit-content',
+                maxWidth: '100%',
+                backgroundColor: theme.palette.success.light + '20',
+                borderColor: theme.palette.success.main,
+              }}
+            >
+              <CheckCircleOutlineIcon color="success" fontSize="small" />
+              <Typography variant="body2" color="text.secondary">
+                {props.featureType === 'Point' &&
+                props.features?.features?.[0]?.geometry
+                  ? `Location selected: ${(
+                      props.features.features[0].geometry as {
+                        coordinates: number[];
+                      }
+                    ).coordinates[1].toFixed(5)}, ${(
+                      props.features.features[0].geometry as {
+                        coordinates: number[];
+                      }
+                    ).coordinates[0].toFixed(5)}`
+                  : `${props.featureType} captured (${
+                      props.features?.features?.length ?? 0
+                    } feature${
+                      (props.features?.features?.length ?? 0) !== 1 ? 's' : ''
+                    })`}
+              </Typography>
+            </Paper>
             {!props.disabled && (
               <Tooltip title="Edit location">
-                <Box
-                  id="edit-location-container"
+                <IconButton
+                  aria-label="Edit location"
+                  onClick={handleClickOpen}
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 80,
-                    height: 80,
+                    color: theme.palette.primary.main,
                     backgroundColor: '#dfdfdf',
                     borderRadius: '6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease-in-out',
+                    // Match the chip's padding so heights line up exactly
+                    // on desktop where they sit side-by-side.
+                    p: 1.5,
+                    // Stretch to the chip's full height on desktop (row
+                    // layout); stay compact / left-aligned on mobile
+                    // (column layout) so we don't pull it wider than needed.
+                    alignSelf: {xs: 'flex-start', sm: 'stretch'},
+                    transition: 'background-color 0.2s ease-in-out',
                     '&:hover': {
                       backgroundColor: '#e0e0e0',
-                      transform: 'scale(1.1)',
-                      boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
                     },
                   }}
-                  onClick={handleClickOpen}
                 >
-                  <EditIcon
-                    sx={{
-                      fontSize: 26,
-                      color: theme.palette.primary.main,
-                    }}
-                  />
-                </Box>
+                  <EditIcon sx={{fontSize: 22}} />
+                </IconButton>
               </Tooltip>
             )}
-          </Box>
+          </Stack>
         )}
 
         <Dialog
@@ -587,8 +629,8 @@ function MapWrapper(props: MapProps) {
               <DialogContent>
                 <Stack spacing={2} id="map-close-confirm-description">
                   <Typography variant="body2">
-                    You have selected a {shapeNoun} on the map but haven't
-                    saved it. If you close now, your selection will be lost.
+                    You have selected a {shapeNoun} on the map but haven't saved
+                    it. If you close now, your selection will be lost.
                   </Typography>
                 </Stack>
               </DialogContent>
