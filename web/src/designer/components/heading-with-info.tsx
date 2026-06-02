@@ -18,7 +18,6 @@ type HeadingWithInfoProps = {
 };
 
 export const HeadingWithInfo = ({
-
   title,
   tooltip,
   variant = 'h2',

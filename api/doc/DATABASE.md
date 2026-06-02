@@ -3,6 +3,8 @@
 FAIMS uses CouchDB for data storage and requires a particular structure to be in
 place. This structure is described here.
 
+For the **notebook definition model** (inlined `uiSpecification`, typed metadata, API routes), see [`NotebookDefinition.md`](../../docs/developer/docs/source/markdown/NotebookDefinition.md). For **deploying the metadata overhaul**, see [`MetadataMigrationGuide.md`](../../docs/developer/docs/source/markdown/MetadataMigrationGuide.md).
+
 ## Databases
 
 All databases have a default `_security` document that contains empty entries
@@ -37,73 +39,73 @@ Used to store records of users with the username as the record `_id`.
 
 ### `projects`
 
-Database referenced in `directory` as `projects_db` contains information about the
-projects stored on this couchdb instance.
+Database referenced in `directory` as `projects_db` contains one document per survey (notebook).
 
-Document `_design/permissions` is added to implement a permissions check that
-restricts access to users with the `_admin` role.
+Document `_design/permissions` implements a permissions check that restricts access to users with the `_admin` role.
 
-Every notebook has it's own document with the notebook name as the `id` containing eg:
+**Current shape (projects DB v4+)** — example:
 
 ```json
 {
   "_id": "blue_mountains_survey",
-  "_rev": "1-d3aa99ada9503360b611b060bee1a72b",
-  "name": "Blue-Mountains-Survey",
-  "metadataDb": {
-    "db_name": "metadata-blue_mountains_survey"
-  },
+  "_rev": "1-…",
+  "name": "Blue Mountains Survey",
+  "description": "Vegetation plot survey",
+  "status": "OPEN",
   "dataDb": {
     "db_name": "data-blue_mountains_survey"
   },
-  "auth_mechanisms": {
-    "demo": {
-      "portal": "https://dev.conductor.faims.edu.au:443",
-      "type": "oauth",
-      "name": "AAO DataCentral"
+  "templateId": "optional-template-id",
+  "ownedByTeamId": "optional-team-id",
+  "createdBy": "people-user-id",
+  "createdAt": "2026-05-01T00:00:00.000Z",
+  "updatedAt": "2026-05-01T00:00:00.000Z",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {},
+      "views": {},
+      "viewsets": {},
+      "visible_types": [],
+      "settings": {"showQrCodeButton": false},
+      "schemaVersion": "<CURRENT_NOTEBOOK_UI_SCHEMA_VERSION>"
+    },
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0",
+        "purposeMarkdown": "",
+        "projectLeadLabel": "",
+        "leadInstitution": ""
+      }
     }
   }
 }
 ```
 
-This names two databases that are used to store the metadata and data records for the
-notebook instance. By convention these are called `data-{project name}` and
-`metadata-{project name}` (via constants defined in the FAIMS3 project) but
-these names are not relied on by the code and the entries
-here are used to locate the databases.
+- **`dataDb`** points at the per-survey **data** database (`data-{projectId}`).
+- **`description`** (optional) — short operational blurb at document root, max 250 characters when present; may be omitted on new surveys. Not the long design prose in `uiSpecification.metadata.information.purposeMarkdown`.
+- **`uiSpecification`** holds the former **`metadata-{projectId}`** content: the form definition (legacy `ui-specification`, with `fviews` decoded to **`views`**) plus typed design metadata and **`uiSpec.settings`**.
+- **`metadataDb` is not stored** on new or migrated v4 documents.
 
-`auth_mechanisms` is repeated here from the projects database. It doesn't seem to be
-used anywhere at all.
+`auth_mechanisms` appeared on older project documents; it is **not used** by current Conductor code.
 
-## Individual project databases
+### `templates`
 
-Two databases hold the data for a notebook: `data-{project name}` and `metadata-{project name}`.
+Same **`uiSpecification`** pattern as projects, with template-specific root fields (`version`, `archived`, `isPublic`, audit fields). Root **`description`** is likewise optional (max 250 characters when set). See `library/data-model/src/data_storage/templatesDB/types.ts`.
 
-### `metadata-{project name}`
+## Per-survey data database
 
-This database contains the notebook metadata including the form definition with the id `ui_specification` (defined in [src/datamodel/database.ts] and equivalently in the FAIMS3 app as `UI_SPECIFICATION_NAME`).
-This holds all of the field definitions etc for the notebook.
+Each survey has a **`data-{projectId}`** database containing user records.
 
-The value of `local_autoincrementers` in the metadata database will contain an incrementing value in the front end app unique to each user.
+### Legacy `metadata-{project name}` (removed after cutover)
 
-Remaining documents in this database have ids like `project-metadata-{fieldname}` and hold values for various metadata fields:
+Historically, each survey also had a separate **`metadata-{projectId}`** Couch database containing:
 
-- `access`
-- `accesses`
-- `behavious` - typo, not referenced anywhere
-- `filenames`
-- `forms`
-- `ispublic`
-- `isrequest`
-- `lead_institution`
-- `meta`
-- `pre_description`
-- `project_lead`
-- `project_status`
-- `projectvalue`
-- `sections`
+- One document `_id: ui-specification` (wire key; code constant `ui-specification`) with `fields`, `fviews`, `viewsets`, `visible_types`
+- Documents `_id: project-metadata-{key}` for loose metadata keys
 
-(defined in `src/gui/components/project/CreateProjectCard.tsx` in FAIMS3)
+That database is **deprecated**. Content is migrated into **`Project.uiSpecification`** by `projectsV3toV4Migration`. After migration, operators may delete leftover metadata databases with `api` script `delete-metadata-databases` (see `api/src/scripts/deleteMetadataDatabases.ts`).
+
+**Autoincrement state:** developer docs once suggested autoincrementers lived in the metadata DB. The mobile app persists autoincrement state in **`local_state`** (IndexedDB), not in Couch metadata databases.
 
 ### `data-{project name}`
 
@@ -179,3 +181,5 @@ The avp document contains a single value and any annotations:
   "created_by": "liz.mannering"
 }
 ```
+
+**Note:** `created` / `created_by` on record documents are **per-record** audit fields, not the survey-level `Project.createdBy`.

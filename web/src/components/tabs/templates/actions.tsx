@@ -13,6 +13,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {NotebookWithHistory} from '@/designer/state/initial';
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
+import {EditTemplateDetailsDialog} from '@/components/dialogs/edit-template-details-dialog';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
@@ -63,6 +64,11 @@ const TemplateActions = () => {
     queryClient.invalidateQueries({queryKey: ['templates', templateId]});
   };
 
+  const canUpdateTemplateDetails = useIsAuthorisedTo({
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    resourceId: templateId,
+  });
+
   const canEditTemplate = useIsAuthorisedTo({
     action: Action.UPDATE_TEMPLATE_UISPEC,
     resourceId: templateId,
@@ -82,23 +88,45 @@ const TemplateActions = () => {
     action: Action.CREATE_PROJECT,
   });
 
-  const canCreateProjectInTeam =
+  const canAssignTemplateToTeam = useIsAuthorisedTo({
+    action: Action.CHANGE_TEMPLATE_TEAM,
+    resourceId: templateId,
+  });
+
+  const canReadTemplateDetails = useIsAuthorisedTo({
+    action: Action.READ_TEMPLATE_DETAILS,
+    resourceId: templateId,
+  });
+
+  /** Matches create-from-template form: global create or team-scoped create on any team. */
+  const canCreateProjectFromTemplate =
+    canCreateProject ||
     getUserResourcesForAction({
       decodedToken: user?.decodedToken,
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
-
-  /** Reassigning team is a template update (PUT /api/templates/:id), not create-template. */
-  const canAssignTemplateToTeam = useIsAuthorisedTo({
-    action: Action.UPDATE_TEMPLATE_DETAILS,
-    resourceId: templateId,
-  });
 
   const archived = data?.archived === true;
 
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {canUpdateTemplateDetails && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Edit Template details</ListLabel>
+                <ListDescription>
+                  Update template title and short description.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditTemplateDetailsDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         {canEditTemplate && (
           <Card>
             <List>
@@ -158,38 +186,38 @@ const TemplateActions = () => {
           </Card>
         )}
 
-        <Card>
-          <List>
-            <ListItem>
-              <ListLabel>Download JSON</ListLabel>
-              <ListDescription>
-                Download the JSON file for this template.
-              </ListDescription>
-            </ListItem>
-            <ListItem>
-              <Button variant="outline" disabled={isLoading}>
-                <a
-                  href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify({
-                      metadata: data?.metadata,
-                      'ui-specification': data?.['ui-specification'],
-                    })
-                  )}`}
-                  download={`${templateId}.json`}
-                >
-                  Download JSON
-                </a>
-              </Button>
-            </ListItem>
-          </List>
-        </Card>
+        {canReadTemplateDetails && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Download JSON</ListLabel>
+                <ListDescription>
+                  Download the template design as JSON (metadata and uiSpec).
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <Button variant="outline" disabled={isLoading}>
+                  <a
+                    href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                      JSON.stringify(data?.uiSpecification ?? {}, null, 2)
+                    )}`}
+                    download={`${templateId}.json`}
+                  >
+                    Download JSON
+                  </a>
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
         {canEditTemplate && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
                 <ListDescription>
-                  Replace the template JSON file.
+                  Upload a JSON design file to replace the existing template
+                  design.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -198,7 +226,7 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
-        {(canCreateProject || canCreateProjectInTeam) && (
+        {canCreateProjectFromTemplate && (
           <Card>
             <List>
               <ListItem>
@@ -244,6 +272,7 @@ const TemplateActions = () => {
       <DesignerDialog
         open={editorOpen && !archived}
         notebook={initialNotebook}
+        exportBaseName={data?.name}
         onClose={handleEditorClose}
       />
     </>

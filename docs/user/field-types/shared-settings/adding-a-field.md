@@ -39,17 +39,17 @@ The dialog has four main areas:
 
 The tab bar organises field types into nine categories:
 
-| Tab | Field Types |
-| --- | ----------- |
-| **ALL** | Shows every available field type (default view) |
-| **TEXT** | Text field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
-| **NUMBERS** | Number field, Auto Incrementing Field |
-| **DATE & TIME** | Date and time picker, Date only picker, Month only picker |
-| **MEDIA** | Take Photo, Upload a File |
-| **LOCATION** | Take GPS Point, Map Field |
-| **CHOICE** | Select one, Select Multiple, Select Field (Hierarchical) |
-| **RELATIONSHIP** | Related Records |
-| **DISPLAY** | Rich Text |
+| Tab              | Field Types                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| **ALL**          | Shows every available field type (default view)                                           |
+| **TEXT**         | Text field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
+| **NUMBERS**      | Number field, Auto Incrementing Field                                                     |
+| **DATE & TIME**  | Date and time picker, Date only picker, Month only picker                                 |
+| **MEDIA**        | Take Photo, Upload a File                                                                 |
+| **LOCATION**     | Take GPS Point, Map Field                                                                 |
+| **CHOICE**       | Select one, Select Multiple, Select Field (Hierarchical)                                  |
+| **RELATIONSHIP** | Related Records                                                                           |
+| **DISPLAY**      | Rich Text                                                                                 |
 
 > **Note:** Not all tabs may be visible at once. If you see a **›**
 > arrow button on the right side of the tab bar, **click** it to scroll

@@ -31,7 +31,7 @@ The list will update itself from time to time but sometimes it's useful to force
 
 Below these buttons is the area where existing records are displayed along with other information and controls for the {{notebook}}:
 
-- The **DETAILS** tab has some details about the {{notebook}} such as the owner and a description of the purpose of the {{notebook}}.
+- The **DETAILS** tab has some details about the {{notebook}} such as the owner and, when set, a short description of the {{notebook}} (longer design intent may appear in design metadata).
 - The **SETTINGS** tab has a number of settings for the {{notebook}} on your device.
 - The **MAP** tab will show an overview map of the records that have been collected if those records include GPS locations.
 

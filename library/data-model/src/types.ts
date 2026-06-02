@@ -106,15 +106,6 @@ export type PossibleConnectionInfo = {
   jwt_token?: string;
 };
 
-export interface ProjectSchema {
-  _id?: string; // optional as we may want to include the raw json in places
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
-  namespace: string;
-  constants: FAIMSConstantCollection;
-  types: FAIMSTypeCollection;
-}
-
 export interface ProjectUIModelDetails {
   fields: ProjectUIFields;
   views: ProjectUIViews;
@@ -122,28 +113,6 @@ export interface ProjectUIModelDetails {
   visible_types: string[];
   conditional_sources?: Set<string>;
 }
-
-// Type for the external format of Notebooks
-export interface EncodedNotebook {
-  metadata: {[key: string]: any};
-  'ui-specification': EncodedProjectUIModel;
-}
-
-export interface EncodedProjectUIModel {
-  fields: ProjectUIFields;
-  fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
-  viewsets: ProjectUIViewsets;
-  visible_types: string[];
-}
-export type CouchProjectUIModel =
-  PouchDB.Core.ExistingDocument<EncodedProjectUIModel>;
-
-export type EncodedProjectMetadata = PouchDB.Core.Document<{
-  _attachments?: PouchDB.Core.Attachments;
-  is_attachment: boolean;
-  metadata: any;
-  single_attachment?: boolean;
-}>;
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
 export type EncodedRecord = PouchDB.Core.Document<{
@@ -226,15 +195,6 @@ export interface FAIMSAttachment {
 }
 
 /*
- * Elements of a Project's metadataDB can be any one of these,
- * discriminated by the prefix of the object's id
- */
-export type ProjectMetaObject =
-  | ProjectSchema
-  | EncodedProjectUIModel
-  | EncodedProjectMetadata;
-
-/*
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
@@ -243,41 +203,6 @@ export type ProjectDataObject =
   | Revision
   | EncodedRecord
   | FAIMSAttachment;
-
-// end of types from datamodel/database.ts --------------------------------
-
-// types from datamodel/drafts.ts --------------------------------
-export interface EncodedDraft {
-  _id: string;
-  // Fields (may itself contain an _id)
-  fields: {[key: string]: unknown};
-  annotations: {
-    [key: string]: Annotations;
-  };
-  attachments: {
-    [key: string]: (
-      | FAIMSAttachmentReference
-      | {
-          filename: string;
-          draft_attachment: boolean;
-        }
-    )[];
-  };
-  _attachments?: PouchDB.Core.Attachments;
-  project_id: ProjectID;
-  // If this draft is for the user updating an existing record, the following
-  // is non-null, the record it's editing.
-  existing: null | {
-    record_id: RecordID;
-    revision_id: RevisionID;
-  };
-  created: string;
-  updated: string;
-  type: string;
-  field_types: {[field_name: string]: FAIMSTypeName};
-  record_id: RecordID;
-  relationship?: Relationship;
-}
 
 //to get the metadata for the draft, for draft_table
 export interface DraftMetadata {
@@ -731,30 +656,3 @@ export const CouchDocumentFieldsSchema = z.object({
   _deleted: z.boolean().optional(),
 });
 export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
-
-// ========================
-// UI SCHEMA AND METADATA
-// ========================
-// TODO use zod more effectively here to enhance validation
-export type ProjectMetadata = {[key: string]: any};
-
-// The UI specification
-// TODO use Zod for existing UI schema models to validate. Note that this is a
-// schema for an JSON notebook (fviews, not views). We refine this model so that
-// it cannot be undefined - Zod.custom by default allows undefined to validate
-export const EncodedUISpecificationSchema = z
-  .custom<EncodedProjectUIModel>()
-  .refine(val => !!val);
-export type EncodedUISpecification = z.infer<
-  typeof EncodedUISpecificationSchema
->;
-
-export const UISpecificationSchema = z
-  .custom<ProjectUIModel>()
-  .refine(val => !!val);
-export type UISpecification = z.infer<typeof UISpecificationSchema>;
-
-// Metadata schema
-// TODO use Zod for existing UI schema models to validate
-export const NotebookMetadataSchema = z.record(z.any());
-export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;

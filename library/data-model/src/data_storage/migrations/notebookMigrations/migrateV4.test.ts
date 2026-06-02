@@ -1,4 +1,4 @@
-import {migrateNotebook} from './index';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION, migrateNotebook} from './index';
 import {migrateToV4} from './migrateV4';
 
 /** Minimal v3-shaped notebook with the fields we want to test against. */
@@ -181,7 +181,6 @@ describe('migrateToV4 — date / time fields', () => {
     expect(out['type-returned']).toBe('faims-core::String');
     expect(out['component-parameters'].show_now_button).toBe(true);
     expect(out['component-parameters'].isAutoPick).toBe(true);
-    // Legacy snake_case key removed in favour of the canonical camelCase one.
     expect(out['component-parameters'].is_auto_pick).toBeUndefined();
     expect(out['component-parameters'].label).toBe('Captured at');
     expect(out['component-parameters'].required).toBe(true);
@@ -267,8 +266,9 @@ describe('migrateToV4 — choice fields', () => {
       {value: 'true', label: 'Yes'},
       {value: 'false', label: 'No'},
     ]);
-    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(false);
-    // true → 'true' so "Yes" is pre-selected after migration.
+    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(
+      false
+    );
     expect(out.initialValue).toBe('true');
     expect(out['component-parameters'].label).toBe('Agree?');
   });
@@ -332,7 +332,9 @@ describe('migrateToV4 — choice fields', () => {
     expect(out['component-namespace']).toBe('faims-custom');
     expect(out['component-name']).toBe('RadioGroup');
     expect(out['type-returned']).toBe('faims-core::String');
-    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(true);
+    expect(out['component-parameters'].ElementProps.enableOtherOption).toBe(
+      true
+    );
     expect(out['component-parameters'].ElementProps.options).toHaveLength(2);
     expect(out['component-parameters'].ElementProps.options[0]).toEqual({
       value: 'a',
@@ -391,8 +393,6 @@ describe('migrateToV4 — schema_version + passthrough', () => {
         'component-parameters': {label: 'Date'},
         initialValue: '',
       },
-      // MultiSelect is NOT consolidated in V4 — it's already the canonical
-      // multi-choice runtime. Must pass through untouched.
       MultiField: {
         'component-namespace': 'faims-custom',
         'component-name': 'MultiSelect',
@@ -403,8 +403,6 @@ describe('migrateToV4 — schema_version + passthrough', () => {
         },
         initialValue: [],
       },
-      // RadioGroup is already canonical — its `component-name` is the
-      // surviving name for single-choice and must pass through unchanged.
       RadioField: {
         'component-namespace': 'faims-custom',
         'component-name': 'RadioGroup',
@@ -446,8 +444,8 @@ describe('migrateToV4 — schema_version + passthrough', () => {
   });
 });
 
-describe('migrateNotebook chains v2 → v3 → v4', () => {
-  test('a 3.0 notebook is upgraded to 4.0', () => {
+describe('migrateNotebook chains v2 → v3 → v4 → v5', () => {
+  test('a 3.0 notebook is upgraded through v4 field migration to v5', () => {
     const nb = v3Notebook({
       Notes: {
         'component-namespace': 'formik-material-ui',
@@ -460,16 +458,17 @@ describe('migrateNotebook chains v2 → v3 → v4', () => {
 
     const {changed, migrated} = migrateNotebook(nb);
     expect(changed).toBe(true);
-    expect(migrated.metadata.schema_version).toBe('4.0');
-    expect(
-      (migrated as any)['ui-specification'].fields.Notes['component-name']
-    ).toBe('TextField');
+    expect(migrated.uiSpec.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+    expect(migrated.uiSpec.fields.Notes['component-name']).toBe('TextField');
+    expect(migrated).not.toHaveProperty('ui-specification');
   });
 
-  test('already at 4.0 → no change', () => {
+  test('already at current schema → no change', () => {
     const nb = v3Notebook({});
-    nb.metadata.schema_version = '4.0';
-    const {changed} = migrateNotebook(nb);
+    const v5 = migrateNotebook(migrateNotebook(nb).migrated).migrated;
+    const {changed} = migrateNotebook(v5);
     expect(changed).toBe(false);
   });
 });

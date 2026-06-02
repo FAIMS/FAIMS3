@@ -58,10 +58,10 @@ type RelatedRecordConfig = {
 /** Related record selector: target form, cardinality, relation type, linked vocab pairs. */
 export const RelatedRecordEditor = ({fieldName}: Props) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
   const dispatch = useAppDispatch();
 

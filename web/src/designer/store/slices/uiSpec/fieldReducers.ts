@@ -87,7 +87,7 @@ export const fieldReducers = {
     }>
   ) => {
     const {fieldName, viewId, direction} = action.payload;
-    const fieldList = state.fviews[viewId].fields;
+    const fieldList = state.views[viewId].fields;
     for (let i = 0; i < fieldList.length; i++) {
       if (fieldList[i] === fieldName) {
         if (direction === 'up') {
@@ -106,7 +106,7 @@ export const fieldReducers = {
         break;
       }
     }
-    state.fviews[viewId].fields = fieldList;
+    state.views[viewId].fields = fieldList;
   },
   /** Move a field directly to an index position in a section (`viewId`). */
   fieldReordered: (
@@ -118,7 +118,7 @@ export const fieldReducers = {
     }>
   ) => {
     const {viewId, sourceIndex, targetIndex} = action.payload;
-    const fieldList = state.fviews[viewId].fields;
+    const fieldList = state.views[viewId].fields;
 
     if (
       sourceIndex < 0 ||
@@ -132,7 +132,7 @@ export const fieldReducers = {
 
     const [movedField] = fieldList.splice(sourceIndex, 1);
     fieldList.splice(targetIndex, 0, movedField);
-    state.fviews[viewId].fields = fieldList;
+    state.views[viewId].fields = fieldList;
   },
   /** Remove field from `sourceViewId` and append to `targetViewId`; cleans cross-form summary fields. */
   fieldMovedToSection: (
@@ -149,12 +149,12 @@ export const fieldReducers = {
       throw new Error(`Cannot move unknown field ${fieldName}`);
     }
 
-    const sourceFields = state.fviews[sourceViewId].fields;
-    state.fviews[sourceViewId].fields = sourceFields.filter(
+    const sourceFields = state.views[sourceViewId].fields;
+    state.views[sourceViewId].fields = sourceFields.filter(
       field => field !== fieldName
     );
 
-    state.fviews[targetViewId].fields.push(fieldName);
+    state.views[targetViewId].fields.push(fieldName);
 
     const sourceViewSetId = getViewSetForView(state, sourceViewId);
     const targetViewSetId = getViewSetForView(state, targetViewId);
@@ -189,7 +189,7 @@ export const fieldReducers = {
     state.fields[fieldLabel] = field;
     delete state.fields[fieldName];
 
-    const viewFields = state.fviews[viewId].fields;
+    const viewFields = state.views[viewId].fields;
     for (let i = 0; i < viewFields.length; i++) {
       if (viewFields[i] === fieldName) {
         viewFields[i] = fieldLabel;
@@ -207,7 +207,7 @@ export const fieldReducers = {
       }
     });
 
-    Object.values(state.fviews).forEach(v => {
+    Object.values(state.views).forEach(v => {
       if (v.condition) {
         const newCondition = replaceFieldInCondition(
           v.condition,
@@ -267,7 +267,7 @@ export const fieldReducers = {
 
     if (fieldType === 'TemplatedStringField') {
       let hasHRID = false;
-      for (const sectionFieldName of state.fviews[viewId].fields) {
+      for (const sectionFieldName of state.views[viewId].fields) {
         if (
           sectionFieldName.startsWith('hrid') &&
           sectionFieldName.endsWith(viewId)
@@ -301,12 +301,12 @@ export const fieldReducers = {
     newField['component-parameters'].name = fieldLabel;
     state.fields[fieldLabel] = newField;
 
-    if (addAfter === '' || state.fviews[viewId].fields.indexOf(addAfter) < 0) {
-      state.fviews[viewId].fields.push(fieldLabel);
+    if (addAfter === '' || state.views[viewId].fields.indexOf(addAfter) < 0) {
+      state.views[viewId].fields.push(fieldLabel);
     } else {
-      const fields = state.fviews[viewId].fields;
+      const fields = state.views[viewId].fields;
       const position = fields.indexOf(addAfter) + 1;
-      state.fviews[viewId].fields = fields
+      state.views[viewId].fields = fields
         .slice(0, position)
         .concat([fieldLabel])
         .concat(fields.slice(position));
@@ -327,7 +327,7 @@ export const fieldReducers = {
         );
       }
       delete state.fields[fieldName];
-      state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
+      state.views[viewId].fields = state.views[viewId].fields.filter(
         field => field !== fieldName
       );
       removeFieldFromSummary(state, fieldName);
@@ -370,8 +370,8 @@ export const fieldReducers = {
 
     state.fields[fieldLabel] = newField;
 
-    const position = state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
-    state.fviews[viewId].fields.splice(position, 0, fieldLabel);
+    const position = state.views[viewId].fields.indexOf(originalFieldName) + 1;
+    state.views[viewId].fields.splice(position, 0, fieldLabel);
   },
   /** Set or clear `field.condition` for visibility rules. */
   fieldConditionChanged: (

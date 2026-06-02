@@ -14,6 +14,8 @@ export interface UseCreateNotebookFromTemplateProps {
   templateId?: string;
   // Name of the project
   name?: string;
+  // Root survey description (required by API; not taken from template)
+  description?: string;
   // Listing to create in
   listingId: string;
   // Username we are working in
@@ -42,6 +44,7 @@ export const useCreateNotebookFromTemplate = (
         templateId: props.templateId!,
         username: props.username,
         name: props.name!,
+        description: props.description!,
         listingId: props.listingId,
       });
     },

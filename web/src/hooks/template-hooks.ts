@@ -4,7 +4,7 @@ import {
   type GetTemplateSurveyReferencesResponse,
 } from '@faims3/data-model';
 
-function errorMessageFromTemplateJsonBody(
+export function errorMessageFromTemplateJsonBody(
   json: unknown,
   fallbackStatusText: string
 ): string {
@@ -99,21 +99,20 @@ export const createTemplateRequest = async ({
   });
 };
 
+/** PUT /api/templates/:templateId — merge name and/or description only. */
 export const updateTemplateRequest = async ({
   user,
   templateId,
   name,
-  teamId,
-  templateData,
+  description,
 }: {
   user: User;
   templateId: string;
   name?: string;
-  teamId?: string;
-  templateData?: {metadata: any; 'ui-specification': any};
+  description?: string;
 }) => {
   return await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${templateId}`,
+    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}`,
     {
       method: 'PUT',
       headers: {
@@ -121,13 +120,56 @@ export const updateTemplateRequest = async ({
         Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
-        ...templateData,
-        teamId,
-        name,
+        ...(name !== undefined && {name}),
+        ...(description !== undefined && {description}),
       }),
     }
   );
 };
+
+/** PUT /api/templates/:templateId/uiSpecification — full design bundle replace. */
+export const updateTemplateUiSpecificationRequest = async ({
+  user,
+  templateId,
+  uiSpecification,
+}: {
+  user: User;
+  templateId: string;
+  uiSpecification: unknown;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/uiSpecification`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify(uiSpecification),
+    }
+  );
+
+/** PUT /api/templates/:templateId/team — change owning team only. */
+export const modifyTeamForTemplate = async ({
+  templateId,
+  teamId,
+  user,
+}: {
+  templateId: string;
+  teamId: string;
+  user: User;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/team`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({teamId}),
+    }
+  );
 
 /**
  * PUT /api/templates/:templateId/visibility — public visibility only.

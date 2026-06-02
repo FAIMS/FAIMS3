@@ -436,7 +436,7 @@ function enable_local_login(): boolean {
 function migrateNotebooks(): boolean {
   const migrate = process.env.MIGRATE_NOTEBOOKS_ON_STARTUP;
   if (migrate === undefined) {
-    return false;
+    return true;
   } else {
     return migrate.toLowerCase() === 'true';
   }

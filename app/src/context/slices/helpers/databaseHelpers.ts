@@ -1,10 +1,5 @@
-import {
-  compileUiSpecConditionals,
-  decodeUiSpec,
-  EncodedProjectUIModel,
-  GetNotebookResponse,
-  ProjectUIModel,
-} from '@faims3/data-model';
+import {GetNotebookResponse} from '@faims3/data-model';
+import {projectInformationFromGetNotebook} from './notebookDefinition';
 import PouchDB from 'pouchdb-browser';
 import {
   DEBUG_APP,
@@ -340,35 +335,35 @@ export function createPouchDbSync<Content extends {}>({
 }
 
 /**
- * Fetch project metadata from the server.
+ * Fetch full notebook details (including inlined uiSpecification) from the server.
+ * Listing comes from GET /api/directory; per-notebook design bundle from here.
  */
-export const fetchProjectMetadataAndSpec = async ({
+export const fetchNotebookDetails = async ({
   token,
   serverUrl,
   projectId,
-  compile = true,
 }: {
   token: string;
   serverUrl: string;
   projectId: string;
-  compile: boolean;
-}): Promise<GetNotebookResponse & {decodedSpec: ProjectUIModel}> => {
+}): Promise<
+  GetNotebookResponse & ReturnType<typeof projectInformationFromGetNotebook>
+> => {
   const url = `${serverUrl}/api/notebooks/${projectId}`;
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-  const notebook = (await response.json()) as GetNotebookResponse;
-
-  // TODO runtime validation. This is a dangerous assumption! This should do a
-  // cast this because of poor typing!!
-  const rawUiSpec = notebook[
-    'ui-specification'
-  ] as any as EncodedProjectUIModel;
-  const uiSpec = decodeUiSpec(rawUiSpec);
-  if (compile) {
-    compileUiSpecConditionals(uiSpec);
+  if (!response.ok) {
+    throw new Error(
+      `Notebook request failed for ${projectId}: HTTP ${response.status}`
+    );
   }
-  return {...notebook, decodedSpec: uiSpec};
+  const notebook = (await response.json()) as GetNotebookResponse;
+  const information = projectInformationFromGetNotebook(notebook);
+  return {...notebook, ...information};
 };
+
+/** @deprecated Use {@link fetchNotebookDetails}. */
+export const fetchProjectMetadataAndSpec = fetchNotebookDetails;

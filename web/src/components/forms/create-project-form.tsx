@@ -11,6 +11,11 @@ import {
   createProjectFromFile,
   createProjectFromTemplate,
 } from '@/hooks/project-hooks';
+import {
+  optionalRootDescriptionField,
+  rootDescriptionForApi,
+} from '@/lib/rootDescriptionField';
+import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -51,6 +56,9 @@ export function CreateProjectForm({
           NOTEBOOK_NAME_CAPITALIZED + ' name must be at least 5 characters.',
       }),
     },
+    optionalRootDescriptionField({
+      helperText: `Optional summary of this ${NOTEBOOK_NAME} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
+    }),
     {
       name: 'template',
       label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template (optional)`,
@@ -74,8 +82,8 @@ export function CreateProjectForm({
   ];
 
   const dividers = [
-    {index: 1, component: <div className="h-5" />},
-    {index: 2, component: <Divider word="OR" />},
+    {index: 2, component: <div className="h-5" />},
+    {index: 3, component: <Divider word="OR" />},
   ];
 
   if (!specifiedTeam) {
@@ -90,11 +98,12 @@ export function CreateProjectForm({
       })),
       schema: canCreateGlobally ? z.string().optional() : z.string(),
     });
-    dividers.push({index: 3, component: <div className="h-5" />});
+    dividers.push({index: 4, component: <div className="h-5" />});
   }
 
   interface onSubmitProps {
     name: string;
+    description?: string;
     team?: string;
     template?: string;
     file?: File;
@@ -106,7 +115,13 @@ export function CreateProjectForm({
    * @param {{name: string, template?: string, file?: File}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({name, template, file, team}: onSubmitProps) => {
+  const onSubmit = async ({
+    name,
+    description,
+    template,
+    file,
+    team,
+  }: onSubmitProps) => {
     if (!user) {
       return {type: 'submit', message: 'User not authenticated'};
     }
@@ -117,6 +132,7 @@ export function CreateProjectForm({
       response = await createProjectFromTemplate({
         user,
         name,
+        description,
         template,
         teamId: specifiedTeam ?? team,
       });
@@ -135,6 +151,7 @@ export function CreateProjectForm({
       response = await createProjectFromFile({
         user,
         name,
+        description,
         file: fileToUpload,
         teamId: specifiedTeam ?? team,
       });

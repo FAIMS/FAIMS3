@@ -4,10 +4,9 @@ import {
   DataDocument,
   DataEngine,
   FieldSummary,
-  ProjectUIModel,
   relatedRecordFieldAvpValueSchema,
   relatedRecordSelectorComponentParamsSchema,
-  UISpecification,
+  NotebookUiSpec,
 } from '@faims3/data-model';
 
 import {getComponentKey} from './utils';
@@ -88,11 +87,11 @@ export async function stripDeletedRelatedRefsFromRecordData({
   fields: FieldSummary[];
   data: Record<string, unknown>;
   dataDb: StripRelatedRefsDataDb;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: NotebookUiSpec;
 }): Promise<void> {
   const engine = new DataEngine({
     dataDb: dataDb as DatabaseInterface<DataDocument>,
-    uiSpec: uiSpecification as UISpecification,
+    uiSpec: uiSpecification,
   });
 
   const relatedIds = new Set<string>();
@@ -177,7 +176,7 @@ export async function buildExportReadyDataCopy({
   data: Record<string, unknown>;
   viewFieldsMap: Record<string, FieldSummary[]>;
   dataDb: StripRelatedRefsDataDb;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: NotebookUiSpec;
 }): Promise<Record<string, unknown>> {
   const copy: Record<string, unknown> = {...data};
   const fields = viewFieldsMap[viewsetId];
