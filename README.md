@@ -207,6 +207,24 @@ there but you can also create new ones.
 pnpm run load-notebooks
 ```
 
+### Sample Data
+
+There is a script to generate a set of sample users with different roles,
+teams and sample templates and notebooks. In the `api` directory run:
+
+```bash
+pnpm seed-test-dataset
+```
+
+This assumes that the database is empty of users etc, so either do this as the first
+action after setting up your environment or run:
+
+```bash
+./scripts/clearCouchDb.sh
+```
+
+which will remove the local docker volume containing the database and force recreation.
+
 ## IOS Notes
 
 To build the IOS app locally you need to be on MacOS. A number of the build

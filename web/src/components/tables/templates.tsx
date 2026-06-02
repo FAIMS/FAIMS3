@@ -3,7 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {cn} from '@/lib/utils';
 import {TeamCellComponent} from './cells/team-cell';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import type {TemplateApiListItem} from '@faims3/data-model';
 import {
   Tooltip,
   TooltipContent,
@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 
-export type Column = any;
+export type Column = TemplateApiListItem;
 
 const nameColumn: ColumnDef<Column> = {
   accessorKey: 'name',
@@ -72,18 +72,15 @@ const visibilityColumn: ColumnDef<Column> = {
   },
 };
 
-const projectLeadColumn: ColumnDef<Column> = {
-  accessorKey: 'metadata.project_lead',
+const createdByColumn: ColumnDef<Column> = {
+  accessorKey: 'createdBy',
   header: ({column}) => (
-    <DataTableColumnHeader
-      column={column}
-      title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
-    />
+    <DataTableColumnHeader column={column} title="Created by" />
   ),
 };
 
 const descriptionColumn: ColumnDef<Column> = {
-  accessorKey: 'metadata.pre_description',
+  accessorKey: 'description',
   header: ({column}) => (
     <DataTableColumnHeader column={column} title="Description" />
   ),
@@ -130,7 +127,7 @@ export function getTemplatesTableColumns(options: {
     ...team,
     statusColumn,
     ...visibility,
-    projectLeadColumn,
+    createdByColumn,
     descriptionColumn,
   ];
 }

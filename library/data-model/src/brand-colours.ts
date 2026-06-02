@@ -27,7 +27,6 @@ export const fieldmarkBrand = {
   infoMain: '#1976D2',
 } as const;
 
-
 export const bssBrand = {
   primaryMain: '#000000',
   primaryDark: '#000000',

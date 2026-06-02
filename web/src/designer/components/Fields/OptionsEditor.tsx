@@ -406,13 +406,13 @@ export const OptionsEditor = ({
 }) => {
   // Get field state from Redux store
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
 
   const dispatch = useAppDispatch();

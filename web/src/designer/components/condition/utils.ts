@@ -52,9 +52,12 @@ export type FieldDependencyReference = {
   templateUsage?: string;
 };
 
-const buildFieldLocationMaps = (allFviews: ViewMap, viewsets: ViewSetMap) => {
+const buildFieldLocationMaps = (allViews: ViewMap, viewsets: ViewSetMap) => {
   const sectionToForm = new Map<string, {formId: string; formLabel: string}>();
-  const fieldToSection = new Map<string, {sectionId: string; sectionLabel: string}>();
+  const fieldToSection = new Map<
+    string,
+    {sectionId: string; sectionLabel: string}
+  >();
 
   for (const [formId, viewset] of Object.entries(viewsets)) {
     for (const sectionId of viewset.views) {
@@ -62,7 +65,7 @@ const buildFieldLocationMaps = (allFviews: ViewMap, viewsets: ViewSetMap) => {
     }
   }
 
-  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+  for (const [sectionId, sectionDef] of Object.entries(allViews)) {
     for (const fieldId of sectionDef.fields) {
       fieldToSection.set(fieldId, {
         sectionId,
@@ -81,12 +84,12 @@ const buildFieldLocationMaps = (allFviews: ViewMap, viewsets: ViewSetMap) => {
 export const findFieldDependencyReferences = (
   fieldName: string,
   allFields: FieldMap,
-  allFviews: ViewMap,
+  allViews: ViewMap,
   viewsets: ViewSetMap
 ): FieldDependencyReference[] => {
   const affected: FieldDependencyReference[] = [];
   const {sectionToForm, fieldToSection} = buildFieldLocationMaps(
-    allFviews,
+    allViews,
     viewsets
   );
 
@@ -99,21 +102,21 @@ export const findFieldDependencyReferences = (
   const scopedViewset = fieldFormId ? viewsets[fieldFormId] : null;
   const scopedSectionIds = scopedViewset ? new Set(scopedViewset.views) : null;
 
-  const scopedFviews = scopedSectionIds
+  const scopedViews = scopedSectionIds
     ? Object.fromEntries(
-        Object.entries(allFviews).filter(([id]) => scopedSectionIds.has(id))
+        Object.entries(allViews).filter(([id]) => scopedSectionIds.has(id))
       )
-    : allFviews;
+    : allViews;
 
   const scopedFieldIds = new Set(
-    Object.values(scopedFviews).flatMap(s => s.fields)
+    Object.values(scopedViews).flatMap(s => s.fields)
   );
   const scopedFields = Object.fromEntries(
     Object.entries(allFields).filter(([id]) => scopedFieldIds.has(id))
   );
 
   // Check section-level conditions
-  for (const [sectionId, sectionDef] of Object.entries(scopedFviews)) {
+  for (const [sectionId, sectionDef] of Object.entries(scopedViews)) {
     const condition = sectionDef.condition;
     if (isFieldUsedInCondition(condition, fieldName)) {
       const form = sectionToForm.get(sectionId);
@@ -182,22 +185,22 @@ export const findFieldDependencyReferences = (
  * If so, returns references for display (like "Section: X references your fields").
  *
  * @param targetSectionId The ID of the section you plan to delete.
- * @param allFviews All sections
+ * @param allViews All sections (`views` map)
  * @param allFields All fields
  * @returns Array of strings describing external references
  */
 export function findSectionExternalUsage(
   targetSectionId: string,
-  allFviews: ViewMap,
+  allViews: ViewMap,
   allFields: FieldMap
 ): string[] {
   const references: string[] = [];
 
   // 1. gather all fields that belong to the target section
-  const targetFields = allFviews[targetSectionId]?.fields || [];
+  const targetFields = allViews[targetSectionId]?.fields || [];
 
-  // 2. For each section in fviews
-  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+  // 2. For each section in `views`
+  for (const [sectionId, sectionDef] of Object.entries(allViews)) {
     // If it's the same section, skip. Self-contained references are okay if you're deleting the whole section
     if (sectionId === targetSectionId) continue;
 
@@ -234,14 +237,14 @@ export function findSectionExternalUsage(
  *
  * @param targetFormId The ID of the form you plan to delete
  * @param viewsets All forms
- * @param allFviews All sections
+ * @param allViews All sections (`views` map)
  * @param allFields All fields
  * @returns Array of strings describing references from outside forms
  */
 export function findFormExternalUsage(
   targetFormId: string,
   viewsets: Record<string, {label: string; views: string[]}>,
-  allFviews: ViewMap,
+  allViews: ViewMap,
   allFields: FieldMap
 ): string[] {
   const references: string[] = [];
@@ -252,7 +255,7 @@ export function findFormExternalUsage(
   // 1. gather all fields across all sections in the target form
   const targetFields: string[] = [];
   for (const sectionId of targetFormDef.views) {
-    targetFields.push(...(allFviews[sectionId]?.fields || []));
+    targetFields.push(...(allViews[sectionId]?.fields || []));
   }
 
   // 2. For each form in viewsets
@@ -261,7 +264,7 @@ export function findFormExternalUsage(
 
     // 2a. for each section in that form
     for (const secId of formDef.views) {
-      const secDef = allFviews[secId];
+      const secDef = allViews[secId];
       if (!secDef) continue;
       // check section-level condition
       if (
@@ -298,14 +301,14 @@ export function findFormExternalUsage(
  * @param targetFieldName The name of the field being checked
  * @param targetField The field's definition
  * @param allFields All fields in the form
- * @param allFviews All sections in the form
+ * @param allViews All sections (`views` map) in the form
  * @returns An array of messages identifying conditions with missing expected values
  */
 export function findInvalidConditionReferences(
   targetFieldName: string,
   targetField: FieldType,
   allFields: Record<string, FieldType>,
-  allFviews: Record<string, {label: string; condition?: ConditionType}>
+  allViews: Record<string, {label: string; condition?: ConditionType}>
 ): string[] {
   const invalidConditions: string[] = [];
 
@@ -364,13 +367,13 @@ export function findInvalidConditionReferences(
   }
 
   // Check section conditions
-  for (const [, fviewDef] of Object.entries(allFviews)) {
-    const cond = fviewDef.condition;
+  for (const [, viewDef] of Object.entries(allViews)) {
+    const cond = viewDef.condition;
     if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
       const invalidVals = getInvalidExpectedValue(cond);
       if (invalidVals.length > 0) {
         invalidVals.forEach(invalidVal => {
-          invalidConditions.push(`Section: ${fviewDef.label} (${invalidVal})`);
+          invalidConditions.push(`Section: ${viewDef.label} (${invalidVal})`);
         });
       }
     }

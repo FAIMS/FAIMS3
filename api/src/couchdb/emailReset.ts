@@ -22,6 +22,7 @@ import {
   ItemNotFoundException,
   TooManyRequestsException,
 } from '../exceptions';
+import {expiryMsFromNow, nowMs} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
@@ -130,19 +131,6 @@ export const checkCanCreateEmailCode = async ({
 };
 
 /**
- * Generates an expiry timestamp for an email verification code.
- *
- * This function calculates the expiry timestamp based on the current time
- * and a predefined expiry duration.
- *
- * @param expiryMs The duration in milliseconds until the code expires
- * @returns {number} The expiry timestamp in milliseconds since the Unix epoch.
- */
-function generateExpiryTimestamp(expiryMs: number): number {
-  return Date.now() + expiryMs;
-}
-
-/**
  * Creates a new email verification code for a given user.
  * @param userId The ID of the user for whom the code is being created.
  * @param expiryMs The duration in milliseconds until the code expires
@@ -171,8 +159,8 @@ export const createNewEmailCode = async ({
   const code = generateVerificationCode();
   const hash = hashChallengeCode(code);
   const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + crypto.randomUUID();
-  const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
-  const currentTimestamp = Date.now();
+  const expiryTimestampMs = expiryMsFromNow(expiryMs);
+  const createdTimestampMs = nowMs();
 
   const newEmailCode: EmailCodeFields = {
     documentType: 'emailcode',
@@ -180,7 +168,7 @@ export const createNewEmailCode = async ({
     code: hash,
     used: false,
     expiryTimestampMs,
-    createdTimestampMs: currentTimestamp,
+    createdTimestampMs,
   };
 
   const response = await authDB.put({_id: dbId, ...newEmailCode});

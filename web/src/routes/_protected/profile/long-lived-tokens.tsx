@@ -17,6 +17,7 @@ import {LONG_LIVED_TOKEN_HELP_LINK} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {revokeLongLivedToken, useGetLongLivedTokens} from '@/hooks/queries';
+import {nowMs} from '@/lib/time';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
@@ -98,7 +99,7 @@ function RouteComponent() {
       }
 
       // Filter out expired tokens if not showing them
-      if (!showExpired && token.expiresAt && token.expiresAt < Date.now()) {
+      if (!showExpired && token.expiresAt && token.expiresAt < nowMs()) {
         return false;
       }
 

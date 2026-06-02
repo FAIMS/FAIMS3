@@ -5,10 +5,18 @@ import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {
+  Action,
+  getUserResourcesForAction,
+  prepareNotebookUiSpecificationInputForApi,
+} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
+import {
+  optionalRootDescriptionField,
+  rootDescriptionForApi,
+} from '@/lib/rootDescriptionField';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -66,6 +74,7 @@ export function CreateTemplateForm({
         message: 'Template name must be at least 5 characters.',
       }),
     },
+    optionalRootDescriptionField(),
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
@@ -118,33 +127,33 @@ export function CreateTemplateForm({
 
   const onSubmit = async (values: {
     name: string;
+    description?: string;
     file?: File;
     team?: string;
     visibility?: 'private' | 'public';
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, file, team, visibility} = values;
+    const {name, description, file, team, visibility} = values;
     const isPublic = canCreatePublicTemplate && visibility === 'public';
-    let jsonPayload: Record<string, any> = {};
+    let uiSpecification: unknown = blankNotebook;
 
     if (file) {
-      // parse the user-uploaded file
       const text = await readFileAsText(file);
       if (!text) {
         return {type: 'submit', message: 'Error reading file'};
       }
+      let parsed: unknown;
       try {
-        jsonPayload = JSON.parse(text);
+        parsed = JSON.parse(text);
       } catch {
         return {type: 'submit', message: 'Invalid JSON file'};
       }
-    } else {
-      // pull in the sample's metadata + ui-spec
-      jsonPayload = {
-        metadata: (blankNotebook as any).metadata,
-        'ui-specification': (blankNotebook as any)['ui-specification'],
-      };
+      const prepared = prepareNotebookUiSpecificationInputForApi(parsed);
+      if (!prepared.ok) {
+        return {type: 'submit', message: prepared.message};
+      }
+      uiSpecification = prepared.uiSpecification;
     }
 
     let chosenTeamId = specifiedTeam;
@@ -166,8 +175,9 @@ export function CreateTemplateForm({
           body: JSON.stringify({
             teamId: chosenTeamId,
             name,
+            ...rootDescriptionForApi(description),
             isPublic,
-            ...jsonPayload,
+            uiSpecification,
           }),
         }
       );

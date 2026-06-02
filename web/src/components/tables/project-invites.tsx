@@ -10,7 +10,7 @@ import {
   Role,
   projectInviteToAction,
 } from '@faims3/data-model';
-import {displayUnixTimestampMs} from '@/lib/utils';
+import {displayUnixTimestampMs} from '@/lib/time';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';

@@ -1,6 +1,6 @@
-import {NotebookV1} from './migrateV2';
+import {NotebookDefinitionV1} from './migrateV2';
 
-export const sampleNotebook: NotebookV1 = {
+export const sampleNotebook: NotebookDefinitionV1 = {
   metadata: {
     notebook_version: '1.0',
     schema_version: '1.0',

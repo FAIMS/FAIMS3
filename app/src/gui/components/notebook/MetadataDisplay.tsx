@@ -25,7 +25,9 @@ export const MetadataDisplayComponent = (
     Component: MetadataDisplayComponent
 
     */
-  // TODO Destub
+  const {information} = props.project.uiDefinition.metadata;
+  const lastUpdated = props.project.updatedAt ?? '';
+
   return (
     <>
       <Box
@@ -55,7 +57,7 @@ export const MetadataDisplayComponent = (
           <strong>Name:</strong>{' '}
           <MetadataRenderer
             project_id={props.project.projectId}
-            explicitValue={props.project.name ?? props.project.metadata.name}
+            explicitValue={props.project.name}
             chips={false}
           />
         </Typography>
@@ -74,7 +76,7 @@ export const MetadataDisplayComponent = (
           <strong>Description:</strong>{' '}
           <MetadataRenderer
             project_id={props.project.projectId}
-            metadata_key={'pre_description'}
+            explicitValue={props.project.description}
             chips={false}
           />
         </Typography>
@@ -83,7 +85,7 @@ export const MetadataDisplayComponent = (
           <strong>Lead Institution:</strong>{' '}
           <MetadataRenderer
             project_id={props.project.projectId}
-            metadata_key={'lead_institution'}
+            informationField="leadInstitution"
             chips={false}
           />
         </Typography>
@@ -95,7 +97,7 @@ export const MetadataDisplayComponent = (
           <strong>Project Lead:</strong>{' '}
           <MetadataRenderer
             project_id={props.project.projectId}
-            metadata_key={'project_lead'}
+            informationField="projectLeadLabel"
             chips={false}
           />
         </Typography>
@@ -105,12 +107,12 @@ export const MetadataDisplayComponent = (
         <Grid size={{xs: 12, sm: 6, md: 6, lg: 4}}>
           <Box component={Paper} elevation={0} variant={'outlined'} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>
-              Description
+              Design purpose
             </Typography>
             <Typography variant="body2" color="text.primary" gutterBottom>
               <MetadataRenderer
                 project_id={props.project.projectId}
-                metadata_key={'pre_description'}
+                informationField="purposeMarkdown"
                 chips={false}
               />
             </Typography>
@@ -132,7 +134,7 @@ export const MetadataDisplayComponent = (
                   <TableCell>
                     <MetadataRenderer
                       project_id={props.project.projectId}
-                      metadata_key={'lead_institution'}
+                      informationField="leadInstitution"
                       chips={false}
                     />
                   </TableCell>
@@ -144,9 +146,21 @@ export const MetadataDisplayComponent = (
                   <TableCell>
                     <MetadataRenderer
                       project_id={props.project.projectId}
-                      metadata_key={'project_lead'}
+                      informationField="projectLeadLabel"
                       chips={false}
                     />
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <Typography variant={'overline'}>
+                      Notebook version
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {information.notebookVersion || '—'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -154,11 +168,9 @@ export const MetadataDisplayComponent = (
                     <Typography variant={'overline'}>Last Updated</Typography>
                   </TableCell>
                   <TableCell>
-                    <MetadataRenderer
-                      project_id={props.project.projectId}
-                      metadata_key={'last_updated'}
-                      chips={false}
-                    />
+                    <Typography variant="body2">
+                      {lastUpdated || '—'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               </TableBody>

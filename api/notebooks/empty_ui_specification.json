@@ -1,0 +1,24 @@
+{
+  "name": "empty",
+  "description": "",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {},
+      "views": {},
+      "viewsets": {},
+      "visible_types": [],
+      "settings": {
+        "showQrCodeButton": false
+      },
+      "schemaVersion": "5.0"
+    },
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0.0",
+        "purposeMarkdown": "",
+        "projectLeadLabel": "",
+        "leadInstitution": ""
+      }
+    }
+  }
+}

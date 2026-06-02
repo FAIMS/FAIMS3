@@ -1,7 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {GetListTeamsResponse} from '@faims3/data-model';
-import {displayUnixTimestampMs} from '@/lib/utils';
+import {displayUnixTimestampMs} from '@/lib/time';
 
 export const columns: ColumnDef<GetListTeamsResponse['teams'][number]>[] = [
   {

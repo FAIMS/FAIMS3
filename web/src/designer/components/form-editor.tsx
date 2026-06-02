@@ -131,9 +131,7 @@ export const FormEditor = ({
   const sectionParam = searchParams.get('section');
   const createSectionParam = searchParams.get('createSection');
 
-  const uiSpec = useAppSelector(
-    state => state.notebook['ui-specification'].present
-  );
+  const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   // we need this to be a ProjectUIModel type for the PreviewFormManager
   // we should also compile this
   const uiSpecInternal = useMemo(
@@ -143,7 +141,7 @@ export const FormEditor = ({
       const uiSpecEncoded = cloneDeep(uiSpec);
       return {
         fields: uiSpecEncoded.fields,
-        views: uiSpecEncoded.fviews,
+        views: uiSpecEncoded.views,
         viewsets: uiSpecEncoded.viewsets,
         visible_types: uiSpecEncoded.visible_types,
       } satisfies UISpecification;
@@ -153,25 +151,21 @@ export const FormEditor = ({
   );
 
   const visibleTypes = useAppSelector(
-    state => state.notebook['ui-specification'].present.visible_types
+    state => state.notebook.uiSpec.present.visible_types
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets[viewSetId],
+    state => state.notebook.uiSpec.present.viewsets[viewSetId],
     (left, right) => {
       return shallowEqual(left, right);
     }
   );
   const sections = viewSet ? viewSet.views : [];
 
-  const views = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
-  const fields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
   const dispatch = useAppDispatch();
 
   const [activeStep, setActiveStep] = useState(0);

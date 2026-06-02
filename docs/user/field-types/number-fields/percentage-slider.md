@@ -36,10 +36,10 @@ Field ID, and add any desired Helper Text.
 
 Below the identity fields, the Percentage Slider provides:
 
-| Setting       | What It Does                                                                 |
-| ------------- | ---------------------------------------------------------------------------- |
-| **Minimum (%)** | Smallest value on the slider (0–100). Defaults to **0** if left unset.     |
-| **Maximum (%)** | Largest value on the slider (0–100). Defaults to **100** if left unset.   |
+| Setting         | What It Does                                                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Minimum (%)** | Smallest value on the slider (0–100). Defaults to **0** if left unset.                                                                             |
+| **Maximum (%)** | Largest value on the slider (0–100). Defaults to **100** if left unset.                                                                            |
 | **Step**        | Increment between valid stops (e.g. **1** for every percent, **10** for tens). Defaults to **1** if left unset. Must fit within the min–max range. |
 
 The app enforces that the minimum is not greater than the maximum, and that

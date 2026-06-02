@@ -6,6 +6,7 @@ import {
   DB_MIGRATIONS,
   DB_TARGET_VERSIONS,
   DatabaseType,
+  GetDbById,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
   MigrationFunc,
   MigrationsDB,
@@ -215,12 +216,14 @@ describe('Migration System Tests', () => {
    */
   describe('performMigration', () => {
     let testDb: DatabaseInterface;
+    let getDbById: GetDbById;
 
     beforeEach(async () => {
       // Create a fresh in-memory database for each test
       testDb = new PouchDB('test-migration-db', {
         adapter: 'memory',
       }) as DatabaseInterface;
+      getDbById = async () => testDb;
 
       // Add some test documents
       await testDb.bulkDocs([
@@ -253,7 +256,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check that correct documents were processed
       expect(result.processedCount).toBe(3);
@@ -300,7 +307,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check results (should include original 3 docs + 250 batch docs)
       expect(result.processedCount).toBe(253);
@@ -330,7 +341,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Should have an issue for the problem document, but continue with others
       expect(result.issues.length).toBe(1);
@@ -353,7 +368,11 @@ describe('Migration System Tests', () => {
       // Try to perform migration on broken DB
       const migrationFunc: MigrationFunc = () => ({action: 'none'});
 
-      const result = await performMigration({db: brokenDb, migrationFunc});
+      const result = await performMigration({
+        db: brokenDb,
+        migrationFunc,
+        getDbById: async () => brokenDb,
+      });
 
       // Should have a database-level issue
       expect(result.issues.length).toBeGreaterThan(0);
@@ -380,7 +399,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check statistics
       expect(result.processedCount).toBe(4); // All docs including the new one
@@ -403,6 +426,50 @@ describe('Migration System Tests', () => {
       const doc2 = await testDb.get<any>('doc2');
       expect(doc2.data).toBe('unchanged');
     });
+
+    it('should pass getDbById to migration functions via context', async () => {
+      const otherDb = new PouchDB('test-migration-other-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const getDbById = jest.fn().mockResolvedValue(otherDb);
+
+      const migrationFunc: MigrationFunc = async (doc, context) => {
+        if (doc._id !== 'doc1') {
+          return {action: 'none'};
+        }
+        const db = await context!.getDbById({
+          dbType: DatabaseType.PEOPLE,
+          id: doc._id,
+        });
+        const person = await db.get(doc._id);
+        return {
+          action: 'update',
+          updatedRecord: {
+            ...doc,
+            mirroredName: (person as {name?: string}).name,
+          },
+        };
+      };
+
+      await otherDb.put({_id: 'doc1', name: 'Alice from other db'});
+
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
+
+      expect(getDbById).toHaveBeenCalledWith({
+        dbType: DatabaseType.PEOPLE,
+        id: 'doc1',
+      });
+      expect(result.issues).toEqual([]);
+
+      const doc1 = await testDb.get<{mirroredName?: string}>('doc1');
+      expect(doc1.mirroredName).toBe('Alice from other db');
+
+      await otherDb.destroy();
+    });
   });
 
   /**
@@ -411,6 +478,7 @@ describe('Migration System Tests', () => {
   describe('migrateDbs', () => {
     let testMigrationDb: DatabaseInterface;
     let testPeopleDb: DatabaseInterface;
+    let getDbById: GetDbById;
 
     beforeEach(async () => {
       // Create in-memory databases
@@ -420,6 +488,7 @@ describe('Migration System Tests', () => {
       testPeopleDb = new PouchDB('test-people-db', {
         adapter: 'memory',
       }) as DatabaseInterface;
+      getDbById = async () => testPeopleDb;
 
       // Add design documents to migrations db
       await couchInitialiser({
@@ -486,6 +555,7 @@ describe('Migration System Tests', () => {
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
         userId: 'test-user',
+        getDbById,
       });
 
       // Check that a migration document was created
@@ -582,6 +652,7 @@ describe('Migration System Tests', () => {
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
         userId: 'test-user',
+        getDbById: async () => realPeopleDb,
       });
 
       // Check that migration document was updated
@@ -679,6 +750,7 @@ describe('Migration System Tests', () => {
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
+        getDbById,
       });
 
       // Check that migration document was not modified
@@ -746,6 +818,7 @@ describe('Migration System Tests', () => {
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
+        getDbById,
       });
 
       // Check that migration document reflects the failure
@@ -814,6 +887,7 @@ describe('Migration System Tests', () => {
             },
           ],
           migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
         });
 
         // Check that migration documents were created for both databases

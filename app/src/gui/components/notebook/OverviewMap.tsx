@@ -23,8 +23,8 @@ import {
   DataDocument,
   DataEngine,
   MinimalRecordMetadata,
+  NotebookUiSpec,
   ProjectID,
-  ProjectUIModel,
 } from '@faims3/data-model';
 import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
 import {
@@ -59,7 +59,8 @@ import {localGetDataDb} from '../../../utils/database';
 import {formatTimestamp} from '../../../utils/formUtilities';
 
 interface OverviewMapProps {
-  uiSpec: ProjectUIModel;
+  /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
+  uiSpec: NotebookUiSpec;
   project_id: ProjectID;
   serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};
@@ -100,7 +101,7 @@ interface FeatureCollection {
 /**
  * Get the names of all GIS fields in a UI Specification
  */
-const getGISFields = (uiSpec: ProjectUIModel): string[] => {
+const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
   const fields = Object.getOwnPropertyNames(uiSpec.fields);
   return fields.filter(
     (field: string) =>
@@ -120,7 +121,7 @@ interface SelectedRecordPopoverContentProps {
   feature: FeatureProps;
   project_id: ProjectID;
   serverId: string;
-  uiSpec: ProjectUIModel;
+  uiSpec: NotebookUiSpec;
   dataEngine: DataEngine;
 }
 
@@ -388,7 +389,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const dataDb = localGetDataDb(project_id);
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: uiSpec,
+      uiSpec,
     });
   }, [project_id, uiSpec]);
 

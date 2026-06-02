@@ -63,7 +63,7 @@ describe('Backup and restore', () => {
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 
       // test record iterator while we're here
-      const projectId = notebooks[0].project_id;
+      const projectId = notebooks[0]._id;
       const uiSpec = await getProjectUIModel(projectId);
       const dataDb = await mockGetDataDB(projectId);
 

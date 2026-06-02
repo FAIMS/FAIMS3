@@ -6,18 +6,24 @@ for setting up your data collection forms.
 
 All of this section also applies to [templates](./templates.md) which share the same structure as {{notebooks}}.
 
-## Metadata
+## Survey details and design metadata
 
-Every {{notebook}} has associated metadata that records properties of the {{notebook}} as a
-whole. There are a number of fixed fields in the metadata but you can also add your own
-field. The fixed fields are:
+Survey and template properties are split into two layers:
 
-- **Title**: the published name of the {{notebook}} as it will appear in the app
-- **Project Lead**: the name of the person running this project (this can be different to the name of the user who creates the {{notebook}})
-- **Lead Institution**: the name of the organisation that owns the project
-- **Description**: A rich text description of the notebook that will appear in the notebook summary in the app and on the {{dashboard}}
-- **Notebook Version**: A version number for your notebook, this can be used if you make changes to indicate different versions of your forms
-- **Enable QR Code Search**: A checkbox that enables users of your notebook to use a QR code scan to find records on their device
+**Survey / template listing fields** (edited in the {{dashboard}} **Details** tab or when creating a survey/template):
+
+- **Name** — title shown in the app and {{dashboard}} (required)
+- **Description** — optional short summary for listings and admin (up to **250** characters; not copied from a template, source survey, or uploaded JSON design file)
+
+**Design metadata** (edited in the {{notebook}} editor **Info** panel; stored inside the design bundle):
+
+- **Design purpose** — rich text design documentation (shown in the app notebook summary and {{dashboard}} details as “Design purpose”)
+- **Design lead** — free-text label for the person responsible for the form design (not the same as the account that created the survey)
+- **Lead institution** — organisation name
+- **Notebook version** — your own version label for the form definition
+- **Enable QR code search** — when enabled, users can search records by QR code on the record list
+
+You can still add **custom** key/value pairs in the designer; these are kept for compatibility but are not part of the fixed design fields above.
 
 ## {{Notebook}} Design
 

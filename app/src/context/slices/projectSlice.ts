@@ -1,10 +1,10 @@
 import {
   couchInitialiser,
   initDataDB,
+  NotebookDefinition,
   ProjectDataObject,
-  ProjectDocument,
+  ProjectListItem,
   ProjectStatus,
-  ProjectUIModel,
   PublicServerInfo,
 } from '@faims3/data-model';
 import {
@@ -28,7 +28,7 @@ import {
   createLocalPouchDatabase,
   createPouchDbSync,
   createRemotePouchDbFromConnectionInfo,
-  fetchProjectMetadataAndSpec,
+  fetchNotebookDetails,
   getRemoteDatabaseNameFromId,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
@@ -116,9 +116,8 @@ function clearAbsentDirectoryRetry(serverId: string) {
   }
 }
 
-function projectDocIsArchivedOnServer(doc: ProjectDocument): boolean {
-  const s = doc.status as ProjectStatus | string;
-  return s === ProjectStatus.ARCHIVED;
+function projectDocIsArchivedOnServer(doc: {status: ProjectStatus}): boolean {
+  return doc.status === ProjectStatus.ARCHIVED;
 }
 
 /**
@@ -126,7 +125,7 @@ function projectDocIsArchivedOnServer(doc: ProjectDocument): boolean {
  * missing from the listing, or present with archived lifecycle.
  */
 function shouldAccumulateRemoteCleanupStreak(
-  directoryEntry: ProjectDocument | undefined
+  directoryEntry: ProjectListItem | undefined
 ): boolean {
   if (directoryEntry === undefined) {
     return true;
@@ -195,34 +194,23 @@ export interface DatabaseConnection {
   remote: RemoteCouchConnection;
 }
 
-// This is metadata which is defined as part of the design file
-export interface KnownProjectMetadata {
-  // The project / notebook display name
-  name: string;
-  // The description
-  description?: string;
-}
-
-// This represents the true metadata which is a combination of mandatory + user added
-export type ProjectMetadata = KnownProjectMetadata & {[key: string]: any};
-
 // Maps a project ID -> project
 export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
-/** This is the subset of project information which is modifiable/trivial */
+/** Superficial notebook details synced from the API (design bundle is typed). */
 export interface ProjectInformation {
-  // Name of the project
+  /** Display title (project document root). */
   name: string;
-
-  // This is metadata information about the project
-  metadata: ProjectMetadata;
-
-  // The UI Specification which is NOT compiled - see compiledSpecId for the
-  // reference to the compiledSpecService instance of the compiled spec.
-  rawUiSpecification: ProjectUIModel;
-
-  // What is the status of the project?
+  /** Operational description (project document root). */
+  description?: string;
+  /** Source template when created from a template. */
+  templateId?: string;
+  /** Inlined uiSpecification from GET /api/notebooks/:id (current notebook schema). */
+  uiDefinition: NotebookDefinition;
+  /** Survey lifecycle. */
   status: ProjectStatus;
+  /** Last update from the server, when known. */
+  updatedAt?: string;
 }
 
 // A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
@@ -451,7 +439,7 @@ const projectsSlice = createSlice({
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
-        payload.rawUiSpecification
+        payload.uiDefinition.uiSpec
       );
 
       // Update the couch DB URL (since we presume this to be an
@@ -466,11 +454,13 @@ const projectsSlice = createSlice({
         serverId: payload.serverId,
 
         // Superficial details
-        metadata: payload.metadata,
         name: payload.name,
+        description: payload.description,
+        templateId: payload.templateId,
+        updatedAt: payload.updatedAt,
+        uiDefinition: payload.uiDefinition,
 
         uiSpecificationId: compiledSpecId,
-        rawUiSpecification: payload.rawUiSpecification,
 
         // Default not activated with no database
         isActivated: false,
@@ -631,7 +621,7 @@ const projectsSlice = createSlice({
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
-        payload.rawUiSpecification
+        payload.uiDefinition.uiSpec
       );
 
       server.couchDbUrl = payload.couchDbUrl;
@@ -642,9 +632,12 @@ const projectsSlice = createSlice({
 
         // Superficial details updated only! You cannot change activated/sync
         // status here - these are controlled actions
-        metadata: payload.metadata,
+        name: payload.name,
+        description: payload.description,
+        templateId: payload.templateId,
+        updatedAt: payload.updatedAt,
+        uiDefinition: payload.uiDefinition,
         uiSpecificationId: compiledSpecId,
-        rawUiSpecification: payload.rawUiSpecification,
         status: payload.status,
       };
     },
@@ -673,10 +666,12 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[serverId].projects[project.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -772,10 +767,12 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -824,10 +821,12 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[serverId].projects[projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -858,10 +857,12 @@ const projectsSlice = createSlice({
       // updates the state to indicate no syncing
       state.servers[project.serverId].projects[project.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -899,10 +900,12 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[project.serverId].projects[project.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -1024,10 +1027,12 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -1152,10 +1157,12 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -1762,7 +1769,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         );
       }
 
-      const directoryResults = (await response.json()) as ProjectDocument[];
+      const directoryResults = (await response.json()) as ProjectListItem[];
 
       // Fetch all project metadata in parallel
       const metadataResults = await Promise.allSettled(
@@ -1778,8 +1785,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           }
 
           try {
-            const meta = await fetchProjectMetadataAndSpec({
-              compile: false,
+            const meta = await fetchNotebookDetails({
               projectId,
               serverUrl: server.serverUrl,
               token,
@@ -1849,13 +1855,17 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           if (value.details?.dataDb?.base_url) {
             actions.push(
               updateProjectDetails({
-                name: existingProject.name,
-                metadata: existingProject.metadata,
+                ...existingProject,
                 projectId: value.projectId,
                 serverId,
-                rawUiSpecification: existingProject.rawUiSpecification,
                 couchDbUrl: value.details.dataDb.base_url,
-                status: existingProject.status,
+                status: value.details.status ?? existingProject.status,
+                name: value.details.name ?? existingProject.name,
+                description:
+                  value.details.description ?? existingProject.description,
+                templateId:
+                  value.details.templateId ?? existingProject.templateId,
+                updatedAt: value.details.updatedAt ?? existingProject.updatedAt,
               })
             );
           }
@@ -1873,10 +1883,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           actions.push(
             addProject({
               name: meta.name,
-              metadata: meta.metadata as ProjectMetadata,
+              description: meta.description,
+              templateId: meta.templateId,
+              updatedAt: meta.updatedAt,
+              uiDefinition: meta.uiDefinition,
               projectId,
               serverId,
-              rawUiSpecification: meta.decodedSpec,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status,
             })
@@ -1885,13 +1897,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           actions.push(
             updateProjectDetails({
               name: meta.name ?? existingProject.name,
-              metadata:
-                (meta.metadata as ProjectMetadata | undefined) ??
-                existingProject.metadata,
+              description: meta.description ?? existingProject.description,
+              templateId: meta.templateId ?? existingProject.templateId,
+              updatedAt: meta.updatedAt ?? existingProject.updatedAt,
+              uiDefinition: meta.uiDefinition,
               projectId,
               serverId,
-              rawUiSpecification:
-                meta.decodedSpec ?? existingProject.rawUiSpecification,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status ?? existingProject.status,
             })
@@ -2335,7 +2346,7 @@ export const compileSpecs = (state: Readonly<ProjectsState>): void => {
     for (const project of Object.values(server.projects)) {
       compiledSpecService.compileAndRegisterSpec(
         project.uiSpecificationId,
-        project.rawUiSpecification
+        project.uiDefinition.uiSpec
       );
     }
   }

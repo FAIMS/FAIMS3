@@ -42,6 +42,10 @@ const baseTheme = createTheme({
       main: '#12B0FB',
       contrastText: '#F4F4F4',
     },
+    success: {
+      main: bssBrand.successMain,
+      contrastText: '#FFFFFF',
+    },
     alert: {
       warningBackground: '#FFFFFF',
       warningText: '#EA0E0EFF',

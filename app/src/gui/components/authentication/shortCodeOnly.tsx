@@ -187,7 +187,12 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
   const showPrefixSelector = props.servers.length > 1;
 
   return (
-    <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+    <Stack
+      data-testid="short-code-only"
+      direction="row"
+      spacing={1}
+      sx={{alignItems: 'center'}}
+    >
       {
         // Only show selector if condition is true i.e. more than one server
       }

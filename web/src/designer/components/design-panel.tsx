@@ -72,11 +72,11 @@ export const DesignPanel = () => {
   const basePath = pathname.split('/').slice(0, 2).join('/');
 
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets,
+    state => state.notebook.uiSpec.present.viewsets,
     shallowEqual
   );
   const visibleTypes: string[] = useAppSelector(
-    state => state.notebook['ui-specification'].present.visible_types
+    state => state.notebook.uiSpec.present.visible_types
   );
   const dispatch = useAppDispatch();
 

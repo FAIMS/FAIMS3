@@ -133,6 +133,10 @@ const RelatedRecordListItem = ({
     return null;
   }
 
+  // True when we have a real HRID (templated string), false when we're
+  // falling back to the raw record id because no HRID was configured.
+  const isHumanReadableHrid = data.hrid !== link.record_id;
+
   // 3. Success State: Hydrated Data
   return (
     <ListItem
@@ -168,10 +172,14 @@ const RelatedRecordListItem = ({
               variant: 'body2',
               sx: {
                 fontFamily: 'monospace',
-                fontWeight: data.hrid !== link.record_id ? 'bold' : 'normal',
+                fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+                // Monospace only as a fallback when no real HRID was configured
+                // (i.e. we're showing the opaque record id). Real HRIDs use the
+                // theme's default font.
+                ...(isHumanReadableHrid ? {} : {fontFamily: 'monospace'}),
               },
             },
-          }}
+          }
         />
       </ListItemButton>
     </ListItem>
@@ -375,7 +383,10 @@ const LinkExistingDialog = ({
             <List dense disablePadding sx={{maxHeight: 300, overflow: 'auto'}}>
               {filteredRecords
                 .filter(r => r.success)
-                .map(recordResult => (
+                .map(recordResult => {
+                  const isHumanReadableHrid =
+                    recordResult.record.hrid !== recordResult.record.record._id;
+                  return (
                   <ListItem
                     key={recordResult.record.record._id}
                     disablePadding
@@ -396,16 +407,16 @@ const LinkExistingDialog = ({
                           primary: {
                             variant: 'body2',
                             sx: {
-                              fontFamily: 'monospace',
-                              fontWeight:
-                                recordResult.record.hrid !==
-                                recordResult.record.record._id
-                                  ? 'bold'
-                                  : 'normal',
+                            ...(isHumanReadableHrid
+                              ? {}
+                              : {fontFamily: 'monospace'}),
+                              fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
                             },
                           },
                           secondary: {
                             variant: 'caption',
+                            // Secondary is always the raw record id, kept
+                            // monospace so it reads as an opaque identifier.
                             sx: {fontFamily: 'monospace'},
                           },
                         }}

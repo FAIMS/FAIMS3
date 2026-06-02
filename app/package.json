@@ -30,7 +30,7 @@
     "lint": "oxlint -c ../.oxlintrc.json .",
     "clean": "gts clean",
     "compile": "tsc",
-    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt .",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
     "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
