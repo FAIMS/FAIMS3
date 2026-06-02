@@ -179,7 +179,7 @@ const RelatedRecordListItem = ({
                 ...(isHumanReadableHrid ? {} : {fontFamily: 'monospace'}),
               },
             },
-          }
+          }}
         />
       </ListItemButton>
     </ListItem>
@@ -387,43 +387,46 @@ const LinkExistingDialog = ({
                   const isHumanReadableHrid =
                     recordResult.record.hrid !== recordResult.record.record._id;
                   return (
-                  <ListItem
-                    key={recordResult.record.record._id}
-                    disablePadding
-                    divider
-                  >
-                    <ListItemButton
-                      onClick={async () => {
-                        await handleSelect(recordResult.record);
-                      }}
+                    <ListItem
+                      key={recordResult.record.record._id}
+                      disablePadding
+                      divider
                     >
-                      <ListItemIcon sx={{minWidth: 40}}>
-                        <LinkIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={recordResult.record.hrid}
-                        secondary={recordResult.record.record._id}
-                        slotProps={{
-                          primary: {
-                            variant: 'body2',
-                            sx: {
-                            ...(isHumanReadableHrid
-                              ? {}
-                              : {fontFamily: 'monospace'}),
-                              fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
-                            },
-                          },
-                          secondary: {
-                            variant: 'caption',
-                            // Secondary is always the raw record id, kept
-                            // monospace so it reads as an opaque identifier.
-                            sx: {fontFamily: 'monospace'},
-                          },
+                      <ListItemButton
+                        onClick={async () => {
+                          await handleSelect(recordResult.record);
                         }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
+                      >
+                        <ListItemIcon sx={{minWidth: 40}}>
+                          <LinkIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={recordResult.record.hrid}
+                          secondary={recordResult.record.record._id}
+                          slotProps={{
+                            primary: {
+                              variant: 'body2',
+                              sx: {
+                                ...(isHumanReadableHrid
+                                  ? {}
+                                  : {fontFamily: 'monospace'}),
+                                fontWeight: isHumanReadableHrid
+                                  ? 'bold'
+                                  : 'normal',
+                              },
+                            },
+                            secondary: {
+                              variant: 'caption',
+                              // Secondary is always the raw record id, kept
+                              // monospace so it reads as an opaque identifier.
+                              sx: {fontFamily: 'monospace'},
+                            },
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
 
               {/* Load More Button */}
               {hasNextPage && (

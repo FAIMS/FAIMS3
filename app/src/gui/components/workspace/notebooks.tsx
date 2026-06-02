@@ -171,8 +171,10 @@ export default function NoteBooks() {
           >
             <Typography
               variant={is_xs ? 'body2' : 'body1'}
-              fontWeight={row.isActivated ? 'bold' : 'normal'}
-              color={row.isActivated ? 'black' : grey[800]}
+              sx={{
+                fontWeight: row.isActivated ? 'bold' : 'normal',
+                color: row.isActivated ? 'black' : grey[800],
+              }}
             >
               {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
