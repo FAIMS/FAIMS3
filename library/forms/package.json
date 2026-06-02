@@ -52,6 +52,7 @@
     "react-dom": "^18.3.1",
     "react-dropzone": "14.2.3",
     "react-router-dom": "^6.26.0",
+    "react-zoom-pan-pinch": "^4.0.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
