@@ -141,6 +141,10 @@ function MapWrapper(props: MapProps) {
   // Has the user drawn features?
   const [hasDrawnFeatures, setHasDrawnFeatures] = useState<boolean>(false);
 
+  // Is the user partway through drawing a polygon / line (sketch started but
+  // not yet finished)? Used so Clear can abort an in-progress sketch.
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
+
   // Does the map have features already?
   const hasExistingFeatures = !!(
     props.features?.features && props.features.features.length > 0
@@ -174,10 +178,17 @@ function MapWrapper(props: MapProps) {
       // Only allow one point at a time
       draw.on('drawstart', () => {
         source.clear();
+        setIsDrawing(true);
       });
 
       draw.on('drawend', () => {
         setHasDrawnFeatures(true);
+        setIsDrawing(false);
+      });
+
+      // Sketch was aborted (e.g. via Clear) - no longer drawing.
+      draw.on('drawabort', () => {
+        setIsDrawing(false);
       });
 
       // import any exiting features
@@ -216,6 +227,7 @@ function MapWrapper(props: MapProps) {
 
     if (action === 'clear') {
       setHasDrawnFeatures(false);
+      setIsDrawing(false);
 
       drawRef.current?.abortDrawing();
       source?.clear();
@@ -252,6 +264,7 @@ function MapWrapper(props: MapProps) {
 
     // Reset this
     setHasDrawnFeatures(false);
+    setIsDrawing(false);
 
     setMapOpen(true);
     setTimeout(() => {
@@ -424,8 +437,11 @@ function MapWrapper(props: MapProps) {
                   onClick={() => handleClose('clear')}
                   color="primary"
                   variant="outlined"
-                  // Disabled if there's nothing to clear
-                  disabled={!hasExistingFeatures && !hasDrawnFeatures}
+                  // Disabled if there's nothing to clear. Stays enabled while a
+                  // polygon/line sketch is in progress so Clear can abort it.
+                  disabled={
+                    !hasExistingFeatures && !hasDrawnFeatures && !isDrawing
+                  }
                 >
                   Clear
                 </Button>
