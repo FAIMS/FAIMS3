@@ -154,6 +154,7 @@ export function completion({
 }): CompletionResult {
   let fieldCount = 0;
   let completedCount = 0;
+  const incompleteRequired: string[] = [];
 
   const allViews = getViewsForViewSet(uiSpec, formId);
   for (const sectionId of allViews) {
@@ -186,15 +187,11 @@ export function completion({
 
       // Get the form data for this field
       const fieldData = data?.[fieldId];
-      if (!fieldData) {
-        // no data for this field so it's not complete
-        continue;
-      }
-
-      // Check if the field is complete
-      const isComplete = completionFunc(fieldData);
+      const isComplete = !!fieldData && completionFunc(fieldData);
       if (isComplete) {
         completedCount += 1;
+      } else {
+        incompleteRequired.push(fieldId);
       }
     }
   }
@@ -205,12 +202,14 @@ export function completion({
       progress: 1.0,
       requiredCount: 0,
       completedCount: 0,
+      incompleteRequired: [],
     };
   }
 
   return {
     progress: completedCount / fieldCount,
     requiredCount: fieldCount,
-    completedCount: completedCount,
+    completedCount,
+    incompleteRequired,
   };
 }
