@@ -33,7 +33,6 @@
       </div>
       <div class="strength-feedback">
         <span class="strength-label" id="strengthLabel"></span>
-        <span class="strength-time" id="strengthTime"></span>
       </div>
       <div class="strength-suggestions" id="strengthSuggestions"></div>
     `;
@@ -46,7 +45,6 @@
   function updateStrengthMeter(password, userInputs = []) {
     const bar = document.getElementById('strengthBar');
     const label = document.getElementById('strengthLabel');
-    const time = document.getElementById('strengthTime');
     const suggestions = document.getElementById('strengthSuggestions');
 
     if (!password || password.length === 0) {
@@ -54,7 +52,6 @@
       bar.style.width = '0%';
       bar.style.backgroundColor = '';
       label.textContent = '';
-      time.textContent = '';
       suggestions.textContent = '';
       return;
     }
@@ -66,7 +63,6 @@
       bar.style.backgroundColor = config.color;
       label.textContent = config.label;
       label.className = 'strength-label ' + config.class;
-      time.textContent = '';
       suggestions.innerHTML = `<span class="text-danger">Password must be at least ${MINIMUM_LENGTH} characters long</span>`;
       return;
     }
@@ -90,9 +86,9 @@
     label.className = 'strength-label ' + config.class;
 
     // Update crack time
-    const crackTime =
-      result.crack_times_display.offline_slow_hashing_1e4_per_second;
-    time.textContent = `Time to crack: ${crackTime}`;
+    // const crackTime =
+    //   result.crack_times_display.offline_slow_hashing_1e4_per_second;
+    // time.textContent = `Time to crack: ${crackTime}`;
 
     // Update suggestions
     const feedback = [];

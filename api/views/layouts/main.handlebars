@@ -44,7 +44,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 15px;
+        /* Respect iOS notch / home indicator while keeping a 15px floor. */
+        padding:
+          max(15px, env(safe-area-inset-top, 0px))
+          max(15px, env(safe-area-inset-right, 0px))
+          max(15px, env(safe-area-inset-bottom, 0px))
+          max(15px, env(safe-area-inset-left, 0px));
       }
 
       .auth-card {
@@ -89,7 +94,12 @@
         padding: 0.5rem 0.75rem;
         border: 1px solid var(--border-color);
         margin-bottom: 0.25rem;
-        font-size: 0.9rem;
+        /*
+         * 1rem (16px) is intentional: anything smaller triggers iOS Safari's
+         * auto-zoom on input focus. Keeping inputs at 16px makes Android
+         * comfortably readable without zooming and stops the iOS jump.
+         */
+        font-size: 1rem;
       }
 
       .form-control:focus {
@@ -98,7 +108,7 @@
       }
 
       .form-label {
-        font-size: 0.9rem;
+        font-size: 1rem;
         margin-bottom: 0.25rem;
         font-weight: bold;
       }
@@ -216,6 +226,56 @@
       /* Form Groups */
       .mb-3 {
         margin-bottom: 0.5rem !important;
+      }
+
+      /*
+       * Mobile breakpoint
+       * Bumps typography so users don't need to pinch-zoom on Android
+       * (iOS already stops auto-zooming thanks to the 1rem input font-size
+       * above). Also gives buttons and form groups more breathing room so
+       * the card feels tappable on small touch screens.
+       */
+      @media (max-width: 480px) {
+        .auth-container {
+          /* Leave a touch less gutter so the card uses more of the viewport. */
+          padding:
+            max(12px, env(safe-area-inset-top, 0px))
+            max(10px, env(safe-area-inset-right, 0px))
+            max(12px, env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-left, 0px));
+        }
+
+        .auth-card {
+          padding: 1.75rem 1.25rem;
+        }
+
+        .auth-header h2 {
+          font-size: 1.5rem;
+        }
+        .auth-header p {
+          font-size: 1rem;
+        }
+
+        .auth-button,
+        .auth-button-outline {
+          font-size: 1rem;
+          /* Bigger vertical padding -> ~48px tall, well above the 44px tap-target floor. */
+          padding: 0.85rem;
+        }
+
+        .helper-text,
+        .auth-helper-text {
+          font-size: 0.95rem;
+        }
+
+        .alert {
+          font-size: 0.95rem;
+        }
+
+        /* Loosen field spacing so adjacent inputs don't crowd each other. */
+        .mb-3 {
+          margin-bottom: 0.75rem !important;
+        }
       }
     </style>
     {{{extraStyles}}}
