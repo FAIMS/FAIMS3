@@ -13,24 +13,15 @@
 // limitations under the License.
 
 /**
- * @file Metadata slice: notebook title, descriptions, access roles, and ad-hoc properties.
- * `propertyUpdated` rejects writes to keys in `protectedFields`.
+ * @file Metadata partition slice: typed `information` fields and org `custom` key/value pairs.
  */
 
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {initialState, NotebookMetadata} from './initial';
-
-/** Keys managed by the platform or notebook structure — not editable via `propertyUpdated`. */
-const protectedFields = [
-  'meta',
-  'access',
-  'accesses',
-  'forms',
-  'filenames',
-  'ispublic',
-  'isrequest',
-  'sections',
-];
+import {
+  initialState,
+  type NotebookInformation,
+  type NotebookMetadata,
+} from './initial';
 
 const metadataReducer = createSlice({
   name: 'metadata',
@@ -40,28 +31,42 @@ const metadataReducer = createSlice({
     loaded: (_state, action: PayloadAction<NotebookMetadata>) => {
       return action.payload;
     },
-    /** Set a single string property; throws if `property` is protected. */
-    propertyUpdated: (
+    /** Merge partial updates into `metadata.information`. */
+    informationUpdated: (
       state,
-      action: PayloadAction<{property: string; value: string}>
+      action: PayloadAction<Partial<NotebookInformation>>
     ) => {
-      const {property, value} = action.payload;
-      if (protectedFields.includes(property)) {
-        throw new Error(
-          `Cannot update protected metadata field ${property} via propertyUpdated action`
-        );
-      } else {
-        state[property] = value;
-      }
+      state.information = {...state.information, ...action.payload};
     },
-    /** Overwrite `accesses` from role picker UI. */
-    rolesUpdated: (state, action: PayloadAction<{roles: string[]}>) => {
-      const {roles} = action.payload;
-      state.accesses = roles;
+    /** Set or update a single key in `metadata.custom`. */
+    customFieldUpdated: (
+      state,
+      action: PayloadAction<{key: string; value: string}>
+    ) => {
+      const {key, value} = action.payload;
+      if (!state.custom) {
+        state.custom = {};
+      }
+      state.custom[key] = value;
+    },
+    /** Remove a key from `metadata.custom`. */
+    customFieldRemoved: (state, action: PayloadAction<{key: string}>) => {
+      if (!state.custom) {
+        return;
+      }
+      delete state.custom[action.payload.key];
+      if (Object.keys(state.custom).length === 0) {
+        delete state.custom;
+      }
     },
   },
 });
 
-export const {loaded, propertyUpdated, rolesUpdated} = metadataReducer.actions;
+export const {
+  loaded,
+  informationUpdated,
+  customFieldUpdated,
+  customFieldRemoved,
+} = metadataReducer.actions;
 
 export default metadataReducer.reducer;

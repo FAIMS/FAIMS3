@@ -31,10 +31,6 @@ import {uiSpecUndoConfig} from './store/undoConfig';
 /**
  * Builds the designer Redux store: notebook slice (metadata + undoable UI spec)
  * plus a simple `modified` flag slice.
- *
- * @param notebook - Optional hydrated notebook; defaults to blank initial state.
- * @param debug - When true, logs every action to the console.
- * @returns Configured store instance.
  */
 export function createDesignerStore(
   notebook?: NotebookWithHistory,
@@ -52,10 +48,7 @@ export function createDesignerStore(
     reducer: {
       notebook: combineReducers<NotebookWithHistory>({
         metadata: metadataReducer,
-        'ui-specification': undoable(
-          uiSpecificationReducer.reducer,
-          uiSpecUndoConfig
-        ),
+        uiSpec: undoable(uiSpecificationReducer.reducer, uiSpecUndoConfig),
       }),
       modified: modifiedStatusReducer,
     },

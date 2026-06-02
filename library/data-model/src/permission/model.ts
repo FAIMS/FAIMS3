@@ -127,6 +127,9 @@ export enum Action {
   // Update the template high level details (e.g. description, title etc)
   UPDATE_TEMPLATE_DETAILS = 'UPDATE_TEMPLATE_DETAILS',
 
+  /** Change the team associated with a template */
+  CHANGE_TEMPLATE_TEAM = 'CHANGE_TEMPLATE_TEAM',
+
   // Update the UI specification
   UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
 
@@ -721,6 +724,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
+  [Action.CHANGE_TEMPLATE_TEAM]: {
+    name: 'Change Template Team',
+    description: 'Change the team associated with a template',
+    resourceSpecific: true,
+    resource: Resource.TEMPLATE,
+  },
   [Action.CHANGE_TEMPLATE_STATUS]: {
     name: 'Change Template Status',
     description: 'Archive or restore a template',
@@ -1169,6 +1178,7 @@ export const roleActions: Record<
   [Role.TEMPLATE_ADMIN]: {
     actions: [
       Action.UPDATE_TEMPLATE_DETAILS,
+      Action.CHANGE_TEMPLATE_TEAM,
       Action.UPDATE_TEMPLATE_UISPEC,
       Action.CHANGE_TEMPLATE_STATUS,
       Action.DELETE_TEMPLATE,

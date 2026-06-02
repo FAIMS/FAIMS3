@@ -1,4 +1,10 @@
-import React, {useMemo, useState} from 'react';
+import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
+import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
+import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
+import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-template-from-project-dialog';
+import {DesignerDialog} from '@/components/dialogs/designer-dialog';
+import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
+import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -8,28 +14,23 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '@/constants';
 import {useAuth} from '@/context/auth-provider';
+import {
+  toDesignerNotebookWithHistory,
+  useDesignerSaveMutation,
+} from '@/designer/integration';
+import type {NotebookWithHistory} from '@/designer/state/initial';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {
   Action,
   getUserResourcesForAction,
   ProjectStatus,
 } from '@faims3/data-model';
-import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
-import {useQueryClient} from '@tanstack/react-query';
-import {DesignerDialog} from '@/components/dialogs/designer-dialog';
-import type {NotebookWithHistory} from '@/designer/state/initial';
-import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
-import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
-import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
-import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
-import {
-  toDesignerNotebookWithHistory,
-  useDesignerSaveMutation,
-} from '@/designer/integration';
+import {useQueryClient} from '@tanstack/react-query';
+import {useMemo, useState} from 'react';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -73,6 +74,11 @@ const ProjectActions = (): JSX.Element => {
     setEditorOpen(false);
   };
 
+  const canUpdateProjectDetails = useIsAuthorisedTo({
+    action: Action.UPDATE_PROJECT_DETAILS,
+    resourceId: projectId,
+  });
+
   const canEditProject = useIsAuthorisedTo({
     action: Action.UPDATE_PROJECT_UISPEC,
     resourceId: projectId,
@@ -89,11 +95,23 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
-  const canCreateTemplateInTeam =
+  /** Matches {@link CreateTemplateFromProjectForm}: global create or any permitted team. */
+  const canCreateTemplateFromProject =
+    useIsAuthorisedTo({action: Action.CREATE_TEMPLATE}) ||
     getUserResourcesForAction({
       decodedToken: user?.decodedToken,
       action: Action.CREATE_TEMPLATE_IN_TEAM,
     }).length > 0;
+
+  const canReadProjectMetadata = useIsAuthorisedTo({
+    action: Action.READ_PROJECT_METADATA,
+    resourceId: projectId,
+  });
+
+  const canGenerateTestRecords = useIsAuthorisedTo({
+    action: Action.GENERATE_RANDOM_PROJECT_RECORDS,
+    resourceId: projectId,
+  });
 
   const projectIsClosed = data?.status === ProjectStatus.CLOSED;
 
@@ -114,7 +132,7 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {DEVELOPER_MODE && (
+        {DEVELOPER_MODE && canGenerateTestRecords && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
@@ -133,6 +151,25 @@ const ProjectActions = (): JSX.Element => {
                 >
                   Generate Records
                 </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {canUpdateProjectDetails && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED} details</ListLabel>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  Update {NOTEBOOK_NAME_CAPITALIZED} title and short
+                  description.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditProjectDetailsDialog />
               </ListItem>
             </List>
           </Card>
@@ -170,28 +207,30 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        <Card className="flex-1">
-          <List className="flex flex-col gap-2 space-y-0">
-            <ListItem>
-              <ListLabel>Download JSON</ListLabel>
-            </ListItem>
-            <ListItem>
-              <Button variant="outline">
-                <a
-                  href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify({
-                      'ui-specification': data?.['ui-specification'],
-                      metadata: data?.metadata,
-                    })
-                  )}`}
-                  download={`${projectId}.json`}
-                >
-                  Download JSON
-                </a>
-              </Button>
-            </ListItem>
-          </List>
-        </Card>
+        {canReadProjectMetadata && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>Download JSON</ListLabel>
+                <ListDescription>
+                  Download the {NOTEBOOK_NAME} design JSON file.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <Button variant="outline" disabled={isLoading}>
+                  <a
+                    href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                      JSON.stringify(data?.uiSpecification ?? {}, null, 2)
+                    )}`}
+                    download={`${projectId}.json`}
+                  >
+                    Download JSON
+                  </a>
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
 
         {canEditProject && (
           <Card className="flex-1">
@@ -200,6 +239,10 @@ const ProjectActions = (): JSX.Element => {
                 <ListLabel>
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
+                <ListDescription>
+                  Upload a JSON design file to replace the existing{' '}
+                  {NOTEBOOK_NAME} design.
+                </ListDescription>
               </ListItem>
               <ListItem>
                 <EditProjectDialog onSuccess={uploadProjectCallback} />
@@ -208,7 +251,7 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canCreateTemplateInTeam && (
+        {canCreateTemplateFromProject && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
@@ -253,6 +296,7 @@ const ProjectActions = (): JSX.Element => {
       <DesignerDialog
         open={editorOpen}
         notebook={initialNotebook}
+        exportBaseName={data?.name}
         onClose={handleEditorClose}
       />
     </>

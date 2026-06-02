@@ -742,7 +742,7 @@ To create new invites, see [Adding a User to Your Team via Invite](#adding-a-use
 1. Click **{{Notebooks}}** in the left sidebar
 
 ```{screenshot} user-roles/09a-notebooks-view.png
-:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description
+:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description (optional when set)
 :align: right
 :width: 100%
 ```

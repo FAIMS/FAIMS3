@@ -1,3 +1,27 @@
+import {DatabaseInterface} from '../../types';
+
+/**
+ * Open a database for migrations.
+ *
+ * - With {@link dbType}: {@link id} is interpreted per kind (e.g. project id for DATA).
+ * - Without {@link dbType}: {@link id} is the Couch database name to open directly.
+ */
+export type GetDbByIdParams = {
+  id: string;
+  dbType?: DATABASE_TYPE;
+};
+
+export type GetDbById = (params: GetDbByIdParams) => Promise<DatabaseInterface>;
+
+export type MigrationContext = {
+  getDbById: GetDbById;
+  /**
+   * Username stored as `createdBy` on migrated audit fields when legacy data has
+   * no creator. Defaults to {@link DEFAULT_MIGRATION_CREATED_BY}.
+   */
+  migrationCreatedBy?: string;
+};
+
 // Check if we are testing
 export const IS_TESTING = process.env.NODE_ENV === 'test';
 
@@ -6,7 +30,6 @@ export enum DatabaseType {
   DATA = 'DATA',
   DIRECTORY = 'DIRECTORY',
   INVITES = 'INVITES',
-  METADATA = 'METADATA',
   PEOPLE = 'PEOPLE',
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
@@ -18,7 +41,6 @@ export const DATABASE_TYPES = [
   DatabaseType.DATA,
   DatabaseType.DIRECTORY,
   DatabaseType.INVITES,
-  DatabaseType.METADATA,
   DatabaseType.PEOPLE,
   DatabaseType.PROJECTS,
   DatabaseType.TEMPLATES,
@@ -47,8 +69,9 @@ export type MigrationFuncReturn =
 export type MigrationFuncRecordInput = PouchDB.Core.ExistingDocument<any>;
 
 export type MigrationFunc = (
-  record: MigrationFuncRecordInput
-) => MigrationFuncReturn;
+  record: MigrationFuncRecordInput,
+  context?: MigrationContext
+) => MigrationFuncReturn | Promise<MigrationFuncReturn>;
 
 export type MigrationDetails = {
   dbType: DATABASE_TYPE;

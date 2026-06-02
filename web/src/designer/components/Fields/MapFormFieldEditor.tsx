@@ -39,7 +39,7 @@ type FieldState = {
 /** Map geometry type, zoom, GeoTIFF path, and “use current location” toggle for `MapFormField`. */
 export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -113,9 +113,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               type="number"
               value={initZoom}
               inputProps={{min: 0}}
-              onChange={e =>
-                updateProperty('zoom', parseFloat(e.target.value))
-              }
+              onChange={e => updateProperty('zoom', parseFloat(e.target.value))}
             />
           </SimpleFieldWrapper>
 
@@ -129,9 +127,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               label=""
               value={initButtonLabelText}
               placeholder="Leave empty to use the field label"
-              onChange={e =>
-                updateProperty('buttonLabelText', e.target.value)
-              }
+              onChange={e => updateProperty('buttonLabelText', e.target.value)}
             />
           </SimpleFieldWrapper>
 
@@ -141,17 +137,12 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                 <Checkbox
                   checked={initAllowSetToCurrentPoint}
                   onChange={e =>
-                    updateProperty(
-                      'allowSetToCurrentPoint',
-                      e.target.checked
-                    )
+                    updateProperty('allowSetToCurrentPoint', e.target.checked)
                   }
                 />
               }
               label={
-                <span
-                  style={{display: 'flex', alignItems: 'center', gap: 4}}
-                >
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}>
                   Display set to current location button
                   <Tooltip title="Enabling this option allows users to directly set their current location as the selected location.">
                     <InfoIcon sx={designerInfoIconSx} />

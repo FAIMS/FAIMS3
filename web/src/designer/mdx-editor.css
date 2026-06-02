@@ -106,53 +106,77 @@ body > .image-dialog {
   pointer-events: auto !important;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(1) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(1) {
   top: -7px;
   left: 50%;
   transform: translateX(-50%);
   cursor: n-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(2) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(2) {
   top: -7px;
   right: -7px;
   cursor: ne-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(3) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(3) {
   top: 50%;
   right: -7px;
   transform: translateY(-50%);
   cursor: e-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(4) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(4) {
   right: -7px;
   bottom: -7px;
   cursor: nwse-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(5) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(5) {
   bottom: -7px;
   left: 50%;
   transform: translateX(-50%);
   cursor: s-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(6) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(6) {
   bottom: -7px;
   left: -7px;
   cursor: sw-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(7) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(7) {
   top: 50%;
   left: -7px;
   transform: translateY(-50%);
   cursor: w-resize;
 }
 
-.mdxEditor [data-editor-block-type='image'] > div:nth-child(2) > div:nth-child(8) {
+.mdxEditor
+  [data-editor-block-type='image']
+  > div:nth-child(2)
+  > div:nth-child(8) {
   top: -7px;
   left: -7px;
   cursor: nw-resize;

@@ -7,6 +7,7 @@ import {
   TokenContents,
   TokenPayload,
 } from '@faims3/data-model';
+import {nowMs} from '@/lib/time';
 import {jwtDecode} from 'jwt-decode';
 import {createContext, useContext, useEffect, useState} from 'react';
 
@@ -51,7 +52,7 @@ function decodeToken(token: string): TokenContents | null {
     const payload = jwtDecode<TokenPayload & {exp: number}>(token);
 
     // Minute buffer is considered expired
-    if (payload.exp * 1000 < Date.now() - 60 * 1000) {
+    if (payload.exp * 1000 < nowMs() - 60 * 1000) {
       console.error('Access token has expired.');
       return null;
     }
@@ -110,7 +111,7 @@ export const isUserExpired = (user: User | null) => {
   // Safe backout if no token present
   if (!user || !user.decodedToken || !user.token) return true;
   // Consider a token expired if it's within 1 minute of expiry
-  return user.decodedToken.exp * 1000 < Date.now();
+  return user.decodedToken.exp * 1000 < nowMs();
 };
 
 /**

@@ -66,7 +66,8 @@ export const ProjectFromTemplateDialog = () => {
         <DialogHeader>
           <DialogTitle>Create {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
           <DialogDescription>
-            Create a new {NOTEBOOK_NAME} based on this template.
+            Create a new {NOTEBOOK_NAME} based on this template. Enter a name
+            and optional description.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectFromTemplateForm setDialogOpen={setOpen} />

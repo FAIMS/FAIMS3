@@ -24,7 +24,7 @@ import {getFieldLabel} from './utils';
 /** Human-readable sentence for a condition tree (uses field labels from the store). */
 export const ConditionTranslation = (props: {condition: ConditionType}) => {
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
 
   const getFieldName = (field: string | undefined) => {

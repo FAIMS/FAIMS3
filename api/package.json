@@ -8,7 +8,7 @@
     "clean": "gts clean",
     "compile": "tsc",
     "build": "tsc && copyfiles views/* views/**/* public/* public/**/* build/src",
-    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt .",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
     "prestart": "pnpm run-script compile",
     "start": "node --expose-gc --max-old-space-size=4096  .",
     "start:prod": "node --expose-gc --max-old-space-size=4096 build/src/index.js",
@@ -21,7 +21,11 @@
     "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
     "migrate": "env-cmd ts-node src/scripts/migrate.ts",
     "migrate-with-keys": "env-cmd ts-node src/scripts/migrate.ts --keys",
-    "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts"
+    "delete-metadata-databases": "env-cmd ts-node src/scripts/deleteMetadataDatabases.ts",
+    "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts",
+    "migrate-test-backups": "ts-node src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl test/backup.jsonl",
+    "migrate-notebook-json": "ts-node src/scripts/migrateNotebookJson.ts",
+    "seed-test-dataset": "env-cmd ts-node src/scripts/seedTestDataset.ts"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",

@@ -4,6 +4,11 @@ import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {NOTEBOOK_NAME} from '@/constants';
 import {Route} from '@/routes/_protected/templates/$templateId';
+import {
+  errorMessageFromTemplateJsonBody,
+  updateTemplateUiSpecificationRequest,
+} from '@/hooks/template-hooks';
+import {prepareNotebookUiSpecificationInputForApi} from '@faims3/data-model';
 
 export const fields = [
   {
@@ -19,11 +24,9 @@ interface UpdateTemplateFormProps {
 }
 
 /**
- * UpdateTemplateForm component renders a form for updating a template.
- * It provides a button to open the dialog and a form to update the template.
- * The onSuccess callback is called after a successful update.
- *
- * @returns {JSX.Element} The rendered UpdateTemplateForm component.
+ * UpdateTemplateForm replaces the template design via PUT
+ * /api/templates/:templateId/uiSpecification. Accepts legacy or current
+ * notebook JSON (same loose validation as create-from-file).
  */
 export function UpdateTemplateForm({
   setDialogOpen,
@@ -39,22 +42,33 @@ export function UpdateTemplateForm({
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/templates/${templateId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: jsonString,
-      }
-    );
+    let payload: unknown;
+    try {
+      payload = JSON.parse(jsonString);
+    } catch {
+      return {type: 'submit', message: 'Invalid JSON file'};
+    }
 
-    if (!response.ok)
-      return {type: 'submit', message: 'Error updating template'};
+    const prepared = prepareNotebookUiSpecificationInputForApi(payload);
+    if (!prepared.ok) {
+      return {type: 'submit', message: prepared.message};
+    }
 
-    // call the onSuccess callback if everything worked
+    const uiResponse = await updateTemplateUiSpecificationRequest({
+      user,
+      templateId,
+      uiSpecification: prepared.uiSpecification,
+    });
+    if (!uiResponse.ok) {
+      const json: unknown = await uiResponse.json().catch(() => undefined);
+      return {
+        type: 'submit',
+        message:
+          'Error updating template design: ' +
+          errorMessageFromTemplateJsonBody(json, uiResponse.statusText),
+      };
+    }
+
     onSuccess();
     setDialogOpen(false);
   };
@@ -63,7 +77,7 @@ export function UpdateTemplateForm({
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText="Upload Template JSON"
+      submitButtonText="Replace Template JSON"
       submitButtonVariant="destructive"
       warningMessage={`Editing the template does not change any of the ${NOTEBOOK_NAME}s created from it.  This may create inconsistencies in your data.`}
     />

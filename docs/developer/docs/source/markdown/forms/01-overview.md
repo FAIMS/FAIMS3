@@ -82,7 +82,7 @@ graph TD
     VSE --> VSL[label]
     VSE --> VSV["views[]"]
 
-    V -->|section definitions| VE["fviews[sectionId]"]
+    V -->|section definitions| VE["views[sectionId]"]
     VE --> VL[label]
     VE --> VF["fields[]"]
 
@@ -94,11 +94,11 @@ graph TD
     FDE --> M[meta]
 ```
 
-| Level      | Key        | Description                                                                    |
-| ---------- | ---------- | ------------------------------------------------------------------------------ |
-| `viewsets` | Form ID    | Defines a complete form with ordered sections                                  |
-| `fviews`   | Section ID | Groups related fields into a section (fviews when encoded, views when decoded) |
-| `fields`   | Field ID   | Individual field configuration                                                 |
+| Level      | Key        | Description                                   |
+| ---------- | ---------- | --------------------------------------------- |
+| `viewsets` | Form ID    | Defines a complete form with ordered sections |
+| `views`    | Section ID | Groups related fields into a section          |
+| `fields`   | Field ID   | Individual field configuration                |
 
 ## Configuration Modes
 

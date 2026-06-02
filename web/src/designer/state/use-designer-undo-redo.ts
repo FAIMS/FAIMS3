@@ -43,7 +43,7 @@ export const useDesignerUndoRedo = (
   messages: UndoRedoMessages = defaultMessages
 ) => {
   const dispatch = useAppDispatch();
-  const undoableState = useAppSelector(state => state.notebook['ui-specification']);
+  const undoableState = useAppSelector(state => state.notebook.uiSpec);
 
   const canUndo = undoableState.past.length > 0;
   const canRedo = undoableState.future.length > 0;
@@ -55,7 +55,13 @@ export const useDesignerUndoRedo = (
     }
     dispatch(ActionCreators.undo());
     onMessage(messages.undoComplete);
-  }, [canUndo, dispatch, messages.nothingToUndo, messages.undoComplete, onMessage]);
+  }, [
+    canUndo,
+    dispatch,
+    messages.nothingToUndo,
+    messages.undoComplete,
+    onMessage,
+  ]);
 
   const redo = useCallback(() => {
     if (!canRedo) {
@@ -64,8 +70,13 @@ export const useDesignerUndoRedo = (
     }
     dispatch(ActionCreators.redo());
     onMessage(messages.redoComplete);
-  }, [canRedo, dispatch, messages.nothingToRedo, messages.redoComplete, onMessage]);
+  }, [
+    canRedo,
+    dispatch,
+    messages.nothingToRedo,
+    messages.redoComplete,
+    onMessage,
+  ]);
 
   return {canUndo, canRedo, undo, redo};
 };
-

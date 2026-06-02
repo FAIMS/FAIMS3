@@ -18,6 +18,7 @@ import {
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
+import {expiryMsFromNow} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
@@ -25,21 +26,6 @@ import {getCouchUserFromEmailOrUserId} from './users';
 const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
 // 5 minutes
 const EXCHANGE_EXPIRY_MS = 60 * 1000 * 5;
-
-/**
- * Generates an expiry timestamp for a refresh token.
- *
- * This function calculates the expiry timestamp based on the current time
- * and a predefined expiry duration. The expiry duration is set using the
- * TOKEN_EXPIRY_HOURS constant, which represents the number of hours from
- * the current time until the token expires.
- *
- * @returns {number} The expiry timestamp in milliseconds since the Unix epoch.
- */
-function generateExpiryTimestamp(expiryMs: number): number {
-  const currentTimestamp = Date.now();
-  return currentTimestamp + expiryMs;
-}
 
 /**
  * Creates a new refresh token for a given user.
@@ -65,8 +51,8 @@ export const createNewRefreshToken = async ({
   const dbId = AUTH_RECORD_ID_PREFIXES.refresh + crypto.randomUUID();
 
   // Set expiry to configured duration
-  const refreshExpiry = generateExpiryTimestamp(refreshExpiryMs);
-  const exchangeExpiry = generateExpiryTimestamp(exchangeExpiryMs);
+  const refreshExpiry = expiryMsFromNow(refreshExpiryMs);
+  const exchangeExpiry = expiryMsFromNow(exchangeExpiryMs);
 
   // Create the exchange token
   const code = generateVerificationCode();

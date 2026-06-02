@@ -5,6 +5,11 @@ import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {Action, PostCreateNotebookInput} from '@faims3/data-model';
+import {
+  optionalRootDescriptionField,
+  rootDescriptionForApi,
+} from '@/lib/rootDescriptionField';
+import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import {z} from 'zod';
@@ -39,6 +44,9 @@ export function CreateProjectFromTemplateForm({
           message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 5 characters.`,
         }),
       },
+      optionalRootDescriptionField({
+        helperText: `Optional summary of this ${NOTEBOOK_NAME} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
+      }),
       {
         name: 'team',
         label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally ? ' (optional)' : ''}`,
@@ -57,7 +65,15 @@ export function CreateProjectFromTemplateForm({
    * @param {{name: string}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({name, team}: {name: string; team?: string}) => {
+  const onSubmit = async ({
+    name,
+    description,
+    team,
+  }: {
+    name: string;
+    description?: string;
+    team?: string;
+  }) => {
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/api/notebooks`,
       {
@@ -69,6 +85,7 @@ export function CreateProjectFromTemplateForm({
         body: JSON.stringify({
           template_id: templateId,
           name,
+          ...rootDescriptionForApi(description),
           ...(team ? {teamId: team} : {}),
         } satisfies PostCreateNotebookInput),
       }

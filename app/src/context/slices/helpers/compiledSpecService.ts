@@ -4,21 +4,22 @@
  * data is not part of the store since it contains runtime JS functions (which
  * are compiled) meaning that it cannot safely be serialised.
  *
- * Note that is the ProjectUIModel - not the Encoded model (e.g. with fviews).
+ * Note that this is the full {@link NotebookUiSpec} — decoded views (no fviews /
+ * encode step), including settings and schemaVersion, with compiled conditionals.
  *
  * NOTE The ID used here is arbitrary so long as it unique to the server +
  * project combo. To this end, databaseHelpers has a buildCompiledSpecId
  * function which takes the server and project and combines them to form an ID.
  */
 
-import {compileUiSpecConditionals, ProjectUIModel} from '@faims3/data-model';
+import {compileUiSpecConditionals, NotebookUiSpec} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
 class CompiledUiSpecService {
   private static instance: CompiledUiSpecService;
-  private specs: Map<string, ProjectUIModel> = new Map();
+  private specs: Map<string, NotebookUiSpec> = new Map();
 
   private constructor() {}
 
@@ -40,8 +41,8 @@ class CompiledUiSpecService {
   }
 
   // Create or get existing database instance
-  compileAndRegisterSpec(id: string, spec: ProjectUIModel) {
-    const copy: ProjectUIModel = JSON.parse(JSON.stringify(spec));
+  compileAndRegisterSpec(id: string, spec: NotebookUiSpec) {
+    const copy: NotebookUiSpec = JSON.parse(JSON.stringify(spec));
     compileUiSpecConditionals(copy);
     this.specs.set(id, copy);
   }

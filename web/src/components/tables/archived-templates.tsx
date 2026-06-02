@@ -1,7 +1,6 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {TeamCellComponent} from './cells/team-cell';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {
   Tooltip,
   TooltipContent,
@@ -201,16 +200,13 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     ),
   },
   {
-    accessorKey: 'metadata.project_lead',
+    accessorKey: 'createdBy',
     header: ({column}) => (
-      <DataTableColumnHeader
-        column={column}
-        title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
-      />
+      <DataTableColumnHeader column={column} title="Created by" />
     ),
   },
   {
-    accessorKey: 'metadata.pre_description',
+    accessorKey: 'description',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Description" />
     ),

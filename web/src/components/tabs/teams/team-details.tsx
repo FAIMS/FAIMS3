@@ -5,7 +5,7 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetTeam} from '@/hooks/queries';
 import {useMemo} from 'react';
-import {displayUnixTimestampMs} from '@/lib/utils';
+import {displayUnixTimestampMs} from '@/lib/time';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},

@@ -9,9 +9,9 @@ import {
   DatabaseInterface,
   FieldSummary,
   HydratedDataRecord,
+  NotebookUiSpec,
   ProjectDataObject,
   ProjectID,
-  ProjectUIModel,
   buildViewsetFieldSummaries,
   notebookRecordIterator,
 } from '@faims3/data-model';
@@ -50,7 +50,7 @@ interface ExtractedGeometry {
  */
 interface SpatialExportContext {
   dataDb: DatabaseInterface<ProjectDataObject>;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: NotebookUiSpec;
   viewFieldsMap: Record<string, FieldSummary[]>;
   hasSpatialFields: boolean;
 }
@@ -138,7 +138,7 @@ export async function processRecordForSpatial(
   viewFieldsMap: Record<string, FieldSummary[]>,
   filenames: string[],
   dataDb: DatabaseInterface<ProjectDataObject>,
-  uiSpecification: ProjectUIModel
+  uiSpecification: NotebookUiSpec
 ): Promise<ProcessedRecord> {
   const hrid = record.hrid || record.record_id;
   const viewID = record.type;
