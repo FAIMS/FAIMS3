@@ -23,13 +23,20 @@ export const createNotebookFromTemplate = async (input: {
   username: string;
   templateId: string;
   name: string;
+  description?: string;
 }): Promise<PostCreateNotebookResponse> => {
   // Create a new notebook
   return await FetchManager.post<PostCreateNotebookResponse>(
     input.listingId,
     input.username,
     '/api/notebooks',
-    {template_id: input.templateId, name: input.name} as PostCreateNotebookInput
+    {
+      template_id: input.templateId,
+      name: input.name,
+      ...(input.description?.trim()
+        ? {description: input.description.trim()}
+        : {}),
+    } as PostCreateNotebookInput
   );
 };
 

@@ -1,6 +1,22 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import {NotebookDefinitionV3} from './migrateV3';
+
 /**
- * @file V4 notebook migration. Rewrites legacy field shapes to their
- * canonical names and bumps `schema_version` to '4.0'. Companion to the
+ * @file Notebook migration to schema 4.0 — rewrites legacy field shapes to their
+ * canonical names and bumps `schema_version` to `'4.0'`. Companion to the
  * registry aliases in `library/forms/lib/fieldRegistry/registry.ts`.
  *
  * Migrations applied:
@@ -15,32 +31,25 @@
  * `MultiSelect`, and every non-legacy field pass through untouched.
  */
 
-type NotebookMetadata = {
-  [key: string]: unknown;
-};
-
-type NotebookUISpec = {
-  fields: {[key: string]: any};
-  fviews: {[key: string]: any};
-  viewsets: {[key: string]: any};
-  visible_types: string[];
-};
-
-type NotebookAfterV3 = {
-  metadata: NotebookMetadata;
-  'ui-specification': NotebookUISpec;
-};
+export type NotebookDefinitionV4 = NotebookDefinitionV3;
 
 /** Fallback when a legacy MultipleTextField had no explicit InputProps.rows. */
 const DEFAULT_TEXTAREA_ROWS = 4;
 
 /**
- * Migrate a v3 notebook to v4. Deep-clones the input; returns the new
- * notebook with `schema_version` set to `'4.0'`.
+ * Migrate a notebook from schema 3.0 to 4.0.
+ *
+ * @param notebook - v3 wire notebook (`metadata` + `ui-specification`)
+ * @returns deep-cloned notebook with canonical field names and `schema_version` `'4.0'`
  */
-export const migrateToV4 = (notebook: any): NotebookAfterV3 => {
-  const out = JSON.parse(JSON.stringify(notebook)) as NotebookAfterV3;
-  const fields = out['ui-specification']?.fields ?? {};
+export const migrateToV4 = (
+  notebook: NotebookDefinitionV3
+): NotebookDefinitionV4 => {
+  const notebookCopy = JSON.parse(
+    JSON.stringify(notebook)
+  ) as NotebookDefinitionV4;
+
+  const fields = notebookCopy['ui-specification']?.fields ?? {};
 
   for (const fieldName of Object.keys(fields)) {
     const field = fields[fieldName];
@@ -52,8 +61,9 @@ export const migrateToV4 = (notebook: any): NotebookAfterV3 => {
     migrateChoiceField(field);
   }
 
-  out.metadata.schema_version = '4.0';
-  return out;
+  notebookCopy.metadata.schema_version = '4.0';
+
+  return notebookCopy;
 };
 
 /** MultipleTextField + FAIMSTextField → TextField. */
@@ -62,8 +72,6 @@ function migrateTextField(field: any): void {
 
   if (cn === 'MultipleTextField') {
     const params = field['component-parameters'] ?? {};
-    // Lift the legacy `InputProps.rows` to the top level — TextField reads
-    // `rows` directly. Fall back to the runtime's render-time default.
     const rows = params.InputProps?.rows ?? DEFAULT_TEXTAREA_ROWS;
     delete params.InputProps;
     params.multiline = true;
@@ -76,8 +84,6 @@ function migrateTextField(field: any): void {
   }
 
   if (cn === 'FAIMSTextField') {
-    // Pure rename — same React component; existing params already describe
-    // whichever mode (short / long) the field was in.
     field['component-namespace'] = 'faims-custom';
     field['component-name'] = 'TextField';
     return;
@@ -112,13 +118,11 @@ function migrateDateField(field: any): void {
 
   const params = field['component-parameters'] ?? {};
 
-  // is_auto_pick → isAutoPick (don't overwrite an explicit canonical value).
   if (params.isAutoPick === undefined && params.is_auto_pick !== undefined) {
     params.isAutoPick = params.is_auto_pick;
   }
   delete params.is_auto_pick;
 
-  // DateTimeNow always rendered the Now button — preserve that.
   if (params.show_now_button === undefined) {
     params.show_now_button = true;
   }
@@ -141,7 +145,6 @@ function migrateChoiceField(field: any): void {
   if (cn === 'Checkbox') {
     const params = field['component-parameters'] ?? {};
 
-    // Only synthesise Yes/No if no options were already configured.
     const existing = params.ElementProps?.options;
     if (!Array.isArray(existing) || existing.length === 0) {
       params.ElementProps = {
@@ -163,7 +166,6 @@ function migrateChoiceField(field: any): void {
   }
 
   if (cn === 'Select') {
-    // ElementProps shape matches RadioGroup — no parameter changes needed.
     field['component-namespace'] = 'faims-custom';
     field['component-name'] = 'RadioGroup';
     field['type-returned'] = 'faims-core::String';

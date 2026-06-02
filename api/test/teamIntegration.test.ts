@@ -29,7 +29,6 @@ import {
   addProjectRole,
   addTeamRole,
   addTemplateRole,
-  EncodedProjectUIModel,
   generateVirtualResourceRoles,
   PostCreateTemplateInput,
   registerClient,
@@ -40,7 +39,6 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {Express} from 'express';
-import fs from 'fs';
 import request from 'supertest';
 import {
   generateJwtFromUser,
@@ -51,7 +49,7 @@ import {KEY_SERVICE} from '../src/buildconfig';
 import {getDataDb, localGetProjectsDb} from '../src/couchdb';
 import {
   createNotebook,
-  getNotebookMetadata,
+  getProjectById,
   getProjectIdsByTeamId,
 } from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
@@ -66,29 +64,29 @@ import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {adminToken, beforeApiTests, requestAuthAndType} from './utils';
 import {addLocalPasswordForUser} from '../src/auth/helpers';
+import {
+  EMPTY_UI_SPECIFICATION,
+  sampleCreateTemplatePayload,
+  testNotebookDescription,
+} from './sampleNotebook';
 
-// set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
 const TEMPLATE_API_BASE = '/api/templates';
 const NOTEBOOKS_API_BASE = '/api/notebooks';
 const TEAMS_API_BASE = '/api/teams';
 
-const uispec: EncodedProjectUIModel = {
-  fields: [],
-  fviews: {},
-  viewsets: {},
-  visible_types: [],
-};
-
-/**
- * Loads example notebook from file system and parses into appropriate format
- */
-const getSampleNotebook = () => {
-  const filename = 'notebooks/sample_notebook.json';
-  const jsonText = fs.readFileSync(filename, 'utf-8');
-  return JSON.parse(jsonText);
-};
+const createTestNotebook = async (
+  projectName: string,
+  teamId?: string
+): Promise<string | undefined> =>
+  createNotebook({
+    projectName,
+    uiSpecification: EMPTY_UI_SPECIFICATION,
+    description: testNotebookDescription,
+    createdBy: 'admin',
+    teamId,
+  });
 
 /**
  * Creates a team with the given name and description
@@ -128,7 +126,7 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Load the sample notebook data
-    const notebook = getSampleNotebook();
+    const notebook = sampleCreateTemplatePayload('test template');
 
     // Create a template without teamId
     const templateWithoutTeam = await requestAuthAndType(
@@ -181,14 +179,12 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project without teamId
     const projectWithoutTeam = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Project without team',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          // No teamId
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project without team',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        // No teamId
+      }),
       adminToken
     )
       .expect(200)
@@ -196,14 +192,12 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project with teamId
     const projectWithTeam = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Project with team',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project with team',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       adminToken
     )
       .expect(200)
@@ -214,8 +208,8 @@ describe('Team integration with templates and projects', () => {
     expect(projectWithTeam.notebook).to.not.be.undefined;
 
     // Get the project metadata
-    await getNotebookMetadata(projectWithTeam.notebook);
-    await getNotebookMetadata(projectWithoutTeam.notebook);
+    await getProjectById(projectWithTeam.notebook);
+    await getProjectById(projectWithoutTeam.notebook);
 
     // Get the projects directory document which contains the ownedByTeamId
     await getDataDb(projectWithTeam.notebook);
@@ -285,14 +279,12 @@ describe('Team integration with templates and projects', () => {
 
     // Verify API rejects member's attempt to create a project in the team
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Member team project attempt',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Member team project attempt',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       memberToken
     ).expect(401);
 
@@ -301,7 +293,7 @@ describe('Team integration with templates and projects', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          ...getSampleNotebook(),
+          ...sampleCreateTemplatePayload('test template'),
           teamId: team._id,
           name: 'test template',
         } satisfies PostCreateTemplateInput),
@@ -335,14 +327,12 @@ describe('Team integration with templates and projects', () => {
     ).to.be.true;
     // Try to create a project in the team using the API
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Team project via API',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Team project via API',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       managerToken
     ).expect(200);
     // Try to create a template in the team using the API
@@ -350,7 +340,7 @@ describe('Team integration with templates and projects', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          ...getSampleNotebook(),
+          ...sampleCreateTemplatePayload('test template'),
           name: 'test template',
           teamId: team._id,
         }),
@@ -414,14 +404,12 @@ describe('Team integration with templates and projects', () => {
 
     // Try to create a project in the team using the API - should be denied
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Unauthorized team project',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Unauthorized team project',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       userToken
     ).expect(401);
 
@@ -430,7 +418,7 @@ describe('Team integration with templates and projects', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          ...getSampleNotebook(),
+          ...sampleCreateTemplatePayload('test template'),
           teamId: team._id,
           name: 'test template',
         } satisfies PostCreateTemplateInput),
@@ -447,14 +435,12 @@ describe('Team integration with templates and projects', () => {
 
     // System admin should be able to create projects and templates in any team
     await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Admin team project',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          teamId: team._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Admin team project',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team._id,
+      }),
       adminToken
     ).expect(200);
 
@@ -462,7 +448,7 @@ describe('Team integration with templates and projects', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          ...getSampleNotebook(),
+          ...sampleCreateTemplatePayload('test template'),
           teamId: team._id,
           name: 'test name',
         } satisfies PostCreateTemplateInput),
@@ -483,7 +469,7 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create templates in each team and one without a team
-    const notebook = getSampleNotebook();
+    const notebook = sampleCreateTemplatePayload('test template');
 
     // Create template in team 1
     const template1 = await createTemplate({
@@ -492,6 +478,7 @@ describe('Team integration with templates and projects', () => {
         name: 'tempalate1',
         teamId: team1._id,
       },
+      createdBy: 'admin',
     });
 
     // Create template in team 2
@@ -501,6 +488,7 @@ describe('Team integration with templates and projects', () => {
         name: 'tempalate2',
         teamId: team2._id,
       },
+      createdBy: 'admin',
     });
 
     // Create another template in team 1
@@ -510,14 +498,15 @@ describe('Team integration with templates and projects', () => {
         name: 'tempalate3',
         teamId: team1._id,
       },
+      createdBy: 'admin',
     });
 
-    // Create template without a team
     await createTemplate({
       payload: {
         ...notebook,
         name: 'tempalate4',
       },
+      createdBy: 'admin',
     });
 
     // Get templates by team ID
@@ -546,28 +535,10 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create projects in each team and one without a team
-    const projectId1 = await createNotebook(
-      'Team 1 Project',
-      uispec,
-      {},
-      undefined,
-      team1._id
-    );
-    const projectId2 = await createNotebook(
-      'Team 2 Project',
-      uispec,
-      {},
-      undefined,
-      team2._id
-    );
-    const projectId3 = await createNotebook(
-      'Team 1 Project 2',
-      uispec,
-      {},
-      undefined,
-      team1._id
-    );
-    await createNotebook('No Team Project', uispec, {});
+    const projectId1 = await createTestNotebook('Team 1 Project', team1._id);
+    const projectId2 = await createTestNotebook('Team 2 Project', team2._id);
+    const projectId3 = await createTestNotebook('Team 1 Project 2', team1._id);
+    await createTestNotebook('No Team Project');
 
     // Get projects by team ID
     const team1Projects = await getProjectIdsByTeamId({teamId: team1._id});
@@ -590,21 +561,14 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create a project owned by the team
-    const projectId = await createNotebook(
-      'Team Project',
-      uispec,
-      {},
-      undefined,
-      team._id
-    );
+    const projectId = await createTestNotebook('Team Project', team._id);
 
-    // Create a template owned by the team
     const template = await createTemplate({
       payload: {
-        ...getSampleNotebook(),
-        name: 'sample template',
+        ...sampleCreateTemplatePayload('sample template'),
         teamId: team._id,
       },
+      createdBy: 'admin',
     });
 
     // Create a test user for virtual role testing
@@ -766,7 +730,7 @@ describe('Team integration with templates and projects', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          ...getSampleNotebook(),
+          ...sampleCreateTemplatePayload('test template'),
           name: 'fake template',
           teamId: team1._id,
         } satisfies PostCreateTemplateInput),
@@ -777,14 +741,12 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project in team 1
     const project = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Update Team Project',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-          teamId: team1._id,
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Update Team Project',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        teamId: team1._id,
+      }),
       adminToken
     )
       .expect(200)
@@ -795,15 +757,10 @@ describe('Team integration with templates and projects', () => {
 
     // Update template - teamId should persist even if not included in update
     await requestAuthAndType(
-      request(app)
-        .put(`${TEMPLATE_API_BASE}/${template._id}`)
-        .send({
-          'ui-specification': templateData['ui-specification'],
-          metadata: {
-            ...templateData.metadata,
-            updated_field: 'updated-value',
-          },
-        }),
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
+        name: templateData.name,
+        description: 'updated-value',
+      }),
       adminToken
     ).expect(200);
 
@@ -812,14 +769,9 @@ describe('Team integration with templates and projects', () => {
 
     // Update project - teamId should persist
     await requestAuthAndType(
-      request(app)
-        .put(`${NOTEBOOKS_API_BASE}/${project.notebook}`)
-        .send({
-          'ui-specification': uispec,
-          metadata: {
-            test_key: 'updated-value',
-          },
-        }),
+      request(app).put(`${NOTEBOOKS_API_BASE}/${project.notebook}`).send({
+        name: 'Project with team',
+      }),
       adminToken
     ).expect(200);
 
@@ -839,13 +791,11 @@ describe('Team integration with templates and projects', () => {
 
     // Create a project without teamId
     const project = await requestAuthAndType(
-      request(app)
-        .post(`${NOTEBOOKS_API_BASE}`)
-        .send({
-          name: 'Project to Assign',
-          'ui-specification': uispec,
-          metadata: {test_key: 'test_value'},
-        }),
+      request(app).post(`${NOTEBOOKS_API_BASE}`).send({
+        name: 'Project to Assign',
+        description: testNotebookDescription,
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+      }),
       adminToken
     )
       .expect(200)
@@ -944,35 +894,22 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create projects owned by the team
-    const project1 = await createNotebook(
-      'Team Project 1',
-      uispec,
-      {},
-      undefined,
-      team._id
-    );
-    const project2 = await createNotebook(
-      'Team Project 2',
-      uispec,
-      {},
-      undefined,
-      team._id
-    );
+    const project1 = await createTestNotebook('Team Project 1', team._id);
+    const project2 = await createTestNotebook('Team Project 2', team._id);
 
-    // Create templates owned by the team
     const template1 = await createTemplate({
       payload: {
-        ...getSampleNotebook(),
-        name: 'template 1',
+        ...sampleCreateTemplatePayload('template 1'),
         teamId: team._id,
       },
+      createdBy: 'admin',
     });
     const template2 = await createTemplate({
       payload: {
-        ...getSampleNotebook(),
-        name: 'template 2',
+        ...sampleCreateTemplatePayload('template 2'),
         teamId: team._id,
       },
+      createdBy: 'admin',
     });
 
     // Create test user with team role
@@ -1069,42 +1006,26 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create resources for team 1
-    const project1 = await createNotebook(
-      'Team 1 Project',
-      uispec,
-      {},
-      undefined,
-      team1._id
-    );
+    const project1 = await createTestNotebook('Team 1 Project', team1._id);
     await createTemplate({
       payload: {
-        ...getSampleNotebook(),
+        ...sampleCreateTemplatePayload('test template'),
         name: 'template 1',
         teamId: team1._id,
       },
+      createdBy: 'admin',
     });
 
     // Create resources for team 2
-    const project2a = await createNotebook(
-      'Team 2 Project A',
-      uispec,
-      {},
-      undefined,
-      team2._id
-    );
-    const project2b = await createNotebook(
-      'Team 2 Project B',
-      uispec,
-      {},
-      undefined,
-      team2._id
-    );
+    const project2a = await createTestNotebook('Team 2 Project A', team2._id);
+    const project2b = await createTestNotebook('Team 2 Project B', team2._id);
     await createTemplate({
       payload: {
-        ...getSampleNotebook(),
+        ...sampleCreateTemplatePayload('test template'),
         name: 'template 1',
         teamId: team2._id,
       },
+      createdBy: 'admin',
     });
 
     // Create test user with multiple team roles
@@ -1205,21 +1126,16 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create a project owned by the team
-    const projectId = await createNotebook(
-      'Team Project',
-      uispec,
-      {},
-      undefined,
-      team._id
-    );
+    const projectId = await createTestNotebook('Team Project', team._id);
 
     // Create a template owned by the team
     const template = await createTemplate({
       payload: {
-        ...getSampleNotebook(),
+        ...sampleCreateTemplatePayload('test template'),
         name: 'template 1',
         teamId: team._id,
       },
+      createdBy: 'admin',
     });
 
     // Create test users with different team roles
@@ -1402,50 +1318,36 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Create resources for team 1
-    const project1a = await createNotebook(
-      'Team 1 Project A',
-      uispec,
-      {},
-      undefined,
-      team1._id
-    );
-    await createNotebook('Team 1 Project B', uispec, {}, undefined, team1._id);
+    const project1a = await createTestNotebook('Team 1 Project A', team1._id);
+    await createTestNotebook('Team 1 Project B', team1._id);
     const template1 = await createTemplate({
       payload: {
-        ...getSampleNotebook(),
+        ...sampleCreateTemplatePayload('test template'),
         name: 'template 1',
         teamId: team1._id,
       },
+      createdBy: 'admin',
     });
 
-    // Create resources for team 2
-    const project2 = await createNotebook(
-      'Team 2 Project',
-      uispec,
-      {},
-      undefined,
-      team2._id
-    );
+    const project2 = await createTestNotebook('Team 2 Project', team2._id);
     await createTemplate({
       payload: {
-        ...getSampleNotebook(),
+        ...sampleCreateTemplatePayload('test template'),
         name: 'template 2',
         teamId: team2._id,
       },
+      createdBy: 'admin',
     });
 
     // Create some non-team resources
-    const independentProject = await createNotebook(
-      'Independent Project',
-      uispec,
-      {}
-    );
+    const independentProject = await createTestNotebook('Independent Project');
 
     const independentTemplate = await createTemplate({
       payload: {
-        ...getSampleNotebook(),
+        ...sampleCreateTemplatePayload('test template'),
         name: 'independant template',
       },
+      createdBy: 'admin',
     });
 
     // Make the user an admin of the independent notebook (since they made it)

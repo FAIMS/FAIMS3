@@ -455,7 +455,7 @@ From here you can:
 1. Click **{{Notebooks}}** in the left sidebar
 
 ```{screenshot} user-roles/09a-notebooks-view.png
-:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description
+:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description (optional short blurb when set)
 :align: right
 :width: 100%
 ```
@@ -477,7 +477,7 @@ From here you can:
 
 | Tab         | Purpose                                                                       |
 | ----------- | ----------------------------------------------------------------------------- |
-| **Details** | {{Notebook}} name, description, and metadata                                  |
+| **Details** | {{Notebook}} name, optional description, and metadata                         |
 | **Invites** | Invitation links for adding users                                             |
 | **Users**   | Current {{notebook}} users and their roles                                    |
 | **Export**  | Export {{notebook}} data                                                      |

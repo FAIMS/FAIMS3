@@ -18,6 +18,7 @@
  *    Tools used in development and testing of FAIMS
  */
 
+import {nowIso, nowMs} from '../time';
 import {
   ProjectID,
   upsertFAIMSData,
@@ -25,7 +26,7 @@ import {
   generateFAIMSDataID,
   getDataDB,
 } from '@faims3/data-model';
-import {getEncodedNotebookUISpec} from './notebooks';
+import {getProjectUIModel} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';
 import * as Exceptions from '../exceptions';
@@ -58,7 +59,7 @@ export const createRandomRecord = async (
   // create the record object and call upsertFAIMSData
 
   const dataDb = await getDataDb(projectId);
-  const uiSpec = await getEncodedNotebookUISpec(projectId);
+  const uiSpec = await getProjectUIModel(projectId);
   if (!uiSpec) {
     throw new Exceptions.ItemNotFoundException(
       `Notebook not found with id ${projectId}`
@@ -77,7 +78,7 @@ export const createRandomRecord = async (
   const views = form.views;
   const fields: string[] = [];
   views.map((view: string) => {
-    uiSpec.fviews[view].fields.map((f: string) => fields.push(f));
+    uiSpec.views[view].fields.map((f: string) => fields.push(f));
   });
   // get the types of the fields
   const field_types: {[key: string]: string} = {};
@@ -151,12 +152,12 @@ const generateValue = (field: any) => {
     case 'faims-core::Bool':
       return randomInt(10) > 5;
     case 'faims-core::Date':
-      return new Date().toISOString();
+      return nowIso();
     case 'faims-pos::Location':
       return {
         type: 'Feature',
         properties: {
-          timestamp: Date.now(),
+          timestamp: nowMs(),
           altitude: null,
           speed: null,
           heading: null,

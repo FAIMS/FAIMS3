@@ -69,7 +69,7 @@ export default function Notebook() {
             textOverflow: 'ellipsis',
           }}
         >
-          {project.name ?? project.metadata.name}
+          {project.name}
         </Typography>
       </Stack>
 

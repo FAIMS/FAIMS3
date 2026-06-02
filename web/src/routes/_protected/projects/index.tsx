@@ -52,7 +52,7 @@ function ProjectsRouteComponent() {
         columns={columns}
         data={data || []}
         loading={isLoading}
-        onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
+        onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
         button={<CreateProjectDialog />}
       />
     </div>
