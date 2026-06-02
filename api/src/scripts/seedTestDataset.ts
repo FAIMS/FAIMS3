@@ -36,6 +36,7 @@ import {
   PeopleDBDocument,
   Role,
   roleDetails,
+  ROOT_DESCRIPTION_MAX_LENGTH,
 } from '@faims3/data-model';
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
@@ -208,21 +209,35 @@ const USER_SPECS: UserSpec[] = [
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────────
 
-function loadNotebookJson(path: string): {
-  metadata: Record<string, unknown>;
-  'ui-specification': unknown;
-} {
+interface NotebookSpec {
+  name: string;
+  description?: string;
+  uiSpecification: Record<string, unknown>;
+}
+
+function loadNotebookJson(path: string): NotebookSpec {
   const raw = readFileSync(path, 'utf-8');
   const parsed = JSON.parse(raw) as Record<string, unknown>;
-  if (!parsed.metadata || !parsed['ui-specification']) {
+  if (!parsed.name || !parsed.uiSpecification) {
     throw new Error(
-      `Notebook file ${path} is missing required 'metadata' or 'ui-specification' fields`
+      `Notebook file ${path} is missing required 'name' or 'uiSpecification' fields`
     );
   }
-  return parsed as {
-    metadata: Record<string, unknown>;
-    'ui-specification': unknown;
-  };
+  return parsed as unknown as NotebookSpec;
+}
+
+/**
+ * Clamp a description to the persisted root-description maximum so seeded
+ * documents stay within the schema-enforced limit.
+ */
+function clampDescription(description?: string): string | undefined {
+  const trimmed = description?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return trimmed.length > ROOT_DESCRIPTION_MAX_LENGTH
+    ? trimmed.slice(0, ROOT_DESCRIPTION_MAX_LENGTH)
+    : trimmed;
 }
 
 function printSummary(
@@ -320,25 +335,21 @@ const main = async () => {
     const blueTemplateSpec = notebookFiles[1];
 
     const redTemplate = await createTemplate({
+      createdBy: seedBot,
       payload: {
-        name: `Red Team Template — ${redTemplateSpec.metadata.name as string}`,
-        metadata: {
-          ...(redTemplateSpec.metadata as Record<string, unknown>),
-          template_id: undefined,
-        },
-        'ui-specification': redTemplateSpec['ui-specification'] as never,
+        name: `Red Team Template — ${redTemplateSpec.name}`,
+        description: clampDescription(redTemplateSpec.description),
+        uiSpecification: redTemplateSpec.uiSpecification,
         teamId: redTeam._id,
       },
     });
 
     const blueTemplate = await createTemplate({
+      createdBy: seedBot,
       payload: {
-        name: `Blue Team Template — ${blueTemplateSpec.metadata.name as string}`,
-        metadata: {
-          ...(blueTemplateSpec.metadata as Record<string, unknown>),
-          template_id: undefined,
-        },
-        'ui-specification': blueTemplateSpec['ui-specification'] as never,
+        name: `Blue Team Template — ${blueTemplateSpec.name}`,
+        description: clampDescription(blueTemplateSpec.description),
+        uiSpecification: blueTemplateSpec.uiSpecification,
         teamId: blueTeam._id,
       },
     });
@@ -349,21 +360,23 @@ const main = async () => {
     // ── Phase 4: Notebooks ────────────────────────────────────────────────────
     console.log('\nPhase 4: Creating notebooks...');
 
-    const redNotebookId = await createNotebook(
-      `Red Team Notebook — ${redTemplateSpec.metadata.name as string}`,
-      redTemplateSpec['ui-specification'] as never,
-      redTemplateSpec.metadata as never,
-      redTemplate._id,
-      redTeam._id
-    );
+    const redNotebookId = await createNotebook({
+      projectName: `Red Team Notebook — ${redTemplateSpec.name}`,
+      uiSpecification: redTemplateSpec.uiSpecification as never,
+      description: clampDescription(redTemplateSpec.description),
+      templateId: redTemplate._id,
+      teamId: redTeam._id,
+      createdBy: seedBot,
+    });
 
-    const blueNotebookId = await createNotebook(
-      `Blue Team Notebook — ${blueTemplateSpec.metadata.name as string}`,
-      blueTemplateSpec['ui-specification'] as never,
-      blueTemplateSpec.metadata as never,
-      blueTemplate._id,
-      blueTeam._id
-    );
+    const blueNotebookId = await createNotebook({
+      projectName: `Blue Team Notebook — ${blueTemplateSpec.name}`,
+      uiSpecification: blueTemplateSpec.uiSpecification as never,
+      description: clampDescription(blueTemplateSpec.description),
+      templateId: blueTemplate._id,
+      teamId: blueTeam._id,
+      createdBy: seedBot,
+    });
 
     if (!redNotebookId || !blueNotebookId) {
       throw new Error('Failed to create one or more notebooks');
