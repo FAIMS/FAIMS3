@@ -31,6 +31,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'TextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
+      name: 'text-field',
       label: 'Text field',
       fullWidth: true,
       helperText: '',
@@ -54,6 +55,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'DateTimePicker',
     'type-returned': 'faims-core::String',
     'component-parameters': {
+      name: 'date-time-picker-field',
       label: 'Date and time picker',
       fullWidth: true,
       helperText: '',
@@ -76,6 +78,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'DatePicker',
     'type-returned': 'faims-core::Date',
     'component-parameters': {
+      name: 'date-picker-field',
       label: 'Date only picker',
       fullWidth: true,
       helperText: '',
@@ -97,6 +100,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'MonthPicker',
     'type-returned': 'faims-core::Date',
     'component-parameters': {
+      name: 'month-picker-field',
       label: 'Month only picker',
       fullWidth: true,
       helperText: '',
@@ -228,6 +232,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'MultiSelect',
     'type-returned': 'faims-core::Array',
     'component-parameters': {
+      name: 'multi-select-field',
       label: 'Select Multiple',
       fullWidth: true,
       helperText: '',
@@ -291,6 +296,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'RichText',
     'type-returned': 'faims-core::String',
     'component-parameters': {
+      name: 'rich-text-field',
       label: 'Unused',
       content: 'Hello __World__',
     },
@@ -306,6 +312,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'RelatedRecordSelector',
     'type-returned': 'faims-core::Relationship',
     'component-parameters': {
+      name: 'related-record-field',
       label: 'Select Related',
       fullWidth: true,
       helperText: '',
@@ -333,6 +340,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
     'component-parameters': {
+      name: 'select-field',
       label: 'Select one',
       fullWidth: true,
       helperText: '',
@@ -360,6 +368,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'AdvancedSelect',
     'type-returned': 'faims-core::String',
     'component-parameters': {
+      name: 'advanced-select-field',
       label: 'Select Field',
       fullWidth: true,
       helperText: '',
@@ -480,6 +489,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'NumberField',
     'type-returned': 'faims-core::Number',
     'component-parameters': {
+      name: 'number-field',
       label: 'Number field',
       fullWidth: true,
       helperText: '',
@@ -506,6 +516,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'Email',
     'type-returned': 'faims-core::String',
     'component-parameters': {
+      name: 'email-field',
       label: 'Email',
       fullWidth: true,
       helperText: '',

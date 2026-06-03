@@ -63,6 +63,7 @@ const selectField: FieldType = {
   'component-name': 'Select',
   'type-returned': 'faims-core::String',
   'component-parameters': {
+    name: 'choice',
     label: 'Choice',
     ElementProps: {
       options: [
@@ -77,7 +78,7 @@ const dependentField: FieldType = {
   'component-namespace': 'faims-custom',
   'component-name': 'FAIMSTextField',
   'type-returned': 'faims-core::String',
-  'component-parameters': {label: 'Dependent'},
+  'component-parameters': {name: 'dependent', label: 'Dependent'},
   condition: {operator: 'equal', field: 'choice', value: 'A'},
 };
 

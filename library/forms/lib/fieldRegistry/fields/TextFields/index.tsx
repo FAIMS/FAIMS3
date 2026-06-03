@@ -23,7 +23,7 @@ import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
  * onto top-level `rows` and sets `multiline: true`, so once a notebook is
  * migrated this back-compat path is dormant.
  */
-const TextFieldPropsSchema = BaseFieldParametersSchema.extend({
+export const TextFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Enable speech-to-text input (default: true) */
   enableSpeech: z.boolean().optional().default(true),
   /** Whether to append speech to existing text or replace */
@@ -40,7 +40,7 @@ const TextFieldPropsSchema = BaseFieldParametersSchema.extend({
   InputProps: z.object({rows: z.number().optional()}).optional(),
 });
 
-type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;
+export type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;
 
 /**
  * Unified text field component with optional speech-to-text.

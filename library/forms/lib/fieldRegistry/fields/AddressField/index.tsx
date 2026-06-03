@@ -35,7 +35,7 @@ const AddressValueNullableSchema = AddressValueSchema.nullable();
 /**
  * Props schema for AddressField - uses base field props only.
  */
-const AddressFieldPropsSchema = BaseFieldParametersSchema.extend({
+export const AddressFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Enables online autosuggest UI when a service is injected. Defaults to true. */
   enableAutoSuggestion: z.boolean().optional(),
   /**
@@ -46,7 +46,7 @@ const AddressFieldPropsSchema = BaseFieldParametersSchema.extend({
   allowFullAddressManualEntry: z.boolean().optional(),
 });
 
-type AddressFieldProps = z.infer<typeof AddressFieldPropsSchema>;
+export type AddressFieldProps = z.infer<typeof AddressFieldPropsSchema>;
 type AddressFieldFullProps = AddressFieldProps & FormFieldContextProps;
 
 const SUGGEST_DEBOUNCE_MS = 300;

@@ -35,7 +35,7 @@ import {logError} from '../../../logging';
 // Props Schema
 // =============================================================================
 
-const dateTimePropsSchema = BaseFieldParametersSchema.extend({
+export const dateTimePropsSchema = BaseFieldParametersSchema.extend({
   fullWidth: z.boolean().optional().default(true),
   variant: z
     .enum(['outlined', 'filled', 'standard'])
@@ -53,7 +53,7 @@ const dateTimePropsSchema = BaseFieldParametersSchema.extend({
   show_now_button: z.boolean().optional().default(false),
 });
 
-type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
+export type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
 
 // Full props including injected form context
 type DateTimeFieldFullProps = FullFieldProps & DateTimeFieldProps;

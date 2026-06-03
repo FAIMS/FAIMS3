@@ -21,6 +21,7 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
+import {MapFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
@@ -43,40 +44,41 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const initZoom = field['component-parameters'].zoom;
-  const initFeatureType = field['component-parameters'].featureType;
-  const initAllowSetToCurrentPoint =
-    field['component-parameters'].allowSetToCurrentPoint ?? false;
-  const initButtonLabelText =
-    field['component-parameters'].buttonLabelText ?? '';
+  const params = field['component-parameters'] as unknown as MapFieldProps;
+  const initZoom = params.zoom;
+  const initFeatureType = params.featureType;
+  const initAllowSetToCurrentPoint = params.allowSetToCurrentPoint ?? false;
+  const initButtonLabelText = params.buttonLabelText ?? '';
 
   const updateField = (fieldName: string, newField: FieldType) => {
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state: FieldState = {
-    featureType: field['component-parameters'].featureType || '',
-    zoom: field['component-parameters'].zoom || 0,
-    allowSetToCurrentPoint:
-      field['component-parameters'].allowSetToCurrentPoint ?? false,
-    buttonLabelText: field['component-parameters'].buttonLabelText ?? '',
+    featureType: params.featureType || '',
+    zoom: params.zoom || 0,
+    allowSetToCurrentPoint: params.allowSetToCurrentPoint ?? false,
+    buttonLabelText: params.buttonLabelText ?? '',
   };
 
   const updateFieldFromState = (newState: FieldState) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    newField['component-parameters'].featureType = newState.featureType;
-    newField['component-parameters'].zoom = newState.zoom;
+    const newParams = newField[
+      'component-parameters'
+    ] as unknown as MapFieldProps;
+    newParams.featureType =
+      newState.featureType as MapFieldProps['featureType'];
+    newParams.zoom = newState.zoom;
     // Only set allowSetToCurrentPoint for Point type, otherwise ensure it's false
-    newField['component-parameters'].allowSetToCurrentPoint =
+    newParams.allowSetToCurrentPoint =
       newState.featureType === 'Point'
         ? newState.allowSetToCurrentPoint
         : false;
     // Store buttonLabelText, or remove if empty
     if (newState.buttonLabelText.trim()) {
-      newField['component-parameters'].buttonLabelText =
-        newState.buttonLabelText;
+      newParams.buttonLabelText = newState.buttonLabelText;
     } else {
-      delete newField['component-parameters'].buttonLabelText;
+      delete newParams.buttonLabelText;
     }
     updateField(fieldName, newField);
   };

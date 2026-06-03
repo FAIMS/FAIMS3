@@ -67,14 +67,16 @@ interface RenderTree {
   label?: string;
 }
 
-const AdvancedSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
+export const AdvancedSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     optiontree: z.array(RenderTreeSchema),
   }),
   valuetype: z.enum(['full', 'child']).optional().default('full'),
 });
 
-type AdvancedSelectFieldProps = z.infer<typeof AdvancedSelectFieldPropsSchema>;
+export type AdvancedSelectFieldProps = z.infer<
+  typeof AdvancedSelectFieldPropsSchema
+>;
 type FieldProps = AdvancedSelectFieldProps & FullFieldProps;
 
 // ============================================================================

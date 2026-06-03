@@ -28,6 +28,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
+import {TemplatedStringProps} from '@faims3/forms';
 import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
 
 import {
@@ -232,11 +233,11 @@ const FieldEditorComponent = ({
     (protection === 'protected' || protection === 'allow-hiding');
 
   const getFieldLabel = () => {
+    const params = field['component-parameters'] as TemplatedStringProps;
     return (
-      (field['component-parameters'] && field['component-parameters'].label) ||
-      (field['component-parameters'].InputLabelProps &&
-        field['component-parameters'].InputLabelProps.label) ||
-      field['component-parameters'].name
+      params.label ||
+      (params.InputLabelProps && params.InputLabelProps.label) ||
+      params.name
     );
   };
 

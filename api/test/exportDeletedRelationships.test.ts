@@ -51,6 +51,7 @@ function testUiSpec(): CompiledNotebookUiSpec {
         'type-returned': 'faims-core::Relationship',
         ...fieldMeta(),
         'component-parameters': {
+          name: 'relF',
           label: 'Rel',
           fullWidth: true,
           helperText: '',
@@ -69,6 +70,7 @@ function testUiSpec(): CompiledNotebookUiSpec {
         'type-returned': 'faims-core::Json',
         ...fieldMeta(),
         'component-parameters': {
+          name: 'mapF',
           label: 'Map',
           fullWidth: true,
           helperText: '',

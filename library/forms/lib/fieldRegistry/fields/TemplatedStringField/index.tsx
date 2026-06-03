@@ -9,6 +9,17 @@ import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
+export const TemplatedStringPropsSchema = BaseFieldParametersSchema.extend({
+  /** Mustache template rendered into the field's read-only value. */
+  template: z.string().optional(),
+  /** Legacy label container retained for un-migrated templated-string fields. */
+  InputLabelProps: z
+    .object({label: z.string().optional()})
+    .passthrough()
+    .optional(),
+});
+export type TemplatedStringProps = z.infer<typeof TemplatedStringPropsSchema>;
+
 const TemplatedStringField = (
   props: BaseFieldParameters & FormFieldContextProps
 ) => {
@@ -49,7 +60,7 @@ export const templatedStringFieldSpec: FieldInfo = {
   name: 'TemplatedStringField',
   returns: 'faims-core::String',
   component: TemplatedStringField,
-  fieldPropsSchema: BaseFieldParametersSchema,
+  fieldPropsSchema: TemplatedStringPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
 };

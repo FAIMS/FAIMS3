@@ -30,7 +30,7 @@ import {
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
-const PercentageSliderPropsSchema = BaseFieldParametersSchema.extend({
+export const PercentageSliderPropsSchema = BaseFieldParametersSchema.extend({
   /** Inclusive lower bound (0–100). Defaults to 0. */
   min: z.number().int().min(0).max(100).optional(),
   /** Inclusive upper bound (0–100). Defaults to 100. */
@@ -57,7 +57,7 @@ const PercentageSliderPropsSchema = BaseFieldParametersSchema.extend({
   }
 });
 
-type PercentageSliderProps = z.infer<typeof PercentageSliderPropsSchema>;
+export type PercentageSliderProps = z.infer<typeof PercentageSliderPropsSchema>;
 type PercentageSliderFullProps = PercentageSliderProps & FormFieldContextProps;
 
 function resolveBounds(props: PercentageSliderProps): {

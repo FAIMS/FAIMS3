@@ -53,14 +53,14 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
-const TakePointFieldPropsSchema = BaseFieldParametersSchema.extend({
+export const TakePointFieldPropsSchema = BaseFieldParametersSchema.extend({
   buttonLabelText: z.string().optional(),
   enableHighAccuracy: z.boolean().optional(),
   timeout: z.number().optional(),
   maximumAge: z.number().optional(),
 });
 
-type TakePointFieldProps = z.infer<typeof TakePointFieldPropsSchema>;
+export type TakePointFieldProps = z.infer<typeof TakePointFieldPropsSchema>;
 type FieldProps = TakePointFieldProps & FullFieldProps;
 
 // GeoJSON Feature schema for the stored value

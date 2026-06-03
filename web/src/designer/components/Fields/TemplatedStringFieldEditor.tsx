@@ -1,8 +1,9 @@
 import {Edit as EditIcon} from '@mui/icons-material';
 import {Alert, Box, Button, Card, Grid, Typography} from '@mui/material';
 import {MutableRefObject, useMemo, useRef, useState} from 'react';
+import {TemplatedStringProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {ComponentParameters, FieldType} from '../../state/initial';
+import {FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
 import {fieldUpdated} from '../../store/slices/uiSpec';
@@ -33,7 +34,7 @@ export const TemplatedStringFieldEditor = ({
   const [alertMessage, setAlertMessage] = useState('');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
-  const state = field['component-parameters'];
+  const state = field['component-parameters'] as TemplatedStringProps;
 
   const viewSet = useAppSelector(
     state => state.notebook.uiSpec.present.viewsets[viewsetId]
@@ -69,11 +70,8 @@ export const TemplatedStringFieldEditor = ({
   ];
 
   const getFieldLabel = (f: FieldType) => {
-    return (
-      f['component-parameters'].InputLabelProps?.label ||
-      f['component-parameters'].name ||
-      ''
-    );
+    const params = f['component-parameters'] as TemplatedStringProps;
+    return params.InputLabelProps?.label || params.name || '';
   };
 
   const fieldVariables = viewSetFields.map(name => {
@@ -85,13 +83,14 @@ export const TemplatedStringFieldEditor = ({
     };
   });
 
-  const updateFieldFromState = (newState: ComponentParameters) => {
+  const updateFieldFromState = (newState: TemplatedStringProps) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].InputLabelProps = {
+    const newParams = newField['component-parameters'] as TemplatedStringProps;
+    newParams.InputLabelProps = {
       label: newState.label || fieldName,
     };
-    newField['component-parameters'].helperText = newState.helperText;
-    newField['component-parameters'].template = newState.template;
+    newParams.helperText = newState.helperText;
+    newParams.template = newState.template;
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
