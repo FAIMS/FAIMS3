@@ -41,7 +41,8 @@ import Typography from '@mui/material/Typography';
 import clsx from 'clsx';
 import React from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -66,7 +67,7 @@ interface RenderTree {
   label?: string;
 }
 
-const AdvancedSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+const AdvancedSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     optiontree: z.array(RenderTreeSchema),
   }),

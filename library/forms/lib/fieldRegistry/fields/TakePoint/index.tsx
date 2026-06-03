@@ -43,7 +43,8 @@ import {useTheme} from '@mui/material/styles';
 import {useState} from 'react';
 import {z} from 'zod';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -52,7 +53,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
-const TakePointFieldPropsSchema = BaseFieldPropsSchema.extend({
+const TakePointFieldPropsSchema = BaseFieldParametersSchema.extend({
   buttonLabelText: z.string().optional(),
   enableHighAccuracy: z.boolean().optional(),
   timeout: z.number().optional(),

@@ -21,10 +21,8 @@ import {
   AddressValueSchema,
 } from '../../../addressTypes';
 import type {FullFormConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {DataViewFieldRender} from '../../../rendering/types';
 import {logWarn} from '../../../logging';
@@ -37,7 +35,7 @@ const AddressValueNullableSchema = AddressValueSchema.nullable();
 /**
  * Props schema for AddressField - uses base field props only.
  */
-const AddressFieldPropsSchema = BaseFieldPropsSchema.extend({
+const AddressFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Enables online autosuggest UI when a service is injected. Defaults to true. */
   enableAutoSuggestion: z.boolean().optional(),
   /**

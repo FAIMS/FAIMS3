@@ -1,4 +1,5 @@
 import {
+  BaseFieldParameters,
   FaimsAttachments,
   FieldDefinition,
   FormAnnotation,
@@ -10,11 +11,7 @@ import {getFieldInfo} from '../fieldRegistry/registry';
 import {logInfo} from '../logging';
 import {FieldAnnotation} from './Annotation';
 import {FormManagerConfig, FullFormManagerConfig} from './formManagers/types';
-import {
-  BaseFieldProps,
-  FaimsForm,
-  FaimsFormFieldState,
-} from './types';
+import {FaimsForm, FaimsFormFieldState} from './types';
 import {getFieldId} from './utils';
 
 interface FieldProps {
@@ -132,7 +129,7 @@ export const Field = React.memo((props: FieldProps) => {
               </Alert>
             )}
             <Component
-              {...(props.fieldSpec['component-parameters'] as BaseFieldProps)}
+              {...(props.fieldSpec['component-parameters'] as BaseFieldParameters)}
               // TODO fix the typing here - I think there is a minor issue but
               // it appears to functionally work
               state={field.state as unknown as FaimsFormFieldState}

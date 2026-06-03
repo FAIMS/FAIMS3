@@ -44,7 +44,8 @@ import {
   TextField,
 } from '@mui/material';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
@@ -68,7 +69,7 @@ const ElementOptionSchema = z.object({
   key: z.string().optional(),
 });
 
-const MultiSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+const MultiSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     options: z.array(ElementOptionSchema),
     expandedChecklist: z.boolean().optional(),

@@ -6,7 +6,8 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import {BaseFieldProps, FormFieldContextProps} from '../../../formModule/types';
+import {BaseFieldParameters} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import FieldWrapper from './FieldWrapper';
 import SpeechToTextButton from '../../../components/SpeechToTextButton';
 import useSpeechToText from '../../../components/useSpeechToText';
@@ -32,7 +33,7 @@ export interface BaseMuiTextFieldConfig {
   speechAppendMode?: boolean;
 }
 
-export type BaseMuiTextFieldProps = BaseFieldProps &
+export type BaseMuiTextFieldProps = BaseFieldParameters &
   FormFieldContextProps &
   BaseMuiTextFieldConfig;
 

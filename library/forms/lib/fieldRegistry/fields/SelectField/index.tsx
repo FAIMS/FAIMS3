@@ -42,7 +42,8 @@ import {
 import {useTheme} from '@mui/material/styles';
 import {useState, useEffect, useRef} from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
@@ -54,7 +55,7 @@ import {
   useOtherOption,
 } from '../../../hooks/useOtherOption';
 
-const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+const SelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     options: z.array(
       z.object({

@@ -68,18 +68,37 @@ export const FieldMetaSchema = z.object({
 export type FieldMeta = z.infer<typeof FieldMetaSchema>;
 
 /**
+ * Parameters shared by every field's `component-parameters`.
+ *
+ * This is the single source of truth for the base parameter envelope: the
+ * forms layer extends this schema per field type (each field's
+ * `fieldPropsSchema`), and the designer types its redux field on top of it.
+ * Living here (the lowest layer) lets both consumers reference one definition
+ * instead of redeclaring the common shape.
+ */
+export const BaseFieldParametersSchema = z.object({
+  label: z.string().optional(),
+  name: z.string(),
+  helperText: z.string().optional(),
+  required: z.boolean().optional(),
+  advancedHelperText: z.string().optional(),
+  disabled: z.boolean().optional(),
+});
+export type BaseFieldParameters = z.infer<typeof BaseFieldParametersSchema>;
+
+/**
  * The modelled shape of a single field definition.
  *
- * `component-parameters` is intentionally left as an open record here. The
- * precise, per-field-type parameter shapes are validated in the forms layer
- * (each field's `fieldPropsSchema`), which depends on this package and so
- * cannot be referenced from it.
+ * `component-parameters` carries the {@link BaseFieldParameters} common to all
+ * fields and passes any further per-field-type parameters through unmodelled
+ * (validated precisely in the forms layer via each field's `fieldPropsSchema`,
+ * which depends on this package and so cannot be referenced from it).
  */
 const fieldDefinitionShape = {
   'component-namespace': z.string(),
   'component-name': z.string(),
   'type-returned': z.string(),
-  'component-parameters': z.record(z.string(), z.any()),
+  'component-parameters': BaseFieldParametersSchema.passthrough(),
   initialValue: z.any().optional(),
   persistent: z.boolean().optional(),
   displayParent: z.boolean().optional(),

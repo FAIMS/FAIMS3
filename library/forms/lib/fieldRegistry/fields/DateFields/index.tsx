@@ -21,7 +21,8 @@ import {
 } from '@mui/material';
 import React, {HTMLInputTypeAttribute, useEffect} from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
   EmptyResponsePlaceholder,
@@ -34,7 +35,7 @@ import {logError} from '../../../logging';
 // Props Schema
 // =============================================================================
 
-const dateTimePropsSchema = BaseFieldPropsSchema.extend({
+const dateTimePropsSchema = BaseFieldParametersSchema.extend({
   fullWidth: z.boolean().optional().default(true),
   variant: z
     .enum(['outlined', 'filled', 'standard'])

@@ -1,7 +1,10 @@
-import {FormAnnotation, FormUpdateData} from '@faims3/data-model';
+import {
+  BaseFieldParameters,
+  FormAnnotation,
+  FormUpdateData,
+} from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
-import {z} from 'zod';
 import {FormConfig} from './formManagers/types';
 
 export type FaimsFormData = FormUpdateData | undefined;
@@ -24,17 +27,6 @@ const myUseForm = () =>
 export type FaimsForm = ReturnType<typeof myUseForm>;
 export type FaimsFormField = ExtractFieldType<FaimsForm>;
 export type FaimsFormFieldState = FaimsFormField['state'];
-
-// Field properties common to all fields
-export const BaseFieldPropsSchema = z.object({
-  label: z.string().optional(),
-  name: z.string(),
-  helperText: z.string().optional(),
-  required: z.boolean().optional(),
-  advancedHelperText: z.string().optional(),
-  disabled: z.boolean().optional(),
-});
-export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 
 // These are the additional FaimsForm props passed
 export interface SetFieldDataFn {
@@ -83,7 +75,7 @@ export type FormFieldContextProps = {
   };
 };
 
-export type FullFieldProps = BaseFieldProps & FormFieldContextProps;
+export type FullFieldProps = BaseFieldParameters & FormFieldContextProps;
 
 export type CompletionResult = {
   progress: number;

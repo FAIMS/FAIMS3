@@ -604,13 +604,16 @@ export function getFieldsForViewSet(
 }
 
 export function getFieldLabel(
-  ui_specification: UiSpecModel,
-  field_name: string
+  uiSpec: UiSpecModel,
+  fieldName: string
 ) {
-  if (field_name in ui_specification.fields) {
-    return ui_specification.fields[field_name]['component-parameters'].label;
+  if (fieldName in uiSpec.fields) {
+    return (
+      uiSpec.fields[fieldName]['component-parameters'].label ??
+      fieldName
+    );
   } else {
-    return field_name;
+    return fieldName;
   }
 }
 

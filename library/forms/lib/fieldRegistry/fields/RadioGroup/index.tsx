@@ -44,7 +44,8 @@ import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -67,7 +68,7 @@ const RadioOptionSchema = z.object({
   label: z.string(),
 });
 
-const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
+const RadioGroupFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     options: z.array(RadioOptionSchema),
     enableOtherOption: z.boolean().optional(),

@@ -1,16 +1,16 @@
 import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
 import {
-  BaseFieldProps,
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+  BaseFieldParameters,
+  BaseFieldParametersSchema,
+} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
 const TemplatedStringField = (
-  props: BaseFieldProps & FormFieldContextProps
+  props: BaseFieldParameters & FormFieldContextProps
 ) => {
   const rawValue = props.state.value?.data ?? undefined;
   const value: string | undefined = rawValue as string | undefined;
@@ -49,7 +49,7 @@ export const templatedStringFieldSpec: FieldInfo = {
   name: 'TemplatedStringField',
   returns: 'faims-core::String',
   component: TemplatedStringField,
-  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldPropsSchema: BaseFieldParametersSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
 };

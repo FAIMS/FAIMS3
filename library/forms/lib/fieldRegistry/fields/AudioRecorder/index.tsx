@@ -20,10 +20,8 @@ import {CapacitorAudioRecorder} from '@capgo/capacitor-audio-recorder';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {useAttachments} from '../../../hooks/useAttachment';
 import {AudioRecorderRender} from '../../../rendering/fields/view/specialised/AudioRecorder';
 import {FieldInfo} from '../../types';
@@ -33,7 +31,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
-const audioRecorderPropsSchema = BaseFieldPropsSchema.extend({
+const audioRecorderPropsSchema = BaseFieldParametersSchema.extend({
   maximumNumberOfRecordings: z.number().optional().default(0),
   bitRate: z.number().optional(),
   sampleRate: z.number().optional(),
