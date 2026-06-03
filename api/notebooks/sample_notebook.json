@@ -831,7 +831,6 @@
         },
         "FORM3SECTION1": {
           "fields": ["hridFORM3", "dimension", "measurement"],
-          "": "form",
           "label": "Dimension"
         },
         "FORM2SECTION1": {
