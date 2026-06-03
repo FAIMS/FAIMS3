@@ -18,17 +18,15 @@
  *   Tests for the devtools module
  */
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
-import {initialiseDbAndKeys} from '../src/couchdb';
-import {createNotebook} from '../src/couchdb/notebooks';
-import * as fs from 'fs';
-import {createRandomRecord} from '../src/couchdb/devtools';
 import {registerClient} from '@faims3/data-model';
-import {DEVELOPER_MODE} from '../src/buildconfig';
 import {expect} from 'chai';
+import {DEVELOPER_MODE} from '../src/buildconfig';
+import {initialiseDbAndKeys} from '../src/couchdb';
+import {createRandomRecord} from '../src/couchdb/devtools';
 import {callbackObject} from './mocks';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
@@ -38,13 +36,8 @@ if (DEVELOPER_MODE) {
   it('createRecords', async () => {
     await initialiseDbAndKeys({});
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const projectID = await createNotebook('Test Notebook', uiSpec, metadata);
+    const {createNotebookFromSampleFile} = await import('./sampleNotebook');
+    const projectID = await createNotebookFromSampleFile('Test Notebook');
 
     expect(projectID).not.to.be.undefined;
 

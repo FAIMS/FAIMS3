@@ -32,6 +32,7 @@
     "@capacitor/camera": "^7.0.2",
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.5",
+    "@capgo/capacitor-audio-recorder": "7",
     "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.11.4",
     "@emotion/styled": "11.10.8",
@@ -44,7 +45,7 @@
     "@tanstack/react-query": "^5.62.16",
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
-    "dompurify": "^3.2.4",
+    "dompurify": "^3.4.0",
     "lodash": "^4.18.1",
     "markdown-it": "^14.1.1",
     "mustache": "^4.2.0",
@@ -53,6 +54,7 @@
     "react-dom": "^18.3.1",
     "react-dropzone": "14.2.3",
     "react-router-dom": "^6.26.0",
+    "react-zoom-pan-pinch": "^4.0.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {

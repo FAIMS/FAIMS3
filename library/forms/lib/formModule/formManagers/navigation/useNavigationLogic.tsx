@@ -153,6 +153,7 @@ export function useNavigationLogic({
         statusText,
         icon: <OutlinedFlagIcon fontSize="small" />,
         variant: 'primary',
+        requiresFinishGuard: true,
       });
     } else {
       // Parent/root record: "Finish" returns to record list
@@ -165,6 +166,7 @@ export function useNavigationLogic({
         statusText,
         icon: <OutlinedFlagIcon fontSize="small" />,
         variant: 'primary',
+        requiresFinishGuard: true,
       });
     }
 

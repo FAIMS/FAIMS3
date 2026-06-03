@@ -47,8 +47,8 @@ export const CreateTemplateDialog = ({
             {specifiedTeam && <> in “{team?.name ?? 'Team'}”</>}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Upload a JSON file to pre-populate, or leave blank to start from
-            scratch.
+            Enter a template name and optional description. Optionally upload an
+            existing JSON design file, or leave it blank to start from scratch.
           </DialogDescription>
         </DialogHeader>
 

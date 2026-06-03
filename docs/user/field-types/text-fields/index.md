@@ -18,13 +18,15 @@ address.md
 
 ```
 
-- **[FAIMS Text Field](faims-text-field.md)** — A single-line input for
-  brief, unconstrained text such as codes, identifiers, and short labels.
+- **[FAIMS Text Field](faims-text-field.md)** — Deprecated as a separate
+  field type; existing fields remain supported. Use the unified **Text field**
+  chooser entry for new single-line text inputs.
 - **[Email](email-field.md)** — A single-line text input with built-in email
   format validation that opens the email keyboard on mobile devices.
-- **[Multi-line Text Field](multiline-text-field.md)** — Extended text entry
-  for narrative content and detailed observations, with internal scrolling
-  for longer passages.
+- **[Multi-line Text Field](multiline-text-field.md)** — Deprecated as a
+  separate field type; existing fields remain supported. Use the unified
+  **Text field** chooser entry with the **multi-line** option enabled for new
+  extended-text inputs.
 - **[Templated String](templated-string.md)** — Auto-generates text from
   other fields using templates; required for human-readable record
   identifiers.

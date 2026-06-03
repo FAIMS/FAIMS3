@@ -5,6 +5,11 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
+import {
+  optionalRootDescriptionField,
+  rootDescriptionForApi,
+} from '@/lib/rootDescriptionField';
+import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 
 interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -58,6 +63,9 @@ export function CreateTemplateFromProjectForm({
         message: 'Template name must be at least 5 characters.',
       }),
     },
+    optionalRootDescriptionField({
+      helperText: `Optional; not copied from the survey (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
+    }),
   ];
 
   if (!justOneTeam) {
@@ -74,12 +82,19 @@ export function CreateTemplateFromProjectForm({
 
   const onSubmit = async (values: {
     name: string;
-    file?: File;
+    description?: string;
     team?: string;
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, team} = values;
+    const {name, description, team} = values;
+
+    if (!projectData?.uiSpecification) {
+      return {
+        type: 'submit',
+        message: 'Survey design is not loaded; try again.',
+      };
+    }
 
     try {
       const res = await fetch(
@@ -91,9 +106,10 @@ export function CreateTemplateFromProjectForm({
             Authorization: `Bearer ${user.token}`,
           },
           body: JSON.stringify({
-            ...projectData,
-            teamId: team ?? specifiedTeam,
             name,
+            ...rootDescriptionForApi(description),
+            uiSpecification: projectData.uiSpecification,
+            teamId: team ?? specifiedTeam,
           }),
         }
       );

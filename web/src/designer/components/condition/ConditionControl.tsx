@@ -234,11 +234,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const [condition, setCondition] = useState(initialValue);
 
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
-  const views = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   // work out which fields to show in the select/combobox, remove either
   // the current field or the fields in the current view
@@ -266,6 +264,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
     // note that dates are stored as strings but we can still do greater/less comparisons on them
     return [
       'NumberField',
+      'PercentageSlider',
       'DateTimePicker',
       'DatePicker',
       'MonthPicker',

@@ -36,7 +36,13 @@ import {
 } from '@mui/material';
 import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {nowMs} from '@/lib/time';
 import DebouncedTextField from './debounced-text-field';
+import {
+  designerCancelButtonSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
+} from './designer-style';
 
 /*
 Patch mustache to not escape values.
@@ -70,8 +76,7 @@ let blockCounter = 0;
  * @returns {string} A unique identifier string
  */
 export const generateBlockId = (): string => {
-  // Get current timestamp
-  const timestamp = Date.now();
+  const timestamp = nowMs();
 
   // Increment counter
   blockCounter++;
@@ -636,7 +641,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={designerDialogTitleSx}>
         <Grid container alignItems="center" spacing={1}>
           <Grid item>Template Builder</Grid>
           {parseError && (
@@ -649,7 +654,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
         </Grid>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent sx={designerDialogContentSx}>
         {/* Instructions */}
         <Paper sx={{p: 2, mb: 3, bgcolor: 'background.default'}}>
           <Typography variant="subtitle2" gutterBottom>
@@ -806,7 +811,9 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} sx={designerCancelButtonSx}>
+          Cancel
+        </Button>
         <Button
           onClick={handleSave}
           variant="contained"

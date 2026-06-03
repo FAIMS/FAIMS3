@@ -1,5 +1,5 @@
 {
-  "ui-specification": {
+  "uiSpec": {
     "fields": {
       "Occupation": {
         "component-namespace": "faims-custom",
@@ -15,7 +15,6 @@
           "name": "Occupation",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -23,8 +22,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -44,8 +49,14 @@
         "showInChooser": true,
         "order": 17,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       },
       "Description": {
@@ -62,7 +73,6 @@
           "name": "Description",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -70,8 +80,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -88,15 +104,20 @@
           "required": true,
           "ElementProps": {
             "options": [
-              {"label": "Primary **option**", "value": "Primary **option**"},
-              {"label": "Secondary *option*", "value": "Secondary *option*"}
+              {
+                "label": "Primary **option**",
+                "value": "Primary **option**"
+              },
+              {
+                "label": "Secondary *option*",
+                "value": "Secondary *option*"
+              }
             ],
             "exclusiveOptions": []
           },
           "name": "Selection",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "Select Field",
         "humanReadableDescription": "Dropdown list allowing one selection",
@@ -104,8 +125,14 @@
         "showInChooser": true,
         "order": 19,
         "meta": {
-          "annotation": {"include": true, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -120,11 +147,6 @@
           "advancedHelperText": "",
           "label": "Photo"
         },
-        "validationSchema": [
-          ["yup.array"],
-          ["yup.of", [["yup.object"], ["yup.nullable"]]],
-          ["yup.nullable"]
-        ],
         "initialValue": null,
         "humanReadableName": "Take Photo",
         "humanReadableDescription": "Capture and attach an image via camera",
@@ -132,8 +154,14 @@
         "showInChooser": true,
         "order": 21,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       },
       "File-Uploader": {
@@ -146,7 +174,6 @@
           "id": "file-upload-field",
           "helperText": ""
         },
-        "validationSchema": [["yup.mixed"]],
         "initialValue": null,
         "humanReadableName": "Upload a File",
         "humanReadableDescription": "Attach one or more files to the record",
@@ -154,8 +181,14 @@
         "showInChooser": true,
         "order": 12,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       },
       "Male-or-female": {
@@ -170,15 +203,20 @@
           "required": false,
           "ElementProps": {
             "options": [
-              {"label": "male", "value": "male"},
-              {"label": "female", "value": "female"}
+              {
+                "label": "male",
+                "value": "male"
+              },
+              {
+                "label": "female",
+                "value": "female"
+              }
             ],
             "exclusiveOptions": []
           },
           "name": "Male-or-female",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "Select Field",
         "humanReadableDescription": "Dropdown list allowing one selection",
@@ -186,8 +224,14 @@
         "showInChooser": true,
         "order": 19,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -206,7 +250,6 @@
           "name": "Female-conditional",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -214,8 +257,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false,
@@ -238,7 +287,6 @@
           "required": false,
           "name": "Male-name"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -246,8 +294,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       },
       "First-name": {
@@ -264,7 +318,6 @@
           "name": "First-name",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -272,8 +325,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -292,7 +351,6 @@
           "name": "Last-name",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -300,8 +358,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -318,9 +382,10 @@
           "required": true,
           "template": "{{First-name}} {{Last-name}}",
           "hidden": false,
-          "InputLabelProps": {"label": "Full name (templated)"}
+          "InputLabelProps": {
+            "label": "Full name (templated)"
+          }
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "humanReadableName": "Templated String Field",
         "humanReadableDescription": "Auto-generates text from a template",
@@ -328,8 +393,14 @@
         "showInChooser": true,
         "order": 23,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       },
       "School-type": {
@@ -344,7 +415,9 @@
           "variant": "outlined",
           "required": false,
           "select": true,
-          "SelectProps": {"multiple": true},
+          "SelectProps": {
+            "multiple": true
+          },
           "ElementProps": {
             "expandedChecklist": false,
             "options": [
@@ -352,18 +425,32 @@
                 "label": "University/Higher Education",
                 "value": "University/Higher Education"
               },
-              {"label": "Primary school", "value": "Primary school"},
-              {"label": "High school", "value": "High school"},
-              {"label": "TAFE", "value": "TAFE"},
-              {"label": "CIT", "value": "CIT"},
-              {"label": "Other", "value": "Other"}
+              {
+                "label": "Primary school",
+                "value": "Primary school"
+              },
+              {
+                "label": "High school",
+                "value": "High school"
+              },
+              {
+                "label": "TAFE",
+                "value": "TAFE"
+              },
+              {
+                "label": "CIT",
+                "value": "CIT"
+              },
+              {
+                "label": "Other",
+                "value": "Other"
+              }
             ],
             "exclusiveOptions": []
           },
           "name": "School-type",
           "protection": "none"
         },
-        "validationSchema": [["yup.array"]],
         "initialValue": [],
         "humanReadableName": "Select Multiple",
         "humanReadableDescription": "Pick several options from a list",
@@ -371,8 +458,14 @@
         "showInChooser": true,
         "order": 14,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -389,7 +482,9 @@
           "variant": "outlined",
           "required": false,
           "select": true,
-          "SelectProps": {"multiple": true},
+          "SelectProps": {
+            "multiple": true
+          },
           "ElementProps": {
             "expandedChecklist": true,
             "options": [
@@ -397,18 +492,32 @@
                 "label": "University/Higher Education",
                 "value": "University/Higher Education"
               },
-              {"label": "Primary school", "value": "Primary school"},
-              {"label": "High school", "value": "High school"},
-              {"label": "TAFE", "value": "TAFE"},
-              {"label": "CIT", "value": "CIT"},
-              {"label": "Other", "value": "Other"}
+              {
+                "label": "Primary school",
+                "value": "Primary school"
+              },
+              {
+                "label": "High school",
+                "value": "High school"
+              },
+              {
+                "label": "TAFE",
+                "value": "TAFE"
+              },
+              {
+                "label": "CIT",
+                "value": "CIT"
+              },
+              {
+                "label": "Other",
+                "value": "Other"
+              }
             ],
             "exclusiveOptions": []
           },
           "name": "School-type-expanded",
           "protection": "none"
         },
-        "validationSchema": [["yup.array"]],
         "initialValue": [],
         "humanReadableName": "Select Multiple",
         "humanReadableDescription": "Pick several options from a list",
@@ -416,8 +525,14 @@
         "showInChooser": true,
         "order": 14,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -436,7 +551,6 @@
           "advancedHelperText": "",
           "protection": "none"
         },
-        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "humanReadableName": "Checkbox",
         "humanReadableDescription": "Boolean yes/no toggle box",
@@ -444,8 +558,14 @@
         "showInChooser": true,
         "order": 11,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -463,16 +583,24 @@
           "required": false,
           "ElementProps": {
             "options": [
-              {"label": "COMP1001", "value": "COMP1001"},
-              {"label": "PYS2002", "value": "PYS2002"},
-              {"label": "Other class", "value": "Other class"}
+              {
+                "label": "COMP1001",
+                "value": "COMP1001"
+              },
+              {
+                "label": "PYS2002",
+                "value": "PYS2002"
+              },
+              {
+                "label": "Other class",
+                "value": "Other class"
+              }
             ],
             "exclusiveOptions": []
           },
           "helperText": "Select the best class! (You can only choose one!)",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "Select one option",
         "humanReadableDescription": "Single-choice radio button set",
@@ -480,8 +608,14 @@
         "showInChooser": true,
         "order": 15,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -498,7 +632,6 @@
           "advancedHelperText": "",
           "protection": "none"
         },
-        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
         "humanReadableName": "Take point",
         "humanReadableDescription": "Record GPS location coordinates",
@@ -506,8 +639,14 @@
         "showInChooser": true,
         "order": 22,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -526,7 +665,6 @@
           "label": "Map Point",
           "geoTiff": ""
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "Map Field",
         "humanReadableDescription": "Interactive map for selecting a point, line or polygon",
@@ -534,12 +672,18 @@
         "showInChooser": true,
         "order": 13,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       }
     },
-    "fviews": {
+    "views": {
       "Person-Main": {
         "label": "Main",
         "fields": [
@@ -577,7 +721,10 @@
           "Map-Point"
         ]
       },
-      "School-Location": {"label": "Location", "fields": ["Current-location"]}
+      "School-Location": {
+        "label": "Location",
+        "fields": ["Current-location"]
+      }
     },
     "viewsets": {
       "Person": {
@@ -590,17 +737,18 @@
         "views": ["School-New-Section", "School-Location"]
       }
     },
-    "visible_types": ["Person", "School"]
+    "visible_types": ["Person", "School"],
+    "settings": {
+      "showQrCodeButton": false
+    },
+    "schemaVersion": "5.0"
   },
   "metadata": {
-    "filenames": [],
-    "lead_institution": "",
-    "meta": {},
-    "name": "sample-notebook",
-    "pre_description": "",
-    "project_id": "1761714716731-very-simple-notebook",
-    "project_lead": "",
-    "project_status": "New",
-    "sections": {}
+    "information": {
+      "notebookVersion": "",
+      "purposeMarkdown": "",
+      "projectLeadLabel": "",
+      "leadInstitution": ""
+    }
   }
 }

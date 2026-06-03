@@ -46,8 +46,8 @@ export const removeFieldFromSummaryForViewset = (
     // Check if the field still exists in any section inside this viewset.
     const isInAnyView = viewset.views.some(
       viewId =>
-        state.fviews[viewId]?.fields &&
-        state.fviews[viewId].fields.includes(fieldName)
+        state.views[viewId]?.fields &&
+        state.views[viewId].fields.includes(fieldName)
     );
 
     // If the field is not found in any section, remove it from summary_fields.
@@ -86,8 +86,8 @@ export const getViewIDForField = (
   uiSpec: NotebookUISpec,
   fieldName: string
 ): string | null => {
-  for (const viewId in uiSpec.fviews) {
-    if (uiSpec.fviews[viewId].fields.includes(fieldName)) {
+  for (const viewId in uiSpec.views) {
+    if (uiSpec.views[viewId].fields.includes(fieldName)) {
       return viewId;
     }
   }

@@ -55,31 +55,46 @@ tabs in the ADD A FIELD dialog.
 
 ### Text
 
-| Field Type                                                          | Purpose                    | Good For                                        |
-| ------------------------------------------------------------------- | -------------------------- | ----------------------------------------------- |
-| **[FAIMS Text Field](../text-fields/faims-text-field.md)**          | Brief text entry           | Codes, identifiers, short labels                |
-| **[Multi-line Text Field](../text-fields/multiline-text-field.md)** | Extended text entry        | Narrative descriptions, observations            |
-| **[Email](../text-fields/email-field.md)**                          | Validated email input      | Contact addresses                               |
-| **[Templated String](../text-fields/templated-string.md)**          | Auto-generated text        | Human-readable record identifiers               |
-| **[QR / Barcode Scanner](../text-fields/qr-barcode-scanner.md)**    | Camera-based scanning      | Specimen barcodes, equipment tags (mobile only) |
-| **[Address](../text-fields/address.md)**                            | Structured address capture | Site locations, property details                |
+| Field Type                                                       | Purpose                    | Good For                                        |
+| ---------------------------------------------------------------- | -------------------------- | ----------------------------------------------- |
+| **Text field** (single-line)                                     | Brief text entry           | Codes, identifiers, short labels                |
+| **Text field** (multi-line)                                      | Extended text entry        | Narrative descriptions, observations            |
+| **[Email](../text-fields/email-field.md)**                       | Validated email input      | Contact addresses                               |
+| **[Templated String](../text-fields/templated-string.md)**       | Auto-generated text        | Human-readable record identifiers               |
+| **[QR / Barcode Scanner](../text-fields/qr-barcode-scanner.md)** | Camera-based scanning      | Specimen barcodes, equipment tags (mobile only) |
+| **[Address](../text-fields/address.md)**                         | Structured address capture | Site locations, property details                |
+
+> **Note:** A single **Text field** entry in the chooser now covers both
+> single-line and multi-line text — enable the multi-line option in the field
+> settings for extended narrative. The legacy
+> [FAIMS Text Field](../text-fields/faims-text-field.md) and
+> [Multi-line Text Field](../text-fields/multiline-text-field.md) entries are
+> deprecated; existing fields remain supported.
 
 ### Numbers
 
-| Field Type                                                                 | Purpose                | Good For                                  |
-| -------------------------------------------------------------------------- | ---------------------- | ----------------------------------------- |
-| **[Number Input](../number-fields/number-input.md)**                       | Numeric entry          | Measurements, counts, scientific readings |
-| **[Controlled Number](../number-fields/controlled-number.md)**             | Bounded numeric entry  | pH (0–14), percentages (0–100), ratings   |
-| **[Auto Incrementing Field](../number-fields/auto-incrementing-field.md)** | Sequential identifiers | Specimen numbers, catalogue IDs           |
+| Field Type                                                                 | Purpose                            | Good For                                              |
+| -------------------------------------------------------------------------- | ---------------------------------- | ----------------------------------------------------- |
+| **[Number Input](../number-fields/number-input.md)**                       | Numeric entry with optional bounds | Measurements, counts, ratings, percentages, pH (0–14) |
+| **[Auto Incrementing Field](../number-fields/auto-incrementing-field.md)** | Sequential identifiers             | Specimen numbers, catalogue IDs                       |
+| **[Percentage Slider](../number-fields/percentage-slider.md)**             | Slider percentage entry            | Canopy cover, quick 0–100 estimates                   |
+
+> **Note:** [Controlled Number](../number-fields/controlled-number.md) is
+> deprecated; existing fields remain supported. Use **Number Input** with
+> minimum and maximum bounds for new bounded-numeric fields.
 
 ### Date and Time
 
-| Field Type                                                                | Purpose                   | Good For                                   |
-| ------------------------------------------------------------------------- | ------------------------- | ------------------------------------------ |
-| **[Date and Time with Now button](../date-time-fields/date-time-now.md)** | Timezone-aware timestamps | Observation moments, event timing          |
-| **[Date picker](../date-time-fields/date-picker.md)**                     | Date-only selection       | Excavation dates, permit dates             |
-| **[Month picker](../date-time-fields/month-picker.md)**                   | Month-and-year selection  | Seasonal data, approximate dates           |
-| **[Date time picker](../date-time-fields/date-time-picker.md)**           | Date and time selection   | Precise event timing (no timezone support) |
+| Field Type                                                      | Purpose                                                | Good For                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
+| **[Date time picker](../date-time-fields/date-time-picker.md)** | Date and time selection, optional one-tap "Now" button | Observation moments, event timing, scheduled records |
+| **[Date picker](../date-time-fields/date-picker.md)**           | Date-only selection                                    | Excavation dates, permit dates                       |
+| **[Month picker](../date-time-fields/month-picker.md)**         | Month-and-year selection                               | Seasonal data, approximate dates                     |
+
+> **Note:** [Date and Time with Now button](../date-time-fields/date-time-now.md)
+> is deprecated as a separate field type; existing fields remain supported.
+> Use **Date time picker** with **Show "Now" button** enabled for new
+> one-tap-timestamp fields.
 
 ### Media
 
@@ -97,13 +112,16 @@ tabs in the ADD A FIELD dialog.
 
 ### Choice
 
-| Field Type                                                                 | Purpose                   | Good For                            |
-| -------------------------------------------------------------------------- | ------------------------- | ----------------------------------- |
-| **[Checkbox](../choice-fields/checkbox.md)**                               | Boolean toggle            | Presence/absence, yes/no flags      |
-| **[Select one option](../choice-fields/radio-group.md)**                   | Visible single selection  | Short lists of 2–10 items           |
-| **[Select Field](../choice-fields/select.md)**                             | Dropdown single selection | Lists of 8–20 items                 |
-| **[Select Multiple](../choice-fields/multi-select.md)**                    | Multiple selection        | Multi-attribute recording           |
-| **[Select Field (Hierarchical)](../choice-fields/hierarchical-select.md)** | Nested vocabulary tree    | Taxonomies, large lists (>20 items) |
+| Field Type                                                                 | Purpose                  | Good For                                |
+| -------------------------------------------------------------------------- | ------------------------ | --------------------------------------- |
+| **[Select one option](../choice-fields/radio-group.md)**                   | Visible single selection | Yes/no flags, short lists of 2–10 items |
+| **[Select Multiple](../choice-fields/multi-select.md)**                    | Multiple selection       | Multi-attribute recording               |
+| **[Select Field (Hierarchical)](../choice-fields/hierarchical-select.md)** | Nested vocabulary tree   | Taxonomies, large lists (>20 items)     |
+
+> **Note:** [Checkbox](../choice-fields/checkbox.md) and
+> [Select Field](../choice-fields/select.md) are deprecated; existing fields
+> remain supported. Use **Select one option** for new yes/no toggles and
+> single-selection lists.
 
 ### Relationship
 
@@ -137,12 +155,13 @@ data, use a choice field (see
 below).
 
 If the text is **predictably brief** (under about 100 characters) — a
-code, a name, a short label — use a
-**[FAIMS Text Field](../text-fields/faims-text-field.md)**.
+code, a name, a short label — use a **Text field** with the multi-line
+option left off (the default).
 
 If you expect **extended narrative**, like paragraph-length
-descriptions or detailed observations, use a
-**[Multi-line Text Field](../text-fields/multiline-text-field.md)**.
+descriptions or detailed observations, use a **Text field** with the
+**multi-line** option enabled and set **Rows to display** to the desired
+initial height.
 
 If the value can be **read from a physical label** — such as a QR
 code on a sample bag or a barcode on equipment — use
@@ -157,9 +176,14 @@ For **specialised validation**, use the matching field type:
 ### Numbers
 
 If the value has **known valid ranges** (e.g., pH 0–14, percentage
-0–100), use a
-**[Controlled Number](../number-fields/controlled-number.md)** — it enforces minimum
-and maximum bounds and supports default values.
+0–100), use a **[Number Input](../number-fields/number-input.md)** and
+configure its minimum and maximum bounds. Number Input enforces the same
+range constraints that the deprecated Controlled Number field provided.
+
+For **percentage-style values** where a **slider** is clearer than typing,
+use a
+**[Percentage Slider](../number-fields/percentage-slider.md)** — integer values
+on a configurable 0–100 scale with optional step size (for example steps of 5 or 10).
 
 If the value is a **sequential number**, e.g., for an identifier
 (specimen 001, 002, 003…), use an
@@ -174,19 +198,19 @@ a **[Number Input](../number-fields/number-input.md)**.
 
 Choose based on the level of temporal detail you need:
 
-- **Current moment** (observation timestamp) →
-  **[Date and Time with Now button](../date-time-fields/date-time-now.md)** — the
-  recommended date-time field, with timezone support and a one-tap
-  capture button. Also supports arbitrary date and time entry in
-  addition to "now."
+- **Date and time** (any combination — current moment, historical, scheduled) →
+  **[Date time picker](../date-time-fields/date-time-picker.md)** — the
+  recommended date-and-time field. Enable **Show "Now" button** for one-tap
+  capture of the current timestamp; leave it off if collectors will only
+  enter specific dates manually.
 - **Date only** (excavation date, permit date) →
   **[Date picker](../date-time-fields/date-picker.md)**.
 - **Month and year only** (seasonal records) →
   **[Month picker](../date-time-fields/month-picker.md)**.
-- **Date and time without timezone** →
-  **[Date time picker](../date-time-fields/date-time-picker.md)** does not store
-  timezone; consider using
-  **[Date and Time with Now button](../date-time-fields/date-time-now.md)** instead.
+
+> **Note:** [Date and Time with Now button](../date-time-fields/date-time-now.md)
+> is deprecated as a separate field type. Existing fields keep working; for
+> new forms, use **Date time picker** with **Show "Now" button** enabled.
 
 ### Choices and Controlled Vocabularies
 
@@ -196,18 +220,19 @@ use:
 **For single selection:**
 
 - **2 states (yes/no, present/absent)** →
-  **[Checkbox](../choice-fields/checkbox.md)** for a simple true/false toggle, or
-  **[Select one option](../choice-fields/radio-group.md)** if you need string values
-  rather than true/false.
+  **[Select one option](../choice-fields/radio-group.md)** with two choices
+  such as "Yes" and "No".
 - **ca. 2–10 options** →
   **[Select one option](../choice-fields/radio-group.md)** — all choices are
   visible, making selection fast on mobile.
-- **ca. 8–20 options** → **[Select Field](../choice-fields/select.md)** — a
-  dropdown that conserves screen space but takes an extra tap to
-  show the list then select.
 - **Many options or hierarchical structure** →
   **[Select Field (Hierarchical)](../choice-fields/hierarchical-select.md)** —
   supports searching and tree navigation.
+
+> **Note:** [Checkbox](../choice-fields/checkbox.md) and
+> [Select Field](../choice-fields/select.md) (the legacy dropdown) are
+> deprecated. Existing fields keep working; for new forms use **Select one
+> option** instead.
 
 **For multiple selection:**
 

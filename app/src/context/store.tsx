@@ -7,6 +7,7 @@ import {
   useSelector,
 } from 'react-redux';
 import {
+  createMigrate,
   FLUSH,
   PAUSE,
   PERSIST,
@@ -18,8 +19,9 @@ import {
 } from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
+import {logError, logInfo, logWarn} from '@faims3/forms';
 import LoadingApp from '../gui/components/loadingApp';
-import {logError} from '../logging';
+import {logError as logAppError} from '../logging';
 import {initialise} from '../sync/initialize';
 import alertsReducer, {addAlert} from './slices/alertSlice';
 import authReducer, {
@@ -28,6 +30,7 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
+import {migrateProjectsPersistedState} from './slices/projectsPersistMigration';
 import projectsReducer from './slices/projectSlice';
 
 // The below configures indexed DB storage which has a greater limit than
@@ -41,11 +44,57 @@ import storage from 'redux-persist-indexeddb-storage';
 const authPersistConfig = {key: 'auth', storage: storage('faims-auth-db')};
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 
+const PERSIST_MIGRATION_LOG = '[redux-persist-migration]';
+
 // Configure persistence for the projects slice
 const projectsPersistConfig = {
   key: 'projects',
+  version: 1,
   storage: storage('faims-projects-db'),
   blacklist: ['isInitialised'],
+  migrate: createMigrate(
+    {
+      0: state => state,
+      1: state => {
+        const fromVersion = state?._persist?.version ?? 'unknown';
+        logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
+          fromVersion,
+          toVersion: 1,
+          slice: 'projects',
+        });
+        if (!state) {
+          logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_skipped`, {
+            toVersion: 1,
+            slice: 'projects',
+            reason: 'empty_state',
+          });
+          return state;
+        }
+        try {
+          const migrated = migrateProjectsPersistedState(state);
+          return {...migrated, _persist: state._persist};
+        } catch (err) {
+          logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_failed`, {
+            fromVersion,
+            toVersion: 1,
+            slice: 'projects',
+            message: err instanceof Error ? err.message : String(err),
+          });
+          logError(
+            new Error('redux-persist projects migration failed unexpectedly'),
+            {
+              fromVersion,
+              toVersion: 1,
+              slice: 'projects',
+              cause: err instanceof Error ? err.message : String(err),
+            }
+          );
+          throw err;
+        }
+      },
+    },
+    {debug: false}
+  ),
 };
 
 const persistedProjectsReducer = persistReducer(
@@ -271,7 +320,7 @@ export const wipeAllDatabases = async () => {
     try {
       console.debug(await db.destroy());
     } catch (err) {
-      logError(err);
+      logAppError(err);
     }
   }
 };

@@ -22,10 +22,10 @@ export const TemplatedStringFieldEditor = ({
   viewsetId,
 }: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const dispatch = useAppDispatch();
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
@@ -36,11 +36,9 @@ export const TemplatedStringFieldEditor = ({
   const state = field['component-parameters'];
 
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets[viewsetId]
+    state => state.notebook.uiSpec.present.viewsets[viewsetId]
   );
-  const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -48,13 +46,13 @@ export const TemplatedStringFieldEditor = ({
   const viewSetFields = useMemo(() => {
     const fieldSet = new Set<string>();
     viewSet.views.forEach(viewId => {
-      const view = fviews[viewId];
+      const view = views[viewId];
       if (view) {
         view.fields.forEach(fieldId => fieldSet.add(fieldId));
       }
     });
     return Array.from(fieldSet);
-  }, [viewSet.views, fviews]);
+  }, [viewSet.views, views]);
 
   // Define system variables
   const systemVariables = [

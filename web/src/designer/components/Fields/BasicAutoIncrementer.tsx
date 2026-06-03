@@ -4,6 +4,7 @@ import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 type PropType = {
   fieldName: string;
@@ -13,7 +14,7 @@ type PropType = {
 /** Digit width for auto-increment (scoped to `viewId` via reducer when field is created). */
 export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -38,15 +39,19 @@ export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
         record. Users select a range of values for the counter on their device.
         Often used as part of a Templated String Field.
       </Typography>
-      <DebouncedTextField
-        name="digits"
-        variant="outlined"
-        label="Number of digits in identifier"
-        type="number"
-        value={digits}
+      <SimpleFieldWrapper
+        heading="Number of digits in identifier"
         helperText="Identifier will be padded with zeros up to this many digits."
-        onChange={e => updateDigits(parseInt(e.target.value))}
-      />
+      >
+        <DebouncedTextField
+          name="digits"
+          variant="outlined"
+          label=""
+          type="number"
+          value={digits}
+          onChange={e => updateDigits(parseInt(e.target.value))}
+        />
+      </SimpleFieldWrapper>
     </BaseFieldEditor>
   );
 };

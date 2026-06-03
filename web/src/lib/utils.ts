@@ -91,62 +91,14 @@ export const downloadFile = async (
   link.click();
 };
 
-export function displayUnixTimestampMs({
-  timestamp,
-}: {
-  timestamp: number;
-}): string {
-  const date = new Date(timestamp);
-  // Format: Apr 2, 2025, 3:30 PM
-  return (
-    date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }) +
-    ', ' +
-    date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  );
-}
-
-// Format dates for datetime-local input (YYYY-MM-DDTHH:MM)
-export const formatDateTimeLocal = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-// Format date for display (DD/MM/YY HH:MM)
-export const formatDisplayDate = (date: Date): string => {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes} on ${day}/${month}/${year}`;
-};
-
-// Calculate days difference
-export const getDaysDifference = (date: Date): number => {
-  const diffMs = date.getTime() - Date.now();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  return diffDays;
-};
-
 function notebookCreatedMs(row: GetNotebookListResponse[number]): number {
-  if (row.created) {
-    const t = Date.parse(row.created);
+  if (row.createdAt) {
+    const t = Date.parse(row.createdAt);
     if (!Number.isNaN(t)) {
       return t;
     }
   }
-  const head = row.project_id.split('-')[0] ?? '';
+  const head = row._id.split('-')[0] ?? '';
   const n = parseInt(head, 10);
   if (!Number.isNaN(n) && String(n) === head) {
     return n;
@@ -155,8 +107,8 @@ function notebookCreatedMs(row: GetNotebookListResponse[number]): number {
 }
 
 /**
- * Returns a new array of notebook list rows sorted newest first (by `created`
- * when present, else the millisecond prefix of standard `project_id` values).
+ * Returns a new array of notebook list rows sorted newest first (by `createdAt`
+ * when present, else the millisecond prefix of standard Couch `_id` values).
  */
 export function sortNotebookListNewestFirst(
   notebooks: GetNotebookListResponse

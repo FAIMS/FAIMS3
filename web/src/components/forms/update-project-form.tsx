@@ -2,8 +2,13 @@ import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
-import {NOTEBOOK_NAME} from '@/constants';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Route} from '@/routes/_protected/projects/$projectId';
+import {
+  errorMessageFromNotebookJsonBody,
+  updateNotebookUiSpecificationRequest,
+} from '@/hooks/project-hooks';
+import {prepareNotebookUiSpecificationInputForApi} from '@faims3/data-model';
 
 const fields = [
   {
@@ -14,12 +19,9 @@ const fields = [
 ];
 
 /**
- * UpdateProjectForm component renders a form for updating a project.
- * It provides a button to submit the form and a file input for selecting a JSON file.
- * The onSuccess callback is called after a successful update.
- *
- * @param {React.Dispatch<React.SetStateAction<boolean>>} setDialogOpen - A function to set the dialog open state.
- * @returns {JSX.Element} The rendered UpdateProjectForm component.
+ * UpdateProjectForm replaces the project notebook design via PUT
+ * /api/notebooks/:projectId/uiSpecification. Accepts legacy or current
+ * notebook JSON (same loose validation as create-from-file).
  */
 export function UpdateProjectForm({
   setDialogOpen,
@@ -38,24 +40,34 @@ export function UpdateProjectForm({
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: jsonString,
-      }
-    );
+    let payload: unknown;
+    try {
+      payload = JSON.parse(jsonString);
+    } catch {
+      return {type: 'submit', message: 'Invalid JSON file'};
+    }
 
-    if (!response.ok)
-      return {type: 'submit', message: 'Error updating template'};
+    const prepared = prepareNotebookUiSpecificationInputForApi(payload);
+    if (!prepared.ok) {
+      return {type: 'submit', message: prepared.message};
+    }
 
-    // call the onSuccess callback if everything worked
+    const uiResponse = await updateNotebookUiSpecificationRequest({
+      user,
+      projectId,
+      uiSpecification: prepared.uiSpecification,
+    });
+    if (!uiResponse.ok) {
+      const json: unknown = await uiResponse.json().catch(() => undefined);
+      return {
+        type: 'submit',
+        message:
+          'Error updating project design: ' +
+          errorMessageFromNotebookJsonBody(json, uiResponse.statusText),
+      };
+    }
+
     onSuccess();
-
     setDialogOpen(false);
   };
 
@@ -63,7 +75,7 @@ export function UpdateProjectForm({
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText={`Update ${NOTEBOOK_NAME}`}
+      submitButtonText={`Replace ${NOTEBOOK_NAME_CAPITALIZED} JSON`}
       submitButtonVariant="destructive"
       warningMessage={
         "If the project's response format has changed, there will be inconsistences in responses."

@@ -2,59 +2,27 @@
  * @file Large in-repo {@link Notebook} fixture for tests and local designer development.
  */
 
-import {Notebook} from './state/initial';
+import type {Notebook} from './state/initial';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from './state/initial';
 
+/** Current-schema notebook (RSpace IGSN demo design). */
 export const sampleNotebook: Notebook = {
-  metadata: {
-    notebook_version: '1.0',
-    schema_version: '1.0',
-    name: 'RSpace IGSN Demo',
-    accesses: ['admin', 'moderator', 'team'],
-    filenames: [],
-    ispublic: false,
-    isrequest: false,
-    lead_institution: 'Fieldmark',
-    showQRCodeButton: 'true',
-    pre_description:
-      'Demonstration notebook to help develop an export pipeline from Fieldmark to RSpace.',
-    project_lead: 'Steve Cassidy',
-    sections: {
-      'Primary-New-Section': {
-        'sectiondescriptionPrimary-New-Section': 'This description.',
-      },
-      'Primary-Next-Section': {
-        'sectiondescriptionPrimary-Next-Section': 'That description.',
-      },
-    },
-  },
-  'ui-specification': {
+  uiSpec: {
     fields: {
       'New-Text-Field': {
-        'component-namespace': 'formik-material-ui',
+        'component-namespace': 'faims-custom',
         'component-name': 'TextField',
         'type-returned': 'faims-core::String',
         'component-parameters': {
-          fullWidth: true,
-          helperText: 'Summarise the collection location.',
-          variant: 'outlined',
-          required: false,
-          InputProps: {
-            type: 'text',
-          },
-          SelectProps: {},
-          InputLabelProps: {
-            label: 'Location Description',
-          },
-          FormHelperTextProps: {},
+          label: 'Location Description',
           name: 'New-Text-Field',
+          helperText: 'Summarise the collection location.',
+          required: false,
         },
         initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'Field-ID': {
@@ -70,13 +38,10 @@ export const sampleNotebook: Notebook = {
           form_id: 'Primary-Next-Section',
           label: 'ID',
         },
-        initialValue: null,
+        initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'hridPrimary-Next-Section': {
@@ -91,20 +56,13 @@ export const sampleNotebook: Notebook = {
           variant: 'outlined',
           required: true,
           template: '',
-          InputProps: {
-            type: 'text',
-          },
-          InputLabelProps: {
-            label: 'Identifier',
-          },
+          InputProps: {type: 'text'},
+          label: 'Identifier',
         },
         initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'IGSN-QR-Code': {
@@ -116,20 +74,13 @@ export const sampleNotebook: Notebook = {
           id: 'qr-code-field',
           variant: 'outlined',
           required: true,
-          FormLabelProps: {
-            children: 'IGSN QR Code',
-          },
-          FormHelperTextProps: {
-            children: 'Scan the pre-printed QR Code for this sample.',
-          },
+          label: 'IGSN QR Code',
+          helperText: 'Scan the pre-printed QR Code for this sample.',
         },
         initialValue: '1',
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
       'Sample-Location': {
@@ -147,10 +98,7 @@ export const sampleNotebook: Notebook = {
         initialValue: null,
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'Sample-Photograph': {
@@ -161,51 +109,39 @@ export const sampleNotebook: Notebook = {
           fullWidth: true,
           name: 'Sample-Photograph',
           id: 'take-photo-field',
-          helpertext: 'Take a photo',
           variant: 'outlined',
           label: 'Sample Photograph',
+          helperText: 'Take a photo',
         },
         initialValue: null,
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'Length-mm': {
-        'component-namespace': 'formik-material-ui',
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::Integer',
+        'component-namespace': 'faims-custom',
+        'component-name': 'NumberField',
+        'type-returned': 'faims-core::Number',
         'component-parameters': {
           fullWidth: true,
           helperText: 'Longest dimension of sample in mm.',
           variant: 'outlined',
           required: false,
-          InputProps: {
-            type: 'number',
-          },
           SelectProps: {},
-          InputLabelProps: {
-            label: 'Length (mm)',
-          },
-          FormHelperTextProps: {},
           name: 'Length-mm',
+          label: 'Length (mm)',
+          numberType: 'integer',
         },
         initialValue: '',
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
-
       'survey-note': {
-        'component-namespace': 'formik-material-ui',
-        'component-name': 'MultipleTextField',
+        'component-namespace': 'faims-custom',
+        'component-name': 'TextField',
         'type-returned': 'faims-core::String',
         'component-parameters': {
           fullWidth: true,
@@ -213,31 +149,22 @@ export const sampleNotebook: Notebook = {
           variant: 'outlined',
           required: false,
           multiline: true,
-          InputProps: {
-            type: 'text',
-            rows: 4,
-          },
           SelectProps: {},
-          InputLabelProps: {
-            label: 'Survey Note',
-          },
-          FormHelperTextProps: {},
           id: 'survey-note',
           name: 'survey-note',
+          label: 'Survey Note',
+          rows: 4,
         },
         initialValue: '',
         access: ['admin'],
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
       Type: {
         'component-namespace': 'faims-custom',
-        'component-name': 'Select',
+        'component-name': 'RadioGroup',
         'type-returned': 'faims-core::String',
         'component-parameters': {
           fullWidth: true,
@@ -249,62 +176,48 @@ export const sampleNotebook: Notebook = {
           SelectProps: {},
           ElementProps: {
             options: [
-              {
-                label: 'Igneous',
-                value: 'Igneous',
-              },
-              {
-                label: 'Metamorphic',
-                value: 'Metamorphic',
-              },
-              {
-                label: 'Sedementary',
-                value: 'Sedementary',
-              },
+              {label: 'Igneous', value: 'Igneous'},
+              {label: 'Metamorphic', value: 'Metamorphic'},
+              {label: 'Sedementary', value: 'Sedementary'},
             ],
           },
-          InputLabelProps: {
-            label: 'Type',
-          },
           name: 'Type',
+          label: 'Type',
         },
         initialValue: '',
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
       safety_hazard: {
         'component-namespace': 'faims-custom',
-        'component-name': 'Checkbox',
-        'type-returned': 'faims-core::Bool',
+        'component-name': 'RadioGroup',
+        'type-returned': 'faims-core::String',
         'component-parameters': {
           name: 'safety_hazard',
           id: 'safety_hazard',
           required: false,
           type: 'checkbox',
-          FormControlLabelProps: {
-            label: 'Safety Hazard',
-          },
-          FormHelperTextProps: {
-            children: 'Selecting this box will alert maintenance (eventually)',
+          label: 'Safety Hazard',
+          helperText: 'Selecting this box will alert maintenance (eventually)',
+          ElementProps: {
+            enableOtherOption: false,
+            options: [
+              {value: 'true', label: 'Yes'},
+              {value: 'false', label: 'No'},
+            ],
           },
         },
-        initialValue: false,
+        initialValue: '',
         access: ['admin'],
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
     },
-    fviews: {
+    views: {
       'Primary-New-Section': {
         label: 'Detail',
         fields: [
@@ -315,6 +228,7 @@ export const sampleNotebook: Notebook = {
           'Type',
           'safety_hazard',
         ],
+        description: 'This description.',
       },
       'Primary-Next-Section': {
         label: 'Identify',
@@ -324,14 +238,27 @@ export const sampleNotebook: Notebook = {
           'IGSN-QR-Code',
           'survey-note',
         ],
+        description: 'That description.',
       },
     },
     viewsets: {
       Primary: {
         label: 'Observation',
         views: ['Primary-Next-Section', 'Primary-New-Section'],
+        hridField: 'hridPrimary-Next-Section',
       },
     },
     visible_types: ['Primary'],
+    settings: {showQrCodeButton: true},
+    schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  },
+  metadata: {
+    information: {
+      notebookVersion: '1.0',
+      purposeMarkdown:
+        'Demonstration notebook to help develop an export pipeline from Fieldmark to RSpace.',
+      projectLeadLabel: 'Steve Cassidy',
+      leadInstitution: 'Fieldmark',
+    },
   },
 };

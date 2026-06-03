@@ -27,7 +27,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, serverId, uiSpecificationId, metadata},
+  project: {projectId, serverId, uiSpecificationId},
   refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
@@ -39,12 +39,12 @@ export default function AddRecordButtons({
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-  const showQRButton = !!metadata['showQRCodeButton'];
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
   }
+  const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
   const visibleTypes = uiSpec.visible_types;
 

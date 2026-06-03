@@ -5,6 +5,12 @@ Editor._
 
 ---
 
+```{important}
+Date and Time with Now button is **deprecated** as a separate field type for new form design.
+It remains fully supported for existing notebooks and existing fields are not removed.
+For new forms, use [Date time picker](date-time-picker.md) and enable its **Show "Now" button** option to capture the current timestamp with one tap.
+```
+
 ## What This Field Does
 
 A Date/Time with Now field captures timezone-aware timestamps in ISO 8601
@@ -16,16 +22,11 @@ projects where timezone safety matters.
 
 ## Adding the Field
 
-To add this field, open the
-[ADD A FIELD dialog](../shared-settings/adding-a-field.md), navigate to the
-**DATE & TIME** tab, and click the **Date and Time with Now button**
-card. Then click the **ADD FIELD** button in the lower right.
+New Date and Time with Now button fields are not available from the add-field chooser.
+The field type remains supported for legacy notebooks where it already exists.
+For new forms, add **Date time picker** and enable its **Show "Now" button** option to get the same one-tap capture.
 
-```{screenshot} field-types-design/date-time-now-01-add-field.png
-:alt: Adding a Date/Time with Now — the DATE & TIME tab in the ADD A FIELD dialog
-:align: right
-:width: 100%
-```
+> **Note:** You can still edit Date and Time with Now settings for existing fields.
 
 ## Configuring the Field
 
@@ -70,3 +71,8 @@ and Display in child records — see
   accepts arbitrary dates including historical ones.
 - **The captured timestamp uses the device clock** — remind field
   teams to sync their device clocks before starting work each day.
+
+## Migration Guidance
+
+- Existing Date and Time with Now button fields can be left in place and will continue to work.
+- For new templates, use **Date time picker** and tick **Show "Now" button**. The combined field supports both arbitrary date/time entry and one-tap "now" capture.

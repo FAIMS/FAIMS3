@@ -17,18 +17,23 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import TabIcon from '@mui/icons-material/Tab';
 import {
   compileUiSpecConditionals,
-  decodeUiSpec,
-  EncodedUISpecification,
+  type NotebookDefinition,
+  normalizeNotebookUiSpecification,
 } from '@faims3/data-model';
 import {FaimsFormData} from '../lib/formModule/types';
 import {getDefaultMapConfig} from '../lib/components/maps/config';
 
-function App({uiSpec: rawUiSpec}: {uiSpec: EncodedUISpecification}) {
+function App({
+  notebookDefinition,
+}: {
+  /** Inlined survey/template UI bundle (`uiSpec` + design `metadata`). */
+  notebookDefinition: NotebookDefinition;
+}) {
   const uiSpec = useMemo(() => {
-    const decoded = decodeUiSpec(rawUiSpec);
-    compileUiSpecConditionals(decoded);
-    return decoded;
-  }, [rawUiSpec]);
+    const {uiSpec: spec} = normalizeNotebookUiSpecification(notebookDefinition);
+    compileUiSpecConditionals(spec);
+    return spec;
+  }, [notebookDefinition]);
 
   const queryClient = useQueryClient();
 

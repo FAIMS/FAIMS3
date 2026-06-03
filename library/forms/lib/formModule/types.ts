@@ -110,4 +110,6 @@ export type CompletionResult = {
   progress: number;
   requiredCount: number;
   completedCount: number;
+  /** Required fields the user hasn't filled in yet. */
+  incompleteRequired: string[];
 };

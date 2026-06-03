@@ -28,8 +28,10 @@ import {
   Box,
   Dialog,
   DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
-  IconButton,
+  Stack,
   Toolbar,
   Tooltip,
   Typography,
@@ -128,12 +130,20 @@ function MapWrapper(props: MapProps) {
   >(undefined);
   const mapRef = useRef<Map | undefined>(undefined);
 
+  const drawRef = useRef<Draw | null>(null);
+
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
+  /** Confirm dialog for closing with unsaved drawn features (BSS-1144). */
+  const [showCloseConfirm, setShowCloseConfirm] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
 
   // Has the user drawn features?
   const [hasDrawnFeatures, setHasDrawnFeatures] = useState<boolean>(false);
+
+  // Is the user partway through drawing a polygon / line (sketch started but
+  // not yet finished)? Used so Clear can abort an in-progress sketch.
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
 
   // Does the map have features already?
   const hasExistingFeatures = !!(
@@ -160,16 +170,25 @@ function MapWrapper(props: MapProps) {
         source: source,
         type: props.featureType || 'Point',
       });
+      // Expose the Draw to handleClose so Clear can abort an in-progress sketch.
+      drawRef.current = draw;
 
       const modify = new Modify({source: source});
 
       // Only allow one point at a time
       draw.on('drawstart', () => {
         source.clear();
+        setIsDrawing(true);
       });
 
       draw.on('drawend', () => {
         setHasDrawnFeatures(true);
+        setIsDrawing(false);
+      });
+
+      // Sketch was aborted (e.g. via Clear) - no longer drawing.
+      draw.on('drawabort', () => {
+        setIsDrawing(false);
       });
 
       // import any exiting features
@@ -208,6 +227,9 @@ function MapWrapper(props: MapProps) {
 
     if (action === 'clear') {
       setHasDrawnFeatures(false);
+      setIsDrawing(false);
+
+      drawRef.current?.abortDrawing();
       source?.clear();
       return;
     }
@@ -242,6 +264,7 @@ function MapWrapper(props: MapProps) {
 
     // Reset this
     setHasDrawnFeatures(false);
+    setIsDrawing(false);
 
     setMapOpen(true);
     setTimeout(() => {
@@ -373,38 +396,33 @@ function MapWrapper(props: MapProps) {
                 paddingX: {xs: '8px', sm: '12px'},
               }}
             >
+              {/* Cancel — destructive. If the user has unsaved drawn
+                  features, prompt before discarding. */}
               <Box
                 sx={{display: 'flex', alignItems: 'center', marginLeft: '10px'}}
               >
-                <IconButton
-                  edge="start"
-                  color="inherit"
-                  onClick={() => setMapOpen(false)}
-                  aria-label="close"
+                <Button
+                  onClick={() => {
+                    if (hasDrawnFeatures) {
+                      setShowCloseConfirm(true);
+                    } else {
+                      setMapOpen(false);
+                    }
+                  }}
+                  aria-label="cancel"
+                  color="error"
+                  variant="contained"
+                  disableElevation
+                  startIcon={<CloseIcon sx={{fontSize: 16}} />}
                   sx={{
-                    backgroundColor: theme.palette.primary.dark,
-                    color: theme.palette.background.default,
-                    fontSize: '16px',
-                    gap: '4px',
-                    fontWeight: 'bold',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    transition:
-                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: theme.palette.text.primary,
-                      transform: 'scale(1.05)',
+                    '& .MuiButton-startIcon': {
+                      marginLeft: 0,
+                      marginRight: '4px',
                     },
                   }}
                 >
-                  <CloseIcon
-                    sx={{
-                      stroke: theme.palette.background.default,
-                      strokeWidth: '1.5',
-                    }}
-                  />
-                  Close
-                </IconButton>
+                  Cancel
+                </Button>
               </Box>
 
               <Box
@@ -413,39 +431,27 @@ function MapWrapper(props: MapProps) {
                   gap: 1,
                 }}
               >
+                {/* Clear — secondary action, outlined so it stays
+                    visually quieter than Save. */}
                 <Button
-                  color="inherit"
                   onClick={() => handleClose('clear')}
-                  sx={{
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    transition:
-                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: 'lightgray',
-
-                      transform: 'scale(1.05)',
-                    },
-                  }}
+                  color="primary"
+                  variant="outlined"
+                  // Disabled if there's nothing to clear. Stays enabled while a
+                  // polygon/line sketch is in progress so Clear can abort it.
+                  disabled={
+                    !hasExistingFeatures && !hasDrawnFeatures && !isDrawing
+                  }
                 >
                   Clear
                 </Button>
 
+                {/* Save — primary action, green via bssTheme success token. */}
                 <Button
-                  color="inherit"
                   onClick={() => handleClose('save')}
-                  sx={{
-                    // backgroundColor: theme.palette.alert.successBackground,
-                    // color: theme.palette.dialogButton.dialogText,
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    transition:
-                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: 'lightgray',
-                      transform: 'scale(1.05)',
-                    },
-                  }}
+                  color="success"
+                  variant="contained"
+                  disableElevation
                   // Gray out when no features and hasn't drawn any
                   disabled={!hasExistingFeatures && !hasDrawnFeatures}
                 >
@@ -575,6 +581,65 @@ function MapWrapper(props: MapProps) {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {(() => {
+          // Use the right noun for the shape the user is drawing
+          // ("location" for points, "polygon" for polygons, "line" for lines).
+          const shapeNoun =
+            props.featureType === 'Polygon'
+              ? 'polygon'
+              : props.featureType === 'LineString'
+                ? 'line'
+                : 'location';
+          return (
+            <Dialog
+              open={showCloseConfirm}
+              onClose={() => setShowCloseConfirm(false)}
+              aria-labelledby="map-close-confirm-title"
+              aria-describedby="map-close-confirm-description"
+              fullWidth
+              maxWidth="sm"
+            >
+              <DialogTitle
+                id="map-close-confirm-title"
+                sx={{textAlign: 'center', fontSize: '1.35rem', fontWeight: 600}}
+              >
+                Are you sure you want to discard the {shapeNoun}?
+              </DialogTitle>
+              <DialogContent>
+                <Stack spacing={2} id="map-close-confirm-description">
+                  <Typography variant="body2">
+                    You have selected a {shapeNoun} on the map but haven't
+                    saved it. If you close now, your selection will be lost.
+                  </Typography>
+                </Stack>
+              </DialogContent>
+              <DialogActions
+                sx={{justifyContent: 'space-between', px: 3, pb: 2}}
+              >
+                <Button
+                  onClick={() => {
+                    setShowCloseConfirm(false);
+                    setMapOpen(false);
+                  }}
+                  color="error"
+                  variant="contained"
+                  disableElevation
+                >
+                  Discard
+                </Button>
+                <Button
+                  onClick={() => setShowCloseConfirm(false)}
+                  color="primary"
+                  variant="contained"
+                  disableElevation
+                >
+                  Keep editing
+                </Button>
+              </DialogActions>
+            </Dialog>
+          );
+        })()}
       </div>
       <style>
         {`
