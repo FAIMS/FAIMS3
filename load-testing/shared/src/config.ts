@@ -24,6 +24,7 @@ export const SharedEnvSchema = z.object({
   BROWSER: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
   VIEWPORT_WIDTH: z.coerce.number().int().positive().default(393),
   VIEWPORT_HEIGHT: z.coerce.number().int().positive().default(852),
+  NOTEBOOK_NAME: z.string().default('notebook'),
 });
 
 export type SharedEnv = z.infer<typeof SharedEnvSchema>;

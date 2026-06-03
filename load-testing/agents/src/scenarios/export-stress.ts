@@ -16,7 +16,7 @@ export async function runExportStress(
 
   const {env, jwtToken} = ctx;
   const notebookId = env.NOTEBOOK_PROJECT_ID;
-  const exportUrl = `${env.DASS_API_URL}/api/notebooks/${notebookId}/records/export?format=csv`;
+  const exportUrl = `${env.DASS_API_URL}/api/${env.NOTEBOOK_NAME}s/${notebookId}/records/export?format=csv`;
 
   const start = Date.now();
   const response = await fetch(exportUrl, {
