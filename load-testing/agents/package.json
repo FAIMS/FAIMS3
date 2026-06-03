@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "pnpm run build && env-cmd node build/src/worker.js",
-    "load-test": "node build/src/worker.js",
+    "start": "node build/src/worker.js",
     "install-browsers": "playwright install chromium",
     "lint": "oxlint -c ../../.oxlintrc.json ."
   },
@@ -17,7 +17,8 @@
     "@faims3/instrumentation": "workspace:*",
     "@faims3/load-testing-shared": "workspace:*",
     "env-cmd": "^10.1.0",
-    "playwright": "^1.51.1"
+    "playwright": "^1.51.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "tsx": "^4.19.3"

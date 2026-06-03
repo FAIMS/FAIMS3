@@ -1,0 +1,32 @@
+{
+  "name": "@faims3/load-testing-infra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AWS CDK infrastructure for DASS load testing (ECS tasks + metrics EC2)",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "cdk": "cdk",
+    "deploy": "pnpm run build && cdk deploy --require-approval never",
+    "synth": "pnpm run build && cdk synth",
+    "diff": "pnpm run build && cdk diff",
+    "destroy": "cdk destroy",
+    "lint": "oxlint -c ../../.oxlintrc.json ."
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.189.0",
+    "constructs": "^10.0.0",
+    "dotenv": "^16.4.7",
+    "source-map-support": "^0.5.21",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "aws-cdk": "^2.178.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
+}

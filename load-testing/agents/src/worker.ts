@@ -1,25 +1,22 @@
 import {fork, type ChildProcess} from 'child_process';
 import {randomUUID} from 'crypto';
 import {join} from 'path';
-import {
-  CoordinatorClient,
-  parseSharedEnv,
-  type MetricReport,
-} from '@faims3/load-testing-shared';
+import {CoordinatorClient, type MetricReport} from '@faims3/load-testing-shared';
+import {parseAgentEnv} from './config.js';
 import {MetricsClient} from './metrics-client.js';
+import {normalizeMetricReport} from './normalize-metric.js';
 import type {IpcMessage} from './types.js';
 
 const SESSION_SCRIPT = join(__dirname, 'browser-session.js');
 
 async function main(): Promise<void> {
-  const env = parseSharedEnv(process.env as Record<string, string>);
-  const coordinatorUrl = process.env.COORDINATOR_URL ?? 'http://localhost:4000';
+  const env = parseAgentEnv();
   const workerId = process.env.WORKER_ID ?? randomUUID();
   const agentId = process.env.AGENT_ID ?? `agent-${workerId.slice(0, 8)}`;
   const sessionsPerAgent = env.SESSIONS_PER_AGENT;
 
-  const client = new CoordinatorClient(coordinatorUrl);
-  const metricsClient = new MetricsClient(coordinatorUrl, agentId);
+  const client = new CoordinatorClient(env.COORDINATOR_URL);
+  const metricsClient = new MetricsClient(env.COORDINATOR_URL, agentId);
 
   console.log(`[worker] registering agent ${agentId} with ${sessionsPerAgent} sessions`);
 
@@ -39,7 +36,7 @@ async function main(): Promise<void> {
   const childEnv = {
     ...process.env,
     AGENT_ID: agentId,
-    COORDINATOR_URL: coordinatorUrl,
+    COORDINATOR_URL: env.COORDINATOR_URL,
   };
 
   function maybeFinish(): void {
@@ -124,7 +121,7 @@ async function main(): Promise<void> {
     metrics: MetricsClient
   ): Promise<void> {
     if (msg.type === 'metric' && msg.payload) {
-      const report = msg.payload as MetricReport;
+      const report = normalizeMetricReport(msg.payload as MetricReport);
       await metrics.send(report);
     }
     if (msg.type === 'error') {

@@ -871,6 +871,8 @@ export const EditableFormManager: React.FC<
         title={`Are you sure you want to finish ${formLabel}?`}
         cancelLabel="Go back and review"
         confirmLabel="Finish anyway"
+        confirmTestId="finish-anyway-button"
+        cancelTestId="finish-go-back-button"
       >
         <Typography
           variant="body2"

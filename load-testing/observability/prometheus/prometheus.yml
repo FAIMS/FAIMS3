@@ -7,9 +7,10 @@ scrape_configs:
     static_configs:
       - targets: ['pushgateway:9091']
 
+  # Coordinator runs on the host during local dev — not on the compose network.
   - job_name: coordinator
     static_configs:
-      - targets: ['coordinator:4000']
+      - targets: ['host.docker.internal:4000']
     metrics_path: /metrics
 
   - job_name: couchdb

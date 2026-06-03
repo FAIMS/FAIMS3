@@ -37,13 +37,6 @@ COPY . .
 
 RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
 
-# Build stage (load testing only — avoids @faims3/forms / app build chain)
-FROM base AS load-test-builder
-
-COPY . .
-
-RUN pnpm turbo build --filter=@faims3/load-testing-coordinator --filter=@faims3/load-testing-agents
-
 # API service
 FROM node:22-slim AS api
 
@@ -89,27 +82,3 @@ WORKDIR /usr/src
 COPY --from=builder /usr/src .
 EXPOSE 3001
 CMD ["pnpm", "run", "web-dev"]
-
-# Load test coordinator
-FROM node:22-slim AS load-test-coordinator
-
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
-WORKDIR /usr/src
-COPY --from=load-test-builder /usr/src .
-EXPOSE 4000
-CMD ["pnpm", "--filter=@faims3/load-testing-coordinator", "start"]
-
-# Load test agent (Playwright)
-FROM node:22 AS load-test-agent
-
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
-WORKDIR /usr/src
-COPY --from=load-test-builder /usr/src .
-RUN pnpm --filter=@faims3/load-testing-agents exec playwright install chromium --with-deps
-CMD ["pnpm", "--filter=@faims3/load-testing-agents", "run", "load-test"]

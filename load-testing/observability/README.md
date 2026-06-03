@@ -2,6 +2,15 @@
 
 Prometheus, Pushgateway, Grafana, and CouchDB exporter configuration for DASS load tests.
 
+Start the stack from `load-testing/`:
+
+```bash
+cp .env.example .env
+make observability
+```
+
+Coordinator and agents run separately — see [../README.md](../README.md).
+
 ## Stack
 
 | Service | Port (default) | Role |

@@ -1,10 +1,7 @@
 import {randomUUID} from 'crypto';
 import {chromium, type Browser, type BrowserContext, type CDPSession, type Page} from 'playwright';
-import {
-  CoordinatorClient,
-  Phase,
-  parseSharedEnv,
-} from '@faims3/load-testing-shared';
+import {CoordinatorClient, Phase} from '@faims3/load-testing-shared';
+import {parseAgentEnv} from './config.js';
 import {MetricBuffer} from './metric-buffer.js';
 import {runExportStress} from './scenarios/export-stress.js';
 import {runOfflineCollection} from './scenarios/offline-collection.js';
@@ -56,11 +53,24 @@ async function injectPerformanceBridge(page: Page): Promise<void> {
   });
 
   await page.exposeFunction('reportMeasure', (detail: unknown) => {
-    send({type: 'metric', payload: {type: 'performance_measure', detail}});
+    send({
+      type: 'metric',
+      payload: {type: 'performance_measure', detail, timestamp: Date.now()},
+    });
   });
 
   await page.exposeFunction('reportLongtask', (detail: unknown) => {
-    send({type: 'metric', payload: {type: 'longtask', detail}});
+    send({
+      type: 'metric',
+      payload: {type: 'longtask', detail, timestamp: Date.now()},
+    });
+  });
+
+  await page.exposeFunction('reportPageLoad', (detail: unknown) => {
+    send({
+      type: 'metric',
+      payload: {type: 'page_load', detail, timestamp: Date.now()},
+    });
   });
 
   await page.addInitScript(() => {
@@ -71,6 +81,11 @@ async function injectPerformanceBridge(page: Page): Promise<void> {
     );
     window.addEventListener('dass:longtask', e =>
       (window as unknown as {reportLongtask: (d: unknown) => void}).reportLongtask(
+        (e as CustomEvent).detail
+      )
+    );
+    window.addEventListener('dass:page_load', e =>
+      (window as unknown as {reportPageLoad: (d: unknown) => void}).reportPageLoad(
         (e as CustomEvent).detail
       )
     );
@@ -138,11 +153,10 @@ async function waitForPhase(
 }
 
 async function runSession(sessionIndex: number): Promise<void> {
-  const env = parseSharedEnv(process.env as Record<string, string>);
-  const coordinatorUrl = process.env.COORDINATOR_URL ?? 'http://localhost:4000';
+  const env = parseAgentEnv();
   const agentId = process.env.AGENT_ID ?? 'agent-0';
   const sessionId = `${agentId}-session-${sessionIndex}-${randomUUID().slice(0, 8)}`;
-  const client = new CoordinatorClient(coordinatorUrl);
+  const client = new CoordinatorClient(env.COORDINATOR_URL);
 
   const ctx: SessionContext = {sessionId, agentId, env};
 
@@ -159,14 +173,12 @@ async function runSession(sessionIndex: number): Promise<void> {
   try {
     browser = await chromium.launch({
       headless: env.HEADLESS,
-      slowMo: parseInt(process.env.SLOW_MO ?? '0', 10) || 0,
+      slowMo: env.SLOW_MO,
     });
 
     context = await browser.newContext({
       viewport: {width: env.VIEWPORT_WIDTH, height: env.VIEWPORT_HEIGHT},
-      userAgent:
-        process.env.USER_AGENT ??
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      userAgent: env.USER_AGENT,
     });
 
     const page = await context.newPage();

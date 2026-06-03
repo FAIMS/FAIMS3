@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICES="${1:-prometheus pushgateway grafana couchdb-exporter coordinator}"
+SERVICES="${1:-prometheus pushgateway grafana couchdb-exporter}"
 TIMEOUT="${TIMEOUT:-120}"
 INTERVAL=2
 elapsed=0

@@ -1,0 +1,8 @@
+.env
+node_modules/
+build/
+cdk.out/
+cdk.context.json
+*.js
+!scripts/*.sh
+*.d.ts

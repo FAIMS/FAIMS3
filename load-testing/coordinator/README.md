@@ -33,6 +33,20 @@ cp .env.example .env
 pnpm run dev
 ```
 
+## Docker
+
+Build from the monorepo root:
+
+```bash
+docker build -f load-testing/coordinator/Dockerfile -t load-test-coordinator .
+docker run --env-file load-testing/coordinator/.env -p 4000:4000 \
+  -e PROMETHEUS_PUSHGATEWAY_URL=http://host.docker.internal:9091 \
+  --add-host=host.docker.internal:host-gateway \
+  load-test-coordinator
+```
+
 ## Environment
 
-Copy [`.env.example`](.env.example) to `.env` in this directory. For Docker Compose, use [`../.env.example`](../.env.example) in the parent folder instead.
+All coordinator settings live in [`.env.example`](.env.example). Parsed by `src/config.ts` (`CoordinatorEnvSchema`).
+
+When running with the observability stack, set `PROMETHEUS_PUSHGATEWAY_URL=http://localhost:9091` (or `host.docker.internal` from inside Docker).

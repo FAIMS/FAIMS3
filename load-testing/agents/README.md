@@ -1,6 +1,6 @@
 # Load Test Agents
 
-Playwright-based browser workers. Each Docker container runs a supervisor (`worker.ts`) that forks N child processes (`browser-session.ts`), one Chromium instance each.
+Playwright-based browser workers. Each container runs a supervisor (`worker.ts`) that forks N child processes (`browser-session.ts`), one Chromium instance each.
 
 ## Scenarios
 
@@ -25,7 +25,7 @@ Agents rely on these stable selectors in the collection app:
 | `sync-status-syncing` | Present while sync in progress |
 | `sync-status-idle` | Present when sync idle |
 
-## Run single agent locally
+## Development
 
 ```bash
 cd load-testing/agents
@@ -36,6 +36,21 @@ pnpm run install-browsers   # first time only
 pnpm run dev
 ```
 
+## Docker
+
+Build from the monorepo root:
+
+```bash
+docker build -f load-testing/agents/Dockerfile -t load-test-agent .
+docker run --env-file load-testing/agents/.env \
+  --shm-size=2g --add-host=host.docker.internal:host-gateway \
+  load-test-agent
+```
+
+When running in Docker, point URLs at the host machine (`host.docker.internal`).
+
 ## Environment
 
-Copy [`.env.example`](.env.example) to `.env` in this directory. For Docker Compose, use [`../.env.example`](../.env.example) in the parent folder instead.
+All agent settings live in [`.env.example`](.env.example). Parsed by `src/config.ts` (`AgentEnvSchema`).
+
+Runtime identity (`WORKER_ID`, `AGENT_ID`, `SESSION_INDEX`) is set by the worker process — not in `.env`.

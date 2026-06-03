@@ -1,9 +1,9 @@
-import type {SharedEnv} from '@faims3/load-testing-shared';
+import type {AgentEnv} from './config.js';
 
 export interface SessionContext {
   sessionId: string;
   agentId: string;
-  env: SharedEnv;
+  env: AgentEnv;
   jwtToken?: string;
 }
 

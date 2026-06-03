@@ -18,7 +18,12 @@ export async function runOfflineCollection(
   if ((await addBtn.count()) === 0) {
     const notebookUrl = getNotebookUrl(env);
     sessionLog(ctx.sessionId, `navigating to notebook ${notebookUrl}`);
-    await page.goto(notebookUrl, {waitUntil: 'networkidle', timeout: 120000});
+    // Avoid 'networkidle' - live sync keeps the network busy; wait for the add
+    // button instead.
+    await page.goto(notebookUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
     await addBtn.waitFor({timeout: 60000});
   }
 
@@ -78,6 +83,7 @@ export async function runOfflineCollection(
         );
         continue;
       }
+      const saveMs = Date.now() - saveStart;
 
       recordIndex += 1;
       sessionLog(ctx.sessionId, `collected record ${recordIndex}`);
@@ -86,15 +92,42 @@ export async function runOfflineCollection(
         type: 'record_create',
         sessionId: ctx.sessionId,
         timestamp: Date.now(),
-        durationMs: Date.now() - saveStart,
+        durationMs: saveMs,
         name: DASS_MEASURES.RECORD_SAVE_UI,
         detail: {recordIndex},
       });
 
-      await page.goBack({waitUntil: 'domcontentloaded'}).catch(async () => {
-        await page.goto(getNotebookUrl(env), {waitUntil: 'domcontentloaded'});
-      });
-      await addBtn.waitFor({timeout: 10000}).catch(() => undefined);
+      // Finish/submit the record. Submission is guarded: since we only fill one
+      // field, required fields stay incomplete and the app shows a "Finish
+      // anyway" confirmation before it closes the record and returns to the
+      // list. Click Finish, then confirm "Finish anyway" if the dialog appears.
+      const finishBtn = page
+        .locator('[data-testid^="nav-button-finish"]')
+        .first();
+      if (await finishBtn.count()) {
+        await finishBtn.click();
+
+        const finishAnyway = page.getByTestId('finish-anyway-button');
+        const guarded = await finishAnyway
+          .waitFor({timeout: 5000})
+          .then(() => true)
+          .catch(() => false);
+        if (guarded) {
+          await finishAnyway.click();
+        }
+      } else {
+        // Fallback: no finish button found, just navigate back to the list.
+        sessionLog(
+          ctx.sessionId,
+          'finish button not found, navigating back instead'
+        );
+        await page.goBack({waitUntil: 'domcontentloaded'}).catch(async () => {
+          await page.goto(getNotebookUrl(env), {waitUntil: 'domcontentloaded'});
+        });
+      }
+
+      // Finishing returns us to the record list; wait for the add button again.
+      await addBtn.waitFor({timeout: 15000}).catch(() => undefined);
       await page.waitForTimeout(1000);
     } catch (err) {
       await metricBuffer.report({

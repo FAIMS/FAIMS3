@@ -494,9 +494,11 @@ export async function runOnboarding(
     }
 
     // Make sure we're on the workspace/home page where the notebook list lives.
+    // Avoid 'networkidle' - live sync can keep the network busy indefinitely;
+    // readiness is asserted by waiting for the "Not Active" tab below.
     await page.goto(env.DASS_APP_URL, {
-      waitUntil: 'networkidle',
-      timeout: 120000,
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
     });
 
     // Open the "Not Active" tab - un-activated notebooks only show there.

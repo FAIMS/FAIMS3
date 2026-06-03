@@ -1,45 +1,78 @@
 # DASS Load Testing Framework
 
-Distributed browser-based load testing for the FAIMS3 collection app (`app/`). Coordinates Playwright agents, collects browser and CouchDB metrics, and surfaces results in Grafana.
+Distributed browser-based load testing for the FAIMS3 collection app. Two self-contained packages — coordinator and agents — plus a shared observability stack.
+
+## Layout
+
+| Path | Purpose |
+|------|---------|
+| [`coordinator/`](coordinator/) | Phase sequencer, agent registry, metrics push |
+| [`agents/`](agents/) | Playwright browser workers |
+| [`shared/`](shared/) | HTTP API schemas and coordinator client (no env config) |
+| [`observability/`](observability/) | Prometheus, Grafana, Pushgateway configs |
+| [`docker-compose.yml`](docker-compose.yml) | Observability stack only |
+
+Each package has its own `.env.example`, config parser (Zod), and `Dockerfile`.
 
 ## Prerequisites
 
-- Docker and Docker Compose
+- Docker and Docker Compose (for observability)
 - Node.js 22 and pnpm (for local development)
 - FAIMS stack running (local or staging)
 - `LOCAL_LOGIN_ENABLED` for automated registration scenarios
-- Multi-use project invite (`usesOriginal >= AGENT_COUNT * SESSIONS_PER_AGENT`)
+- Multi-use project invite (`usesOriginal >= agent count × sessions per agent`)
 
-## Quick start (local)
+## Quick start
 
-1. Start FAIMS: `./localdev.sh` or `docker compose up -d` (couchdb, api, app).
-2. Migrate and load a demo notebook; create a multi-use invite in web admin.
-3. Configure load test:
+### 1. Observability stack
 
 ```bash
 cd load-testing
 cp .env.example .env
+make observability
+```
+
+Grafana: http://localhost:3030 (anonymous admin enabled).
+
+### 2. Coordinator
+
+```bash
+cd load-testing/coordinator
+cp .env.example .env
+# Edit EXPECTED_AGENT_COUNT, phase timers
+pnpm run dev
+```
+
+Or with Docker (from monorepo root):
+
+```bash
+make -C load-testing build-coordinator
+docker run --env-file load-testing/coordinator/.env -p 4000:4000 \
+  -e PROMETHEUS_PUSHGATEWAY_URL=http://host.docker.internal:9091 \
+  --add-host=host.docker.internal:host-gateway \
+  load-test-coordinator
+```
+
+### 3. Agents
+
+```bash
+cd load-testing/agents
+cp .env.example .env
 # Edit INVITE_CODE, NOTEBOOK_PROJECT_ID, URLs
+pnpm run install-browsers   # first time only
+pnpm run dev
 ```
 
-For local dev without Docker, use package-specific env files instead:
+Or with Docker (from monorepo root):
 
 ```bash
-cp coordinator/.env.example coordinator/.env
-cp agents/.env.example agents/.env
+make -C load-testing build-agent
+docker run --env-file load-testing/agents/.env \
+  --shm-size=2g --add-host=host.docker.internal:host-gateway \
+  load-test-agent
 ```
 
-4. Run:
-
-```bash
-make test
-```
-
-5. Open Grafana: http://localhost:3030 (anonymous admin enabled).
-
-## Quick start (staging)
-
-Point `.env` at staging `DASS_APP_URL`, `DASS_API_URL`, and `COUCH_URL`. Run the compose stack on a load-generator host with sufficient RAM (32GB+ for ~150 concurrent sessions).
+Set `EXPECTED_AGENT_COUNT` on the coordinator to match how many agent containers you run.
 
 ## Phase model
 
@@ -54,45 +87,17 @@ Point `.env` at staging `DASS_APP_URL`, `DASS_API_URL`, and `COUCH_URL`. Run the
 
 ## Configuration
 
-| File | Use |
-|------|-----|
-| [`.env.example`](.env.example) | Docker Compose / `make test` |
-| [`coordinator/.env.example`](coordinator/.env.example) | Local coordinator dev |
-| [`agents/.env.example`](agents/.env.example) | Local agent dev |
+| File | Variables |
+|------|-----------|
+| [`load-testing/.env.example`](.env.example) | CouchDB exporter + observability ports |
+| [`coordinator/.env.example`](coordinator/.env.example) | Port, agent count, phase timers, pushgateway |
+| [`agents/.env.example`](agents/.env.example) | FAIMS URLs, invite, browser, scenario timing |
 
-Key variables:
-
-- `AGENT_COUNT` / `SESSIONS_PER_AGENT` — scale via `make test AGENT_COUNT=5`
-- `INVITE_CODE` — project invite short code
-- `NOTEBOOK_PROJECT_ID` — notebook to activate
-- `OFFLINE_DURATION_MS` — agent offline record loop (agents package)
-- `OFFLINE_COLLECTION_DURATION_MS` — coordinator timer before SYNC_STORM
-
-## Local dev without Docker
-
-```bash
-pnpm install
-pnpm build-load-testing
-
-# Terminal 1 — coordinator
-cd load-testing/coordinator && cp .env.example .env && pnpm run dev
-
-# Terminal 2 — agent
-cd load-testing/agents && cp .env.example .env && pnpm run install-browsers && pnpm run dev
-```
+Key timing relationship: coordinator `OFFLINE_COLLECTION_DURATION_MS` should be ≥ agent `OFFLINE_DURATION_MS`.
 
 ## Limitations
 
 - Collection app (web/PWA) only — not native iOS/Android
 - Requires local login or pre-seeded users on SSO-only environments
 
-## Package layout
-
-| Package | Purpose |
-|---------|---------|
-| `@faims3/instrumentation` | Shared `dass.*` performance marks |
-| `@faims3/load-testing-shared` | API schemas, coordinator client |
-| `@faims3/load-testing-coordinator` | Hono coordinator + Prometheus |
-| `@faims3/load-testing-agents` | Playwright workers |
-
-See also: [coordinator/README.md](coordinator/README.md), [agents/README.md](agents/README.md), [observability/README.md](observability/README.md).
+See also: [coordinator/README.md](coordinator/README.md), [agents/README.md](agents/README.md), [observability/README.md](observability/README.md), [infra/README.md](infra/README.md) (AWS CDK deployment).

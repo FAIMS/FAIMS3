@@ -1,41 +1,25 @@
 import {serve} from '@hono/node-server';
-import {Phase, type PhaseAdvanceStrategy} from '@faims3/load-testing-shared';
+import {Phase} from '@faims3/load-testing-shared';
+import {parseCoordinatorEnv} from './config';
 import {MetricsService} from './metrics';
 import {createRoutes} from './routes';
 import {Registry, createCoordinatorId, createTestRunId} from './registry';
 import {Sequencer} from './sequencer';
 
-function envInt(name: string, defaultValue: number): number {
-  const v = process.env[name];
-  if (!v) return defaultValue;
-  const n = parseInt(v, 10);
-  return Number.isNaN(n) ? defaultValue : n;
-}
-
-function envStrategy(): PhaseAdvanceStrategy {
-  const v = process.env.PHASE_ADVANCE_STRATEGY ?? 'all_ready';
-  if (v === 'majority' || v === 'timeout') return v;
-  return 'all_ready';
-}
-
-const port = envInt('PORT', 4000);
+const env = parseCoordinatorEnv();
 const coordinatorId = createCoordinatorId();
 const testRunId = createTestRunId();
-const expectedAgentCount = envInt('EXPECTED_AGENT_COUNT', 1);
 
-const registry = new Registry(expectedAgentCount);
-const metrics = new MetricsService(
-  testRunId,
-  process.env.PROMETHEUS_PUSHGATEWAY_URL
-);
+const registry = new Registry(env.EXPECTED_AGENT_COUNT);
+const metrics = new MetricsService(testRunId, env.PROMETHEUS_PUSHGATEWAY_URL);
 
 const sequencer = new Sequencer(testRunId, registry, {
-  strategy: envStrategy(),
-  expectedAgentCount,
-  offlineCollectionDurationMs: envInt('OFFLINE_COLLECTION_DURATION_MS', 45000),
-  exportStressDurationMs: envInt('EXPORT_STRESS_DURATION_MS', 15000),
-  readinessTimeoutMs: envInt('READINESS_TIMEOUT_MS', 30000),
-  phaseTimeoutMs: envInt('PHASE_TIMEOUT_MS', 60000),
+  strategy: env.PHASE_ADVANCE_STRATEGY,
+  expectedAgentCount: env.EXPECTED_AGENT_COUNT,
+  offlineCollectionDurationMs: env.OFFLINE_COLLECTION_DURATION_MS,
+  exportStressDurationMs: env.EXPORT_STRESS_DURATION_MS,
+  readinessTimeoutMs: env.READINESS_TIMEOUT_MS,
+  phaseTimeoutMs: env.PHASE_TIMEOUT_MS,
 });
 
 sequencer.onPhaseChange((phase, advancedAt) => {
@@ -51,6 +35,8 @@ sequencer.startReadinessTimeout();
 
 const app = createRoutes(registry, sequencer, metrics, coordinatorId);
 
-console.log(`[coordinator] starting on port ${port}, testRunId=${testRunId}`);
+console.log(
+  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, expecting ${env.EXPECTED_AGENT_COUNT} agent(s)`
+);
 
-serve({fetch: app.fetch, port});
+serve({fetch: app.fetch, port: env.PORT});

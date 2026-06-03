@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "env-cmd tsx watch src/server.ts",
-    "start": "env-cmd node build/src/server.js",
+    "start": "node build/src/server.js",
     "lint": "oxlint -c ../../.oxlintrc.json ."
   },
   "dependencies": {

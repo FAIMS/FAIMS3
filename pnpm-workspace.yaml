@@ -9,6 +9,7 @@ packages:
   - load-testing/shared
   - load-testing/coordinator
   - load-testing/agents
+  - load-testing/infra
   - tests
   - infrastructure/aws-cdk
   - e2e

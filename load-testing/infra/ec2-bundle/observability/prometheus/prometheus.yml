@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: pushgateway
+    honor_labels: true
+    static_configs:
+      - targets: ['pushgateway:9091']
+
+  # Coordinator runs as ephemeral ECS task — add a static scrape target manually
+  # after run-load-test.sh prints the coordinator private IP, or rely on
+  # pushgateway for agent/coordinator pushed metrics.
+  # - job_name: coordinator
+  #   static_configs:
+  #     - targets: ['<coordinator-task-ip>:4000']
+
+  - job_name: couchdb
+    static_configs:
+      - targets: ['couchdb-exporter:9984']

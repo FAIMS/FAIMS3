@@ -5,8 +5,6 @@ services:
       - '${PROMETHEUS_PORT:-9090}:9090'
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=48h'
@@ -37,8 +35,6 @@ services:
     env_file:
       - .env
     command:
-      - --couchdb.uri=${COUCHDB_EXPORTER_URL:-http://host.docker.internal:5984}
+      - --couchdb.uri=${COUCHDB_EXPORTER_URL}
       - --couchdb.username=${COUCH_USER:-admin}
       - --couchdb.password=${COUCH_PASSWORD}
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
