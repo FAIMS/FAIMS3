@@ -30,7 +30,6 @@ export function DesignerDialog({
   // Mount / unmount logic with animation
   useEffect(() => {
     if (open) {
-      setSessionNotebook(notebook);
       setMounted(true);
       const tid = window.setTimeout(() => setAnimateIn(true), 50);
       return () => window.clearTimeout(tid);
@@ -44,7 +43,15 @@ export function DesignerDialog({
       }, animationDuration);
       return () => window.clearTimeout(tid);
     }
-  }, [open, animationDuration, mounted, notebook]);
+  }, [open, animationDuration, mounted]);
+
+
+  useEffect(() => {
+    if (open) {
+      setSessionNotebook(notebook);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Lock body scroll while the designer dialog is open so the background page doesn't scroll through
   useEffect(() => {
