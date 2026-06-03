@@ -4,7 +4,6 @@ import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   GetExportNotebookResponse,
   isValidForSpatialExport,
-  ProjectUIViewsets,
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
@@ -40,7 +39,7 @@ const ExportProjectForm = () => {
     [uiSpec]
   );
 
-  const viewSets = uiSpec.viewsets as ProjectUIViewsets;
+  const viewSets = uiSpec.viewsets;
 
   // Tabular export form (CSV)
   const tabularFields: Field[] = [

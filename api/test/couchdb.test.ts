@@ -25,6 +25,7 @@ PouchDB.plugin(PouchDBFind);
 import {
   Action,
   addProjectRole,
+  FieldDefinition,
   removeProjectRole,
   resourceRoles,
   Role,
@@ -385,7 +386,7 @@ describe('notebook api', () => {
       uiSpecification.metadata.information.projectLeadLabel = 'Bob Bobalooba';
       uiSpecification.uiSpec.views['FORM1SECTION1'].label = 'Updated Label';
 
-      const newField = {
+      const newField: FieldDefinition = {
         'component-namespace': 'faims-custom',
         'component-name': 'BasicAutoIncrementer',
         'type-returned': 'faims-core::String',
@@ -398,11 +399,9 @@ describe('notebook api', () => {
           form_id: 'FORM1SECTION1',
           label: 'FeatureIDincrementor',
         },
-        validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
         meta: {
-          annotation_label: 'annotation',
-          annotation: true,
+          annotation: {include: true, label: 'annotation'},
           uncertainty: {
             include: false,
             label: 'uncertainty',

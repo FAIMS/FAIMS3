@@ -21,6 +21,7 @@
 import {StateWithHistory} from 'redux-undo';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  type FieldDefinition,
   type NotebookDefinition,
   type NotebookInformation,
   type NotebookMetadata,
@@ -111,37 +112,34 @@ export type ComponentParameters = {
   allowFullAddressManualEntry?: boolean;
 };
 
-/** Single field definition: component binding, parameters, optional visibility condition. */
-export type FieldType = {
-  'component-namespace': string;
-  'component-name': string;
-  'type-returned': string;
+/**
+ * Single field definition as used in the designer.
+ *
+ * The canonical runtime shape lives in `@faims3/data-model`
+ * ({@link FieldDefinition}); here we only add the designer-specific authoring
+ * and field-chooser metadata, and narrow two properties:
+ * - `component-parameters` to the richer {@link ComponentParameters} union for
+ *   editor ergonomics (consolidating this with the forms field prop schemas is
+ *   the next step), and
+ * - `condition` to the designer's {@link ConditionType} (allowing `null`).
+ */
+export type FieldType = Omit<
+  FieldDefinition,
+  'component-parameters' | 'condition'
+> & {
   'component-parameters': ComponentParameters;
-  initialValue?: unknown;
-  access?: string[];
   condition?: ConditionType | null;
-  persistent?: boolean;
-  displayParent?: boolean;
+
+  // Designer-only authoring / field-chooser metadata (not part of the runtime
+  // field definition).
   designerIdentifier?: string;
   humanReadableName?: string;
-  category?: string;
-
   humanReadableDescription?: string;
+  category?: string;
   showInChooser?: boolean;
   order?: number;
   deprecated?: boolean;
   deprecationMessage?: string;
-
-  meta?: {
-    annotation: {
-      include: boolean;
-      label: string;
-    };
-    uncertainty: {
-      include: boolean;
-      label: string;
-    };
-  };
 };
 
 /** Editable UI spec body: fields, sections (`views`), forms (`viewsets`), settings, schema version. */
@@ -151,7 +149,6 @@ export type NotebookUISpec = {
     [key: string]: {
       fields: string[];
       description?: string;
-      uidesign?: string;
       label: string;
       condition?: ConditionType;
     };

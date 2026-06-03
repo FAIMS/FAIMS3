@@ -1,5 +1,6 @@
 import {
   FaimsAttachments,
+  FieldDefinition,
   FormAnnotation,
   FormDataEntry,
 } from '@faims3/data-model';
@@ -11,7 +12,6 @@ import {FieldAnnotation} from './Annotation';
 import {FormManagerConfig, FullFormManagerConfig} from './formManagers/types';
 import {
   BaseFieldProps,
-  EncodedFieldSpecification,
   FaimsForm,
   FaimsFormFieldState,
 } from './types';
@@ -19,7 +19,7 @@ import {getFieldId} from './utils';
 
 interface FieldProps {
   fieldId: string;
-  fieldSpec: EncodedFieldSpecification;
+  fieldSpec: FieldDefinition;
   form: FaimsForm;
   config: FormManagerConfig;
 }

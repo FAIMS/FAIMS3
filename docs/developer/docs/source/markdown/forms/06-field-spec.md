@@ -2,21 +2,28 @@
 
 ## Overview
 
-Fields in the UISpec are defined using `EncodedFieldSpecification`. This schema determines which component renders and how it behaves.
+Fields in the UISpec are defined using `FieldDefinition`. This schema determines which component renders and how it behaves. It is the canonical field shape and lives in `@faims3/data-model` (`uiSpecification/types.ts`).
 
-## EncodedFieldSpecification Schema
+## FieldDefinition Schema
 
 ```typescript
-const FieldSpecificationSchema = z.object({
-  'component-namespace': z.string(),
-  'component-name': z.string(),
-  'component-parameters': z.record(z.string(), z.any()),
-  initialValue: z.any(),
-  // Not currently implemented in new forms module
-  persistent: z.boolean(),
-  displayParent: z.boolean(),
-  meta: FieldSpecificationMeta,
-});
+// @faims3/data-model
+const FieldDefinitionSchema = z
+  .object({
+    'component-namespace': z.string(),
+    'component-name': z.string(),
+    'type-returned': z.string(),
+    'component-parameters': z.record(z.string(), z.any()),
+    initialValue: z.any().optional(),
+    // Not currently implemented in new forms module
+    persistent: z.boolean().optional(),
+    displayParent: z.boolean().optional(),
+    meta: FieldMetaSchema.optional(),
+    // Conditional visibility logic
+    condition: ConditionalExpressionSchema.nullable().optional(),
+  })
+  // unmodelled keys (e.g. designer authoring metadata) survive a round-trip
+  .passthrough();
 ```
 
 ## Field Resolution
@@ -92,7 +99,8 @@ For complex fields:
 ## Meta Configuration
 
 ```typescript
-const FieldSpecificationMeta = z.object({
+// @faims3/data-model
+const FieldMetaSchema = z.object({
   annotation: z.object({
     include: z.boolean(),
     label: z.string(),

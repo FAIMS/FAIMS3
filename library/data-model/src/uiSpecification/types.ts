@@ -60,21 +60,95 @@ export const ConditionalExpressionSchema: z.ZodType<ConditionalExpression> =
     })
   );
 
+/** Annotation & uncertainty capture toggles attached to a field. */
+export const FieldMetaSchema = z.object({
+  annotation: z.object({include: z.boolean(), label: z.string()}),
+  uncertainty: z.object({include: z.boolean(), label: z.string()}),
+});
+export type FieldMeta = z.infer<typeof FieldMetaSchema>;
+
 /**
- * Field definitions keyed by field name.
+ * The modelled shape of a single field definition.
  *
- * TODO: model the individual field-definition shape with zod. Field configs are
- * currently untyped (`any`); their compiled `conditionFn` is attached at runtime.
+ * `component-parameters` is intentionally left as an open record here. The
+ * precise, per-field-type parameter shapes are validated in the forms layer
+ * (each field's `fieldPropsSchema`), which depends on this package and so
+ * cannot be referenced from it.
  */
-export const UiSpecFieldsSchema = z.record(z.string(), z.any());
+const fieldDefinitionShape = {
+  'component-namespace': z.string(),
+  'component-name': z.string(),
+  'type-returned': z.string(),
+  'component-parameters': z.record(z.string(), z.any()),
+  initialValue: z.any().optional(),
+  persistent: z.boolean().optional(),
+  displayParent: z.boolean().optional(),
+  meta: FieldMetaSchema.optional(),
+  /** Conditional logic controlling this field's visibility. */
+  condition: ConditionalExpressionSchema.nullable().optional(),
+};
+
+/**
+ * A single field definition, keyed by field name in {@link UiSpecFieldsSchema}.
+ * This is the canonical runtime (serializable) shape of a field; the designer
+ * extends it with its own authoring/chooser metadata rather than redefining it.
+ *
+ * `.passthrough()` keeps any unmodelled properties (including the designer's
+ * authoring metadata) intact across a validate/serialize round-trip.
+ */
+export const FieldDefinitionSchema = z
+  .object(fieldDefinitionShape)
+  .passthrough();
+
+/**
+ * Canonical field-definition type.
+ *
+ * Derived from the strict (non-passthrough) shape so it carries the named
+ * properties without a `[k: string]: unknown` index signature. That keeps the
+ * type composable with `Omit`/intersection in downstream packages (e.g. the
+ * designer overriding `component-parameters`), while the schema above still
+ * passes unmodelled keys through at runtime.
+ */
+export type FieldDefinition = z.infer<z.ZodObject<typeof fieldDefinitionShape>>;
+
+/**
+ * A field definition with its conditional logic compiled into a callable
+ * function. Same shape as {@link FieldDefinition} but carries the
+ * non-serializable `conditionFn`, mirroring the {@link UiSpecView} ↔
+ * {@link CompiledUiSpecView} relationship.
+ */
+const compiledFieldDefinitionShape = {
+  ...fieldDefinitionShape,
+  /**
+   * Compiled form of {@link FieldDefinition.condition}; attached at runtime by
+   * `compileUiSpecConditionals`. Non-serializable, so it is only validated as
+   * being a function (when present) rather than by structure.
+   */
+  conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
+};
+export const CompiledFieldDefinitionSchema = z
+  .object(compiledFieldDefinitionShape)
+  .passthrough();
+export type CompiledFieldDefinition = z.infer<
+  z.ZodObject<typeof compiledFieldDefinitionShape>
+>;
+
+/** Field definitions keyed by field name. */
+export const UiSpecFieldsSchema = z.record(z.string(), FieldDefinitionSchema);
 export type UiSpecFields = z.infer<typeof UiSpecFieldsSchema>;
+
+/** Compiled field definitions keyed by field name. */
+export const CompiledUiSpecFieldsSchema = z.record(
+  z.string(),
+  CompiledFieldDefinitionSchema
+);
+export type CompiledUiSpecFields = z.infer<typeof CompiledUiSpecFieldsSchema>;
 
 /** A viewset: a named form type composed of one or more views. */
 export const UiSpecViewsetSchema = z
   .object({
     label: z.string().optional(),
     views: z.array(z.string()),
-    submit_label: z.string().optional(),
     is_visible: z.boolean().optional(),
     summary_fields: z.array(z.string()).optional(),
     /** Which field should be used as the HRID. */
@@ -94,18 +168,8 @@ export const UiSpecViewSchema = z
   .object({
     label: z.string().optional(),
     fields: z.array(z.string()),
-    uidesign: z.string().optional(),
-    next_label: z.string().optional(),
-    /** Branching logic. */
-    is_logic: z.record(z.string(), z.array(z.string())).optional(),
     /** Conditional logic that controls visibility. */
     condition: ConditionalExpressionSchema.optional(),
-    /**
-     * Compiled form of {@link condition}; see {@link CompiledUiSpecView}.
-     * Non-serializable, so it is only validated as being a function (when
-     * present) rather than by structure.
-     */
-    conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
     description: z.string().optional(),
   })
   .passthrough();
@@ -147,6 +211,7 @@ export type UiSpecModel = z.infer<typeof UiSpecModelSchema>;
  * and a record of which fields feed into conditional expressions.
  */
 export const CompiledUiSpecModelSchema = UiSpecModelSchema.extend({
+  fields: CompiledUiSpecFieldsSchema,
   views: CompiledUiSpecViewsSchema,
   /** Field names that are referenced as conditional sources. */
   conditional_sources: z.set(z.string()),

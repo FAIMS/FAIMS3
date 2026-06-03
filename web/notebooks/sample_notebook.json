@@ -776,12 +776,10 @@
           "newfield5334b903",
           "newfield813f3aee"
         ],
-        "uidesign": "form",
         "label": "SECTION1"
       },
       "FORM3SECTION1": {
         "fields": ["hridFORM3", "newfield4bfc3c26", "newfield0b21d3e2"],
-        "uidesign": "form",
         "label": "Dimension"
       },
       "FORM2SECTION1": {
@@ -793,7 +791,6 @@
           "newfieldcce6babf",
           "newfield8530569f"
         ],
-        "uidesign": "form",
         "label": "SECTION1"
       }
     },

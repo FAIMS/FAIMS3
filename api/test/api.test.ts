@@ -24,6 +24,8 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  FieldDefinition,
   getDataDB,
   GetListAllUsersResponseSchema,
   GetNotebookResponse,
@@ -36,7 +38,6 @@ import {
   resourceRoles,
   Role,
   userHasProjectRole,
-  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
@@ -52,12 +53,16 @@ import {
   DEVELOPER_MODE,
   KEY_SERVICE,
 } from '../src/buildconfig';
+import {getDataDb} from '../src/couchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
   getProjectById,
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
+import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
+import {app} from '../src/expressSetup';
+import {callbackObject, databaseList} from './mocks';
 import {
   createNotebookFromSampleFile,
   EMPTY_UI_SPECIFICATION,
@@ -65,9 +70,6 @@ import {
   sampleCreateNotebookPayload,
   testNotebookDescription,
 } from './sampleNotebook';
-import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
-import {app} from '../src/expressSetup';
-import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,
   beforeApiTests,
@@ -76,7 +78,6 @@ import {
   notebookUserName,
   notebookUserToken,
 } from './utils';
-import {getDataDb} from '../src/couchdb';
 
 export const NOTEBOOKS_API_BASE = '/api/notebooks';
 
@@ -187,7 +188,7 @@ describe('API tests', () => {
     uiSpecification.metadata.information.projectLeadLabel = 'Bob Bobalooba';
     uiSpecification.uiSpec.views['FORM1SECTION1'].label = 'Updated Label';
 
-    const newField = {
+    const newField: FieldDefinition = {
       'component-namespace': 'faims-custom',
       'component-name': 'BasicAutoIncrementer',
       'type-returned': 'faims-core::String',
@@ -200,11 +201,9 @@ describe('API tests', () => {
         form_id: 'FORM1SECTION1',
         label: 'FeatureIDincrementor',
       },
-      validationSchema: [['yup.string'], ['yup.required']],
       initialValue: null,
       meta: {
-        annotation_label: 'annotation',
-        annotation: true,
+        annotation: {include: true, label: 'annotation'},
         uncertainty: {
           include: false,
           label: 'uncertainty',

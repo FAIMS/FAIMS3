@@ -3,7 +3,6 @@ import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
 import {
   compileExpression,
-  compileIsLogic,
   getDependantFields,
 } from './conditionals';
 import {
@@ -318,10 +317,10 @@ export const getNotebookFieldTypes = ({
         viewId: view,
         // include a hint as to whether this is a spatial field
         isSpatial: SPATIAL_FIELDS.some(f => f === fieldInfo['component-name']),
-        annotation: fieldInfo.meta.annotation.include
+        annotation: fieldInfo.meta?.annotation.include
           ? slugify(fieldInfo.meta.annotation.label)
           : '',
-        uncertainty: fieldInfo.meta.uncertainty.include
+        uncertainty: fieldInfo.meta?.uncertainty.include
           ? slugify(fieldInfo.meta.uncertainty.label)
           : '',
       });
@@ -495,9 +494,13 @@ export function getFieldsMatchingCondition(
     // filter the whole set of views
     const result = allFields.filter(field => {
       const fieldDetails = uiSpec.fields[field];
+      // Visibility condition function (compiled specs always set one; default
+      // to visible if absent, mirroring getViewsMatchingCondition).
+      const visibleByCondition = fieldDetails.conditionFn
+        ? fieldDetails.conditionFn(values)
+        : true;
       return (
-        // Visibility condition function
-        fieldDetails.conditionFn(values) &&
+        visibleByCondition &&
         // Hidden explicitly in element props - e.g. templated field
         !fieldDetails['component-parameters']?.hidden
       );
@@ -539,21 +542,13 @@ export function getViewsMatchingCondition(
 // logic, return true if it is, false otherwise
 //
 function is_controller_field(uiSpec: CompiledUiSpecModel, field: string) {
-  // we have two possible sources
-  // - old logic_select property on the field
-  // - new conditional_sources property on the ui_specification
-
   // check that this is a field, touched can contain non-field stuff
   if (uiSpec.fields[field] === undefined) {
     return false;
   }
 
-  // here we return true if there is any logic_select property
-  // which might be a false positive but shouldn't cost too much
-  if ('logic_select' in uiSpec.fields[field]) return true;
-  else if (uiSpec.conditional_sources && uiSpec.conditional_sources.has(field))
-    return true;
-  else return false;
+  // a controller field is one referenced by a conditional expression
+  return Boolean(uiSpec.conditional_sources?.has(field));
 }
 
 // compile all conditional expressions in this UiSpec and store the
@@ -576,18 +571,14 @@ export function compileUiSpecConditionals(
 
   for (const field in uiSpecification.fields) {
     const fieldDef = uiSpecification.fields[field];
-    fieldDef.conditionFn = fieldDef.is_logic
-      ? compileIsLogic(fieldDef.is_logic)
-      : compileExpression(fieldDef.condition);
+    fieldDef.conditionFn = compileExpression(fieldDef.condition);
     depFields.push(...getDependantFields(fieldDef.condition));
   }
 
   const views: CompiledUiSpecViews = {};
   for (const view in uiSpecification.views) {
     const viewDef = uiSpecification.views[view];
-    viewDef.conditionFn = viewDef.is_logic
-      ? compileIsLogic(viewDef.is_logic)
-      : compileExpression(viewDef.condition);
+    viewDef.conditionFn = compileExpression(viewDef.condition);
     views[view] = viewDef;
     depFields.push(...getDependantFields(viewDef.condition));
   }

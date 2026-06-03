@@ -1,4 +1,4 @@
-import {FormAnnotation} from '@faims3/data-model';
+import {FieldMeta, FormAnnotation} from '@faims3/data-model';
 import NoteIcon from '@mui/icons-material/Note';
 import {
   Box,
@@ -11,10 +11,10 @@ import {
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useState} from 'react';
-import {FaimsFormFieldState, FieldSpecificationMeta} from './types';
+import {FaimsFormFieldState} from './types';
 
 type FieldAnnotationProps = {
-  config: FieldSpecificationMeta;
+  config?: FieldMeta;
   state: FaimsFormFieldState;
   setFieldAnnotation: (value: FormAnnotation) => void;
 };
@@ -30,10 +30,10 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
     uncertainty: false,
   };
 
-  const show =
-    props.config.annotation.include || props.config.uncertainty.include;
-
-  if (!show) {
+  // Fields may omit `meta` entirely, in which case there is no annotation or
+  // uncertainty capture to render.
+  const config = props.config;
+  if (!config || !(config.annotation.include || config.uncertainty.include)) {
     return null;
   }
 
@@ -64,9 +64,9 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
           sx={{ml: {xs: 0, sm: 2}, p: 2, my: 1}}
           bgcolor={grey[100]}
         >
-          {props.config.annotation.include && (
+          {config.annotation.include && (
             <TextField
-              label={props.config.annotation.label}
+              label={config.annotation.label}
               value={annotation || ''}
               onChange={handleAnnotationChange}
               fullWidth
@@ -74,7 +74,7 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
               minRows={3}
             />
           )}
-          {props.config.uncertainty.include && (
+          {config.uncertainty.include && (
             <Box mt={2} display="flex" alignItems="center">
               <FormControlLabel
                 control={
@@ -83,7 +83,7 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
                     onChange={handleUncertaintyChange}
                   />
                 }
-                label={props.config.uncertainty.label}
+                label={config.uncertainty.label}
               />
             </Box>
           )}
