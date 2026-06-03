@@ -17,16 +17,14 @@
  * Description:
  *   Functions to query specific information from pouchdb
  */
-import {getDataDB} from '../callbacks';
 import {
   AttributeValuePair,
   DataDbType,
-  FAIMSTypeName,
   ProjectID,
-  ProjectUIModel,
   RecordID,
   RecordMetadata,
 } from '../types';
+import {UiSpecModel} from '../uiSpecification/types';
 import {listRecordMetadata} from './internals';
 
 /**
@@ -45,7 +43,7 @@ export async function getAllRecordsWithRegex({
 }: {
   projectId: ProjectID;
   regex: string;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
   hydrate?: boolean;
 }): Promise<RecordMetadata[]> {

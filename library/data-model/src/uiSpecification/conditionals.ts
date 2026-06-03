@@ -18,7 +18,7 @@
  *
  */
 
-import {ConditionalExpression, RecordValues} from '../types';
+import {ConditionalExpression, RecordValues} from './types';
 
 // Create a register of compiler functions
 type FieldCompilerFn = (

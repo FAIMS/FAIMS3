@@ -17,7 +17,7 @@
  */
 
 import {getMapConfig} from '@/constants';
-import {UISpecification} from '@faims3/data-model';
+import {UiSpecModel} from '@faims3/data-model';
 import {PreviewFormManager} from '@faims3/forms';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
@@ -132,7 +132,7 @@ export const FormEditor = ({
   const createSectionParam = searchParams.get('createSection');
 
   const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
-  // we need this to be a ProjectUIModel type for the PreviewFormManager
+  // we need this to be a UiSpecModel type for the PreviewFormManager
   // we should also compile this
   const uiSpecInternal = useMemo(
     () => {
@@ -144,7 +144,7 @@ export const FormEditor = ({
         views: uiSpecEncoded.views,
         viewsets: uiSpecEncoded.viewsets,
         visible_types: uiSpecEncoded.visible_types,
-      } satisfies UISpecification;
+      } satisfies UiSpecModel;
     },
     // Bit of a hack to force diff on uiSpec even tho ref may no
     [previewForm, uiSpec]

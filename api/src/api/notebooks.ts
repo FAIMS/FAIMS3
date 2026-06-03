@@ -20,18 +20,19 @@
 
 import {
   Action,
-  ProjectStatus,
   addProjectRole,
+  compileUiSpecConditionals,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   GetExportNotebookResponse,
   getIdsByFieldName,
+  getNotebookFieldTypes,
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
-  getNotebookFieldTypes,
   getRecordListAudit,
   getRecordsWithRegex,
+  isPeopleUserAccountDisabled,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
@@ -42,19 +43,18 @@ import {
   PostRecordStatusInputSchema,
   PostRecordStatusResponse,
   projectRoleToAction,
+  ProjectStatus,
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookMetadataInputSchema,
-  PutUpdateNotebookUiSpecificationInputSchema,
   PutUpdateNotebookResponse,
+  PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
   Role,
   slugify,
-  isPeopleUserAccountDisabled,
   userCanReadTemplateDocument,
   userHasProjectRole,
 } from '@faims3/data-model';
-import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
@@ -79,6 +79,7 @@ import {
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
+import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import {FullExportConfigSchema} from '../couchdb/export/types';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
@@ -87,14 +88,14 @@ import {
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
+  getCompiledUiSpecModel,
   getProjectById,
-  getProjectUIModel,
   getRolesForNotebook,
+  getUiSpecModel,
   getUserProjectsDetailed,
   updateProjectMetadata,
   updateProjectUiSpecification,
 } from '../couchdb/notebooks';
-import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
 import {
   filterPeopleUsersForList,
@@ -103,6 +104,7 @@ import {
   getUsers,
   saveCouchUser,
   saveExpressUser,
+  stripProjectRolesForProjectId,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -110,9 +112,9 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import {recordsRouter} from './records';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
+import {recordsRouter} from './records';
 
 // This must occur before express api is used
 patch();
@@ -289,7 +291,7 @@ api.get(
       }
 
       // Validate the viewID exists
-      const uiSpec = await getProjectUIModel(req.params.id);
+      const uiSpec = await getUiSpecModel(req.params.id);
 
       if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
@@ -342,7 +344,7 @@ api.get(
     }
 
     // get the label for this form for the filename header
-    const uiSpec = await getProjectUIModel(req.params.id);
+    const uiSpec = await getUiSpecModel(req.params.id);
 
     // check the view ID is valid
     if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
@@ -716,7 +718,8 @@ api.get(
     }
     const tokenContents = mockTokenContentsForUser(req.user);
     const {id: projectId} = req.params;
-    const uiSpecification = await getProjectUIModel(req.params.id);
+    const uiSpecification = await getCompiledUiSpecModel(req.params.id);
+    compileUiSpecConditionals(uiSpecification);
     const dataDb = await getDataDb(projectId);
     const records = await getRecordsWithRegex({
       dataDb,
@@ -847,7 +850,7 @@ api.get(
     // Depending on the format type - handle differently
     let exportLabel = '';
     if (REQUIRES_VIEW_ID.includes(payload.format) || payload.viewID) {
-      const uiSpec = await getProjectUIModel(payload.projectID);
+      const uiSpec = await getUiSpecModel(payload.projectID);
       if (!payload.viewID) {
         throw new Exceptions.InvalidRequestException(
           'Must provide viewID for this export format.'

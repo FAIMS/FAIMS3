@@ -9,20 +9,16 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
-import {randomUuid} from '../utils';
-import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
 import {getDataDB, shouldDisplayRecord} from '../callbacks';
-import {TokenContents} from '../permission/types';
 import {logError} from '../logging';
+import {TokenContents} from '../permission/types';
 import {
   Annotations,
   DatabaseInterface,
   DataDbType,
-  FAIMSTypeName,
   ProjectDataObject,
   ProjectID,
   ProjectRevisionListing,
-  ProjectUIModel,
   Record,
   RecordID,
   RecordMetadata,
@@ -33,6 +29,8 @@ import {
   RevisionID,
   UnhydratedRecord,
 } from '../types';
+import {UiSpecModel} from '../uiSpecification/types';
+import {randomUuid} from '../utils';
 import {
   addNewRevisionFromForm,
   FormData,
@@ -313,7 +311,10 @@ export async function setRecordAsDeleted({
   userId: string;
 }): Promise<RevisionID> {
   const date = new Date();
-  const baseRevision = await getRevision({dataDb, revisionId: baseRevisionId});
+  const baseRevision = await getRevision({
+    dataDb,
+    revisionId: baseRevisionId,
+  });
   const newRevisionId = generateFAIMSRevisionID();
   const newRevision: Revision = {
     _id: newRevisionId,
@@ -349,7 +350,10 @@ export async function setRecordAsUndeleted({
   userId: string;
 }): Promise<RevisionID> {
   const date = new Date();
-  const baseRevision = await getRevision({dataDb, revisionId: baseRevisionId});
+  const baseRevision = await getRevision({
+    dataDb,
+    revisionId: baseRevisionId,
+  });
   const newRevId = generateFAIMSRevisionID();
   const newRevision: Revision = {
     _id: newRevId,
@@ -384,7 +388,7 @@ export async function getRecordMetadata({
   dataDb: DataDbType;
   recordId: RecordID;
   revisionId: RevisionID;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Promise<RecordMetadata> {
   try {
     const record = await getRecord({dataDb, recordId});
@@ -430,7 +434,7 @@ export async function getHRIDforRecordID({
 }: {
   dataDb: DataDbType;
   recordId: RecordID;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Promise<string> {
   try {
     const record = await getRecord({dataDb, recordId});
@@ -502,7 +506,7 @@ export async function getMetadataForSomeRecords({
   projectId: ProjectID;
   recordIds: RecordID[];
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -545,7 +549,7 @@ export async function getMetadataForAllRecords({
   tokenContents: TokenContents;
   projectId: ProjectID;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -581,7 +585,7 @@ export async function getRecordsWithRegex({
   projectId: ProjectID;
   regex: string;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -616,7 +620,7 @@ export async function getMinimalRecordDataWithRegex({
   projectId: ProjectID;
   regex: string;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<UnhydratedRecord[]> {
   try {
@@ -660,7 +664,7 @@ export async function getMinimalRecordData({
   tokenContents: TokenContents;
   projectId: ProjectID;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<UnhydratedRecord[]> {
   try {
@@ -711,7 +715,7 @@ export const hydrateRecord = async ({
   projectId: string;
   dataDb: DataDbType;
   record: RecordRevisionIndexDocument;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   includeAttachments?: boolean;
 }): Promise<HydratedDataRecord> => {
   try {
@@ -827,7 +831,7 @@ export const notebookRecordIterator = async ({
   // overhead - these are buffered as File like objects straight into the
   // response. Use the nano couchdb node client to use attachment.getAsStream
   includeAttachments?: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }) => {
   const batchSize = 20;
   const getNextBatch = async (bookmark: string | null) => {

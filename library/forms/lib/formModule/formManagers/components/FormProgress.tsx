@@ -1,4 +1,8 @@
-import {currentlyVisibleMap, UISpecification} from '@faims3/data-model';
+import {
+  CompiledUiSpecModel,
+  currentlyVisibleMap,
+  UiSpecModel,
+} from '@faims3/data-model';
 import {useStore} from '@tanstack/react-form';
 import React, {useMemo} from 'react';
 import {FormProgressBar} from '../../../components';
@@ -9,7 +13,7 @@ import {FieldVisibilityMap} from '../types';
 
 interface LiveFormProgressProps {
   form: FaimsForm;
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   formId: string;
   visibilityMap: FieldVisibilityMap;
 }
@@ -35,7 +39,7 @@ export const LiveFormProgress: React.FC<LiveFormProgressProps> = props => {
 
 interface StaticFormProgressProps {
   data: FaimsFormData;
-  uiSpec: UISpecification;
+  uiSpec: CompiledUiSpecModel;
   formId: string;
 }
 

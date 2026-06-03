@@ -1,4 +1,4 @@
-import type {UISpecification} from '@faims3/data-model';
+import type {UiSpecModel} from '@faims3/data-model';
 import {FORCE_IGNORED_FIELDS} from '../../fieldRegistry';
 import {Field} from '../Field';
 import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
@@ -6,7 +6,7 @@ import {FaimsForm} from '../types';
 import {logWarn} from '../../logging';
 
 interface FormSectionProps {
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   section: string;
   form: FaimsForm;
   config: FormManagerConfig;

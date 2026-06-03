@@ -35,7 +35,7 @@
  */
 
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {FAIMSPosition, logError} from '@faims3/data-model';
+import {logError} from '@faims3/data-model';
 import LocationOn from '@mui/icons-material/LocationOn';
 import {Alert, Box, Paper, Typography} from '@mui/material';
 import Button from '@mui/material/Button';
@@ -78,6 +78,7 @@ const FAIMSPositionSchema = z.object({
     coordinates: z.tuple([z.number(), z.number()]), // [longitude, latitude]
   }),
 });
+type FAIMSPosition = z.infer<typeof FAIMSPositionSchema>;
 
 // ============================================================================
 // Utility Functions

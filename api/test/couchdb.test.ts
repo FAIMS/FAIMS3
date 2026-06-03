@@ -36,7 +36,7 @@ import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
-  getProjectUIModel,
+  getUiSpecModel,
   getProjectById,
   getRolesForNotebook,
   getUserProjectsDetailed,
@@ -338,7 +338,7 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getProjectUIModel(projectID);
+      const retrieved = await getUiSpecModel(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
@@ -422,7 +422,7 @@ describe('notebook api', () => {
 
       const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const newUISpec = await getProjectUIModel(projectID);
+      const newUISpec = await getUiSpecModel(projectID);
       if (newUISpec) {
         expect(newUISpec.views['FORM1SECTION1'].label).to.equal(
           'Updated Label'

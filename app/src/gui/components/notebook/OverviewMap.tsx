@@ -19,6 +19,7 @@
  */
 
 import {
+  CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
   DataEngine,
@@ -60,7 +61,7 @@ import {formatTimestamp} from '../../../utils/formUtilities';
 
 interface OverviewMapProps {
   /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
-  uiSpec: NotebookUiSpec;
+  uiSpec: CompiledNotebookUiSpec;
   project_id: ProjectID;
   serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};

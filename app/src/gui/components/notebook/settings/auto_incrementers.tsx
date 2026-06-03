@@ -1,4 +1,4 @@
-import {ProjectUIModel} from '@faims3/data-model';
+import {UiSpecModel} from '@faims3/data-model';
 import {Box, Button, Grid, Paper, Typography} from '@mui/material';
 import {useEffect, useState} from 'react';
 import {Project} from '../../../../context/slices/projectSlice';
@@ -9,7 +9,7 @@ import {AutoIncrementReference} from '../../../../local-data/autoincrementTypes'
 
 interface AutoIncrementerSettingsListProps {
   project: Project;
-  uiSpec: ProjectUIModel;
+  uiSpec: UiSpecModel;
 }
 
 export default function AutoIncrementerSettingsList(

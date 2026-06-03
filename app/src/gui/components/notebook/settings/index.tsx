@@ -18,7 +18,7 @@
  *   The settings component for a notebook presents user changeable options
  */
 
-import {ProjectID, ProjectUIModel} from '@faims3/data-model';
+import {ProjectID, UiSpecModel} from '@faims3/data-model';
 import {
   Box,
   Button,
@@ -57,7 +57,7 @@ import {
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
 
-export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
+export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   const nav = useNavigate();
   const {projectId} = useParams<{projectId: ProjectID}>();
   if (!projectId) return <></>;

@@ -2,7 +2,7 @@
  * redux-persist migration for the projects slice (persist version 0 → 1).
  *
  * Older app builds stored each project with a loose `metadata` bag plus
- * `rawUiSpecification` (decoded {@link ProjectUIModel}). Current builds expect
+ * `rawUiSpecification` (decoded {@link UiSpecModel}). Current builds expect
  * a typed {@link NotebookDefinition} on `uiDefinition`, with `description` and
  * `templateId` at the project root.
  *
@@ -72,7 +72,7 @@ type LegacyPersistedProject = {
   database?: Project['database'];
   metadata?: Record<string, unknown>;
   rawUiSpecification?: Project['uiDefinition'] extends infer _U
-    ? import('@faims3/data-model').ProjectUIModel
+    ? import('@faims3/data-model').UiSpecModel
     : never;
   uiDefinition?: NotebookDefinition;
   description?: string;
