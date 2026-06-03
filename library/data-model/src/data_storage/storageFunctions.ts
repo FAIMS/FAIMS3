@@ -26,7 +26,6 @@ import {
   Record,
   RecordID,
   RecordMetadata,
-  RecordReference,
   RecordRevisionListing,
   Relationship,
   Revision,
@@ -48,7 +47,7 @@ import {
   REVISIONS_INDEX,
   updateHeads,
 } from './internals';
-import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
+import {getAllRecordsWithRegex} from './queries';
 
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + randomUuid();
@@ -446,110 +445,6 @@ export async function getHRIDforRecordID({
   } catch (err) {
     console.warn('Failed to get hrid', err);
     return recordId;
-  }
-}
-
-/**
- * getPossibleRelatedRecords - get all records of a given type but remove any that
- *   are already children of some parent if relation_type is Child
- *
- * @param projectId - project identifier
- * @param type - type of record we are looking for
- * @param relationType - 'faims-core::Child' or 'faims-core::Linked'
- * @param recordId - record id that might be the parent/source of this link
- * @param fieldId - field that will hold the relationship
- * @param relationLinkedVocabPair - names of the relationship
- * @returns  a promise resolving to an array of RecordReference objects
- */
-export async function getPossibleRelatedRecords({
-  projectId,
-  dataDb,
-  type,
-  relationLinkedVocabPair = null,
-  relationType,
-  recordId,
-  fieldId,
-  uiSpecification,
-}: {
-  projectId: ProjectID;
-  dataDb: DataDbType;
-  type: FAIMSTypeName;
-  relationType: string;
-  recordId: string;
-  fieldId: string;
-  relationLinkedVocabPair: string[] | null;
-  uiSpecification: ProjectUIModel;
-}): Promise<RecordReference[]> {
-  try {
-    let relation_vocab: string[] | null = null;
-    if (relationType !== 'faims-core::Child') {
-      relation_vocab = [
-        DEFAULT_RELATION_LINK_VOCABULARY,
-        DEFAULT_RELATION_LINK_VOCABULARY,
-      ]; //default value of the linked items
-      if (
-        relationLinkedVocabPair !== null &&
-        relationLinkedVocabPair.length > 0
-      )
-        relation_vocab = relationLinkedVocabPair; //get the name from relation_linked_vocabPair
-    }
-
-    const records: RecordReference[] = [];
-    await listRecordMetadata({
-      projectId,
-      dataDb,
-      uiSpecification,
-    }).then(record_list => {
-      for (const key in record_list) {
-        const metadata = record_list[key];
-
-        let is_parent = false;
-        const relationship = metadata['relationship'];
-
-        if (relationType === 'faims-core::Child') {
-          //check if record has the parent, record should only have one parent
-          if (
-            relationship === undefined ||
-            relationship['parent'] === undefined ||
-            relationship['parent'] === null ||
-            relationship['parent'].record_id === undefined
-          )
-            is_parent = false;
-          else if (relationship['parent'].record_id !== recordId)
-            is_parent = true;
-          else if (
-            relationship['parent'].record_id === recordId &&
-            relationship['parent'].field_id !== fieldId
-          )
-            is_parent = true;
-        }
-        if (!metadata.deleted && metadata.type === type && !is_parent) {
-          const hrid =
-            metadata.hrid !== '' && metadata.hrid !== undefined
-              ? metadata.hrid
-              : metadata.record_id;
-          if (relation_vocab === null)
-            records.push({
-              project_id: projectId,
-              record_id: metadata.record_id,
-              record_label: hrid,
-            });
-          else
-            records.push({
-              project_id: projectId,
-              record_id: metadata.record_id,
-              record_label: hrid,
-              relation_type_vocabPair: relation_vocab, // pass the value of the vocab
-            });
-        }
-      }
-    });
-    return records;
-  } catch (err) {
-    // TODO: What are we doing here, why would things error?
-    const records = await getAllRecordsOfType(projectId, type);
-    logError(err);
-    return records;
   }
 }
 

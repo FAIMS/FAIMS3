@@ -15,38 +15,45 @@
  *
  * Filename: types.ts
  * Description:
- *   Types and interfaces that are used by the database module
+ *   Types and interfaces shared across the data model: identifiers, sync/storage
+ *   documents, the database interface, and the form/UI record representations.
  */
 
-import {z} from 'zod';
+// ============================================================================
+// Identifiers
+// ============================================================================
 
-// from datamodel/core.ts ---------------------------------------------------
+/** Stand-in for jose's KeyLike. Aliased here to avoid the import dependency. */
+export type KeyLike = string;
 
-// import type {KeyLike} from 'jose';
-export type KeyLike = string; // this is the same type but might not be enough for import
+// There are two internal IDs for projects: ProjectID is unique to the whole
+// system (it includes the listing_id), while NonUniqueProjectID is unique only
+// to the 'projects' database it came from. This is because the list of projects
+// is decentralised, so we cannot enforce system-wide unique project IDs without
+// a 'namespace' listing id.
 
-// There are two internal IDs for projects, the former is unique to the system
-// (i.e. includes the listing_id), the latter is unique only to the 'projects'
-// database it came from, for a FAIMS listing
-// (It is this way because the list of projects is decentralised and so we
-// cannot enforce system-wide unique project IDs without a 'namespace' listing id)
-
-/** Projects are identified by a string unique to the whole system */
+/** Project identifier unique to the whole system. */
 export type ProjectID = string;
-/** Non Unique project identifier is unique only to the database it comes from, may clash with
- * other identifiers in other databases */
+
+/**
+ * Project identifier unique only to the database it comes from. May clash with
+ * identifiers in other databases.
+ */
 export type NonUniqueProjectID = string;
-/** Listing identifier */
+
+/** Listing identifier. */
 export type ListingID = string;
 
-// There are two internal ID for records, the former is unique to a
-// project, the latter unique to the system (i.e. includes project_id)
+// There are two internal IDs for records: RecordID is unique to a project, while
+// FullyResolvedRecordID is unique to the system (it includes the project_id).
 
-/** Record identifier unique to the project */
+/** Record identifier unique to the project. */
 export type RecordID = string;
-/** Record identifier unique to the system, includes the project identifier */
+
+/** Record identifier unique to the system; includes the project identifier. */
 export type FullyResolvedRecordID = string;
-/** A representation of a {FullyResolvedRecordID} split into the component parts */
+
+/** A {@link FullyResolvedRecordID} split into its component parts. */
 export interface SplitRecordID {
   project_id: ProjectID;
   record_id: RecordID;
@@ -58,9 +65,13 @@ export type FAIMSAttachmentID = string;
 
 export type FAIMSTypeName = string;
 
-export type Annotations = {annotation: string; uncertainty: boolean};
-
 export type ProjectRole = string;
+
+// ============================================================================
+// Shared value types
+// ============================================================================
+
+export type Annotations = {annotation: string; uncertainty: boolean};
 
 export interface ClusterProjectRoles {
   [key: string]: Array<ProjectRole>;
@@ -78,21 +89,18 @@ export interface LinkedRelation {
   field_id: string;
   relation_type_vocabPair: string[];
 }
+
 export interface Relationship {
-  parent?: LinkedRelation; // has single parent
-  linked?: Array<LinkedRelation>; // has multiple link
+  /** A record has a single parent. */
+  parent?: LinkedRelation;
+  /** A record may have multiple links. */
+  linked?: Array<LinkedRelation>;
 }
 
-// end of types from datamodel/core.ts -----------------------------------------
-
-// types from datamodel/database.ts ----------------------------------------
-
 /**
- * Describes a project, with connection, name, description, and schema
- * Part of the Projects DB
- * Do not use with UI code; sync code only
+ * Connection details for a project's remote database. Part of the Projects DB.
+ * Do not use with UI code; sync code only.
  */
-
 export type PossibleConnectionInfo = {
   base_url?: string | undefined;
   proto?: string | undefined;
@@ -106,17 +114,16 @@ export type PossibleConnectionInfo = {
   jwt_token?: string;
 };
 
-export interface ProjectUIModelDetails {
-  fields: ProjectUIFields;
-  views: ProjectUIViews;
-  viewsets: ProjectUIViewsets;
-  visible_types: string[];
-  conditional_sources?: Set<string>;
-}
+// ============================================================================
+// Data DB documents (PouchDB / sync layer)
+//
+// These types describe the documents stored in a project's data database and
+// are used within the pouch/sync subsystem. Do not use them with the form/UI.
+// ============================================================================
 
-// This is used within the pouch/sync subsystem, do not use with form/ui
 export type EncodedRecord = PouchDB.Core.Document<{
-  _conflicts?: string[]; // Pouchdb conflicts array
+  /** PouchDB conflicts array. */
+  _conflicts?: string[];
   record_format_version: number;
   created: string;
   created_by: string;
@@ -126,26 +133,12 @@ export type EncodedRecord = PouchDB.Core.Document<{
   _deleted?: boolean;
 }>;
 
-export type AttributeValuePairIDMap = {
-  [field_name: string]: AttributeValuePairID;
-};
-
-export type AttributeValuePairMap = {
-  [field_name: string]: AttributeValuePair;
-};
-
-export type RevisionMap = {
-  [revision_id: string]: Revision;
-};
-
-export type RecordMap = {
-  [record_id: string]: EncodedRecord;
-};
-
 export interface Revision {
   _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean; // This is for couchdb deletion
+  /** Optional, as we may want to include the raw JSON in places. */
+  _rev?: string;
+  /** CouchDB deletion flag. */
+  _deleted?: boolean;
   revision_format_version: number;
   avps: AttributeValuePairIDMap;
   record_id: RecordID;
@@ -155,13 +148,16 @@ export interface Revision {
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;
-  relationship?: Relationship; // added for save relation to child/linked record
+  /** Saves the relation to a child/linked record. */
+  relationship?: Relationship;
 }
 
 export interface AttributeValuePair {
   _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean; // This is for couchdb deletion
+  /** Optional, as we may want to include the raw JSON in places. */
+  _rev?: string;
+  /** CouchDB deletion flag. */
+  _deleted?: boolean;
   _attachments?: PouchDB.Core.Attachments;
   avp_format_version: number;
   type: FAIMSTypeName;
@@ -182,8 +178,10 @@ export interface FAIMSAttachmentReference {
 
 export interface FAIMSAttachment {
   _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean; // This is for couchdb deletion
+  /** Optional, as we may want to include the raw JSON in places. */
+  _rev?: string;
+  /** CouchDB deletion flag. */
+  _deleted?: boolean;
   _attachments?: PouchDB.Core.Attachments;
   filename: string;
   attach_format_version: number;
@@ -194,9 +192,9 @@ export interface FAIMSAttachment {
   created_by: string;
 }
 
-/*
- * Elements of a Project's dataDB can be any one of these,
- * discriminated by the prefix of the object's id
+/**
+ * Elements of a project's dataDB can be any one of these, discriminated by the
+ * prefix of the object's id.
  */
 export type ProjectDataObject =
   | AttributeValuePair
@@ -204,28 +202,29 @@ export type ProjectDataObject =
   | EncodedRecord
   | FAIMSAttachment;
 
-//to get the metadata for the draft, for draft_table
-export interface DraftMetadata {
-  _id: string;
-  project_id: ProjectID;
-  existing: null | {
-    record_id: RecordID;
-    revision_id: RevisionID;
-  };
-  // Only difference: Date is a date, not string
-  created: Date;
-  updated: Date;
-  type: string;
-  hrid: string | null;
-  record_id: string;
-}
-
-export type DraftMetadataList = {
-  [key: string]: DraftMetadata;
+export type AttributeValuePairIDMap = {
+  [field_name: string]: AttributeValuePairID;
 };
 
-// Define an abstract database interface that will allow for real
-// PouchDB databases or our wrapped version in the app
+export type AttributeValuePairMap = {
+  [field_name: string]: AttributeValuePair;
+};
+
+export type RevisionMap = {
+  [revision_id: string]: Revision;
+};
+
+export type RecordMap = {
+  [record_id: string]: EncodedRecord;
+};
+
+// ============================================================================
+// Database interface
+//
+// An abstract database interface that allows for either real PouchDB databases
+// or our wrapped version in the app.
+// ============================================================================
+
 export interface DatabaseInterface<Content extends {} = {}> {
   name: string;
 
@@ -301,123 +300,26 @@ export interface DatabaseInterface<Content extends {} = {}> {
   ): PouchDB.SecurityHelper.Security;
 }
 
-// Add these type definitions after the existing DatabaseInterface
 export type RecordDbType = DatabaseInterface<EncodedRecord>;
 export type RevisionDbType = DatabaseInterface<Revision>;
 export type AvpDbType = DatabaseInterface<AttributeValuePair>;
 export type AttachmentDbType = DatabaseInterface<FAIMSAttachment>;
-
 export type DataDbType = DatabaseInterface<ProjectDataObject>;
 
-// end of types from datamodel/drafts.ts --------------------------------
+// ============================================================================
+// Project / server information
+// ============================================================================
 
-// types from datamodel/geo.ts --------------------------------
-
-// This is the same as the web/capacitor output, will need to be updated for the
-// new GeoJSON format
-export interface FAIMSCoordinate {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  altitudeAccuracy: number | null;
-  altitude: number | null;
-  speed: number | null;
-  heading: number | null;
-}
-
-export interface FAIMSPosition {
-  type: string;
-  properties: FAIMSPositionProperties;
-  geometry: FAIMSPositionGeometry;
-}
-
-export interface FAIMSPositionProperties {
-  timestamp: number;
-  altitude: number | null;
-  speed: number | null;
-  heading: number | null;
-  accuracy: number;
-  altitude_accuracy: number | null;
-}
-
-export interface FAIMSPositionGeometry {
-  type: string;
-  coordinates: number[];
-}
-
-// types from datamodel/typeSystems.ts --------------------------------
-
-export interface FAIMSType {
-  [key: string]: any; // any for now until we lock down the json
-}
-
-export interface FAIMSTypeCollection {
-  [key: string]: FAIMSType;
-}
-
-export interface FAIMSConstant {
-  [key: string]: any; // any for now until we lock down the json
-}
-
-export interface FAIMSConstantCollection {
-  [key: string]: FAIMSConstant;
-}
-
-export interface ProjectUIFields {
-  [key: string]: any;
-}
-
-export interface ProjectUIViewset {
-  label?: string;
-  views: string[];
-  submit_label?: string;
-  is_visible?: boolean;
-  summary_fields?: Array<string>;
-  // Which field should be used as the hrid?
-  hridField?: string;
-  // Layout option
-  layout?: 'inline' | 'tabs';
-}
-
-export interface ProjectUIViewsets {
-  [type: string]: ProjectUIViewset;
-}
-
-export interface ConditionalExpression {
-  operator: string;
-  conditions?: ConditionalExpression[];
-  field?: string;
-  value?: any;
-}
-
-export interface RecordValues {
-  [field_name: string]: any;
-}
-
-export interface ProjectUIViews {
-  [key: string]: {
-    label?: string;
-    fields: string[];
-    uidesign?: string;
-    next_label?: string;
-    is_logic?: {[key: string]: string[]}; //add for branching logic
-    condition?: ConditionalExpression; // new conditional logic
-    conditionFn?: (v: RecordValues) => boolean; // compiled conditional function
-    description?: string;
-  };
-}
-
-// end of types from datamodel/typeSystems.ts --------------------------------
-
-// types from datamodel/ui.ts --------------------------------
 export interface PublicServerInfo {
   id: string;
   name: string;
   conductor_url: string;
   description: string;
   prefix: string;
-  // The version of the server e.g. 1.3.2. Optional for backwards compat - new
-  // versions always report
+  /**
+   * The version of the server, e.g. 1.3.2. Optional for backwards
+   * compatibility; new versions always report it.
+   */
   serverVersion?: string;
 }
 
@@ -430,22 +332,15 @@ export interface ProjectInformation {
   status?: string;
   is_activated: boolean;
   listing_id: ListingID;
-  // Was the project created from a template?
+  /** Set if the project was created from a template. */
   template_id?: string;
 }
 
-export interface ProjectUIModel extends ProjectUIModelDetails {
-  _id?: string; // optional as we may want to include the raw json in places
-  _rev?: string; // optional as we may want to include the raw json in places
-}
-export interface RecordReference {
-  project_id: ProjectID;
-  record_id: RecordID;
-  // This is for HRIDs or other non ID descriptions of reference
-  record_label: RecordID | string;
-  //this is for Label of linked items, default: ['is related to', 'is related to']
-  relation_type_vocabPair?: Array<string>;
-}
+// ============================================================================
+// Form / UI record types
+//
+// These types are used within the form/UI subsystem. Do not use them with pouch.
+// ============================================================================
 
 export interface RecordMetadata {
   project_id: ProjectID;
@@ -462,7 +357,8 @@ export interface RecordMetadata {
   avps: AttributeValuePairIDMap;
   relationship?: Relationship;
   data?: {[key: string]: any};
-  synced?: boolean; // optional sync status
+  /** Optional sync status. */
+  synced?: boolean;
 }
 
 export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;
@@ -471,7 +367,6 @@ export type RecordMetadataList = {
   [key: string]: RecordMetadata;
 };
 
-// This is used within the form/ui subsystem, do not use with pouch
 export interface Record {
   project_id?: ProjectID;
   record_id: RecordID;
@@ -483,16 +378,21 @@ export interface Record {
   field_types: {[field_name: string]: FAIMSTypeName};
   annotations: {[field_name: string]: Annotations};
   ugc_comment?: string;
-  /*
-    created{_by} are optional as we don't need to track them with the actual data.
-    If you need creation information, then use record metadata
-    */
+  /**
+   * created/created_by are optional as we don't need to track them with the
+   * actual data. If you need creation information, use record metadata instead.
+   */
   created?: Date;
   created_by?: string;
-  /**add for relationship*/
-  relationship?: Relationship; // added for save relation to child/linked record
-  deleted?: boolean; //add for checking if record been deleted
+  /** Saves the relation to a child/linked record. */
+  relationship?: Relationship;
+  /** Set when checking if the record has been deleted. */
+  deleted?: boolean;
 }
+
+// ============================================================================
+// Merge types
+// ============================================================================
 
 export interface FieldMergeInformation {
   avp_id: AttributeValuePairID;
@@ -527,107 +427,6 @@ export interface UserMergeResult {
   relationship: Relationship;
 }
 
-export type RecordList = {
-  [key: string]: Record;
-};
-
-/*
- * This somehow needs to handle class-based components and function-based
- * components...
- */
-export type FAIMSFormField = any;
-export type FAIMSBuilderFormField = any;
-export type FAIMSBuilderIcon = any;
-export type FAIMSUiSpec = any;
-
-export interface ComponentRegistryProperties {
-  human_readable_name: string;
-  description: string;
-  category: string;
-  component: FAIMSFormField;
-  uiSpecProps: FAIMSUiSpec;
-  settingsProps: Array<FAIMSUiSpec>;
-  builder_component: FAIMSBuilderFormField;
-  icon: FAIMSBuilderIcon;
-}
-
-export type ComponentRegistryItem = {
-  [name: string]: ComponentRegistryProperties;
-};
-
-export type ComponentRegistry = {[namespace: string]: ComponentRegistryItem};
-
-export interface FormComponent {
-  namespace: string;
-  component_name: string;
-  component_properties: ComponentRegistryProperties;
-}
-export type FormComponentList = FormComponent[];
-
-export type FAIMShandlerType = any;
-export type FAIMSEVENTTYPE = any;
-export interface ProjectValueList {
-  [key: string]: any;
-}
-
-export interface BehaviourProperties {
-  label: string;
-  helpText: string;
-}
-
-export type componenentSettingprops = {
-  uiSetting: ProjectUIModel;
-  formProps: any;
-  component: FAIMSBuilderFormField;
-  uiSpec: ProjectUIModel;
-  setuiSpec: FAIMShandlerType;
-  fieldName: string;
-  fieldui: ProjectUIFields;
-  handlerchanges?: any;
-  handlerchangewithview: FAIMShandlerType;
-  designvalue: string;
-  initialValues: ProjectUIFields;
-  setinitialValues: FAIMShandlerType;
-  currentview: string;
-  currentform: string;
-  projectvalue: any;
-};
-
-export type resetprops = {
-  namespace: string;
-  componentName: string;
-  uiSpec: ProjectUIModel;
-  setuiSpec: FAIMShandlerType;
-  fieldName: string;
-  formProps: any;
-  designvalue: string;
-  currentview: string;
-  currentform: string;
-  initialValues: ProjectUIFields;
-  setinitialValues: FAIMShandlerType;
-  projectvalue: any;
-};
-
-export type SectionMeta = any;
-
-// end of types from datamodel/ui.ts --------------------------------
-
-// types from data_storage/index.ts --------------------------------
-
-/**
- * Project Revision Listing
- * @interface
- */
-export interface ProjectRevisionListing {
-  [_id: string]: string[];
-}
-
-export type RecordRevisionListing = RevisionID[];
-
-// end of types from datamodel/index.ts --------------------------------
-
-// types from data_storage/merging.ts --------------------------------
-
 interface InitialMergeRevisionDetails {
   created: Date;
   created_by: string;
@@ -645,14 +444,12 @@ export interface InitialMergeDetails {
   initial_head_data: RecordMergeInformation;
 }
 
-// ===============
-// COUCH DB MODELS
-// ===============
+// ============================================================================
+// Revision listings
+// ============================================================================
 
-// Base properties returned from list, get etc
-export const CouchDocumentFieldsSchema = z.object({
-  _id: z.string().min(1),
-  _rev: z.string().optional(),
-  _deleted: z.boolean().optional(),
-});
-export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
+export interface ProjectRevisionListing {
+  [_id: string]: string[];
+}
+
+export type RecordRevisionListing = RevisionID[];
