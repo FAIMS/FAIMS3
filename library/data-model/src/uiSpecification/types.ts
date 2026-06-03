@@ -29,9 +29,9 @@ export type RecordValues = z.infer<typeof RecordValuesSchema>;
 // ============================================================================
 // UI specification model
 //
-// The decoded form definition: fields, the views that group them, and the
-// viewsets (form types) that group views. Object schemas use `.passthrough()`
-// so that validating a stored spec never silently drops unmodelled properties.
+// UISpec: fields, the views that group them, and the viewsets (form types) that
+// group views. Object schemas use `.passthrough()` so that validating a stored
+// spec never silently drops unmodelled properties.
 // ============================================================================
 
 /**

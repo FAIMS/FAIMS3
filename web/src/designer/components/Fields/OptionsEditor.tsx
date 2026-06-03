@@ -429,8 +429,9 @@ export const OptionsEditor = ({
   // Configure drag-and-drop sensors - just pointer sensor is fine
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const elementProps = (field['component-parameters'] as ChoiceComponentParameters)
-    .ElementProps;
+  const elementProps = (
+    field['component-parameters'] as ChoiceComponentParameters
+  ).ElementProps;
 
   // Component state
   const isShowExpandedList = elementProps?.expandedChecklist ?? true;

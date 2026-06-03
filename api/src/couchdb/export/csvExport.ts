@@ -12,7 +12,7 @@ import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
-import {getCompiledUiSpecModel, getUiSpecModel} from '../notebooks';
+import {getCompiledUiSpecModel} from '../notebooks';
 import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,

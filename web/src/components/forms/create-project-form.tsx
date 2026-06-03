@@ -11,10 +11,7 @@ import {
   createProjectFromFile,
   createProjectFromTemplate,
 } from '@/hooks/project-hooks';
-import {
-  optionalRootDescriptionField,
-  rootDescriptionForApi,
-} from '@/lib/rootDescriptionField';
+import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 
 // Import the default sample notebook JSON

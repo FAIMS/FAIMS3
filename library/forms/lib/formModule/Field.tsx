@@ -129,7 +129,9 @@ export const Field = React.memo((props: FieldProps) => {
               </Alert>
             )}
             <Component
-              {...(props.fieldSpec['component-parameters'] as BaseFieldParameters)}
+              {...(props.fieldSpec[
+                'component-parameters'
+              ] as BaseFieldParameters)}
               // TODO fix the typing here - I think there is a minor issue but
               // it appears to functionally work
               state={field.state as unknown as FaimsFormFieldState}

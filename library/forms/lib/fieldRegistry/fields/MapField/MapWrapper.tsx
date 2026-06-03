@@ -609,8 +609,8 @@ function MapWrapper(props: MapProps) {
               <DialogContent>
                 <Stack spacing={2} id="map-close-confirm-description">
                   <Typography variant="body2">
-                    You have selected a {shapeNoun} on the map but haven't
-                    saved it. If you close now, your selection will be lost.
+                    You have selected a {shapeNoun} on the map but haven't saved
+                    it. If you close now, your selection will be lost.
                   </Typography>
                 </Stack>
               </DialogContent>

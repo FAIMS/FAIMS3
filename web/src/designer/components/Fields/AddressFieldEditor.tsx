@@ -50,7 +50,8 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     const newParams = newField['component-parameters'] as AddressFieldProps;
     newParams.enableAutoSuggestion = newState.enableAutoSuggestion;
-    newParams.allowFullAddressManualEntry = newState.allowFullAddressManualEntry;
+    newParams.allowFullAddressManualEntry =
+      newState.allowFullAddressManualEntry;
     dispatch(fieldUpdated({fieldName, newField}));
   };
 

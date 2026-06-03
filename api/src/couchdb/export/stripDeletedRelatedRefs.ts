@@ -6,7 +6,6 @@ import {
   FieldSummary,
   relatedRecordFieldAvpValueSchema,
   relatedRecordSelectorComponentParamsSchema,
-  NotebookUiSpec,
   CompiledNotebookUiSpec,
 } from '@faims3/data-model';
 

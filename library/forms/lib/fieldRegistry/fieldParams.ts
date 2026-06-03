@@ -24,10 +24,7 @@ export {
   type ChoiceElementProps,
   type ChoiceOption,
 } from './fields/choiceFieldParams';
-export {
-  TextFieldPropsSchema,
-  type TextFieldProps,
-} from './fields/TextFields';
+export {TextFieldPropsSchema, type TextFieldProps} from './fields/TextFields';
 export {
   NumberFieldPropsSchema,
   type NumberFieldProps,

@@ -26,7 +26,9 @@ const fieldDefinitionShape = {
 };
 
 // unmodelled keys (e.g. designer authoring metadata) survive a round-trip
-export const FieldDefinitionSchema = z.object(fieldDefinitionShape).passthrough();
+export const FieldDefinitionSchema = z
+  .object(fieldDefinitionShape)
+  .passthrough();
 export type FieldDefinition = z.infer<z.ZodObject<typeof fieldDefinitionShape>>;
 ```
 

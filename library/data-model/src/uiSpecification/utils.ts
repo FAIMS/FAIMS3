@@ -1,10 +1,7 @@
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
-import {
-  compileExpression,
-  getDependantFields,
-} from './conditionals';
+import {compileExpression, getDependantFields} from './conditionals';
 import {
   CompiledUiSpecModel,
   CompiledUiSpecViews,
@@ -603,15 +600,9 @@ export function getFieldsForViewSet(
   return fields;
 }
 
-export function getFieldLabel(
-  uiSpec: UiSpecModel,
-  fieldName: string
-) {
+export function getFieldLabel(uiSpec: UiSpecModel, fieldName: string) {
   if (fieldName in uiSpec.fields) {
-    return (
-      uiSpec.fields[fieldName]['component-parameters'].label ??
-      fieldName
-    );
+    return uiSpec.fields[fieldName]['component-parameters'].label ?? fieldName;
   } else {
     return fieldName;
   }
