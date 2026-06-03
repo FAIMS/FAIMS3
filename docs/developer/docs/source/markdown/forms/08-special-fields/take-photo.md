@@ -27,7 +27,7 @@ Camera capture field using Capacitor Camera API. Supports both native mobile and
 ### Props Schema
 
 ```typescript
-const takePhotoPropsSchema = BaseFieldPropsSchema.extend({});
+const takePhotoPropsSchema = BaseFieldParametersSchema.extend({});
 ```
 
 No additional parameters beyond base field props.

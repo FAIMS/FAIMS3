@@ -8,23 +8,51 @@ Fields in the UISpec are defined using `FieldDefinition`. This schema determines
 
 ```typescript
 // @faims3/data-model
-const FieldDefinitionSchema = z
+const fieldDefinitionShape = {
+  'component-namespace': z.string(),
+  'component-name': z.string(),
+  'type-returned': z.string(),
+  // base parameters common to all fields, with any per-field-type parameters
+  // passed through unmodelled (validated precisely in the forms layer via each
+  // field's `fieldPropsSchema`)
+  'component-parameters': BaseFieldParametersSchema.passthrough(),
+  initialValue: z.any().optional(),
+  // Not currently implemented in new forms module
+  persistent: z.boolean().optional(),
+  displayParent: z.boolean().optional(),
+  meta: FieldMetaSchema.optional(),
+  // Conditional visibility logic (raw, serializable expression)
+  condition: ConditionalExpressionSchema.nullable().optional(),
+};
+
+// unmodelled keys (e.g. designer authoring metadata) survive a round-trip
+export const FieldDefinitionSchema = z.object(fieldDefinitionShape).passthrough();
+export type FieldDefinition = z.infer<z.ZodObject<typeof fieldDefinitionShape>>;
+```
+
+### Standard vs compiled
+
+Following the same pattern as views, the raw `condition` expression is compiled
+at runtime into a callable `conditionFn`. That non-serializable function lives on
+`CompiledFieldDefinition` (`CompiledFieldDefinitionSchema`) rather than on the
+base `FieldDefinition`, so the serializable shape stays clean:
+
+```typescript
+// @faims3/data-model
+export const CompiledFieldDefinitionSchema = z
   .object({
-    'component-namespace': z.string(),
-    'component-name': z.string(),
-    'type-returned': z.string(),
-    'component-parameters': z.record(z.string(), z.any()),
-    initialValue: z.any().optional(),
-    // Not currently implemented in new forms module
-    persistent: z.boolean().optional(),
-    displayParent: z.boolean().optional(),
-    meta: FieldMetaSchema.optional(),
-    // Conditional visibility logic
-    condition: ConditionalExpressionSchema.nullable().optional(),
+    ...fieldDefinitionShape,
+    // attached at runtime by `compileUiSpecConditionals`
+    conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
   })
-  // unmodelled keys (e.g. designer authoring metadata) survive a round-trip
   .passthrough();
 ```
+
+> The exported `FieldDefinition` **type** is derived from the strict (non-
+> passthrough) shape so it has no `[k: string]: unknown` index signature. That
+> keeps it composable with `Omit`/intersection downstream (e.g. the designer
+> overriding `component-parameters`), while the **schema** still passes
+> unmodelled keys through at runtime.
 
 ## Field Resolution
 
@@ -48,7 +76,7 @@ The `component-parameters` object is spread directly into the field component:
 
 ```typescript
 <Component
-  {...(fieldSpec['component-parameters'] as BaseFieldProps)}
+  {...(fieldSpec['component-parameters'] as BaseFieldParameters)}
   state={field.state}
   config={props.config}
   // ... other injected props
@@ -210,11 +238,6 @@ Enables uncertainty flag for field value:
         "name": "Site-Hazards",
         "protection": "none"
     },
-    "validationSchema": [
-        [
-            "yup.array"
-        ]
-    ],
     "initialValue": [],
     "meta": {
         "annotation": {
