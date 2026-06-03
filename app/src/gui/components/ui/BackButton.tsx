@@ -25,10 +25,10 @@ const BackButton = ({link}: {link: string}) => {
         </IconButton>
         <Typography
           variant="h5"
-          fontWeight="bold"
           sx={{
             color: 'primary.main',
             textAlign: 'center',
+            fontWeight: 'bold',
           }}
         >
           Back

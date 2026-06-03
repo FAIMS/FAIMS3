@@ -857,7 +857,7 @@ export const OptionsEditor = ({
         >
           <Grid container spacing={1.5}>
             {/* Options table */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               {options.length === 0 && !enableOther ? (
                 <Typography
                   variant="body2"
@@ -988,14 +988,13 @@ export const OptionsEditor = ({
             </Grid>
 
             {/* Controls under table */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Box sx={{mt: 0.5}}>
                 <form onSubmit={addOption}>
                   <Stack
                     direction={{xs: 'column', sm: 'row'}}
                     spacing={1}
-                    alignItems={{xs: 'stretch', sm: 'flex-end'}}
-                    sx={{mb: 1.5}}
+                    sx={{mb: 1.5, alignItems: {xs: 'stretch', sm: 'flex-end'}}}
                   >
                     <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
                       <SimpleFieldWrapper
@@ -1048,7 +1047,11 @@ export const OptionsEditor = ({
                     >
                       Add
                     </Button>
-                    <Stack direction="row" spacing={0.65} alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={0.65}
+                      sx={{alignItems: 'center'}}
+                    >
                       <Button
                         variant="outlined"
                         color="primary"
@@ -1079,7 +1082,11 @@ export const OptionsEditor = ({
                 {showExpandedCheckListControl && (
                   <FormControl sx={{mb: 0}}>
                     <FormLabel>
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{alignItems: 'center'}}
+                      >
                         <Typography component="span">
                           {isMultiSelectField
                             ? 'Multi-select display mode'
@@ -1143,10 +1150,12 @@ export const OptionsEditor = ({
       <Dialog
         open={!!editingOption}
         onClose={() => setEditingOption(null)}
-        TransitionProps={{
-          onExited: () => {
-            setRenameDialogState(null);
-            setLastEditedOption(null);
+        slotProps={{
+          transition: {
+            onExited: () => {
+              setRenameDialogState(null);
+              setLastEditedOption(null);
+            },
           },
         }}
       >
@@ -1211,9 +1220,11 @@ export const OptionsEditor = ({
       <Dialog
         open={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        TransitionProps={{
-          onExited: () => {
-            setDeleteDialogRefs([]);
+        slotProps={{
+          transition: {
+            onExited: () => {
+              setDeleteDialogRefs([]);
+            },
           },
         }}
       >

@@ -14,11 +14,11 @@ export default function CircularLoading(props: {label: string}) {
   return (
     <Grid
       container
-      direction={{xs: 'column', sm: 'row'}}
-      alignItems="center"
-      justifyContent="center"
       spacing={2}
       sx={{
+        flexDirection: {xs: 'column', sm: 'row'},
+        alignItems: 'center',
+        justifyContent: 'center',
         padding: 3,
         maxWidth: '100%',
         width: '100%',
@@ -26,7 +26,7 @@ export default function CircularLoading(props: {label: string}) {
         textAlign: 'center',
       }}
     >
-      <Grid item>
+      <Grid>
         <CircularProgress
           size={36}
           thickness={5}
@@ -35,7 +35,7 @@ export default function CircularLoading(props: {label: string}) {
           }}
         />
       </Grid>
-      <Grid item>
+      <Grid>
         <Typography
           variant="h6"
           color="text.secondary"

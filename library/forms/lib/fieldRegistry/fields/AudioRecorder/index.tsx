@@ -183,8 +183,8 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
 }) => {
   return (
     <Box
-      sx={{
-        ...(isRecording
+      sx={
+        isRecording
           ? {
               position: 'fixed',
               bottom: 0,
@@ -198,10 +198,14 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
               px: 3,
               boxShadow: 6,
             }
-          : {}),
-      }}
+          : {}
+      }
     >
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{alignItems: 'center', flexWrap: 'wrap'}}
+      >
         {!isRecording && (
           <Button
             variant="contained"

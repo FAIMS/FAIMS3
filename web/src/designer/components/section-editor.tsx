@@ -302,13 +302,15 @@ export const SectionEditor = ({
   return (
     <>
       {renderSectionToolbar(
-        <Stack spacing={1.5} mt={0.75} mb={2}>
+        <Stack spacing={1.5} sx={{mt: 0.75, mb: 2}}>
           <Stack
             direction="row"
-            alignItems="center"
-            flexWrap="wrap"
-            columnGap={1}
-            sx={designerControlActionRowSx}
+            sx={{
+              ...designerControlActionRowSx,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              columnGap: 1,
+            }}
           >
             <Button
               variant="text"
@@ -322,7 +324,7 @@ export const SectionEditor = ({
 
             <Typography sx={designerPipeSx}> | </Typography>
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
               <Tooltip title="Move section left">
                 <span>
                   <IconButton
@@ -445,35 +447,37 @@ export const SectionEditor = ({
                   data-testid="label"
                   placeholder="Section Name"
                   inputRef={sectionEditInputRef}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Save section name">
-                          <IconButton
-                            size="small"
-                            type="submit"
-                            sx={{
-                              ...designerInlineEditActionIconSx,
-                              color: 'success.main',
-                            }}
-                          >
-                            <DoneRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Cancel name edit">
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditMode(false)}
-                            sx={{
-                              ...designerInlineEditActionIconSx,
-                              color: 'error.main',
-                            }}
-                          >
-                            <CloseRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Save section name">
+                            <IconButton
+                              size="small"
+                              type="submit"
+                              sx={{
+                                ...designerInlineEditActionIconSx,
+                                color: 'success.main',
+                              }}
+                            >
+                              <DoneRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Cancel name edit">
+                            <IconButton
+                              size="small"
+                              onClick={() => setEditMode(false)}
+                              sx={{
+                                ...designerInlineEditActionIconSx,
+                                color: 'error.main',
+                              }}
+                            >
+                              <CloseRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                   value={fView.label}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,7 +577,7 @@ export const SectionEditor = ({
         maxWidth="sm"
       >
         <DialogTitle sx={designerDialogTitleSx}>
-          <Stack direction="row" alignItems="center" spacing={0.75}>
+          <Stack direction="row" spacing={0.75} sx={{alignItems: 'center'}}>
             <Typography variant="h6" sx={{fontWeight: 800}}>
               Add New Section
             </Typography>

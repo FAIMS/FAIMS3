@@ -221,16 +221,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
           onChange={handleSummaryFieldsChange}
           getOptionLabel={option => option.label}
           renderInput={params => (
-            <DebouncedTextField
-              onChange={function (): void {
-                throw new Error('Function not implemented.');
-              }}
-              {...params}
-              InputProps={{
-                ...params.InputProps,
-                sx: {'& .MuiInputLabel-root': {display: 'none'}},
-              }}
-            />
+            <DebouncedTextField {...params} onChange={() => {}} />
           )}
         />
       </SettingSection>
@@ -248,14 +239,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
           onChange={handleHridFieldChange}
           getOptionLabel={option => option.label}
           renderInput={params => (
-            <DebouncedTextField
-              onChange={function (): void {}}
-              {...params}
-              InputProps={{
-                ...params.InputProps,
-                sx: {'& .MuiInputLabel-root': {display: 'none'}},
-              }}
-            />
+            <DebouncedTextField {...params} onChange={() => {}} />
           )}
         />
       </SettingSection>

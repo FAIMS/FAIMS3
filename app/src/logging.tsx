@@ -83,12 +83,14 @@ export const ErrorPage = () => {
       <Grid
         container
         direction="row"
-        justifyContent="center"
-        alignItems="center"
         spacing={3}
-        sx={{minHeight: '60vh'}}
+        sx={{
+          minHeight: '60vh',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
       >
-        <Grid item xs={12} sm={6}>
+        <Grid size={{xs: 12, sm: 6}}>
           <Typography
             variant={'h4'}
             sx={{fontWeight: 'light', mb: 3}}

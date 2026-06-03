@@ -101,7 +101,7 @@ export const SpeechSettingsEditor = ({
   };
 
   return (
-    <Grid item xs={12}>
+    <Grid size={12}>
       <Card variant="outlined">
         <CardHeader
           avatar={<MicIcon color="action" />}
@@ -110,8 +110,8 @@ export const SpeechSettingsEditor = ({
           }
           sx={{pb: 0}}
         />
-        <Grid container p={2} pt={1} rowGap={1}>
-          <Grid item xs={12}>
+        <Grid container sx={{p: 2, pt: 1, rowGap: 1}}>
+          <Grid size={12}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -133,7 +133,7 @@ export const SpeechSettingsEditor = ({
           </Grid>
 
           {settings.enableSpeech && (
-            <Grid item xs={12} sx={{pl: 4}}>
+            <Grid size={12} sx={{pl: 4}}>
               <FormControlLabel
                 control={
                   <Checkbox

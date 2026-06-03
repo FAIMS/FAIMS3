@@ -173,10 +173,10 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined">
-          <Grid container p={2} rowSpacing={3}>
-            <Grid item xs={12} sm={3}>
+          <Grid container rowSpacing={3} sx={{p: 2}}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -191,7 +191,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -210,7 +210,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -231,7 +231,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControl required sx={{minWidth: 150}}>
                 <InputLabel id="relationType-label">
                   Select Relation Type
@@ -248,7 +248,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControl required sx={{minWidth: 150}}>
                 <InputLabel id="relatedType-label">
                   Select Related Form
@@ -268,7 +268,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControl required sx={{minWidth: 150}}>
                 <DebouncedTextField
                   name="related-type-label"
@@ -287,19 +287,20 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
       </Grid>
 
       {state.relationType === 'faims-core::Linked' && (
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card variant="outlined" sx={{display: 'flex'}}>
-            <Grid container p={2} columnSpacing={3} rowSpacing={3}>
-              <Grid item xs={12} sm={6}>
+            <Grid container columnSpacing={3} rowSpacing={3} sx={{p: 2}}>
+              <Grid size={{xs: 12, sm: 6}}>
                 <Alert severity="info">
                   Add and remove Linking Pairs as needed.
                 </Alert>
                 <form onSubmit={addPair}>
                   <Grid
                     container
-                    item
-                    style={{display: 'flex'}}
-                    direction={{xs: 'column', sm: 'row'}}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: {xs: 'column', sm: 'row'},
+                    }}
                   >
                     <DebouncedTextField
                       label="Performed Before"
@@ -326,7 +327,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                 </form>
                 {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{xs: 12, sm: 6}}>
                 <List>
                   {pairs.map((pair, index) => (
                     <ListItem

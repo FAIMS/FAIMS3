@@ -7,10 +7,10 @@ import {
   InputAdornment,
   InputLabel,
   MenuItem,
+  OutlinedInput,
   Select,
   SelectChangeEvent,
   Stack,
-  TextField,
   useTheme,
 } from '@mui/material';
 import React, {useState} from 'react';
@@ -191,7 +191,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
       data-testid="short-code-only"
       direction="row"
       spacing={1}
-      alignItems="center"
+      sx={{alignItems: 'center'}}
     >
       {
         // Only show selector if condition is true i.e. more than one server
@@ -219,19 +219,16 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
         </FormControl>
       )}
 
-      <TextField
+      <OutlinedInput
         value={shortCode}
         placeholder="Enter code"
-        variant="outlined"
         onChange={updateShortCode}
         size="small"
         fullWidth
-        InputProps={{
-          sx: {fontFamily: 'monospace'},
-          startAdornment: (
-            <InputAdornment position="start">{selectedPrefix} -</InputAdornment>
-          ),
-        }}
+        sx={{fontFamily: 'monospace'}}
+        startAdornment={
+          <InputAdornment position="start">{selectedPrefix} -</InputAdornment>
+        }
       />
 
       <Button

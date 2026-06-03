@@ -28,10 +28,14 @@ export const PercentageSliderFieldEditor = ({
     state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
+  const componentParameters = field['component-parameters'] as Record<
+    string,
+    unknown
+  >;
 
-  const min = field['component-parameters'].min as number | undefined;
-  const max = field['component-parameters'].max as number | undefined;
-  const step = field['component-parameters'].step as number | undefined;
+  const min = componentParameters.min as number | undefined;
+  const max = componentParameters.max as number | undefined;
+  const step = componentParameters.step as number | undefined;
 
   const handleMinChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newField = withUpdatedField(field, nextField => {
@@ -73,11 +77,13 @@ export const PercentageSliderFieldEditor = ({
     const newField = withUpdatedField(field, nextField => {
       const value = event.target.value;
       if (value === '') {
-        delete nextField['component-parameters'].step;
+        delete (nextField['component-parameters'] as Record<string, unknown>)
+          .step;
       } else {
         const parsed = parseInt(value, 10);
         if (!isNaN(parsed) && parsed > 0) {
-          nextField['component-parameters'].step = Math.min(100, parsed);
+          (nextField['component-parameters'] as Record<string, unknown>).step =
+            Math.min(100, parsed);
         }
       }
     });
@@ -94,7 +100,7 @@ export const PercentageSliderFieldEditor = ({
           onChange={handleMinChange}
           variant="outlined"
           size="small"
-          inputProps={{min: 0, max: 100}}
+          slotProps={{htmlInput: {min: 0, max: 100}}}
           sx={{flex: '1 1 120px'}}
         />
         <TextField
@@ -104,7 +110,7 @@ export const PercentageSliderFieldEditor = ({
           onChange={handleMaxChange}
           variant="outlined"
           size="small"
-          inputProps={{min: 0, max: 100}}
+          slotProps={{htmlInput: {min: 0, max: 100}}}
           sx={{flex: '1 1 120px'}}
         />
         <TextField
@@ -114,7 +120,7 @@ export const PercentageSliderFieldEditor = ({
           onChange={handleStepChange}
           variant="outlined"
           size="small"
-          inputProps={{min: 1, max: 100}}
+          slotProps={{htmlInput: {min: 1, max: 100}}}
           sx={{flex: '1 1 120px'}}
         />
       </Box>

@@ -1,15 +1,5 @@
-import styled from '@emotion/styled';
 import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
-import {
-  Alert,
-  AlertTitle,
-  AppBar,
-  Box,
-  Paper,
-  Tab,
-  Tabs,
-  TabScrollButton,
-} from '@mui/material';
+import {Alert, AlertTitle, AppBar, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
@@ -108,16 +98,6 @@ function a11yProps(index: number, id: string) {
     'aria-controls': `${id}-tabpanel-${index}`,
   };
 }
-
-const MyTabScrollButton = styled(TabScrollButton)({
-  '&.Mui-disabled': {
-    width: 0,
-  },
-  overflow: 'hidden',
-  transition: 'width 0.3s',
-  width: 25,
-  marginLeft: 0,
-});
 
 /**
  * NotebookComponentProps defines the properties for the NotebookComponent component.
@@ -263,8 +243,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           </Box>
         )}
         <Box
-          mb={2}
           sx={{
+            mb: 2,
             marginLeft: {sm: '-16px', md: 0},
             marginRight: {sm: '-16px', md: 0},
           }}
@@ -284,14 +264,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               onChange={handleTabChange}
               aria-label={`${NOTEBOOK_NAME} tabs`}
               indicatorColor="secondary"
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: theme.palette.secondary.contrastText,
-                },
-              }}
               sx={{
                 backgroundColor: theme.palette.background.tabsBackground,
                 justifyItems: 'space-between',
+                '& .MuiTabs-indicator': {
+                  backgroundColor: theme.palette.secondary.contrastText,
+                },
 
                 // Make more compact if needed
 
@@ -306,7 +284,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                     }
                   : {},
               }}
-              ScrollButtonComponent={MyTabScrollButton}
               textColor="inherit"
               variant="scrollable"
               scrollButtons={true}
