@@ -53,6 +53,7 @@
     "@capacitor/ios": "^7.2.0",
     "@capacitor/share": "^7.0.1",
     "@capacitor/status-bar": "^7.0.1",
+    "@capgo/capacitor-audio-recorder": "7",
     "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",

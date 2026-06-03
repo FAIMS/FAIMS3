@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import React, {ReactNode, useState} from 'react';
+import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {RichTextContent} from '../../../components/RichText';
 
 /**
@@ -74,6 +75,15 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const open = Boolean(anchorEl);
+  // Image clicked inside the advanced helper dialog — opens PhotoLightbox.
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const onHelperImageClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      e.preventDefault();
+      setZoomImageUrl((target as HTMLImageElement).src);
+    }
+  };
 
   const hasErrors = errors.length > 0;
 
@@ -308,6 +318,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
 
           <DialogContent
             dividers
+            onClick={onHelperImageClick}
             sx={{
               maxHeight: '60vh',
               overflowY: 'auto',
@@ -317,6 +328,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 borderRadius: 1,
                 display: 'block',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                cursor: 'zoom-in',
               },
               '& p': {
                 wordBreak: 'break-word',
@@ -351,6 +363,14 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             </Button>
           </DialogActions>
         </Dialog>
+      )}
+
+      {/* Click-to-zoom lightbox for images inside the helper dialog. */}
+      {zoomImageUrl && (
+        <PhotoLightbox
+          url={zoomImageUrl}
+          onClose={() => setZoomImageUrl(null)}
+        />
       )}
     </Box>
   );
