@@ -16,6 +16,63 @@ import {
   repoRootFromHere,
 } from './config';
 
+function containerInsightsSetting(
+  config: LoadTestInfraConfig
+): ecs.ContainerInsights {
+  switch (config.CONTAINER_INSIGHTS) {
+    case 'disabled':
+      return ecs.ContainerInsights.DISABLED;
+    case 'enabled':
+      return ecs.ContainerInsights.ENABLED;
+    case 'enhanced':
+    default:
+      return ecs.ContainerInsights.ENHANCED;
+  }
+}
+
+function createFargateTaskRoles(
+  scope: Construct,
+  idPrefix: string
+): {executionRole: iam.Role; taskRole: iam.Role} {
+  const executionRole = new iam.Role(scope, `${idPrefix}ExecutionRole`, {
+    assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+    managedPolicies: [
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        'service-role/AmazonECSTaskExecutionRolePolicy'
+      ),
+    ],
+  });
+
+  const taskRole = new iam.Role(scope, `${idPrefix}TaskRole`, {
+    assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+  });
+  taskRole.addToPolicy(
+    new iam.PolicyStatement({
+      actions: [
+        'ssmmessages:CreateControlChannel',
+        'ssmmessages:CreateDataChannel',
+        'ssmmessages:OpenControlChannel',
+        'ssmmessages:OpenDataChannel',
+      ],
+      resources: ['*'],
+    })
+  );
+
+  return {executionRole, taskRole};
+}
+
+function awsLogsDriver(
+  logGroup: logs.ILogGroup,
+  streamPrefix: string
+): ecs.LogDriver {
+  return ecs.LogDrivers.awsLogs({
+    logGroup,
+    streamPrefix,
+    mode: ecs.AwsLogDriverMode.NON_BLOCKING,
+    maxBufferSize: cdk.Size.mebibytes(25),
+  });
+}
+
 export interface LoadTestStackProps extends cdk.StackProps {
   config: LoadTestInfraConfig;
 }
@@ -43,6 +100,17 @@ export class LoadTestStack extends cdk.Stack {
     });
 
     const publicSubnets = vpc.selectSubnets({subnetType: ec2.SubnetType.PUBLIC});
+
+    if (config.ENABLE_VPC_FLOW_LOGS === 'true') {
+      const vpcFlowLogGroup = new logs.LogGroup(this, 'VpcFlowLogs', {
+        retention: logs.RetentionDays.ONE_WEEK,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      });
+      new ec2.FlowLog(this, 'VpcFlowLog', {
+        resourceType: ec2.FlowLogResourceType.fromVpc(vpc),
+        destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogGroup),
+      });
+    }
 
     // --- Security groups ---
     const ecsSecurityGroup = new ec2.SecurityGroup(this, 'EcsTasksSg', {
@@ -95,8 +163,11 @@ export class LoadTestStack extends cdk.Stack {
     // --- ECS cluster + task definitions (RunTask only — no services) ---
     const cluster = new ecs.Cluster(this, 'Cluster', {
       vpc,
-      containerInsightsV2: ecs.ContainerInsights.ENABLED,
+      containerInsightsV2: containerInsightsSetting(config),
     });
+
+    const coordinatorRoles = createFargateTaskRoles(this, 'Coordinator');
+    const agentRoles = createFargateTaskRoles(this, 'Agent');
 
     const coordinatorLogGroup = new logs.LogGroup(this, 'CoordinatorLogs', {
       retention: logs.RetentionDays.ONE_WEEK,
@@ -114,15 +185,14 @@ export class LoadTestStack extends cdk.Stack {
       {
         cpu: config.COORDINATOR_CPU,
         memoryLimitMiB: config.COORDINATOR_MEMORY_MIB,
+        executionRole: coordinatorRoles.executionRole,
+        taskRole: coordinatorRoles.taskRole,
       }
     );
 
     coordinatorTaskDef.addContainer('coordinator', {
       image: ecs.ContainerImage.fromDockerImageAsset(coordinatorImage),
-      logging: ecs.LogDrivers.awsLogs({
-        logGroup: coordinatorLogGroup,
-        streamPrefix: 'coordinator',
-      }),
+      logging: awsLogsDriver(coordinatorLogGroup, 'coordinator'),
       environment: {
         PORT: '4000',
         PHASE_ADVANCE_STRATEGY: 'all_ready',
@@ -133,14 +203,13 @@ export class LoadTestStack extends cdk.Stack {
     const agentTaskDef = new ecs.FargateTaskDefinition(this, 'AgentTaskDef', {
       cpu: config.AGENT_CPU,
       memoryLimitMiB: config.AGENT_MEMORY_MIB,
+      executionRole: agentRoles.executionRole,
+      taskRole: agentRoles.taskRole,
     });
 
     agentTaskDef.addContainer('agent', {
       image: ecs.ContainerImage.fromDockerImageAsset(agentImage),
-      logging: ecs.LogDrivers.awsLogs({
-        logGroup: agentLogGroup,
-        streamPrefix: 'agent',
-      }),
+      logging: awsLogsDriver(agentLogGroup, 'agent'),
       environment: {
         HEADLESS: 'true',
         SESSIONS_PER_AGENT: '1',
@@ -160,6 +229,9 @@ export class LoadTestStack extends cdk.Stack {
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName(
           'AmazonSSMManagedInstanceCore'
+        ),
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          'CloudWatchAgentServerPolicy'
         ),
       ],
     });
@@ -228,6 +300,7 @@ export class LoadTestStack extends cdk.Stack {
       role: metricsRole,
       userData,
       ssmSessionPermissions: true,
+      detailedMonitoring: true,
     });
 
     const eip = new ec2.CfnEIP(this, 'MetricsEip', {
@@ -261,6 +334,21 @@ export class LoadTestStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ClusterArn', {
       value: cluster.clusterArn,
       description: 'ECS cluster ARN',
+    });
+
+    new cdk.CfnOutput(this, 'ContainerInsights', {
+      value: config.CONTAINER_INSIGHTS,
+      description: 'ECS Container Insights mode (disabled | enabled | enhanced)',
+    });
+
+    new cdk.CfnOutput(this, 'CoordinatorLogGroupName', {
+      value: coordinatorLogGroup.logGroupName,
+      description: 'CloudWatch log group for coordinator tasks',
+    });
+
+    new cdk.CfnOutput(this, 'AgentLogGroupName', {
+      value: agentLogGroup.logGroupName,
+      description: 'CloudWatch log group for agent tasks',
     });
 
     new cdk.CfnOutput(this, 'CoordinatorTaskDefinitionArn', {

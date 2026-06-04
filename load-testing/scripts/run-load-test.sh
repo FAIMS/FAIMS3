@@ -117,6 +117,7 @@ COORD_TASK_ARN="$(aws ecs run-task \
   --cluster "$CLUSTER" \
   --task-definition "$COORD_TASK_DEF" \
   --launch-type FARGATE \
+  --enable-execute-command \
   --network-configuration "$NETWORK_CONFIG" \
   --overrides "$(jq -n --argjson env "$coord_env" '{containerOverrides:[{name:"coordinator",environment:$env}]}')" \
   --region "$AWS_REGION" \
@@ -222,6 +223,7 @@ for i in $(seq 1 "$AGENT_COUNT"); do
     --cluster "$CLUSTER" \
     --task-definition "$AGENT_TASK_DEF" \
     --launch-type FARGATE \
+    --enable-execute-command \
     --network-configuration "$NETWORK_CONFIG" \
     --overrides "$overrides" \
     --region "$AWS_REGION" \

@@ -13,6 +13,8 @@ export const CoordinatorEnvSchema = z.object({
   EXPECTED_AGENT_COUNT: z.coerce.number().int().positive().default(1),
   READINESS_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   PROMETHEUS_PUSHGATEWAY_URL: z.string().url().optional(),
+  /** Debounce interval for batched Pushgateway pushes (default 2s). */
+  METRICS_PUSH_INTERVAL_MS: z.coerce.number().int().positive().default(2000),
   SEQUENCE_PLAN_FILE: z.string().optional(),
 });
 

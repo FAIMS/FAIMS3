@@ -20,12 +20,84 @@ const RUN_STATE_NUMERIC: Record<RunState, number> = {
   complete: 2,
 };
 
+const DEFAULT_PUSH_INTERVAL_MS = 2000;
+const PUSH_WARN_INTERVAL_MS = 30_000;
+
+export interface MetricsServiceOptions {
+  pushIntervalMs?: number;
+}
+
+/** Debounced async flush — coalesces many schedule() calls into periodic pushes. */
+class PushDebouncer {
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private inFlight: Promise<void> | null = null;
+  private flushAgain = false;
+  private lastWarnAt = 0;
+
+  constructor(
+    private readonly intervalMs: number,
+    private readonly push: () => Promise<void>,
+    private readonly label: string
+  ) {}
+
+  schedule(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      void this.flush();
+    }, this.intervalMs);
+  }
+
+  async flush(): Promise<void> {
+    if (this.inFlight) {
+      this.flushAgain = true;
+      await this.inFlight;
+      if (this.flushAgain) {
+        this.flushAgain = false;
+        return this.flush();
+      }
+      return;
+    }
+
+    this.flushAgain = false;
+    this.inFlight = this.push()
+      .catch(err => {
+        const now = Date.now();
+        if (now - this.lastWarnAt >= PUSH_WARN_INTERVAL_MS) {
+          console.warn(`Pushgateway ${this.label} push failed:`, err);
+          this.lastWarnAt = now;
+        }
+      })
+      .finally(() => {
+        this.inFlight = null;
+      });
+
+    await this.inFlight;
+
+    if (this.flushAgain) {
+      this.flushAgain = false;
+      return this.flush();
+    }
+  }
+
+  stop(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+}
+
 export class MetricsService {
   private readonly promRegistry: PromRegistry;
   private readonly agentRegistry: PromRegistry;
   private readonly agentPushgateway: Pushgateway<RegistryContentType> | null;
   private readonly coordinatorPushgateway: Pushgateway<RegistryContentType> | null;
   private readonly testRunId: string;
+  private readonly agentPushDebouncer: PushDebouncer | null;
+  private readonly coordinatorPushDebouncer: PushDebouncer | null;
   private metricsReceived = 0;
 
   private runStateGauge: Gauge;
@@ -37,7 +109,14 @@ export class MetricsService {
   private counters = new Map<string, Counter>();
   private gauges = new Map<string, Gauge>();
 
-  constructor(testRunId: string, pushgatewayUrl?: string) {
+  constructor(
+    testRunId: string,
+    pushgatewayUrl?: string,
+    options: MetricsServiceOptions = {}
+  ) {
+    const pushIntervalMs =
+      options.pushIntervalMs ?? DEFAULT_PUSH_INTERVAL_MS;
+
     this.testRunId = testRunId;
     this.promRegistry = new PromRegistry();
     this.agentRegistry = new PromRegistry();
@@ -77,12 +156,17 @@ export class MetricsService {
     this.coordinatorPushgateway = pushUrl
       ? new Pushgateway(pushUrl, {}, this.promRegistry)
       : null;
-  }
 
-  private pushCoordinatorStateFireAndForget(): void {
-    void this.pushCoordinatorState().catch(err => {
-      console.warn('Pushgateway coordinator push failed:', err);
-    });
+    this.agentPushDebouncer = this.agentPushgateway
+      ? new PushDebouncer(pushIntervalMs, () => this.pushAgentMetrics(), 'agent')
+      : null;
+    this.coordinatorPushDebouncer = this.coordinatorPushgateway
+      ? new PushDebouncer(
+          pushIntervalMs,
+          () => this.pushCoordinatorState(),
+          'coordinator'
+        )
+      : null;
   }
 
   getMetricsReceived(): number {
@@ -101,13 +185,13 @@ export class MetricsService {
         advancedAt / 1000
       );
     }
-    this.pushCoordinatorStateFireAndForget();
+    this.coordinatorPushDebouncer?.schedule();
   }
 
   updateAgentCounts(registered: number, ready: number): void {
     this.registeredAgentsGauge.set(registered);
     this.readyAgentsGauge.set(ready);
-    this.pushCoordinatorStateFireAndForget();
+    this.coordinatorPushDebouncer?.schedule();
   }
 
   private getHistogram(name: string): Histogram {
@@ -194,6 +278,8 @@ export class MetricsService {
         report.durationMs
       );
     }
+
+    this.agentPushDebouncer?.schedule();
   }
 
   async pushCoordinatorState(jobName = 'dass_coordinator'): Promise<void> {
@@ -204,5 +290,15 @@ export class MetricsService {
   async pushAgentMetrics(jobName = 'dass_agent_metrics'): Promise<void> {
     if (!this.agentPushgateway) return;
     await this.agentPushgateway.pushAdd({jobName});
+  }
+
+  /** Flush pending Pushgateway batches (call before shutdown). */
+  async shutdown(): Promise<void> {
+    this.agentPushDebouncer?.stop();
+    this.coordinatorPushDebouncer?.stop();
+    await Promise.all([
+      this.agentPushDebouncer?.flush(),
+      this.coordinatorPushDebouncer?.flush(),
+    ]);
   }
 }

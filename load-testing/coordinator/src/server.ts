@@ -13,7 +13,9 @@ const coordinatorId = createCoordinatorId();
 const testRunId = createTestRunId();
 
 const registry = new Registry(env.EXPECTED_AGENT_COUNT);
-const metrics = new MetricsService(testRunId, env.PROMETHEUS_PUSHGATEWAY_URL);
+const metrics = new MetricsService(testRunId, env.PROMETHEUS_PUSHGATEWAY_URL, {
+  pushIntervalMs: env.METRICS_PUSH_INTERVAL_MS,
+});
 
 const engine = new PlanEngine(plan, testRunId, {
   expectedAgentCount: env.EXPECTED_AGENT_COUNT,
@@ -27,8 +29,12 @@ engine.onPlanChange((runState, advancedAt) => {
   );
   if (runState === 'complete' && engine.allAgentsDone()) {
     setTimeout(() => {
-      console.log('[coordinator] all agents finished — test complete');
-      process.exit(0);
+      void (async () => {
+        console.log('[coordinator] all agents finished — flushing metrics');
+        await metrics.shutdown();
+        console.log('[coordinator] test complete');
+        process.exit(0);
+      })();
     }, 1000);
   }
 });

@@ -34,6 +34,13 @@ export const LoadTestInfraConfigSchema = z
     COORDINATOR_MEMORY_MIB: z.coerce.number().int().positive().default(4096),
     AGENT_CPU: z.coerce.number().int().positive().default(2048),
     AGENT_MEMORY_MIB: z.coerce.number().int().positive().default(4096),
+    /** ECS Container Insights: disabled | enabled | enhanced */
+    CONTAINER_INSIGHTS: z
+      .enum(['disabled', 'enabled', 'enhanced'])
+      .default('enhanced'),
+    ENABLE_VPC_FLOW_LOGS: z
+      .enum(['true', 'false'])
+      .default('true'),
   })
   .refine(
     data => data.COUCH_PASSWORD_SECRET_ARN || data.COUCH_PASSWORD,

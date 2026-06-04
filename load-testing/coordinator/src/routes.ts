@@ -66,15 +66,10 @@ export function createRoutes(
     });
   });
 
-  app.post('/report', zValidator('json', MetricReportSchema), async c => {
+  app.post('/report', zValidator('json', MetricReportSchema), c => {
     const body = c.req.valid('json');
     const promName = metricReportToPrometheusName(body);
     metrics.ingestReport(body, promName);
-    try {
-      await metrics.pushAgentMetrics('dass_agent_metrics');
-    } catch (err) {
-      console.warn('Pushgateway push failed:', err);
-    }
     return c.json({ok: true});
   });
 

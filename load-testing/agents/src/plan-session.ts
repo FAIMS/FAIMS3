@@ -1,4 +1,4 @@
-import type {ActiveStep} from '@faims3/load-testing-shared';
+import type {ActiveStep, StepCompleteRequest} from '@faims3/load-testing-shared';
 import type {BrowserContext, CDPSession, Page} from 'playwright';
 import {CoordinatorClient} from '@faims3/load-testing-shared';
 import type {MetricBuffer} from './metric-buffer.js';
@@ -11,6 +11,63 @@ import {runOnboarding} from './scenarios/onboarding.js';
 import {runPatchyNetwork} from './scenarios/patchy-network.js';
 
 const POLL_MS = 3000;
+const COORDINATOR_RETRY_BASE_MS = 500;
+const COORDINATOR_RETRY_MAX_MS = 5000;
+const COORDINATOR_WARN_INTERVAL_MS = 30_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withCoordinatorRetry<T>(
+  sessionId: string,
+  label: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  let attempt = 0;
+  let lastWarnAt = 0;
+
+  while (true) {
+    try {
+      return await fn();
+    } catch (err) {
+      attempt += 1;
+      const now = Date.now();
+      if (now - lastWarnAt >= COORDINATOR_WARN_INTERVAL_MS) {
+        sessionLog(
+          sessionId,
+          `coordinator ${label} failed (${(err as Error).message}) — retrying`
+        );
+        lastWarnAt = now;
+      }
+      const backoff = Math.min(
+        COORDINATOR_RETRY_MAX_MS,
+        COORDINATOR_RETRY_BASE_MS * attempt
+      );
+      await sleep(backoff);
+    }
+  }
+}
+
+async function getStepResilient(
+  client: CoordinatorClient,
+  agentId: string,
+  sessionId: string
+) {
+  return withCoordinatorRetry(sessionId, 'getStep', () =>
+    client.getStep(agentId)
+  );
+}
+
+async function stepCompleteResilient(
+  client: CoordinatorClient,
+  body: StepCompleteRequest,
+  sessionId: string
+) {
+  return withCoordinatorRetry(sessionId, 'stepComplete', () =>
+    client.stepComplete(body)
+  );
+}
 
 async function waitForRunningStep(
   client: CoordinatorClient,
@@ -18,14 +75,14 @@ async function waitForRunningStep(
   sessionId: string
 ): Promise<ActiveStep | null> {
   while (true) {
-    const {runState, step} = await client.getStep(agentId);
+    const {runState, step} = await getStepResilient(client, agentId, sessionId);
     if (runState === 'complete') {
       return null;
     }
     if (runState === 'running' && step) {
       return step;
     }
-    await new Promise(r => setTimeout(r, POLL_MS));
+    await sleep(POLL_MS);
     sessionLog(sessionId, `waiting for plan start (runState=${runState})…`);
   }
 }
@@ -37,17 +94,18 @@ function isNewStepInstance(completed: ActiveStep, next: ActiveStep): boolean {
 async function waitForNextStep(
   client: CoordinatorClient,
   agentId: string,
+  sessionId: string,
   completedStep: ActiveStep
 ): Promise<ActiveStep | null> {
   while (true) {
-    const {runState, step} = await client.getStep(agentId);
+    const {runState, step} = await getStepResilient(client, agentId, sessionId);
     if (runState === 'complete' || !step) {
       return null;
     }
     if (isNewStepInstance(completedStep, step)) {
       return step;
     }
-    await new Promise(r => setTimeout(r, POLL_MS));
+    await sleep(POLL_MS);
   }
 }
 
@@ -99,11 +157,15 @@ export async function executeSequencePlan(
   while (step) {
     metricBuffer.setStepId(step.id);
     await runPlanStep(step, page, context, cdp, metricBuffer, ctx);
-    await client.stepComplete({
-      agentId: ctx.agentId,
-      stepId: step.id,
-      sessionCount: 1,
-    });
-    step = await waitForNextStep(client, ctx.agentId, step);
+    await stepCompleteResilient(
+      client,
+      {
+        agentId: ctx.agentId,
+        stepId: step.id,
+        sessionCount: 1,
+      },
+      ctx.sessionId
+    );
+    step = await waitForNextStep(client, ctx.agentId, ctx.sessionId, step);
   }
 }
