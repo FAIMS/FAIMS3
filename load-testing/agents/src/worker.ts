@@ -120,21 +120,28 @@ async function main(): Promise<void> {
     msg: IpcMessage,
     metrics: MetricsClient
   ): Promise<void> {
-    if (msg.type === 'metric' && msg.payload) {
-      const report = normalizeMetricReport(msg.payload as MetricReport);
-      await metrics.send(report);
-    }
-    if (msg.type === 'error') {
-      const message = String(
-        (msg.payload as {message?: string})?.message ?? 'unknown'
+    try {
+      if (msg.type === 'metric' && msg.payload) {
+        const report = normalizeMetricReport(msg.payload as MetricReport);
+        await metrics.send(report);
+      }
+      if (msg.type === 'error') {
+        const message = String(
+          (msg.payload as {message?: string})?.message ?? 'unknown'
+        );
+        console.error(`[worker] session ${msg.sessionId ?? '?'} error: ${message}`);
+        await metricsClient.send({
+          type: 'session_error',
+          errorType: 'session_error',
+          message,
+          sessionId: msg.sessionId,
+        });
+      }
+    } catch (err) {
+      console.warn(
+        '[worker] failed to forward session message to coordinator:',
+        (err as Error).message
       );
-      console.error(`[worker] session ${msg.sessionId ?? '?'} error: ${message}`);
-      await metricsClient.send({
-        type: 'session_error',
-        errorType: 'session_error',
-        message,
-        sessionId: msg.sessionId,
-      });
     }
   }
 
