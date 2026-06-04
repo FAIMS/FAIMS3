@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "split-online-patchy-loops",
-  "description": "Onboarding, then 5×(2min: half online / half patchy split), then 4min all-online surveying.",
+  "description": "Onboarding, then 5×(45s: half online / half patchy split), then 60s all-online finale. Shorter timers for quicker loop validation.",
   "steps": [
     {
       "id": "onboarding",
@@ -12,7 +12,7 @@
     },
     {
       "id": "mixed_cycles",
-      "label": "Five rounds of 50/50 online vs patchy (2 min each branch)",
+      "label": "Five rounds of 50/50 online vs patchy (45s each branch)",
       "loop": {
         "count": 5,
         "steps": [
@@ -31,10 +31,10 @@
                       "id": "cycle_online",
                       "kind": "online_collection",
                       "label": "Online surveying",
-                      "durationMs": 120000,
+                      "durationMs": 45000,
                       "advance": "timer",
                       "config": {
-                        "recordIntervalMs": 5000
+                        "recordIntervalMs": 4000
                       }
                     }
                   ]
@@ -47,15 +47,15 @@
                     {
                       "id": "cycle_patchy",
                       "kind": "patchy_network",
-                      "label": "Patchy surveying (~30s cycles)",
-                      "durationMs": 120000,
+                      "label": "Patchy surveying (~15s cycles)",
+                      "durationMs": 45000,
                       "advance": "timer",
                       "config": {
-                        "cycleMs": 30000,
-                        "cycleJitterMs": 8000,
-                        "offlineDurationMs": 12000,
-                        "offlineJitterMs": 4000,
-                        "recordIntervalMs": 5000
+                        "cycleMs": 15000,
+                        "cycleJitterMs": 4000,
+                        "offlineDurationMs": 6000,
+                        "offlineJitterMs": 2000,
+                        "recordIntervalMs": 4000
                       }
                     }
                   ]
@@ -71,10 +71,10 @@
       "id": "all_online_finale",
       "kind": "online_collection",
       "label": "Everyone online — final survey push",
-      "durationMs": 240000,
+      "durationMs": 60000,
       "advance": "timer",
       "config": {
-        "recordIntervalMs": 5000
+        "recordIntervalMs": 4000
       }
     }
   ]

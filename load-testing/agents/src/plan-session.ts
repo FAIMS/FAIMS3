@@ -30,17 +30,21 @@ async function waitForRunningStep(
   }
 }
 
+function isNewStepInstance(completed: ActiveStep, next: ActiveStep): boolean {
+  return completed.id !== next.id || completed.startedAt !== next.startedAt;
+}
+
 async function waitForNextStep(
   client: CoordinatorClient,
   agentId: string,
-  previousStepId: string
+  completedStep: ActiveStep
 ): Promise<ActiveStep | null> {
   while (true) {
     const {runState, step} = await client.getStep(agentId);
     if (runState === 'complete' || !step) {
       return null;
     }
-    if (step.id !== previousStepId) {
+    if (isNewStepInstance(completedStep, step)) {
       return step;
     }
     await new Promise(r => setTimeout(r, POLL_MS));
@@ -100,6 +104,6 @@ export async function executeSequencePlan(
       stepId: step.id,
       sessionCount: 1,
     });
-    step = await waitForNextStep(client, ctx.agentId, step.id);
+    step = await waitForNextStep(client, ctx.agentId, step);
   }
 }
