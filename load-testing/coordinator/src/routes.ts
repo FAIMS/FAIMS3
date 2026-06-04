@@ -57,7 +57,7 @@ export function createRoutes(
     const promName = metricReportToPrometheusName(body);
     metrics.ingestReport(body, promName);
     try {
-      await metrics.pushMetrics('dass_agent_metrics');
+      await metrics.pushAgentMetrics('dass_agent_metrics');
     } catch (err) {
       console.warn('Pushgateway push failed:', err);
     }

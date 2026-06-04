@@ -1,6 +1,12 @@
 import {DASS_MEASURES} from '@faims3/instrumentation';
 import type {BrowserContext, CDPSession, Page} from 'playwright';
 import {getNotebookUrl} from '../notebook-url.js';
+import {
+  addRecordButton,
+  finishAnywayButton,
+  finishRecordButton,
+  saveRecordIndicator,
+} from '../selectors.js';
 import {sessionLog} from '../session-log.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 import type {SessionContext} from '../types.js';
@@ -14,7 +20,7 @@ export async function runOfflineCollection(
 ): Promise<void> {
   const {env} = ctx;
 
-  const addBtn = page.getByTestId('add-record-button');
+  const addBtn = addRecordButton(page);
   if ((await addBtn.count()) === 0) {
     const notebookUrl = getNotebookUrl(env);
     sessionLog(ctx.sessionId, `navigating to notebook ${notebookUrl}`);
@@ -70,7 +76,7 @@ export async function runOfflineCollection(
       await field.fill(`load-test-${recordIndex}-${Date.now()}`);
 
       const saveStart = Date.now();
-      const saved = page.getByTestId('save-record-indicator');
+      const saved = saveRecordIndicator(page);
       const saveConfirmed = await saved
         .waitFor({timeout: 10000})
         .then(() => true)
@@ -101,13 +107,11 @@ export async function runOfflineCollection(
       // field, required fields stay incomplete and the app shows a "Finish
       // anyway" confirmation before it closes the record and returns to the
       // list. Click Finish, then confirm "Finish anyway" if the dialog appears.
-      const finishBtn = page
-        .locator('[data-testid^="nav-button-finish"]')
-        .first();
+      const finishBtn = finishRecordButton(page);
       if (await finishBtn.count()) {
         await finishBtn.click();
 
-        const finishAnyway = page.getByTestId('finish-anyway-button');
+        const finishAnyway = finishAnywayButton(page);
         const guarded = await finishAnyway
           .waitFor({timeout: 5000})
           .then(() => true)

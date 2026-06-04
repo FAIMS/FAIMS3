@@ -16,8 +16,30 @@ install_docker_compose
 # Write .env values with jq @json so passwords containing =, #, $, etc. stay intact.
 append_env_var() {
   local key=$1 value=$2
-  jq -n --arg k "$key" --arg v "$value" '"\($k)=\($v | @json)"' >> .env
+  jq -rn --arg k "$key" --arg v "$value" '"\($k)=\($v | @json)"' >> .env
 }
+
+if [[ -n "${COUCH_PASSWORD_SECRET_ARN:-}" ]]; then
+  secret_json="$(aws secretsmanager get-secret-value \
+    --secret-id "$COUCH_PASSWORD_SECRET_ARN" \
+    --query SecretString \
+    --output text)"
+  COUCH_PASSWORD="$(printf '%s' "$secret_json" | jq -r .password | tr -d '\r')"
+  secret_user="$(printf '%s' "$secret_json" | jq -r '.username // empty')"
+  if [[ -n "$secret_user" && "$secret_user" != "null" ]]; then
+    COUCH_USER="$secret_user"
+  fi
+elif [[ -n "${COUCH_PASSWORD:-}" ]]; then
+  COUCH_PASSWORD="$(printf '%s' "$COUCH_PASSWORD" | tr -d '\r')"
+else
+  echo "Set COUCH_PASSWORD or COUCH_PASSWORD_SECRET_ARN before running bootstrap" >&2
+  exit 1
+fi
+
+if [[ -z "${COUCH_PASSWORD}" || "${COUCH_PASSWORD}" == "null" ]]; then
+  echo "COUCH_PASSWORD is empty after resolving credentials" >&2
+  exit 1
+fi
 
 : > .env
 append_env_var COUCHDB_EXPORTER_URL "$COUCHDB_EXPORTER_URL"
@@ -27,25 +49,10 @@ append_env_var PROMETHEUS_PORT "${PROMETHEUS_PORT:-9090}"
 append_env_var PUSHGATEWAY_PORT "${PUSHGATEWAY_PORT:-9091}"
 append_env_var GRAFANA_PORT "${GRAFANA_PORT:-3030}"
 append_env_var COUCHDB_EXPORTER_PORT "${COUCHDB_EXPORTER_PORT:-9984}"
-
-if [[ -n "${COUCH_PASSWORD_SECRET_ARN:-}" ]]; then
-  COUCH_PASSWORD="$(aws secretsmanager get-secret-value \
-    --secret-id "$COUCH_PASSWORD_SECRET_ARN" \
-    --query SecretString \
-    --output text | jq -r .password)"
-elif [[ -n "${COUCH_PASSWORD:-}" ]]; then
-  :
-else
-  echo "Set COUCH_PASSWORD or COUCH_PASSWORD_SECRET_ARN before running bootstrap" >&2
-  exit 1
-fi
-
-if [[ -z "${COUCH_PASSWORD}" ]]; then
-  echo "COUCH_PASSWORD is empty after resolving credentials" >&2
-  exit 1
-fi
-
 append_env_var COUCH_PASSWORD "$COUCH_PASSWORD"
+append_env_var COUCHDB_URI "$COUCHDB_EXPORTER_URL"
+append_env_var COUCHDB_USERNAME "$COUCH_USER"
+append_env_var COUCHDB_PASSWORD "$COUCH_PASSWORD"
 
 chmod -R a+rX "$INSTALL_DIR"
 

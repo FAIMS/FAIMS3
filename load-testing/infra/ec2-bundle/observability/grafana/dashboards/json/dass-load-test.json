@@ -81,11 +81,11 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "id": 5,
       "targets": [
-        {"expr": "histogram_quantile(0.5, sum(rate(dass_record_create_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "p50"},
-        {"expr": "histogram_quantile(0.95, sum(rate(dass_record_create_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "p95"},
-        {"expr": "histogram_quantile(0.99, sum(rate(dass_record_create_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "p99"}
+        {"expr": "histogram_quantile(0.5, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p99"}
       ],
-      "title": "Record create latency",
+      "title": "Record create latency (selected range)",
       "type": "timeseries"
     },
     {
@@ -130,9 +130,10 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 25},
       "id": 9,
       "targets": [
-        {"expr": "histogram_quantile(0.95, sum(rate(dass_sync_duration_ms_bucket[$__rate_interval])) by (le, name))", "legendFormat": "{{name}}"}
+        {"expr": "histogram_quantile(0.5, sum(increase(dass_sync_duration_ms_bucket[$__range])) by (le, name))", "legendFormat": "{{name}} p50"},
+        {"expr": "histogram_quantile(0.95, sum(increase(dass_sync_duration_ms_bucket[$__range])) by (le, name))", "legendFormat": "{{name}} p95"}
       ],
-      "title": "Sync duration",
+      "title": "Sync duration (selected range)",
       "type": "timeseries"
     },
     {
@@ -208,5 +209,5 @@
   "timezone": "browser",
   "title": "DASS Load Test",
   "uid": "dass-load-test",
-  "version": 1
+  "version": 2
 }

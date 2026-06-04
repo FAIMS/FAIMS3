@@ -34,7 +34,8 @@ services:
       - '${COUCHDB_EXPORTER_PORT:-9984}:9984'
     env_file:
       - .env
-    command:
-      - --couchdb.uri=${COUCHDB_EXPORTER_URL}
-      - --couchdb.username=${COUCH_USER:-admin}
-      - --couchdb.password=${COUCH_PASSWORD}
+    environment:
+      # gesellix reads COUCHDB_* env vars (not COUCH_USER / COUCH_PASSWORD from env_file)
+      COUCHDB_URI: ${COUCHDB_EXPORTER_URL}
+      COUCHDB_USERNAME: ${COUCHDB_USERNAME:-${COUCH_USER:-admin}}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-${COUCH_PASSWORD}}

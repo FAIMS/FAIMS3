@@ -83,6 +83,31 @@ Or terminate the metrics EC2 instance and redeploy after a CDK update (user-data
 
 Grafana: `http://<MetricsDnsName>:3030`
 
+## Metrics pipeline (AWS vs local)
+
+| Metric | Local dev | AWS |
+|--------|-----------|-----|
+| Phase (`dass_test_phase`, agent counts) | Prometheus scrapes `host.docker.internal:4000/metrics` | Coordinator **pushes** job `dass_coordinator` to Pushgateway |
+| Agent timings (record create, sync, …) | Coordinator pushes job `dass_agent_metrics` to Pushgateway | Same |
+
+Prometheus on metrics EC2 only scrapes **Pushgateway** and **couchdb-exporter** (not the ephemeral coordinator task).
+
+If Grafana panels are empty after a successful run:
+
+```bash
+cd load-testing/scripts
+COORDINATOR_URL=http://<coord-public-ip>:4000 ./debug-metrics.sh
+```
+
+On the metrics EC2 instance (SSM):
+
+```bash
+curl -s localhost:9091/metrics | grep '^dass_' | head
+curl -s 'localhost:9090/api/v1/query?query=dass_test_phase' | jq '.data.result'
+```
+
+Coordinator CloudWatch logs: search for `Pushgateway coordinator push failed` or `Pushgateway push failed`.
+
 ## Run a load test
 
 ```bash

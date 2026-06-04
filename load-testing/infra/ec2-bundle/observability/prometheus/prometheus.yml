@@ -7,12 +7,9 @@ scrape_configs:
     static_configs:
       - targets: ['pushgateway:9091']
 
-  # Coordinator runs as ephemeral ECS task — add a static scrape target manually
-  # after run-load-test.sh prints the coordinator private IP, or rely on
-  # pushgateway for agent/coordinator pushed metrics.
-  # - job_name: coordinator
-  #   static_configs:
-  #     - targets: ['<coordinator-task-ip>:4000']
+  # Phase/coordinator gauges (dass_test_phase, dass_ready_agents, …) and agent
+  # histograms are pushed to pushgateway by the ephemeral ECS coordinator task.
+  # Local dev also scrapes host.docker.internal:4000/metrics directly.
 
   - job_name: couchdb
     static_configs:

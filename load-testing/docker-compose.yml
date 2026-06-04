@@ -36,9 +36,9 @@ services:
       - '${COUCHDB_EXPORTER_PORT:-9984}:9984'
     env_file:
       - .env
-    command:
-      - --couchdb.uri=${COUCHDB_EXPORTER_URL:-http://host.docker.internal:5984}
-      - --couchdb.username=${COUCH_USER:-admin}
-      - --couchdb.password=${COUCH_PASSWORD}
+    environment:
+      COUCHDB_URI: ${COUCHDB_EXPORTER_URL:-http://host.docker.internal:5984}
+      COUCHDB_USERNAME: ${COUCHDB_USERNAME:-${COUCH_USER:-admin}}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-${COUCH_PASSWORD}}
     extra_hosts:
       - 'host.docker.internal:host-gateway'

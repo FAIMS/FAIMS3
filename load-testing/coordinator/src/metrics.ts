@@ -18,7 +18,8 @@ import {
 export class MetricsService {
   private readonly promRegistry: PromRegistry;
   private readonly agentRegistry: PromRegistry;
-  private readonly pushgateway: Pushgateway<RegistryContentType> | null;
+  private readonly agentPushgateway: Pushgateway<RegistryContentType> | null;
+  private readonly coordinatorPushgateway: Pushgateway<RegistryContentType> | null;
   private readonly testRunId: string;
   private metricsReceived = 0;
 
@@ -63,10 +64,20 @@ export class MetricsService {
       registers: [this.promRegistry],
     });
 
-    this.pushgateway =
-      pushgatewayUrl && pushgatewayUrl.length > 0
-        ? new Pushgateway(pushgatewayUrl, {}, this.agentRegistry)
-        : null;
+    const pushUrl =
+      pushgatewayUrl && pushgatewayUrl.length > 0 ? pushgatewayUrl : undefined;
+    this.agentPushgateway = pushUrl
+      ? new Pushgateway(pushUrl, {}, this.agentRegistry)
+      : null;
+    this.coordinatorPushgateway = pushUrl
+      ? new Pushgateway(pushUrl, {}, this.promRegistry)
+      : null;
+  }
+
+  private pushCoordinatorStateFireAndForget(): void {
+    void this.pushCoordinatorState().catch(err => {
+      console.warn('Pushgateway coordinator push failed:', err);
+    });
   }
 
   getMetricsReceived(): number {
@@ -83,11 +94,13 @@ export class MetricsService {
       {phase, testRunId: this.testRunId},
       advancedAt / 1000
     );
+    this.pushCoordinatorStateFireAndForget();
   }
 
   updateAgentCounts(registered: number, ready: number): void {
     this.registeredAgentsGauge.set(registered);
     this.readyAgentsGauge.set(ready);
+    this.pushCoordinatorStateFireAndForget();
   }
 
   private getHistogram(name: string): Histogram {
@@ -176,8 +189,20 @@ export class MetricsService {
     }
   }
 
-  async pushMetrics(jobName = 'dass_coordinator'): Promise<void> {
-    if (!this.pushgateway) return;
-    await this.pushgateway.pushAdd({jobName});
+  async pushCoordinatorState(
+    jobName = 'dass_coordinator'
+  ): Promise<void> {
+    if (!this.coordinatorPushgateway) return;
+    await this.coordinatorPushgateway.pushAdd({jobName});
+  }
+
+  async pushAgentMetrics(jobName = 'dass_agent_metrics'): Promise<void> {
+    if (!this.agentPushgateway) return;
+    await this.agentPushgateway.pushAdd({jobName});
+  }
+
+  /** @deprecated use pushAgentMetrics */
+  async pushMetrics(jobName = 'dass_agent_metrics'): Promise<void> {
+    await this.pushAgentMetrics(jobName);
   }
 }

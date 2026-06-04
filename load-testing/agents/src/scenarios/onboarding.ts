@@ -2,6 +2,11 @@ import {mkdir} from 'fs/promises';
 import path from 'path';
 import type {Page} from 'playwright';
 import {getNotebookUrl} from '../notebook-url.js';
+import {
+  addRecordButton,
+  notebookActivateButton,
+  notebookActivateConfirm,
+} from '../selectors.js';
 import {sessionLog} from '../session-log.js';
 import type {SessionContext} from '../types.js';
 
@@ -87,6 +92,23 @@ async function captureFailureScreenshot(
     );
     return undefined;
   }
+}
+
+async function focusNotActiveNotebooks(page: Page, sessionId: string): Promise<void> {
+  const notActiveTab = page.getByRole('tab', {name: /not active/i});
+  if ((await notActiveTab.count()) > 0) {
+    sessionLog(sessionId, 'notebook list layout: tabs');
+    await notActiveTab.first().waitFor({state: 'visible', timeout: 30000});
+    await notActiveTab.first().click();
+    return;
+  }
+
+  sessionLog(sessionId, 'notebook list layout: headings');
+  // Headings layout renders both grids; wait for the not-active section label.
+  await page
+    .getByText('Not Active', {exact: true})
+    .first()
+    .waitFor({state: 'visible', timeout: 30000});
 }
 
 async function step<T>(
@@ -495,24 +517,22 @@ export async function runOnboarding(
 
     // Make sure we're on the workspace/home page where the notebook list lives.
     // Avoid 'networkidle' - live sync can keep the network busy indefinitely;
-    // readiness is asserted by waiting for the "Not Active" tab below.
+    // readiness is asserted by waiting for the not-active list below.
     await page.goto(env.DASS_APP_URL, {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
 
-    // Open the "Not Active" tab - un-activated notebooks only show there.
-    const notActiveTab = page.getByRole('tab', {name: /not active/i});
-    await notActiveTab.waitFor({timeout: 30000});
-    await notActiveTab.click();
+    // Tabs: click "Not Active". Headings: both sections are already visible.
+    await focusNotActiveNotebooks(page, ctx.sessionId);
 
     // The notebook list is a MUI DataGrid; each row's data-id is its projectId.
     // Target our notebook's row specifically, falling back to the first row if
     // we can't match it (e.g. only one notebook is present).
     const row = page.locator(`[role="row"][data-id="${projectId}"]`);
     const activateButton = (await row.count())
-      ? row.getByTestId('notebook-activate-button')
-      : page.getByTestId('notebook-activate-button').first();
+      ? notebookActivateButton(page, row)
+      : notebookActivateButton(page);
 
     if (!(await row.count())) {
       sessionLog(
@@ -526,7 +546,7 @@ export async function runOnboarding(
     await activateButton.click();
 
     // Confirm activation in the dialog.
-    const confirmBtn = page.getByTestId('notebook-activate-confirm');
+    const confirmBtn = notebookActivateConfirm(page);
     await confirmBtn.waitFor({timeout: 15000});
     await confirmBtn.click();
 
@@ -598,7 +618,7 @@ export async function runOnboarding(
   });
 
   await step(page, ctx, 'await-add-record-button', async () => {
-    await page.getByTestId('add-record-button').waitFor({timeout: 15000});
+    await addRecordButton(page).waitFor({timeout: 15000});
     sessionLog(ctx.sessionId, `add record button visible`);
   });
 

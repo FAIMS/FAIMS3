@@ -37,9 +37,18 @@ AGENT_COUNT="${AGENT_COUNT:-1}"
 NOTEBOOK_NAME="${NOTEBOOK_NAME:-survey}"
 PARTICIPATE_IN_EXPORT="${PARTICIPATE_IN_EXPORT:-false}"
 OFFLINE_DURATION_MS="${OFFLINE_DURATION_MS:-30000}"
+# How long the coordinator keeps OFFLINE_COLLECTION before SYNC_STORM.
+# Defaults to agent offline duration + 60s so agents can finish their loop.
+OFFLINE_COLLECTION_DURATION_MS="${OFFLINE_COLLECTION_DURATION_MS:-$((OFFLINE_DURATION_MS + 60000))}"
+EXPORT_STRESS_DURATION_MS="${EXPORT_STRESS_DURATION_MS:-15000}"
 SYNC_STORM_DELAY_MS="${SYNC_STORM_DELAY_MS:-60000}"
 WAIT_TIMEOUT_SEC="${WAIT_TIMEOUT_SEC:-3600}"
 EXPECTED_AGENT_COUNT="${EXPECTED_AGENT_COUNT:-$AGENT_COUNT}"
+
+if [[ "$OFFLINE_COLLECTION_DURATION_MS" -lt "$OFFLINE_DURATION_MS" ]]; then
+  echo "OFFLINE_COLLECTION_DURATION_MS (${OFFLINE_COLLECTION_DURATION_MS}) must be >= OFFLINE_DURATION_MS (${OFFLINE_DURATION_MS})" >&2
+  exit 1
+fi
 
 stack_output() {
   local key="$1"
@@ -80,6 +89,7 @@ METRICS_PRIVATE_IP="$(aws ec2 describe-instances \
 PUSHGATEWAY_URL="http://${METRICS_PRIVATE_IP}:9091"
 echo "Pushgateway: ${PUSHGATEWAY_URL}"
 echo "Grafana:     http://${METRICS_DNS}:3030"
+echo "Timing:      offline collection ${OFFLINE_COLLECTION_DURATION_MS}ms (coordinator), agent records ${OFFLINE_DURATION_MS}ms, sync wait ${SYNC_STORM_DELAY_MS}ms"
 
 NETWORK_CONFIG="$(jq -n \
   --arg subnets "$SUBNETS" \
@@ -93,7 +103,12 @@ NETWORK_CONFIG="$(jq -n \
 coord_env="$(jq -n \
   --arg n "$EXPECTED_AGENT_COUNT" \
   --arg pg "$PUSHGATEWAY_URL" \
-  '[{name:"EXPECTED_AGENT_COUNT",value:$n},{name:"PROMETHEUS_PUSHGATEWAY_URL",value:$pg}]')"
+  --arg offlinePhase "$OFFLINE_COLLECTION_DURATION_MS" \
+  --arg exportPhase "$EXPORT_STRESS_DURATION_MS" \
+  '[{name:"EXPECTED_AGENT_COUNT",value:$n},
+    {name:"PROMETHEUS_PUSHGATEWAY_URL",value:$pg},
+    {name:"OFFLINE_COLLECTION_DURATION_MS",value:$offlinePhase},
+    {name:"EXPORT_STRESS_DURATION_MS",value:$exportPhase}]')"
 
 echo "Starting coordinator task (expecting ${EXPECTED_AGENT_COUNT} agent(s))…"
 
@@ -157,6 +172,7 @@ COORD_PUBLIC_IP="$(aws ec2 describe-network-interfaces \
 
 COORDINATOR_URL="http://${COORD_PUBLIC_IP}:4000"
 echo "Coordinator URL: ${COORDINATOR_URL}"
+echo "Metrics debug:   COORDINATOR_URL=${COORDINATOR_URL} ${SCRIPT_DIR}/debug-metrics.sh"
 
 echo "Waiting for coordinator /health…"
 health_elapsed=0

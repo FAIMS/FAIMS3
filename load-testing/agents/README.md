@@ -13,17 +13,21 @@ Playwright-based browser workers. Each container runs a supervisor (`worker.ts`)
 
 ## data-testid contract
 
-Agents rely on these stable selectors in the collection app:
+Agents prefer these stable selectors when the instrumented app build is deployed.
+`src/selectors.ts` also provides **label/role fallbacks** so load tests can run
+against older dev stacks (main) that lack the test ids — remove those fallbacks
+once dev runs this branch.
 
-| testid | Element |
-|--------|---------|
-| `notebook-activate-button` | Activate notebook button |
-| `notebook-activate-confirm` | Activation dialog confirm |
-| `add-record-button` | Add new record |
-| `save-record-indicator` | "Saved" indicator after debounced save |
-| `sync-status-icon` | Sync status cloud button |
-| `sync-status-syncing` | Present while sync in progress |
-| `sync-status-idle` | Present when sync idle |
+| testid | Element | Fallback (main branch) |
+|--------|---------|------------------------|
+| `notebook-activate-button` | Activate notebook button | `button` named "Activate" |
+| `notebook-activate-confirm` | Activation dialog confirm | dialog `button` named "Activate" |
+| `add-record-button` | Add new record | `button` matching `/add new/i` |
+| `save-record-indicator` | "Saved" after debounced save | text "Saved" |
+| `sync-status-icon` | Sync cloud control | first button in `#app-bar` toolbar trailing cluster |
+| `sync-status-syncing` / `sync-status-idle` | Sync state markers | sync status popover table |
+| `nav-button-finish*` | Finish record | `button` matching `/^Finish /i` |
+| `finish-anyway-button` | Incomplete-form confirm | `button` named "Finish anyway" |
 
 ## Development
 
