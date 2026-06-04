@@ -236,9 +236,37 @@ echo "Load test running."
 echo "  Coordinator task: ${COORD_TASK_ARN}"
 echo "  Grafana:          http://${METRICS_DNS}:3030"
 echo ""
-echo "Monitor coordinator:"
-echo "  curl ${COORDINATOR_URL}/status"
+STATUS_POLL_INTERVAL_SEC="${STATUS_POLL_INTERVAL_SEC:-5}"
+export COORDINATOR_URL
+echo "Live status (Ctrl+C to stop polling; test continues):"
 echo ""
+
+poll_coordinator_once() {
+  local script="${SCRIPT_DIR}/poll-coordinator-status.sh"
+  if [[ ! -x "$script" ]]; then
+    chmod +x "$script"
+  fi
+  "$script" --once
+}
+
+# Poll status in background while waiting for coordinator to stop
+(
+  sleep 2
+  while true; do
+    if ! poll_coordinator_once; then
+      break
+    fi
+    run_state="$(curl -sf "${COORDINATOR_URL}/status" 2>/dev/null | jq -r '.runState // empty')" || break
+    if [[ "$run_state" == "complete" ]]; then
+      sleep 1
+      poll_coordinator_once || true
+      break
+    fi
+    sleep "$STATUS_POLL_INTERVAL_SEC"
+  done
+) &
+POLL_PID=$!
+
 echo "Waiting for coordinator task to stop (test complete)…"
 
 wait_task_stopped() {
@@ -264,4 +292,11 @@ wait_task_stopped() {
 }
 
 wait_task_stopped "$COORD_TASK_ARN"
+kill "$POLL_PID" 2>/dev/null || true
+wait "$POLL_PID" 2>/dev/null || true
+
+echo ""
+echo "Final status:"
+"${SCRIPT_DIR}/poll-coordinator-status.sh" --once || true
+
 echo "Coordinator finished. Check agent tasks in ECS console or CloudWatch logs."

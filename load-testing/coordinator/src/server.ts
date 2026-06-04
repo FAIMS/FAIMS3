@@ -1,4 +1,5 @@
 import {serve} from '@hono/node-server';
+import {analyzePlan} from '@faims3/load-testing-shared';
 import {loadSequencePlanFromEnv, parseCoordinatorEnv} from './config';
 import {MetricsService} from './metrics';
 import {PlanEngine} from './plan-engine';
@@ -7,6 +8,7 @@ import {Registry, createCoordinatorId, createTestRunId} from './registry';
 
 const env = parseCoordinatorEnv();
 const plan = loadSequencePlanFromEnv();
+const planAnalysis = analyzePlan(plan);
 const coordinatorId = createCoordinatorId();
 const testRunId = createTestRunId();
 
@@ -34,10 +36,16 @@ engine.onPlanChange((runState, advancedAt) => {
 metrics.recordRunStateChange('waiting_for_agents', Date.now());
 engine.startReadinessTimeout();
 
-const app = createRoutes(registry, engine, metrics, coordinatorId);
+const app = createRoutes(
+  registry,
+  engine,
+  metrics,
+  coordinatorId,
+  planAnalysis
+);
 
 console.log(
-  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, plan=${plan.name ?? 'unnamed'}, expecting ${env.EXPECTED_AGENT_COUNT} agent(s)`
+  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, plan=${plan.name ?? 'unnamed'}, est=${Math.round(planAnalysis.estimatedDurationMs / 1000)}s, expecting ${env.EXPECTED_AGENT_COUNT} agent(s)`
 );
 
 serve({fetch: app.fetch, port: env.PORT});

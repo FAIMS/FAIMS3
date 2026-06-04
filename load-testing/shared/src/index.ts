@@ -5,3 +5,4 @@ export * from './export-schemas';
 export * from './sequence-plan';
 export * from './plan-cursor';
 export * from './split-assignment';
+export * from './plan-progress';

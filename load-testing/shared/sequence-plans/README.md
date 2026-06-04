@@ -71,6 +71,7 @@ Each phase supports `durationMs` + `advance` (`timer`, `all_agents_done`, `major
 | `legacy-default.json` | Short onboarding → offline+sync → export |
 | `online-offline-loops-patchy.json` | Onboarding → 2×(online → offline) → patchy |
 | `long-offline-loop.json` | 5min online/offline cycles + 10min patchy |
+| `split-online-patchy-loops.json` | 5×(2min 50/50 online vs patchy) + 4min all online |
 | `split-online-offline.json` | 50/50 split then patchy |
 
 ## Metrics

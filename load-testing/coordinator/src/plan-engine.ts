@@ -23,8 +23,37 @@ interface AgentRuntime {
   cursor: AgentCursor;
   ready: boolean;
   done: boolean;
-  /** step id the agent is blocked on until barrier releases */
   blockedOnStepId: string | null;
+}
+
+export interface CompletedStepRecord {
+  stepId: string;
+  kind: string;
+  completedAt: number;
+  agentCount: number;
+}
+
+export interface ActiveBarrierInfo {
+  stepId: string;
+  advance: StepAdvanceMode;
+  startedAt: number;
+  durationMs?: number;
+  endsAt?: number;
+  completedAgents: number;
+  totalAgents: number;
+  waitingOn: string;
+}
+
+export interface AgentDetail {
+  agentId: string;
+  index: number;
+  ready: boolean;
+  done: boolean;
+  stepId?: string;
+  stepKind?: string;
+  branchId?: string;
+  blockedOnStepId?: string | null;
+  step?: ActiveStep | null;
 }
 
 interface StepBarrier {
@@ -68,6 +97,8 @@ export class PlanEngine {
   private runState: RunState = 'waiting_for_agents';
   private advancedAt = Date.now();
   private startedAt = Date.now();
+  private runStartedAt: number | null = null;
+  private completedSteps: CompletedStepRecord[] = [];
   private readinessTimer: ReturnType<typeof setTimeout> | null = null;
   private nextAgentIndex = 0;
 
@@ -99,6 +130,70 @@ export class PlanEngine {
 
   getStartedAt(): number {
     return this.startedAt;
+  }
+
+  getRunStartedAt(): number | null {
+    return this.runStartedAt;
+  }
+
+  getCompletedSteps(): CompletedStepRecord[] {
+    return [...this.completedSteps];
+  }
+
+  getActiveBarriers(): ActiveBarrierInfo[] {
+    const now = Date.now();
+    const total = this.agents.size;
+    return [...this.barriers.values()].map(barrier => {
+      const completed = barrier.completed.size;
+      let waitingOn = 'agents';
+      if (barrier.advance === 'timer') {
+        waitingOn = 'timer';
+      } else if (barrier.advance === 'timer_or_all_done' && completed < total) {
+        waitingOn = completed > 0 ? 'timer_or_agents' : 'timer_or_agents';
+      }
+      return {
+        stepId: barrier.stepId,
+        advance: barrier.advance,
+        startedAt: barrier.startedAt,
+        durationMs: barrier.durationMs,
+        endsAt:
+          barrier.durationMs !== undefined
+            ? barrier.startedAt + barrier.durationMs
+            : undefined,
+        completedAgents: completed,
+        totalAgents: total,
+        waitingOn,
+      };
+    });
+  }
+
+  getAgentDetails(): AgentDetail[] {
+    return [...this.agents.values()].map(agent => {
+      let step: ActiveStep | null = null;
+      let phase = null;
+      if (this.runState === 'running' && !agent.done && !isPlanComplete(agent.cursor)) {
+        phase = resolvePhaseStep(
+          agent.cursor,
+          agent.index,
+          agent.agentId,
+          this.testRunId
+        );
+        if (phase) {
+          step = this.toActiveStep(agent, phase);
+        }
+      }
+      return {
+        agentId: agent.agentId,
+        index: agent.index,
+        ready: agent.ready,
+        done: agent.done,
+        stepId: step?.id ?? phase?.id,
+        stepKind: step?.kind ?? phase?.kind,
+        branchId: step?.branchId,
+        blockedOnStepId: agent.blockedOnStepId,
+        step,
+      };
+    });
   }
 
   getTestRunId(): string {
@@ -251,7 +346,8 @@ export class PlanEngine {
       this.readinessTimer = null;
     }
     this.runState = 'running';
-    this.advancedAt = Date.now();
+    this.runStartedAt = Date.now();
+    this.advancedAt = this.runStartedAt;
     this.emitChange();
   }
 
@@ -319,6 +415,7 @@ export class PlanEngine {
     }
     this.barriers.delete(stepId);
 
+    let kind = stepId;
     for (const agent of this.agents.values()) {
       const phase = resolvePhaseStep(
         agent.cursor,
@@ -327,10 +424,18 @@ export class PlanEngine {
         this.testRunId
       );
       if (phase?.id === stepId) {
+        kind = phase.kind;
         advancePastPhaseStep(agent.cursor);
         agent.blockedOnStepId = null;
       }
     }
+
+    this.completedSteps.push({
+      stepId,
+      kind,
+      completedAt: Date.now(),
+      agentCount: this.agents.size,
+    });
 
     this.advancedAt = Date.now();
     this.emitChange();

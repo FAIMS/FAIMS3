@@ -7,16 +7,19 @@ import {
   ReadyRequestSchema,
   StepCompleteRequestSchema,
   metricReportToPrometheusName,
+  type PlanAnalysis,
 } from '@faims3/load-testing-shared';
 import type {MetricsService} from './metrics';
 import type {PlanEngine} from './plan-engine';
+import {buildStatusReport} from './progress-report';
 import type {Registry} from './registry';
 
 export function createRoutes(
   registry: Registry,
   engine: PlanEngine,
   metrics: MetricsService,
-  coordinatorId: string
+  coordinatorId: string,
+  planAnalysis: PlanAnalysis
 ): Hono {
   const app = new Hono();
   const plan = engine.getPlan();
@@ -101,19 +104,15 @@ export function createRoutes(
     });
   });
 
-  app.get('/status', c =>
-    c.json({
-      runState: engine.getRunState(),
-      planName: plan.name,
-      registeredAgents: registry.registeredCount(),
-      readyAgents: registry.readyCount(),
-      doneAgents: registry.agentsDoneCount(),
-      testRunId: engine.getTestRunId(),
-      startedAt: engine.getStartedAt(),
-      metricsReceived: metrics.getMetricsReceived(),
-      activeSteps: engine.getActiveStepSummary(),
-    })
-  );
+  app.get('/status', c => {
+    const report = buildStatusReport({
+      engine,
+      registry,
+      planAnalysis,
+    });
+    report.metricsReceived = metrics.getMetricsReceived();
+    return c.json(report);
+  });
 
   app.get('/metrics', async c => {
     const text = await metrics.getMetricsText();
