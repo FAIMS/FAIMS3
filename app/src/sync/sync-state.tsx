@@ -302,7 +302,7 @@ export default function SyncStatus() {
   const renderCloudIcon = () => {
     if (isSyncError) {
       return (
-        <Box display="flex" alignItems="center">
+        <Box sx={{display: 'flex', alignItems: 'center'}}>
           <CloudOffIcon sx={{color: 'primary.main'}} />
           <ErrorIcon
             sx={{fontSize: '16px', ml: -0.5, mt: -1.5}}

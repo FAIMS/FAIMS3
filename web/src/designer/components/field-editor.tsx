@@ -423,7 +423,7 @@ const FieldEditorComponent = ({
       ref={setNodeRef}
       expanded={expanded}
       onChange={handleAccordionChange}
-      TransitionProps={{unmountOnExit: true}}
+      slotProps={{transition: {unmountOnExit: true}}}
       disableGutters
       square
       elevation={0}
@@ -527,9 +527,9 @@ const FieldEditorComponent = ({
           },
         }}
       >
-        <Grid container rowGap={1} alignItems={'center'}>
-          <Grid item xs={12} sm={8}>
-            <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
+        <Grid container sx={{rowGap: 1, alignItems: 'center'}}>
+          <Grid size={{xs: 12, sm: 8}}>
+            <Stack direction="column" spacing={1} sx={{pr: {xs: 0, sm: 2}}}>
               <Typography
                 variant="subtitle2"
                 sx={{
@@ -551,13 +551,13 @@ const FieldEditorComponent = ({
               {field['component-parameters'].helperText && (
                 <Typography
                   variant="body2"
-                  fontSize={13}
-                  fontWeight={450}
-                  fontStyle="italic"
                   sx={{
                     mt: 0.65,
                     px: 1,
                     py: 0.5,
+                    fontSize: 13,
+                    fontWeight: 450,
+                    fontStyle: 'italic',
                     color: 'text.secondary',
                     background: theme =>
                       `linear-gradient(100deg, ${alpha(theme.palette.grey[400], 0.15)} 0%, ${alpha(
@@ -584,7 +584,7 @@ const FieldEditorComponent = ({
                 </Typography>
               )}
               {/* Chips below question + helper text */}
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{flexWrap: 'wrap'}}>
                 <Chip
                   label={fieldComponentDisplayName}
                   size="small"
@@ -631,13 +631,13 @@ const FieldEditorComponent = ({
               </Stack>
             </Stack>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{xs: 12, sm: 4}}>
             <Stack
               direction="row"
-              justifyContent={{sm: 'right', xs: 'left'}}
               spacing={0.25}
               sx={{
                 p: 0.35,
+                justifyContent: {sm: 'right', xs: 'left'},
                 borderRadius: 1,
                 backgroundColor: theme =>
                   alpha(theme.palette.common.black, 0.02),
@@ -825,9 +825,11 @@ const FieldEditorComponent = ({
           onClose={() => setDeleteWarningOpen(false)}
           fullWidth
           maxWidth="sm"
-          TransitionProps={{
-            onExited: () => {
-              setConditionsAffected([]);
+          slotProps={{
+            transition: {
+              onExited: () => {
+                setConditionsAffected([]);
+              },
             },
           }}
         >
@@ -849,7 +851,12 @@ const FieldEditorComponent = ({
               <Typography variant="subtitle1" sx={{fontWeight: 700, mb: 0.75}}>
                 Referenced From
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{flexWrap: 'wrap'}}
+              >
                 <Chip
                   size="small"
                   label={`Form: ${viewsets[viewSetId]?.label ?? viewSetId}`}
@@ -894,9 +901,8 @@ const FieldEditorComponent = ({
                   <Stack
                     direction="row"
                     spacing={0.75}
-                    mt={0.75}
-                    flexWrap="wrap"
                     useFlexGap
+                    sx={{mt: 0.75, flexWrap: 'wrap'}}
                   >
                     {dependency.formLabel && (
                       <Chip
@@ -1095,13 +1101,13 @@ const FieldEditorComponent = ({
           {(protection === 'protected' || protection === 'allow-hiding') && (
             <Stack
               direction="column"
-              alignItems="center"
-              justifyContent="center"
               spacing={1}
               sx={{
                 width: '100%',
                 padding: 2,
                 marginBottom: 2,
+                alignItems: 'center',
+                justifyContent: 'center',
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 borderRadius: 1,
                 border: '1px solid',
@@ -1128,7 +1134,7 @@ const FieldEditorComponent = ({
           >
             <Grid container sx={designerResponsiveFieldEditorSx}>
               {invalidRefs.length > 0 && (
-                <Grid item xs={12} sx={{marginBottom: 3.5}}>
+                <Grid size={12} sx={{marginBottom: 3.5}}>
                   <Alert severity="warning">
                     The following fields/sections have visibility conditions
                     that depend on this field having a specific option
@@ -1144,7 +1150,7 @@ const FieldEditorComponent = ({
                 </Grid>
               )}
 
-              <Grid item xs={12}>
+              <Grid size={12}>
                 {renderFieldEditor({
                   fieldComponent,
                   context: {fieldName, viewId, viewSetId},

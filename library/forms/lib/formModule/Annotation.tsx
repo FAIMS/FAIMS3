@@ -58,11 +58,10 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
       </IconButton>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <Box
-          variant={'outlined'}
           component={Paper}
+          sx={{ml: {xs: 0, sm: 2}, p: 2, my: 1, bgcolor: grey[100]}}
+          variant="outlined"
           elevation={0}
-          sx={{ml: {xs: 0, sm: 2}, p: 2, my: 1}}
-          bgcolor={grey[100]}
         >
           {props.config.annotation.include && (
             <TextField
@@ -75,7 +74,7 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
             />
           )}
           {props.config.uncertainty.include && (
-            <Box mt={2} display="flex" alignItems="center">
+            <Box sx={{mt: 2, display: 'flex', alignItems: 'center'}}>
               <FormControlLabel
                 control={
                   <Checkbox

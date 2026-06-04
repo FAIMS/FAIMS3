@@ -60,10 +60,10 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid container p={2} rowGap={1}>
-            <Grid item xs={12}>
+          <Grid container sx={{p: 2, rowGap: 1}}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -86,7 +86,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox

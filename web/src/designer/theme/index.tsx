@@ -218,7 +218,7 @@ export const createDesignerTheme = (
             border: '1px solid transparent',
             boxShadow: '0 1px 6px rgba(15, 23, 32, 0.06)',
           },
-          standardInfo: {
+          standard: {
             borderColor: alpha(colors.blueGrey[700], 0.18),
             backgroundColor: alpha(colors.blueGrey[700], 0.06),
           },

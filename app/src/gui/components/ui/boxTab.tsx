@@ -9,8 +9,8 @@ type BoxTabProps = {
 export default function BoxTab(props: BoxTabProps) {
   return (
     <Box
-      bgcolor={props.bgcolor || grey[200]}
-      style={{
+      sx={{
+        bgcolor: props.bgcolor || grey[200],
         borderTopLeftRadius: '4px',
         borderTopRightRadius: '4px',
         width: 'fit-content',

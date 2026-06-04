@@ -285,7 +285,6 @@ where these workflows will run.
 - `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
 - `vars.APP_NAME` - the app name that appears in various places
 - `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
-- `vars.ENABLE_RECORD_FILTERS` - enable 'filters' in the records table
 - `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
 - `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
 - `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer

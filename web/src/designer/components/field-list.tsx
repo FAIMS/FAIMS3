@@ -211,11 +211,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     <>
       <Stack
         direction="row"
-        alignItems="center"
         spacing={1}
-        mt={2}
-        mb={1}
-        sx={designerHeadingRowSx}
+        sx={{...designerHeadingRowSx, alignItems: 'center', mt: 2, mb: 1}}
       >
         <Typography variant="h2" sx={designerHeadingTextSx}>
           Fields
@@ -266,9 +263,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       >
         <Stack
           direction="row"
-          alignItems="center"
           spacing={0.75}
-          flexWrap="wrap"
+          sx={{alignItems: 'center', flexWrap: 'wrap'}}
         >
           <HeadingWithInfo
             title="Visible fields"
@@ -366,12 +362,11 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         </SortableContext>
       </DndContext>
 
-      <Box mt={2}>
+      <Box sx={{mt: 2}}>
         <Stack
           direction="row"
-          alignItems="center"
           spacing={0.75}
-          flexWrap="wrap"
+          sx={{alignItems: 'center', flexWrap: 'wrap'}}
         >
           <HeadingWithInfo
             title="Hidden fields"
@@ -471,7 +466,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           </DndContext>
         </>
       ) : (
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="body2" color="text.secondary">
           No hidden fields
         </Typography>
       )}

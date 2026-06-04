@@ -210,8 +210,8 @@ const PercentageSlider: React.FC<PercentageSliderFullProps> = props => {
           disabled={disabled || maxVal <= minVal}
           valueLabelDisplay="off"
           marks={graduationMarks}
-          components={{Mark: SliderGraduationMark}}
-          onChange={(_, value) => {
+          slots={{mark: SliderGraduationMark}}
+          onChange={(_e, value: number | number[], _a) => {
             const next = Array.isArray(value) ? value[0] : value;
             setFieldData(next);
           }}

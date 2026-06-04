@@ -6,7 +6,7 @@ import {
   HydratedRecord,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
@@ -115,10 +115,12 @@ const RelatedRecordListItem = ({
           <ListItemText
             primary={link.record_id}
             secondary={link.relation_type_vocabPair[0] + ' (Load Error)'}
-            primaryTypographyProps={{
-              variant: 'body2',
-              fontFamily: 'monospace',
-              color: 'error',
+            slotProps={{
+              primary: {
+                variant: 'body2',
+                color: 'error',
+                sx: {fontFamily: 'monospace'},
+              },
             }}
           />
         </ListItemButton>
@@ -165,13 +167,18 @@ const RelatedRecordListItem = ({
         </ListItemIcon>
         <ListItemText
           primary={data.hrid}
-          primaryTypographyProps={{
-            variant: 'body2',
-            fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
-            // Monospace only as a fallback when no real HRID was configured
-            // (i.e. we're showing the opaque record id). Real HRIDs use the
-            // theme's default font.
-            ...(isHumanReadableHrid ? {} : {fontFamily: 'monospace'}),
+          slotProps={{
+            primary: {
+              variant: 'body2',
+              sx: {
+                fontFamily: 'monospace',
+                fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+                // Monospace only as a fallback when no real HRID was configured
+                // (i.e. we're showing the opaque record id). Real HRIDs use the
+                // theme's default font.
+                ...(isHumanReadableHrid ? {} : {fontFamily: 'monospace'}),
+              },
+            },
           }}
         />
       </ListItemButton>
@@ -314,12 +321,14 @@ const LinkExistingDialog = ({
           value={searchFilter}
           onChange={e => setSearchFilter(e.target.value)}
           sx={{mb: 2, mt: 1}}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -394,18 +403,24 @@ const LinkExistingDialog = ({
                         <ListItemText
                           primary={recordResult.record.hrid}
                           secondary={recordResult.record.record._id}
-                          primaryTypographyProps={{
-                            variant: 'body2',
-                            fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
-                            ...(isHumanReadableHrid
-                              ? {}
-                              : {fontFamily: 'monospace'}),
-                          }}
-                          secondaryTypographyProps={{
-                            variant: 'caption',
-                            // Secondary is always the raw record id, kept
-                            // monospace so it reads as an opaque identifier.
-                            fontFamily: 'monospace',
+                          slotProps={{
+                            primary: {
+                              variant: 'body2',
+                              sx: {
+                                ...(isHumanReadableHrid
+                                  ? {}
+                                  : {fontFamily: 'monospace'}),
+                                fontWeight: isHumanReadableHrid
+                                  ? 'bold'
+                                  : 'normal',
+                              },
+                            },
+                            secondary: {
+                              variant: 'caption',
+                              // Secondary is always the raw record id, kept
+                              // monospace so it reads as an opaque identifier.
+                              sx: {fontFamily: 'monospace'},
+                            },
                           }}
                         />
                       </ListItemButton>

@@ -96,7 +96,6 @@ jobs:
           export VITE_FORCE_REMOTE_DELETION=${{vars.FORCE_REMOTE_DELETION}}
           export VITE_DELETE_ON_DEACTIVATION=${{vars.DELETE_ON_DEACTIVATION}}
 
-          export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
           export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
           export VITE_MAP_SOURCE=${{vars.MAP_SOURCE}}
           export VITE_SATELLITE_SOURCE=${{vars.SATELLITE_SOURCE}}

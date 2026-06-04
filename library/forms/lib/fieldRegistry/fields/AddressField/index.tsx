@@ -404,16 +404,19 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   label="Search for an address"
                   placeholder="Start typing an address..."
                   onBlur={handleBlur}
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {suggestLoading ? (
-                          <CircularProgress color="inherit" size={20} />
-                        ) : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
+                  slotProps={{
+                    ...params.slotProps,
+                    input: {
+                      ...(params.slotProps?.input ?? {}),
+                      endAdornment: (
+                        <>
+                          {suggestLoading ? (
+                            <CircularProgress color="inherit" size={20} />
+                          ) : null}
+                          {(params.slotProps?.input as any)?.endAdornment}
+                        </>
+                      ),
+                    },
                   }}
                 />
               )}
@@ -433,7 +436,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
 
         {/* Summary row + edit/expand icon (left): display mode (after autocomplete) or manual-only structured */}
         {showSummaryRow && (
-          <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
             {!disabled && (
               <IconButton
                 size="small"
@@ -463,7 +466,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
           in={editPanelOpen && (hasStructured || allowFullAddressManualEntry)}
         >
           <Stack spacing={2} sx={{mt: 2}}>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1} sx={{flexWrap: 'wrap'}}>
               <Button
                 size="small"
                 startIcon={<ClearIcon />}

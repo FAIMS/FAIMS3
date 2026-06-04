@@ -122,18 +122,20 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
 
   // Build InputProps with speech button if enabled
   const inputProps = React.useMemo(() => {
+    const baseInputProps = (muiProps.slotProps?.input ?? undefined) as any;
+
     if (!enableSpeech) {
-      return muiProps.InputProps;
+      return baseInputProps;
     }
 
     return {
-      ...muiProps.InputProps,
+      ...baseInputProps,
       endAdornment: (
         <InputAdornment
           position="end"
           sx={multiline ? {alignSelf: 'flex-start', mt: 1} : undefined}
         >
-          {muiProps.InputProps?.endAdornment}
+          {baseInputProps?.endAdornment}
           <SpeechToTextButton
             status={speech.status}
             isAvailable={speech.isAvailable}
@@ -153,7 +155,7 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
     speech.isAvailable,
     speech.hasPermission,
     speech.toggleListening,
-    muiProps.InputProps,
+    muiProps.slotProps,
   ]);
 
   return (
@@ -176,7 +178,10 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
           minRows={rows}
           type={inputType}
           {...muiProps}
-          InputProps={inputProps}
+          slotProps={{
+            ...muiProps.slotProps,
+            input: inputProps,
+          }}
           sx={{
             // Highlight border when listening
             ...(speech.isListening && {

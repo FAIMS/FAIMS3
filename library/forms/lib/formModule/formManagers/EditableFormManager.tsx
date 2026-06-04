@@ -756,7 +756,7 @@ export const EditableFormManager: React.FC<
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <Stack gap={2}>
+    <Stack sx={{gap: 2}}>
       {/* Error Snackbar */}
       <Snackbar
         open={errorOpen}
@@ -779,11 +779,9 @@ export const EditableFormManager: React.FC<
       {/* Header: Breadcrumbs + Save Status */}
       <Grid
         container
-        justifyContent="space-between"
-        gap={0.5}
-        alignItems="center"
+        sx={{justifyContent: 'space-between', gap: 0.5, alignItems: 'center'}}
       >
-        <Grid item xs={7.75}>
+        <Grid size={7.75}>
           <FormBreadcrumbs
             config={props.config}
             currentFormId={props.formId}
@@ -791,7 +789,7 @@ export const EditableFormManager: React.FC<
             navigationContext={props.navigationContext}
           />
         </Grid>
-        <Grid item xs={3.75} paddingRight={1}>
+        <Grid size={3.75} sx={{paddingRight: 1}}>
           <Box
             sx={{
               display: 'flex',

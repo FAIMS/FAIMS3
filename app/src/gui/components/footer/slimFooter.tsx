@@ -18,9 +18,11 @@ const SlimFooter = () => {
       <Container maxWidth="xl" sx={{p: 1}}>
         <Stack
           direction={matchDownSM ? 'column' : 'row'}
-          justifyContent={matchDownSM ? 'center' : 'space-between'}
           spacing={2}
-          textAlign={matchDownSM ? 'center' : 'inherit'}
+          sx={{
+            justifyContent: matchDownSM ? 'center' : 'space-between',
+            textAlign: matchDownSM ? 'center' : 'inherit',
+          }}
         >
           <Typography
             variant="subtitle2"
@@ -33,7 +35,7 @@ const SlimFooter = () => {
           <Stack
             direction={matchDownSM ? 'column' : 'row'}
             spacing={matchDownSM ? 1 : 3}
-            textAlign={matchDownSM ? 'center' : 'inherit'}
+            sx={{textAlign: matchDownSM ? 'center' : 'inherit'}}
           >
             <Typography
               variant="subtitle2"

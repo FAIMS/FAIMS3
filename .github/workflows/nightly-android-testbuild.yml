@@ -109,7 +109,6 @@ jobs:
           export VITE_APP_PRIVACY_POLICY_URL=${{vars.APP_PRIVACY_POLICY_URL}}
           export VITE_SUPPORT_EMAIL=${{vars.SUPPORT_EMAIL}}
           export VITE_APP_CONTACT_URL=${{vars.APP_CONTACT_URL}}
-          export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
           export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
           export VITE_MAP_SOURCE=${{vars.MAP_SOURCE}}
           export VITE_SATELLITE_SOURCE=${{vars.SATELLITE_SOURCE}}

@@ -18,7 +18,7 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {CheckCircleOutline} from '@mui/icons-material';
+import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import {Alert, Box, Button, Paper, Typography, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
@@ -266,7 +266,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
                 borderColor: theme.palette.success.main,
               }}
             >
-              <CheckCircleOutline color="success" fontSize="small" />
+              <CheckCircleOutlined color="success" fontSize="small" />
               <Typography variant="body2" color="text.secondary">
                 {featureType === 'Point' &&
                 drawnFeatures?.features?.[0]?.geometry

@@ -165,7 +165,7 @@ export const NotebookEditor = ({
             </TabList>
           </Box>
           <Box sx={toolbarSx}>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
               {isDesignRoute && (
                 <>
                   <Button
@@ -258,9 +258,8 @@ export const NotebookEditor = ({
                     label={
                       <Stack
                         direction="row"
-                        alignItems="center"
                         spacing={0.5}
-                        sx={{userSelect: 'none'}}
+                        sx={{userSelect: 'none', alignItems: 'center'}}
                       >
                         <Typography variant="body2" sx={{fontWeight: 600}}>
                           Preview
