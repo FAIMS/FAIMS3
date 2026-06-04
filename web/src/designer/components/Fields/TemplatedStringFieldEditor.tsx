@@ -106,17 +106,17 @@ export const TemplatedStringFieldEditor = ({
   return (
     <Grid container spacing={2}>
       {alertMessage && (
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Alert onClose={() => setAlertMessage('')} severity="error">
             {alertMessage}
           </Alert>
         </Grid>
       )}
 
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined">
           <Grid container spacing={2} sx={{p: 2}}>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{xs: 12, sm: 6}}>
               <DebouncedTextField
                 name="label"
                 variant="outlined"
@@ -127,7 +127,7 @@ export const TemplatedStringFieldEditor = ({
                 helperText="Enter a label for the field"
               />
             </Grid>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{xs: 12, sm: 6}}>
               <DebouncedTextField
                 name="helperText"
                 variant="outlined"
@@ -144,7 +144,7 @@ export const TemplatedStringFieldEditor = ({
         </Card>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined">
           <Box sx={{p: 2}}>
             <Typography variant="subtitle2" sx={{mb: 2}}>
@@ -152,7 +152,7 @@ export const TemplatedStringFieldEditor = ({
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs>
+              <Grid size="grow">
                 <DebouncedTextField
                   name="template"
                   inputRef={textAreaRef}
@@ -165,7 +165,7 @@ export const TemplatedStringFieldEditor = ({
                   helperText="Enter the template or use the visual builder"
                 />
               </Grid>
-              <Grid item>
+              <Grid size="auto">
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}

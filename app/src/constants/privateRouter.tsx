@@ -1,4 +1,4 @@
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import {
   Alert,
   AlertTitle,
@@ -126,7 +126,7 @@ const OfflineLoginBanner = ({loginPath, visible}: OfflineLoginBannerProps) => {
         }}
       >
         <Alert
-          icon={<ErrorOutlineIcon sx={{fontSize: 28}} />}
+          icon={<ErrorOutlineIcon fontSize="large" />}
           severity="error"
           sx={{
             borderRadius: 2.5,

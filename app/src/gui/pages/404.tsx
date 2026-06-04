@@ -44,22 +44,24 @@ export default function NotFound404() {
   // const classes = useStyles();
   return (
     <Container maxWidth={false}>
-      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
+      <Box sx={{display: 'flex', flexDirection: 'row-reverse', p: 1, m: 1}}>
         <Breadcrumbs aria-label="breadcrumb">
           <NavLink to={ROUTES.INDEX}>Home</NavLink>
-          <Typography color="textPrimary">Not Found</Typography>
+          <Typography color="text.primary">Not Found</Typography>
         </Breadcrumbs>
       </Box>
 
       <Grid
         container
         spacing={0}
-        direction="column"
-        alignItems="center"
-        justifyContent="center"
-        style={{minHeight: '70vh'}}
+        sx={{
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '70vh',
+        }}
       >
-        <Grid item xs={12}>
+        <Grid size={12}>
           <span
             style={{
               display: 'flex',
@@ -68,12 +70,12 @@ export default function NotFound404() {
             }}
           >
             <NotListedLocationIcon sx={{fontSize: '64px', mt: 1}} />
-            <Typography variant="h1" fontSize={'64px'} fontWeight={700}>
+            <Typography variant="h1" sx={{fontSize: '64px', fontWeight: 700}}>
               404
             </Typography>
           </span>
           <Divider sx={{m: 2}} />
-          <Box m={2}>
+          <Box sx={{m: 2}}>
             <Typography variant="h3" gutterBottom>
               Something's missing
             </Typography>

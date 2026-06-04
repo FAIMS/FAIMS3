@@ -103,8 +103,10 @@ export default function NotebookSyncSwitch({
             open={open}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
-            PaperProps={{
-              sx: {padding: 2},
+            slotProps={{
+              paper: {
+                sx: {padding: 2},
+              },
             }}
           >
             <Alert severity={isSyncing ? 'warning' : 'info'}>
@@ -112,7 +114,7 @@ export default function NotebookSyncSwitch({
               Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
               {project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
-            <DialogActions style={{justifyContent: 'space-between'}}>
+            <DialogActions className="dialog-actions-spread">
               <Button
                 variant="contained"
                 sx={{

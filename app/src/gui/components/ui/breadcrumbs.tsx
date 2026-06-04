@@ -30,7 +30,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
 
   if (NAVIGATION_STYLE === 'breadcrumbs')
     return (
-      <Box display="flex" flexDirection="row-reverse" sx={{p: 1, m: 1}}>
+      <Box sx={{display: 'flex', flexDirection: 'row-reverse', p: 1, m: 1}}>
         <MuiBreadcrumbs
           aria-label="breadcrumb"
           maxItems={not_xs ? 4 : 2}
@@ -57,7 +57,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
               </RouterLink>
             ) : (
               <Typography
-                color="textPrimary"
+                color="text.primary"
                 key={'breadcrumb-item-' + item.title}
               >
                 {abbreviateTitle(item.title)}

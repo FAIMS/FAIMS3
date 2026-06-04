@@ -26,7 +26,11 @@ export default function RecordRouteDisplay(props: PropsType) {
       ) : (
         <ArticleIcon fontSize={'inherit'} sx={{mt: '3px', mr: '3px'}} />
       )}
-      <Typography component={'span'} variant={'body2'} fontWeight={'bold'}>
+      <Typography
+        component={'span'}
+        variant={'body2'}
+        sx={{fontWeight: 'bold'}}
+      >
         {props.children}
       </Typography>
     </span>

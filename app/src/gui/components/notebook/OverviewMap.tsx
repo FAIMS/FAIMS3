@@ -231,10 +231,10 @@ const SelectedRecordPopoverContent = ({
       <CardContent sx={{'&:last-child': {pb: 2}}}>
         <Typography
           variant="subtitle1"
-          fontWeight="600"
           gutterBottom
           title={hydrated.hrid}
           sx={{
+            fontWeight: 600,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -245,7 +245,11 @@ const SelectedRecordPopoverContent = ({
         <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
           {formLabel}
         </Typography>
-        <Typography variant="caption" color="text.secondary" display="block">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block'}}
+        >
           Created {createdDate}
           {hydrated.record.createdBy ? ` by ${hydrated.record.createdBy}` : ''}
         </Typography>

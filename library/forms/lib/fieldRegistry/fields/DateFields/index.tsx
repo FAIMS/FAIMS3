@@ -85,8 +85,8 @@ interface DateTimeBaseProps extends DateTimeFieldFullProps {
   inputType: HTMLInputTypeAttribute;
   /** Label for the optional "Now" button (shown when show_now_button is true). */
   nowButtonLabel: string;
-  /** Extra props forwarded to the native <input> element (e.g. step:1 for seconds). */
-  inputPropsExtra?: React.InputHTMLAttributes<HTMLInputElement>;
+  /** Allow seconds input for datetime-local type */
+  step?: number;
 }
 
 const DateTimeBase: React.FC<DateTimeBaseProps> = ({
@@ -104,7 +104,7 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
   show_now_button,
   inputType,
   nowButtonLabel,
-  inputPropsExtra,
+  step,
 }) => {
   const value = (state.value?.data as string) ?? '';
   const errors = state.meta.errors as unknown as string[] | undefined;
@@ -143,7 +143,12 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
           disabled={disabled}
           required={required}
           error={Boolean(errors && errors.length > 0)}
-          inputProps={inputPropsExtra}
+          slotProps={{
+            htmlInput: {
+              step: inputType === 'datetime-local' ? 1 : undefined,
+              shrink: true,
+            },
+          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: show_now_button
@@ -151,7 +156,6 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
                 : 1,
             },
           }}
-          InputLabelProps={{shrink: true}}
         />
         {show_now_button && (
           <Button
@@ -178,12 +182,7 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
 // =============================================================================
 
 const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => (
-  <DateTimeBase
-    {...props}
-    inputType="datetime-local"
-    nowButtonLabel="Now"
-    inputPropsExtra={{step: 1}}
-  />
+  <DateTimeBase {...props} inputType="datetime-local" nowButtonLabel="Now" />
 );
 
 const DatePickerField: React.FC<DateTimeFieldFullProps> = props => (

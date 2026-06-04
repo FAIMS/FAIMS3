@@ -61,7 +61,7 @@ export function SignIn() {
         <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={4}>
           {selectedServer && (
-            <Grid item lg={4} md={6} sm={8} xs={12} key="selected-server">
+            <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="selected-server">
               <ClusterCard
                 key={selectedServer.serverId}
                 serverId={selectedServer.serverId}
@@ -72,13 +72,13 @@ export function SignIn() {
             </Grid>
           )}
 
-          <Grid item lg={4} md={6} sm={8} xs={12} key="short-code">
+          <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="short-code">
             <ShortCodeRegistration servers={servers} />
           </Grid>
           {IS_WEB_PLATFORM ? (
             <></>
           ) : (
-            <Grid item lg={4} md={6} sm={8} xs={12} key="qr-code">
+            <Grid size={{lg: 4, md: 6, sm: 8, xs: 12}} key="qr-code">
               <QRCodeRegistration servers={servers} />
             </Grid>
           )}

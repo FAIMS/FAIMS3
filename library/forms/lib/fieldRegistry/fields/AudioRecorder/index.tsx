@@ -199,7 +199,11 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
           : {}
       }
     >
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{alignItems: 'center', flexWrap: 'wrap'}}
+      >
         {!isRecording && (
           <Button
             variant="contained"

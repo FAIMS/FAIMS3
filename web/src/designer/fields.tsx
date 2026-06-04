@@ -544,7 +544,6 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       min: 0,
       max: 100,
-      step: 1,
     },
     initialValue: null,
     humanReadableName: 'Percentage Slider',

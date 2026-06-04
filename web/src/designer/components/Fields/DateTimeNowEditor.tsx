@@ -61,9 +61,9 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item sm={8} xs={12}>
+      <Grid size={{xs: 12, sm: 8}}>
         <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+          <Grid size={12} sx={{mx: 1.5, my: 2}}>
             <Stack spacing={1}>
               {supportsAutoPick && (
                 <FormControlLabel
@@ -76,7 +76,11 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                     />
                   }
                   label={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{alignItems: 'center'}}
+                    >
                       <Typography component="span">
                         Time pre-populated <strong>*</strong>
                       </Typography>
@@ -110,7 +114,11 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                     />
                   }
                   label={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{alignItems: 'center'}}
+                    >
                       <Typography
                         component="span"
                         sx={{whiteSpace: 'normal', overflowWrap: 'anywhere'}}

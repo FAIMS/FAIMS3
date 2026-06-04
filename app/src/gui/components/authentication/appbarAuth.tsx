@@ -257,10 +257,12 @@ const AuthenticatedDisplayComponent = () => {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            width: 280,
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              width: 280,
+            },
           },
         }}
       >
@@ -284,10 +286,10 @@ const AuthenticatedDisplayComponent = () => {
           >
             <Typography
               variant="subtitle1"
-              fontWeight="bold"
               noWrap
               sx={{
                 display: 'block',
+                fontWeight: 'bold',
               }}
             >
               {activeUser?.parsedToken.name ?? ''}

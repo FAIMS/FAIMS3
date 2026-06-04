@@ -212,14 +212,16 @@ export function DesignerWidget({
   if (loading) {
     return (
       <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        height="100%"
-        width="100%"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          width: '100%',
+        }}
       >
-        <Typography variant="h4" fontWeight="bold" sx={{mb: 2}}>
+        <Typography variant="h4" sx={{mb: 2, fontWeight: 'bold'}}>
           Notebook Editor
         </Typography>
         <CircularProgress sx={{color: '#669911'}} />
@@ -245,7 +247,7 @@ export function DesignerWidget({
         >
           <AppBar position="static" color="default" elevation={1}>
             <Toolbar sx={{justifyContent: 'space-between'}}>
-              <Typography variant="h6" fontWeight="bold">
+              <Typography variant="h6" sx={{fontWeight: 'bold'}}>
                 Notebook Editor
               </Typography>
               <IconButton
@@ -265,11 +267,11 @@ export function DesignerWidget({
           <Dialog
             open={cancelDialogOpen}
             onClose={() => setCancelDialogOpen(false)}
-            TransitionComponent={Grow}
+            slots={{transition: Grow}}
             transitionDuration={animationDuration}
             aria-labelledby="cancel-dialog-title"
             aria-describedby="cancel-dialog-description"
-            PaperProps={{sx: {transformOrigin: 'top center'}}}
+            slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
           >
             <DialogTitle id="cancel-dialog-title">
               Are you sure you want to cancel?
@@ -294,7 +296,7 @@ export function DesignerWidget({
             </DialogActions>
           </Dialog>
 
-          <Box flexGrow={1} minHeight={0} sx={{overflow: 'auto'}}>
+          <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
             <RouterProvider router={memoryRouterInstance} />
           </Box>
         </Box>

@@ -36,19 +36,19 @@ export default function Workspace() {
 
   return (
     <React.Fragment>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={12} lg={8}>
+      <Grid container>
+        <Grid size={{xs: 12, md: 12, lg: 8}} sx={{width: '100%', minWidth: 0}}>
           <Typography
             variant="h2"
-            color="textSecondary"
-            style={{marginBottom: theme.spacing(2)}}
+            color="text.secondary"
+            sx={{mb: theme.spacing(2)}}
           >
             My {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
           <Typography
             variant="h4"
-            color="textSecondary"
-            style={{marginBottom: theme.spacing(2)}}
+            color="text.secondary"
+            sx={{mb: theme.spacing(2)}}
           >
             {serverName}
           </Typography>

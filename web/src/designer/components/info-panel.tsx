@@ -96,7 +96,7 @@ export const InfoPanel = () => {
       )}
 
       <Card variant="outlined" sx={{mt: 2}}>
-        <Grid container spacing={3} p={3}>
+        <Grid container spacing={3} sx={{p: 3}}>
           <Grid item xs={12}>
             <Typography variant="h6">Settings</Typography>
             <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
@@ -133,8 +133,8 @@ export const InfoPanel = () => {
             </Typography>
           </Grid>
 
-          <Grid container item xs={12} spacing={2.5}>
-            <Grid item xs={12} sm={4}>
+          <Grid container size={12} spacing={2.5}>
+            <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
                 label="Project lead (label)"
@@ -148,7 +148,7 @@ export const InfoPanel = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
                 label="Lead institution"
@@ -162,7 +162,7 @@ export const InfoPanel = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
                 label={`${NOTEBOOK_NAME_CAPITALIZED} version`}
@@ -181,7 +181,7 @@ export const InfoPanel = () => {
             </Grid>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <MdxEditor
               initialMarkdown={information.purposeMarkdown}
               editorRef={purposeRef}
@@ -201,7 +201,7 @@ export const InfoPanel = () => {
             </FormHelperText>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Divider sx={{my: 1}} />
             <Typography variant="subtitle1" sx={{mb: 1}}>
               Custom metadata

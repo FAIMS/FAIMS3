@@ -227,19 +227,21 @@ export default function FieldChooserDialog({
             fullWidth
             variant="outlined"
             size="small"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon
-                    sx={{
-                      color: 'text.secondary',
-                      fontSize: '1.35rem',
-                      strokeWidth: 1.8,
-                      filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))',
-                    }}
-                  />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon
+                      sx={{
+                        color: 'text.secondary',
+                        fontSize: '1.35rem',
+                        strokeWidth: 1.8,
+                        filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.18))',
+                      }}
+                    />
+                  </InputAdornment>
+                ),
+              },
             }}
             sx={{
               mb: 2,
@@ -295,7 +297,7 @@ export default function FieldChooserDialog({
         >
           <Grid container spacing={2}>
             {filtered.map(opt => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
+              <Grid size={{xs: 12, sm: 6, md: 4, lg: 3}} key={opt.key}>
                 <Tooltip
                   title={
                     opt.deprecated && opt.deprecationMessage
@@ -358,8 +360,7 @@ export default function FieldChooserDialog({
                         <Stack
                           direction="row"
                           spacing={1}
-                          alignItems="center"
-                          sx={{minHeight: 24}}
+                          sx={{minHeight: 24, alignItems: 'center'}}
                         >
                           {CategoryConfigMap[opt.category]?.icon ?? (
                             <ViewModuleRoundedIcon />
@@ -413,7 +414,7 @@ export default function FieldChooserDialog({
             ))}
 
             {filtered.length === 0 && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography
                   variant="body2"
                   color="text.secondary"
