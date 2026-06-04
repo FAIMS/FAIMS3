@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "name": "online-offline-loops-with-patchy",
+  "description": "Onboarding, then 2×(online → offline), then patchy connectivity. Adjust durations for production runs.",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "label": "Register, activate notebook, initial sync",
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "survey_cycles",
+      "label": "Repeated online / offline fieldwork",
+      "loop": {
+        "count": 2,
+        "steps": [
+          {
+            "id": "online_survey",
+            "kind": "online_collection",
+            "label": "Online surveying",
+            "durationMs": 120000,
+            "advance": "timer",
+            "config": {
+              "recordIntervalMs": 5000
+            }
+          },
+          {
+            "id": "offline_survey",
+            "kind": "offline_collection",
+            "label": "Fully offline then reconnect sync",
+            "durationMs": 300000,
+            "advance": "timer",
+            "config": {
+              "recordIntervalMs": 8000,
+              "reconnectJitterMaxMs": 10000,
+              "syncTimeoutMs": 600000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "patchy_fieldwork",
+      "kind": "patchy_network",
+      "label": "Patchy connectivity (~30s jittery cycles)",
+      "durationMs": 600000,
+      "advance": "timer",
+      "config": {
+        "cycleMs": 30000,
+        "cycleJitterMs": 10000,
+        "offlineDurationMs": 15000,
+        "offlineJitterMs": 5000,
+        "recordIntervalMs": 5000
+      }
+    }
+  ]
+}

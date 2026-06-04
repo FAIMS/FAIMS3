@@ -3,54 +3,65 @@ import {zValidator} from '@hono/zod-validator';
 import {
   AgentDoneRequestSchema,
   MetricReportSchema,
-  PhaseCompleteRequestSchema,
   RegisterRequestSchema,
   ReadyRequestSchema,
+  StepCompleteRequestSchema,
   metricReportToPrometheusName,
 } from '@faims3/load-testing-shared';
 import type {MetricsService} from './metrics';
+import type {PlanEngine} from './plan-engine';
 import type {Registry} from './registry';
-import type {Sequencer} from './sequencer';
 
 export function createRoutes(
   registry: Registry,
-  sequencer: Sequencer,
+  engine: PlanEngine,
   metrics: MetricsService,
   coordinatorId: string
 ): Hono {
   const app = new Hono();
+  const plan = engine.getPlan();
 
   app.get('/health', c => c.json({status: 'ok'}));
 
   app.post('/register', zValidator('json', RegisterRequestSchema), c => {
     const body = c.req.valid('json');
     registry.register(body);
+    engine.registerAgent(body.agentId);
     metrics.updateAgentCounts(registry.registeredCount(), registry.readyCount());
     return c.json({
       coordinatorId,
-      testRunId: sequencer.getTestRunId(),
+      testRunId: engine.getTestRunId(),
+      planName: plan.name,
     });
   });
 
   app.post('/ready', zValidator('json', ReadyRequestSchema), c => {
     const body = c.req.valid('json');
     registry.markReady(body.agentId);
+    engine.markReady(body.agentId);
     metrics.updateAgentCounts(registry.registeredCount(), registry.readyCount());
-    sequencer.checkReadinessAdvance();
+    const step = engine.getStep(body.agentId);
     return c.json({
-      phase: sequencer.getPhase(),
-      advancedAt: sequencer.getAdvancedAt(),
-      testRunId: sequencer.getTestRunId(),
+      runState: engine.getRunState(),
+      testRunId: engine.getTestRunId(),
+      advancedAt: engine.getAdvancedAt(),
+      step,
     });
   });
 
-  app.get('/phase', c =>
-    c.json({
-      phase: sequencer.getPhase(),
-      advancedAt: sequencer.getAdvancedAt(),
-      testRunId: sequencer.getTestRunId(),
-    })
-  );
+  app.get('/step', c => {
+    const agentId = c.req.query('agentId');
+    if (!agentId) {
+      return c.json({error: 'agentId required'}, 400);
+    }
+    const step = engine.getStep(agentId);
+    return c.json({
+      runState: engine.getRunState(),
+      testRunId: engine.getTestRunId(),
+      advancedAt: engine.getAdvancedAt(),
+      step,
+    });
+  });
 
   app.post('/report', zValidator('json', MetricReportSchema), async c => {
     const body = c.req.valid('json');
@@ -65,37 +76,42 @@ export function createRoutes(
   });
 
   app.post(
-    '/phase-complete',
-    zValidator('json', PhaseCompleteRequestSchema),
+    '/step-complete',
+    zValidator('json', StepCompleteRequestSchema),
     c => {
       const body = c.req.valid('json');
-      registry.markPhaseComplete(body.agentId, body.phase);
-      sequencer.checkPhaseCompleteAdvance(body.phase);
-      const next = sequencer.getPhase();
-      return c.json({nextPhase: next});
+      engine.completeStep(body.agentId, body.stepId);
+      return c.json({
+        accepted: true,
+        runState: engine.getRunState(),
+      });
     }
   );
 
   app.post('/agent-done', zValidator('json', AgentDoneRequestSchema), c => {
     const body = c.req.valid('json');
     registry.markAgentDone(body.agentId);
-    sequencer.checkAgentDoneAdvance();
+    engine.markAgentDone(body.agentId);
+    const step = engine.getStep(body.agentId);
     return c.json({
-      phase: sequencer.getPhase(),
-      advancedAt: sequencer.getAdvancedAt(),
-      testRunId: sequencer.getTestRunId(),
+      runState: engine.getRunState(),
+      testRunId: engine.getTestRunId(),
+      advancedAt: engine.getAdvancedAt(),
+      step,
     });
   });
 
   app.get('/status', c =>
     c.json({
-      phase: sequencer.getPhase(),
+      runState: engine.getRunState(),
+      planName: plan.name,
       registeredAgents: registry.registeredCount(),
       readyAgents: registry.readyCount(),
       doneAgents: registry.agentsDoneCount(),
-      testRunId: sequencer.getTestRunId(),
-      startedAt: sequencer.getStartedAt(),
+      testRunId: engine.getTestRunId(),
+      startedAt: engine.getStartedAt(),
       metricsReceived: metrics.getMetricsReceived(),
+      activeSteps: engine.getActiveStepSummary(),
     })
   );
 

@@ -1,9 +1,5 @@
 import {randomUUID} from 'crypto';
-import {
-  Phase,
-  type PhaseAdvanceStrategy,
-  type RegisterRequest,
-} from '@faims3/load-testing-shared';
+import type {RegisterRequest} from '@faims3/load-testing-shared';
 
 export interface AgentRecord {
   agentId: string;
@@ -12,8 +8,6 @@ export interface AgentRecord {
   registeredAt: number;
   readyAt: number | null;
   doneAt: number | null;
-  currentPhase: Phase;
-  phaseCompletions: Partial<Record<Phase, number>>;
 }
 
 export class Registry {
@@ -32,8 +26,6 @@ export class Registry {
       registeredAt: Date.now(),
       readyAt: null,
       doneAt: null,
-      currentPhase: Phase.WAITING_FOR_AGENTS,
-      phaseCompletions: {},
     };
     this.agents.set(body.agentId, record);
     return record;
@@ -43,14 +35,6 @@ export class Registry {
     const agent = this.agents.get(agentId);
     if (!agent) return undefined;
     agent.readyAt = Date.now();
-    return agent;
-  }
-
-  markPhaseComplete(agentId: string, phase: Phase): AgentRecord | undefined {
-    const agent = this.agents.get(agentId);
-    if (!agent) return undefined;
-    agent.phaseCompletions[phase] = Date.now();
-    agent.currentPhase = phase;
     return agent;
   }
 
@@ -65,11 +49,6 @@ export class Registry {
     return [...this.agents.values()].filter(a => a.doneAt !== null).length;
   }
 
-  allAgentsDone(): boolean {
-    if (this.agents.size < this.expectedAgentCount) return false;
-    return this.agentsDoneCount() >= this.agents.size;
-  }
-
   getAgent(agentId: string): AgentRecord | undefined {
     return this.agents.get(agentId);
   }
@@ -82,38 +61,16 @@ export class Registry {
     return [...this.agents.values()].filter(a => a.readyAt !== null).length;
   }
 
-  agentsCompletedPhase(phase: Phase): number {
-    return [...this.agents.values()].filter(
-      a => a.phaseCompletions[phase] !== undefined
-    ).length;
-  }
-
-  allAgentsReady(): boolean {
-    if (this.agents.size < this.expectedAgentCount) return false;
-    return [...this.agents.values()].every(a => a.readyAt !== null);
-  }
-
-  majorityAgentsReady(): boolean {
-    if (this.agents.size === 0) return false;
-    return this.readyCount() > this.agents.size / 2;
-  }
-
-  allAgentsCompletedPhase(phase: Phase): boolean {
-    if (this.agents.size === 0) return false;
-    return this.agentsCompletedPhase(phase) >= this.agents.size;
-  }
-
-  majorityCompletedPhase(phase: Phase): boolean {
-    if (this.agents.size === 0) return false;
-    return this.agentsCompletedPhase(phase) > this.agents.size / 2;
-  }
-
   getAllAgents(): AgentRecord[] {
     return [...this.agents.values()];
   }
 
   setExpectedAgentCount(count: number): void {
     this.expectedAgentCount = count;
+  }
+
+  getExpectedAgentCount(): number {
+    return this.expectedAgentCount;
   }
 }
 

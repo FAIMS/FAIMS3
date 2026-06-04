@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "name": "legacy-default",
+  "description": "Equivalent to the original coordinator phase pipeline (onboarding → offline+sync → export).",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "label": "Onboarding",
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "offline_collection",
+      "kind": "offline_collection",
+      "label": "Offline collection and sync storm",
+      "durationMs": 45000,
+      "advance": "timer",
+      "config": {
+        "reconnectJitterMaxMs": 10000,
+        "syncTimeoutMs": 60000
+      }
+    },
+    {
+      "id": "export_stress",
+      "kind": "export_stress",
+      "label": "Export stress",
+      "durationMs": 15000,
+      "advance": "timer",
+      "config": {}
+    }
+  ]
+}

@@ -1,5 +1,19 @@
 import {z} from 'zod';
-import {Phase} from './phases';
+import {StepAdvanceModeSchema} from './sequence-plan';
+
+export const RunStateSchema = z.enum([
+  'waiting_for_agents',
+  'running',
+  'complete',
+]);
+
+export const PhaseKindSchema = z.enum([
+  'onboarding',
+  'online_collection',
+  'offline_collection',
+  'patchy_network',
+  'export_stress',
+]);
 
 export const RegisterRequestSchema = z.object({
   agentId: z.string().min(1),
@@ -10,26 +24,41 @@ export const RegisterRequestSchema = z.object({
 export const RegisterResponseSchema = z.object({
   coordinatorId: z.string(),
   testRunId: z.string(),
+  planName: z.string().optional(),
 });
 
 export const ReadyRequestSchema = z.object({
   agentId: z.string().min(1),
 });
 
-export const PhaseResponseSchema = z.object({
-  phase: z.nativeEnum(Phase),
-  advancedAt: z.number(),
-  testRunId: z.string(),
+export const ActiveStepSchema = z.object({
+  id: z.string(),
+  kind: PhaseKindSchema,
+  label: z.string().optional(),
+  config: z.record(z.unknown()),
+  advance: StepAdvanceModeSchema,
+  durationMs: z.number().int().positive().optional(),
+  startedAt: z.number(),
+  endsAt: z.number().int().positive().optional(),
+  branchId: z.string().optional(),
 });
 
-export const PhaseCompleteRequestSchema = z.object({
+export const StepResponseSchema = z.object({
+  runState: RunStateSchema,
+  testRunId: z.string(),
+  advancedAt: z.number(),
+  step: ActiveStepSchema.nullable(),
+});
+
+export const StepCompleteRequestSchema = z.object({
   agentId: z.string().min(1),
-  phase: z.nativeEnum(Phase),
+  stepId: z.string().min(1),
   sessionCount: z.number().int().nonnegative(),
 });
 
-export const PhaseCompleteResponseSchema = z.object({
-  nextPhase: z.nativeEnum(Phase).nullable(),
+export const StepCompleteResponseSchema = z.object({
+  accepted: z.boolean(),
+  runState: RunStateSchema,
 });
 
 export const MetricReportSchema = z.object({
@@ -46,7 +75,7 @@ export const MetricReportSchema = z.object({
   ]),
   agentId: z.string().optional(),
   sessionId: z.string().optional(),
-  phase: z.nativeEnum(Phase).optional(),
+  stepId: z.string().optional(),
   timestamp: z.number(),
   name: z.string().optional(),
   durationMs: z.number().optional(),
@@ -63,21 +92,28 @@ export const AgentDoneRequestSchema = z.object({
 });
 
 export const StatusResponseSchema = z.object({
-  phase: z.nativeEnum(Phase),
+  runState: RunStateSchema,
+  planName: z.string().optional(),
   registeredAgents: z.number(),
   readyAgents: z.number(),
   doneAgents: z.number().optional(),
   testRunId: z.string(),
   startedAt: z.number(),
   metricsReceived: z.number(),
+  activeSteps: z.record(z.string()).optional(),
 });
 
+export type RunState = z.infer<typeof RunStateSchema>;
+export type ActiveStep = z.infer<typeof ActiveStepSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 export type ReadyRequest = z.infer<typeof ReadyRequestSchema>;
-export type PhaseResponse = z.infer<typeof PhaseResponseSchema>;
-export type PhaseCompleteRequest = z.infer<typeof PhaseCompleteRequestSchema>;
-export type PhaseCompleteResponse = z.infer<typeof PhaseCompleteResponseSchema>;
-export type AgentDoneRequest = z.infer<typeof AgentDoneRequestSchema>;
+export type StepResponse = z.infer<typeof StepResponseSchema>;
+export type StepCompleteRequest = z.infer<typeof StepCompleteRequestSchema>;
+export type StepCompleteResponse = z.infer<typeof StepCompleteResponseSchema>;
 export type MetricReport = z.infer<typeof MetricReportSchema>;
+export type AgentDoneRequest = z.infer<typeof AgentDoneRequestSchema>;
 export type StatusResponse = z.infer<typeof StatusResponseSchema>;
+
+/** @deprecated use StepAdvanceMode from sequence-plan */
+export type PhaseAdvanceStrategy = 'all_ready' | 'majority' | 'timeout';

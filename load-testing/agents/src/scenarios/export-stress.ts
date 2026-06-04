@@ -5,10 +5,11 @@ import type {MetricBuffer} from '../metric-buffer.js';
 
 export async function runExportStress(
   metricBuffer: MetricBuffer,
-  ctx: SessionContext
+  ctx: SessionContext,
+  stepId: string
 ): Promise<void> {
-  if (!ctx.env.PARTICIPATE_IN_EXPORT || !ctx.jwtToken) {
-    sessionLog(ctx.sessionId, 'skipping export stress (PARTICIPATE_IN_EXPORT=false)');
+  if (!ctx.jwtToken) {
+    sessionLog(ctx.sessionId, 'skipping export — no JWT from onboarding');
     return;
   }
 
@@ -27,6 +28,7 @@ export async function runExportStress(
     await metricBuffer.report({
       type: 'session_error',
       sessionId: ctx.sessionId,
+      stepId,
       timestamp: Date.now(),
       errorType: 'export_request_failed',
       message: `HTTP ${response.status}`,
@@ -40,6 +42,7 @@ export async function runExportStress(
     await metricBuffer.report({
       type: 'session_error',
       sessionId: ctx.sessionId,
+      stepId,
       timestamp: Date.now(),
       errorType: 'export_response_invalid',
       message: parsed.error.message,
@@ -58,6 +61,7 @@ export async function runExportStress(
   await metricBuffer.report({
     type: 'performance_measure',
     sessionId: ctx.sessionId,
+    stepId,
     timestamp: Date.now(),
     durationMs: Date.now() - start,
     name: 'export.download_complete',

@@ -1,16 +1,11 @@
 import {randomUUID} from 'crypto';
 import {chromium, type Browser, type BrowserContext, type CDPSession, type Page} from 'playwright';
-import {CoordinatorClient, Phase} from '@faims3/load-testing-shared';
+import {CoordinatorClient} from '@faims3/load-testing-shared';
 import {parseAgentEnv} from './config.js';
+import {executeSequencePlan} from './plan-session.js';
 import {MetricBuffer} from './metric-buffer.js';
-import {runExportStress} from './scenarios/export-stress.js';
-import {runOfflineCollection} from './scenarios/offline-collection.js';
-import {runOnboarding} from './scenarios/onboarding.js';
-import {runSyncStorm} from './scenarios/sync-storm.js';
 import type {IpcMessage, SessionContext} from './types.js';
 import {sessionLog} from './session-log.js';
-
-const POLL_MS = 3000;
 
 function send(msg: IpcMessage): void {
   if (process.send) {
@@ -128,30 +123,6 @@ function setupCouchCapture(
   });
 }
 
-async function waitForPhase(
-  client: CoordinatorClient,
-  target: Phase,
-  sessionId: string
-): Promise<void> {
-  sessionLog(sessionId, `waiting for ${target} phase…`);
-  while (true) {
-    const {phase} = await client.getPhase();
-    const order = [
-      Phase.WAITING_FOR_AGENTS,
-      Phase.ONBOARDING,
-      Phase.OFFLINE_COLLECTION,
-      Phase.SYNC_STORM,
-      Phase.EXPORT_STRESS,
-      Phase.COMPLETE,
-    ];
-    if (order.indexOf(phase) >= order.indexOf(target)) {
-      sessionLog(sessionId, `coordinator at ${phase}, starting ${target}`);
-      return;
-    }
-    await new Promise(r => setTimeout(r, POLL_MS));
-  }
-}
-
 async function runSession(sessionIndex: number): Promise<void> {
   const env = parseAgentEnv();
   const agentId = process.env.AGENT_ID ?? 'agent-0';
@@ -192,36 +163,9 @@ async function runSession(sessionIndex: number): Promise<void> {
     send({type: 'ready', sessionId});
     sessionLog(sessionId, 'browser ready');
 
-    await waitForPhase(client, Phase.ONBOARDING, sessionId);
-    sessionLog(sessionId, 'starting onboarding');
-    const onboarding = await runOnboarding(page, ctx);
-    ctx.jwtToken = onboarding.jwtToken;
-    sessionLog(sessionId, 'onboarding complete');
-    await client.phaseComplete({
-      agentId,
-      phase: Phase.ONBOARDING,
-      sessionCount: 1,
-    });
-    send({type: 'phase_complete', sessionId, payload: {phase: Phase.ONBOARDING}});
+    await executeSequencePlan(client, page, context, cdp, metricBuffer, ctx);
 
-    await waitForPhase(client, Phase.OFFLINE_COLLECTION, sessionId);
-    await runOfflineCollection(page, context, cdp, metricBuffer, ctx);
-
-    await waitForPhase(client, Phase.SYNC_STORM, sessionId);
-    sessionLog(sessionId, 'starting sync storm');
-    await runSyncStorm(page, context, metricBuffer, ctx);
-    sessionLog(sessionId, 'sync storm complete');
-    await client.phaseComplete({
-      agentId,
-      phase: Phase.SYNC_STORM,
-      sessionCount: 1,
-    });
-    send({type: 'phase_complete', sessionId, payload: {phase: Phase.SYNC_STORM}});
-
-    await waitForPhase(client, Phase.EXPORT_STRESS, sessionId);
-    await runExportStress(metricBuffer, ctx);
-
-    sessionLog(sessionId, 'all phases complete');
+    sessionLog(sessionId, 'sequence plan complete');
     send({type: 'done', sessionId, payload: {success: true}});
   } catch (err) {
     const message = (err as Error).message;

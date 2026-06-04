@@ -2,7 +2,7 @@ import type {MetricReport} from './coordinator-api';
 
 export const PROMETHEUS_LABELS = [
   'testRunId',
-  'phase',
+  'stepId',
   'agentId',
   'sessionId',
   'name',

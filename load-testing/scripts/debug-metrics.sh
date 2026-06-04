@@ -67,7 +67,7 @@ curl -s localhost:9091/metrics | grep -E '^dass_' | head -30
 
 # 3. Prometheus ingesting pushgateway?
 curl -s 'localhost:9090/api/v1/query?query=up{job="pushgateway"}' | jq '.data.result'
-curl -s 'localhost:9090/api/v1/query?query=dass_test_phase' | jq '.data.result'
+curl -s 'localhost:9090/api/v1/query?query=dass_run_state' | jq '.data.result'
 curl -s 'localhost:9090/api/v1/query?query=dass_record_create_ms_count' | jq '.data.result'
 
 # 4. Scrape targets healthy?
@@ -86,5 +86,4 @@ echo "=== Common causes ==="
 echo "- Observability compose not running on metrics EC2"
 echo "- Coordinator task missing PROMETHEUS_PUSHGATEWAY_URL (run-load-test.sh sets it)"
 echo "- ECS SG cannot reach metrics EC2 :9091 (check EcsTasksSg → MetricsEc2Sg rule)"
-echo "- Phase metrics: require coordinator build that pushes promRegistry to pushgateway"
-echo "  (older coordinator only exposed phases on /metrics, scraped locally via host.docker.internal)"
+echo "- Run state metrics: coordinator pushes dass_run_state to pushgateway as job dass_coordinator"

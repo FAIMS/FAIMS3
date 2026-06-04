@@ -1,37 +1,27 @@
 import {DASS_MEASURES} from '@faims3/instrumentation';
+import {
+  OfflineCollectionPhaseConfigSchema,
+  type ActiveStep,
+} from '@faims3/load-testing-shared';
 import type {BrowserContext, CDPSession, Page} from 'playwright';
 import {getNotebookUrl} from '../notebook-url.js';
-import {
-  addRecordButton,
-  finishAnywayButton,
-  finishRecordButton,
-  saveRecordIndicator,
-} from '../selectors.js';
+import {waitForSyncComplete} from '../selectors.js';
 import {sessionLog} from '../session-log.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 import type {SessionContext} from '../types.js';
+import {runRecordLoop} from './record-collection.js';
 
 export async function runOfflineCollection(
   page: Page,
   context: BrowserContext,
   cdp: CDPSession,
   metricBuffer: MetricBuffer,
-  ctx: SessionContext
+  ctx: SessionContext,
+  step: ActiveStep
 ): Promise<void> {
-  const {env} = ctx;
-
-  const addBtn = addRecordButton(page);
-  if ((await addBtn.count()) === 0) {
-    const notebookUrl = getNotebookUrl(env);
-    sessionLog(ctx.sessionId, `navigating to notebook ${notebookUrl}`);
-    // Avoid 'networkidle' - live sync keeps the network busy; wait for the add
-    // button instead.
-    await page.goto(notebookUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
-    });
-    await addBtn.waitFor({timeout: 60000});
-  }
+  const config = OfflineCollectionPhaseConfigSchema.parse(step.config);
+  const deadlineMs =
+    step.endsAt ?? step.startedAt + (step.durationMs ?? 60_000);
 
   try {
     await cdp.send('Network.emulateNetworkConditions', {
@@ -44,108 +34,65 @@ export async function runOfflineCollection(
     // CDP network emulation may be unavailable
   }
 
-  await page.waitForTimeout(1000);
   await context.setOffline(true);
   metricBuffer.setOnline(false);
 
-  const durationSec = Math.round(env.OFFLINE_DURATION_MS / 1000);
   sessionLog(
     ctx.sessionId,
-    `starting offline collection (${durationSec}s, creating records while offline)`
+    `offline collection until ${new Date(deadlineMs).toISOString()}`
   );
 
-  const endTime = Date.now() + env.OFFLINE_DURATION_MS;
-  let recordIndex = 0;
-
-  while (Date.now() < endTime) {
-    try {
-      if (!(await addBtn.count())) {
-        sessionLog(ctx.sessionId, 'add-record-button not found, stopping collection');
-        break;
-      }
-
-      await addBtn.first().click();
-      await page.waitForTimeout(1000);
-
-      const field = page.locator('input, textarea').first();
-      if (!(await field.count())) {
-        sessionLog(ctx.sessionId, 'no form field found after add-record click');
-        break;
-      }
-
-      await field.fill(`load-test-${recordIndex}-${Date.now()}`);
-
-      const saveStart = Date.now();
-      const saved = saveRecordIndicator(page);
-      const saveConfirmed = await saved
-        .waitFor({timeout: 10000})
-        .then(() => true)
-        .catch(() => false);
-
-      if (!saveConfirmed) {
-        sessionLog(
-          ctx.sessionId,
-          `record ${recordIndex + 1} save not confirmed — skipping`
-        );
-        continue;
-      }
-      const saveMs = Date.now() - saveStart;
-
-      recordIndex += 1;
-      sessionLog(ctx.sessionId, `collected record ${recordIndex}`);
-
-      await metricBuffer.report({
-        type: 'record_create',
-        sessionId: ctx.sessionId,
-        timestamp: Date.now(),
-        durationMs: saveMs,
-        name: DASS_MEASURES.RECORD_SAVE_UI,
-        detail: {recordIndex},
-      });
-
-      // Finish/submit the record. Submission is guarded: since we only fill one
-      // field, required fields stay incomplete and the app shows a "Finish
-      // anyway" confirmation before it closes the record and returns to the
-      // list. Click Finish, then confirm "Finish anyway" if the dialog appears.
-      const finishBtn = finishRecordButton(page);
-      if (await finishBtn.count()) {
-        await finishBtn.click();
-
-        const finishAnyway = finishAnywayButton(page);
-        const guarded = await finishAnyway
-          .waitFor({timeout: 5000})
-          .then(() => true)
-          .catch(() => false);
-        if (guarded) {
-          await finishAnyway.click();
-        }
-      } else {
-        // Fallback: no finish button found, just navigate back to the list.
-        sessionLog(
-          ctx.sessionId,
-          'finish button not found, navigating back instead'
-        );
-        await page.goBack({waitUntil: 'domcontentloaded'}).catch(async () => {
-          await page.goto(getNotebookUrl(env), {waitUntil: 'domcontentloaded'});
-        });
-      }
-
-      // Finishing returns us to the record list; wait for the add button again.
-      await addBtn.waitFor({timeout: 15000}).catch(() => undefined);
-      await page.waitForTimeout(1000);
-    } catch (err) {
-      await metricBuffer.report({
-        type: 'session_error',
-        sessionId: ctx.sessionId,
-        timestamp: Date.now(),
-        errorType: 'offline_record_create',
-        message: (err as Error).message,
-      });
-    }
-  }
+  const count = await runRecordLoop(page, metricBuffer, ctx, {
+    stepId: step.id,
+    deadlineMs,
+    recordIntervalMs: config.recordIntervalMs ?? 5000,
+    maxRecords: config.maxRecords,
+  });
 
   sessionLog(
     ctx.sessionId,
-    `offline collection complete (${recordIndex} record${recordIndex === 1 ? '' : 's'})`
+    `offline collection done (${count} records), reconnecting…`
+  );
+
+  const jitterCapMs = Math.min(10000, config.reconnectJitterMaxMs);
+  const jitterMs = Math.floor(Math.random() * (jitterCapMs + 1));
+  await page.waitForTimeout(jitterMs);
+
+  const notebookUrl = getNotebookUrl(ctx.env);
+  const target = new URL(notebookUrl);
+  const current = new URL(page.url());
+  if (
+    current.origin !== target.origin ||
+    !current.pathname.startsWith(target.pathname)
+  ) {
+    await page.goto(notebookUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
+  }
+
+  await context.setOffline(false);
+  metricBuffer.setOnline(true);
+
+  const syncStart = Date.now();
+  const {sawSyncing} = await waitForSyncComplete(page, config.syncTimeoutMs);
+
+  if (!sawSyncing) {
+    sessionLog(ctx.sessionId, 'warning: sync never entered syncing state');
+  }
+
+  await metricBuffer.report({
+    type: 'sync_duration',
+    sessionId: ctx.sessionId,
+    stepId: step.id,
+    timestamp: Date.now(),
+    durationMs: Date.now() - syncStart,
+    name: DASS_MEASURES.SYNC_PUSH_COMPLETE,
+    detail: {jitterMs, sawSyncing, recordCount: count},
+  });
+
+  sessionLog(
+    ctx.sessionId,
+    `offline phase complete (sync ${Math.round((Date.now() - syncStart) / 1000)}s)`
   );
 }

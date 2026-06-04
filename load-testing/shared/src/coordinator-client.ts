@@ -1,22 +1,22 @@
 import {
   AgentDoneRequestSchema,
   MetricReportSchema,
-  PhaseCompleteRequestSchema,
-  PhaseCompleteResponseSchema,
-  PhaseResponseSchema,
   RegisterRequestSchema,
   RegisterResponseSchema,
   ReadyRequestSchema,
   StatusResponseSchema,
+  StepCompleteRequestSchema,
+  StepCompleteResponseSchema,
+  StepResponseSchema,
   type AgentDoneRequest,
   type MetricReport,
-  type PhaseCompleteRequest,
-  type PhaseCompleteResponse,
-  type PhaseResponse,
   type RegisterRequest,
   type RegisterResponse,
   type ReadyRequest,
   type StatusResponse,
+  type StepCompleteRequest,
+  type StepCompleteResponse,
+  type StepResponse,
 } from './coordinator-api';
 
 async function parseJson<T>(
@@ -48,19 +48,21 @@ export class CoordinatorClient {
     return parseJson(response, RegisterResponseSchema);
   }
 
-  async ready(body: ReadyRequest): Promise<PhaseResponse> {
+  async ready(body: ReadyRequest): Promise<StepResponse> {
     ReadyRequestSchema.parse(body);
     const response = await fetch(this.url('/ready'), {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
     });
-    return parseJson(response, PhaseResponseSchema);
+    return parseJson(response, StepResponseSchema);
   }
 
-  async getPhase(): Promise<PhaseResponse> {
-    const response = await fetch(this.url('/phase'));
-    return parseJson(response, PhaseResponseSchema);
+  async getStep(agentId: string): Promise<StepResponse> {
+    const response = await fetch(
+      this.url(`/step?agentId=${encodeURIComponent(agentId)}`)
+    );
+    return parseJson(response, StepResponseSchema);
   }
 
   async report(metric: MetricReport): Promise<void> {
@@ -76,26 +78,24 @@ export class CoordinatorClient {
     }
   }
 
-  async phaseComplete(
-    body: PhaseCompleteRequest
-  ): Promise<PhaseCompleteResponse> {
-    PhaseCompleteRequestSchema.parse(body);
-    const response = await fetch(this.url('/phase-complete'), {
+  async stepComplete(body: StepCompleteRequest): Promise<StepCompleteResponse> {
+    StepCompleteRequestSchema.parse(body);
+    const response = await fetch(this.url('/step-complete'), {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
     });
-    return parseJson(response, PhaseCompleteResponseSchema);
+    return parseJson(response, StepCompleteResponseSchema);
   }
 
-  async agentDone(body: AgentDoneRequest): Promise<PhaseResponse> {
+  async agentDone(body: AgentDoneRequest): Promise<StepResponse> {
     AgentDoneRequestSchema.parse(body);
     const response = await fetch(this.url('/agent-done'), {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
     });
-    return parseJson(response, PhaseResponseSchema);
+    return parseJson(response, StepResponseSchema);
   }
 
   async getStatus(): Promise<StatusResponse> {

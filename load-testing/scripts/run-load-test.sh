@@ -36,19 +36,23 @@ require_var NOTEBOOK_SERVER_ID
 AGENT_COUNT="${AGENT_COUNT:-1}"
 NOTEBOOK_NAME="${NOTEBOOK_NAME:-survey}"
 PARTICIPATE_IN_EXPORT="${PARTICIPATE_IN_EXPORT:-false}"
-OFFLINE_DURATION_MS="${OFFLINE_DURATION_MS:-30000}"
-# How long the coordinator keeps OFFLINE_COLLECTION before SYNC_STORM.
-# Defaults to agent offline duration + 60s so agents can finish their loop.
-OFFLINE_COLLECTION_DURATION_MS="${OFFLINE_COLLECTION_DURATION_MS:-$((OFFLINE_DURATION_MS + 60000))}"
-EXPORT_STRESS_DURATION_MS="${EXPORT_STRESS_DURATION_MS:-15000}"
-SYNC_STORM_DELAY_MS="${SYNC_STORM_DELAY_MS:-60000}"
 WAIT_TIMEOUT_SEC="${WAIT_TIMEOUT_SEC:-3600}"
 EXPECTED_AGENT_COUNT="${EXPECTED_AGENT_COUNT:-$AGENT_COUNT}"
 
-if [[ "$OFFLINE_COLLECTION_DURATION_MS" -lt "$OFFLINE_DURATION_MS" ]]; then
-  echo "OFFLINE_COLLECTION_DURATION_MS (${OFFLINE_COLLECTION_DURATION_MS}) must be >= OFFLINE_DURATION_MS (${OFFLINE_DURATION_MS})" >&2
+SEQUENCE_PLAN_FILE="${SEQUENCE_PLAN_FILE:-${SCRIPT_DIR}/../shared/sequence-plans/online-offline-loops-patchy.json}"
+if [[ ! -f "$SEQUENCE_PLAN_FILE" ]]; then
+  echo "Sequence plan not found: ${SEQUENCE_PLAN_FILE}" >&2
   exit 1
 fi
+
+if [[ -n "${SEQUENCE_PLAN_B64:-}" ]]; then
+  PLAN_B64="$SEQUENCE_PLAN_B64"
+else
+  PLAN_B64="$(base64 -w0 "$SEQUENCE_PLAN_FILE")"
+fi
+
+PLAN_NAME="$(jq -r '.name // "unnamed"' "$SEQUENCE_PLAN_FILE")"
+echo "Sequence plan: ${PLAN_NAME} (${SEQUENCE_PLAN_FILE})"
 
 stack_output() {
   local key="$1"
@@ -89,7 +93,6 @@ METRICS_PRIVATE_IP="$(aws ec2 describe-instances \
 PUSHGATEWAY_URL="http://${METRICS_PRIVATE_IP}:9091"
 echo "Pushgateway: ${PUSHGATEWAY_URL}"
 echo "Grafana:     http://${METRICS_DNS}:3030"
-echo "Timing:      offline collection ${OFFLINE_COLLECTION_DURATION_MS}ms (coordinator), agent records ${OFFLINE_DURATION_MS}ms, sync wait ${SYNC_STORM_DELAY_MS}ms"
 
 NETWORK_CONFIG="$(jq -n \
   --arg subnets "$SUBNETS" \
@@ -103,12 +106,10 @@ NETWORK_CONFIG="$(jq -n \
 coord_env="$(jq -n \
   --arg n "$EXPECTED_AGENT_COUNT" \
   --arg pg "$PUSHGATEWAY_URL" \
-  --arg offlinePhase "$OFFLINE_COLLECTION_DURATION_MS" \
-  --arg exportPhase "$EXPORT_STRESS_DURATION_MS" \
+  --arg plan "$PLAN_B64" \
   '[{name:"EXPECTED_AGENT_COUNT",value:$n},
     {name:"PROMETHEUS_PUSHGATEWAY_URL",value:$pg},
-    {name:"OFFLINE_COLLECTION_DURATION_MS",value:$offlinePhase},
-    {name:"EXPORT_STRESS_DURATION_MS",value:$exportPhase}]')"
+    {name:"SEQUENCE_PLAN_B64",value:$plan}]')"
 
 echo "Starting coordinator task (expecting ${EXPECTED_AGENT_COUNT} agent(s))…"
 
@@ -197,8 +198,6 @@ agent_env_base="$(jq -n \
   --arg server "$NOTEBOOK_SERVER_ID" \
   --arg nb "$NOTEBOOK_NAME" \
   --arg export "$PARTICIPATE_IN_EXPORT" \
-  --arg offline "$OFFLINE_DURATION_MS" \
-  --arg sync "$SYNC_STORM_DELAY_MS" \
   --arg app "$DASS_APP_URL" \
   --arg api "$DASS_API_URL" \
   --arg couch "$COUCH_URL" \
@@ -208,8 +207,6 @@ agent_env_base="$(jq -n \
     {name:"NOTEBOOK_SERVER_ID",value:$server},
     {name:"NOTEBOOK_NAME",value:$nb},
     {name:"PARTICIPATE_IN_EXPORT",value:$export},
-    {name:"OFFLINE_DURATION_MS",value:$offline},
-    {name:"SYNC_STORM_DELAY_MS",value:$sync},
     {name:"DASS_APP_URL",value:$app},
     {name:"DASS_API_URL",value:$api},
     {name:"COUCH_URL",value:$couch}]')"

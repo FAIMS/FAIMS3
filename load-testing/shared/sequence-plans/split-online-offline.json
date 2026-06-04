@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "name": "split-online-offline",
+  "description": "Half the agents survey online while half survey offline in parallel, then everyone syncs in the next step.",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "label": "Onboarding",
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "mixed_collection",
+      "label": "50/50 online vs offline split",
+      "split": {
+        "assignment": "agent_index_mod",
+        "branches": [
+          {
+            "id": "online_half",
+            "label": "Online branch",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "online_survey",
+                "kind": "online_collection",
+                "label": "Online surveying",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "recordIntervalMs": 5000
+                }
+              }
+            ]
+          },
+          {
+            "id": "offline_half",
+            "label": "Offline branch",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "offline_survey",
+                "kind": "offline_collection",
+                "label": "Offline surveying + reconnect",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "recordIntervalMs": 8000,
+                  "reconnectJitterMaxMs": 10000,
+                  "syncTimeoutMs": 600000
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "patchy_fieldwork",
+      "kind": "patchy_network",
+      "label": "Patchy connectivity",
+      "durationMs": 600000,
+      "advance": "timer",
+      "config": {
+        "cycleMs": 30000,
+        "cycleJitterMs": 10000,
+        "offlineDurationMs": 15000,
+        "offlineJitterMs": 5000,
+        "recordIntervalMs": 5000
+      }
+    }
+  ]
+}

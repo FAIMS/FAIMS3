@@ -14,8 +14,6 @@ export const AgentEnvSchema = z.object({
   NOTEBOOK_SERVER_ID: z.string().min(1).default('local-dev'),
   NOTEBOOK_NAME: z.string().default('notebook'),
   SESSIONS_PER_AGENT: z.coerce.number().int().positive().default(1),
-  OFFLINE_DURATION_MS: z.coerce.number().int().positive().default(30000),
-  SYNC_STORM_DELAY_MS: z.coerce.number().int().nonnegative().default(60000),
   PARTICIPATE_IN_EXPORT: booleanFromEnv.optional().default(false),
   HEADLESS: z
     .enum(['true', 'false'])

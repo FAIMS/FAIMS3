@@ -13,11 +13,11 @@
       {
         "datasource": {"type": "prometheus", "uid": "prometheus"},
         "enable": true,
-        "expr": "dass_phase_transition_timestamp",
+        "expr": "dass_step_transition_timestamp",
         "iconColor": "orange",
-        "name": "Phase transitions",
-        "tagKeys": "phase",
-        "titleFormat": "Phase {{phase}}"
+        "name": "Step transitions",
+        "tagKeys": "stepId",
+        "titleFormat": "Step {{stepId}}"
       }
     ]
   },
@@ -40,8 +40,8 @@
       "gridPos": {"h": 6, "w": 6, "x": 0, "y": 1},
       "id": 1,
       "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"]}},
-      "targets": [{"expr": "dass_test_phase", "legendFormat": "phase"}],
-      "title": "Current phase",
+      "targets": [{"expr": "dass_run_state", "legendFormat": "run state"}],
+      "title": "Run state",
       "type": "stat"
     },
     {
@@ -188,18 +188,18 @@
       {
         "current": {},
         "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "definition": "label_values(dass_test_phase, testRunId)",
+        "definition": "label_values(dass_step_transition_timestamp, testRunId)",
         "name": "testRunId",
-        "query": {"query": "label_values(dass_test_phase, testRunId)", "refId": "StandardVariableQuery"},
+        "query": {"query": "label_values(dass_step_transition_timestamp, testRunId)", "refId": "StandardVariableQuery"},
         "type": "query",
         "hide": 2
       },
       {
         "current": {},
         "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "definition": "label_values(dass_record_create_ms_bucket, phase)",
-        "name": "phase",
-        "query": {"query": "label_values(dass_record_create_ms_bucket, phase)", "refId": "StandardVariableQuery"},
+        "definition": "label_values(dass_record_create_ms_bucket, stepId)",
+        "name": "stepId",
+        "query": {"query": "label_values(dass_record_create_ms_bucket, stepId)", "refId": "StandardVariableQuery"},
         "type": "query",
         "hide": 2
       }

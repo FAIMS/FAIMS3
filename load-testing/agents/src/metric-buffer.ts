@@ -5,10 +5,15 @@ export type MetricSender = (report: MetricReport) => Promise<void>;
 export class MetricBuffer {
   private buffer: MetricReport[] = [];
   private online = true;
+  private currentStepId?: string;
   private sender: MetricSender;
 
   constructor(sender: MetricSender) {
     this.sender = sender;
+  }
+
+  setStepId(stepId: string): void {
+    this.currentStepId = stepId;
   }
 
   setOnline(online: boolean): void {
@@ -21,6 +26,7 @@ export class MetricBuffer {
   async report(data: MetricReport): Promise<void> {
     const report: MetricReport = {
       ...data,
+      stepId: data.stepId ?? this.currentStepId,
       timestamp: data.timestamp ?? Date.now(),
     };
     if (this.online) {

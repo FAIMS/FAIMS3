@@ -8,12 +8,17 @@ import {
   type RegistryContentType,
 } from 'prom-client';
 import {
-  Phase,
-  phaseToNumeric,
   type MetricReport,
+  type RunState,
   isCounterMetric,
   isGaugeMetric,
 } from '@faims3/load-testing-shared';
+
+const RUN_STATE_NUMERIC: Record<RunState, number> = {
+  waiting_for_agents: 0,
+  running: 1,
+  complete: 2,
+};
 
 export class MetricsService {
   private readonly promRegistry: PromRegistry;
@@ -23,8 +28,8 @@ export class MetricsService {
   private readonly testRunId: string;
   private metricsReceived = 0;
 
-  private testPhaseGauge: Gauge;
-  private phaseTransitionGauge: Gauge;
+  private runStateGauge: Gauge;
+  private stepTransitionGauge: Gauge;
   private registeredAgentsGauge: Gauge;
   private readyAgentsGauge: Gauge;
 
@@ -39,16 +44,16 @@ export class MetricsService {
 
     collectDefaultMetrics({register: this.promRegistry});
 
-    this.testPhaseGauge = new Gauge({
-      name: 'dass_test_phase',
-      help: 'Current test phase as numeric enum',
+    this.runStateGauge = new Gauge({
+      name: 'dass_run_state',
+      help: 'Run state: 0=waiting, 1=running, 2=complete',
       registers: [this.promRegistry],
     });
 
-    this.phaseTransitionGauge = new Gauge({
-      name: 'dass_phase_transition_timestamp',
-      help: 'Unix timestamp of phase transitions',
-      labelNames: ['phase', 'testRunId'],
+    this.stepTransitionGauge = new Gauge({
+      name: 'dass_step_transition_timestamp',
+      help: 'Unix timestamp when run state or step barrier advanced',
+      labelNames: ['stepId', 'testRunId'],
       registers: [this.promRegistry],
     });
 
@@ -88,12 +93,14 @@ export class MetricsService {
     return this.promRegistry.metrics();
   }
 
-  recordPhaseChange(phase: Phase, advancedAt: number): void {
-    this.testPhaseGauge.set(phaseToNumeric(phase));
-    this.phaseTransitionGauge.set(
-      {phase, testRunId: this.testRunId},
-      advancedAt / 1000
-    );
+  recordRunStateChange(runState: RunState, advancedAt: number, stepId?: string): void {
+    this.runStateGauge.set(RUN_STATE_NUMERIC[runState]);
+    if (stepId) {
+      this.stepTransitionGauge.set(
+        {stepId, testRunId: this.testRunId},
+        advancedAt / 1000
+      );
+    }
     this.pushCoordinatorStateFireAndForget();
   }
 
@@ -109,7 +116,7 @@ export class MetricsService {
       h = new Histogram({
         name,
         help: `${name} histogram`,
-        labelNames: ['testRunId', 'phase', 'agentId', 'sessionId', 'name'],
+        labelNames: ['testRunId', 'stepId', 'agentId', 'sessionId', 'name'],
         buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000],
         registers: [this.agentRegistry],
       });
@@ -124,7 +131,7 @@ export class MetricsService {
       c = new Counter({
         name,
         help: `${name} counter`,
-        labelNames: ['testRunId', 'phase', 'agentId', 'sessionId', 'errorType'],
+        labelNames: ['testRunId', 'stepId', 'agentId', 'sessionId', 'errorType'],
         registers: [this.agentRegistry],
       });
       this.counters.set(name, c);
@@ -138,7 +145,7 @@ export class MetricsService {
       g = new Gauge({
         name,
         help: `${name} gauge`,
-        labelNames: ['testRunId', 'phase', 'agentId', 'sessionId'],
+        labelNames: ['testRunId', 'stepId', 'agentId', 'sessionId'],
         registers: [this.agentRegistry],
       });
       this.gauges.set(name, g);
@@ -150,7 +157,7 @@ export class MetricsService {
     this.metricsReceived += 1;
     const labels = {
       testRunId: this.testRunId,
-      phase: report.phase ?? 'unknown',
+      stepId: report.stepId ?? 'unknown',
       agentId: report.agentId ?? 'unknown',
       sessionId: report.sessionId ?? 'unknown',
       name: report.name ?? 'unknown',
@@ -160,7 +167,7 @@ export class MetricsService {
     if (isCounterMetric(report)) {
       this.getCounter(promName).inc({
         testRunId: labels.testRunId,
-        phase: labels.phase,
+        stepId: labels.stepId,
         agentId: labels.agentId,
         sessionId: labels.sessionId,
         errorType: labels.errorType,
@@ -169,7 +176,7 @@ export class MetricsService {
       this.getGauge(promName).set(
         {
           testRunId: labels.testRunId,
-          phase: labels.phase,
+          stepId: labels.stepId,
           agentId: labels.agentId,
           sessionId: labels.sessionId,
         },
@@ -179,7 +186,7 @@ export class MetricsService {
       this.getHistogram(promName).observe(
         {
           testRunId: labels.testRunId,
-          phase: labels.phase,
+          stepId: labels.stepId,
           agentId: labels.agentId,
           sessionId: labels.sessionId,
           name: labels.name,
@@ -189,9 +196,7 @@ export class MetricsService {
     }
   }
 
-  async pushCoordinatorState(
-    jobName = 'dass_coordinator'
-  ): Promise<void> {
+  async pushCoordinatorState(jobName = 'dass_coordinator'): Promise<void> {
     if (!this.coordinatorPushgateway) return;
     await this.coordinatorPushgateway.pushAdd({jobName});
   }
@@ -199,10 +204,5 @@ export class MetricsService {
   async pushAgentMetrics(jobName = 'dass_agent_metrics'): Promise<void> {
     if (!this.agentPushgateway) return;
     await this.agentPushgateway.pushAdd({jobName});
-  }
-
-  /** @deprecated use pushAgentMetrics */
-  async pushMetrics(jobName = 'dass_agent_metrics'): Promise<void> {
-    await this.pushAgentMetrics(jobName);
   }
 }

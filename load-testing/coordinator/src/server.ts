@@ -1,42 +1,43 @@
 import {serve} from '@hono/node-server';
-import {Phase} from '@faims3/load-testing-shared';
-import {parseCoordinatorEnv} from './config';
+import {loadSequencePlanFromEnv, parseCoordinatorEnv} from './config';
 import {MetricsService} from './metrics';
+import {PlanEngine} from './plan-engine';
 import {createRoutes} from './routes';
 import {Registry, createCoordinatorId, createTestRunId} from './registry';
-import {Sequencer} from './sequencer';
 
 const env = parseCoordinatorEnv();
+const plan = loadSequencePlanFromEnv();
 const coordinatorId = createCoordinatorId();
 const testRunId = createTestRunId();
 
 const registry = new Registry(env.EXPECTED_AGENT_COUNT);
 const metrics = new MetricsService(testRunId, env.PROMETHEUS_PUSHGATEWAY_URL);
 
-const sequencer = new Sequencer(testRunId, registry, {
-  strategy: env.PHASE_ADVANCE_STRATEGY,
+const engine = new PlanEngine(plan, testRunId, {
   expectedAgentCount: env.EXPECTED_AGENT_COUNT,
-  offlineCollectionDurationMs: env.OFFLINE_COLLECTION_DURATION_MS,
-  exportStressDurationMs: env.EXPORT_STRESS_DURATION_MS,
   readinessTimeoutMs: env.READINESS_TIMEOUT_MS,
-  phaseTimeoutMs: env.PHASE_TIMEOUT_MS,
 });
 
-sequencer.onPhaseChange((phase, advancedAt) => {
-  metrics.recordPhaseChange(phase, advancedAt);
-  console.log(`[coordinator] phase → ${phase} at ${new Date(advancedAt).toISOString()}`);
-  if (phase === Phase.ONBOARDING || phase === Phase.SYNC_STORM) {
-    sequencer.startPhaseTimeout(phase);
+engine.onPlanChange((runState, advancedAt) => {
+  metrics.recordRunStateChange(runState, advancedAt);
+  console.log(
+    `[coordinator] runState → ${runState} at ${new Date(advancedAt).toISOString()}`
+  );
+  if (runState === 'complete' && engine.allAgentsDone()) {
+    setTimeout(() => {
+      console.log('[coordinator] all agents finished — test complete');
+      process.exit(0);
+    }, 1000);
   }
 });
 
-metrics.recordPhaseChange(Phase.WAITING_FOR_AGENTS, Date.now());
-sequencer.startReadinessTimeout();
+metrics.recordRunStateChange('waiting_for_agents', Date.now());
+engine.startReadinessTimeout();
 
-const app = createRoutes(registry, sequencer, metrics, coordinatorId);
+const app = createRoutes(registry, engine, metrics, coordinatorId);
 
 console.log(
-  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, expecting ${env.EXPECTED_AGENT_COUNT} agent(s)`
+  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, plan=${plan.name ?? 'unnamed'}, expecting ${env.EXPECTED_AGENT_COUNT} agent(s)`
 );
 
 serve({fetch: app.fetch, port: env.PORT});
