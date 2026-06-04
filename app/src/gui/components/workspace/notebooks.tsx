@@ -163,10 +163,9 @@ export default function NoteBooks() {
         return (
           <Box
             sx={{
-              py: 1,
               display: 'flex',
               flexDirection: 'column',
-              gap: 1,
+              gap: 0,
             }}
           >
             <Typography
