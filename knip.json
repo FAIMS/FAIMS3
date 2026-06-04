@@ -5,27 +5,52 @@
     "type": true
   },
   "tags": ["-lintignore"],
+  "ignoreBinaries": ["run-script"],
   "workspaces": {
     ".": {},
+    "api": {
+      "entry": ["src/index.ts", "src/scripts/*.ts"],
+      "project": ["src/**/*.{js,ts}"]
+    },
     "app": {
       "entry": ["src/index.tsx"],
+      "project": ["src/**/*.{js,ts,tsx}"],
+      "ignoreDependencies": ["@capacitor/android", "@capacitor/ios"]
+    },
+    "web": {
+      "entry": ["src/main.tsx"],
       "project": ["src/**/*.{js,ts,tsx}"]
     },
     "library/forms": {
-      "entry": ["lib/index.ts", "src/App.tsx"],
-      "project": ["lib/**/*.{js,ts,tsx}"]
+      "entry": ["lib/index.ts", "src/main.tsx"],
+      "project": ["lib/**/*.{js,ts,tsx}", "src/**/*.{js,ts,tsx}"]
     },
     "library/data-model": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.{js,ts,tsx}"]
     },
     "infrastructure/aws-cdk": {
-      "entry": ["bin/aws-cdk-faims-infra.ts"],
-      "project": ["src/**/*.{js,ts,tsx}", "bin/**/*.{js,ts,tsx}"]
+      "entry": ["bin/aws-cdk-faims-infra.ts", "validateConfig.ts"],
+      "project": ["bin/**/*.{js,ts}", "lib/**/*.{js,ts}", "test/**/*.{js,ts}"]
     },
-    "web": {
-      "entry": ["src/main.tsx"],
-      "project": ["src/**/*.{js,ts,tsx}"]
+    "e2e": {
+      "entry": [
+        "wdio*.conf.ts",
+        "chrome-headless-capabilities.ts",
+        "test/specs/**/*.e2e.ts"
+      ],
+      "project": ["**/*.ts"],
+      "webdriver-io": {
+        "config": ["wdio*.conf.ts"]
+      },
+      "ignoreDependencies": [
+        "@wdio/local-runner",
+        "@wdio/appium-service",
+        "appium",
+        "appium-uiautomator2-driver",
+        "chromedriver",
+        "ts-node"
+      ]
     }
   }
 }

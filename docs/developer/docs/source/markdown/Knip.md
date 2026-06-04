@@ -7,15 +7,7 @@ whole: it follows the import graph from a set of declared entry points and
 reports anything it cannot reach.
 
 This document describes how Knip is wired up in this repository, how to run it,
-how to read its output, and — importantly — the **known false positives** in the
-current configuration so that results are interpreted correctly.
-
-> **Status (sanity check only):** Knip is installed and runnable, but the
-> configuration in `knip.json` does not yet cover every workspace. A large share
-> of the current findings are configuration artefacts rather than genuine dead
-> code. See [Interpreting the current output](#interpreting-the-current-output)
-> before acting on anything Knip reports. No code or dependencies have been
-> removed on the basis of this report.
+and how to interpret its output.
 
 ## Installation
 
@@ -23,7 +15,7 @@ Knip is already a dev dependency of the root workspace and does not need to be
 installed separately — a normal `pnpm install` at the repo root provides it.
 
 - Declared in the root [`package.json`](../../../../../package.json) under
-  `devDependencies` as `knip` (currently `^5.75.x`).
+  `devDependencies` as `knip`.
 - A `knip` script is defined at the repo root.
 - Configuration lives in [`knip.json`](../../../../../knip.json) at the repo
   root.
@@ -33,15 +25,15 @@ installed separately — a normal `pnpm install` at the repo root provides it.
 All commands are run from the **repository root**.
 
 ```bash
-# Full report across all configured workspaces
+# Full report across all workspaces
 pnpm knip
 
 # Equivalent (uses the root "knip" script)
 pnpm run knip
 ```
 
-Knip exits with a **non-zero status code when it finds issues**, which is what
-makes it usable as a CI gate.
+Knip exits with a **non-zero status code when it finds issues**, which makes it
+usable as a CI gate.
 
 ### Useful flags
 
@@ -63,6 +55,9 @@ pnpm knip --production
 # Machine-readable output
 pnpm knip --reporter json
 pnpm knip --reporter compact
+
+# Show why a workspace resolves the files/deps it does (debugging the config)
+pnpm knip --workspace <name> --debug
 ```
 
 The categories Knip reports are: `files`, `dependencies`, `devDependencies`,
@@ -72,116 +67,126 @@ The categories Knip reports are: `files`, `dependencies`, `devDependencies`,
 ## How the configuration works
 
 `knip.json` uses Knip's [monorepo / workspaces](https://knip.dev/features/monorepos-and-workspaces)
-mode. Each entry under `workspaces` declares:
+mode and declares **every** pnpm workspace explicitly. Each entry under
+`workspaces` declares:
 
 - `entry` — the files Knip treats as roots of the import graph (anything not
-  reachable from an entry is "unused").
+  reachable from an entry is reported as unused).
 - `project` — the set of source files in that workspace that Knip is allowed to
-  consider.
+  consider when looking for unused files/exports.
 
-The current config also sets:
+The workspaces and their entry points:
 
-- `ignoreExportsUsedInFile` for `interface` and `type` — an export that is only
-  used within the file that declares it is not reported. This avoids noise from
-  types that are exported for documentation/consistency but consumed locally.
+| Workspace                | Entry                                                | Notes                                             |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------------- |
+| `api`                    | `src/index.ts`, `src/scripts/*.ts`                   | Express server + ts-node CLIs; Mocha tests via plugin |
+| `app`                    | `src/index.tsx`                                       | Vite/Vitest + Capacitor                           |
+| `web`                    | `src/main.tsx`                                        | Vite/Vitest + TanStack Router (`routeTree.gen.ts`)|
+| `library/forms`          | `lib/index.ts`, `src/main.tsx`                        | Published lib (`lib/`) + dev harness (`src/`)     |
+| `library/data-model`     | `src/index.ts`                                        | Jest tests via plugin                             |
+| `infrastructure/aws-cdk` | `bin/aws-cdk-faims-infra.ts`, `validateConfig.ts`    | Code lives in `lib/`/`bin/`, not `src/`           |
+| `e2e`                    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium      |
+
+Knip auto-detects and runs **tool plugins** based on each workspace's
+dependencies and config files (Vite, Vitest, Jest, Mocha, WebdriverIO,
+Capacitor, MSW, ts-node, Oxlint). These contribute extra entry points (for
+example Vitest `setupFiles`, Mocha specs from `.mocharc.json`, and the
+WebdriverIO config) so that test-only dependencies are correctly seen as used.
+
+The config also sets:
+
+- `ignoreExportsUsedInFile` for `interface` and `type` — an export only used
+  within the file that declares it is not reported.
 - `tags: ["-lintignore"]` — any symbol annotated with a `@lintignore` JSDoc tag
   is excluded from the report. Use this to deliberately suppress a finding in
-  source, e.g.:
+  source:
 
   ```ts
   /** @lintignore intentionally part of the public API */
   export const keepMe = ...;
   ```
 
-## Interpreting the current output
+- `ignoreBinaries: ["run-script"]` — suppresses a false positive: `pnpm
+  run-script ...` is a built-in pnpm subcommand, not an external binary.
+- Per-workspace `ignoreDependencies` for packages that are **resolved at
+  runtime by a toolchain** and can never be seen by static analysis:
+  - `app`: `@capacitor/android`, `@capacitor/ios` — native platform packages,
+    consumed by the native build, never imported in TS.
+  - `e2e`: `@wdio/local-runner`, `@wdio/appium-service`, `appium`,
+    `appium-uiautomator2-driver`, `chromedriver`, `ts-node` — loaded by the
+    WebdriverIO runner / Appium at runtime via config strings.
 
-A sanity-check run (`pnpm knip`) currently reports roughly:
+## A note on the `api` workspace and `.gitignore`
 
-| Category                    | Count | Verdict                                              |
-| --------------------------- | ----- | ---------------------------------------------------- |
-| Unused files                | ~33   | Mixed — mostly real, some config-driven (e2e)        |
-| Unused dependencies         | ~84   | **Largely false positives** (see `api` below)        |
-| Unused devDependencies      | ~58   | **Largely false positives** (see `api` below)        |
-| Unlisted dependencies       | ~4    | Real — should be declared in the right `package.json`|
-| Unlisted binaries           | ~4    | Mostly real / expected                               |
-| Unused exports              | ~183  | Needs manual review — plausible but verify           |
-| Unused exported types       | ~2    | Needs manual review                                  |
-| Unused exported enum members| ~1    | Needs manual review                                  |
-| Duplicate exports           | ~40   | **Mostly intentional** (back-compat aliases)         |
-| Configuration hints         | ~6    | Action items for `knip.json` itself                  |
+Knip honours `.gitignore` files when building its `project` file list. A
+malformed pattern in `api/.gitignore` (`*data_dummy_listing||*`) was previously
+parsed by Knip's glob engine as an empty alternation (`||`) that matched
+**everything**, so the entire `api/src` tree was excluded and *every* api
+dependency was falsely reported as unused. Git itself treats the `|` characters
+literally, so the bug was invisible outside of Knip. The pattern has been
+corrected to `*data_dummy_listing*` (its evident intent), which both fixes Knip
+and makes the ignore rule actually work in git. If you add patterns to a
+`.gitignore`, avoid `|` characters — they are not valid glob/gitignore syntax.
 
-The counts will drift as the codebase changes; the **shape** of the findings is
-the important part.
+## Interpreting the output
 
-### Known config gaps that cause false positives
+With the corrected configuration, the remaining findings are **genuine** and
+worth reviewing — they are no longer configuration artefacts. As of writing, a
+`pnpm knip` run reports roughly:
 
-These are problems with the Knip configuration, not the code. They should be
-fixed in `knip.json` (and `pnpm-workspace.yaml`) **before** anyone acts on the
-related findings.
+| Category                     | Count | What to do                                                  |
+| ---------------------------- | ----- | ---------------------------------------------------------- |
+| Unused files                 | ~18   | Verify, then delete (e.g. orphaned themes, `._test` files) |
+| Unused dependencies          | ~51   | Verify each, then remove from the relevant `package.json`  |
+| Unused devDependencies       | ~28   | As above                                                   |
+| Unlisted dependencies        | ~10   | Add the package to the correct `package.json`              |
+| Unlisted binaries            | ~3    | Declare the providing package, or ignore if external (CI)  |
+| Unresolved imports           | ~2    | Fix the import / install or remove the referenced types    |
+| Unused exports               | ~236  | Verify, then remove the `export` keyword or the symbol     |
+| Unused exported types/enums  | ~11   | As above                                                   |
+| Duplicate exports            | ~42   | Mostly intentional back-compat aliases — see below         |
+| Configuration hints          | ~1    | Root `package.json` `main: index.js` points at a missing file |
 
-1. **The `api` workspace is not configured.**
-   `pnpm-workspace.yaml` includes `api`, but `knip.json` has no `api` entry.
-   As a result Knip cannot follow the api import graph properly and reports the
-   bulk of the api runtime/dev dependencies as "unused". This is demonstrably
-   wrong — for example `express`, `cors`, `passport`, `morgan`, `cookie-session`
-   and `handlebars` are all imported at the top of
-   [`api/src/expressSetup.ts`](../../../../../api/src/expressSetup.ts) yet appear
-   in the "Unused dependencies" list. **Treat every `api/package.json` entry in
-   the dependency report as suspect until `api` is configured** with proper
-   entry points (server entry `src/index.ts`, the `src/scripts/*.ts` CLIs, and
-   the Mocha test suite).
+Counts will drift as the codebase changes.
 
-2. **`infrastructure/aws-cdk` project pattern matches nothing.**
-   The config points `project` at `src/**`, but the CDK code actually lives in
-   `infrastructure/aws-cdk/lib/` (with the entry in `bin/`). Knip emits a
-   `Refine project pattern (no matches)` configuration hint for this workspace.
-   The `project` glob should target `lib/**` and `bin/**`.
+### Things that are intentional / expected
 
-3. **`e2e` has no entry configuration.**
-   `e2e` is picked up as a workspace with Knip defaults, so the WebdriverIO
-   config files (`wdio*.conf.ts`) and page objects/specs are reported as unused
-   files. They are not dead code — they need to be declared as entry points
-   (e.g. `wdio*.conf.ts` and `test/specs/**/*.e2e.ts`).
-
-4. **Stale workspaces in `pnpm-workspace.yaml`.**
-   `pnpm-workspace.yaml` still lists `designer` and `tests` packages, but those
-   directories no longer exist on disk (the designer now lives under
-   `web/src/designer`). These stale entries should be removed; they are a
-   separate cleanup from Knip but surface while auditing workspaces.
-
-### Categories that are mostly intentional
-
-- **Duplicate exports** — the majority are deliberate backward-compatibility
-  aliases, e.g. the versioned schema aliases in
+- **Duplicate exports** are mostly deliberate backward-compatibility aliases,
+  e.g. the versioned schema aliases in
   `library/data-model/src/data_storage/.../types.ts`
-  (`AuthRecordV5FieldsSchema` ↔ `AuthRecordFieldsSchema`), and components that
-  export both a named symbol and a `default` (`QRCodeButton|default`). These are
-  generally safe and may be excluded with `--exclude duplicates` or annotated
-  with `@lintignore` if a clean report is desired.
+  (`AuthRecordV5FieldsSchema` ↔ `AuthRecordFieldsSchema`) and components that
+  export both a named symbol and a `default`. Exclude them with
+  `--exclude duplicates`, or annotate with `@lintignore` if a clean report is
+  wanted.
+- **Disabled tests** named `*._test.tsx` (rather than `*.test.tsx`) are not run
+  by Vitest and therefore show up as unused files. They are orphaned test files,
+  not dead production code — decide whether to re-enable or delete them.
 
-### Categories that warrant real review
+### Common reasons for a finding that is *not* dead code
 
-- **Unused files / unused exports** in the configured workspaces (`app`, `web`,
-  `library/forms`, `library/data-model`) are plausible dead code, but each needs
-  to be verified manually before removal. Common reasons for false positives
-  here are:
-  - symbols referenced only by string (routes, dynamic lookups);
-  - test-only helpers where the test files are not declared as entries;
-  - public API surface that is intentionally exported for downstream consumers.
+Before deleting anything, check for these (they are the usual false-positive
+sources, and the ones that remain are why every finding needs a quick manual
+check):
 
-- **Unlisted dependencies** (e.g. `@wdio/types`, `jsdom`, `@vitest/coverage-v8`,
-  `react-scripts`) are genuine: the package is imported/used but missing from the
-  relevant `package.json`. These are low-risk, useful fixes.
+- symbols referenced only by string (routes, dynamic lookups);
+- dependencies pulled in only via build config / polyfills (e.g.
+  `rollup-plugin-node-polyfills` referenced as a string alias in
+  `vite.config.ts`, or `buffer`/`stream` global polyfills);
+- public API surface intentionally exported for downstream consumers.
+
+If something is genuinely used but undetectable, prefer a targeted fix —
+`@lintignore` on the symbol, or `ignoreDependencies` in `knip.json` — over
+deleting it.
 
 ## Suggested workflow
 
 1. Run `pnpm knip` from the repo root.
-2. Ignore the `api` dependency findings and the `aws-cdk`/`e2e` file findings
-   until the config gaps above are addressed.
-3. For everything else, verify each finding before deleting code — prefer
-   `pnpm knip --workspace <name> --include <category>` to focus.
-4. Use the `@lintignore` tag (or `knip.json` ignore options) for intentional
-   public API / aliases rather than deleting them.
+2. Triage one category/workspace at a time:
+   `pnpm knip --workspace <name> --include <category>`.
+3. Verify each finding (see the false-positive sources above) before removing
+   code or dependencies.
+4. Use `@lintignore` / `knip.json` ignore options for intentional public API or
+   runtime-only usage rather than deleting it.
 
 ## References
 
