@@ -174,6 +174,7 @@ async function runSession(sessionIndex: number): Promise<void> {
     browser = await chromium.launch({
       headless: env.HEADLESS,
       slowMo: env.SLOW_MO,
+      args: ['--disable-dev-shm-usage'],
     });
 
     context = await browser.newContext({

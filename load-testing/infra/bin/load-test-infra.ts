@@ -17,7 +17,7 @@ new LoadTestStack(app, config.STACK_NAME, {
     region: config.AWS_REGION,
   },
   config,
-  description: 'DASS load testing — ECS task definitions + metrics EC2',
+  description: 'DASS load testing - ECS task definitions + metrics EC2',
 });
 
 app.synth();

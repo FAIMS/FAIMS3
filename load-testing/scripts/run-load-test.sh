@@ -1,62 +1,44 @@
 #!/usr/bin/env bash
-# Launch a DASS load test run using ECS RunTask (coordinator + N agents).
+# Launch a DASS load test on AWS using ECS RunTask (coordinator + N agents).
 #
-# Prerequisites:
-#   - AWS CLI v2, jq, curl
-#   - Stack deployed: cd load-testing/infra && pnpm run deploy
-#   - Metrics EC2: SSM in, cd /opt/loadtest && docker compose up -d
-#
-# Usage:
-#   ./scripts/run-load-test.sh --agents 10 \
-#     --invite DEV-XXXXXX \
-#     --notebook-project-id 1780442865830-fa-fa-fds \
-#     --notebook-server-id development-faims-server
-#
-# Environment (or flags):
-#   STACK_NAME, AWS_REGION — must match load-testing/infra/.env
+# Configuration: load-testing/scripts/.env (see .env.example)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INFRA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ENV_FILE="${ENV_FILE:-${SCRIPT_DIR}/.env}"
 
-STACK_NAME="${STACK_NAME:-loadtest-dev}"
-AWS_REGION="${AWS_REGION:-ap-southeast-2}"
-AGENT_COUNT=1
-INVITE_CODE=""
-NOTEBOOK_PROJECT_ID=""
-NOTEBOOK_SERVER_ID=""
-NOTEBOOK_NAME="survey"
-PARTICIPATE_IN_EXPORT="false"
-OFFLINE_DURATION_MS="30000"
-SYNC_STORM_DELAY_MS="60000"
-EXPECTED_AGENT_COUNT=""
-WAIT_TIMEOUT_SEC=3600
-
-usage() {
-  sed -n '2,20p' "$0"
-  exit 1
-}
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --agents) AGENT_COUNT="$2"; shift 2 ;;
-    --invite) INVITE_CODE="$2"; shift 2 ;;
-    --notebook-project-id) NOTEBOOK_PROJECT_ID="$2"; shift 2 ;;
-    --notebook-server-id) NOTEBOOK_SERVER_ID="$2"; shift 2 ;;
-    --notebook-name) NOTEBOOK_NAME="$2"; shift 2 ;;
-    --stack) STACK_NAME="$2"; shift 2 ;;
-    --region) AWS_REGION="$2"; shift 2 ;;
-    -h|--help) usage ;;
-    *) echo "Unknown option: $1" >&2; usage ;;
-  esac
-done
-
-if [[ -z "$INVITE_CODE" || -z "$NOTEBOOK_PROJECT_ID" || -z "$NOTEBOOK_SERVER_ID" ]]; then
-  echo "Required: --invite --notebook-project-id --notebook-server-id" >&2
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing ${ENV_FILE}" >&2
+  echo "Copy load-testing/scripts/.env.example to load-testing/scripts/.env and edit." >&2
   exit 1
 fi
 
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+require_var() {
+  local name="$1"
+  if [[ -z "${!name:-}" ]]; then
+    echo "Required variable ${name} is not set in ${ENV_FILE}" >&2
+    exit 1
+  fi
+}
+
+require_var STACK_NAME
+require_var AWS_REGION
+require_var INVITE_CODE
+require_var NOTEBOOK_PROJECT_ID
+require_var NOTEBOOK_SERVER_ID
+
+AGENT_COUNT="${AGENT_COUNT:-1}"
+NOTEBOOK_NAME="${NOTEBOOK_NAME:-survey}"
+PARTICIPATE_IN_EXPORT="${PARTICIPATE_IN_EXPORT:-false}"
+OFFLINE_DURATION_MS="${OFFLINE_DURATION_MS:-30000}"
+SYNC_STORM_DELAY_MS="${SYNC_STORM_DELAY_MS:-60000}"
+WAIT_TIMEOUT_SEC="${WAIT_TIMEOUT_SEC:-3600}"
 EXPECTED_AGENT_COUNT="${EXPECTED_AGENT_COUNT:-$AGENT_COUNT}"
 
 stack_output() {
@@ -77,11 +59,14 @@ ECS_SG="$(stack_output EcsSecurityGroupId)"
 SUBNETS="$(stack_output PublicSubnetIds)"
 METRICS_INSTANCE_ID="$(stack_output MetricsInstanceId)"
 METRICS_DNS="$(stack_output MetricsDnsName)"
-DASS_APP_URL="$(stack_output TargetDassAppUrl)"
+
+DASS_APP_URL="${DASS_APP_URL:-$(stack_output TargetDassAppUrl)}"
+DASS_API_URL="${DASS_API_URL:-$(stack_output TargetDassApiUrl)}"
+COUCH_URL="${COUCH_URL:-$(stack_output TargetCouchUrl)}"
 
 for v in CLUSTER COORD_TASK_DEF AGENT_TASK_DEF ECS_SG SUBNETS METRICS_INSTANCE_ID; do
   if [[ -z "$v" || "$v" == "None" ]]; then
-    echo "Missing CloudFormation output. Deploy the stack first." >&2
+    echo "Missing CloudFormation output. Deploy the stack first (load-testing/infra)." >&2
     exit 1
   fi
 done
@@ -110,7 +95,7 @@ coord_env="$(jq -n \
   --arg pg "$PUSHGATEWAY_URL" \
   '[{name:"EXPECTED_AGENT_COUNT",value:$n},{name:"PROMETHEUS_PUSHGATEWAY_URL",value:$pg}]')"
 
-echo "Starting coordinator task…"
+echo "Starting coordinator task (expecting ${EXPECTED_AGENT_COUNT} agent(s))…"
 
 COORD_TASK_ARN="$(aws ecs run-task \
   --cluster "$CLUSTER" \
@@ -199,6 +184,8 @@ agent_env_base="$(jq -n \
   --arg offline "$OFFLINE_DURATION_MS" \
   --arg sync "$SYNC_STORM_DELAY_MS" \
   --arg app "$DASS_APP_URL" \
+  --arg api "$DASS_API_URL" \
+  --arg couch "$COUCH_URL" \
   '[{name:"COORDINATOR_URL",value:$url},
     {name:"INVITE_CODE",value:$invite},
     {name:"NOTEBOOK_PROJECT_ID",value:$proj},
@@ -207,10 +194,11 @@ agent_env_base="$(jq -n \
     {name:"PARTICIPATE_IN_EXPORT",value:$export},
     {name:"OFFLINE_DURATION_MS",value:$offline},
     {name:"SYNC_STORM_DELAY_MS",value:$sync},
-    {name:"DASS_APP_URL",value:$app}]')"
+    {name:"DASS_APP_URL",value:$app},
+    {name:"DASS_API_URL",value:$api},
+    {name:"COUCH_URL",value:$couch}]')"
 
 echo "Launching ${AGENT_COUNT} agent task(s)…"
-AGENT_TASK_ARNS=()
 
 for i in $(seq 1 "$AGENT_COUNT"); do
   agent_id="agent-${i}-$(date +%s)"
@@ -228,7 +216,6 @@ for i in $(seq 1 "$AGENT_COUNT"); do
     --output text)"
 
   echo "  started ${agent_id}: ${arn}"
-  AGENT_TASK_ARNS+=("$arn")
 done
 
 echo ""
@@ -239,7 +226,7 @@ echo ""
 echo "Monitor coordinator:"
 echo "  curl ${COORDINATOR_URL}/status"
 echo ""
-echo "Wait for coordinator task to STOP (exit 0) — indicates run complete."
+echo "Waiting for coordinator task to stop (test complete)…"
 
 wait_task_stopped() {
   local task_arn="$1"
