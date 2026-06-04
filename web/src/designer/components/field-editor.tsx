@@ -527,8 +527,12 @@ const FieldEditorComponent = ({
           },
         }}
       >
-        <Grid container sx={{rowGap: 1, alignItems: 'center'}}>
-          <Grid size={{xs: 12, sm: 8}}>
+        <Grid
+          container
+          spacing={2}
+          sx={{width: '100%', rowGap: 1, alignItems: 'center'}}
+        >
+          <Grid size={8}>
             <Stack direction="column" spacing={1} sx={{pr: {xs: 0, sm: 2}}}>
               <Typography
                 variant="subtitle2"
@@ -631,7 +635,7 @@ const FieldEditorComponent = ({
               </Stack>
             </Stack>
           </Grid>
-          <Grid size={{xs: 12, sm: 4}}>
+          <Grid size={4}>
             <Stack
               direction="row"
               spacing={0.25}
@@ -639,8 +643,6 @@ const FieldEditorComponent = ({
                 p: 0.35,
                 justifyContent: {sm: 'right', xs: 'left'},
                 borderRadius: 1,
-                backgroundColor: theme =>
-                  alpha(theme.palette.common.black, 0.02),
               }}
             >
               <Tooltip title="Delete Field">
