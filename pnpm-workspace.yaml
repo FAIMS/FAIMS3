@@ -2,10 +2,8 @@ packages:
   - api
   - app
   - web
-  - designer
   - library/data-model
   - library/forms
-  - tests
   - infrastructure/aws-cdk
   - e2e
 onlyBuiltDependencies:
