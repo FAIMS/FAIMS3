@@ -139,7 +139,7 @@ export const buildSharedComponentOverrides = (theme: Theme) => ({
           },
         },
         '& .MuiDataGrid-cell': {
-          padding: '16px 24px',
+          padding: '24px 24px 0px 24px',
           borderBottom: `1px solid ${theme.palette.divider}`,
           '&:focus, &:focus-within': {outline: 'none'},
         },
