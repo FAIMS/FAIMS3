@@ -30,8 +30,8 @@ Usage:
 Environment (from .env or shell):
   AGENT_COUNT                 Number of agent tasks (default: 1)
   AWS_REGION                  Pricing region (default: ap-southeast-2)
-  COORDINATOR_CPU             Fargate CPU units, 1024 = 1 vCPU (default: 512)
-  COORDINATOR_MEMORY_MIB      Coordinator memory MiB (default: 1024)
+  COORDINATOR_CPU             Fargate CPU units, 1024 = 1 vCPU (default: 2048)
+  COORDINATOR_MEMORY_MIB      Coordinator memory MiB (default: 4096)
   AGENT_CPU                   Agent CPU units (default: 2048)
   AGENT_MEMORY_MIB            Agent memory MiB (default: 4096)
   ESTIMATE_DURATION_MIN         Default duration if no arg (default: 15)
@@ -54,8 +54,8 @@ fi
 
 AGENT_COUNT="${AGENT_COUNT:-1}"
 AWS_REGION="${AWS_REGION:-ap-southeast-2}"
-COORDINATOR_CPU="${COORDINATOR_CPU:-512}"
-COORDINATOR_MEMORY_MIB="${COORDINATOR_MEMORY_MIB:-1024}"
+COORDINATOR_CPU="${COORDINATOR_CPU:-2048}"
+COORDINATOR_MEMORY_MIB="${COORDINATOR_MEMORY_MIB:-4096}"
 AGENT_CPU="${AGENT_CPU:-2048}"
 AGENT_MEMORY_MIB="${AGENT_MEMORY_MIB:-4096}"
 ESTIMATE_DURATION_MIN="${1:-${ESTIMATE_DURATION_MIN:-15}}"

@@ -4,6 +4,10 @@
 # Usage:
 #   COORDINATOR_URL=http://x.x.x.x:4000 ./poll-coordinator-status.sh
 #   COORDINATOR_URL=... ./poll-coordinator-status.sh --once
+#
+# Compact display (default): clusters agents and compresses the plan timeline.
+#   STATUS_VERBOSE=true       per-agent lines + full timeline
+#   STATUS_CLEAR_SCREEN=true  clear terminal each poll (loop mode only)
 
 set -euo pipefail
 
@@ -14,6 +18,8 @@ fi
 
 : "${COORDINATOR_URL:?Set COORDINATOR_URL}"
 POLL_INTERVAL_SEC="${STATUS_POLL_INTERVAL_SEC:-5}"
+STATUS_VERBOSE="${STATUS_VERBOSE:-false}"
+STATUS_CLEAR_SCREEN="${STATUS_CLEAR_SCREEN:-true}"
 
 format_ms() {
   local ms="$1"
@@ -31,7 +37,131 @@ format_ms() {
   fi
 }
 
-render_status() {
+render_status_compact() {
+  local json="$1"
+  local now
+  now="$(date -u +%H:%M:%S)"
+
+  local run_state plan_name summary_line
+  run_state="$(jq -r '.runState' <<< "$json")"
+  plan_name="$(jq -r '.planName // "unnamed"' <<< "$json")"
+
+  summary_line="$(jq -r '
+    def fmt_ms(ms):
+      if ms == null then "—"
+      else
+        (ms / 1000 | floor) as $s
+        | ($s / 60 | floor) as $m
+        | ($s % 60) as $r
+        | if $m > 0 then "\($m)m\(if $r < 10 then "0" else "" end)\($r)s" else "\($s)s" end
+      end;
+    "agents \(.registeredAgents)/\(.expectedAgents // .registeredAgents) reg"
+    + "  \(.readyAgents) rdy"
+    + "  \(.doneAgents // 0)/\(.expectedAgents // .registeredAgents) done"
+    + "  |  metrics \(.metricsReceived)"
+    + "  |  "
+    + (if (.runState == "running" or .runState == "complete") then
+        "\(fmt_ms(.elapsedMs)) / ~\(fmt_ms(.estimatedDurationMs))"
+        + (if .progressPercent != null then " (\(.progressPercent)%)" else "" end)
+        + (if .runState == "running" then "  ~\(fmt_ms(.estimatedRemainingMs)) left" else "" end)
+      else "" end)
+  ' <<< "$json")"
+
+  printf '\033[1m══════════════════════════════════════════════════════════════\033[0m\n'
+  printf ' \033[1mDASS Load Test\033[0m — %s  [%s UTC]\n' "$plan_name" "$now"
+  printf ' \033[36m%s\033[0m  %s\n' "$run_state" "$summary_line"
+
+  if [[ "$run_state" == "waiting_for_agents" ]]; then
+    local expected
+    expected="$(jq -r '.expectedAgents // .registeredAgents' <<< "$json")"
+    printf ' waiting for %s agent(s)…\n' "$expected"
+  fi
+
+  jq -r '
+    def eta_sec(ms):
+      if ms == null then "—"
+      else ((ms / 1000) | floor | tostring) + "s"
+      end;
+
+    (if (.completedSteps // []) | length > 0 then
+      "done: "
+        + ([.completedSteps[]?.stepId]
+           | if length > 6 then (.[0:5] | join(", ")) + " …+" + ((length - 5) | tostring)
+             else join(", ") end)
+    else empty end),
+
+    (if (.activeStepGroups // []) | length > 0 then
+      "active: "
+        + ([.activeStepGroups[] |
+            (.stepId + (if .branchId then "/" + .branchId else "" end))
+            + " x" + (.agentCount | tostring)
+            + " ETA " + eta_sec(.remainingMs)
+            + (if .barrier then
+                " [" + .barrier.waitingOn + " " + (.barrier.completedAgents | tostring)
+                + "/" + (.barrier.totalAgents | tostring) + "]"
+              else "" end)
+          ] | join("  ·  "))
+    else empty end),
+
+    (if (.splitSummary // []) | length > 0 then
+      "split: " + ([.splitSummary[] | .branchId + "=" + (.agentCount | tostring)] | join("  "))
+    else empty end),
+
+    (if (.agents // []) | length > 0 then
+      "agents: "
+        + (
+          [.agents[] |
+            {
+              bucket: (
+                (if .done then "done"
+                 elif (.ready | not) then "pending"
+                 else "active" end)
+                + "|" + (.stepId // "-")
+                + "|" + (.branchId // "-")
+                + (if .blockedOnStepId then "|wait" else "" end)
+              ),
+              label: (
+                if .done then "done"
+                elif (.ready | not) then "pending"
+                else (.stepId // "-")
+                  + (if .branchId then "/" + .branchId else "" end)
+                  + (if .blockedOnStepId then " (wait)" else "" end)
+                end
+              )
+            }
+          ]
+          | group_by(.bucket)
+          | map({n: length, label: .[0].label})
+          | sort_by(-.n, .label)
+          | map((.n | tostring) + "x " + .label)
+          | join("  ·  ")
+        )
+    else empty end),
+
+    (if (.planTimeline // []) | length > 0 then
+      . as $root
+      | ($root.completedSteps // []) | map(.stepId) as $done
+      | [$root.activeStepGroups[]?.stepId] as $active
+      | "plan: "
+        + ([$root.planTimeline[] |
+            if .structural == "loop" then
+              "[loop " + .id + " x" + ((.loopCount // 0) | tostring) + "]"
+            elif .structural == "split" then
+              "{split " + .id + "}"
+            else
+              (if (.id | IN($done[])) then "+"
+               elif (.id | IN($active[])) then ">"
+               else "." end)
+              + .id
+            end
+          ] | join(" "))
+    else empty end)
+  ' <<< "$json"
+
+  printf '\033[1m══════════════════════════════════════════════════════════════\033[0m\n'
+}
+
+render_status_verbose() {
   local json="$1"
   local now
   now="$(date -u +%H:%M:%S)"
@@ -67,72 +197,47 @@ render_status() {
   printf ' agents: %s/%s registered  |  %s ready  |  %s/%s done  |  metrics: %s\n' \
     "$reg" "$expected" "$ready" "$done" "$expected" "$metrics"
 
-  if [[ "$run_state" == "waiting_for_agents" ]]; then
-    printf '  waiting for %s agent(s) to register and ready up…\n' "$expected"
-  fi
-
   local completed
   completed="$(jq -r '[.completedSteps[]?.stepId] | join(", ")' <<< "$json")"
   if [[ -n "$completed" ]]; then
-    printf ' completed steps: %s\n' "$completed"
+    printf ' completed: %s\n' "$completed"
   fi
 
   local group_count
   group_count="$(jq -r '.activeStepGroups | length' <<< "$json")"
   if [[ "$group_count" != "0" && "$group_count" != "null" ]]; then
-    printf '──────────────────────────────────────────────────────────────\n'
-    printf ' \033[1mActive steps\033[0m\n'
-    jq -r '.activeStepGroups[] |
-      "  \(.stepId) (\(.kind))\(if .branchId then " branch=\(.branchId)" else "" end)  \(.agentCount) agent(s)  ETA \(
-        if .remainingMs then ((.remainingMs / 1000 | floor) | tostring) + "s" else "—" end
-      )\(
-        if .barrier then "  barrier=\(.barrier.waitingOn) \(.barrier.completedAgents)/\(.barrier.totalAgents)" else "" end
-      )"' <<< "$json"
-  fi
-
-  local split_count
-  split_count="$(jq -r '.splitSummary | length' <<< "$json")"
-  if [[ "$split_count" != "0" && "$split_count" != "null" ]]; then
-    printf ' \033[1mSplit\033[0m '
-    jq -r '[.splitSummary[] | "\(.branchId)=\(.agentCount) (\(.kind))"] | join("  ")' <<< "$json"
+    printf ' active: '
+    jq -r '[.activeStepGroups[] |
+      "\(.stepId) (\(.kind))\(if .branchId then "/\(.branchId)" else "" end) x\(.agentCount) ETA \(
+        if .remainingMs then ((.remainingMs / 1000 | floor)|tostring) + "s" else "—" end
+      )"] | join("  ·  ")' <<< "$json"
     printf '\n'
   fi
 
-  local blocked
-  blocked="$(jq -r '[.agents[]? | select(.blockedOnStepId != null) | .agentId] | join(", ")' <<< "$json")"
-  if [[ -n "$blocked" ]]; then
-    printf ' waiting on barrier: %s\n' "$blocked"
-  fi
+  jq -r '.agents[]? |
+    "   \(.agentId)  \(.stepId // "—")\(if .branchId then "/\(.branchId)" else "" end)\(if .done then " DONE" elif .ready then "" else " !rdy" end)\(if .blockedOnStepId then " (wait)" else "" end)"' <<< "$json"
 
-  local agent_rows
-  agent_rows="$(jq -r '.agents[]? |
-    "  \(.agentId)  step=\(.stepId // "—")\(if .branchId then " branch=\(.branchId)" else "" end)\(if .done then " DONE" elif .ready then "" else " (not ready)" end)\(if .blockedOnStepId then " blocked=\(.blockedOnStepId)" else "" end)"' <<< "$json")"
-  if [[ -n "$agent_rows" ]]; then
-    printf '──────────────────────────────────────────────────────────────\n'
-    printf ' \033[1mAgents\033[0m\n'
-    printf '%s\n' "$agent_rows"
-  fi
-
-  local timeline_len
-  timeline_len="$(jq -r '.planTimeline | length // 0' <<< "$json")"
-  if [[ "$timeline_len" != "0" && "$timeline_len" != "null" ]]; then
-    printf '──────────────────────────────────────────────────────────────\n'
-    printf ' \033[1mPlan timeline\033[0m (leaf phases; ≈ = structural)\n'
-    jq -r '
-      . as $root |
-      ($root.completedSteps // []) | map(.stepId) as $done |
-      [$root.activeStepGroups[]?.stepId] as $active |
-      $root.planTimeline[] |
-      (if .structural then "≈ " else "  " end) +
-      (if (.id | IN($done[])) then "✓ " elif (.id | IN($active[])) then "▶ " else "  " end) +
-      .id +
-      (if .kind then " (\(.kind))" else "" end) +
-      (if .label then " \(.label)" else "" end) +
-      " ~" + ((.durationMs / 1000 | floor | tostring)) + "s"
-    ' <<< "$json"
-  fi
+  jq -r '
+    . as $root |
+    ($root.completedSteps // []) | map(.stepId) as $done |
+    [$root.activeStepGroups[]?.stepId] as $active |
+    $root.planTimeline[] |
+    (if .structural then "~ " else "  " end) +
+    (if (.id | IN($done[])) then "+ " elif (.id | IN($active[])) then "> " else "  " end) +
+    .id + (if .kind then " (\(.kind))" else "" end) +
+    " ~" + ((.durationMs / 1000 | floor | tostring)) + "s"
+  ' <<< "$json"
 
   printf '\033[1m══════════════════════════════════════════════════════════════\033[0m\n'
+}
+
+render_status() {
+  local json="$1"
+  if [[ "${STATUS_VERBOSE,,}" == "true" ]]; then
+    render_status_verbose "$json"
+  else
+    render_status_compact "$json"
+  fi
 }
 
 poll_once() {
@@ -140,6 +245,9 @@ poll_once() {
   if ! json="$(curl -sf "${COORDINATOR_URL}/status")"; then
     echo "Coordinator unreachable: ${COORDINATOR_URL}/status" >&2
     return 1
+  fi
+  if [[ "$ONCE" != "true" && "${STATUS_CLEAR_SCREEN,,}" == "true" ]]; then
+    printf '\033[2J\033[H'
   fi
   render_status "$json"
 }

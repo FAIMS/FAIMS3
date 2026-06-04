@@ -30,8 +30,8 @@ export const LoadTestInfraConfigSchema = z
     METRICS_INSTANCE_TYPE: z.string().default('t3.medium'),
     ALLOWED_GRAFANA_CIDR: z.string().default('0.0.0.0/0'),
     ALLOWED_COORDINATOR_CIDR: z.string().default('0.0.0.0/0'),
-    COORDINATOR_CPU: z.coerce.number().int().positive().default(512),
-    COORDINATOR_MEMORY_MIB: z.coerce.number().int().positive().default(1024),
+    COORDINATOR_CPU: z.coerce.number().int().positive().default(2048),
+    COORDINATOR_MEMORY_MIB: z.coerce.number().int().positive().default(4096),
     AGENT_CPU: z.coerce.number().int().positive().default(2048),
     AGENT_MEMORY_MIB: z.coerce.number().int().positive().default(4096),
   })
