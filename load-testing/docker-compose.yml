@@ -36,5 +36,7 @@ services:
       - '${COUCHDB_EXPORTER_PORT:-9984}:9984'
     env_file:
       - couchdb-exporter.env
+    command:
+      - '--databases=${COUCHDB_EXPORTER_DATABASES:-_all_dbs}'
     extra_hosts:
       - 'host.docker.internal:host-gateway'

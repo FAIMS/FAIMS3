@@ -24,6 +24,8 @@ Coordinator and agents run separately — see [../README.md](../README.md).
 
 Provisioned from `grafana/dashboards/json/dass-load-test.json` into folder **DASS Load Tests**.
 
+The **CouchDB server load** section charts gesellix exporter metrics for HTTP throughput, read/write rates, errors, Erlang memory, replication, fabric failures, and per-database growth (requires `COUCHDB_EXPORTER_DATABASES=_all_dbs` on the exporter).
+
 After editing panels in Grafana UI, export JSON back:
 
 1. Dashboard → Share → Export → Save to file

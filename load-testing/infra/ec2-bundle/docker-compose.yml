@@ -35,3 +35,5 @@ services:
     env_file:
       # bootstrap.sh writes this file; $ in passwords is escaped as $$ for compose.
       - couchdb-exporter.env
+    command:
+      - '--databases=${COUCHDB_EXPORTER_DATABASES:-_all_dbs}'

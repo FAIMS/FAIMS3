@@ -55,6 +55,7 @@ append_env_var .env PROMETHEUS_PORT "${PROMETHEUS_PORT:-9090}"
 append_env_var .env PUSHGATEWAY_PORT "${PUSHGATEWAY_PORT:-9091}"
 append_env_var .env GRAFANA_PORT "${GRAFANA_PORT:-3030}"
 append_env_var .env COUCHDB_EXPORTER_PORT "${COUCHDB_EXPORTER_PORT:-9984}"
+append_env_var .env COUCHDB_EXPORTER_DATABASES "${COUCHDB_EXPORTER_DATABASES:-_all_dbs}"
 # Never write COUCH_PASSWORD to project .env — compose auto-loads it and interpolates $VAR.
 
 # gesellix creds live in couchdb-exporter.env ($ escaped as $$ for compose env_file).
