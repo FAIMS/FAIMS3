@@ -57,7 +57,7 @@ append_env_var COUCHDB_PASSWORD "$COUCH_PASSWORD"
 chmod -R a+rX "$INSTALL_DIR"
 
 echo "Bootstrap complete."
-echo "  cd ${INSTALL_DIR} && docker compose up -d"
+echo "  Observability: cd ${INSTALL_DIR} && docker compose up -d"
 if [[ -n "${METRICS_FQDN:-}" ]]; then
   echo "  Grafana: http://${METRICS_FQDN}:3030"
 fi

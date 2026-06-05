@@ -13,6 +13,7 @@ import {
   isCounterMetric,
   isGaugeMetric,
 } from '@faims3/load-testing-shared';
+import {coordinatorWarn} from './coordinator-log';
 
 const RUN_STATE_NUMERIC: Record<RunState, number> = {
   waiting_for_agents: 0,
@@ -73,7 +74,7 @@ class PushThrottle {
       .catch(err => {
         const now = Date.now();
         if (now - this.lastWarnAt >= PUSH_WARN_INTERVAL_MS) {
-          console.warn(`Pushgateway ${this.label} push failed:`, err);
+          coordinatorWarn(`Pushgateway ${this.label} push failed`, err);
           this.lastWarnAt = now;
         }
       })

@@ -51,16 +51,18 @@ This will:
 | `MetricsInstanceId` | Resolve pushgateway private IP |
 | `MetricsDnsName` | Grafana URL |
 
-## Start observability (manual)
+## Observability stack
 
-Connect via **Session Manager** to the metrics EC2 instance, then:
+EC2 user-data installs Docker, downloads the bundle to `/opt/loadtest`, runs `bootstrap.sh` (writes `.env`), and starts `docker compose up -d`. Grafana is available at `http://<MetricsDnsName>:3030` once the instance finishes booting.
+
+To restart after a compose change:
 
 ```bash
 cd /opt/loadtest
 docker compose up -d
 ```
 
-User-data installs Docker, downloads the bundle from S3 to `/opt/loadtest`, and runs `bootstrap.sh` (writes `.env`). If bootstrap failed (check `sudo tail -100 /var/log/cloud-init-output.log`), recover manually:
+If bootstrap or compose failed (check `sudo tail -100 /var/log/cloud-init-output.log`), recover manually:
 
 ```bash
 # On your laptop — get bundle URI from stack output MetricsBundleS3Uri
@@ -106,7 +108,20 @@ curl -s localhost:9091/metrics | grep '^dass_' | head
 curl -s 'localhost:9090/api/v1/query?query=dass_test_phase' | jq '.data.result'
 ```
 
-Coordinator CloudWatch logs: search for `Pushgateway coordinator push failed` or `Pushgateway push failed`.
+**CloudWatch logs** (separate log groups — do not mix coordinator and agent):
+
+| Output | Contents |
+|--------|----------|
+| `CoordinatorLogGroupName` | Coordinator RunTask (`[coordinator] …`) |
+| `AgentLogGroupName` | Agent RunTasks (`[worker]`, `[session …]`) — stream `agent/agent/<task-id>` per task |
+
+```bash
+cd load-testing/scripts
+./tail-agent-logs.sh          # follow latest agent stream
+./tail-agent-logs.sh --list   # list recent agent streams
+```
+
+Coordinator logs: search for `Pushgateway coordinator push failed` or `Pushgateway push failed`.
 
 ## Run a load test
 

@@ -10,10 +10,17 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
-set -a
-# shellcheck disable=SC1091
-source .env
-set +a
+# Values are jq @json quoted — never `source .env` (bash expands $ inside "...").
+read_env() {
+  local key=$1
+  grep "^${key}=" .env 2>/dev/null | sed "s/^${key}=//" | jq -r . 2>/dev/null || true
+}
+
+COUCHDB_EXPORTER_URL="$(read_env COUCHDB_EXPORTER_URL)"
+COUCH_USER="$(read_env COUCH_USER)"
+COUCHDB_USERNAME="$(read_env COUCHDB_USERNAME)"
+COUCH_PASSWORD="$(read_env COUCH_PASSWORD)"
+COUCHDB_PASSWORD="$(read_env COUCHDB_PASSWORD)"
 
 redact() {
   sed -E 's/(COUCHDB_PASSWORD|COUCH_PASSWORD)=.*/\1=***/'
@@ -58,12 +65,42 @@ docker compose config 2>/dev/null \
 cid="$(docker compose ps -q couchdb-exporter 2>/dev/null || true)"
 if [[ -n "$cid" ]]; then
   echo
-  echo "=== Running container env ==="
-  docker exec "$cid" sh -c '
-    echo "  COUCHDB_URI=${COUCHDB_URI:-<unset>}"
-    echo "  COUCHDB_USERNAME=${COUCHDB_USERNAME:-<unset>}"
-    printf "  COUCHDB_PASSWORD len=%s\n" "$(printf "%s" "${COUCHDB_PASSWORD:-}" | wc -c)"
-  '
+  echo "=== Running container env (docker inspect — gesellix image has no curl) ==="
+  container_pass="$(
+    docker inspect "$cid" --format '{{range .Config.Env}}{{println .}}{{end}}' \
+      | sed -n 's/^COUCHDB_PASSWORD=//p'
+  )"
+  docker inspect "$cid" --format '{{range .Config.Env}}{{println .}}{{end}}' \
+    | grep -E '^COUCHDB_(URI|USERNAME|PASSWORD)=' \
+    | redact
+  env_len="$(printf '%s' "${pass}" | wc -c)"
+  container_len="$(printf '%s' "${container_pass}" | wc -c)"
+  echo "  .env COUCHDB_PASSWORD len=${env_len}, container len=${container_len}"
+  if [[ "${env_len}" != "${container_len}" || "${pass}" != "${container_pass}" ]]; then
+    echo "  MISMATCH — compose mangled the password (often \$VAR inside the value)"
+    echo "  Fix: redeploy ec2-bundle compose without COUCHDB_PASSWORD in environment:, then recreate"
+  fi
+
+  net="$(docker inspect "$cid" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')"
+  if [[ -n "$net" ]]; then
+    echo
+    echo "=== Curl from compose network '${net}' (same path as exporter) ==="
+    stats_url="${url%/}/_stats"
+    net_code="$(docker run --rm --network "$net" curlimages/curl:8.5.0 \
+      -sS -o /dev/null -w '%{http_code}' \
+      -u "${user}:${pass}" \
+      "$stats_url" 2>/dev/null || echo "000")"
+    echo "  GET ${stats_url} → HTTP ${net_code}"
+    if [[ "$net_code" == "200" ]]; then
+      echo "  CouchDB reachable with container creds"
+    elif [[ "$code" == "200" && "$net_code" != "200" ]]; then
+      echo "  Host OK but compose network failed — check COUCHDB_URI / DNS / egress"
+    fi
+  fi
+
+  echo
+  echo "=== Exporter logs (last 20 lines) ==="
+  docker compose logs couchdb-exporter --tail 20 2>/dev/null || true
 fi
 
 echo

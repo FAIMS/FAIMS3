@@ -63,13 +63,21 @@ function createFargateTaskRoles(
 
 function awsLogsDriver(
   logGroup: logs.ILogGroup,
-  streamPrefix: string
+  streamPrefix: string,
+  options: {nonBlocking?: boolean} = {}
 ): ecs.LogDriver {
+  if (options.nonBlocking) {
+    return ecs.LogDrivers.awsLogs({
+      logGroup,
+      streamPrefix,
+      mode: ecs.AwsLogDriverMode.NON_BLOCKING,
+      maxBufferSize: cdk.Size.mebibytes(25),
+    });
+  }
+  // Blocking (default): reliable delivery for short-lived RunTask agents.
   return ecs.LogDrivers.awsLogs({
     logGroup,
     streamPrefix,
-    mode: ecs.AwsLogDriverMode.NON_BLOCKING,
-    maxBufferSize: cdk.Size.mebibytes(25),
   });
 }
 
@@ -179,6 +187,9 @@ export class LoadTestStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    coordinatorLogGroup.grantWrite(coordinatorRoles.executionRole);
+    agentLogGroup.grantWrite(agentRoles.executionRole);
+
     const coordinatorTaskDef = new ecs.FargateTaskDefinition(
       this,
       'CoordinatorTaskDef',
@@ -192,7 +203,9 @@ export class LoadTestStack extends cdk.Stack {
 
     coordinatorTaskDef.addContainer('coordinator', {
       image: ecs.ContainerImage.fromDockerImageAsset(coordinatorImage),
-      logging: awsLogsDriver(coordinatorLogGroup, 'coordinator'),
+      logging: awsLogsDriver(coordinatorLogGroup, 'coordinator', {
+        nonBlocking: true,
+      }),
       environment: {
         PORT: '4000',
         PHASE_ADVANCE_STRATEGY: 'all_ready',
@@ -210,6 +223,10 @@ export class LoadTestStack extends cdk.Stack {
     agentTaskDef.addContainer('agent', {
       image: ecs.ContainerImage.fromDockerImageAsset(agentImage),
       logging: awsLogsDriver(agentLogGroup, 'agent'),
+      linuxParameters: new ecs.LinuxParameters(agentTaskDef, 'AgentLinux', {
+        initProcessEnabled: true,
+      }),
+      stopTimeout: cdk.Duration.seconds(120),
       environment: {
         HEADLESS: 'true',
         SESSIONS_PER_AGENT: '1',
@@ -288,7 +305,9 @@ export class LoadTestStack extends cdk.Stack {
         : [`export COUCH_PASSWORD='${couchPasswordInline}'`]),
       '/opt/loadtest/bootstrap.sh',
       'docker compose version',
-      'echo "Metrics host ready. Start observability: cd /opt/loadtest && docker compose up -d"'
+      'cd /opt/loadtest',
+      'docker compose up -d',
+      `echo "Metrics host ready. Grafana: http://${metricsFqdn}:3030"`
     );
 
     const metricsInstance = new ec2.Instance(this, 'MetricsInstance', {

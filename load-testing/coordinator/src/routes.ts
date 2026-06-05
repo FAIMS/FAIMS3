@@ -11,6 +11,7 @@ import {
   type PlanAnalysis,
 } from '@faims3/load-testing-shared';
 import type {AccountPool} from './account-pool';
+import {coordinatorLog, coordinatorWarn} from './coordinator-log';
 import type {MetricsService} from './metrics';
 import type {PlanEngine} from './plan-engine';
 import {buildStatusReport} from './progress-report';
@@ -46,6 +47,10 @@ export function createRoutes(
     registry.register(body);
     engine.registerAgent(body.agentId);
     metrics.updateAgentCounts(registry.registeredCount(), registry.readyCount());
+    coordinatorLog(
+      `agent registered: ${body.agentId} (worker=${body.workerId}, sessions=${body.sessionCount})` +
+        ` — ${registry.registeredCount()}/${registry.getExpectedAgentCount()} registered`
+    );
     return c.json({
       coordinatorId,
       testRunId: engine.getTestRunId(),
@@ -59,6 +64,11 @@ export function createRoutes(
     engine.markReady(body.agentId);
     metrics.updateAgentCounts(registry.registeredCount(), registry.readyCount());
     const step = engine.getStep(body.agentId);
+    coordinatorLog(
+      `agent ready: ${body.agentId}` +
+        ` — ${registry.readyCount()}/${registry.getExpectedAgentCount()} ready` +
+        (step ? `, first step=${step.id} (${step.kind})` : '')
+    );
     return c.json({
       runState: engine.getRunState(),
       testRunId: engine.getTestRunId(),
@@ -93,9 +103,15 @@ export function createRoutes(
     zValidator('json', StepCompleteRequestSchema),
     c => {
       const body = c.req.valid('json');
-      engine.completeStep(body.agentId, body.stepId);
+      const accepted = engine.completeStep(body.agentId, body.stepId);
+      if (!accepted) {
+        coordinatorWarn(
+          `step-complete rejected: agent=${body.agentId} step=${body.stepId}` +
+            ` runState=${engine.getRunState()}`
+        );
+      }
       return c.json({
-        accepted: true,
+        accepted,
         runState: engine.getRunState(),
       });
     }
@@ -106,6 +122,10 @@ export function createRoutes(
     registry.markAgentDone(body.agentId);
     engine.markAgentDone(body.agentId);
     const step = engine.getStep(body.agentId);
+    coordinatorLog(
+      `agent done: ${body.agentId}` +
+        ` — ${registry.agentsDoneCount()}/${registry.registeredCount()} finished`
+    );
     return c.json({
       runState: engine.getRunState(),
       testRunId: engine.getTestRunId(),

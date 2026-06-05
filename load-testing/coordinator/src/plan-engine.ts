@@ -65,11 +65,22 @@ interface StepBarrier {
   timer: ReturnType<typeof setTimeout> | null;
 }
 
-export type PlanChangeListener = (
-  runState: RunState,
-  advancedAt: number,
-  testRunId: string
-) => void;
+export type PlanChangeReason =
+  | 'run_started'
+  | 'run_completed'
+  | 'step_completed';
+
+export interface PlanChangeEvent {
+  runState: RunState;
+  advancedAt: number;
+  testRunId: string;
+  reason: PlanChangeReason;
+  stepId?: string;
+  stepKind?: string;
+  runStartTrigger?: 'all_ready' | 'timeout';
+}
+
+export type PlanChangeListener = (event: PlanChangeEvent) => void;
 
 function needsTimer(advance: StepAdvanceMode): boolean {
   return advance === 'timer' || advance === 'timer_or_all_done';
@@ -252,7 +263,7 @@ export class PlanEngine {
   startReadinessTimeout(): void {
     this.readinessTimer = setTimeout(() => {
       if (this.runState === 'waiting_for_agents') {
-        this.beginRun();
+        this.beginRun('timeout');
       }
     }, this.config.readinessTimeoutMs);
   }
@@ -336,11 +347,11 @@ export class PlanEngine {
   private tryStartRun(): void {
     if (this.runState !== 'waiting_for_agents') return;
     if (this.allAgentsReady()) {
-      this.beginRun();
+      this.beginRun('all_ready');
     }
   }
 
-  private beginRun(): void {
+  private beginRun(trigger: 'all_ready' | 'timeout'): void {
     if (this.readinessTimer) {
       clearTimeout(this.readinessTimer);
       this.readinessTimer = null;
@@ -348,7 +359,7 @@ export class PlanEngine {
     this.runState = 'running';
     this.runStartedAt = Date.now();
     this.advancedAt = this.runStartedAt;
-    this.emitChange();
+    this.emitChange('run_started', {runStartTrigger: trigger});
   }
 
   private tryCompleteRun(): void {
@@ -356,16 +367,32 @@ export class PlanEngine {
     if (!this.allAgentsDone()) return;
     this.runState = 'complete';
     this.advancedAt = Date.now();
-    this.emitChange();
+    this.emitChange('run_completed');
     for (const barrier of this.barriers.values()) {
       if (barrier.timer) clearTimeout(barrier.timer);
     }
     this.barriers.clear();
   }
 
-  private emitChange(): void {
+  private emitChange(
+    reason: PlanChangeReason,
+    extra?: {
+      stepId?: string;
+      stepKind?: string;
+      runStartTrigger?: 'all_ready' | 'timeout';
+    }
+  ): void {
+    const event: PlanChangeEvent = {
+      runState: this.runState,
+      advancedAt: this.advancedAt,
+      testRunId: this.testRunId,
+      reason,
+      stepId: extra?.stepId,
+      stepKind: extra?.stepKind,
+      runStartTrigger: extra?.runStartTrigger,
+    };
     for (const listener of this.listeners) {
-      listener(this.runState, this.advancedAt, this.testRunId);
+      listener(event);
     }
   }
 
@@ -438,7 +465,7 @@ export class PlanEngine {
     });
 
     this.advancedAt = Date.now();
-    this.emitChange();
+    this.emitChange('step_completed', {stepId, stepKind: kind});
   }
 
   private getBarrierStep(

@@ -37,8 +37,8 @@ services:
     env_file:
       - .env
     environment:
+      # COUCHDB_PASSWORD must come from .env via env_file only (see ec2-bundle compose).
       COUCHDB_URI: ${COUCHDB_EXPORTER_URL:-http://host.docker.internal:5984}
       COUCHDB_USERNAME: ${COUCHDB_USERNAME:-${COUCH_USER:-admin}}
-      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-${COUCH_PASSWORD}}
     extra_hosts:
       - 'host.docker.internal:host-gateway'

@@ -35,7 +35,8 @@ services:
     env_file:
       - .env
     environment:
-      # gesellix reads COUCHDB_* env vars (not COUCH_USER / COUCH_PASSWORD from env_file)
+      # bootstrap.sh writes COUCHDB_URI/USERNAME/PASSWORD into .env (jq @json).
+      # Do NOT re-interpolate COUCHDB_PASSWORD here — compose treats $ in values
+      # as variable references and corrupts passwords like 0pNQs!:s$VR6U]K=.
       COUCHDB_URI: ${COUCHDB_EXPORTER_URL}
       COUCHDB_USERNAME: ${COUCHDB_USERNAME:-${COUCH_USER:-admin}}
-      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-${COUCH_PASSWORD}}
