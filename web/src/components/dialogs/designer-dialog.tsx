@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {DesignerWidget} from '../../designer/DesignerWidget';
 import type {NotebookWithHistory} from '../../designer/state/initial';
 
@@ -27,13 +27,23 @@ export function DesignerDialog({
     NotebookWithHistory | undefined
   >(undefined);
 
-  // Mount / unmount logic with animation
+  // Snapshot notebook only on open edge, ignore upstream refetches mid-session.
+  const wasOpenRef = useRef(false);
+
   useEffect(() => {
-    if (open) {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = open;
+
+    // capture notebook, mount, animate in.
+    if (open && !wasOpen) {
+      setSessionNotebook(notebook);
       setMounted(true);
       const tid = window.setTimeout(() => setAnimateIn(true), 50);
       return () => window.clearTimeout(tid);
-    } else if (mounted) {
+    }
+
+    // animate out, then unmount.
+    if (!open && wasOpen && mounted) {
       setAnimateOut(true);
       setAnimateIn(false);
       const tid = window.setTimeout(() => {
@@ -43,15 +53,7 @@ export function DesignerDialog({
       }, animationDuration);
       return () => window.clearTimeout(tid);
     }
-  }, [open, animationDuration, mounted]);
-
-
-  useEffect(() => {
-    if (open) {
-      setSessionNotebook(notebook);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, notebook, animationDuration, mounted]);
 
   // Lock body scroll while the designer dialog is open so the background page doesn't scroll through
   useEffect(() => {
