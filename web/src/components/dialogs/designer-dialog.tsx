@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {DesignerWidget} from '../../designer/DesignerWidget';
 import type {NotebookWithHistory} from '../../designer/state/initial';
 
@@ -27,33 +27,32 @@ export function DesignerDialog({
     NotebookWithHistory | undefined
   >(undefined);
 
-  // Snapshot notebook only on open edge, ignore upstream refetches mid-session.
-  const wasOpenRef = useRef(false);
-
+  // Open: capture notebook once, mount, animate in. The functional updater
+  // makes the snapshot idempotent — once `sessionNotebook` is set, later
+  // upstream refetches (React Query refetchOnWindowFocus, polling) cannot
+  // overwrite it. The session is only cleared on close.
   useEffect(() => {
-    const wasOpen = wasOpenRef.current;
-    wasOpenRef.current = open;
+    if (!open) return;
+    setSessionNotebook(prev => prev ?? notebook);
+    setMounted(true);
+    if (animateIn) return;
+    const tid = window.setTimeout(() => setAnimateIn(true), 50);
+    return () => window.clearTimeout(tid);
+  }, [open, notebook, animateIn]);
 
-    // capture notebook, mount, animate in.
-    if (open && !wasOpen) {
-      setSessionNotebook(notebook);
-      setMounted(true);
-      const tid = window.setTimeout(() => setAnimateIn(true), 50);
-      return () => window.clearTimeout(tid);
-    }
-
-    // animate out, then unmount.
-    if (!open && wasOpen && mounted) {
-      setAnimateOut(true);
-      setAnimateIn(false);
-      const tid = window.setTimeout(() => {
-        setMounted(false);
-        setAnimateOut(false);
-        setSessionNotebook(undefined);
-      }, animationDuration);
-      return () => window.clearTimeout(tid);
-    }
-  }, [open, notebook, animationDuration, mounted]);
+  // Close: animate out, then unmount and clear the snapshot so the next
+  // open starts fresh.
+  useEffect(() => {
+    if (open || !mounted) return;
+    setAnimateOut(true);
+    setAnimateIn(false);
+    const tid = window.setTimeout(() => {
+      setMounted(false);
+      setAnimateOut(false);
+      setSessionNotebook(undefined);
+    }, animationDuration);
+    return () => window.clearTimeout(tid);
+  }, [open, mounted, animationDuration]);
 
   // Lock body scroll while the designer dialog is open so the background page doesn't scroll through
   useEffect(() => {
