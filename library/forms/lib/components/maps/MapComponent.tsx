@@ -497,34 +497,32 @@ export const MapComponent = (props: MapComponentProps) => {
 
   return (
     <>
-      <Grid container spacing={2} sx={{height: '100%'}}>
-        <Box sx={{height: '100%', width: '100%'}}>
-          <Box
-            ref={refCallback} // will create the map
-            sx={{
-              height: '97%',
-              width: '100%',
-            }}
-          />
-          <Box
-            sx={{
-              height: '3%',
-              paddingLeft: '50px',
-            }}
-          >
-            {attribution && (
-              <div
-                dangerouslySetInnerHTML={{__html: attribution}}
-                style={{
-                  fontSize: '10px',
-                  lineHeight: 1.1,
-                  color: '#666',
-                }}
-              />
-            )}
-          </Box>
+      <Box sx={{height: '100%', width: '100%'}}>
+        <Box
+          ref={refCallback} // will create the map
+          sx={{
+            height: '97%',
+            width: '100%',
+          }}
+        />
+        <Box
+          sx={{
+            height: '3%',
+            paddingLeft: '50px',
+          }}
+        >
+          {attribution && (
+            <div
+              dangerouslySetInnerHTML={{__html: attribution}}
+              style={{
+                fontSize: '10px',
+                lineHeight: 1.1,
+                color: '#666',
+              }}
+            />
+          )}
         </Box>
-      </Grid>
+      </Box>
     </>
   );
 };
