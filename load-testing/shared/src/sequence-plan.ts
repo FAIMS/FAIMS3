@@ -8,14 +8,19 @@ import {z} from 'zod';
  * `split`. Leaf steps are typed `phase` nodes with a `kind` and optional
  * `config`.
  *
- * ## Env wiring
+ * ## Plan sources (coordinator only)
  *
- * Pass a plan through any channel as JSON:
+ * The coordinator loads exactly one plan at startup. Agents receive steps via
+ * HTTP (`GET /step`) and do not read plan JSON.
  *
- * - `SEQUENCE_PLAN` — compact JSON string
- * - `SEQUENCE_PLAN_B64` — base64-encoded JSON (safer for ECS/Shell)
+ * | Variable | Use case |
+ * |----------|----------|
+ * | `SEQUENCE_PLAN_S3_URI` | AWS ECS runs (`s3://bucket/plans/name.json`) |
+ * | `SEQUENCE_PLAN_FILE` | Local dev — path to `.json` on disk |
+ * | `SEQUENCE_PLAN` | Inline compact JSON (small plans / tests) |
+ * | `SEQUENCE_PLAN_B64` | Base64-encoded JSON (legacy ECS override) |
  *
- * Parse at runtime with {@link parseSequencePlanFromEnv}.
+ * Precedence: S3 URI → inline/base64 → file path.
  *
  * ## Splits
  *
@@ -37,6 +42,47 @@ import {z} from 'zod';
 
 export const SEQUENCE_PLAN_ENV_VAR = 'SEQUENCE_PLAN';
 export const SEQUENCE_PLAN_B64_ENV_VAR = 'SEQUENCE_PLAN_B64';
+export const SEQUENCE_PLAN_S3_URI_ENV_VAR = 'SEQUENCE_PLAN_S3_URI';
+export const SEQUENCE_PLAN_FILE_ENV_VAR = 'SEQUENCE_PLAN_FILE';
+
+/** Parse `s3://bucket/object/key` into bucket and key. */
+export function parseS3Uri(uri: string): {bucket: string; key: string} {
+  const trimmed = uri.trim();
+  if (!trimmed.startsWith('s3://')) {
+    throw new Error(`Invalid S3 URI (expected s3://bucket/key): ${uri}`);
+  }
+  const withoutScheme = trimmed.slice('s3://'.length);
+  const slash = withoutScheme.indexOf('/');
+  if (slash < 1 || slash === withoutScheme.length - 1) {
+    throw new Error(`Invalid S3 URI (expected s3://bucket/key): ${uri}`);
+  }
+  return {
+    bucket: withoutScheme.slice(0, slash),
+    key: withoutScheme.slice(slash + 1),
+  };
+}
+
+/** Whether any supported sequence plan source is configured. */
+export function hasSequencePlanSource(
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return !!(
+    env[SEQUENCE_PLAN_S3_URI_ENV_VAR]?.trim() ||
+    env[SEQUENCE_PLAN_ENV_VAR]?.trim() ||
+    env[SEQUENCE_PLAN_B64_ENV_VAR]?.trim() ||
+    env[SEQUENCE_PLAN_FILE_ENV_VAR]?.trim()
+  );
+}
+
+/** Human-readable hint for missing-plan errors. */
+export function sequencePlanSourceHint(): string {
+  return [
+    SEQUENCE_PLAN_S3_URI_ENV_VAR,
+    SEQUENCE_PLAN_ENV_VAR,
+    SEQUENCE_PLAN_B64_ENV_VAR,
+    SEQUENCE_PLAN_FILE_ENV_VAR,
+  ].join(', ');
+}
 
 export const SequencePlanVersionSchema = z.literal(1);
 

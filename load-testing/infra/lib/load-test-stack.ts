@@ -6,6 +6,7 @@ import * as ecr_assets from 'aws-cdk-lib/aws-ecr-assets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3assets from 'aws-cdk-lib/aws-s3-assets';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
@@ -176,6 +177,15 @@ export class LoadTestStack extends cdk.Stack {
 
     const coordinatorRoles = createFargateTaskRoles(this, 'Coordinator');
     const agentRoles = createFargateTaskRoles(this, 'Agent');
+
+    const sequencePlansBucket = new s3.Bucket(this, 'SequencePlansBucket', {
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      enforceSSL: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+    sequencePlansBucket.grantRead(coordinatorRoles.taskRole);
 
     const coordinatorLogGroup = new logs.LogGroup(this, 'CoordinatorLogs', {
       retention: logs.RetentionDays.ONE_WEEK,
@@ -441,6 +451,13 @@ export class LoadTestStack extends cdk.Stack {
       value: bundleS3Uri,
       description: 'S3 URI of observability bundle (manual bootstrap recovery)',
       exportName: `${config.STACK_NAME}-MetricsBundleS3Uri`,
+    });
+
+    new cdk.CfnOutput(this, 'SequencePlansBucketName', {
+      value: sequencePlansBucket.bucketName,
+      description:
+        'S3 bucket for sequence plan JSON (run-load-test.sh uploads; coordinator reads)',
+      exportName: `${config.STACK_NAME}-SequencePlansBucketName`,
     });
 
     new cdk.CfnOutput(this, 'PushgatewayUrlTemplate', {

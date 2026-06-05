@@ -5,6 +5,7 @@ On-demand AWS resources for DASS load tests:
 | Component | AWS resource | Lifecycle |
 |-----------|--------------|-----------|
 | Observability (Prometheus, Grafana, Pushgateway, couchdb-exporter) | EC2 + EIP + Route53 | Start/stop instance; compose via SSM |
+| Sequence plans | S3 bucket | Plans uploaded per run by `run-load-test.sh` |
 | Coordinator | ECS Fargate **RunTask** | Exits when test completes |
 | Agents | ECS Fargate **RunTask** × N | One task per worker |
 
@@ -36,8 +37,9 @@ This will:
 
 1. Build and push **coordinator** and **agent** Docker images (scoped `.dockerignore` excludes via `DOCKER_ASSET_EXCLUDES`)
 2. Create VPC, ECS cluster, task definitions (no services)
-3. Launch metrics EC2 with observability bundle in `/opt/loadtest`
-4. Create EIP + Route53 A record (`METRICS_SUBDOMAIN.HOSTED_ZONE_NAME`)
+3. Create an **S3 bucket** for sequence plan JSON (coordinator task role: read; your CLI user: upload via `run-load-test.sh`)
+4. Launch metrics EC2 with observability bundle in `/opt/loadtest`
+5. Create EIP + Route53 A record (`METRICS_SUBDOMAIN.HOSTED_ZONE_NAME`)
 
 ### Stack outputs
 
@@ -50,6 +52,18 @@ This will:
 | `EcsSecurityGroupId` | awsvpc network config |
 | `MetricsInstanceId` | Resolve pushgateway private IP |
 | `MetricsDnsName` | Grafana URL |
+| `SequencePlansBucketName` | Upload local plan JSON; coordinator reads via `SEQUENCE_PLAN_S3_URI` |
+
+## Sequence plan S3 bucket
+
+The coordinator does not receive large plan JSON through ECS environment variables (8192-byte limit per value). Instead:
+
+1. `run-load-test.sh` reads `SEQUENCE_PLAN_FILE` from your laptop
+2. Uploads to `s3://<SequencePlansBucketName>/plans/<filename>.json`
+3. Passes `SEQUENCE_PLAN_S3_URI` to the coordinator RunTask override
+4. Coordinator fetches and validates the plan at startup using its task IAM role
+
+To use a pre-uploaded object, set `SEQUENCE_PLAN_S3_URI` in `scripts/.env` and skip the file path.
 
 ## Observability stack
 
@@ -97,7 +111,7 @@ Grafana: `http://<MetricsDnsName>:3030`
 
 | Metric | Local dev | AWS |
 |--------|-----------|-----|
-| Phase (`dass_test_phase`, agent counts) | Prometheus scrapes `host.docker.internal:4000/metrics` | Coordinator **pushes** job `dass_coordinator` to Pushgateway |
+| Run state, agent counts | Prometheus scrapes `host.docker.internal:4000/metrics` | Coordinator **pushes** job `dass_coordinator` to Pushgateway |
 | Agent timings (record create, sync, …) | Coordinator pushes job `dass_agent_metrics` to Pushgateway | Same |
 
 Prometheus on metrics EC2 only scrapes **Pushgateway** and **couchdb-exporter** (not the ephemeral coordinator task).
@@ -113,7 +127,7 @@ On the metrics EC2 instance (SSM):
 
 ```bash
 curl -s localhost:9091/metrics | grep '^dass_' | head
-curl -s 'localhost:9090/api/v1/query?query=dass_test_phase' | jq '.data.result'
+curl -s 'localhost:9090/api/v1/query?query=dass_run_state' | jq '.data.result'
 ```
 
 **CloudWatch logs** (separate log groups — do not mix coordinator and agent):
@@ -136,7 +150,7 @@ Coordinator logs: search for `Pushgateway coordinator push failed` or `Pushgatew
 ```bash
 cd load-testing/scripts
 cp .env.example .env
-# Edit AGENT_COUNT, LOAD_TEST_ACCOUNTS, notebook IDs, STACK_NAME, AWS_REGION
+# Edit AGENT_COUNT, LOAD_TEST_ACCOUNTS, notebook IDs, STACK_NAME, AWS_REGION, SEQUENCE_PLAN_FILE
 
 ./run-load-test.sh
 ```
@@ -144,10 +158,11 @@ cp .env.example .env
 The script loads `load-testing/scripts/.env`, reads CloudFormation stack outputs, then:
 
 1. Resolves metrics EC2 private IP → `PROMETHEUS_PUSHGATEWAY_URL`
-2. `run-task` coordinator with `EXPECTED_AGENT_COUNT`
-3. Waits for `/health`, discovers coordinator public IP
-4. `run-task` N agents with `COORDINATOR_URL` and scenario env overrides
-5. Waits for coordinator task to stop
+2. Uploads sequence plan to S3 (unless `SEQUENCE_PLAN_S3_URI` or `SEQUENCE_PLAN_DELIVERY=env`)
+3. `run-task` coordinator with `EXPECTED_AGENT_COUNT` and `SEQUENCE_PLAN_S3_URI`
+4. Waits for `/health`, discovers coordinator public IP
+5. `run-task` N agents with `COORDINATOR_URL` and scenario env overrides
+6. Waits for coordinator task to stop
 
 ## Tear down
 
@@ -155,7 +170,7 @@ The script loads `load-testing/scripts/.env`, reads CloudFormation stack outputs
 pnpm run destroy
 ```
 
-Stop metrics EC2 separately if you want to keep the stack but pause costs.
+Stop metrics EC2 separately if you want to keep the stack but pause costs. The sequence-plans bucket is destroyed with the stack (`autoDeleteObjects` enabled).
 
 ## Layout
 
@@ -169,5 +184,5 @@ infra/
 
 ../scripts/
   run-load-test.sh          # RunTask helper (.env driven)
-  .env.example              # Run config (stack name, agents, invite, etc.)
+  .env.example              # Run config (stack name, agents, plan file, etc.)
 ```

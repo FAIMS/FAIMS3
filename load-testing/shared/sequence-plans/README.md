@@ -2,24 +2,49 @@
 
 Composable load-test scenarios for the DASS coordinator + agents.
 
-Plans are **Zod-validated JSON** (`@faims3/load-testing-shared` → `sequence-plan.ts`). The coordinator **requires** a plan at startup; there is no legacy fixed-phase mode.
+Plans are **Zod-validated JSON** (`@faims3/load-testing-shared` → `sequence-plan.ts`). The coordinator **requires** a plan at startup; there is no legacy fixed-phase mode. Agents receive individual steps over HTTP and do not read these files directly.
 
-## Env variables
+## Delivering a plan to the coordinator
 
 | Variable | Where | Format |
 |----------|-------|--------|
+| `SEQUENCE_PLAN_S3_URI` | Coordinator (AWS ECS) | `s3://bucket/plans/name.json` — **default for remote runs** |
+| `SEQUENCE_PLAN_FILE` | Coordinator (local dev) | Path to `.json` on disk |
 | `SEQUENCE_PLAN` | Coordinator | Compact JSON string |
-| `SEQUENCE_PLAN_B64` | Coordinator (ECS) | Base64-encoded JSON |
-| `SEQUENCE_PLAN_FILE` | Coordinator local dev | Path to `.json` file |
-| `SEQUENCE_PLAN_FILE` | `run-load-test.sh` | Path encoded and passed as `SEQUENCE_PLAN_B64` |
+| `SEQUENCE_PLAN_B64` | Coordinator (legacy ECS) | Base64-encoded JSON (8192-byte ECS env limit) |
+
+Precedence: S3 URI → inline/base64 → file path.
+
+### Local development
 
 ```bash
-# Encode for manual ECS overrides
-export SEQUENCE_PLAN_B64="$(base64 -w0 load-testing/shared/sequence-plans/long-offline-loop.json)"
-
-# AWS run script (reads file → base64 → coordinator task)
-SEQUENCE_PLAN_FILE=../shared/sequence-plans/long-offline-loop.json ./run-load-test.sh
+# coordinator/.env
+SEQUENCE_PLAN_FILE=../shared/sequence-plans/long-offline-loop.json
 ```
+
+### AWS (`run-load-test.sh`)
+
+By default the script uploads your local file to the stack S3 bucket and passes the URI:
+
+```bash
+# scripts/.env
+SEQUENCE_PLAN_FILE=../shared/sequence-plans/sixty-agent-30min-triple-split.json
+./run-load-test.sh
+# → uploads s3://<SequencePlansBucketName>/plans/sixty-agent-30min-triple-split.json
+# → coordinator gets SEQUENCE_PLAN_S3_URI
+```
+
+Overrides:
+
+```bash
+# Use a plan already in S3 (skip upload)
+SEQUENCE_PLAN_S3_URI=s3://my-bucket/plans/custom.json ./run-load-test.sh
+
+# Legacy: pass base64 in ECS env (small plans only)
+SEQUENCE_PLAN_DELIVERY=env ./run-load-test.sh
+```
+
+Your AWS credentials need `s3:PutObject` on the plans bucket. The coordinator ECS task role has `s3:GetObject`.
 
 ## Step types
 
@@ -73,7 +98,7 @@ Each phase supports `durationMs` + `advance` (`timer`, `all_agents_done`, `major
 | `long-offline-loop.json` | 5min online/offline cycles + 10min patchy |
 | `split-online-patchy-loops.json` | 5×(2min 50/50 online vs patchy) + 4min all online |
 | `split-online-offline.json` | 50/50 split then patchy |
-| `sixty-agent-30min-triple-split.json` | 60 agents: baseline + peak + rotating 3-way splits (~30 min). Compact JSON for ECS env limits. |
+| `sixty-agent-30min-triple-split.json` | 60 agents: baseline + peak + rotating 3-way splits (~30 min) |
 
 ## Metrics
 

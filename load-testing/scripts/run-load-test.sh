@@ -39,20 +39,28 @@ PARTICIPATE_IN_EXPORT="${PARTICIPATE_IN_EXPORT:-false}"
 WAIT_TIMEOUT_SEC="${WAIT_TIMEOUT_SEC:-3600}"
 EXPECTED_AGENT_COUNT="${EXPECTED_AGENT_COUNT:-$AGENT_COUNT}"
 
-SEQUENCE_PLAN_FILE="${SEQUENCE_PLAN_FILE:-${SCRIPT_DIR}/../shared/sequence-plans/online-offline-loops-patchy.json}"
-if [[ ! -f "$SEQUENCE_PLAN_FILE" ]]; then
-  echo "Sequence plan not found: ${SEQUENCE_PLAN_FILE}" >&2
-  exit 1
+# Plan delivery for remote runs: s3 (default) uploads local JSON to the stack bucket;
+# env passes base64 in the coordinator task override (8192-byte ECS limit per value).
+SEQUENCE_PLAN_DELIVERY="${SEQUENCE_PLAN_DELIVERY:-s3}"
+
+if [[ -z "${SEQUENCE_PLAN_S3_URI:-}" && -z "${SEQUENCE_PLAN_B64:-}" ]]; then
+  SEQUENCE_PLAN_FILE="${SEQUENCE_PLAN_FILE:-${SCRIPT_DIR}/../shared/sequence-plans/online-offline-loops-patchy.json}"
+  if [[ ! -f "$SEQUENCE_PLAN_FILE" ]]; then
+    echo "Sequence plan not found: ${SEQUENCE_PLAN_FILE}" >&2
+    exit 1
+  fi
 fi
 
-if [[ -n "${SEQUENCE_PLAN_B64:-}" ]]; then
-  PLAN_B64="$SEQUENCE_PLAN_B64"
+if [[ -n "${SEQUENCE_PLAN_FILE:-}" && -f "${SEQUENCE_PLAN_FILE}" ]]; then
+  PLAN_NAME="$(jq -r '.name // "unnamed"' "$SEQUENCE_PLAN_FILE")"
+  echo "Sequence plan: ${PLAN_NAME} (${SEQUENCE_PLAN_FILE})"
+elif [[ -n "${SEQUENCE_PLAN_S3_URI:-}" ]]; then
+  PLAN_NAME="$(basename "${SEQUENCE_PLAN_S3_URI}")"
+  echo "Sequence plan: ${PLAN_NAME} (${SEQUENCE_PLAN_S3_URI})"
 else
-  PLAN_B64="$(jq -c . "$SEQUENCE_PLAN_FILE" | base64 -w0)"
+  PLAN_NAME="unnamed (SEQUENCE_PLAN_B64)"
+  echo "Sequence plan: ${PLAN_NAME}"
 fi
-
-PLAN_NAME="$(jq -r '.name // "unnamed"' "$SEQUENCE_PLAN_FILE")"
-echo "Sequence plan: ${PLAN_NAME} (${SEQUENCE_PLAN_FILE})"
 
 stack_output() {
   local key="$1"
@@ -79,12 +87,39 @@ DASS_APP_URL="${DASS_APP_URL:-$(stack_output TargetDassAppUrl)}"
 DASS_API_URL="${DASS_API_URL:-$(stack_output TargetDassApiUrl)}"
 COUCH_URL="${COUCH_URL:-$(stack_output TargetCouchUrl)}"
 
-for v in CLUSTER COORD_TASK_DEF AGENT_TASK_DEF ECS_SG SUBNETS METRICS_INSTANCE_ID; do
+PLANS_BUCKET="$(stack_output SequencePlansBucketName)"
+
+for v in CLUSTER COORD_TASK_DEF AGENT_TASK_DEF ECS_SG SUBNETS METRICS_INSTANCE_ID PLANS_BUCKET; do
   if [[ -z "$v" || "$v" == "None" ]]; then
     echo "Missing CloudFormation output. Deploy the stack first (load-testing/infra)." >&2
     exit 1
   fi
 done
+
+plan_env_json() {
+  if [[ -n "${SEQUENCE_PLAN_S3_URI:-}" ]]; then
+    jq -n --arg uri "$SEQUENCE_PLAN_S3_URI" \
+      '[{name:"SEQUENCE_PLAN_S3_URI",value:$uri}]'
+    return
+  fi
+
+  if [[ "${SEQUENCE_PLAN_DELIVERY}" == "env" || -n "${SEQUENCE_PLAN_B64:-}" ]]; then
+    local plan_b64="${SEQUENCE_PLAN_B64:-}"
+    if [[ -z "$plan_b64" ]]; then
+      plan_b64="$(jq -c . "$SEQUENCE_PLAN_FILE" | base64 -w0)"
+    fi
+    jq -n --arg plan "$plan_b64" '[{name:"SEQUENCE_PLAN_B64",value:$plan}]'
+    return
+  fi
+
+  local plan_basename plan_key plan_uri
+  plan_basename="$(basename "$SEQUENCE_PLAN_FILE")"
+  plan_key="plans/${plan_basename}"
+  plan_uri="s3://${PLANS_BUCKET}/${plan_key}"
+  echo "Uploading sequence plan to ${plan_uri}…" >&2
+  aws s3 cp "$SEQUENCE_PLAN_FILE" "s3://${PLANS_BUCKET}/${plan_key}" --region "$AWS_REGION"
+  jq -n --arg uri "$plan_uri" '[{name:"SEQUENCE_PLAN_S3_URI",value:$uri}]'
+}
 
 METRICS_PRIVATE_IP="$(aws ec2 describe-instances \
   --instance-ids "$METRICS_INSTANCE_ID" \
@@ -105,15 +140,15 @@ NETWORK_CONFIG="$(jq -n \
     assignPublicIp: "ENABLED"
   }}')"
 
+plan_env="$(plan_env_json)"
 coord_env="$(jq -n \
   --arg n "$EXPECTED_AGENT_COUNT" \
   --arg pg "$PUSHGATEWAY_URL" \
-  --arg plan "$PLAN_B64" \
   --arg accounts "$LOAD_TEST_ACCOUNTS" \
+  --argjson plan_env "$plan_env" \
   '[{name:"EXPECTED_AGENT_COUNT",value:$n},
     {name:"PROMETHEUS_PUSHGATEWAY_URL",value:$pg},
-    {name:"SEQUENCE_PLAN_B64",value:$plan},
-    {name:"LOAD_TEST_ACCOUNTS",value:$accounts}]')"
+    {name:"LOAD_TEST_ACCOUNTS",value:$accounts}] + $plan_env')"
 
 echo "Starting coordinator task (expecting ${EXPECTED_AGENT_COUNT} agent(s))…"
 

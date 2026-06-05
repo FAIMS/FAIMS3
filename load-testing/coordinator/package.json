@@ -13,6 +13,7 @@
     "lint": "oxlint -c ../../.oxlintrc.json ."
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
     "@faims3/load-testing-shared": "workspace:*",
     "@hono/node-server": "^1.14.1",
     "@hono/zod-validator": "^0.4.3",

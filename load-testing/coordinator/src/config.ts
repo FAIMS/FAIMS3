@@ -1,13 +1,9 @@
 import {z} from 'zod';
-import {readFileSync} from 'fs';
-import {resolve} from 'path';
 import {
-  parseSequencePlan,
-  parseSequencePlanFromEnv,
+  hasSequencePlanSource,
   parseLoadTestAccounts,
   LOAD_TEST_ACCOUNTS_ENV_VAR,
-  SEQUENCE_PLAN_B64_ENV_VAR,
-  SEQUENCE_PLAN_ENV_VAR,
+  sequencePlanSourceHint,
   type LoadTestAccount,
 } from '@faims3/load-testing-shared';
 
@@ -19,32 +15,23 @@ export const CoordinatorEnvSchema = z.object({
   /** Throttle interval for batched Pushgateway pushes (default 2s). */
   METRICS_PUSH_INTERVAL_MS: z.coerce.number().int().positive().default(2000),
   SEQUENCE_PLAN_FILE: z.string().optional(),
-  /** Pre-seeded accounts: `email||password` entries separated by commas or newlines. */
+  SEQUENCE_PLAN_S3_URI: z.string().optional(),
+  SEQUENCE_PLAN: z.string().optional(),
+  SEQUENCE_PLAN_B64: z.string().optional(),
+  /** Pre-seeded accounts: `email::password` entries separated by commas or newlines. */
   LOAD_TEST_ACCOUNTS: z.string().min(1),
 });
 
 export type CoordinatorEnv = z.infer<typeof CoordinatorEnvSchema>;
 
-export function loadSequencePlanFromEnv(
-  env: Record<string, string | undefined> = process.env
-): ReturnType<typeof parseSequencePlan> {
-  if (env[SEQUENCE_PLAN_ENV_VAR]?.trim() || env[SEQUENCE_PLAN_B64_ENV_VAR]?.trim()) {
-    return parseSequencePlanFromEnv(env);
-  }
-  const file = env.SEQUENCE_PLAN_FILE?.trim();
-  if (file) {
-    const json = readFileSync(resolve(file), 'utf8');
-    return parseSequencePlan(json);
-  }
-  throw new Error(
-    `Missing sequence plan: set ${SEQUENCE_PLAN_ENV_VAR}, ${SEQUENCE_PLAN_B64_ENV_VAR}, or SEQUENCE_PLAN_FILE`
-  );
-}
-
 export function parseCoordinatorEnv(
   env: Record<string, string | undefined> = process.env
 ): CoordinatorEnv {
-  loadSequencePlanFromEnv(env);
+  if (!hasSequencePlanSource(env)) {
+    throw new Error(
+      `Missing sequence plan: set one of ${sequencePlanSourceHint()}`
+    );
+  }
   return CoordinatorEnvSchema.parse(env);
 }
 

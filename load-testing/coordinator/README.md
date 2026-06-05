@@ -2,7 +2,20 @@
 
 Hono HTTP server that registers agents, executes a **sequence plan**, and forwards metrics to Prometheus Pushgateway.
 
-Requires `SEQUENCE_PLAN`, `SEQUENCE_PLAN_B64`, or `SEQUENCE_PLAN_FILE`, and `LOAD_TEST_ACCOUNTS` at startup.
+## Plan loading
+
+The coordinator must load a validated sequence plan at startup. Configure **one** source:
+
+| Variable | Format | Typical use |
+|----------|--------|-------------|
+| `SEQUENCE_PLAN_S3_URI` | `s3://bucket/plans/name.json` | AWS ECS (via `run-load-test.sh`) |
+| `SEQUENCE_PLAN_FILE` | Filesystem path | Local `pnpm run dev` |
+| `SEQUENCE_PLAN` | Compact JSON string | Tests / tiny plans |
+| `SEQUENCE_PLAN_B64` | Base64-encoded JSON | Legacy ECS override (size-limited) |
+
+Precedence: S3 URI → inline/base64 → file. On AWS, the coordinator task role has `s3:GetObject` on the stack’s sequence-plans bucket.
+
+Also requires `LOAD_TEST_ACCOUNTS` (pre-seeded user pool).
 
 ## API
 

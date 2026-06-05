@@ -327,11 +327,11 @@
           "legendFormat": "client p95"
         },
         {
-          "expr": "max(couchdb_httpd_request_time)",
-          "legendFormat": "server last request (ms)"
+          "expr": "max(couchdb_httpd_request_time{metric=\"0.95\"})",
+          "legendFormat": "server p95 (internal, ms)"
         }
       ],
-      "title": "CouchDB request latency (client p95 vs server last-request gauge)",
+      "title": "CouchDB request latency (client p95 vs server p95)",
       "type": "timeseries"
     },
     {
