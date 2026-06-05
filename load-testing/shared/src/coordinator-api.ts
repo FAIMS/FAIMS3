@@ -27,6 +27,11 @@ export const RegisterResponseSchema = z.object({
   planName: z.string().optional(),
 });
 
+export const CredentialsResponseSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
+
 export const ReadyRequestSchema = z.object({
   agentId: z.string().min(1),
 });
@@ -176,6 +181,7 @@ export type RunState = z.infer<typeof RunStateSchema>;
 export type ActiveStep = z.infer<typeof ActiveStepSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
+export type CredentialsResponse = z.infer<typeof CredentialsResponseSchema>;
 export type ReadyRequest = z.infer<typeof ReadyRequestSchema>;
 export type StepResponse = z.infer<typeof StepResponseSchema>;
 export type StepCompleteRequest = z.infer<typeof StepCompleteRequestSchema>;

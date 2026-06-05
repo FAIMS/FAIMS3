@@ -8,6 +8,7 @@ import {
   notebookActivateConfirm,
 } from '../selectors.js';
 import {sessionLog} from '../session-log.js';
+import {CoordinatorClient} from '@faims3/load-testing-shared';
 import type {SessionContext} from '../types.js';
 
 export interface OnboardingResult {
@@ -411,14 +412,16 @@ async function logBrowserState(
 
 export async function runOnboarding(
   page: Page,
-  ctx: SessionContext
+  ctx: SessionContext,
+  coordinator: CoordinatorClient
 ): Promise<OnboardingResult> {
   const {env} = ctx;
-  const email = `loadtest+${ctx.sessionId}@example.com`;
-  const password = 'LoadTestPass123!';
-  const registerUrl = new URL('/register', env.DASS_API_URL);
-  registerUrl.searchParams.set('inviteId', env.INVITE_CODE);
-  registerUrl.searchParams.set('redirect', `${env.DASS_APP_URL}/auth-return`);
+  const {username: email, password} = await coordinator.getCredentials(
+    ctx.agentId
+  );
+  sessionLog(ctx.sessionId, `using pre-seeded account ${email}`);
+  const loginUrl = new URL('/login', env.DASS_API_URL);
+  loginUrl.searchParams.set('redirect', `${env.DASS_APP_URL}/auth-return`);
 
   // Capture browser console + page errors so we can see what the app logs while
   // it attempts to exchange the token and log in. Registered against the page
@@ -427,33 +430,30 @@ export async function runOnboarding(
 
   const start = Date.now();
 
-  await step(page, ctx, 'register', async () => {
-    sessionLog(ctx.sessionId, `registering user at ${registerUrl.origin}`);
-    await page.goto(registerUrl.toString(), {waitUntil: 'domcontentloaded'});
+  await step(page, ctx, 'login', async () => {
+    sessionLog(ctx.sessionId, `logging in at ${loginUrl.origin}`);
+    await page.goto(loginUrl.toString(), {waitUntil: 'domcontentloaded'});
 
-    const emailInput = page.locator('#EmailInput, input[name="email"]');
-    if (await emailInput.count()) {
-      await emailInput.fill(email);
-      await page
-        .locator('#NameInput, input[name="name"]')
-        .fill(`Load Test ${ctx.sessionId}`);
-      await page
-        .locator('#InputPassword, input[name="password"]')
-        .fill(password);
-      await page.locator('#RepeatPassword, input[name="repeat"]').fill(password);
-      await page
-        .locator('button[type="submit"], input[type="submit"]')
-        .first()
-        .click();
-    }
+    const emailInput = page.locator(
+      '#EmailInput, [data-testid="email-input"], input[name="email"]'
+    );
+    const passwordInput = page.locator(
+      '#InputPassword, [data-testid="password-input"], input[name="password"]'
+    );
+    await emailInput.waitFor({state: 'visible', timeout: 30000});
+    await emailInput.fill(email);
+    await passwordInput.fill(password);
+    await page
+      .locator(
+        '[data-testid="login-submit-button"], button[type="submit"], input[type="submit"]'
+      )
+      .first()
+      .click();
   });
 
   await step(page, ctx, 'await-auth-return', async () => {
     await page.waitForURL(/auth-return|localhost:3000/, {timeout: 120000});
-    sessionLog(
-      ctx.sessionId,
-      `registration submitted, landed on ${page.url()}`
-    );
+    sessionLog(ctx.sessionId, `login submitted, landed on ${page.url()}`);
 
     // The /auth-return route runs an async token exchange and then redirects.
     // Log the state right as we arrive, then again after giving the exchange a
@@ -525,6 +525,32 @@ export async function runOnboarding(
 
     // Tabs: click "Not Active". Headings: both sections are already visible.
     await focusNotActiveNotebooks(page, ctx.sessionId);
+
+    const refreshBtn = page.getByRole('button', {name: /^REFRESH$/i});
+    if (await refreshBtn.count()) {
+      sessionLog(ctx.sessionId, 'refreshing notebook list from API');
+      await refreshBtn.first().click();
+      await page.waitForTimeout(5000);
+    }
+
+    const emptyNotActive = page.getByText(
+      "You don't have any unactivated surveys.",
+      {exact: true}
+    );
+    const targetRow = page.locator(`[role="row"][data-id="${projectId}"]`);
+    const listDeadline = Date.now() + 20000;
+    while (Date.now() < listDeadline && !(await targetRow.count())) {
+      if (await emptyNotActive.isVisible()) {
+        const auth = await logBrowserState(page, ctx, 'activate-notebook:empty-list');
+        throw new Error(
+          `notebook ${projectId} is not listed for ${auth?.activeUsername ?? 'this user'} — ` +
+            `the app could not load GET /api/notebooks/${projectId} (see console 404/metadata errors). ` +
+            `Confirm NOTEBOOK_PROJECT_ID matches a survey on ${env.DASS_API_URL} and re-run ` +
+            `seed-load-test-accounts.sh against that environment's CouchDB.`
+        );
+      }
+      await page.waitForTimeout(1000);
+    }
 
     // The notebook list is a MUI DataGrid; each row's data-id is its projectId.
     // Target our notebook's row specifically, falling back to the first row if

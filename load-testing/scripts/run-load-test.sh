@@ -29,7 +29,7 @@ require_var() {
 
 require_var STACK_NAME
 require_var AWS_REGION
-require_var INVITE_CODE
+require_var LOAD_TEST_ACCOUNTS
 require_var NOTEBOOK_PROJECT_ID
 require_var NOTEBOOK_SERVER_ID
 
@@ -107,9 +107,11 @@ coord_env="$(jq -n \
   --arg n "$EXPECTED_AGENT_COUNT" \
   --arg pg "$PUSHGATEWAY_URL" \
   --arg plan "$PLAN_B64" \
+  --arg accounts "$LOAD_TEST_ACCOUNTS" \
   '[{name:"EXPECTED_AGENT_COUNT",value:$n},
     {name:"PROMETHEUS_PUSHGATEWAY_URL",value:$pg},
-    {name:"SEQUENCE_PLAN_B64",value:$plan}]')"
+    {name:"SEQUENCE_PLAN_B64",value:$plan},
+    {name:"LOAD_TEST_ACCOUNTS",value:$accounts}]')"
 
 echo "Starting coordinator task (expecting ${EXPECTED_AGENT_COUNT} agent(s))…"
 
@@ -194,7 +196,6 @@ fi
 
 agent_env_base="$(jq -n \
   --arg url "$COORDINATOR_URL" \
-  --arg invite "$INVITE_CODE" \
   --arg proj "$NOTEBOOK_PROJECT_ID" \
   --arg server "$NOTEBOOK_SERVER_ID" \
   --arg nb "$NOTEBOOK_NAME" \
@@ -203,7 +204,6 @@ agent_env_base="$(jq -n \
   --arg api "$DASS_API_URL" \
   --arg couch "$COUCH_URL" \
   '[{name:"COORDINATOR_URL",value:$url},
-    {name:"INVITE_CODE",value:$invite},
     {name:"NOTEBOOK_PROJECT_ID",value:$proj},
     {name:"NOTEBOOK_SERVER_ID",value:$server},
     {name:"NOTEBOOK_NAME",value:$nb},

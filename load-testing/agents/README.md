@@ -8,7 +8,7 @@ Agents execute the coordinator **sequence plan** by polling `GET /step?agentId=`
 
 | File | Step kind |
 |------|-----------|
-| `scenarios/onboarding.ts` | `onboarding` |
+| `scenarios/onboarding.ts` | `onboarding` (login via coordinator `/credentials`) |
 | `scenarios/online-collection.ts` | `online_collection` |
 | `scenarios/offline-collection.ts` | `offline_collection` (includes reconnect + sync) |
 | `scenarios/patchy-network.ts` | `patchy_network` |

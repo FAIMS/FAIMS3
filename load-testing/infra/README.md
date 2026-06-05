@@ -113,7 +113,7 @@ Coordinator CloudWatch logs: search for `Pushgateway coordinator push failed` or
 ```bash
 cd load-testing/scripts
 cp .env.example .env
-# Edit AGENT_COUNT, INVITE_CODE, notebook IDs, STACK_NAME, AWS_REGION
+# Edit AGENT_COUNT, LOAD_TEST_ACCOUNTS, notebook IDs, STACK_NAME, AWS_REGION
 
 ./run-load-test.sh
 ```

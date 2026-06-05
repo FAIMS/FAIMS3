@@ -6,3 +6,4 @@ export * from './sequence-plan';
 export * from './plan-cursor';
 export * from './split-assignment';
 export * from './plan-progress';
+export * from './test-accounts';

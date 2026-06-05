@@ -9,7 +9,6 @@ export const AgentEnvSchema = z.object({
   DASS_APP_URL: z.string().url(),
   DASS_API_URL: z.string().url(),
   COUCH_URL: z.string().url(),
-  INVITE_CODE: z.string().min(1),
   NOTEBOOK_PROJECT_ID: z.string().min(1),
   NOTEBOOK_SERVER_ID: z.string().min(1).default('local-dev'),
   NOTEBOOK_NAME: z.string().default('notebook'),

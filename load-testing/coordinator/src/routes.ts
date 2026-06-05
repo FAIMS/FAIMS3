@@ -6,9 +6,11 @@ import {
   RegisterRequestSchema,
   ReadyRequestSchema,
   StepCompleteRequestSchema,
+  CredentialsResponseSchema,
   metricReportToPrometheusName,
   type PlanAnalysis,
 } from '@faims3/load-testing-shared';
+import type {AccountPool} from './account-pool';
 import type {MetricsService} from './metrics';
 import type {PlanEngine} from './plan-engine';
 import {buildStatusReport} from './progress-report';
@@ -18,6 +20,7 @@ export function createRoutes(
   registry: Registry,
   engine: PlanEngine,
   metrics: MetricsService,
+  accountPool: AccountPool,
   coordinatorId: string,
   planAnalysis: PlanAnalysis
 ): Hono {
@@ -25,6 +28,18 @@ export function createRoutes(
   const plan = engine.getPlan();
 
   app.get('/health', c => c.json({status: 'ok'}));
+
+  app.get('/credentials', c => {
+    const agentId = c.req.query('agentId');
+    if (!agentId) {
+      return c.json({error: 'agentId required'}, 400);
+    }
+    if (!registry.getAgent(agentId)) {
+      return c.json({error: 'agent not registered'}, 404);
+    }
+    const account = accountPool.assign(agentId);
+    return c.json(CredentialsResponseSchema.parse(account));
+  });
 
   app.post('/register', zValidator('json', RegisterRequestSchema), c => {
     const body = c.req.valid('json');

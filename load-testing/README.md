@@ -19,8 +19,8 @@ Each package has its own `.env.example`, config parser (Zod), and `Dockerfile`.
 - Docker and Docker Compose (for observability)
 - Node.js 22 and pnpm (for local development)
 - FAIMS stack running (local or staging)
-- `LOCAL_LOGIN_ENABLED` for automated registration scenarios
-- Multi-use project invite (`usesOriginal >= agent count × sessions per agent`)
+- `LOCAL_LOGIN_ENABLED` for automated login during onboarding
+- Pre-seeded load-test users in CouchDB (see **Account pool** below)
 
 ## Quick start
 
@@ -39,7 +39,7 @@ Grafana: http://localhost:3030 (anonymous admin enabled).
 ```bash
 cd load-testing/coordinator
 cp .env.example .env
-# Edit EXPECTED_AGENT_COUNT, phase timers
+# Edit EXPECTED_AGENT_COUNT, LOAD_TEST_ACCOUNTS, sequence plan
 pnpm run dev
 ```
 
@@ -58,7 +58,7 @@ docker run --env-file load-testing/coordinator/.env -p 4000:4000 \
 ```bash
 cd load-testing/agents
 cp .env.example .env
-# Edit INVITE_CODE, NOTEBOOK_PROJECT_ID, URLs
+# Edit NOTEBOOK_PROJECT_ID, URLs, COORDINATOR_URL
 pnpm run install-browsers   # first time only
 pnpm run dev
 ```
@@ -79,7 +79,7 @@ Set `EXPECTED_AGENT_COUNT` on the coordinator to match how many agent containers
 | Phase | Behaviour |
 |-------|-----------|
 | WAITING_FOR_AGENTS | Agents register and signal ready |
-| ONBOARDING | Register/login, activate notebook, initial sync |
+| ONBOARDING | Login (coordinator-assigned account), activate notebook, initial sync |
 | OFFLINE_COLLECTION | Simulated offline record creation |
 | SYNC_STORM | Staggered reconnection and sync |
 | EXPORT_STRESS | Optional API export (subset of agents) |
@@ -91,7 +91,16 @@ Set `EXPECTED_AGENT_COUNT` on the coordinator to match how many agent containers
 |------|-----------|
 | [`load-testing/.env.example`](.env.example) | CouchDB exporter + observability ports |
 | [`coordinator/.env.example`](coordinator/.env.example) | Port, agent count, phase timers, pushgateway |
-| [`agents/.env.example`](agents/.env.example) | FAIMS URLs, invite, browser, scenario timing |
+| [`agents/.env.example`](agents/.env.example) | FAIMS URLs, browser, notebook targets |
+| [`scripts/.env.example`](scripts/.env.example) | AWS run + `LOAD_TEST_ACCOUNTS` for coordinator |
+
+### Account pool
+
+1. Seed users (no migrations): `./scripts/seed-load-test-accounts.sh` — prints `LOAD_TEST_ACCOUNTS=email::password,...` (requires an already-initialised CouchDB). Use `::` between email and password in `.env` — unquoted `||` breaks when bash sources the file.
+2. Set that line on the **coordinator** (and `scripts/.env` for `run-load-test.sh`)
+3. Each agent calls `GET /credentials?agentId=` once during onboarding; assignments are sticky per agent (round-robin across the pool)
+
+Use **at most one agent per account** (`AGENT_COUNT` ≤ account count) to avoid concurrent edits on the same user.
 
 Key timing relationship: coordinator `OFFLINE_COLLECTION_DURATION_MS` should be ≥ agent `OFFLINE_DURATION_MS`.
 

@@ -110,6 +110,7 @@ async function waitForNextStep(
 }
 
 async function runPlanStep(
+  client: CoordinatorClient,
   step: ActiveStep,
   page: Page,
   context: BrowserContext,
@@ -124,7 +125,7 @@ async function runPlanStep(
 
   switch (step.kind) {
     case 'onboarding': {
-      const onboarding = await runOnboarding(page, ctx);
+      const onboarding = await runOnboarding(page, ctx, client);
       ctx.jwtToken = onboarding.jwtToken;
       break;
     }
@@ -156,7 +157,7 @@ export async function executeSequencePlan(
   let step = await waitForRunningStep(client, ctx.agentId, ctx.sessionId);
   while (step) {
     metricBuffer.setStepId(step.id);
-    await runPlanStep(step, page, context, cdp, metricBuffer, ctx);
+    await runPlanStep(client, step, page, context, cdp, metricBuffer, ctx);
     await stepCompleteResilient(
       client,
       {

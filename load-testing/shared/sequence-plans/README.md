@@ -27,7 +27,7 @@ SEQUENCE_PLAN_FILE=../shared/sequence-plans/long-offline-loop.json ./run-load-te
 
 | Kind | Behaviour |
 |------|-----------|
-| `onboarding` | Register/login, activate notebook. Advances when all agents done. |
+| `onboarding` | Login with coordinator-assigned account, activate notebook. Advances when all agents done. |
 | `online_collection` | Stay online; create records every `config.recordIntervalMs`. |
 | `offline_collection` | Go offline, create records, reconnect with jitter, wait for sync. |
 | `patchy_network` | Toggle offline/online on jittered cycles while surveying. |

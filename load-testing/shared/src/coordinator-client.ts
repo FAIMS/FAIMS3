@@ -3,6 +3,7 @@ import {
   MetricReportSchema,
   RegisterRequestSchema,
   RegisterResponseSchema,
+  CredentialsResponseSchema,
   ReadyRequestSchema,
   StatusResponseSchema,
   StepCompleteRequestSchema,
@@ -12,6 +13,7 @@ import {
   type MetricReport,
   type RegisterRequest,
   type RegisterResponse,
+  type CredentialsResponse,
   type ReadyRequest,
   type StatusResponse,
   type StepCompleteRequest,
@@ -147,6 +149,13 @@ export class CoordinatorClient {
       timeoutMs: this.requestTimeoutMs,
       retries: this.requestRetries,
     });
+  }
+
+  async getCredentials(agentId: string): Promise<CredentialsResponse> {
+    const response = await this.request(
+      `/credentials?agentId=${encodeURIComponent(agentId)}`
+    );
+    return parseJson(response, CredentialsResponseSchema);
   }
 
   async register(body: RegisterRequest): Promise<RegisterResponse> {

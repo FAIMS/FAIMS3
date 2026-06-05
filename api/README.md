@@ -16,6 +16,37 @@ variables supported.
 
 Environment variables are documented in comments in `.env.dist`.
 
+### Optional: `.env` from a CDK deployment
+
+For AWS-hosted stacks deployed with [`infrastructure/aws-cdk`](../infrastructure/aws-cdk), you can generate an `.env` that mirrors the **Conductor** ECS task definition (plain environment variables plus resolved Secrets Manager values). This is optional tooling for deployment management — local Docker development still typically uses `.env.dist` and instance keys under `keys/`.
+
+**Prerequisites:** AWS CLI v2, `jq`, and IAM access to describe the CloudFormation stack, ECS task definition, and the secrets referenced by the task.
+
+```bash
+cd api
+# Stack name is the `stackName` from your CDK config JSON (e.g. configs/production.json)
+./scripts/env-from-cdk-stack.sh <stack-name>
+
+# Or via pnpm (pass stack name after --)
+pnpm run env-from-cdk -- my-faims-stack --region ap-southeast-2 -o .env.cdk-export
+```
+
+| Flag | Description |
+|------|-------------|
+| `<stack-name>` | CloudFormation stack name (required) |
+| `-r`, `--region` | AWS region (defaults to the stack’s region) |
+| `-o`, `--output` | Output path (default: `api/.env.cdk-export`) |
+
+The script finds `AWS::ECS::TaskDefinition` resources whose logical ID contains `conductor`, reads the `conductor-container-dfn` (or first matching) container, and writes sorted `KEY=value` lines.
+
+Multi-line secrets (e.g. SAML PEM keys) are written as a **single** `KEY="..."` line with `\\n` line breaks, matching `api/.env.dist`.
+
+**After generation**, review and merge into `.env`. You may still need to adjust:
+
+- `COUCHDB_INTERNAL_URL` — use a reachable URL from your laptop (VPN, tunnel, or public Couch endpoint)
+- `KEY_SOURCE` / `KEY_FILE_PATH` — ECS uses `KEY_SOURCE=AWS_SM`; local `pnpm`/`ts-node` scripts often need file-based keys (`KEY_SOURCE` unset or local key files via `keymanagement/makeInstanceKeys.sh`)
+- `CONDUCTOR_EXTERNAL_PORT` — derived from the container port when absent; may differ from your local Docker mapping
+
 ## Key Generation
 
 ```bash

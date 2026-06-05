@@ -27,8 +27,12 @@ export interface MetricsServiceOptions {
   pushIntervalMs?: number;
 }
 
-/** Debounced async flush — coalesces many schedule() calls into periodic pushes. */
-class PushDebouncer {
+/**
+ * Throttled async flush — at most one push per intervalMs while reports keep arriving.
+ * Unlike debounce, an already-scheduled timer is not reset, so continuous /report
+ * traffic cannot starve Pushgateway pushes.
+ */
+class PushThrottle {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private inFlight: Promise<void> | null = null;
   private flushAgain = false;
@@ -41,8 +45,11 @@ class PushDebouncer {
   ) {}
 
   schedule(): void {
-    if (this.timer) {
-      clearTimeout(this.timer);
+    if (this.timer || this.inFlight) {
+      if (this.inFlight) {
+        this.flushAgain = true;
+      }
+      return;
     }
     this.timer = setTimeout(() => {
       this.timer = null;
@@ -96,8 +103,8 @@ export class MetricsService {
   private readonly agentPushgateway: Pushgateway<RegistryContentType> | null;
   private readonly coordinatorPushgateway: Pushgateway<RegistryContentType> | null;
   private readonly testRunId: string;
-  private readonly agentPushDebouncer: PushDebouncer | null;
-  private readonly coordinatorPushDebouncer: PushDebouncer | null;
+  private readonly agentPushThrottle: PushThrottle | null;
+  private readonly coordinatorPushThrottle: PushThrottle | null;
   private metricsReceived = 0;
 
   private runStateGauge: Gauge;
@@ -157,11 +164,11 @@ export class MetricsService {
       ? new Pushgateway(pushUrl, {}, this.promRegistry)
       : null;
 
-    this.agentPushDebouncer = this.agentPushgateway
-      ? new PushDebouncer(pushIntervalMs, () => this.pushAgentMetrics(), 'agent')
+    this.agentPushThrottle = this.agentPushgateway
+      ? new PushThrottle(pushIntervalMs, () => this.pushAgentMetrics(), 'agent')
       : null;
-    this.coordinatorPushDebouncer = this.coordinatorPushgateway
-      ? new PushDebouncer(
+    this.coordinatorPushThrottle = this.coordinatorPushgateway
+      ? new PushThrottle(
           pushIntervalMs,
           () => this.pushCoordinatorState(),
           'coordinator'
@@ -185,13 +192,13 @@ export class MetricsService {
         advancedAt / 1000
       );
     }
-    this.coordinatorPushDebouncer?.schedule();
+    this.coordinatorPushThrottle?.schedule();
   }
 
   updateAgentCounts(registered: number, ready: number): void {
     this.registeredAgentsGauge.set(registered);
     this.readyAgentsGauge.set(ready);
-    this.coordinatorPushDebouncer?.schedule();
+    this.coordinatorPushThrottle?.schedule();
   }
 
   private getHistogram(name: string): Histogram {
@@ -279,7 +286,7 @@ export class MetricsService {
       );
     }
 
-    this.agentPushDebouncer?.schedule();
+    this.agentPushThrottle?.schedule();
   }
 
   async pushCoordinatorState(jobName = 'dass_coordinator'): Promise<void> {
@@ -294,11 +301,11 @@ export class MetricsService {
 
   /** Flush pending Pushgateway batches (call before shutdown). */
   async shutdown(): Promise<void> {
-    this.agentPushDebouncer?.stop();
-    this.coordinatorPushDebouncer?.stop();
+    this.agentPushThrottle?.stop();
+    this.coordinatorPushThrottle?.stop();
     await Promise.all([
-      this.agentPushDebouncer?.flush(),
-      this.coordinatorPushDebouncer?.flush(),
+      this.agentPushThrottle?.flush(),
+      this.coordinatorPushThrottle?.flush(),
     ]);
   }
 }

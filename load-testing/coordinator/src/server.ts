@@ -1,6 +1,11 @@
 import {serve} from '@hono/node-server';
 import {analyzePlan} from '@faims3/load-testing-shared';
-import {loadSequencePlanFromEnv, parseCoordinatorEnv} from './config';
+import {
+  loadSequencePlanFromEnv,
+  loadTestAccountsFromEnv,
+  parseCoordinatorEnv,
+} from './config';
+import {AccountPool} from './account-pool';
 import {MetricsService} from './metrics';
 import {PlanEngine} from './plan-engine';
 import {createRoutes} from './routes';
@@ -12,6 +17,7 @@ const planAnalysis = analyzePlan(plan);
 const coordinatorId = createCoordinatorId();
 const testRunId = createTestRunId();
 
+const accountPool = new AccountPool(loadTestAccountsFromEnv());
 const registry = new Registry(env.EXPECTED_AGENT_COUNT);
 const metrics = new MetricsService(testRunId, env.PROMETHEUS_PUSHGATEWAY_URL, {
   pushIntervalMs: env.METRICS_PUSH_INTERVAL_MS,
@@ -46,12 +52,13 @@ const app = createRoutes(
   registry,
   engine,
   metrics,
+  accountPool,
   coordinatorId,
   planAnalysis
 );
 
 console.log(
-  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, plan=${plan.name ?? 'unnamed'}, est=${Math.round(planAnalysis.estimatedDurationMs / 1000)}s, expecting ${env.EXPECTED_AGENT_COUNT} agent(s)`
+  `[coordinator] starting on port ${env.PORT}, testRunId=${testRunId}, plan=${plan.name ?? 'unnamed'}, est=${Math.round(planAnalysis.estimatedDurationMs / 1000)}s, expecting ${env.EXPECTED_AGENT_COUNT} agent(s), ${accountPool.size()} pre-seeded account(s)`
 );
 
 serve({fetch: app.fetch, port: env.PORT});

@@ -2,7 +2,7 @@
 
 Hono HTTP server that registers agents, executes a **sequence plan**, and forwards metrics to Prometheus Pushgateway.
 
-Requires `SEQUENCE_PLAN`, `SEQUENCE_PLAN_B64`, or `SEQUENCE_PLAN_FILE` at startup.
+Requires `SEQUENCE_PLAN`, `SEQUENCE_PLAN_B64`, or `SEQUENCE_PLAN_FILE`, and `LOAD_TEST_ACCOUNTS` at startup.
 
 ## API
 
@@ -10,6 +10,7 @@ Requires `SEQUENCE_PLAN`, `SEQUENCE_PLAN_B64`, or `SEQUENCE_PLAN_FILE` at startu
 |--------|------|-------------|
 | GET | `/health` | Liveness probe |
 | POST | `/register` | Register agent `{ agentId, sessionCount, workerId }` |
+| GET | `/credentials?agentId=` | Assign pre-seeded `username` / `password` (sticky per agent) |
 | POST | `/ready` | Agent ready `{ agentId }` |
 | GET | `/step?agentId=` | Current plan step for agent |
 | POST | `/step-complete` | Step done `{ agentId, stepId, sessionCount }` |
