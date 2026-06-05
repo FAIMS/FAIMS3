@@ -94,11 +94,6 @@
         padding: 0.5rem 0.75rem;
         border: 1px solid var(--border-color);
         margin-bottom: 0.25rem;
-        /*
-         * 1rem (16px) is intentional: anything smaller triggers iOS Safari's
-         * auto-zoom on input focus. Keeping inputs at 16px makes Android
-         * comfortably readable without zooming and stops the iOS jump.
-         */
         font-size: 1rem;
       }
 
@@ -228,13 +223,6 @@
         margin-bottom: 0.5rem !important;
       }
 
-      /*
-       * Mobile breakpoint
-       * Bumps typography so users don't need to pinch-zoom on Android
-       * (iOS already stops auto-zooming thanks to the 1rem input font-size
-       * above). Also gives buttons and form groups more breathing room so
-       * the card feels tappable on small touch screens.
-       */
       @media (max-width: 480px) {
         .auth-container {
           /* Leave a touch less gutter so the card uses more of the viewport. */
@@ -246,6 +234,11 @@
         }
 
         .auth-card {
+          /* Drop the 400px desktop cap on mobile so the card grows to fill
+             viewport - container padding (~340px on 360px phones, ~392px
+             on 412px phones). The container padding still leaves a small
+             gutter so the card never goes edge-to-edge. */
+          max-width: none;
           padding: 1.75rem 1.25rem;
         }
 
