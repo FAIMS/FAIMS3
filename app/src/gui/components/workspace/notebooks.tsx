@@ -91,6 +91,17 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 export const DE_ACTIVATE_VERB = 'De-activate';
 export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
+export const notebookListDataGridSx = {
+  '& .MuiDataGrid-cell': {
+    padding: '8px 16px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  '& .MuiDataGrid-row': {
+    minHeight: '75px !important',
+  },
+};
+
 export default function NoteBooks() {
   // get the active user - this will allow us to check roles against it
   // TODO what do we do if this is not defined
