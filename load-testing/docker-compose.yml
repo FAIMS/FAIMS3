@@ -35,10 +35,6 @@ services:
     ports:
       - '${COUCHDB_EXPORTER_PORT:-9984}:9984'
     env_file:
-      - .env
-    environment:
-      # COUCHDB_PASSWORD must come from .env via env_file only (see ec2-bundle compose).
-      COUCHDB_URI: ${COUCHDB_EXPORTER_URL:-http://host.docker.internal:5984}
-      COUCHDB_USERNAME: ${COUCHDB_USERNAME:-${COUCH_USER:-admin}}
+      - couchdb-exporter.env
     extra_hosts:
       - 'host.docker.internal:host-gateway'

@@ -16,23 +16,43 @@ read_env() {
   grep "^${key}=" .env 2>/dev/null | sed "s/^${key}=//" | jq -r . 2>/dev/null || true
 }
 
+read_env_file() {
+  local file=$1 key=$2
+  grep "^${key}=" "$file" 2>/dev/null | sed "s/^${key}=//" | jq -r . 2>/dev/null || true
+}
+
 COUCHDB_EXPORTER_URL="$(read_env COUCHDB_EXPORTER_URL)"
 COUCH_USER="$(read_env COUCH_USER)"
-COUCHDB_USERNAME="$(read_env COUCHDB_USERNAME)"
-COUCH_PASSWORD="$(read_env COUCH_PASSWORD)"
-COUCHDB_PASSWORD="$(read_env COUCHDB_PASSWORD)"
+COUCHDB_USERNAME="$(read_env_file couchdb-exporter.env COUCHDB_USERNAME)"
+COUCHDB_URI="$(read_env_file couchdb-exporter.env COUCHDB_URI)"
+exporter_env_pass="$(read_env_file couchdb-exporter.env COUCHDB_PASSWORD)"
+# couchdb-exporter.env stores $$ for compose; container receives a single $.
+COUCHDB_PASSWORD="${exporter_env_pass//\$\$/$}"
+COUCH_PASSWORD="$COUCHDB_PASSWORD"
+
+if [[ -f .env ]] && grep -q '^COUCH_PASSWORD=' .env; then
+  echo "WARNING: COUCH_PASSWORD is still in project .env — compose will interpolate \$ inside it." >&2
+  echo "  Run: sudo /opt/loadtest/refresh-couchdb-exporter-env.sh" >&2
+fi
 
 redact() {
   sed -E 's/(COUCHDB_PASSWORD|COUCH_PASSWORD)=.*/\1=***/'
 }
 
 echo "=== .env (redacted) ==="
-grep -E '^(COUCHDB_EXPORTER_URL|COUCH_USER|COUCHDB_USERNAME|COUCH_PASSWORD|COUCHDB_PASSWORD)=' .env | redact
+grep -E '^(COUCHDB_EXPORTER_URL|COUCH_USER)=' .env | redact
+grep '^COUCH_PASSWORD=' .env 2>/dev/null | redact || true
+
+if [[ -f couchdb-exporter.env ]]; then
+  echo "=== couchdb-exporter.env (redacted) ==="
+  grep -E '^COUCHDB_' couchdb-exporter.env | redact
+else
+  echo "=== couchdb-exporter.env: MISSING (re-run bootstrap.sh) ==="
+fi
 
 echo
 echo "=== Password lengths (characters) ==="
-echo "  COUCH_PASSWORD:     $(printf '%s' "${COUCH_PASSWORD:-}" | wc -c)"
-echo "  COUCHDB_PASSWORD:   $(printf '%s' "${COUCHDB_PASSWORD:-}" | wc -c)"
+echo "  expected password (from couchdb-exporter.env): $(printf '%s' "${COUCH_PASSWORD:-}" | wc -c)"
 
 if [[ -n "${COUCH_PASSWORD_SECRET_ARN:-}" ]]; then
   secret_len="$(aws secretsmanager get-secret-value \
@@ -45,7 +65,7 @@ fi
 echo
 echo "=== Host curl (same creds as .env) ==="
 user="${COUCHDB_USERNAME:-${COUCH_USER:-admin}}"
-pass="${COUCHDB_PASSWORD:-${COUCH_PASSWORD:-}}"
+pass="${COUCH_PASSWORD:-}"
 url="${COUCHDB_URI:-${COUCHDB_EXPORTER_URL:-}}"
 code="$(curl -sS -o /dev/null -w '%{http_code}' -u "${user}:${pass}" "${url}/_up" || echo "000")"
 echo "  GET ${url}/_up → HTTP ${code}"
@@ -73,12 +93,12 @@ if [[ -n "$cid" ]]; then
   docker inspect "$cid" --format '{{range .Config.Env}}{{println .}}{{end}}' \
     | grep -E '^COUCHDB_(URI|USERNAME|PASSWORD)=' \
     | redact
-  env_len="$(printf '%s' "${pass}" | wc -c)"
+  env_len="$(printf '%s' "${COUCH_PASSWORD}" | wc -c)"
   container_len="$(printf '%s' "${container_pass}" | wc -c)"
-  echo "  .env COUCHDB_PASSWORD len=${env_len}, container len=${container_len}"
-  if [[ "${env_len}" != "${container_len}" || "${pass}" != "${container_pass}" ]]; then
-    echo "  MISMATCH — compose mangled the password (often \$VAR inside the value)"
-    echo "  Fix: redeploy ec2-bundle compose without COUCHDB_PASSWORD in environment:, then recreate"
+  echo "  expected len=${env_len}, container len=${container_len}"
+  if [[ "${env_len}" != "${container_len}" || "${COUCHDB_PASSWORD}" != "${container_pass}" ]]; then
+    echo "  MISMATCH — compose ate \$VAR in the password (use couchdb-exporter.env with \$\$ escapes)"
+    echo "  Fix: re-run bootstrap.sh, then: docker compose up -d --force-recreate couchdb-exporter"
   fi
 
   net="$(docker inspect "$cid" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')"

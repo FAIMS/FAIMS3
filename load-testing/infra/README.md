@@ -78,7 +78,15 @@ export COUCHDB_EXPORTER_URL='https://couchdb.your.domain'
 export COUCH_USER='admin'
 export COUCH_PASSWORD_SECRET_ARN='arn:aws:secretsmanager:…'
 sudo -E /opt/loadtest/bootstrap.sh
-cd /opt/loadtest && sudo docker compose up -d
+cd /opt/loadtest && docker compose up -d
+```
+
+Couch passwords with `$` must not live in project `.env` (compose auto-loads it). If the exporter shows a truncated password, run:
+
+```bash
+export COUCH_PASSWORD_SECRET_ARN='arn:aws:secretsmanager:…'
+sudo -E /opt/loadtest/refresh-couchdb-exporter-env.sh
+cd /opt/loadtest && docker compose up -d --force-recreate couchdb-exporter
 ```
 
 Or terminate the metrics EC2 instance and redeploy after a CDK update (user-data runs again on new instance).

@@ -294,7 +294,7 @@ export class LoadTestStack extends cdk.Stack {
       'mkdir -p /opt/loadtest',
       `aws s3 cp '${bundleS3Uri}' /tmp/loadtest-bundle.zip`,
       'unzip -o /tmp/loadtest-bundle.zip -d /opt/loadtest',
-      'chmod +x /opt/loadtest/bootstrap.sh /opt/loadtest/install-docker-compose.sh /opt/loadtest/verify-couch-auth.sh',
+      'chmod +x /opt/loadtest/bootstrap.sh /opt/loadtest/install-docker-compose.sh /opt/loadtest/verify-couch-auth.sh /opt/loadtest/refresh-couchdb-exporter-env.sh',
       `export COUCHDB_EXPORTER_URL='${config.COUCH_URL}'`,
       `export COUCH_USER='${config.COUCH_USER}'`,
       `export METRICS_FQDN='${metricsFqdn}'`,
@@ -306,6 +306,7 @@ export class LoadTestStack extends cdk.Stack {
       '/opt/loadtest/bootstrap.sh',
       'docker compose version',
       'cd /opt/loadtest',
+      'docker compose up -d --force-recreate couchdb-exporter',
       'docker compose up -d',
       `echo "Metrics host ready. Grafana: http://${metricsFqdn}:3030"`
     );

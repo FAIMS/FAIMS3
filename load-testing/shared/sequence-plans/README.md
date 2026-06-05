@@ -73,6 +73,7 @@ Each phase supports `durationMs` + `advance` (`timer`, `all_agents_done`, `major
 | `long-offline-loop.json` | 5min online/offline cycles + 10min patchy |
 | `split-online-patchy-loops.json` | 5×(2min 50/50 online vs patchy) + 4min all online |
 | `split-online-offline.json` | 50/50 split then patchy |
+| `sixty-agent-30min-triple-split.json` | 60 agents: 3×(online/offline/patchy) phases over ~30 min timed steps |
 
 ## Metrics
 

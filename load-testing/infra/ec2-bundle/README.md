@@ -9,6 +9,7 @@ After connecting via Session Manager:
 sudo bash /opt/loadtest/install-docker-compose.sh
 
 cd /opt/loadtest
+# bootstrap.sh writes .env and couchdb-exporter.env (password $ escaped as $$ for compose)
 docker compose up -d
 ```
 

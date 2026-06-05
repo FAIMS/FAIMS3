@@ -5,6 +5,8 @@ export
 
 observability:
 	chmod -R a+rX observability
+	chmod +x scripts/generate-couchdb-exporter-env.sh
+	./scripts/generate-couchdb-exporter-env.sh
 	docker compose up -d
 	./scripts/wait-for-healthy.sh
 	@echo "Observability stack running. Grafana: http://localhost:$(GRAFANA_PORT:-3030)"

@@ -13,10 +13,15 @@ install_docker_compose
 : "${COUCHDB_EXPORTER_URL:?COUCHDB_EXPORTER_URL is required}"
 : "${COUCH_USER:?COUCH_USER is required}"
 
-# Write .env values with jq @json so passwords containing =, #, $, etc. stay intact.
+# Write env values with jq @json so passwords containing =, #, $, etc. stay intact.
 append_env_var() {
-  local key=$1 value=$2
-  jq -rn --arg k "$key" --arg v "$value" '"\($k)=\($v | @json)"' >> .env
+  local file=$1 key=$2 value=$3
+  jq -rn --arg k "$key" --arg v "$value" '"\($k)=\($v | @json)"' >>"$file"
+}
+
+# Docker Compose interpolates $ in env_file values; $$ → literal $ in the container.
+escape_compose_dollar() {
+  sed 's/\$/$$/g'
 }
 
 if [[ -n "${COUCH_PASSWORD_SECRET_ARN:-}" ]]; then
@@ -41,20 +46,28 @@ if [[ -z "${COUCH_PASSWORD}" || "${COUCH_PASSWORD}" == "null" ]]; then
   exit 1
 fi
 
-: > .env
-append_env_var COUCHDB_EXPORTER_URL "$COUCHDB_EXPORTER_URL"
-append_env_var COUCH_USER "$COUCH_USER"
-append_env_var COUCHDB_EXPORTER_VERSION "${COUCHDB_EXPORTER_VERSION:-latest}"
-append_env_var PROMETHEUS_PORT "${PROMETHEUS_PORT:-9090}"
-append_env_var PUSHGATEWAY_PORT "${PUSHGATEWAY_PORT:-9091}"
-append_env_var GRAFANA_PORT "${GRAFANA_PORT:-3030}"
-append_env_var COUCHDB_EXPORTER_PORT "${COUCHDB_EXPORTER_PORT:-9984}"
-append_env_var COUCH_PASSWORD "$COUCH_PASSWORD"
-append_env_var COUCHDB_URI "$COUCHDB_EXPORTER_URL"
-append_env_var COUCHDB_USERNAME "$COUCH_USER"
-append_env_var COUCHDB_PASSWORD "$COUCH_PASSWORD"
+: >.env
+: >couchdb-exporter.env
+append_env_var .env COUCHDB_EXPORTER_URL "$COUCHDB_EXPORTER_URL"
+append_env_var .env COUCH_USER "$COUCH_USER"
+append_env_var .env COUCHDB_EXPORTER_VERSION "${COUCHDB_EXPORTER_VERSION:-latest}"
+append_env_var .env PROMETHEUS_PORT "${PROMETHEUS_PORT:-9090}"
+append_env_var .env PUSHGATEWAY_PORT "${PUSHGATEWAY_PORT:-9091}"
+append_env_var .env GRAFANA_PORT "${GRAFANA_PORT:-3030}"
+append_env_var .env COUCHDB_EXPORTER_PORT "${COUCHDB_EXPORTER_PORT:-9984}"
+# Never write COUCH_PASSWORD to project .env — compose auto-loads it and interpolates $VAR.
 
+# gesellix creds live in couchdb-exporter.env ($ escaped as $$ for compose env_file).
+append_env_var couchdb-exporter.env COUCHDB_URI "$COUCHDB_EXPORTER_URL"
+append_env_var couchdb-exporter.env COUCHDB_USERNAME "$COUCH_USER"
+compose_pass="$(printf '%s' "$COUCH_PASSWORD" | escape_compose_dollar)"
+append_env_var couchdb-exporter.env COUCHDB_PASSWORD "$compose_pass"
+
+chmod 600 couchdb-exporter.env
+chmod 644 .env
+chown -R ec2-user:ec2-user "$INSTALL_DIR"
 chmod -R a+rX "$INSTALL_DIR"
+chmod 600 couchdb-exporter.env
 
 echo "Bootstrap complete."
 echo "  Observability: cd ${INSTALL_DIR} && docker compose up -d"
