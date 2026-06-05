@@ -48,7 +48,7 @@ fi
 if [[ -n "${SEQUENCE_PLAN_B64:-}" ]]; then
   PLAN_B64="$SEQUENCE_PLAN_B64"
 else
-  PLAN_B64="$(base64 -w0 "$SEQUENCE_PLAN_FILE")"
+  PLAN_B64="$(jq -c . "$SEQUENCE_PLAN_FILE" | base64 -w0)"
 fi
 
 PLAN_NAME="$(jq -r '.name // "unnamed"' "$SEQUENCE_PLAN_FILE")"

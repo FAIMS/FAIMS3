@@ -1,109 +1,67 @@
 {
   "version": 1,
   "name": "sixty-agent-30min-triple-split",
-  "description": "60-agent / ~30min run: onboarding, then baseline 3-way split (online / offline / patchy), all-online sync, peak-stress 3-way split, 2× rotating 3-way splits, and an all-online finale. Set EXPECTED_AGENT_COUNT=60.",
   "steps": [
     {
       "id": "onboarding",
-      "kind": "onboarding",
-      "label": "Register, activate notebook, initial sync",
-      "advance": "all_agents_done",
-      "config": {}
+      "kind": "onboarding"
     },
     {
       "id": "baseline_fieldwork",
-      "label": "Phase 1 — baseline 3-way split (20 online / 20 offline / 20 patchy)",
       "split": {
-        "assignment": "agent_index_mod",
         "branches": [
           {
             "id": "baseline_online",
-            "label": "Steady online",
-            "weight": 1,
             "steps": [
               {
                 "id": "baseline_online_survey",
                 "kind": "online_collection",
-                "label": "Baseline online surveying",
-                "durationMs": 480000,
-                "advance": "timer",
-                "config": {
-                  "recordIntervalMs": 5000
-                }
+                "durationMs": 480000
               }
             ]
           },
           {
             "id": "baseline_offline",
-            "label": "Fully offline",
-            "weight": 1,
             "steps": [
               {
                 "id": "baseline_offline_survey",
                 "kind": "offline_collection",
-                "label": "Baseline offline surveying + reconnect sync",
                 "durationMs": 480000,
-                "advance": "timer",
                 "config": {
-                  "recordIntervalMs": 8000,
-                  "reconnectJitterMaxMs": 10000,
-                  "syncTimeoutMs": 600000
+                  "recordIntervalMs": 8000
                 }
               }
             ]
           },
           {
             "id": "baseline_patchy",
-            "label": "Patchy connectivity",
-            "weight": 1,
             "steps": [
               {
                 "id": "baseline_patchy_survey",
                 "kind": "patchy_network",
-                "label": "Baseline patchy surveying (~30s cycles)",
-                "durationMs": 480000,
-                "advance": "timer",
-                "config": {
-                  "cycleMs": 30000,
-                  "cycleJitterMs": 10000,
-                  "offlineDurationMs": 15000,
-                  "offlineJitterMs": 5000,
-                  "recordIntervalMs": 5000
-                }
+                "durationMs": 480000
               }
             ]
           }
         ]
-      },
-      "advance": "all_agents_done"
+      }
     },
     {
       "id": "sync_consolidation",
       "kind": "online_collection",
-      "label": "Phase 2 — everyone online to consolidate sync (3 min)",
-      "durationMs": 180000,
-      "advance": "timer",
-      "config": {
-        "recordIntervalMs": 5000
-      }
+      "durationMs": 180000
     },
     {
       "id": "peak_stress",
-      "label": "Phase 3 — peak-stress 3-way split (tighter intervals / faster patchy cycles)",
       "split": {
-        "assignment": "agent_index_mod",
         "branches": [
           {
             "id": "peak_online",
-            "label": "High-rate online",
-            "weight": 1,
             "steps": [
               {
                 "id": "peak_online_survey",
                 "kind": "online_collection",
-                "label": "Peak online surveying",
                 "durationMs": 420000,
-                "advance": "timer",
                 "config": {
                   "recordIntervalMs": 4000
                 }
@@ -112,34 +70,25 @@
           },
           {
             "id": "peak_offline",
-            "label": "High-rate offline",
-            "weight": 1,
             "steps": [
               {
                 "id": "peak_offline_survey",
                 "kind": "offline_collection",
-                "label": "Peak offline surveying + reconnect sync",
                 "durationMs": 420000,
-                "advance": "timer",
                 "config": {
                   "recordIntervalMs": 6000,
-                  "reconnectJitterMaxMs": 8000,
-                  "syncTimeoutMs": 600000
+                  "reconnectJitterMaxMs": 8000
                 }
               }
             ]
           },
           {
             "id": "peak_patchy",
-            "label": "Aggressive patchy",
-            "weight": 1,
             "steps": [
               {
                 "id": "peak_patchy_survey",
                 "kind": "patchy_network",
-                "label": "Aggressive patchy surveying (~20s cycles)",
                 "durationMs": 420000,
-                "advance": "timer",
                 "config": {
                   "cycleMs": 20000,
                   "cycleJitterMs": 6000,
@@ -151,81 +100,55 @@
             ]
           }
         ]
-      },
-      "advance": "all_agents_done"
+      }
     },
     {
-      "id": "rotating_cycles",
-      "label": "Phase 4 — two rounds of 3-way split (5 min each, 10 min total)",
-      "loop": {
-        "count": 2,
-        "steps": [
+      "id": "rotating_triple_split",
+      "split": {
+        "branches": [
           {
-            "id": "rotating_triple_split",
-            "label": "Rotating online / offline / patchy mix",
-            "split": {
-              "assignment": "agent_index_mod",
-              "branches": [
-                {
-                  "id": "rotate_online",
-                  "label": "Online branch",
-                  "weight": 1,
-                  "steps": [
-                    {
-                      "id": "rotate_online_survey",
-                      "kind": "online_collection",
-                      "label": "Rotating online surveying",
-                      "durationMs": 300000,
-                      "advance": "timer",
-                      "config": {
-                        "recordIntervalMs": 4500
-                      }
-                    }
-                  ]
-                },
-                {
-                  "id": "rotate_offline",
-                  "label": "Offline branch",
-                  "weight": 1,
-                  "steps": [
-                    {
-                      "id": "rotate_offline_survey",
-                      "kind": "offline_collection",
-                      "label": "Rotating offline surveying + reconnect sync",
-                      "durationMs": 300000,
-                      "advance": "timer",
-                      "config": {
-                        "recordIntervalMs": 7000,
-                        "reconnectJitterMaxMs": 12000,
-                        "syncTimeoutMs": 600000
-                      }
-                    }
-                  ]
-                },
-                {
-                  "id": "rotate_patchy",
-                  "label": "Patchy branch",
-                  "weight": 1,
-                  "steps": [
-                    {
-                      "id": "rotate_patchy_survey",
-                      "kind": "patchy_network",
-                      "label": "Rotating patchy surveying (~25s cycles)",
-                      "durationMs": 300000,
-                      "advance": "timer",
-                      "config": {
-                        "cycleMs": 25000,
-                        "cycleJitterMs": 8000,
-                        "offlineDurationMs": 12000,
-                        "offlineJitterMs": 4000,
-                        "recordIntervalMs": 4500
-                      }
-                    }
-                  ]
+            "id": "rotate_online",
+            "steps": [
+              {
+                "id": "rotate_online_survey",
+                "kind": "online_collection",
+                "durationMs": 600000,
+                "config": {
+                  "recordIntervalMs": 4500
                 }
-              ]
-            },
-            "advance": "all_agents_done"
+              }
+            ]
+          },
+          {
+            "id": "rotate_offline",
+            "steps": [
+              {
+                "id": "rotate_offline_survey",
+                "kind": "offline_collection",
+                "durationMs": 600000,
+                "config": {
+                  "recordIntervalMs": 7000,
+                  "reconnectJitterMaxMs": 12000
+                }
+              }
+            ]
+          },
+          {
+            "id": "rotate_patchy",
+            "steps": [
+              {
+                "id": "rotate_patchy_survey",
+                "kind": "patchy_network",
+                "durationMs": 600000,
+                "config": {
+                  "cycleMs": 25000,
+                  "cycleJitterMs": 8000,
+                  "offlineDurationMs": 12000,
+                  "offlineJitterMs": 4000,
+                  "recordIntervalMs": 4500
+                }
+              }
+            ]
           }
         ]
       }
@@ -233,9 +156,7 @@
     {
       "id": "all_online_finale",
       "kind": "online_collection",
-      "label": "Phase 5 — everyone online, final survey push (2 min)",
       "durationMs": 120000,
-      "advance": "timer",
       "config": {
         "recordIntervalMs": 4000
       }
