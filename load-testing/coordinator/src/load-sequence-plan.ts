@@ -9,6 +9,7 @@ import {
   SEQUENCE_PLAN_ENV_VAR,
   SEQUENCE_PLAN_FILE_ENV_VAR,
   SEQUENCE_PLAN_S3_URI_ENV_VAR,
+  resolveCollectionProfilesInPlan,
   sequencePlanSourceHint,
   type SequencePlan,
 } from '@faims3/load-testing-shared';
@@ -34,25 +35,27 @@ async function loadSequencePlanFromS3(uri: string): Promise<SequencePlan> {
 export async function loadSequencePlan(
   env: Record<string, string | undefined> = process.env
 ): Promise<SequencePlan> {
+  let plan: SequencePlan;
+
   const s3Uri = env[SEQUENCE_PLAN_S3_URI_ENV_VAR]?.trim();
   if (s3Uri) {
-    return loadSequencePlanFromS3(s3Uri);
-  }
-
-  if (
+    plan = await loadSequencePlanFromS3(s3Uri);
+  } else if (
     env[SEQUENCE_PLAN_ENV_VAR]?.trim() ||
     env[SEQUENCE_PLAN_B64_ENV_VAR]?.trim()
   ) {
-    return parseSequencePlanFromEnv(env);
+    plan = parseSequencePlanFromEnv(env);
+  } else {
+    const file = env[SEQUENCE_PLAN_FILE_ENV_VAR]?.trim();
+    if (file) {
+      const json = readFileSync(resolve(file), 'utf8');
+      plan = parseSequencePlan(json);
+    } else {
+      throw new Error(
+        `Missing sequence plan: set one of ${sequencePlanSourceHint()}`
+      );
+    }
   }
 
-  const file = env[SEQUENCE_PLAN_FILE_ENV_VAR]?.trim();
-  if (file) {
-    const json = readFileSync(resolve(file), 'utf8');
-    return parseSequencePlan(json);
-  }
-
-  throw new Error(
-    `Missing sequence plan: set one of ${sequencePlanSourceHint()}`
-  );
+  return resolveCollectionProfilesInPlan(plan, env);
 }

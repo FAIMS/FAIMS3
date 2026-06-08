@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {CollectionProfileRefSchema} from './collection-profile';
 
 /**
  * DASS load-test sequence plan (v1).
@@ -128,6 +129,11 @@ export const OnboardingPhaseConfigSchema = z
   })
   .default({});
 
+const CollectionPhaseConfigFields = {
+  /** Filename in collection-profiles/ or inline profile (resolved by coordinator). */
+  collectionProfile: CollectionProfileRefSchema.optional(),
+};
+
 /** Online surveying: agents stay online and create records on an interval. */
 export const OnlineCollectionPhaseConfigSchema = z
   .object({
@@ -135,6 +141,7 @@ export const OnlineCollectionPhaseConfigSchema = z
     recordIntervalMs: z.number().int().positive().default(5000),
     /** Stop after N records even if durationMs not reached (optional cap). */
     maxRecords: z.number().int().positive().optional(),
+    ...CollectionPhaseConfigFields,
   })
   .default({});
 
@@ -150,6 +157,7 @@ export const OfflineCollectionPhaseConfigSchema = z
     reconnectJitterMaxMs: z.number().int().nonnegative().default(10000),
     /** Max wait for sync UI to return idle after reconnect. */
     syncTimeoutMs: z.number().int().positive().default(600000),
+    ...CollectionPhaseConfigFields,
   })
   .default({});
 
@@ -169,6 +177,7 @@ export const PatchyNetworkPhaseConfigSchema = z
     offlineJitterMs: z.number().int().nonnegative().default(5000),
     recordIntervalMs: z.number().int().positive().default(5000),
     maxRecords: z.number().int().positive().optional(),
+    ...CollectionPhaseConfigFields,
   })
   .default({});
 

@@ -9,6 +9,7 @@ import {waitForSyncComplete} from '../selectors.js';
 import {sessionLog} from '../session-log.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 import type {SessionContext} from '../types.js';
+import {collectionProfileFromStepConfig} from '../collection/from-step-config.js';
 import {runRecordLoop} from './record-collection.js';
 
 export async function runOfflineCollection(
@@ -47,6 +48,7 @@ export async function runOfflineCollection(
     deadlineMs,
     recordIntervalMs: config.recordIntervalMs ?? 5000,
     maxRecords: config.maxRecords,
+    collectionProfile: collectionProfileFromStepConfig(step.config),
   });
 
   sessionLog(

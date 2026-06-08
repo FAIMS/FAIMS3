@@ -23,10 +23,23 @@ export function notebookActivateConfirm(page: Page): Locator {
 }
 
 /** Primary control to start creating a new record in the notebook list. */
-export function addRecordButton(page: Page): Locator {
+export function addRecordButton(page: Page, formType?: string): Locator {
+  if (formType) {
+    const label = escapeRegExp(formType);
+    return page
+      .getByRole('button', {
+        name: new RegExp(`^(?:Add new |New )?${label}$`, 'i'),
+      })
+      .first();
+  }
+
   return page
     .getByTestId('add-record-button')
     .or(page.getByRole('button', {name: /add new/i}).first());
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Debounced-save confirmation in the record editor. */

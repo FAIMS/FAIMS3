@@ -1,3 +1,5 @@
+export * from './collection-profile';
+export * from './resolve-collection-profiles';
 export * from './coordinator-api';
 export * from './coordinator-client';
 export * from './metrics';

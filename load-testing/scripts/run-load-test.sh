@@ -96,6 +96,19 @@ for v in CLUSTER COORD_TASK_DEF AGENT_TASK_DEF ECS_SG SUBNETS METRICS_INSTANCE_I
   fi
 done
 
+resolve_sequence_plan_file() {
+  local src="$1" dest="$2"
+  local prepare_js="${SCRIPT_DIR}/../shared/build/src/prepare-sequence-plan.js"
+
+  if [[ ! -f "$prepare_js" ]]; then
+    echo "Building @faims3/load-testing-shared (prepare-sequence-plan)…" >&2
+    (cd "${SCRIPT_DIR}/../shared" && pnpm run build) >&2
+  fi
+
+  COLLECTION_PROFILES_DIR="${COLLECTION_PROFILES_DIR:-${SCRIPT_DIR}/../shared/collection-profiles}" \
+    node "$prepare_js" "$src" "$dest"
+}
+
 plan_env_json() {
   if [[ -n "${SEQUENCE_PLAN_S3_URI:-}" ]]; then
     jq -n --arg uri "$SEQUENCE_PLAN_S3_URI" \
@@ -103,10 +116,18 @@ plan_env_json() {
     return
   fi
 
+  local resolved_plan
+  resolved_plan="$(mktemp)"
+  # shellcheck disable=SC2064
+  trap "rm -f '${resolved_plan}'" RETURN
+
+  echo "Inlining collection profiles into sequence plan…" >&2
+  resolve_sequence_plan_file "$SEQUENCE_PLAN_FILE" "$resolved_plan"
+
   if [[ "${SEQUENCE_PLAN_DELIVERY}" == "env" || -n "${SEQUENCE_PLAN_B64:-}" ]]; then
     local plan_b64="${SEQUENCE_PLAN_B64:-}"
     if [[ -z "$plan_b64" ]]; then
-      plan_b64="$(jq -c . "$SEQUENCE_PLAN_FILE" | base64 -w0)"
+      plan_b64="$(base64 -w0 < "$resolved_plan")"
     fi
     jq -n --arg plan "$plan_b64" '[{name:"SEQUENCE_PLAN_B64",value:$plan}]'
     return
@@ -117,7 +138,9 @@ plan_env_json() {
   plan_key="plans/${plan_basename}"
   plan_uri="s3://${PLANS_BUCKET}/${plan_key}"
   echo "Uploading sequence plan to ${plan_uri}…" >&2
-  aws s3 cp "$SEQUENCE_PLAN_FILE" "s3://${PLANS_BUCKET}/${plan_key}" --region "$AWS_REGION"
+  # Keep stdout JSON-only for plan_env_json() callers (--argjson below).
+  aws s3 cp "$resolved_plan" "s3://${PLANS_BUCKET}/${plan_key}" \
+    --region "$AWS_REGION" --only-show-errors >&2
   jq -n --arg uri "$plan_uri" '[{name:"SEQUENCE_PLAN_S3_URI",value:$uri}]'
 }
 

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "person-survey-online",
+  "description": "Onboarding then online collection using the person-survey collection profile.",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "person_online",
+      "kind": "online_collection",
+      "durationMs": 300000,
+      "config": {
+        "recordIntervalMs": 8000,
+        "collectionProfile": "person-survey.json"
+      }
+    }
+  ]
+}

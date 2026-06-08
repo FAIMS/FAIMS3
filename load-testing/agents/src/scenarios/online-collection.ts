@@ -6,6 +6,7 @@ import type {Page} from 'playwright';
 import {sessionLog} from '../session-log.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 import type {SessionContext} from '../types.js';
+import {collectionProfileFromStepConfig} from '../collection/from-step-config.js';
 import {runRecordLoop} from './record-collection.js';
 
 export async function runOnlineCollection(
@@ -29,6 +30,7 @@ export async function runOnlineCollection(
     deadlineMs,
     recordIntervalMs: config.recordIntervalMs,
     maxRecords: config.maxRecords,
+    collectionProfile: collectionProfileFromStepConfig(step.config),
   });
 
   sessionLog(

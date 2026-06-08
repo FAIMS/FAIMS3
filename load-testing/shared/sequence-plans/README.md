@@ -58,6 +58,8 @@ Your AWS credentials need `s3:PutObject` on the plans bucket. The coordinator EC
 | `patchy_network` | Toggle offline/online on jittered cycles while surveying. |
 | `export_stress` | Optional CSV export via API (`participateFraction` or agent env). |
 
+Collection phases (`online_collection`, `offline_collection`, `patchy_network`) accept optional `config.collectionProfile` — a filename in `shared/collection-profiles/` or an inline profile object. See [collection-profiles/README.md](../collection-profiles/README.md).
+
 Each phase supports `durationMs` + `advance` (`timer`, `all_agents_done`, `majority_done`, `timer_or_all_done`).
 
 ### Structural steps
@@ -99,6 +101,8 @@ Each phase supports `durationMs` + `advance` (`timer`, `all_agents_done`, `major
 | `split-online-patchy-loops.json` | 5×(2min 50/50 online vs patchy) + 4min all online |
 | `split-online-offline.json` | 50/50 split then patchy |
 | `sixty-agent-30min-triple-split.json` | 60 agents: baseline + peak + rotating 3-way splits (~30 min) |
+| `person-survey-online.json` | Onboarding → online collection with `person-survey` profile |
+| `load-test-survey-smoke.json` | Smoke test for `1780544113233-load-test-survey` notebook (~2 min) |
 
 ## Metrics
 
