@@ -6,6 +6,7 @@ FAIMS3 Developer Documentation
    :caption: Contents:
 
    markdown/Drafts.md
+   markdown/Knip.md
    markdown/CouchMigrations.md
    markdown/PermissionModel.md
    markdown/NotebookDefinition.md

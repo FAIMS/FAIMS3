@@ -12,7 +12,11 @@ import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
-import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
+import {
+  ACTIVATED_LABEL,
+  NOT_ACTIVATED_LABEL,
+  notebookListDataGridSx,
+} from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
 
 /**
@@ -107,7 +111,11 @@ export default function TabProjectGrid({
               key={`notebook_list_datagrid_${tab}`}
               rows={tab === '1' ? activatedProjects : availableProjects}
               columns={tab === '1' ? activatedColumns : notActivatedColumns}
-              sx={{width: '100%', cursor: tab === '1' ? 'pointer' : 'default'}}
+              sx={{
+                width: '100%',
+                cursor: tab === '1' ? 'pointer' : 'default',
+                ...notebookListDataGridSx,
+              }}
               getRowId={({projectId}) => projectId}
               rowHeight={75}
               hideFooter

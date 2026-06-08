@@ -60,7 +60,7 @@ export default function NotebookSyncSwitch({
   const isSyncing = project.database?.isSyncing ?? false;
 
   return (
-    <Box>
+    <Box sx={{display: 'flex', alignItems: 'center', height: '100%'}}>
       {!project.isActivated ? (
         <NotebookActivationSwitch
           project={project}

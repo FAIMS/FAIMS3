@@ -242,20 +242,22 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             />
           </Box>
         )}
+        {/* Note that the Tab bar below is set to auto scroll, so on sm screens
+        there is a gap on the left due to the hidden left scroll button, this appears
+        if you scroll right.  There doesn't seem to be a way to push the content all
+        the way to the left when the scroll button is hidden.
+        
+        Previous margin adjustments have been removed */}
         <Box
           sx={{
             mb: 2,
-            marginLeft: {sm: '-16px', md: 0},
-            marginRight: {sm: '-16px', md: 0},
           }}
           component={Paper}
           elevation={0}
           variant={isMedium ? 'outlined' : 'elevation'}
         >
-          <AppBar
-            position="static"
+          <Paper
             sx={{
-              paddingLeft: '16px',
               backgroundColor: theme.palette.background.tabsBackground,
             }}
           >
@@ -286,7 +288,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               }}
               textColor="inherit"
               variant="scrollable"
-              scrollButtons={true}
+              scrollButtons="auto"
               allowScrollButtonsMobile={true}
             >
               <Tab
@@ -310,7 +312,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 {...a11yProps(4, NOTEBOOK_NAME)}
               />
             </Tabs>
-          </AppBar>
+          </Paper>
         </Box>
 
         {
