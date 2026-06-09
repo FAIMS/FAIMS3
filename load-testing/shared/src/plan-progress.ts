@@ -21,10 +21,12 @@ export interface PlanAnalysis {
 
 const DEFAULT_ONBOARDING_MS = 120_000;
 
+/** Type guard for leaf phase steps. */
 function isPhaseStep(node: SequenceNode): node is PhaseStep {
   return 'kind' in node;
 }
 
+/** Effective duration for a phase; onboarding defaults when unset. */
 function stepDurationMs(step: PhaseStep): number {
   if (step.durationMs !== undefined) {
     return step.durationMs;
@@ -35,6 +37,7 @@ function stepDurationMs(step: PhaseStep): number {
   return 0;
 }
 
+/** Sum phase durations; loops multiply, splits take the longest branch. */
 function estimateNodes(nodes: SequenceNode[]): number {
   let total = 0;
   for (const node of nodes) {
@@ -50,6 +53,7 @@ function estimateNodes(nodes: SequenceNode[]): number {
   return total;
 }
 
+/** Build a flat timeline with loop/split structural markers for status UI. */
 function flattenNodes(
   nodes: SequenceNode[],
   out: PlanTimelineStep[],
@@ -105,6 +109,7 @@ export function analyzePlan(plan: SequencePlan): PlanAnalysis {
   };
 }
 
+/** Format milliseconds as a compact human string (e.g. `5m30s`, `1h2m3s`). */
 export function formatDurationMs(ms: number): string {
   if (ms < 0) ms = 0;
   const sec = Math.floor(ms / 1000);

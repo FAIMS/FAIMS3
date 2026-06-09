@@ -12,6 +12,7 @@ import {Registry, createCoordinatorId, createTestRunId} from './registry';
 
 const PROGRESS_LOG_INTERVAL_MS = 60_000;
 
+/** Bootstrap coordinator services, wire plan engine events, and start HTTP server. */
 async function main(): Promise<void> {
   const env = parseCoordinatorEnv();
   const plan = await loadSequencePlan();
@@ -32,6 +33,7 @@ async function main(): Promise<void> {
 
   let progressLogTimer: ReturnType<typeof setInterval> | null = null;
 
+  /** Emit a one-line progress summary to coordinator logs. */
   function logProgressSnapshot(): void {
     const report = buildStatusReport({engine, registry, planAnalysis});
     report.metricsReceived = metrics.getMetricsReceived();
@@ -54,6 +56,7 @@ async function main(): Promise<void> {
     );
   }
 
+  /** Begin periodic progress snapshots while the run is active. */
   function startProgressLogging(): void {
     if (progressLogTimer) return;
     progressLogTimer = setInterval(() => {
@@ -63,6 +66,7 @@ async function main(): Promise<void> {
     }, PROGRESS_LOG_INTERVAL_MS);
   }
 
+  /** Stop periodic progress snapshots. */
   function stopProgressLogging(): void {
     if (!progressLogTimer) return;
     clearInterval(progressLogTimer);
@@ -102,6 +106,7 @@ async function main(): Promise<void> {
         break;
     }
 
+    // Delay shutdown so late /report batches and agent-done calls can land.
     if (event.runState === 'complete' && engine.allAgentsDone()) {
       setTimeout(() => {
         void (async () => {

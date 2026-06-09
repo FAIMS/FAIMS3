@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {CollectionProfileRefSchema} from './collection-profile';
 
 /**
- * DASS load-test sequence plan (v1).
+ * FAIMS load-test sequence plan (v1).
  *
  * A sequence plan is a tree of steps executed by the coordinator and agents.
  * Steps can be nested with `loop`, or run in parallel subsets of agents with
@@ -297,10 +297,12 @@ export type SequencePlan = z.infer<typeof SequencePlanSchema>;
 export type StepAdvanceMode = z.infer<typeof StepAdvanceModeSchema>;
 export type SplitAssignment = z.infer<typeof SplitAssignmentSchema>;
 
+/** True when advance mode requires an explicit `durationMs` on the step. */
 function needsDuration(advance: StepAdvanceMode): boolean {
   return advance === 'timer' || advance === 'timer_or_all_done';
 }
 
+/** Recursively ensure timer-based steps declare `durationMs`. */
 function validateStepAdvanceTimers(
   nodes: SequenceNode[],
   ctx: z.RefinementCtx,

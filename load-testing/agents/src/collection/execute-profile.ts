@@ -32,10 +32,12 @@ export interface ExecuteProfileOptions {
   stepId: string;
 }
 
+/** Promise-based delay between step retries. */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/** Human-readable label for logging a collection step. */
 function stepLabel(step: CollectionStep, index: number): string {
   if ('label' in step && step.label) {
     return step.label;
@@ -46,6 +48,7 @@ function stepLabel(step: CollectionStep, index: number): string {
   return `${step.action}#${index + 1}`;
 }
 
+/** Retry a step action up to `step.retry` times with delay. */
 async function withStepRetry(
   step: CollectionStep,
   run: () => Promise<void>
@@ -69,6 +72,7 @@ async function withStepRetry(
   throw lastError;
 }
 
+/** Wait for a field container in the DOM and scroll it into view. */
 async function waitForFieldVisible(
   page: Page,
   fieldId: string,
@@ -79,6 +83,7 @@ async function waitForFieldVisible(
   await container.scrollIntoViewIfNeeded().catch(() => undefined);
 }
 
+/** Fill a text/textarea field with an interpolated profile value. */
 async function runFill(
   page: Page,
   step: Extract<CollectionStep, {action: 'fill'}>,
@@ -93,6 +98,7 @@ async function runFill(
   await input.fill(value);
 }
 
+/** Open a dropdown and select an option by label. */
 async function runSelect(
   page: Page,
   step: Extract<CollectionStep, {action: 'select'}>,
@@ -113,6 +119,7 @@ async function runSelect(
   await optionLocator.click();
 }
 
+/** Set a checkbox/radio to the desired checked state. */
 async function runToggle(
   page: Page,
   step: Extract<CollectionStep, {action: 'toggle'}>,
@@ -140,6 +147,7 @@ async function runToggle(
   }
 }
 
+/** Build tab name matcher for section navigation (label or id). */
 function sectionNameMatcher(
   section: string,
   match: 'label' | 'id'
@@ -150,6 +158,7 @@ function sectionNameMatcher(
   return section;
 }
 
+/** True when the active section label matches the target section. */
 function sectionLabelMatches(
   label: string | null | undefined,
   section: string,
@@ -165,6 +174,7 @@ function sectionLabelMatches(
   return normalized === section || normalized.includes(section);
 }
 
+/** Read the currently active section from tabs or mobile heading. */
 async function readActiveSectionLabel(page: Page): Promise<string | null> {
   const selectedTab = page.locator('[role="tab"][aria-selected="true"]').first();
   if (await selectedTab.count()) {
@@ -179,6 +189,7 @@ async function readActiveSectionLabel(page: Page): Promise<string | null> {
   return null;
 }
 
+/** True when the record editor is showing the requested section. */
 async function isOnTargetSection(
   page: Page,
   section: string,
@@ -197,6 +208,7 @@ async function isOnTargetSection(
   return sectionLabelMatches(activeLabel, section, match);
 }
 
+/** Click Next/Back on the mobile section stepper if available. */
 async function clickMobileSectionStep(
   page: Page,
   direction: 'next' | 'back'
@@ -219,6 +231,7 @@ async function clickMobileSectionStep(
 
 const MAX_MOBILE_SECTION_STEPS = 20;
 
+/** Step through mobile sections until the target is active or attempts exhaust. */
 async function navigateViaMobileStepper(
   page: Page,
   section: string,
@@ -241,6 +254,7 @@ async function navigateViaMobileStepper(
   return isOnTargetSection(page, section, match);
 }
 
+/** Navigate to a form section via tabs or mobile stepper. */
 async function runNavigateSection(
   page: Page,
   step: Extract<CollectionStep, {action: 'navigate_section'}>,
@@ -277,6 +291,7 @@ async function runNavigateSection(
   throw new Error(`timeout navigating to section "${step.section}"`);
 }
 
+/** Scroll a field container into view. */
 async function runScrollToField(
   page: Page,
   step: Extract<CollectionStep, {action: 'scroll_to_field'}>,
@@ -285,11 +300,13 @@ async function runScrollToField(
   await waitForFieldVisible(page, step.field, timeoutMs);
 }
 
+/** Block until the debounced-save indicator appears. */
 async function runWaitSave(page: Page, timeoutMs: number): Promise<void> {
   const saved = saveRecordIndicator(page);
   await saved.waitFor({timeout: timeoutMs});
 }
 
+/** Submit or abandon the record per finish strategy. */
 async function runFinish(
   page: Page,
   ctx: SessionContext,
@@ -335,10 +352,12 @@ async function runFinish(
     .catch(() => undefined);
 }
 
+/** Escape a string for use inside a RegExp constructor. */
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** Run one collection step (leaf or nested group) with retry. */
 async function executeStep(
   page: Page,
   ctx: SessionContext,
@@ -386,6 +405,7 @@ async function executeStep(
   );
 }
 
+/** Run an ordered list of collection steps; honour optional steps. */
 async function executeSteps(
   page: Page,
   ctx: SessionContext,
@@ -420,6 +440,7 @@ async function executeSteps(
   return {stepsCompleted, stepsFailed, finished};
 }
 
+/** Apply profile `onFailure` policy after a step error. */
 async function recoverFromRecordFailure(
   page: Page,
   ctx: SessionContext,

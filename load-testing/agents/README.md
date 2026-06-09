@@ -11,7 +11,7 @@ Agents only need FAIMS URLs, notebook targets, and `COORDINATOR_URL`. Timing, lo
 | Variable | Purpose |
 |----------|---------|
 | `COORDINATOR_URL` | Base URL for register / step / report APIs |
-| `DASS_APP_URL`, `DASS_API_URL`, `COUCH_URL` | Target environment |
+| `FAIMS_APP_URL`, `FAIMS_API_URL`, `COUCH_URL` | Target environment |
 | `NOTEBOOK_PROJECT_ID`, `NOTEBOOK_SERVER_ID`, `NOTEBOOK_NAME` | Survey notebook |
 | `PARTICIPATE_IN_EXPORT` | Opt-in for `export_stress` steps |
 | `SESSIONS_PER_AGENT` | Browser sessions per worker process |

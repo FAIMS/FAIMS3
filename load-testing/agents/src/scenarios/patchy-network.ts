@@ -9,12 +9,14 @@ import type {SessionContext} from '../types.js';
 import {collectionProfileFromStepConfig} from '../collection/from-step-config.js';
 import {runRecordLoop} from './record-collection.js';
 
+/** Randomise a duration by ±jitterMs, floored at 1s. */
 function jitter(baseMs: number, jitterMs: number): number {
   if (jitterMs <= 0) return baseMs;
   const delta = Math.floor(Math.random() * (jitterMs * 2 + 1)) - jitterMs;
   return Math.max(1000, baseMs + delta);
 }
 
+/** Toggle offline/online on a jittered cycle while surveying when online. */
 export async function runPatchyNetwork(
   page: Page,
   context: BrowserContext,

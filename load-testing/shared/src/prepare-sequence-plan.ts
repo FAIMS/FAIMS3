@@ -12,6 +12,7 @@ import {
   serializeSequencePlan,
 } from './sequence-plan.js';
 
+/** CLI entry: read plan JSON, inline profiles, write prepared output. */
 function main(): void {
   const input = process.argv[2];
   const output = process.argv[3];

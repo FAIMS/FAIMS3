@@ -3,6 +3,7 @@ import {sessionLog} from '../session-log.js';
 import type {SessionContext} from '../types.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 
+/** Request a CSV export and download the signed URL; report timing/errors. */
 export async function runExportStress(
   metricBuffer: MetricBuffer,
   ctx: SessionContext,
@@ -17,7 +18,7 @@ export async function runExportStress(
 
   const {env, jwtToken} = ctx;
   const notebookId = env.NOTEBOOK_PROJECT_ID;
-  const exportUrl = `${env.DASS_API_URL}/api/${env.NOTEBOOK_NAME}s/${notebookId}/records/export?format=csv`;
+  const exportUrl = `${env.FAIMS_API_URL}/api/${env.NOTEBOOK_NAME}s/${notebookId}/records/export?format=csv`;
 
   const start = Date.now();
   const response = await fetch(exportUrl, {

@@ -8,35 +8,38 @@ export const PROMETHEUS_LABELS = [
   'name',
 ] as const;
 
+/** Map agent metric type to the Prometheus metric name used by the coordinator. */
 export function metricReportToPrometheusName(report: MetricReport): string {
   switch (report.type) {
     case 'performance_measure':
-      return 'dass_measure_duration_ms';
+      return 'faims_measure_duration_ms';
     case 'longtask':
-      return 'dass_longtask_duration_ms';
+      return 'faims_longtask_duration_ms';
     case 'couch_request':
-      return 'dass_couch_request_ms';
+      return 'faims_couch_request_ms';
     case 'page_load':
-      return 'dass_page_load_ms';
+      return 'faims_page_load_ms';
     case 'record_create':
-      return 'dass_record_create_ms';
+      return 'faims_record_create_ms';
     case 'sync_duration':
-      return 'dass_sync_duration_ms';
+      return 'faims_sync_duration_ms';
     case 'session_error':
-      return 'dass_session_errors_total';
+      return 'faims_session_errors_total';
     case 'indexeddb_bytes':
-      return 'dass_indexeddb_bytes';
+      return 'faims_indexeddb_bytes';
     case 'active_session':
-      return 'dass_active_sessions';
+      return 'faims_active_sessions';
     default:
-      return 'dass_unknown_metric';
+      return 'faims_unknown_metric';
   }
 }
 
+/** True when the report should increment a Prometheus counter. */
 export function isCounterMetric(report: MetricReport): boolean {
   return report.type === 'session_error';
 }
 
+/** True when the report should set a Prometheus gauge. */
 export function isGaugeMetric(report: MetricReport): boolean {
   return (
     report.type === 'indexeddb_bytes' || report.type === 'active_session'

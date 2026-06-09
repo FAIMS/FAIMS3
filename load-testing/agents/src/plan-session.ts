@@ -15,10 +15,12 @@ const COORDINATOR_RETRY_BASE_MS = 500;
 const COORDINATOR_RETRY_MAX_MS = 5000;
 const COORDINATOR_WARN_INTERVAL_MS = 30_000;
 
+/** Promise-based delay for coordinator polling. */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/** Retry coordinator calls indefinitely with exponential backoff. */
 async function withCoordinatorRetry<T>(
   sessionId: string,
   label: string,
@@ -49,6 +51,7 @@ async function withCoordinatorRetry<T>(
   }
 }
 
+/** Poll `/step` with resilient retries. */
 async function getStepResilient(
   client: CoordinatorClient,
   agentId: string,
@@ -59,6 +62,7 @@ async function getStepResilient(
   );
 }
 
+/** Post `/step-complete` with resilient retries. */
 async function stepCompleteResilient(
   client: CoordinatorClient,
   body: StepCompleteRequest,
@@ -69,6 +73,7 @@ async function stepCompleteResilient(
   );
 }
 
+/** Block until the coordinator run is `running` and returns a step. */
 async function waitForRunningStep(
   client: CoordinatorClient,
   agentId: string,
@@ -87,10 +92,12 @@ async function waitForRunningStep(
   }
 }
 
+/** True when the coordinator advanced to a new step instance (id or startedAt). */
 function isNewStepInstance(completed: ActiveStep, next: ActiveStep): boolean {
   return completed.id !== next.id || completed.startedAt !== next.startedAt;
 }
 
+/** Poll until the coordinator assigns the next step after completion. */
 async function waitForNextStep(
   client: CoordinatorClient,
   agentId: string,
@@ -109,6 +116,7 @@ async function waitForNextStep(
   }
 }
 
+/** Dispatch a single phase step to the matching scenario handler. */
 async function runPlanStep(
   client: CoordinatorClient,
   step: ActiveStep,
@@ -146,6 +154,7 @@ async function runPlanStep(
   }
 }
 
+/** Main session loop: run steps until the coordinator reports plan complete. */
 export async function executeSequencePlan(
   client: CoordinatorClient,
   page: Page,

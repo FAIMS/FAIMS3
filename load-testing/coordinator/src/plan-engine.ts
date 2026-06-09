@@ -82,10 +82,12 @@ export interface PlanChangeEvent {
 
 export type PlanChangeListener = (event: PlanChangeEvent) => void;
 
+/** True when a step barrier should schedule a wall-clock release timer. */
 function needsTimer(advance: StepAdvanceMode): boolean {
   return advance === 'timer' || advance === 'timer_or_all_done';
 }
 
+/** True when enough agents reported step-complete for the advance mode. */
 function barrierSatisfied(
   barrier: StepBarrier,
   agentCount: number,
@@ -98,6 +100,10 @@ function barrierSatisfied(
   return count >= agentCount;
 }
 
+/**
+ * Drives sequence plan execution: per-agent cursors, step barriers,
+ * and run lifecycle (waiting → running → complete).
+ */
 export class PlanEngine {
   private readonly plan: SequencePlan;
   private readonly testRunId: string;
@@ -113,6 +119,7 @@ export class PlanEngine {
   private readinessTimer: ReturnType<typeof setTimeout> | null = null;
   private nextAgentIndex = 0;
 
+  /** @param plan Resolved sequence plan with inlined collection profiles. */
   constructor(
     plan: SequencePlan,
     testRunId: string,
@@ -123,34 +130,42 @@ export class PlanEngine {
     this.config = config;
   }
 
+  /** Subscribe to run start, step completion, and run completion events. */
   onPlanChange(listener: PlanChangeListener): void {
     this.listeners.push(listener);
   }
 
+  /** The loaded sequence plan (profiles already resolved). */
   getPlan(): SequencePlan {
     return this.plan;
   }
 
+  /** Current run lifecycle state. */
   getRunState(): RunState {
     return this.runState;
   }
 
+  /** Timestamp of the last plan advance (run start or step barrier release). */
   getAdvancedAt(): number {
     return this.advancedAt;
   }
 
+  /** Coordinator process start time (before agents are ready). */
   getStartedAt(): number {
     return this.startedAt;
   }
 
+  /** Wall-clock time the run entered `running`, or null while waiting. */
   getRunStartedAt(): number | null {
     return this.runStartedAt;
   }
 
+  /** Steps whose barriers have been released, in completion order. */
   getCompletedSteps(): CompletedStepRecord[] {
     return [...this.completedSteps];
   }
 
+  /** Open step barriers and their agent-completion progress. */
   getActiveBarriers(): ActiveBarrierInfo[] {
     const now = Date.now();
     const total = this.agents.size;
@@ -178,6 +193,7 @@ export class PlanEngine {
     });
   }
 
+  /** Per-agent cursor position, active step, and blocked state for status UI. */
   getAgentDetails(): AgentDetail[] {
     return [...this.agents.values()].map(agent => {
       let step: ActiveStep | null = null;
@@ -207,10 +223,12 @@ export class PlanEngine {
     });
   }
 
+  /** Test run id propagated to agents and metrics. */
   getTestRunId(): string {
     return this.testRunId;
   }
 
+  /** Initialise per-agent cursor when `/register` is called. */
   registerAgent(agentId: string): void {
     this.agents.set(agentId, {
       agentId,
@@ -222,6 +240,7 @@ export class PlanEngine {
     });
   }
 
+  /** Mark agent ready and attempt to start the run. */
   markReady(agentId: string): void {
     const agent = this.agents.get(agentId);
     if (agent) {
@@ -230,6 +249,7 @@ export class PlanEngine {
     this.tryStartRun();
   }
 
+  /** Mark agent finished and attempt to complete the run. */
   markAgentDone(agentId: string): void {
     const agent = this.agents.get(agentId);
     if (agent) {
@@ -238,28 +258,34 @@ export class PlanEngine {
     this.tryCompleteRun();
   }
 
+  /** Agents registered with the plan engine. */
   registeredCount(): number {
     return this.agents.size;
   }
 
+  /** Agents marked ready in the plan engine. */
   readyCount(): number {
     return [...this.agents.values()].filter(a => a.ready).length;
   }
 
+  /** Agents that finished the full plan. */
   doneCount(): number {
     return [...this.agents.values()].filter(a => a.done).length;
   }
 
+  /** True when expected agent count is registered and all are ready. */
   allAgentsReady(): boolean {
     if (this.agents.size < this.config.expectedAgentCount) return false;
     return [...this.agents.values()].every(a => a.ready);
   }
 
+  /** True when every registered agent reported plan completion. */
   allAgentsDone(): boolean {
     if (this.agents.size === 0) return false;
     return [...this.agents.values()].every(a => a.done);
   }
 
+  /** Start timer to begin run even if not all agents register in time. */
   startReadinessTimeout(): void {
     this.readinessTimer = setTimeout(() => {
       if (this.runState === 'waiting_for_agents') {
@@ -268,6 +294,7 @@ export class PlanEngine {
     }, this.config.readinessTimeoutMs);
   }
 
+  /** Resolve the active phase step for an agent, including barrier timing. */
   getStep(agentId: string): ActiveStep | null {
     const agent = this.agents.get(agentId);
     if (!agent || this.runState !== 'running') {
@@ -287,6 +314,7 @@ export class PlanEngine {
       return null;
     }
 
+    // Agent finished step but barrier not released — still expose blocked step timing.
     if (agent.blockedOnStepId && agent.blockedOnStepId !== phase.id) {
       const blocked = this.getBarrierStep(agent.blockedOnStepId, phase);
       return blocked;
@@ -296,6 +324,7 @@ export class PlanEngine {
     return this.toActiveStep(agent, phase);
   }
 
+  /** Record agent step completion; may release barrier for all agents. */
   completeStep(agentId: string, stepId: string): boolean {
     const agent = this.agents.get(agentId);
     if (!agent || this.runState !== 'running') {
@@ -328,6 +357,7 @@ export class PlanEngine {
     return true;
   }
 
+  /** Map of agentId → current step id for legacy status fields. */
   getActiveStepSummary(): Record<string, string> {
     const summary: Record<string, string> = {};
     for (const agent of this.agents.values()) {
@@ -344,6 +374,7 @@ export class PlanEngine {
     return summary;
   }
 
+  /** Transition to `running` when all expected agents are ready. */
   private tryStartRun(): void {
     if (this.runState !== 'waiting_for_agents') return;
     if (this.allAgentsReady()) {
@@ -351,6 +382,7 @@ export class PlanEngine {
     }
   }
 
+  /** Enter `running` state and emit a run_started event. */
   private beginRun(trigger: 'all_ready' | 'timeout'): void {
     if (this.readinessTimer) {
       clearTimeout(this.readinessTimer);
@@ -362,6 +394,7 @@ export class PlanEngine {
     this.emitChange('run_started', {runStartTrigger: trigger});
   }
 
+  /** Transition to `complete` when every agent has finished the plan. */
   private tryCompleteRun(): void {
     if (this.runState !== 'running') return;
     if (!this.allAgentsDone()) return;
@@ -374,6 +407,7 @@ export class PlanEngine {
     this.barriers.clear();
   }
 
+  /** Notify listeners of a plan lifecycle change. */
   private emitChange(
     reason: PlanChangeReason,
     extra?: {
@@ -396,6 +430,7 @@ export class PlanEngine {
     }
   }
 
+  /** Create a step barrier (and timer) on first agent access to a phase. */
   private ensureBarrier(agent: AgentRuntime, phase: PhaseStep): void {
     if (this.barriers.has(phase.id)) {
       return;
@@ -418,6 +453,7 @@ export class PlanEngine {
     }
   }
 
+  /** True when agent-completion count satisfies the step advance mode. */
   private shouldReleaseBarrier(barrier: StepBarrier): boolean {
     const agentCount = this.agents.size;
     switch (barrier.advance) {
@@ -433,6 +469,7 @@ export class PlanEngine {
     }
   }
 
+  /** Advance all agents past a step and emit step_completed. */
   private releaseBarrier(stepId: string): void {
     const barrier = this.barriers.get(stepId);
     if (!barrier) return;
@@ -468,6 +505,7 @@ export class PlanEngine {
     this.emitChange('step_completed', {stepId, stepKind: kind});
   }
 
+  /** Return step view for agents blocked waiting on a barrier. */
   private getBarrierStep(
     blockedStepId: string,
     current: PhaseStep
@@ -491,6 +529,7 @@ export class PlanEngine {
     };
   }
 
+  /** Build HTTP-facing ActiveStep from cursor position and barrier state. */
   private toActiveStep(agent: AgentRuntime, phase: PhaseStep): ActiveStep {
     const barrier = this.barriers.get(phase.id);
     const startedAt = barrier?.startedAt ?? Date.now();

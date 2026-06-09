@@ -63,14 +63,17 @@ function attachConsoleCapture(page: Page): PageDebugBuffers {
   return buffers;
 }
 
+/** Return captured console/page-error buffers for a page (may be empty). */
 function getDebugBuffers(page: Page): PageDebugBuffers {
   return pageDebugBuffers.get(page) ?? {consoleMessages: [], pageErrors: []};
 }
 
+/** Sanitise a string for safe use in screenshot filenames. */
 function sanitize(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]+/g, '_');
 }
 
+/** Save a full-page PNG when an onboarding step fails. */
 async function captureFailureScreenshot(
   page: Page,
   sessionId: string,
@@ -95,6 +98,7 @@ async function captureFailureScreenshot(
   }
 }
 
+/** Switch to the not-active notebook list (tabs or headings layout). */
 async function focusNotActiveNotebooks(page: Page, sessionId: string): Promise<void> {
   const notActiveTab = page.getByRole('tab', {name: /not active/i});
   if ((await notActiveTab.count()) > 0) {
@@ -112,6 +116,7 @@ async function focusNotActiveNotebooks(page: Page, sessionId: string): Promise<v
     .waitFor({state: 'visible', timeout: 30000});
 }
 
+/** Run an onboarding sub-step with screenshot + debug dump on failure. */
 async function step<T>(
   page: Page,
   ctx: SessionContext,
@@ -410,6 +415,7 @@ async function logBrowserState(
   return auth;
 }
 
+/** Login, activate notebook, open record list; returns JWT for export phase. */
 export async function runOnboarding(
   page: Page,
   ctx: SessionContext,
@@ -420,8 +426,8 @@ export async function runOnboarding(
     ctx.agentId
   );
   sessionLog(ctx.sessionId, `using pre-seeded account ${email}`);
-  const loginUrl = new URL('/login', env.DASS_API_URL);
-  loginUrl.searchParams.set('redirect', `${env.DASS_APP_URL}/auth-return`);
+  const loginUrl = new URL('/login', env.FAIMS_API_URL);
+  loginUrl.searchParams.set('redirect', `${env.FAIMS_APP_URL}/auth-return`);
 
   // Capture browser console + page errors so we can see what the app logs while
   // it attempts to exchange the token and log in. Registered against the page
@@ -480,7 +486,7 @@ export async function runOnboarding(
     await page.evaluate(
       ({ms, pageName}) => {
         window.dispatchEvent(
-          new CustomEvent('dass:page_load', {
+          new CustomEvent('faims:page_load', {
             detail: {name: pageName, durationMs: ms},
           })
         );
@@ -491,7 +497,7 @@ export async function runOnboarding(
 
   await step(page, ctx, 'open-app', async () => {
     // Avoid 'networkidle' - live sync can keep the network busy indefinitely.
-    await page.goto(env.DASS_APP_URL, {
+    await page.goto(env.FAIMS_APP_URL, {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
@@ -518,7 +524,7 @@ export async function runOnboarding(
     // Make sure we're on the workspace/home page where the notebook list lives.
     // Avoid 'networkidle' - live sync can keep the network busy indefinitely;
     // readiness is asserted by waiting for the not-active list below.
-    await page.goto(env.DASS_APP_URL, {
+    await page.goto(env.FAIMS_APP_URL, {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
@@ -545,7 +551,7 @@ export async function runOnboarding(
         throw new Error(
           `notebook ${projectId} is not listed for ${auth?.activeUsername ?? 'this user'} — ` +
             `the app could not load GET /api/notebooks/${projectId} (see console 404/metadata errors). ` +
-            `Confirm NOTEBOOK_PROJECT_ID matches a survey on ${env.DASS_API_URL} and re-run ` +
+            `Confirm NOTEBOOK_PROJECT_ID matches a survey on ${env.FAIMS_API_URL} and re-run ` +
             `seed-load-test-accounts.sh against that environment's CouchDB.`
         );
       }

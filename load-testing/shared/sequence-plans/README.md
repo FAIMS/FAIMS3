@@ -1,6 +1,6 @@
 # Sequence plans
 
-Composable load-test scenarios for the DASS coordinator + agents.
+Composable load-test scenarios for the FAIMS coordinator + agents.
 
 Plans are **Zod-validated JSON** (`@faims3/load-testing-shared` → `sequence-plan.ts`). The coordinator **requires** a plan at startup; there is no legacy fixed-phase mode. Agents receive individual steps over HTTP and do not read these files directly.
 
@@ -106,4 +106,4 @@ Each phase supports `durationMs` + `advance` (`timer`, `all_agents_done`, `major
 
 ## Metrics
 
-Prometheus labels use **`stepId`** (plan step `id`) instead of the old phase enum. Coordinator pushes `dass_run_state` and `dass_step_transition_timestamp`.
+Prometheus labels use **`stepId`** (plan step `id`) instead of the old phase enum. Coordinator pushes `faims_run_state` and `faims_step_transition_timestamp`.

@@ -59,7 +59,6 @@
     "@emotion/styled": "11.14.1",
     "@faims3/data-model": "workspace:*",
     "@faims3/forms": "workspace:*",
-    "@faims3/instrumentation": "workspace:*",
     "@fast-check/vitest": "^0.0.7",
     "@ionic/pwa-elements": "^3.2.2",
     "@mui/icons-material": "9.0.1",

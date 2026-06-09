@@ -50,7 +50,7 @@ if [[ -n "${COORDINATOR_URL:-}" ]]; then
   curl -sf "${COORDINATOR_URL}/status" | jq . || echo "  /status unreachable"
   echo ""
   echo "Coordinator /metrics (phase gauges — local dev only unless pushed):"
-  curl -sf "${COORDINATOR_URL}/metrics" | grep -E '^dass_' | head -20 || echo "  no dass_ metrics on /metrics"
+  curl -sf "${COORDINATOR_URL}/metrics" | grep -E '^faims_' | head -20 || echo "  no faims_ metrics on /metrics"
   echo ""
 fi
 
@@ -62,13 +62,13 @@ cd /opt/loadtest
 sudo docker compose ps
 
 # 2. Pushgateway has pushed metrics?
-curl -s localhost:9091/metrics | grep -E '^dass_' | head -30
-# expect jobs: dass_coordinator (phase) and dass_agent_metrics (histograms)
+curl -s localhost:9091/metrics | grep -E '^faims_' | head -30
+# expect jobs: faims_coordinator (phase) and faims_agent_metrics (histograms)
 
 # 3. Prometheus ingesting pushgateway?
 curl -s 'localhost:9090/api/v1/query?query=up{job="pushgateway"}' | jq '.data.result'
-curl -s 'localhost:9090/api/v1/query?query=dass_run_state' | jq '.data.result'
-curl -s 'localhost:9090/api/v1/query?query=dass_record_create_ms_count' | jq '.data.result'
+curl -s 'localhost:9090/api/v1/query?query=faims_run_state' | jq '.data.result'
+curl -s 'localhost:9090/api/v1/query?query=faims_record_create_ms_count' | jq '.data.result'
 
 # 4. Scrape targets healthy?
 curl -s localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health, lastError: .lastError}'
@@ -86,4 +86,4 @@ echo "=== Common causes ==="
 echo "- Observability compose not running on metrics EC2"
 echo "- Coordinator task missing PROMETHEUS_PUSHGATEWAY_URL (run-load-test.sh sets it)"
 echo "- ECS SG cannot reach metrics EC2 :9091 (check EcsTasksSg → MetricsEc2Sg rule)"
-echo "- Run state metrics: coordinator pushes dass_run_state to pushgateway as job dass_coordinator"
+echo "- Run state metrics: coordinator pushes faims_run_state to pushgateway as job faims_coordinator"

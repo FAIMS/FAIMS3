@@ -18,6 +18,7 @@ export function bundledCollectionProfilesDir(): string {
   return join(__dirname, '../../collection-profiles');
 }
 
+/** Resolve collection-profiles dir from env, plan file location, or bundled default. */
 function resolveProfilesDirectory(
   env: Record<string, string | undefined>
 ): string {
@@ -36,6 +37,7 @@ function resolveProfilesDirectory(
   return bundledCollectionProfilesDir();
 }
 
+/** Load a profile JSON by filename (relative to profilesDir) or absolute path. */
 function loadProfileByName(
   name: string,
   profilesDir: string
@@ -54,6 +56,7 @@ function loadProfileByName(
   return parseCollectionProfile(readFileSync(candidate, 'utf8'));
 }
 
+/** Inline a filename ref or validate an already-embedded profile object. */
 function resolvePhaseConfig(
   config: Record<string, unknown>,
   profilesDir: string
@@ -71,6 +74,7 @@ function resolvePhaseConfig(
   config.collectionProfile = CollectionProfileSchema.parse(ref);
 }
 
+/** Walk the plan tree and resolve collection profile refs on phase steps. */
 function walkNodes(nodes: SequenceNode[], profilesDir: string): void {
   for (const node of nodes) {
     if ('kind' in node && isCollectionPhaseKind(node.kind)) {

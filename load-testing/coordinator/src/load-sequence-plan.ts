@@ -14,6 +14,7 @@ import {
   type SequencePlan,
 } from '@faims3/load-testing-shared';
 
+/** Download and parse a sequence plan JSON object from S3. */
 async function loadSequencePlanFromS3(uri: string): Promise<SequencePlan> {
   const {bucket, key} = parseS3Uri(uri);
   const client = new S3Client({});

@@ -133,6 +133,7 @@ export const COLLECTION_PHASE_KINDS = [
 
 export type CollectionPhaseKind = (typeof COLLECTION_PHASE_KINDS)[number];
 
+/** True when a phase kind supports `config.collectionProfile`. */
 export function isCollectionPhaseKind(kind: string): kind is CollectionPhaseKind {
   return (COLLECTION_PHASE_KINDS as readonly string[]).includes(kind);
 }

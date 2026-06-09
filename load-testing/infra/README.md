@@ -1,6 +1,6 @@
 # Load testing AWS infrastructure (CDK)
 
-On-demand AWS resources for DASS load tests:
+On-demand AWS resources for FAIMS load tests:
 
 | Component | AWS resource | Lifecycle |
 |-----------|--------------|-----------|
@@ -111,8 +111,8 @@ Grafana: `http://<MetricsDnsName>:3030`
 
 | Metric | Local dev | AWS |
 |--------|-----------|-----|
-| Run state, agent counts | Prometheus scrapes `host.docker.internal:4000/metrics` | Coordinator **pushes** job `dass_coordinator` to Pushgateway |
-| Agent timings (record create, sync, …) | Coordinator pushes job `dass_agent_metrics` to Pushgateway | Same |
+| Run state, agent counts | Prometheus scrapes `host.docker.internal:4000/metrics` | Coordinator **pushes** job `faims_coordinator` to Pushgateway |
+| Agent timings (record create, sync, …) | Coordinator pushes job `faims_agent_metrics` to Pushgateway | Same |
 
 Prometheus on metrics EC2 only scrapes **Pushgateway** and **couchdb-exporter** (not the ephemeral coordinator task).
 
@@ -126,8 +126,8 @@ COORDINATOR_URL=http://<coord-public-ip>:4000 ./debug-metrics.sh
 On the metrics EC2 instance (SSM):
 
 ```bash
-curl -s localhost:9091/metrics | grep '^dass_' | head
-curl -s 'localhost:9090/api/v1/query?query=dass_run_state' | jq '.data.result'
+curl -s localhost:9091/metrics | grep '^faims_' | head
+curl -s 'localhost:9090/api/v1/query?query=faims_run_state' | jq '.data.result'
 ```
 
 **CloudWatch logs** (separate log groups — do not mix coordinator and agent):

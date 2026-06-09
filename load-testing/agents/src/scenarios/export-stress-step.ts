@@ -7,6 +7,7 @@ import type {SessionContext} from '../types.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 import {runExportStress} from './export-stress.js';
 
+/** Gate export stress by plan fraction or `PARTICIPATE_IN_EXPORT` env. */
 export async function runExportStressStep(
   metricBuffer: MetricBuffer,
   ctx: SessionContext,

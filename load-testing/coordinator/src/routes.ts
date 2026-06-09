@@ -17,6 +17,7 @@ import type {PlanEngine} from './plan-engine';
 import {buildStatusReport} from './progress-report';
 import type {Registry} from './registry';
 
+/** Wire Hono HTTP routes for agent registration, steps, metrics, and status. */
 export function createRoutes(
   registry: Registry,
   engine: PlanEngine,

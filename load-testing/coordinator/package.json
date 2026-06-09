@@ -1,7 +1,7 @@
 {
   "name": "@faims3/load-testing-coordinator",
   "version": "1.5.2",
-  "description": "DASS load test coordinator server",
+  "description": "FAIMS load test coordinator server",
   "license": "Apache",
   "private": true,
   "main": "./build/src/server.js",

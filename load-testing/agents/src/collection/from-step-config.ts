@@ -1,5 +1,6 @@
 import {CollectionProfileSchema, type CollectionProfile} from '@faims3/load-testing-shared';
 
+/** Extract and validate an inlined collection profile from step config. */
 export function collectionProfileFromStepConfig(
   config: Record<string, unknown>
 ): CollectionProfile | undefined {

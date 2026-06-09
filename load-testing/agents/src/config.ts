@@ -6,8 +6,8 @@ const booleanFromEnv = z
 
 export const AgentEnvSchema = z.object({
   COORDINATOR_URL: z.string().url().default('http://localhost:4000'),
-  DASS_APP_URL: z.string().url(),
-  DASS_API_URL: z.string().url(),
+  FAIMS_APP_URL: z.string().url(),
+  FAIMS_API_URL: z.string().url(),
   COUCH_URL: z.string().url(),
   NOTEBOOK_PROJECT_ID: z.string().min(1),
   NOTEBOOK_SERVER_ID: z.string().min(1).default('local-dev'),
@@ -30,6 +30,7 @@ export const AgentEnvSchema = z.object({
 
 export type AgentEnv = z.infer<typeof AgentEnvSchema>;
 
+/** Parse and validate agent worker / browser session environment. */
 export function parseAgentEnv(
   env: Record<string, string | undefined> = process.env
 ): AgentEnv {

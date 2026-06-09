@@ -16,7 +16,7 @@ export function normalizeMetricReport(
   }
 
   if (!report.name && detail && typeof detail.name === 'string') {
-    report.name = detail.name.replace(/^dass\./, '');
+    report.name = detail.name.replace(/^faims\./, '');
   }
 
   if (report.type === 'page_load' && detail) {

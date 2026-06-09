@@ -24,6 +24,7 @@ export const CoordinatorEnvSchema = z.object({
 
 export type CoordinatorEnv = z.infer<typeof CoordinatorEnvSchema>;
 
+/** Parse and validate coordinator env; requires a sequence plan source. */
 export function parseCoordinatorEnv(
   env: Record<string, string | undefined> = process.env
 ): CoordinatorEnv {
@@ -35,6 +36,7 @@ export function parseCoordinatorEnv(
   return CoordinatorEnvSchema.parse(env);
 }
 
+/** Load pre-seeded test accounts from `LOAD_TEST_ACCOUNTS`. */
 export function loadTestAccountsFromEnv(
   env: Record<string, string | undefined> = process.env
 ): LoadTestAccount[] {

@@ -1,7 +1,7 @@
 {
   "name": "@faims3/load-testing-agents",
   "version": "1.5.2",
-  "description": "DASS load test Playwright agents",
+  "description": "FAIMS load test Playwright agents",
   "license": "Apache",
   "private": true,
   "main": "./build/src/worker.js",

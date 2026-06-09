@@ -1,4 +1,4 @@
-import {DASS_MEASURES} from '@faims3/instrumentation';
+import {FAIMS_MEASURES} from '@faims3/instrumentation';
 import type {CollectionProfile} from '@faims3/load-testing-shared';
 import type {Page} from 'playwright';
 import {getNotebookUrl} from '../notebook-url.js';
@@ -15,6 +15,7 @@ import {sessionLog} from '../session-log.js';
 import type {MetricBuffer} from '../metric-buffer.js';
 import type {SessionContext} from '../types.js';
 
+/** Navigate to the notebook list if the add-record button is not visible. */
 export async function ensureNotebookList(page: Page, ctx: SessionContext): Promise<void> {
   const addBtn = addRecordButton(page);
   if ((await addBtn.count()) > 0) {
@@ -37,6 +38,7 @@ export interface RecordLoopOptions {
   collectionProfile?: CollectionProfile;
 }
 
+/** Fallback record flow: fill first field, save, and finish without a profile. */
 async function runSimpleRecord(
   page: Page,
   metricBuffer: MetricBuffer,
@@ -82,7 +84,7 @@ async function runSimpleRecord(
     stepId: options.stepId,
     timestamp: Date.now(),
     durationMs: Date.now() - saveStart,
-    name: DASS_MEASURES.RECORD_SAVE_UI,
+    name: FAIMS_MEASURES.RECORD_SAVE_UI,
     detail: {recordIndex: recordIndex + 1, profile: 'simple'},
   });
 
@@ -158,7 +160,7 @@ export async function runRecordLoop(
           stepId: options.stepId,
           timestamp: Date.now(),
           durationMs: Date.now() - saveStart,
-          name: DASS_MEASURES.RECORD_SAVE_UI,
+          name: FAIMS_MEASURES.RECORD_SAVE_UI,
           detail: {recordIndex, ...profileDetail},
         });
       }

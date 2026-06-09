@@ -1,6 +1,10 @@
 import {createHash} from 'crypto';
 import type {SplitAssignment, SplitStep} from './sequence-plan';
 
+/**
+ * Pick a split branch id for an agent using weighted assignment.
+ * Returns a stable branch for the run based on `assignment` mode.
+ */
 export function assignSplitBranch(
   split: SplitStep,
   agentIndex: number,
@@ -12,6 +16,7 @@ export function assignSplitBranch(
   const total = weights.reduce((a, b) => a + b, 0);
   const assignment = split.split.assignment ?? 'agent_index_mod';
 
+  // Map agent to a slot in [0, total) then walk cumulative weights.
   let slot: number;
   switch (assignment) {
     case 'hash_agent_id': {

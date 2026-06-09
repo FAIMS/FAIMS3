@@ -6,7 +6,7 @@ import {
   getFormLabel,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {DASS_MEASURES, perf} from '@faims3/instrumentation';
+import {FAIMS_MEASURES, perf} from '@faims3/instrumentation';
 import CheckIcon from '@mui/icons-material/Check';
 import {
   Alert,
@@ -230,7 +230,7 @@ export const EditableFormManager: React.FC<
 
     isSavingRef.current = true;
     setIsSaving(true);
-    perf.mark(`${DASS_MEASURES.RECORD_SAVE_UI}.start`);
+    perf.mark(`${FAIMS_MEASURES.RECORD_SAVE_UI}.start`);
 
     try {
       const revisionToUpdate = await ensureWorkingRevision();
@@ -250,12 +250,12 @@ export const EditableFormManager: React.FC<
         update: form.state.values ?? {},
         mode: props.mode,
       });
-      perf.mark(DASS_MEASURES.RECORD_SAVE_LOCAL);
-      perf.mark(`${DASS_MEASURES.RECORD_SAVE_UI}.end`);
+      perf.mark(FAIMS_MEASURES.RECORD_SAVE_LOCAL);
+      perf.mark(`${FAIMS_MEASURES.RECORD_SAVE_UI}.end`);
       perf.measure(
-        DASS_MEASURES.RECORD_SAVE_UI,
-        `${DASS_MEASURES.RECORD_SAVE_UI}.start`,
-        `${DASS_MEASURES.RECORD_SAVE_UI}.end`
+        FAIMS_MEASURES.RECORD_SAVE_UI,
+        `${FAIMS_MEASURES.RECORD_SAVE_UI}.start`,
+        `${FAIMS_MEASURES.RECORD_SAVE_UI}.end`
       );
 
       pendingValuesRef.current = false;

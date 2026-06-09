@@ -7,19 +7,21 @@ import {MetricBuffer} from './metric-buffer.js';
 import type {IpcMessage, SessionContext} from './types.js';
 import {sessionLog} from './session-log.js';
 
+/** Send an IPC message to the parent worker process. */
 function send(msg: IpcMessage): void {
   if (process.send) {
     process.send(msg);
   }
 }
 
+/** Bridge PerformanceObserver and custom events to worker IPC metrics. */
 async function injectPerformanceBridge(page: Page): Promise<void> {
   await page.addInitScript(() => {
     new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
-        if (entry.name.startsWith('dass.')) {
+        if (entry.name.startsWith('faims.')) {
           window.dispatchEvent(
-            new CustomEvent('dass:measure', {
+            new CustomEvent('faims:measure', {
               detail: {
                 name: entry.name,
                 duration: entry.duration,
@@ -36,7 +38,7 @@ async function injectPerformanceBridge(page: Page): Promise<void> {
     new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         window.dispatchEvent(
-          new CustomEvent('dass:longtask', {
+          new CustomEvent('faims:longtask', {
             detail: {
               duration: entry.duration,
               startTime: entry.startTime,
@@ -69,17 +71,17 @@ async function injectPerformanceBridge(page: Page): Promise<void> {
   });
 
   await page.addInitScript(() => {
-    window.addEventListener('dass:measure', e =>
+    window.addEventListener('faims:measure', e =>
       (window as unknown as {reportMeasure: (d: unknown) => void}).reportMeasure(
         (e as CustomEvent).detail
       )
     );
-    window.addEventListener('dass:longtask', e =>
+    window.addEventListener('faims:longtask', e =>
       (window as unknown as {reportLongtask: (d: unknown) => void}).reportLongtask(
         (e as CustomEvent).detail
       )
     );
-    window.addEventListener('dass:page_load', e =>
+    window.addEventListener('faims:page_load', e =>
       (window as unknown as {reportPageLoad: (d: unknown) => void}).reportPageLoad(
         (e as CustomEvent).detail
       )
@@ -87,6 +89,7 @@ async function injectPerformanceBridge(page: Page): Promise<void> {
   });
 }
 
+/** Capture CouchDB request timing via CDP Network events. */
 function setupCouchCapture(
   cdp: CDPSession,
   couchUrl: string,
@@ -106,6 +109,7 @@ function setupCouchCapture(
     }
   });
 
+  // Pair requestWillBeSent with loadingFinished to compute Couch round-trip ms.
   cdp.on('Network.loadingFinished', event => {
     const req = pending.get(event.requestId);
     if (req) {
@@ -123,6 +127,7 @@ function setupCouchCapture(
   });
 }
 
+/** Launch Chromium, run the coordinator-driven plan, and report completion. */
 async function runSession(sessionIndex: number): Promise<void> {
   const env = parseAgentEnv();
   const agentId = process.env.AGENT_ID ?? 'agent-0';

@@ -7,7 +7,7 @@ scrape_configs:
     static_configs:
       - targets: ['pushgateway:9091']
 
-  # Phase/coordinator gauges (dass_test_phase, dass_ready_agents, …) and agent
+  # Phase/coordinator gauges (faims_test_phase, faims_ready_agents, …) and agent
   # histograms are pushed to pushgateway by the ephemeral ECS coordinator task.
   # Local dev also scrapes host.docker.internal:4000/metrics directly.
 

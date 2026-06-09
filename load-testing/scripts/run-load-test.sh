@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch a DASS load test on AWS using ECS RunTask (coordinator + N agents).
+# Launch a FAIMS load test on AWS using ECS RunTask (coordinator + N agents).
 #
 # Configuration: load-testing/scripts/.env (see .env.example)
 
@@ -83,8 +83,8 @@ METRICS_DNS="$(stack_output MetricsDnsName)"
 AGENT_LOG_GROUP="$(stack_output AgentLogGroupName)"
 COORD_LOG_GROUP="$(stack_output CoordinatorLogGroupName)"
 
-DASS_APP_URL="${DASS_APP_URL:-$(stack_output TargetDassAppUrl)}"
-DASS_API_URL="${DASS_API_URL:-$(stack_output TargetDassApiUrl)}"
+FAIMS_APP_URL="${FAIMS_APP_URL:-$(stack_output TargetFaimsAppUrl)}"
+FAIMS_API_URL="${FAIMS_API_URL:-$(stack_output TargetFaimsApiUrl)}"
 COUCH_URL="${COUCH_URL:-$(stack_output TargetCouchUrl)}"
 
 PLANS_BUCKET="$(stack_output SequencePlansBucketName)"
@@ -260,16 +260,16 @@ agent_env_base="$(jq -n \
   --arg server "$NOTEBOOK_SERVER_ID" \
   --arg nb "$NOTEBOOK_NAME" \
   --arg export "$PARTICIPATE_IN_EXPORT" \
-  --arg app "$DASS_APP_URL" \
-  --arg api "$DASS_API_URL" \
+  --arg app "$FAIMS_APP_URL" \
+  --arg api "$FAIMS_API_URL" \
   --arg couch "$COUCH_URL" \
   '[{name:"COORDINATOR_URL",value:$url},
     {name:"NOTEBOOK_PROJECT_ID",value:$proj},
     {name:"NOTEBOOK_SERVER_ID",value:$server},
     {name:"NOTEBOOK_NAME",value:$nb},
     {name:"PARTICIPATE_IN_EXPORT",value:$export},
-    {name:"DASS_APP_URL",value:$app},
-    {name:"DASS_API_URL",value:$api},
+    {name:"FAIMS_APP_URL",value:$app},
+    {name:"FAIMS_API_URL",value:$api},
     {name:"COUCH_URL",value:$couch}]')"
 
 echo "Launching ${AGENT_COUNT} agent task(s)…"

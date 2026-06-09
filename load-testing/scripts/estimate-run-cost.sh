@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Estimate AWS cost for a DASS load test RunTask (coordinator + N agents on Fargate).
+# Estimate AWS cost for a FAIMS load test RunTask (coordinator + N agents on Fargate).
 #
 # Usage:
 #   ./estimate-run-cost.sh [duration_minutes]
@@ -191,7 +191,7 @@ coord_gib="$(mib_to_gib "$COORDINATOR_MEMORY_MIB")"
 agent_gib="$(mib_to_gib "$AGENT_MEMORY_MIB")"
 
 printf '\n'
-printf 'DASS load test cost estimate (%s)\n' "$AWS_REGION"
+printf 'FAIMS load test cost estimate (%s)\n' "$AWS_REGION"
 printf '══════════════════════════════════════════════════════════════\n'
 printf ' Tasks:        1 coordinator + %s agents = %s Fargate tasks\n' "$AGENT_COUNT" "$task_count"
 printf ' Agent run:    %s min\n' "$ESTIMATE_DURATION_MIN"
@@ -204,7 +204,7 @@ printf '   Coordinator (%s min)     %s\n' "$(bc_calc "$coord_total_hours * 60" |
 printf '   Agents (%s × %s min)       %s\n' "$AGENT_COUNT" "$ESTIMATE_DURATION_MIN" "$(bc_usd "$agents_cost")"
 printf '   Subtotal                   %s\n' "$(bc_usd "$fargate_total")"
 printf ' Public IPv4 (%s addresses)   %s\n' "$public_ip_count" "$(bc_usd "$public_ip_total")"
-printf ' Data transfer out (~%.2f GiB) %s  (%.1f GiB/agent, to DASS/Couch)\n' \
+printf ' Data transfer out (~%.2f GiB) %s  (%.1f GiB/agent, to FAIMS/Couch)\n' \
   "$(bc_calc "$egress_gib")" "$(bc_usd "$egress_cost")" "$ESTIMATE_EGRESS_GB_PER_AGENT"
 printf ' CloudWatch Logs (~%.2f GiB)  %s\n' "$ESTIMATE_LOG_GB" "$(bc_usd "$logs_cost")"
 printf '──────────────────────────────────────────────────────────────\n'
@@ -222,7 +222,7 @@ printf '════════════════════════
 printf '\n'
 printf 'Notes:\n'
 printf ' • Fargate bills from image pull until task stop (1-minute minimum per task).\n'
-printf ' • Does not include target DASS/Couch infrastructure or Route53/ECR storage.\n'
+printf ' • Does not include target FAIMS/Couch infrastructure or Route53/ECR storage.\n'
 printf ' • Rates are approximate; use https://calculator.aws/ for quotes.\n'
 printf ' • Tune egress: ESTIMATE_EGRESS_GB_PER_AGENT=0.5 ./estimate-run-cost.sh 15\n'
 printf '\n'

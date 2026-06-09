@@ -2,7 +2,7 @@
   "name": "@faims3/load-testing-infra",
   "version": "0.1.0",
   "private": true,
-  "description": "AWS CDK infrastructure for DASS load testing (ECS tasks + metrics EC2)",
+  "description": "AWS CDK infrastructure for FAIMS load testing (ECS tasks + metrics EC2)",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "cdk": "cdk",

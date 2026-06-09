@@ -68,7 +68,7 @@ render_status_compact() {
   ' <<< "$json")"
 
   printf '\033[1m══════════════════════════════════════════════════════════════\033[0m\n'
-  printf ' \033[1mDASS Load Test\033[0m — %s  [%s UTC]\n' "$plan_name" "$now"
+  printf ' \033[1mFAIMS Load Test\033[0m — %s  [%s UTC]\n' "$plan_name" "$now"
   printf ' \033[36m%s\033[0m  %s\n' "$run_state" "$summary_line"
 
   if [[ "$run_state" == "waiting_for_agents" ]]; then
@@ -182,7 +182,7 @@ render_status_verbose() {
   metrics="$(jq -r '.metricsReceived' <<< "$json")"
 
   printf '\033[1m══════════════════════════════════════════════════════════════\033[0m\n'
-  printf ' \033[1mDASS Load Test\033[0m — %s  [%s UTC]\n' "$plan_name" "$now"
+  printf ' \033[1mFAIMS Load Test\033[0m — %s  [%s UTC]\n' "$plan_name" "$now"
   printf ' runState: \033[36m%s\033[0m' "$run_state"
   if [[ "$run_state" == "running" || "$run_state" == "complete" ]]; then
     printf '  |  elapsed: %s / ~%s est' "$elapsed" "$est"

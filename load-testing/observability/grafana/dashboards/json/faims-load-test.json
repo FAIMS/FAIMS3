@@ -13,7 +13,7 @@
       {
         "datasource": {"type": "prometheus", "uid": "prometheus"},
         "enable": true,
-        "expr": "dass_step_transition_timestamp",
+        "expr": "faims_step_transition_timestamp",
         "iconColor": "orange",
         "name": "Step transitions",
         "tagKeys": "stepId",
@@ -40,7 +40,7 @@
       "gridPos": {"h": 6, "w": 6, "x": 0, "y": 1},
       "id": 1,
       "options": {"colorMode": "value", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"]}},
-      "targets": [{"expr": "dass_run_state", "legendFormat": "run state"}],
+      "targets": [{"expr": "faims_run_state", "legendFormat": "run state"}],
       "title": "Run state",
       "type": "stat"
     },
@@ -48,7 +48,7 @@
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 6, "x": 6, "y": 1},
       "id": 2,
-      "targets": [{"expr": "dass_registered_agents", "legendFormat": "registered"}],
+      "targets": [{"expr": "faims_registered_agents", "legendFormat": "registered"}],
       "title": "Registered agents",
       "type": "stat"
     },
@@ -56,7 +56,7 @@
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 6, "x": 12, "y": 1},
       "id": 3,
-      "targets": [{"expr": "dass_ready_agents", "legendFormat": "ready"}],
+      "targets": [{"expr": "faims_ready_agents", "legendFormat": "ready"}],
       "title": "Ready agents",
       "type": "stat"
     },
@@ -64,7 +64,7 @@
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 6, "x": 18, "y": 1},
       "id": 4,
-      "targets": [{"expr": "dass_active_sessions", "legendFormat": "sessions"}],
+      "targets": [{"expr": "faims_active_sessions", "legendFormat": "sessions"}],
       "title": "Active sessions",
       "type": "stat"
     },
@@ -81,9 +81,9 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "id": 5,
       "targets": [
-        {"expr": "histogram_quantile(0.5, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p50"},
-        {"expr": "histogram_quantile(0.95, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p95"},
-        {"expr": "histogram_quantile(0.99, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p99"}
+        {"expr": "histogram_quantile(0.5, sum(increase(faims_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum(increase(faims_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, sum(increase(faims_record_create_ms_bucket[$__range])) by (le))", "legendFormat": "p99"}
       ],
       "title": "Record create latency (selected range)",
       "type": "timeseries"
@@ -94,7 +94,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "id": 6,
       "targets": [
-        {"expr": "histogram_quantile(0.95, sum(rate(dass_measure_duration_ms_bucket[$__rate_interval])) by (le, name))", "legendFormat": "{{name}}"}
+        {"expr": "histogram_quantile(0.95, sum(rate(faims_measure_duration_ms_bucket[$__rate_interval])) by (le, name))", "legendFormat": "{{name}}"}
       ],
       "title": "App measure duration (p95)",
       "type": "timeseries"
@@ -104,7 +104,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
       "id": 7,
       "targets": [
-        {"expr": "histogram_quantile(0.95, sum(rate(dass_longtask_duration_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "p95"}
+        {"expr": "histogram_quantile(0.95, sum(rate(faims_longtask_duration_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "p95"}
       ],
       "title": "Long task duration",
       "type": "timeseries"
@@ -113,7 +113,7 @@
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
       "id": 8,
-      "targets": [{"expr": "dass_indexeddb_bytes", "legendFormat": "{{sessionId}}"}],
+      "targets": [{"expr": "faims_indexeddb_bytes", "legendFormat": "{{sessionId}}"}],
       "title": "IndexedDB size",
       "type": "timeseries"
     },
@@ -130,8 +130,8 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 25},
       "id": 9,
       "targets": [
-        {"expr": "histogram_quantile(0.5, sum(increase(dass_sync_duration_ms_bucket[$__range])) by (le, name))", "legendFormat": "{{name}} p50"},
-        {"expr": "histogram_quantile(0.95, sum(increase(dass_sync_duration_ms_bucket[$__range])) by (le, name))", "legendFormat": "{{name}} p95"}
+        {"expr": "histogram_quantile(0.5, sum(increase(faims_sync_duration_ms_bucket[$__range])) by (le, name))", "legendFormat": "{{name}} p50"},
+        {"expr": "histogram_quantile(0.95, sum(increase(faims_sync_duration_ms_bucket[$__range])) by (le, name))", "legendFormat": "{{name}} p95"}
       ],
       "title": "Sync duration (selected range)",
       "type": "timeseries"
@@ -142,7 +142,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 25},
       "id": 10,
       "targets": [
-        {"expr": "histogram_quantile(0.95, sum(rate(dass_couch_request_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "client p95"},
+        {"expr": "histogram_quantile(0.95, sum(rate(faims_couch_request_ms_bucket[$__rate_interval])) by (le))", "legendFormat": "client p95"},
         {"expr": "max(couchdb_httpd_request_time{metric=\"0.95\"})", "legendFormat": "server p95 (internal, ms)"}
       ],
       "title": "CouchDB request latency (client p95 vs server p95)",
@@ -182,24 +182,24 @@
   ],
   "refresh": "5s",
   "schemaVersion": 39,
-  "tags": ["dass", "load-test"],
+  "tags": ["faims", "load-test"],
   "templating": {
     "list": [
       {
         "current": {},
         "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "definition": "label_values(dass_step_transition_timestamp, testRunId)",
+        "definition": "label_values(faims_step_transition_timestamp, testRunId)",
         "name": "testRunId",
-        "query": {"query": "label_values(dass_step_transition_timestamp, testRunId)", "refId": "StandardVariableQuery"},
+        "query": {"query": "label_values(faims_step_transition_timestamp, testRunId)", "refId": "StandardVariableQuery"},
         "type": "query",
         "hide": 2
       },
       {
         "current": {},
         "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "definition": "label_values(dass_record_create_ms_bucket, stepId)",
+        "definition": "label_values(faims_record_create_ms_bucket, stepId)",
         "name": "stepId",
-        "query": {"query": "label_values(dass_record_create_ms_bucket, stepId)", "refId": "StandardVariableQuery"},
+        "query": {"query": "label_values(faims_record_create_ms_bucket, stepId)", "refId": "StandardVariableQuery"},
         "type": "query",
         "hide": 2
       }
@@ -207,7 +207,7 @@
   },
   "time": {"from": "now-1h", "to": "now"},
   "timezone": "browser",
-  "title": "DASS Load Test",
-  "uid": "dass-load-test",
+  "title": "FAIMS Load Test",
+  "uid": "faims-load-test",
   "version": 2
 }

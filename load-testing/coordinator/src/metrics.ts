@@ -39,12 +39,14 @@ class PushThrottle {
   private flushAgain = false;
   private lastWarnAt = 0;
 
+  /** @param push Async Pushgateway flush invoked at most once per interval. */
   constructor(
     private readonly intervalMs: number,
     private readonly push: () => Promise<void>,
     private readonly label: string
   ) {}
 
+  /** Queue a push after `intervalMs`; coalesce bursts of /report traffic. */
   schedule(): void {
     if (this.timer || this.inFlight) {
       if (this.inFlight) {
@@ -58,6 +60,7 @@ class PushThrottle {
     }, this.intervalMs);
   }
 
+  /** Execute a pending push immediately, chaining if reports arrived mid-flight. */
   async flush(): Promise<void> {
     if (this.inFlight) {
       this.flushAgain = true;
@@ -90,6 +93,7 @@ class PushThrottle {
     }
   }
 
+  /** Cancel a scheduled push timer (shutdown). */
   stop(): void {
     if (this.timer) {
       clearTimeout(this.timer);
@@ -98,6 +102,7 @@ class PushThrottle {
   }
 }
 
+/** Prometheus registries with throttled Pushgateway export for coordinator + agents. */
 export class MetricsService {
   private readonly promRegistry: PromRegistry;
   private readonly agentRegistry: PromRegistry;
@@ -117,6 +122,7 @@ export class MetricsService {
   private counters = new Map<string, Counter>();
   private gauges = new Map<string, Gauge>();
 
+  /** @param pushgatewayUrl When set, enables throttled Pushgateway export. */
   constructor(
     testRunId: string,
     pushgatewayUrl?: string,
@@ -132,26 +138,26 @@ export class MetricsService {
     collectDefaultMetrics({register: this.promRegistry});
 
     this.runStateGauge = new Gauge({
-      name: 'dass_run_state',
+      name: 'faims_run_state',
       help: 'Run state: 0=waiting, 1=running, 2=complete',
       registers: [this.promRegistry],
     });
 
     this.stepTransitionGauge = new Gauge({
-      name: 'dass_step_transition_timestamp',
+      name: 'faims_step_transition_timestamp',
       help: 'Unix timestamp when run state or step barrier advanced',
       labelNames: ['stepId', 'testRunId'],
       registers: [this.promRegistry],
     });
 
     this.registeredAgentsGauge = new Gauge({
-      name: 'dass_registered_agents',
+      name: 'faims_registered_agents',
       help: 'Number of registered agents',
       registers: [this.promRegistry],
     });
 
     this.readyAgentsGauge = new Gauge({
-      name: 'dass_ready_agents',
+      name: 'faims_ready_agents',
       help: 'Number of ready agents',
       registers: [this.promRegistry],
     });
@@ -177,14 +183,17 @@ export class MetricsService {
       : null;
   }
 
+  /** Total `/report` payloads ingested this run. */
   getMetricsReceived(): number {
     return this.metricsReceived;
   }
 
+  /** Expose coordinator registry as Prometheus text for `/metrics`. */
   async getMetricsText(): Promise<string> {
     return this.promRegistry.metrics();
   }
 
+  /** Update run-state gauges when the plan advances. */
   recordRunStateChange(runState: RunState, advancedAt: number, stepId?: string): void {
     this.runStateGauge.set(RUN_STATE_NUMERIC[runState]);
     if (stepId) {
@@ -196,12 +205,14 @@ export class MetricsService {
     this.coordinatorPushThrottle?.schedule();
   }
 
+  /** Update registered/ready agent gauges after register or ready calls. */
   updateAgentCounts(registered: number, ready: number): void {
     this.registeredAgentsGauge.set(registered);
     this.readyAgentsGauge.set(ready);
     this.coordinatorPushThrottle?.schedule();
   }
 
+  /** Lazily create a labelled histogram in the agent metrics registry. */
   private getHistogram(name: string): Histogram {
     let h = this.histograms.get(name);
     if (!h) {
@@ -217,6 +228,7 @@ export class MetricsService {
     return h;
   }
 
+  /** Lazily create a labelled counter in the agent metrics registry. */
   private getCounter(name: string): Counter {
     let c = this.counters.get(name);
     if (!c) {
@@ -231,6 +243,7 @@ export class MetricsService {
     return c;
   }
 
+  /** Lazily create a labelled gauge in the agent metrics registry. */
   private getGauge(name: string): Gauge {
     let g = this.gauges.get(name);
     if (!g) {
@@ -245,6 +258,7 @@ export class MetricsService {
     return g;
   }
 
+  /** Record an agent metric report into the appropriate Prometheus type. */
   ingestReport(report: MetricReport, promName: string): void {
     this.metricsReceived += 1;
     const labels = {
@@ -290,12 +304,14 @@ export class MetricsService {
     this.agentPushThrottle?.schedule();
   }
 
-  async pushCoordinatorState(jobName = 'dass_coordinator'): Promise<void> {
+  /** Push coordinator registry to Pushgateway (additive job). */
+  async pushCoordinatorState(jobName = 'faims_coordinator'): Promise<void> {
     if (!this.coordinatorPushgateway) return;
     await this.coordinatorPushgateway.pushAdd({jobName});
   }
 
-  async pushAgentMetrics(jobName = 'dass_agent_metrics'): Promise<void> {
+  /** Push agent metrics registry to Pushgateway (additive job). */
+  async pushAgentMetrics(jobName = 'faims_agent_metrics'): Promise<void> {
     if (!this.agentPushgateway) return;
     await this.agentPushgateway.pushAdd({jobName});
   }

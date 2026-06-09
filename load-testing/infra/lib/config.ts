@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {z} from 'zod';
 
+/** Copy process.env into a string-only record for Zod parsing. */
 const envRecord = (env: NodeJS.ProcessEnv = process.env): Record<string, string> => {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(env)) {
@@ -20,8 +21,8 @@ export const LoadTestInfraConfigSchema = z
     HOSTED_ZONE_ID: z.string().min(1),
     HOSTED_ZONE_NAME: z.string().min(1),
     METRICS_SUBDOMAIN: z.string().min(1).default('loadtest-metrics'),
-    DASS_APP_URL: z.string().url(),
-    DASS_API_URL: z.string().url(),
+    FAIMS_APP_URL: z.string().url(),
+    FAIMS_API_URL: z.string().url(),
     COUCH_URL: z.string().url(),
     COUCH_USER: z.string().min(1).default('admin'),
     COUCH_PASSWORD_SECRET_ARN: z.string().min(1).optional(),
@@ -53,12 +54,14 @@ export const LoadTestInfraConfigSchema = z
 
 export type LoadTestInfraConfig = z.infer<typeof LoadTestInfraConfigSchema>;
 
+/** Parse and validate CDK deploy environment for load-test infrastructure. */
 export function loadLoadTestInfraConfig(
   env: NodeJS.ProcessEnv = process.env
 ): LoadTestInfraConfig {
   return LoadTestInfraConfigSchema.parse(envRecord(env));
 }
 
+/** Fully qualified DNS name for the metrics/Grafana EC2 host. */
 export function metricsDomain(config: LoadTestInfraConfig): string {
   return `${config.METRICS_SUBDOMAIN}.${config.HOSTED_ZONE_NAME}`;
 }

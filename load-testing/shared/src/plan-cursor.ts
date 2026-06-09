@@ -15,6 +15,7 @@ export interface AgentCursor {
   splitBranches: Record<string, string>;
 }
 
+/** Initialise a cursor at the root of the plan step list. */
 export function createAgentCursor(plan: SequencePlan): AgentCursor {
   return {
     frames: [{steps: plan.steps, index: 0}],
@@ -22,16 +23,19 @@ export function createAgentCursor(plan: SequencePlan): AgentCursor {
   };
 }
 
+/** Type guard for leaf phase steps (have a `kind`). */
 function isPhaseStep(node: SequenceNode): node is PhaseStep {
   return 'kind' in node;
 }
 
+/** Type guard for loop containers. */
 function isLoopStep(
   node: SequenceNode
 ): node is SequenceNode & {loop: {count: number; steps: SequenceNode[]}} {
   return 'loop' in node;
 }
 
+/** Type guard for split containers. */
 function isSplitStep(node: SequenceNode): node is SplitStep {
   return 'split' in node;
 }
@@ -73,6 +77,7 @@ export function resolvePhaseStep(
     }
 
     if (isSplitStep(node)) {
+      // Assign branch once per agent; split container itself is not a runnable step.
       let branchId = cursor.splitBranches[node.id];
       if (!branchId) {
         branchId = assignSplitBranch(node, agentIndex, agentId, testRunId);
@@ -94,6 +99,7 @@ export function resolvePhaseStep(
   }
 }
 
+/** Pop the current frame; decrement loop counter or advance parent index. */
 function popFrame(cursor: AgentCursor): boolean {
   const frame = cursor.frames.pop();
   if (!frame) {
@@ -146,6 +152,7 @@ export function advancePastPhaseStep(cursor: AgentCursor): void {
   }
 }
 
+/** True when all frames are exhausted and the agent has no remaining steps. */
 export function isPlanComplete(cursor: AgentCursor): boolean {
   while (
     cursor.frames.length > 0 &&

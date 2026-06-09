@@ -38,6 +38,7 @@ export function addRecordButton(page: Page, formType?: string): Locator {
     .or(page.getByRole('button', {name: /add new/i}).first());
 }
 
+/** Escape a string for use inside a RegExp constructor. */
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -77,6 +78,7 @@ export function syncStatusIcon(page: Page): Locator {
   return page.getByTestId('sync-status-icon').or(legacy);
 }
 
+/** True when the instrumented app exposes sync status test ids. */
 async function usesSyncTestIds(page: Page): Promise<boolean> {
   return (await page.getByTestId('sync-status-icon').count()) > 0;
 }
@@ -119,6 +121,7 @@ export async function waitForSyncComplete(
   return waitForSyncCompleteLegacy(page, syncIcon, timeoutMs);
 }
 
+/** Poll sync status popover table on legacy (pre-testid) app builds. */
 async function waitForSyncCompleteLegacy(
   page: Page,
   syncIcon: Locator,

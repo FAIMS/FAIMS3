@@ -1,6 +1,6 @@
 /* eslint-disable n/no-process-exit */
 /**
- * Seed DASS load-test accounts (users only — no DB init or migrations).
+ * Seed FAIMS load-test accounts (users only — no DB init or migrations).
  *
  * Creates or updates N local-auth users with PROJECT_CONTRIBUTOR on a given
  * notebook project. Does NOT call initialiseAndMigrateDBs or migrate.

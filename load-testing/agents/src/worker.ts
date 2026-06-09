@@ -9,6 +9,7 @@ import type {IpcMessage} from './types.js';
 
 const SESSION_SCRIPT = join(__dirname, 'browser-session.js');
 
+/** Fork browser sessions, forward metrics/errors, and signal coordinator lifecycle. */
 async function main(): Promise<void> {
   const env = parseAgentEnv();
   const workerId = process.env.WORKER_ID ?? randomUUID();
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
     COORDINATOR_URL: env.COORDINATOR_URL,
   };
 
+  /** Exit when all sessions finish; notify coordinator on success. */
   function maybeFinish(): void {
     if (doneCount < sessionsPerAgent) return;
     if (failedCount > 0) {
@@ -88,6 +90,7 @@ async function main(): Promise<void> {
         if (!success) failedCount += 1;
         maybeFinish();
       }
+      // Coordinator run starts only after every forked session reports browser ready.
       if (readyCount >= sessionsPerAgent && !readySent) {
         readySent = true;
         console.log(`[worker] notifying coordinator that ${agentId} is ready`);
@@ -116,6 +119,7 @@ async function main(): Promise<void> {
     children.push(child);
   }
 
+  /** Forward IPC metrics and session errors to the coordinator. */
   async function handleMessage(
     msg: IpcMessage,
     metrics: MetricsClient

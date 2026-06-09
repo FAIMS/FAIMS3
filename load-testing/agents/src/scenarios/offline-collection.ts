@@ -1,4 +1,4 @@
-import {DASS_MEASURES} from '@faims3/instrumentation';
+import {FAIMS_MEASURES} from '@faims3/instrumentation';
 import {
   OfflineCollectionPhaseConfigSchema,
   type ActiveStep,
@@ -12,6 +12,7 @@ import type {SessionContext} from '../types.js';
 import {collectionProfileFromStepConfig} from '../collection/from-step-config.js';
 import {runRecordLoop} from './record-collection.js';
 
+/** Survey offline, reconnect with jitter, then wait for sync to complete. */
 export async function runOfflineCollection(
   page: Page,
   context: BrowserContext,
@@ -89,7 +90,7 @@ export async function runOfflineCollection(
     stepId: step.id,
     timestamp: Date.now(),
     durationMs: Date.now() - syncStart,
-    name: DASS_MEASURES.SYNC_PUSH_COMPLETE,
+    name: FAIMS_MEASURES.SYNC_PUSH_COMPLETE,
     detail: {jitterMs, sawSyncing, recordCount: count},
   });
 

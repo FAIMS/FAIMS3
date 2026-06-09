@@ -20,6 +20,7 @@ export const LOAD_TEST_ACCOUNTS_ENV_VAR = 'LOAD_TEST_ACCOUNTS';
 const MIN_ACCOUNTS = 1;
 const MAX_ACCOUNTS = 50;
 
+/** Parse a single `username::password` (or `||`) entry into a validated account. */
 function parseAccountEntry(entry: string): LoadTestAccount {
   for (const sep of LOAD_TEST_ACCOUNT_SEPARATORS) {
     const idx = entry.indexOf(sep);

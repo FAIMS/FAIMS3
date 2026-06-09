@@ -19,7 +19,7 @@
           "uid": "prometheus"
         },
         "enable": true,
-        "expr": "dass_step_transition_timestamp",
+        "expr": "faims_step_transition_timestamp",
         "iconColor": "orange",
         "name": "Step transitions",
         "tagKeys": "stepId",
@@ -74,7 +74,7 @@
       },
       "targets": [
         {
-          "expr": "dass_run_state",
+          "expr": "faims_run_state",
           "legendFormat": "run state"
         }
       ],
@@ -95,7 +95,7 @@
       "id": 2,
       "targets": [
         {
-          "expr": "dass_registered_agents",
+          "expr": "faims_registered_agents",
           "legendFormat": "registered"
         }
       ],
@@ -116,7 +116,7 @@
       "id": 3,
       "targets": [
         {
-          "expr": "dass_ready_agents",
+          "expr": "faims_ready_agents",
           "legendFormat": "ready"
         }
       ],
@@ -137,7 +137,7 @@
       "id": 4,
       "targets": [
         {
-          "expr": "dass_active_sessions",
+          "expr": "faims_active_sessions",
           "legendFormat": "sessions"
         }
       ],
@@ -176,15 +176,15 @@
       "id": 5,
       "targets": [
         {
-          "expr": "histogram_quantile(0.5, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))",
+          "expr": "histogram_quantile(0.5, sum(increase(faims_record_create_ms_bucket[$__range])) by (le))",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(increase(faims_record_create_ms_bucket[$__range])) by (le))",
           "legendFormat": "p95"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(increase(dass_record_create_ms_bucket[$__range])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(increase(faims_record_create_ms_bucket[$__range])) by (le))",
           "legendFormat": "p99"
         }
       ],
@@ -211,7 +211,7 @@
       "id": 6,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(dass_measure_duration_ms_bucket[$__rate_interval])) by (le, name))",
+          "expr": "histogram_quantile(0.95, sum(rate(faims_measure_duration_ms_bucket[$__rate_interval])) by (le, name))",
           "legendFormat": "{{name}}"
         }
       ],
@@ -232,7 +232,7 @@
       "id": 7,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(dass_longtask_duration_ms_bucket[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(faims_longtask_duration_ms_bucket[$__rate_interval])) by (le))",
           "legendFormat": "p95"
         }
       ],
@@ -253,7 +253,7 @@
       "id": 8,
       "targets": [
         {
-          "expr": "dass_indexeddb_bytes",
+          "expr": "faims_indexeddb_bytes",
           "legendFormat": "{{sessionId}}"
         }
       ],
@@ -292,11 +292,11 @@
       "id": 9,
       "targets": [
         {
-          "expr": "histogram_quantile(0.5, sum(increase(dass_sync_duration_ms_bucket[$__range])) by (le, name))",
+          "expr": "histogram_quantile(0.5, sum(increase(faims_sync_duration_ms_bucket[$__range])) by (le, name))",
           "legendFormat": "{{name}} p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(increase(dass_sync_duration_ms_bucket[$__range])) by (le, name))",
+          "expr": "histogram_quantile(0.95, sum(increase(faims_sync_duration_ms_bucket[$__range])) by (le, name))",
           "legendFormat": "{{name}} p95"
         }
       ],
@@ -323,7 +323,7 @@
       "id": 10,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(dass_couch_request_ms_bucket[$__rate_interval])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(faims_couch_request_ms_bucket[$__rate_interval])) by (le))",
           "legendFormat": "client p95"
         },
         {
@@ -949,7 +949,7 @@
   "refresh": "5s",
   "schemaVersion": 39,
   "tags": [
-    "dass",
+    "faims",
     "load-test"
   ],
   "templating": {
@@ -960,10 +960,10 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(dass_step_transition_timestamp, testRunId)",
+        "definition": "label_values(faims_step_transition_timestamp, testRunId)",
         "name": "testRunId",
         "query": {
-          "query": "label_values(dass_step_transition_timestamp, testRunId)",
+          "query": "label_values(faims_step_transition_timestamp, testRunId)",
           "refId": "StandardVariableQuery"
         },
         "type": "query",
@@ -975,10 +975,10 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(dass_record_create_ms_bucket, stepId)",
+        "definition": "label_values(faims_record_create_ms_bucket, stepId)",
         "name": "stepId",
         "query": {
-          "query": "label_values(dass_record_create_ms_bucket, stepId)",
+          "query": "label_values(faims_record_create_ms_bucket, stepId)",
           "refId": "StandardVariableQuery"
         },
         "type": "query",
@@ -991,7 +991,7 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "DASS Load Test",
-  "uid": "dass-load-test",
+  "title": "FAIMS Load Test",
+  "uid": "faims-load-test",
   "version": 3
 }

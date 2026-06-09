@@ -9,6 +9,7 @@ import type {SessionContext} from '../types.js';
 import {collectionProfileFromStepConfig} from '../collection/from-step-config.js';
 import {runRecordLoop} from './record-collection.js';
 
+/** Stay online and create records on an interval until the step ends. */
 export async function runOnlineCollection(
   page: Page,
   metricBuffer: MetricBuffer,

@@ -17,6 +17,7 @@ import {
   repoRootFromHere,
 } from './config';
 
+/** Map config string to ECS Container Insights enum value. */
 function containerInsightsSetting(
   config: LoadTestInfraConfig
 ): ecs.ContainerInsights {
@@ -31,6 +32,7 @@ function containerInsightsSetting(
   }
 }
 
+/** Create execution + task IAM roles with SSM channel access for ECS Exec. */
 function createFargateTaskRoles(
   scope: Construct,
   idPrefix: string
@@ -62,6 +64,7 @@ function createFargateTaskRoles(
   return {executionRole, taskRole};
 }
 
+/** CloudWatch log driver; non-blocking mode for long-lived coordinator tasks. */
 function awsLogsDriver(
   logGroup: logs.ILogGroup,
   streamPrefix: string,
@@ -86,7 +89,9 @@ export interface LoadTestStackProps extends cdk.StackProps {
   config: LoadTestInfraConfig;
 }
 
+/** CDK stack: ECS task defs, metrics EC2, S3 plans bucket, and Route53 record. */
 export class LoadTestStack extends cdk.Stack {
+  /** Provision load-test infrastructure from validated infra config. */
   constructor(scope: Construct, id: string, props: LoadTestStackProps) {
     super(scope, id, props);
 
@@ -240,8 +245,8 @@ export class LoadTestStack extends cdk.Stack {
       environment: {
         HEADLESS: 'true',
         SESSIONS_PER_AGENT: '1',
-        DASS_APP_URL: config.DASS_APP_URL,
-        DASS_API_URL: config.DASS_API_URL,
+        FAIMS_APP_URL: config.FAIMS_APP_URL,
+        FAIMS_API_URL: config.FAIMS_API_URL,
         COUCH_URL: config.COUCH_URL,
       },
     });
@@ -432,14 +437,14 @@ export class LoadTestStack extends cdk.Stack {
       description: 'ECR URI built for agent (also embedded in task def)',
     });
 
-    new cdk.CfnOutput(this, 'TargetDassAppUrl', {
-      value: config.DASS_APP_URL,
-      description: 'Default DASS app URL injected into agent task definition',
+    new cdk.CfnOutput(this, 'TargetFaimsAppUrl', {
+      value: config.FAIMS_APP_URL,
+      description: 'Default FAIMS app URL injected into agent task definition',
     });
 
-    new cdk.CfnOutput(this, 'TargetDassApiUrl', {
-      value: config.DASS_API_URL,
-      description: 'Default DASS API URL injected into agent task definition',
+    new cdk.CfnOutput(this, 'TargetFaimsApiUrl', {
+      value: config.FAIMS_API_URL,
+      description: 'Default FAIMS API URL injected into agent task definition',
     });
 
     new cdk.CfnOutput(this, 'TargetCouchUrl', {

@@ -18,10 +18,12 @@ export interface BuildStatusOptions {
   now?: number;
 }
 
+/** Composite key for grouping agents on the same active step instance. */
 function groupKey(step: ActiveStep): string {
   return `${step.id}|${step.kind}|${step.branchId ?? ''}`;
 }
 
+/** Assemble `/status` JSON from engine state, registry counts, and plan analysis. */
 export function buildStatusReport(options: BuildStatusOptions): StatusResponse {
   const {engine, registry, planAnalysis} = options;
   const now = options.now ?? Date.now();
