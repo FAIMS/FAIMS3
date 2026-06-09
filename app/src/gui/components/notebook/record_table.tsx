@@ -6,7 +6,7 @@ import {
   MinimalRecordMetadata,
   PostRecordStatusResponse,
   UiSpecModel,
-  UiSpecViewsets,
+  UiSpecForms,
   RecordMetadata,
 } from '@faims3/data-model';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
@@ -103,7 +103,7 @@ interface RecordsTableProps {
   /** Whether the table is in a loading state */
   loading: boolean;
   /** Optional viewsets configuration for the table */
-  viewsets?: UiSpecViewsets | null;
+  viewsets?: UiSpecForms | null;
   /** Function to handle query changes */
   handleQueryFunction: Function;
   /** Function to handle table refresh */
@@ -924,7 +924,7 @@ const useTableColumns = ({
 }: {
   uiSpec: UiSpecModel | null;
   visibleTypes: string[];
-  viewsets: UiSpecViewsets | null | undefined;
+  viewsets: UiSpecForms | null | undefined;
   size: SizeCategory;
   hasConflict: boolean;
 }) => {

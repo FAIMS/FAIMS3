@@ -11,15 +11,12 @@ import {z} from 'zod';
 export const ValuesObjectSchema = z.record(z.string(), z.any());
 export type ValuesObject = z.infer<typeof ValuesObjectSchema>;
 
-/** Identifier for a viewset (a form type). */
-export const ViewsetIdSchema = z.string();
-export type ViewsetId = z.infer<typeof ViewsetIdSchema>;
+/** Identifier for a form (a form type). */
+export const FormIdSchema = z.string();
+export type FormId = z.infer<typeof FormIdSchema>;
 
-/** Maps each viewset to the field used as its human-readable id (HRID). */
-export const HridFieldMapSchema = z.record(
-  ViewsetIdSchema,
-  z.string().optional()
-);
+/** Maps each form to the field used as its human-readable id (HRID). */
+export const HridFieldMapSchema = z.record(FormIdSchema, z.string().optional());
 export type HridFieldMap = z.infer<typeof HridFieldMapSchema>;
 
 /** Current field values, used when evaluating conditional logic. */
@@ -29,14 +26,15 @@ export type RecordValues = z.infer<typeof RecordValuesSchema>;
 // ============================================================================
 // UI specification model
 //
-// UISpec: fields, the views that group them, and the viewsets (form types) that
-// group views. Object schemas use `.passthrough()` so that validating a stored
-// spec never silently drops unmodelled properties.
+// UISpec: fields, the sections that group them, and the forms that group
+// sections. Object schemas use `.passthrough()` so that validating a stored
+// spec never silently drops unmodelled properties. Note: Viewsets === Forms ->
+// We will eventually rename this to Form
 // ============================================================================
 
 /**
  * A conditional logic expression, evaluated against a record's values to decide
- * whether a view or field is shown. May nest via `conditions`.
+ * whether a section or field is shown. May nest via `conditions`.
  *
  * This type is declared explicitly rather than inferred: it is self-referential,
  * and zod needs a type annotation to resolve a recursive `z.lazy` schema.
@@ -133,8 +131,8 @@ export type FieldDefinition = z.infer<z.ZodObject<typeof fieldDefinitionShape>>;
 /**
  * A field definition with its conditional logic compiled into a callable
  * function. Same shape as {@link FieldDefinition} but carries the
- * non-serializable `conditionFn`, mirroring the {@link UiSpecView} ↔
- * {@link CompiledUiSpecView} relationship.
+ * non-serializable `conditionFn`, mirroring the {@link UiSpecSection} ↔
+ * {@link CompiledUiSpecSection} relationship.
  */
 const compiledFieldDefinitionShape = {
   ...fieldDefinitionShape,
@@ -163,27 +161,28 @@ export const CompiledUiSpecFieldsSchema = z.record(
 );
 export type CompiledUiSpecFields = z.infer<typeof CompiledUiSpecFieldsSchema>;
 
-/** A viewset: a named form type composed of one or more views. */
-export const UiSpecViewsetSchema = z
+/** A form: a named form type composed of one or more sections. */
+export const UiSpecFormSchema = z
   .object({
     label: z.string().optional(),
+    // TODO Rename to sections
     views: z.array(z.string()),
     is_visible: z.boolean().optional(),
     summary_fields: z.array(z.string()).optional(),
     /** Which field should be used as the HRID. */
     hridField: z.string().optional(),
-    /** How the viewset's views are laid out. */
+    /** How the form's sections are laid out. */
     layout: z.enum(['inline', 'tabs']).optional(),
   })
   .passthrough();
-export type UiSpecViewset = z.infer<typeof UiSpecViewsetSchema>;
+export type UiSpecForm = z.infer<typeof UiSpecFormSchema>;
 
-/** Viewsets keyed by type. */
-export const UiSpecViewsetsSchema = z.record(z.string(), UiSpecViewsetSchema);
-export type UiSpecViewsets = z.infer<typeof UiSpecViewsetsSchema>;
+/** Forms keyed by type. */
+export const UiSpecFormsSchema = z.record(z.string(), UiSpecFormSchema);
+export type UiSpecForms = z.infer<typeof UiSpecFormsSchema>;
 
-/** A view: a named group of fields, optionally gated by conditional logic. */
-export const UiSpecViewSchema = z
+/** A section: a named group of fields, optionally gated by conditional logic. */
+export const UiSpecSectionSchema = z
   .object({
     label: z.string().optional(),
     fields: z.array(z.string()),
@@ -192,34 +191,38 @@ export const UiSpecViewSchema = z
     description: z.string().optional(),
   })
   .passthrough();
-export type UiSpecView = z.infer<typeof UiSpecViewSchema>;
+export type UiSpecSection = z.infer<typeof UiSpecSectionSchema>;
 
 /**
- * A view with its conditional logic compiled into a callable function. Same
- * shape as {@link UiSpecView} but carries the non-serializable `conditionFn`.
+ * A section with its conditional logic compiled into a callable function. Same
+ * shape as {@link UiSpecSection} but carries the non-serializable `conditionFn`.
  */
-export const CompiledUiSpecViewSchema = UiSpecViewSchema.extend({
+export const CompiledUiSpecSectionSchema = UiSpecSectionSchema.extend({
   conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
 });
-export type CompiledUiSpecView = z.infer<typeof CompiledUiSpecViewSchema>;
+export type CompiledUiSpecSection = z.infer<typeof CompiledUiSpecSectionSchema>;
 
-/** Views keyed by view name. */
-export const UiSpecViewsSchema = z.record(z.string(), UiSpecViewSchema);
-export type UiSpecViews = z.infer<typeof UiSpecViewsSchema>;
+/** Sections keyed by section name. */
+export const UiSpecSectionsSchema = z.record(z.string(), UiSpecSectionSchema);
+export type UiSpecSections = z.infer<typeof UiSpecSectionsSchema>;
 
-/** Compiled views keyed by view name. */
-export const CompiledUiSpecViewsSchema = z.record(
+/** Compiled sections keyed by section name. */
+export const CompiledUiSpecSectionsSchema = z.record(
   z.string(),
-  CompiledUiSpecViewSchema
+  CompiledUiSpecSectionSchema
 );
-export type CompiledUiSpecViews = z.infer<typeof CompiledUiSpecViewsSchema>;
+export type CompiledUiSpecSections = z.infer<
+  typeof CompiledUiSpecSectionsSchema
+>;
 
 /** The full UI specification model. */
 export const UiSpecModelSchema = z
   .object({
     fields: UiSpecFieldsSchema,
-    views: UiSpecViewsSchema,
-    viewsets: UiSpecViewsetsSchema,
+    // TODO Rename to sections
+    views: UiSpecSectionsSchema,
+    // TODO Rename to forms
+    viewsets: UiSpecFormsSchema,
     visible_types: z.array(z.string()),
   })
   .passthrough();
@@ -231,7 +234,8 @@ export type UiSpecModel = z.infer<typeof UiSpecModelSchema>;
  */
 export const CompiledUiSpecModelSchema = UiSpecModelSchema.extend({
   fields: CompiledUiSpecFieldsSchema,
-  views: CompiledUiSpecViewsSchema,
+  // TODO Rename to sections
+  views: CompiledUiSpecSectionsSchema,
   /** Field names that are referenced as conditional sources. */
   conditional_sources: z.set(z.string()),
 });
@@ -279,8 +283,8 @@ export const NotebookMetadataSchema = z.object({
 export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 
 /**
- * Inlined merge of the former notebook JSON and metadata DB.
- * `uiSpec` = decoded **`UiSpecModel`** (`fields`, `views`, `viewsets`,
+ * Inlined merge of the former notebook JSON and metadata DB. `uiSpec` = decoded
+ * **`UiSpecModel`** (`fields`, `views (sections)`, `viewsets (forms)`,
  * `visible_types`) plus **`settings`** and **`schemaVersion`**.
  */
 export const NotebookUiSpecSchema = UiSpecModelSchema.and(
@@ -294,7 +298,7 @@ export const NotebookUiSpecSchema = UiSpecModelSchema.and(
 export type NotebookUiSpec = z.infer<typeof NotebookUiSpecSchema>;
 
 /**
- * Compiled counterpart of {@link NotebookUiSpec}: same shape but with views
+ * Compiled counterpart of {@link NotebookUiSpec}: same shape but with sections
  * compiled (conditions turned into `conditionFn`s) and `conditional_sources`
  * populated, as per {@link CompiledUiSpecModelSchema}.
  */

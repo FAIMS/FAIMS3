@@ -4,11 +4,11 @@ import {slugify} from '../utils';
 import {compileExpression, getDependantFields} from './conditionals';
 import {
   CompiledUiSpecModel,
-  CompiledUiSpecViews,
+  CompiledUiSpecSections,
   HridFieldMap,
   NotebookUiSpec,
   UiSpecModel,
-  UiSpecViewset,
+  UiSpecForm,
   ValuesObject,
 } from './types';
 
@@ -17,7 +17,7 @@ import {
  * @param {Object} params - The parameters object
  * @param {UiSpecModel} params.uiSpecification - The UI specification containing viewsets
  * @param {string} params.viewSetId - The ID of the viewset to retrieve
- * @returns {UiSpecViewset} The requested viewset
+ * @returns {UiSpecForm} The requested viewset
  * @throws {Error} If the viewset ID is not found in the specification
  */
 export const getViewsetByViewsetId = ({
@@ -26,7 +26,7 @@ export const getViewsetByViewsetId = ({
 }: {
   uiSpecification: UiSpecModel;
   viewSetId: string;
-}): UiSpecViewset => {
+}): UiSpecForm => {
   const viewSet = uiSpecification.viewsets[viewSetId];
   if (!viewSet) {
     throw new Error(
@@ -572,7 +572,7 @@ export function compileUiSpecConditionals(
     depFields.push(...getDependantFields(fieldDef.condition));
   }
 
-  const views: CompiledUiSpecViews = {};
+  const views: CompiledUiSpecSections = {};
   for (const view in uiSpecification.views) {
     const viewDef = uiSpecification.views[view];
     viewDef.conditionFn = compileExpression(viewDef.condition);
