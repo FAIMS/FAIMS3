@@ -142,7 +142,11 @@ export default function NotebookSyncSwitch({
             aria-labelledby="sync-mode-dialog-title"
             maxWidth="sm"
             fullWidth
-            PaperProps={{sx: {p: 1}}}
+            slotProps={{
+              paper: {
+                sx: {p: 1},
+              },
+            }}
           >
             <DialogTitle id="sync-mode-dialog-title">
               Change sync mode?

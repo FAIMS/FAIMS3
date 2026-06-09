@@ -252,16 +252,34 @@ if (DEBUG_APP) {
   };
 }
 
+/**
+ * Live PouchDB replication handle returned by {@link createPouchDbReplication}.
+ *
+ * Either a two-way {@link PouchDB.Replication.Sync} (`syncMode: 'both'`) or a
+ * one-way {@link PouchDB.Replication.Replication} for push/pull-only modes.
+ */
 export type PouchReplicationHandle =
   | PouchDB.Replication.Sync<{}>
   | PouchDB.Replication.Replication<{}>;
 
+/**
+ * Attach replication event handlers to a sync/replicate handle.
+ *
+ * Shared by all sync modes so callers register handlers once regardless of
+ * direction. The types provided in `@types/pouchdb` are incomplete — e.g. see
+ * https://pouchdb.com/api.html#sync — these events are not even available in
+ * the types and the interfaces are incomplete/too-restrictive.
+ *
+ * @param replication The live sync or replicate object from PouchDB
+ * @param eventHandlers Optional handlers for replication lifecycle events
+ * @returns The same handle with handlers attached (for chaining)
+ */
 function attachReplicationEventHandlers(
   replication: PouchReplicationHandle,
   eventHandlers: SyncEventHandlers
 ): PouchReplicationHandle {
   let handle: PouchReplicationHandle = replication;
-  // PouchDB replication event types are incomplete in @types/pouchdb
+  // Attach all provided event handlers — see note above on @types/pouchdb gaps.
   if (eventHandlers.change) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -291,7 +309,30 @@ function attachReplicationEventHandlers(
 }
 
 /**
- * Creates live replication between local and remote DBs for the given sync mode.
+ * Creates live replication between the specified local and remote DBs.
+ *
+ * This is the preferred replication factory: it centralises PouchDB options so
+ * callers cannot misconfigure live/retry/batch sizing. Behaviour depends on
+ * {@link syncMode}:
+ *
+ * - **`both`**: two-way sync via `PouchDB.sync` (push + pull), with optional
+ *   attachment filtering on the pull side.
+ * - **`push`**: one-way replicate local → remote only.
+ * - **`pull`**: one-way replicate remote → local only, with optional attachment
+ *   filtering on the pull side.
+ *
+ * Live replication and retry-on-failure are always enabled. When
+ * `attachmentDownload` is false, pull replication uses
+ * {@link ATTACHMENT_FILTER_CONFIG} so attachments created on other devices are
+ * not downloaded (records still sync).
+ *
+ * @param syncMode Replication direction (`push`, `pull`, or `both`)
+ * @param attachmentDownload Download attachments from other devices when pull is active
+ * @param localDb The local DB to replicate
+ * @param remoteDb The remote DB to replicate
+ * @param eventHandlers Optional event handlers for replication events
+ *
+ * @returns The new live sync/replicate object (with handlers attached)
  */
 export function createPouchDbReplication<Content extends {}>({
   syncMode,
@@ -306,11 +347,16 @@ export function createPouchDbReplication<Content extends {}>({
   remoteDb: PouchDB.Database<Content>;
   eventHandlers?: SyncEventHandlers;
 }): PouchReplicationHandle {
+  // Configure attachment filtering if needed (applies to pull direction only)
   const pullFilter = attachmentDownload ? {} : ATTACHMENT_FILTER_CONFIG;
   const baseOpts: PouchDB.Replication.ReplicateOptions = {
+    // Live sync mode (i.e. poll)
     live: true,
+    // Retry on fail
     retry: true,
+    // Timeout after 15 seconds
     timeout: 15000,
+    // Sync batch sizing options
     batch_size: POUCH_BATCH_SIZE,
     batches_limit: POUCH_BATCHES_LIMIT,
   };
@@ -321,9 +367,16 @@ export function createPouchDbReplication<Content extends {}>({
     case 'both': {
       const options: DBReplicateOptions = {
         ...baseOpts,
-        push: {checkpoint: 'source'},
-        pull: {checkpoint: 'target', ...pullFilter},
+        // Push and pull specific options
+        push: {
+          checkpoint: 'source',
+        },
+        pull: {
+          checkpoint: 'target',
+          ...pullFilter,
+        },
       };
+      // Create the two-way sync object
       replication = PouchDB.sync(localDb.db, remoteDb, options);
       break;
     }
@@ -345,7 +398,22 @@ export function createPouchDbReplication<Content extends {}>({
   return attachReplicationEventHandlers(replication, eventHandlers);
 }
 
-/** @deprecated Use {@link createPouchDbReplication}. */
+/**
+ * Creates a new synchronisation (PouchDB.sync) between the specified local and
+ * remote DB. This uses the preferred sync options to avoid misconfiguration in
+ * caller functions. Two way sync is always enabled, with live and retry. If
+ * attachment filter is supplied, the pull sync options are overridden with a
+ * filter.
+ *
+ * @deprecated Use {@link createPouchDbReplication} with `syncMode: 'both'`.
+ *
+ * @param attachmentDownload Download attachments iff true
+ * @param localDb The local DB to sync
+ * @param remoteDb The remote DB to sync
+ * @param eventHandlers Optional event handlers for sync events
+ *
+ * @returns The new sync object
+ */
 export function createPouchDbSync<Content extends {}>(params: {
   attachmentDownload: boolean;
   localDb: PouchDBWrapper<Content>;

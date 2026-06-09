@@ -304,6 +304,16 @@ export const initialProjectState: ProjectsState = {
   isInitialised: false,
 };
 
+/**
+ * Merge an incoming `recordCount` with a stored value.
+ */
+function mergeRecordCount(
+  incoming: number | undefined,
+  existing: number | undefined
+): number | undefined {
+  return incoming !== undefined ? incoming : existing;
+}
+
 const projectsSlice = createSlice({
   name: 'projects',
   initialState: initialProjectState,
@@ -651,8 +661,10 @@ const projectsSlice = createSlice({
         uiDefinition: payload.uiDefinition,
         uiSpecificationId: compiledSpecId,
         status: payload.status,
-        recordCount:
-          payload.recordCount ?? server.projects[payload.projectId].recordCount,
+        recordCount: mergeRecordCount(
+          payload.recordCount,
+          server.projects[payload.projectId].recordCount
+        ),
       };
     },
 
@@ -704,7 +716,7 @@ const projectsSlice = createSlice({
             syncId: syncId,
           },
         },
-        recordCount: recordCount ?? project.recordCount,
+        recordCount: mergeRecordCount(recordCount, project.recordCount),
       };
     },
 
@@ -882,82 +894,6 @@ const projectsSlice = createSlice({
         status: project.status,
         name: project.name,
         recordCount: project.recordCount,
-        isActivated: true,
-        database: {
-          syncMode: project.database.syncMode,
-          isSyncingAttachments: project.database.isSyncingAttachments,
-          localDbId: project.database.localDbId,
-          remote: {
-            connectionConfiguration:
-              project.database.remote.connectionConfiguration,
-            remoteDbId: project.database.remote.remoteDbId,
-            syncId: project.database.remote.syncId,
-          },
-        },
-      };
-    },
-
-    // @deprecated — use setSyncModeSuccess
-    stopSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
-      // check project/server exists
-      const project = action.payload;
-
-      if (!project.database)
-        throw new Error('Project database not properly initialised');
-
-      // updates the state to indicate no syncing
-      state.servers[project.serverId].projects[project.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // Project remains activated, but syncing is stopped
-        isActivated: true,
-        database: {
-          syncMode: 'none',
-          isSyncingAttachments: project.database.isSyncingAttachments,
-          localDbId: project.database.localDbId,
-          remote: {
-            connectionConfiguration:
-              project.database.remote.connectionConfiguration,
-            remoteDbId: project.database.remote.remoteDbId,
-            syncId: undefined,
-          },
-        },
-      };
-    },
-
-    // @deprecated — use setSyncModeSuccess
-    resumeSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
-      // check project/server exists
-      const project = action.payload;
-
-      if (!project.database)
-        throw new Error('Project database not properly initialised');
-
-      // updates the state with all of this new information
-      state.servers[project.serverId].projects[project.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1954,7 +1890,10 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               serverId,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status ?? existingProject.status,
-              recordCount: meta.recordCount ?? existingProject.recordCount,
+              recordCount: mergeRecordCount(
+                meta.recordCount,
+                existingProject.recordCount
+              ),
             })
           );
         }
@@ -2227,22 +2166,6 @@ export const setSyncMode = createAsyncThunk<
 
   dispatch(setSyncModeSuccess(updatedProject));
 });
-
-/** @deprecated Use {@link setSyncMode} with syncMode `'none'`. */
-export const stopSyncingProject = createAsyncThunk<void, ProjectIdentity>(
-  'projects/stopSyncingProject',
-  async (payload, {dispatch}) => {
-    await dispatch(setSyncMode({...payload, syncMode: 'none'})).unwrap();
-  }
-);
-
-/** @deprecated Use {@link setSyncMode} with syncMode `'both'`. */
-export const resumeSyncingProject = createAsyncThunk<void, ProjectIdentity>(
-  'projects/resumeSyncingProject',
-  async (payload, {dispatch}) => {
-    await dispatch(setSyncMode({...payload, syncMode: 'both'})).unwrap();
-  }
-);
 
 /**
  * As part of initialisation, rebuilds and registers all databases (local,
