@@ -30,7 +30,10 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
-import {migrateProjectsPersistedState} from './slices/projectsPersistMigration';
+import {
+  migrateProjectsPersistedState,
+  migrateProjectsSyncModeV2,
+} from './slices/projectsPersistMigration';
 import projectsReducer from './slices/projectSlice';
 
 // The below configures indexed DB storage which has a greater limit than
@@ -49,7 +52,7 @@ const PERSIST_MIGRATION_LOG = '[redux-persist-migration]';
 // Configure persistence for the projects slice
 const projectsPersistConfig = {
   key: 'projects',
-  version: 1,
+  version: 2,
   storage: storage('faims-projects-db'),
   blacklist: ['isInitialised'],
   migrate: createMigrate(
@@ -89,6 +92,29 @@ const projectsPersistConfig = {
               cause: err instanceof Error ? err.message : String(err),
             }
           );
+          throw err;
+        }
+      },
+      2: state => {
+        const fromVersion = state?._persist?.version ?? 'unknown';
+        logInfo(`${PERSIST_MIGRATION_LOG} version_migrate`, {
+          fromVersion,
+          toVersion: 2,
+          slice: 'projects',
+        });
+        if (!state) {
+          return state;
+        }
+        try {
+          const migrated = migrateProjectsSyncModeV2(state);
+          return {...migrated, _persist: state._persist};
+        } catch (err) {
+          logWarn(`${PERSIST_MIGRATION_LOG} version_migrate_failed`, {
+            fromVersion,
+            toVersion: 2,
+            slice: 'projects',
+            message: err instanceof Error ? err.message : String(err),
+          });
           throw err;
         }
       },

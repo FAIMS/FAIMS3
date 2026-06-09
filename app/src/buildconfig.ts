@@ -131,6 +131,31 @@ function pouch_batch_size(): number {
   }
 }
 
+// This number requires more tuning based on upcoming load testing results. 500
+// is probably okay for most devices to two-way sync, but this is a more
+// conservative estimate.
+const DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD = 500;
+
+/*
+ * Record count above which activation defaults to push-only sync (when online).
+ * See VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD.
+ */
+function sync_push_only_record_threshold(): number {
+  const raw = import.meta.env.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
+  if (raw === '' || raw === undefined) {
+    return DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
+  }
+  try {
+    const parsed = parseInt(raw, 10);
+    return Number.isNaN(parsed)
+      ? DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD
+      : parsed;
+  } catch (err) {
+    logError(err);
+    return DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
+  }
+}
+
 /*
  * See batches_limit in https://pouchdb.com/api.html#replication
  */
@@ -754,6 +779,8 @@ export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
+export const SYNC_PUSH_ONLY_RECORD_THRESHOLD =
+  sync_push_only_record_threshold();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const SHOW_POUCHDB_BROWSER = show_pouchdb_browser();
 export const SHOW_WIPE = show_wipe();

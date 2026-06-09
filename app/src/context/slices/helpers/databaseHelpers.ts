@@ -7,6 +7,7 @@ import {
   POUCH_BATCHES_LIMIT,
   RUNNING_UNDER_TEST,
 } from '../../../buildconfig';
+import type {ReplicatingSyncMode} from '../../../sync/syncMode';
 import {DatabaseConnectionConfig, ProjectIdentity} from '../projectSlice';
 import {PouchDBWrapper} from './pouchDBWrapper';
 
@@ -251,87 +252,110 @@ if (DEBUG_APP) {
   };
 }
 
+export type PouchReplicationHandle =
+  | PouchDB.Replication.Sync<{}>
+  | PouchDB.Replication.Replication<{}>;
+
+function attachReplicationEventHandlers(
+  replication: PouchReplicationHandle,
+  eventHandlers: SyncEventHandlers
+): PouchReplicationHandle {
+  let handle: PouchReplicationHandle = replication;
+  // PouchDB replication event types are incomplete in @types/pouchdb
+  if (eventHandlers.change) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    handle = handle.on('change', eventHandlers.change);
+  }
+  if (eventHandlers.paused) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    handle = handle.on('paused', eventHandlers.paused);
+  }
+  if (eventHandlers.active) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    handle = handle.on('active', eventHandlers.active);
+  }
+  if (eventHandlers.denied) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    handle = handle.on('denied', eventHandlers.denied);
+  }
+  if (eventHandlers.error) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    handle = handle.on('error', eventHandlers.error);
+  }
+  return handle;
+}
+
 /**
- * Creates a new synchronisation (PouchDB.sync) between the specified local and
- * remote DB. This uses the preferred sync options to avoid misconfiguration in
- * caller functions. Two way sync is always enabled, with live and retry. If
- * attachment filter is supplied, the pull sync options are overridden with a
- * filter.
- *
- * @param attachmentDownload Download attachments iff true
- * @param localDb The local DB to sync
- * @param remoteDb The remote DB to sync
- * @param eventHandlers Optional event handlers for sync events
- *
- * @returns The new sync object
+ * Creates live replication between local and remote DBs for the given sync mode.
  */
-export function createPouchDbSync<Content extends {}>({
+export function createPouchDbReplication<Content extends {}>({
+  syncMode,
   attachmentDownload,
   localDb,
   remoteDb,
   eventHandlers = DEFAULT_SYNC_HANDLERS,
 }: {
+  syncMode: ReplicatingSyncMode;
   attachmentDownload: boolean;
   localDb: PouchDBWrapper<Content>;
   remoteDb: PouchDB.Database<Content>;
   eventHandlers?: SyncEventHandlers;
-}) {
-  // Configure attachment filtering if needed
+}): PouchReplicationHandle {
   const pullFilter = attachmentDownload ? {} : ATTACHMENT_FILTER_CONFIG;
-  const options: DBReplicateOptions = {
-    // Live sync mode (i.e. poll)
+  const baseOpts: PouchDB.Replication.ReplicateOptions = {
     live: true,
-    // Retry on fail
     retry: true,
-    // Timeout after 15 seconds
     timeout: 15000,
-    // Sync batch sizing options
     batch_size: POUCH_BATCH_SIZE,
     batches_limit: POUCH_BATCHES_LIMIT,
-    // Push and pull specific options
-    push: {
-      checkpoint: 'source',
-    },
-    pull: {
-      checkpoint: 'target',
-      ...pullFilter,
-    },
   };
 
-  // Create the sync object
-  let sync = PouchDB.sync(localDb.db, remoteDb, options);
+  let replication: PouchReplicationHandle;
 
-  // Attach all provided event handlers These types provided in the library are
-  // completely wrong - e.g. see the docs here https://pouchdb.com/api.html#sync
-  // - these events are not even available in the types and the interfaces are
-  //   incomplete/too-restrictive
-  if (eventHandlers.change) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    sync = sync.on('change', eventHandlers.change);
-  }
-  if (eventHandlers.paused) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    sync = sync.on('paused', eventHandlers.paused);
-  }
-  if (eventHandlers.active) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    sync = sync.on('active', eventHandlers.active);
-  }
-  if (eventHandlers.denied) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    sync = sync.on('denied', eventHandlers.denied);
-  }
-  if (eventHandlers.error) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    sync = sync.on('error', eventHandlers.error);
+  switch (syncMode) {
+    case 'both': {
+      const options: DBReplicateOptions = {
+        ...baseOpts,
+        push: {checkpoint: 'source'},
+        pull: {checkpoint: 'target', ...pullFilter},
+      };
+      replication = PouchDB.sync(localDb.db, remoteDb, options);
+      break;
+    }
+    case 'push':
+      replication = PouchDB.replicate(localDb.db, remoteDb, {
+        ...baseOpts,
+        checkpoint: 'source',
+      });
+      break;
+    case 'pull':
+      replication = PouchDB.replicate(remoteDb, localDb.db, {
+        ...baseOpts,
+        checkpoint: 'target',
+        ...pullFilter,
+      });
+      break;
   }
 
-  return sync;
+  return attachReplicationEventHandlers(replication, eventHandlers);
+}
+
+/** @deprecated Use {@link createPouchDbReplication}. */
+export function createPouchDbSync<Content extends {}>(params: {
+  attachmentDownload: boolean;
+  localDb: PouchDBWrapper<Content>;
+  remoteDb: PouchDB.Database<Content>;
+  eventHandlers?: SyncEventHandlers;
+}): PouchReplicationHandle {
+  return createPouchDbReplication({
+    syncMode: 'both',
+    ...params,
+  });
 }
 
 /**

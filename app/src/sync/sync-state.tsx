@@ -276,11 +276,17 @@ export default function SyncStatus() {
         aggregatedStatus.pendingRecords > 0
           ? ` (${aggregatedStatus.pendingRecords} pending)`
           : '';
-      return `Sync is underway${pendingText}`;
+      const direction =
+        isSyncingUp && !isSyncingDown
+          ? 'Upload'
+          : isSyncingDown && !isSyncingUp
+            ? 'Download'
+            : 'Sync';
+      return `${direction} is underway${pendingText}`;
     }
 
     if (status === 'paused') {
-      return 'Sync is paused';
+      return 'Sync is idle';
     }
 
     return 'Waiting for changes';
@@ -291,7 +297,9 @@ export default function SyncStatus() {
    */
   const getStatusLabel = (): string => {
     if (isSyncError) return 'Error';
-    if (isSyncingUp || isSyncingDown) return 'In Progress';
+    if (isSyncingUp && isSyncingDown) return 'In Progress';
+    if (isSyncingUp) return 'Uploading';
+    if (isSyncingDown) return 'Downloading';
     if (status === 'paused') return 'Complete';
     return 'Complete';
   };

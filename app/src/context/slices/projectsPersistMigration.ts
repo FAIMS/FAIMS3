@@ -20,7 +20,9 @@ import type {
   Project,
   ProjectsState,
   ProjectIdToProjectMap,
+  DatabaseConnection,
 } from './projectSlice';
+import {syncModeFromLegacyIsSyncing} from '../../sync/syncMode';
 import {notebookDefinitionFromLegacyPersistedProject} from './helpers/notebookDefinition';
 
 const emptyProjectsState: ProjectsState = {
@@ -339,5 +341,71 @@ export function migrateProjectsPersistedState(state: unknown): ProjectsState {
     ...inbound,
     servers: migratedServers,
     isInitialised: false,
+  };
+}
+
+type LegacyDatabaseConnection = DatabaseConnection & {
+  isSyncing?: boolean;
+};
+
+function migrateDatabaseConnection(
+  database: LegacyDatabaseConnection | undefined
+): DatabaseConnection | undefined {
+  if (!database) {
+    return undefined;
+  }
+  if ('syncMode' in database && database.syncMode) {
+    return database as DatabaseConnection;
+  }
+  const legacyIsSyncing = database.isSyncing ?? true;
+  const {isSyncing: _removed, ...rest} = database;
+  return {
+    ...rest,
+    syncMode: syncModeFromLegacyIsSyncing(legacyIsSyncing),
+  };
+}
+
+function migrateProjectSyncMode(project: Project): Project {
+  if (!project.database) {
+    return project;
+  }
+  return {
+    ...project,
+    database: migrateDatabaseConnection(
+      project.database as LegacyDatabaseConnection
+    ),
+  };
+}
+
+/**
+ * redux-persist migration 2: legacy `database.isSyncing` boolean → `syncMode` enum.
+ */
+export function migrateProjectsSyncModeV2(state: unknown): ProjectsState {
+  logMigrationInfo('begin', {persistVersion: 2});
+
+  if (!isPlainObject(state)) {
+    return emptyProjectsState;
+  }
+
+  const inbound = state as unknown as ProjectsState;
+  const servers = inbound.servers ?? {};
+  const migratedServers: ProjectsState['servers'] = {};
+
+  for (const [serverId, server] of Object.entries(servers)) {
+    if (!server) {
+      continue;
+    }
+    const projects: ProjectIdToProjectMap = {};
+    for (const [projectId, project] of Object.entries(server.projects ?? {})) {
+      projects[projectId] = migrateProjectSyncMode(project);
+    }
+    migratedServers[serverId] = {...server, projects};
+  }
+
+  logMigrationInfo('complete', {persistVersion: 2});
+
+  return {
+    ...inbound,
+    servers: migratedServers,
   };
 }
