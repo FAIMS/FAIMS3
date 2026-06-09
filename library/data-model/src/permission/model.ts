@@ -1053,20 +1053,21 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.TEAM_ADMIN]: {
     name: 'Team Administrator',
     description:
-      'Full control over a specific team, including deletion and admin user management',
+      'Can remove people from teams and surveys; create invites and edit role access; archive and delete surveys and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MANAGER]: {
     name: 'Team Manager',
     description:
-      'Can manage team settings and member permissions within a team',
+      'Can create templates, surveys and invites; open and close surveys; edit user roles but cannot remove users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
     name: 'Team Member (Contributor)',
-    description: 'Can contribute data to all projects within a team',
+    description:
+      'Can contribute to all surveys in the team and view team details, users, surveys and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },

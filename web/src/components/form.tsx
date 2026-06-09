@@ -191,10 +191,10 @@ export function Form<
                               value={field.value ?? ''}
                               disabled={isDisabled}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder={`Select ${name}`} />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="w-[var(--radix-select-trigger-width)]">
                                 {options.map(({label, value, description}) => (
                                   <SelectItem
                                     key={value}
