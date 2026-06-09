@@ -34,6 +34,14 @@ export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
 
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
 
+/** Team roles to hide from team-role dropdowns (`VITE_EXCLUDED_TEAM_ROLES`). */
+export const EXCLUDED_TEAM_ROLES = new Set(
+  (import.meta.env.VITE_EXCLUDED_TEAM_ROLES as string | undefined)
+    ?.split(',')
+    .map(s => s.trim())
+    .filter(Boolean) ?? []
+);
+
 /**
  * When the directory lists a notebook as archived (or id absent), the mobile app
  * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).

@@ -1,4 +1,5 @@
 import {Field, Form} from '@/components/form';
+import {EXCLUDED_TEAM_ROLES} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
@@ -46,6 +47,9 @@ export function AddUserToTeamForm({
     rolesAvailable.push(Role.TEAM_ADMIN);
   }
 
+  // DASS hides TEAM_MEMBER_CREATOR.
+  const visibleRoles = rolesAvailable.filter(r => !EXCLUDED_TEAM_ROLES.has(r));
+
   const fields: Field[] = [
     {
       name: 'email',
@@ -55,7 +59,7 @@ export function AddUserToTeamForm({
     {
       name: 'role',
       label: 'Role',
-      options: rolesAvailable.map(r => ({
+      options: visibleRoles.map(r => ({
         label: roleDetails[r].name,
         value: r,
         description: roleDetails[r].description,

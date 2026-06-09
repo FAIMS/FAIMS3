@@ -1010,27 +1010,28 @@ export const roleDetails: Record<Role, RoleDetails> = {
   // Project roles
   [Role.PROJECT_ADMIN]: {
     name: 'Administrator',
-    description:
-      'Full control over a specific project, including deletion and admin user management',
+    description: 'Can delete the survey and manage any admin users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_MANAGER]: {
     name: 'Manager',
     description:
-      'Can manage project settings, invitations and all data within a project',
+      'Can create survey invites, edit survey roles, manage survey settings, and open or close the survey. Cannot delete the survey.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
     name: 'Contributor',
-    description: 'Can view all data within a project and contribute their own',
+    description:
+      'Can view and edit any survey responses created by any user, including their own.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_GUEST]: {
     name: 'Guest',
-    description: 'Can view only their own contributions to a project',
+    description:
+      "Can create and edit their own survey response, but cannot view or edit anyone else's responses.",
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
@@ -1052,28 +1053,28 @@ export const roleDetails: Record<Role, RoleDetails> = {
   // Team roles
   [Role.TEAM_ADMIN]: {
     name: 'Team Administrator',
-    description: 'Can delete the survey and manage any admin users.',
+    description:
+      'Can remove people from teams and surveys, create invites, edit user roles, and archive or delete surveys and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MANAGER]: {
     name: 'Team Manager',
     description:
-      'Can create survey invites; edit survey roles; manage survey settings; open and close the survey; cannot delete the survey.',
+      'Can create templates, surveys, and invites, open and close surveys, and edit user roles. Cannot remove users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
     name: 'Team Member (Contributor)',
     description:
-      "Can create and edit their own survey response; cannot view or edit anyone else's responses.",
+      'Can contribute to all surveys in the team and view team details, users, surveys and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER_CREATOR]: {
     name: 'Team Member (Creator)',
-    description:
-      'Can view and edit any survey responses created by any user (including their own).',
+    description: 'Can create new projects within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
