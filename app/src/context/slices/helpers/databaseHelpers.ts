@@ -311,9 +311,12 @@ function attachReplicationEventHandlers(
     const onChange = eventHandlers.change;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    handle = handle.on('change', (info: ChangeSyncInfo | ReplicationChangeStats) => {
-      onChange(normalizeChangeSyncInfo(info, defaultDirection));
-    });
+    handle = handle.on(
+      'change',
+      (info: ChangeSyncInfo | ReplicationChangeStats) => {
+        onChange(normalizeChangeSyncInfo(info, defaultDirection));
+      }
+    );
   }
   if (eventHandlers.paused) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment

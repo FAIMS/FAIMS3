@@ -10,11 +10,11 @@ While working online, or within range of an offline server, records will be cont
 
 When you activate a {{notebook}}, record sync starts automatically. In **{{Notebook}} Settings**, use **Sync mode** to choose how record data moves between your device and the server:
 
-| Mode | Behaviour |
-|------|-----------|
-| **Sync off (local device only)** | Records stay on this device; nothing is sent to or received from the server. |
-| **Upload only** | Your new and updated records upload to the server. Existing records from other devices are not downloaded. |
-| **Upload and download** | Full two-way sync (default for smaller {{notebooks}} when online). |
+| Mode                             | Behaviour                                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Sync off (local device only)** | Records stay on this device; nothing is sent to or received from the server.                               |
+| **Upload only**                  | Your new and updated records upload to the server. Existing records from other devices are not downloaded. |
+| **Upload and download**          | Full two-way sync (default for smaller {{notebooks}} when online).                                         |
 
 When you activate a {{notebook}} while online, the app may set **Upload only** automatically for {{notebooks}} with very large numbers of records, to save storage and mobile data. If the record count cannot be fetched (offline or error), **Upload and download** is used instead.
 

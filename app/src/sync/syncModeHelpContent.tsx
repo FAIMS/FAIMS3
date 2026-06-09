@@ -1,8 +1,5 @@
 import {Box} from '@mui/material';
-import {
-  NOTEBOOK_NAME,
-  SYNC_PUSH_ONLY_RECORD_THRESHOLD,
-} from '../buildconfig';
+import {NOTEBOOK_NAME, SYNC_PUSH_ONLY_RECORD_THRESHOLD} from '../buildconfig';
 import type {SyncMode} from './syncMode';
 
 /** Modes shown in sync mode help and change confirmations. */
