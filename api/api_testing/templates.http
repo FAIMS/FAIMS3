@@ -126,20 +126,6 @@ Content-Type: application/json
           "variant": "outlined",
           "label": "Take GPS Starting Point"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
-        "is_logic": {
-          "campus-zone": [
-            "Zone Alpha; ",
-            "Zone Charlie; "
-          ]
-        },
         "initialValue": null,
         "access": [
           "admin"
@@ -270,20 +256,6 @@ Content-Type: application/json
           "helperText": "Tap to select the end point for the survey.",
           "variant": "outlined",
           "label": "Take GPS End Point"
-        },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
-        "is_logic": {
-          "campus-zone": [
-            "Zone Alpha; ",
-            "Zone Charlie; "
-          ]
         },
         "initialValue": null,
         "access": [
@@ -1054,7 +1026,6 @@ Content-Type: application/json
           "landscape-elements",
           "related-survey-area"
         ],
-        "uidesign": "form",
         "label": "Survey Details",
         "description": "Here you will describe the survey session."
       },
@@ -1071,7 +1042,6 @@ Content-Type: application/json
           "take-photo",
           "element-notes"
         ],
-        "uidesign": "form",
         "label": "Description"
       },
       "FORM1SECTION2": {
@@ -1079,14 +1049,7 @@ Content-Type: application/json
           "take-photo-2",
           "journal"
         ],
-        "uidesign": "form",
         "label": "Journal",
-        "is_logic": {
-          "campus-zone": [
-            "Zone Beta; ",
-            "Zone Charlie; "
-          ]
-        }
       }
     },
     "viewsets": {

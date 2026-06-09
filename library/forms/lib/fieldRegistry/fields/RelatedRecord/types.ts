@@ -1,18 +1,16 @@
 import {
+  BaseFieldParametersSchema,
   relatedRecordFieldAvpEntrySchema,
   relatedRecordSelectorComponentParamsSchema,
 } from '@faims3/data-model';
 import z from 'zod';
 import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {FormFieldContextProps} from '../../../formModule/types';
 
 // ============================================================================
 // Component Specific Types & Schemas
 // ============================================================================
-export const relatedRecordPropsSchema = BaseFieldPropsSchema.merge(
+export const relatedRecordPropsSchema = BaseFieldParametersSchema.merge(
   relatedRecordSelectorComponentParamsSchema
 );
 

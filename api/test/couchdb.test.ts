@@ -25,6 +25,7 @@ PouchDB.plugin(PouchDBFind);
 import {
   Action,
   addProjectRole,
+  FieldDefinition,
   removeProjectRole,
   resourceRoles,
   Role,
@@ -36,7 +37,7 @@ import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
-  getProjectUIModel,
+  getUiSpecModel,
   getProjectById,
   getRolesForNotebook,
   getUserProjectsDetailed,
@@ -338,7 +339,7 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getProjectUIModel(projectID);
+      const retrieved = await getUiSpecModel(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
@@ -385,7 +386,7 @@ describe('notebook api', () => {
       uiSpecification.metadata.information.projectLeadLabel = 'Bob Bobalooba';
       uiSpecification.uiSpec.views['FORM1SECTION1'].label = 'Updated Label';
 
-      const newField = {
+      const newField: FieldDefinition = {
         'component-namespace': 'faims-custom',
         'component-name': 'BasicAutoIncrementer',
         'type-returned': 'faims-core::String',
@@ -398,11 +399,9 @@ describe('notebook api', () => {
           form_id: 'FORM1SECTION1',
           label: 'FeatureIDincrementor',
         },
-        validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
         meta: {
-          annotation_label: 'annotation',
-          annotation: true,
+          annotation: {include: true, label: 'annotation'},
           uncertainty: {
             include: false,
             label: 'uncertainty',
@@ -422,7 +421,7 @@ describe('notebook api', () => {
 
       const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const newUISpec = await getProjectUIModel(projectID);
+      const newUISpec = await getUiSpecModel(projectID);
       if (newUISpec) {
         expect(newUISpec.views['FORM1SECTION1'].label).to.equal(
           'Updated Label'

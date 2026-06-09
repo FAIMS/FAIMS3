@@ -13,7 +13,11 @@ import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
-import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
+import {
+  ACTIVATED_LABEL,
+  NOT_ACTIVATED_LABEL,
+  notebookListDataGridSx,
+} from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
 
 /**
@@ -94,6 +98,7 @@ export default function HeadingProjectGrid({
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
           mb: 2,
+          ...notebookListDataGridSx,
         }}
         getRowId={({projectId}) => projectId}
         hideFooter={true}
@@ -128,6 +133,7 @@ export default function HeadingProjectGrid({
           borderRadius: '4px',
           boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
           mb: 2,
+          ...notebookListDataGridSx,
         }}
         onRowClick={handleRowClick}
         getRowId={({projectId}) => projectId}

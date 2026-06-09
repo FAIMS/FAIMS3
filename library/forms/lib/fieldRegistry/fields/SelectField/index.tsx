@@ -42,7 +42,9 @@ import {
 import {useTheme} from '@mui/material/styles';
 import {useState, useEffect, useRef} from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
+import {ChoiceElementPropsSchema} from '../choiceFieldParams';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
@@ -54,21 +56,11 @@ import {
   useOtherOption,
 } from '../../../hooks/useOtherOption';
 
-const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
-  ElementProps: z.object({
-    options: z.array(
-      z.object({
-        value: z.string(),
-        label: z.string(),
-        key: z.string().optional(),
-      })
-    ),
-    enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(),
-  }),
+export const SelectFieldPropsSchema = BaseFieldParametersSchema.extend({
+  ElementProps: ChoiceElementPropsSchema,
   select_others: z.string().optional(),
 });
-type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
+export type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
 
 const valueSchema = (props: SelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);

@@ -1,10 +1,8 @@
 import {TextField as MuiTextField} from '@mui/material';
 import React from 'react';
 import z from 'zod';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -13,16 +11,18 @@ import FieldWrapper from '../wrappers/FieldWrapper';
  * Extended props schema for NumberField.
  * Supports both integer and floating-point number types.
  */
-const NumberFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const NumberFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Number type: 'integer' uses stepper, 'floating' allows decimals */
   numberType: z.enum(['integer', 'floating']).optional().default('integer'),
   /** Minimum allowed value (inclusive) */
   min: z.number().optional(),
   /** Maximum allowed value (inclusive) */
   max: z.number().optional(),
+  /** MUI input props; `type: 'number'` binds the native numeric input. */
+  InputProps: z.object({type: z.string().optional()}).passthrough().optional(),
 });
 
-type NumberFieldProps = z.infer<typeof NumberFieldPropsSchema>;
+export type NumberFieldProps = z.infer<typeof NumberFieldPropsSchema>;
 type NumberFieldFullProps = NumberFieldProps & FormFieldContextProps;
 
 /**

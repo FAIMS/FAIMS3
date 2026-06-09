@@ -44,7 +44,9 @@ import {
   TextField,
 } from '@mui/material';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
@@ -62,24 +64,11 @@ import {
 // Types & Schema
 // ============================================================================
 
-const ElementOptionSchema = z.object({
-  value: z.string(),
-  label: z.string(),
-  key: z.string().optional(),
+export const MultiSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
+  ElementProps: ChoiceElementPropsSchema,
 });
 
-const MultiSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
-  ElementProps: z.object({
-    options: z.array(ElementOptionSchema),
-    expandedChecklist: z.boolean().optional(),
-    exclusiveOptions: z.array(z.string()).optional(),
-    enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(), // Position of "Other" in the list
-  }),
-});
-
-type MultiSelectFieldProps = z.infer<typeof MultiSelectFieldPropsSchema>;
-type ElementOption = z.infer<typeof ElementOptionSchema>;
+export type MultiSelectFieldProps = z.infer<typeof MultiSelectFieldPropsSchema>;
 type FieldProps = MultiSelectFieldProps & FullFieldProps;
 
 // ============================================================================
@@ -87,7 +76,7 @@ type FieldProps = MultiSelectFieldProps & FullFieldProps;
 // ============================================================================
 
 interface ExpandedChecklistProps {
-  options: ElementOption[];
+  options: ChoiceOption[];
   value: string[];
   onChange: (values: string[]) => void;
   exclusiveOptions: string[];
@@ -107,7 +96,6 @@ const ExpandedChecklist = ({
   exclusiveOptions,
   disabled,
   enableOtherOption,
-  otherOptionPosition,
   otherText,
   onOtherTextChange,
   hasOtherSelected,
@@ -187,7 +175,7 @@ const ExpandedChecklist = ({
   );
 
   // Render a regular option component
-  const renderOption = (option: ElementOption) => (
+  const renderOption = (option: ChoiceOption) => (
     <FormControlLabel
       key={option.key || option.value}
       control={
@@ -258,7 +246,7 @@ const ExpandedChecklist = ({
 };
 
 interface MuiMultiSelectProps {
-  options: ElementOption[];
+  options: ChoiceOption[];
   value: string[];
   onChange: (values: string[]) => void;
   exclusiveOptions: string[];
@@ -279,7 +267,6 @@ const MuiMultiSelect = ({
   disabled,
   onBlur,
   enableOtherOption,
-  otherOptionPosition,
   otherText,
   onOtherTextChange,
   hasOtherSelected,
@@ -435,7 +422,7 @@ const MuiMultiSelect = ({
             );
 
             // Render a regular option MenuItem
-            const renderOptionMenuItem = (option: ElementOption) => (
+            const renderOptionMenuItem = (option: ChoiceOption) => (
               <MenuItem
                 key={option.key || option.value}
                 value={option.value}

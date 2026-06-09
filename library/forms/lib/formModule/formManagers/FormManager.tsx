@@ -1,4 +1,4 @@
-import type {UISpecification} from '@faims3/data-model';
+import type {UiSpecModel} from '@faims3/data-model';
 import {type ComponentProps} from 'react';
 import {InlineSectionDisplay} from '../sections/InlineSections';
 import {TabbedSectionDisplay} from '../sections/TabbedSections';
@@ -15,7 +15,7 @@ export interface FormManagerProps extends ComponentProps<any> {
   /** TanStack Form instance managing form state */
   form: FaimsForm;
   /** UI specification containing form structure and field definitions */
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   /** Configuration determining form mode and available features */
   config: FormManagerConfig;
   /** Visibility information - undefined means full visibility (disabling this

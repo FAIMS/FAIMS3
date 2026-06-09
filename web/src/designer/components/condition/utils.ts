@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {ChoiceElementProps, TemplatedStringProps} from '@faims3/forms';
 import {FieldType} from '../../state/initial';
 import {ConditionType, SelectableConditionOption} from '../../types/condition';
 import {isFieldUsedInCondition} from '../../domain/conditions/conditionReferences';
@@ -27,10 +28,9 @@ import {isFieldUsedInCondition} from '../../domain/conditions/conditionReference
  * @returns Human-readable label string.
  */
 export const getFieldLabel = (f: FieldType) => {
+  const params = f['component-parameters'] as TemplatedStringProps;
   return (
-    (f['component-parameters'].InputLabelProps &&
-      f['component-parameters'].InputLabelProps.label) ||
-    f['component-parameters'].label
+    (params.InputLabelProps && params.InputLabelProps.label) || params.label
   );
 };
 
@@ -154,7 +154,9 @@ export const findFieldDependencyReferences = (
   // Check for Templated String Fields using the deleted field
   for (const [fId, fieldDef] of Object.entries(scopedFields)) {
     if (fieldDef['component-name'] === 'TemplatedStringField') {
-      const template = fieldDef['component-parameters']?.template || '';
+      const template =
+        (fieldDef['component-parameters'] as TemplatedStringProps).template ||
+        '';
 
       if (template.includes(`{{${fieldName}}}`)) {
         const label = fieldDef['component-parameters']?.label ?? fId;
@@ -321,9 +323,11 @@ export function findInvalidConditionReferences(
     return invalidConditions;
   }
 
+  const elementProps = (
+    targetField['component-parameters'] as {ElementProps?: ChoiceElementProps}
+  ).ElementProps;
   const validOptions: string[] = (
-    (targetField['component-parameters'].ElementProps?.options ??
-      []) as SelectableConditionOption[]
+    (elementProps?.options ?? []) as SelectableConditionOption[]
   ).map(opt => opt.value);
 
   // Check if a condition is using a value that no longer exists

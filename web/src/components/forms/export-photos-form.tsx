@@ -1,7 +1,7 @@
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {GetExportNotebookResponse, ProjectUIViewsets} from '@faims3/data-model';
+import {GetExportNotebookResponse} from '@faims3/data-model';
 import {ChevronRight} from 'lucide-react';
 import {useState} from 'react';
 import {z} from 'zod';
@@ -23,7 +23,7 @@ const ExportPhotosForm = () => {
     return null;
   }
 
-  const viewSets = data.uiSpecification.uiSpec.viewsets as ProjectUIViewsets;
+  const viewSets = data.uiSpecification.uiSpec.viewsets;
 
   const singleFormFields: Field[] = [
     {

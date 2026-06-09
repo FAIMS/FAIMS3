@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {TextFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {fieldUpdated} from '../../store/slices/uiSpec';
@@ -35,10 +36,13 @@ interface SpeechSettingsEditorProps {
 /**
  * Helper to get speech settings from a field's component-parameters
  */
-export const getSpeechSettings = (field: FieldType): SpeechSettings => ({
-  enableSpeech: field['component-parameters'].enableSpeech ?? true,
-  speechAppendMode: field['component-parameters'].speechAppendMode ?? false,
-});
+export const getSpeechSettings = (field: FieldType): SpeechSettings => {
+  const params = field['component-parameters'] as TextFieldProps;
+  return {
+    enableSpeech: params.enableSpeech ?? true,
+    speechAppendMode: params.speechAppendMode ?? false,
+  };
+};
 
 /**
  * Helper to update speech settings in a field's component-parameters

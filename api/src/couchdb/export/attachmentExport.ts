@@ -5,7 +5,7 @@ import {
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {getDataDb, getNanoDataDb} from '..';
-import {getProjectUIModel} from '../notebooks';
+import {getUiSpecModel} from '../notebooks';
 import {
   MAX_FIELD_ID_LENGTH,
   MAX_HRID_LENGTH,
@@ -65,7 +65,7 @@ export const appendAttachmentsToArchive = async ({
   };
 
   // Get UI spec to know all valid view IDs
-  const uiSpec = await getProjectUIModel(projectId);
+  const uiSpec = await getUiSpecModel(projectId);
   const allViewIds = Object.keys(uiSpec.viewsets);
 
   // Initialize per-view counts

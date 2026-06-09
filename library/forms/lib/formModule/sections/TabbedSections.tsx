@@ -1,7 +1,7 @@
 import {
   getFieldLabel,
   getFieldsForView,
-  type UISpecification,
+  type UiSpecModel,
 } from '@faims3/data-model';
 import {
   Box,
@@ -115,10 +115,7 @@ const scrollToElement = (element: HTMLElement | null): void => {
  * @param sectionId - The identifier of the section/view
  * @returns The display label for the section
  */
-const getSectionLabel = (
-  uiSpec: UISpecification,
-  sectionId: string
-): string => {
+const getSectionLabel = (uiSpec: UiSpecModel, sectionId: string): string => {
   return uiSpec.views[sectionId]?.label ?? sectionId;
 };
 
@@ -137,7 +134,7 @@ const getSectionLabel = (
 const groupErrorsBySection = (
   errors: Record<string, string[]>,
   sections: string[],
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): Record<string, string[]> => {
   const result: Record<string, string[]> = {};
 
@@ -209,7 +206,7 @@ const getStepColor = (
 const checkHasErrors = (
   sectionId: string,
   errors: Record<string, string[]>,
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): boolean => {
   const fields = getFieldsForView(uiSpec, sectionId);
   return Object.keys(errors).some(errorField => fields.includes(errorField));
@@ -230,7 +227,7 @@ const checkHasErrors = (
 const checkSectionVisited = (
   sectionId: string,
   fieldMeta: Record<string, {isTouched: boolean; errors: unknown[]}>,
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): boolean => {
   const fields = getFieldsForView(uiSpec, sectionId);
   return fields.some(fieldName => fieldMeta[fieldName]?.isTouched === true);
@@ -293,7 +290,7 @@ interface ErrorSummaryPanelProps {
   /** Map of field names to their validation error messages */
   errors: Record<string, string[]>;
   /** UI specification for field label lookups */
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   /** Currently active/visible section ID */
   activeSection: string;
   /** All section IDs in display order */
@@ -628,7 +625,7 @@ interface TabbedSectionDisplayProps {
   /** Unique identifier for this form within the viewsets */
   formId: string;
   /** UI specification defining form structure, fields, and views */
-  spec: UISpecification;
+  spec: UiSpecModel;
   /** Configuration for the form manager (renderers, validators, etc.) */
   config: FormManagerConfig;
   /**

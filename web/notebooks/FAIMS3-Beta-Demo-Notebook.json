@@ -1670,7 +1670,6 @@
           "date-and-time-now"
         ],
         "label": "Input Fields",
-        "uidesign": "form",
         "description": "We can collect data about more than one thing. You decide what it's called, and what information you need to collect about that thing. "
       },
       "FORM1SECTION2": {
@@ -1683,7 +1682,6 @@
           "checkbox"
         ],
         "label": "Structured Data",
-        "uidesign": "form",
         "description": "We can also store Structured and controlled data."
       },
       "FORM1SECTION3": {
@@ -1693,7 +1691,6 @@
           "take-photo-2"
         ],
         "label": "Metadata",
-        "uidesign": "form",
         "description": "FAIMS3 offers input options for annotation and certain when the options are structured, but the data are fuzzy."
       },
       "FORM1SECTION5": {
@@ -1707,13 +1704,11 @@
           "colour-picker",
           "qr-code-demonstration-button-mobile-device-only"
         ],
-        "label": "Special Fields",
-        "uidesign": "form"
+        "label": "Special Fields"
       },
       "FORM1SECTION7": {
         "fields": ["html-text-2", "html-text-6", "html-text-9"],
-        "label": "Views",
-        "uidesign": "form"
+        "label": "Views"
       },
       "FORM1SECTION8": {
         "fields": [
@@ -1729,8 +1724,7 @@
           "html-text-15",
           "controlled-number"
         ],
-        "label": "Sync",
-        "uidesign": "form"
+        "label": "Sync"
       },
       "FORM2SECTION1": {
         "fields": [
@@ -1740,19 +1734,16 @@
           "thing-2-incrementer",
           "is-related-to"
         ],
-        "label": "Identifiers",
-        "uidesign": "form"
+        "label": "Identifiers"
       },
       "FORM2SECTION2": {
         "fields": ["parent-child-relationships", "linking-relationships"],
-        "label": "Relationships",
-        "uidesign": "form"
+        "label": "Relationships"
       }
     },
     "viewsets": {
       "FORM1": {
         "label": "Thing 1",
-        "submit_label": "Save and New",
         "views": [
           "FORM1SECTION1",
           "FORM1SECTION2",

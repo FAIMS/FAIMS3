@@ -29,7 +29,7 @@ Links records together via parent-child or linked relationships. Supports creati
 ### Props Schema
 
 ```typescript
-const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
+const relatedRecordPropsSchema = BaseFieldParametersSchema.extend({
   related_type: z.string(),
   relation_type: z.enum(['faims-core::Child', 'faims-core::Linked']),
   multiple: z.boolean().optional().default(false),
@@ -239,11 +239,6 @@ const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
         "relation_linked_vocabPair": [],
         "protection": "none"
     },
-    "validationSchema": [
-        [
-            "yup.string"
-        ]
-    ],
     "initialValue": "",
     "meta": {
         "annotation": {

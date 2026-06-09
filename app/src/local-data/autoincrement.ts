@@ -21,7 +21,7 @@
 import {
   getFieldToIdsMap,
   ProjectID,
-  ProjectUIFields,
+  UiSpecFields,
   safeWriteDocument,
 } from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
@@ -285,7 +285,7 @@ export async function getAutoincrementReferencesForProject(
   const viewsetMap = getFieldToIdsMap(uiSpec);
   const references: AutoIncrementReference[] = [];
 
-  const fields = (uiSpec?.fields ?? []) as ProjectUIFields;
+  const fields = (uiSpec?.fields ?? []) as UiSpecFields;
   for (const [fieldId, fieldDetails] of Object.entries(fields)) {
     if (fieldDetails['component-name'] === 'BasicAutoIncrementer') {
       // Default

@@ -40,7 +40,6 @@ import {
   FAIMSAttachment,
   FAIMSTypeName,
   ProjectID,
-  ProjectUIModel,
   Record,
   RecordDbType,
   RecordID,
@@ -56,6 +55,7 @@ import {
   getIdsByFieldName,
   HridFieldMap,
 } from '../uiSpecification';
+import {UiSpecModel} from '../uiSpecification/types';
 import {createHash} from './utils';
 
 // INDEX NAMES
@@ -448,7 +448,7 @@ export async function getHRID({
   dataDb,
 }: {
   revision: Revision;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<string | null> {
   let hridFieldName = undefined;
@@ -577,7 +577,7 @@ export async function fetchAndHydrateRecord({
   recordId: string;
   revisionId?: string;
   dataDb: DataDbType;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Promise<RecordMetadata | undefined> {
   // Grab field map for HRID
   const hridFieldMap = getHridFieldMap(uiSpecification);
@@ -675,7 +675,7 @@ export async function listRecordMetadata({
   projectId: ProjectID;
   recordIds?: RecordID[];
   hydrate?: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -809,7 +809,7 @@ export async function hydrateIndividualRecord({
 }: {
   record: UnhydratedRecord;
   hridFieldMap?: HridFieldMap;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata> {
   // Only needs to be done if not provided

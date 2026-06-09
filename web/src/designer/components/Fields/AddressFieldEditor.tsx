@@ -21,6 +21,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {AddressFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -39,7 +40,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const params = field['component-parameters'];
+  const params = field['component-parameters'] as AddressFieldProps;
   const state: AddressFieldConfig = {
     enableAutoSuggestion: params.enableAutoSuggestion ?? true,
     allowFullAddressManualEntry: params.allowFullAddressManualEntry ?? false,
@@ -47,9 +48,9 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   const updateField = (newState: AddressFieldConfig) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].enableAutoSuggestion =
-      newState.enableAutoSuggestion;
-    newField['component-parameters'].allowFullAddressManualEntry =
+    const newParams = newField['component-parameters'] as AddressFieldProps;
+    newParams.enableAutoSuggestion = newState.enableAutoSuggestion;
+    newParams.allowFullAddressManualEntry =
       newState.allowFullAddressManualEntry;
     dispatch(fieldUpdated({fieldName, newField}));
   };

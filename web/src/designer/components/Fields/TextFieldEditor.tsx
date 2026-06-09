@@ -21,6 +21,7 @@ import {
   Radio,
   RadioGroup,
 } from '@mui/material';
+import {TextFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
@@ -36,16 +37,14 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const dispatch = useAppDispatch();
 
   const initVal = field['initialValue'] as string | number;
+  const params = field['component-parameters'] as TextFieldProps;
   // Long answer = either the unified shape (TextField / legacy FAIMSTextField
   // with `multiline: true`) or the un-migrated legacy `MultipleTextField`
   // (where multiline was implicit). Treat all of those as long.
   const isLongAnswer =
-    field['component-parameters'].multiline === true ||
+    params.multiline === true ||
     field['component-name'] === 'MultipleTextField';
-  const rows =
-    (field['component-parameters'].rows as number | undefined) ||
-    field['component-parameters'].InputProps?.rows ||
-    4;
+  const rows = params.rows || params.InputProps?.rows || 4;
 
   const updateField = (updater: (nextField: typeof field) => void) => {
     const newField = withUpdatedField(field, nextField => {

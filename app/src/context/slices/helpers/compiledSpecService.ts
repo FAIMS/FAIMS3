@@ -12,14 +12,18 @@
  * function which takes the server and project and combines them to form an ID.
  */
 
-import {compileUiSpecConditionals, NotebookUiSpec} from '@faims3/data-model';
+import {
+  CompiledNotebookUiSpec,
+  compileUiSpecConditionals,
+  NotebookUiSpec,
+} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
 class CompiledUiSpecService {
   private static instance: CompiledUiSpecService;
-  private specs: Map<string, NotebookUiSpec> = new Map();
+  private specs: Map<string, CompiledNotebookUiSpec> = new Map();
 
   private constructor() {}
 
@@ -42,9 +46,10 @@ class CompiledUiSpecService {
 
   // Create or get existing database instance
   compileAndRegisterSpec(id: string, spec: NotebookUiSpec) {
-    const copy: NotebookUiSpec = JSON.parse(JSON.stringify(spec));
+    let copy: NotebookUiSpec = JSON.parse(JSON.stringify(spec));
     compileUiSpecConditionals(copy);
-    this.specs.set(id, copy);
+    // TODO this is not the tidiest implementation - the spec for the compile function
+    this.specs.set(id, copy as CompiledNotebookUiSpec);
   }
 }
 

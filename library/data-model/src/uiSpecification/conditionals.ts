@@ -18,7 +18,7 @@
  *
  */
 
-import {ConditionalExpression, RecordValues} from '../types';
+import {ConditionalExpression, RecordValues} from './types';
 
 // Create a register of compiler functions
 type FieldCompilerFn = (
@@ -29,23 +29,10 @@ const registerCompiler = (operator: string, compiler: FieldCompilerFn) => {
   compileFns[operator] = compiler;
 };
 
-// compile an is_logic expression for backward compatibility
-// return a comparisonFn
-export const compileIsLogic = (
-  isLogic: {[field_name: string]: any} | undefined
-) => {
-  return (values: RecordValues) => {
-    for (const field in isLogic) {
-      if (!isLogic[field].includes(values[field])) return false;
-    }
-    return true;
-  };
-};
-
 // return an array of the field names that are referenced
 // in this expression
 export const getDependantFields = (
-  expression: ConditionalExpression | undefined
+  expression: ConditionalExpression | null | undefined
 ): Set<string> => {
   if (expression === undefined || expression === null) return new Set();
   else if (expression.field !== undefined) return new Set([expression.field]);
@@ -66,7 +53,7 @@ export const getDependantFields = (
 // compile an expression into a function that will evaluate
 // that expression given a set of field values
 export const compileExpression = (
-  expression: ConditionalExpression | undefined
+  expression: ConditionalExpression | null | undefined
 ) => {
   // if we don't get an expression, then this field/view has no condition
   // so return a fn that will always return true

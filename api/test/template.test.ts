@@ -288,9 +288,10 @@ describe('template API tests', () => {
 
     const detail = await getATemplate(app, template._id);
     expect(detail.uiSpecification).to.be.ok;
-    expect(JSON.stringify(detail.uiSpecification)).to.equal(
-      JSON.stringify(nb.uiSpecification)
-    );
+    // Deep-equal (order-insensitive): validating the spec through the data-model
+    // zod schemas can reorder object keys (modelled keys first, then
+    // passthrough), but the content must be identical.
+    expect(detail.uiSpecification).to.deep.equal(nb.uiSpecification);
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
@@ -415,11 +416,11 @@ describe('template API tests', () => {
 
     // get the specific new template
     await getATemplate(app, templateId1).then(template => {
-      // Check all properties match
+      // Check all properties match. Deep-equal is order-insensitive: validating
+      // the spec through the data-model zod schemas can reorder object keys
+      // (modelled keys first, then passthrough), but content must be identical.
       expect(template._id).to.equal(templateId1);
-      expect(JSON.stringify(template.uiSpecification)).to.equal(
-        JSON.stringify(nb.uiSpecification)
-      );
+      expect(template.uiSpecification).to.deep.equal(nb.uiSpecification);
 
       // should be version 1
       expect(template.version).to.equal(1);
@@ -451,11 +452,9 @@ describe('template API tests', () => {
 
     // get the specific new template
     await getATemplate(app, templateId2).then(template => {
-      // Check all properties match
+      // Check all properties match (order-insensitive deep-equal; see above).
       expect(template._id).to.equal(templateId2);
-      expect(JSON.stringify(template.uiSpecification)).to.equal(
-        JSON.stringify(nb.uiSpecification)
-      );
+      expect(template.uiSpecification).to.deep.equal(nb.uiSpecification);
 
       // should be version 1
       expect(template.version).to.equal(1);

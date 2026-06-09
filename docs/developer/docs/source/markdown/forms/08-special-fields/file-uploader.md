@@ -31,7 +31,7 @@ Drag-and-drop file upload field supporting multiple file types with size and cou
 ### Props Schema
 
 ```typescript
-const fileUploaderPropsSchema = BaseFieldPropsSchema.extend({
+const fileUploaderPropsSchema = BaseFieldParametersSchema.extend({
   multiple: z.boolean().optional().default(true),
   maximum_number_of_files: z.number().optional().default(0),
   maximum_file_size: z.number().optional(),

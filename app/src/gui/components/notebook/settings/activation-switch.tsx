@@ -51,7 +51,7 @@ export default function NotebookActivationSwitch({
   };
 
   return (
-    <Box sx={{my: 1}}>
+    <Box sx={{display: 'flex', alignItems: 'center', height: '100%'}}>
       <Button
         onClick={handleOpen}
         color="primary"
