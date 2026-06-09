@@ -80,7 +80,7 @@ export default function SyncModeHelpDialog({
             sx: {
               borderRadius: 2,
               p: 1,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+              boxShadow: theme.shadows[8],
               position: 'relative',
             },
           },
@@ -115,11 +115,17 @@ export default function SyncModeHelpDialog({
           <Button
             onClick={() => setOpen(false)}
             variant="contained"
+            disableElevation
             sx={{
+              backgroundColor: theme.palette.dialogButton.confirm,
+              color: theme.palette.dialogButton.dialogText,
               fontWeight: 'bold',
               textTransform: 'none',
               fontSize: isMobile ? '0.85rem' : '0.95rem',
               px: 2.5,
+              '&:hover': {
+                backgroundColor: theme.palette.dialogButton.hoverBackground,
+              },
             }}
           >
             Close

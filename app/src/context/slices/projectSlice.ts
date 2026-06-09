@@ -2281,10 +2281,11 @@ export function createSyncStateHandlers(
       syncStateService.setActive(serverId, projectId);
     },
     change: info => {
+      const change = info.change;
       syncStateService.recordChange(serverId, projectId, {
-        pending: info.change.pending ?? 0,
-        docsRead: info.change.docs_read,
-        docsWritten: info.change.docs_written,
+        pending: change.pending ?? 0,
+        docsRead: change.docs_read ?? 0,
+        docsWritten: change.docs_written ?? 0,
         direction: info.direction,
       });
     },

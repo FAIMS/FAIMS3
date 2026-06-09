@@ -166,9 +166,13 @@ export default function NotebookSyncSwitch({
             <DialogActions className="dialog-actions-spread">
               <Button
                 variant="contained"
+                disableElevation
                 sx={{
                   backgroundColor: theme.palette.dialogButton.cancel,
                   color: theme.palette.dialogButton.dialogText,
+                  '&:hover': {
+                    backgroundColor: theme.palette.text.primary,
+                  },
                 }}
                 onClick={handleClose}
                 autoFocus
@@ -177,11 +181,14 @@ export default function NotebookSyncSwitch({
               </Button>
               <Button
                 variant="contained"
-                sx={{
-                  backgroundColor: theme.palette.dialogButton?.confirm,
-                  color: theme.palette.dialogButton.dialogText,
-                }}
                 disableElevation
+                sx={{
+                  backgroundColor: theme.palette.dialogButton.confirm,
+                  color: theme.palette.dialogButton.dialogText,
+                  '&:hover': {
+                    backgroundColor: theme.palette.dialogButton.hoverBackground,
+                  },
+                }}
                 onClick={handleConfirm}
               >
                 Confirm

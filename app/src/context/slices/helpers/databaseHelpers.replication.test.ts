@@ -1,6 +1,9 @@
 import {describe, expect, it, vi} from 'vitest';
 import PouchDB from 'pouchdb-browser';
-import {createPouchDbReplication} from './databaseHelpers';
+import {
+  createPouchDbReplication,
+  normalizeChangeSyncInfo,
+} from './databaseHelpers';
 import {PouchDBWrapper} from './pouchDBWrapper';
 
 vi.mock('pouchdb-browser', () => {
@@ -9,6 +12,34 @@ vi.mock('pouchdb-browser', () => {
   return {
     default: {sync, replicate},
   };
+});
+
+describe('normalizeChangeSyncInfo', () => {
+  const replicateChange = {
+    ok: true,
+    start_time: '2025-01-01T00:00:00.000Z',
+    docs_read: 2,
+    docs_written: 1,
+    doc_write_failures: 0,
+    errors: [],
+    last_seq: 3,
+    pending: 4,
+  };
+
+  it('wraps one-way replicate() change events', () => {
+    expect(normalizeChangeSyncInfo(replicateChange, 'push')).toEqual({
+      direction: 'push',
+      change: replicateChange,
+    });
+  });
+
+  it('passes through two-way sync() change events', () => {
+    const syncChange = {
+      direction: 'pull' as const,
+      change: replicateChange,
+    };
+    expect(normalizeChangeSyncInfo(syncChange, 'push')).toEqual(syncChange);
+  });
 });
 
 describe('createPouchDbReplication', () => {

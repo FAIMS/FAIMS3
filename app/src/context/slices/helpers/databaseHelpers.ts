@@ -158,6 +158,9 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
 /**
  * Information about replication progress/completion
  */
+/** Progress payload shared by PouchDB replicate() change events. */
+export type ReplicationChangeStats = ChangeSyncInfo['change'];
+
 export interface ChangeSyncInfo {
   /** Which sync direction is this? */
   direction: 'push' | 'pull';
@@ -263,6 +266,29 @@ export type PouchReplicationHandle =
   | PouchDB.Replication.Replication<{}>;
 
 /**
+ * Normalise PouchDB change events to the shape produced by two-way sync.
+ *
+ * `PouchDB.sync` emits `{direction, change}`, while one-way `PouchDB.replicate`
+ * emits the change stats object directly (no nested `change` property).
+ */
+export function normalizeChangeSyncInfo(
+  info: ChangeSyncInfo | ReplicationChangeStats,
+  defaultDirection: 'push' | 'pull'
+): ChangeSyncInfo {
+  if ('direction' in info && info.change) {
+    return {
+      direction: info.direction ?? defaultDirection,
+      change: info.change,
+    };
+  }
+
+  return {
+    direction: defaultDirection,
+    change: info as ReplicationChangeStats,
+  };
+}
+
+/**
  * Attach replication event handlers to a sync/replicate handle.
  *
  * Shared by all sync modes so callers register handlers once regardless of
@@ -276,14 +302,18 @@ export type PouchReplicationHandle =
  */
 function attachReplicationEventHandlers(
   replication: PouchReplicationHandle,
-  eventHandlers: SyncEventHandlers
+  eventHandlers: SyncEventHandlers,
+  defaultDirection: 'push' | 'pull'
 ): PouchReplicationHandle {
   let handle: PouchReplicationHandle = replication;
   // Attach all provided event handlers — see note above on @types/pouchdb gaps.
   if (eventHandlers.change) {
+    const onChange = eventHandlers.change;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    handle = handle.on('change', eventHandlers.change);
+    handle = handle.on('change', (info: ChangeSyncInfo | ReplicationChangeStats) => {
+      onChange(normalizeChangeSyncInfo(info, defaultDirection));
+    });
   }
   if (eventHandlers.paused) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -395,7 +425,14 @@ export function createPouchDbReplication<Content extends {}>({
       break;
   }
 
-  return attachReplicationEventHandlers(replication, eventHandlers);
+  const defaultDirection: 'push' | 'pull' =
+    syncMode === 'pull' ? 'pull' : 'push';
+
+  return attachReplicationEventHandlers(
+    replication,
+    eventHandlers,
+    defaultDirection
+  );
 }
 
 /**
