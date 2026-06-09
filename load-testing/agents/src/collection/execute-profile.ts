@@ -140,21 +140,141 @@ async function runToggle(
   }
 }
 
+function sectionNameMatcher(
+  section: string,
+  match: 'label' | 'id'
+): string | RegExp {
+  if (match === 'id') {
+    return new RegExp(`^${escapeRegExp(section)}$`, 'i');
+  }
+  return section;
+}
+
+function sectionLabelMatches(
+  label: string | null | undefined,
+  section: string,
+  match: 'label' | 'id'
+): boolean {
+  if (!label) {
+    return false;
+  }
+  const normalized = label.replace(/\s+/g, ' ').trim();
+  if (match === 'id') {
+    return new RegExp(`^${escapeRegExp(section)}$`, 'i').test(normalized);
+  }
+  return normalized === section || normalized.includes(section);
+}
+
+async function readActiveSectionLabel(page: Page): Promise<string | null> {
+  const selectedTab = page.locator('[role="tab"][aria-selected="true"]').first();
+  if (await selectedTab.count()) {
+    return (await selectedTab.innerText()).replace(/\s+/g, ' ').trim();
+  }
+
+  const mobileHeading = page.getByRole('heading', {level: 4}).first();
+  if (await mobileHeading.isVisible().catch(() => false)) {
+    return (await mobileHeading.innerText()).replace(/\s+/g, ' ').trim();
+  }
+
+  return null;
+}
+
+async function isOnTargetSection(
+  page: Page,
+  section: string,
+  match: 'label' | 'id'
+): Promise<boolean> {
+  const tabName = sectionNameMatcher(section, match);
+  const tab = page.getByRole('tab', {name: tabName}).first();
+  if (await tab.isVisible().catch(() => false)) {
+    const selected = await tab.getAttribute('aria-selected');
+    if (selected === 'true') {
+      return true;
+    }
+  }
+
+  const activeLabel = await readActiveSectionLabel(page);
+  return sectionLabelMatches(activeLabel, section, match);
+}
+
+async function clickMobileSectionStep(
+  page: Page,
+  direction: 'next' | 'back'
+): Promise<boolean> {
+  const button = page
+    .getByRole('button', {name: direction === 'next' ? /^Next$/i : /^Back$/i})
+    .first();
+
+  if (!(await button.isVisible().catch(() => false))) {
+    return false;
+  }
+  if (await button.isDisabled()) {
+    return false;
+  }
+
+  await button.click();
+  await page.waitForTimeout(300);
+  return true;
+}
+
+const MAX_MOBILE_SECTION_STEPS = 20;
+
+async function navigateViaMobileStepper(
+  page: Page,
+  section: string,
+  match: 'label' | 'id',
+  direction: 'next' | 'back',
+  deadline: number
+): Promise<boolean> {
+  for (let i = 0; i < MAX_MOBILE_SECTION_STEPS; i += 1) {
+    if (Date.now() >= deadline) {
+      return false;
+    }
+    if (await isOnTargetSection(page, section, match)) {
+      return true;
+    }
+    if (!(await clickMobileSectionStep(page, direction))) {
+      return false;
+    }
+  }
+
+  return isOnTargetSection(page, section, match);
+}
+
 async function runNavigateSection(
   page: Page,
   step: Extract<CollectionStep, {action: 'navigate_section'}>,
   timeoutMs: number
 ): Promise<void> {
   const match = step.match ?? 'label';
-  const tabName =
-    match === 'id'
-      ? new RegExp(`^${escapeRegExp(step.section)}$`, 'i')
-      : step.section;
+  const tabName = sectionNameMatcher(step.section, match);
+  const deadline = Date.now() + timeoutMs;
+
+  if (await isOnTargetSection(page, step.section, match)) {
+    return;
+  }
 
   const tab = page.getByRole('tab', {name: tabName}).first();
-  await tab.waitFor({state: 'visible', timeout: timeoutMs});
-  await tab.click();
-  await page.waitForTimeout(300);
+  if (await tab.isVisible().catch(() => false)) {
+    await tab.click();
+    await page.waitForTimeout(300);
+    if (await isOnTargetSection(page, step.section, match)) {
+      return;
+    }
+  }
+
+  if (
+    await navigateViaMobileStepper(page, step.section, match, 'next', deadline)
+  ) {
+    return;
+  }
+  if (
+    await navigateViaMobileStepper(page, step.section, match, 'back', deadline)
+  ) {
+    return;
+  }
+
+  throw new Error(`timeout navigating to section "${step.section}"`);
 }
 
 async function runScrollToField(

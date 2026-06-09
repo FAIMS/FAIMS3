@@ -37,7 +37,7 @@ For S3-delivered plans, `run-load-test.sh` inlines profile references before upl
 | `fill` | Text/number input in `#field-{field}` |
 | `select` | MUI dropdown — `option` matches label or value |
 | `toggle` | Checkbox in field container; use `option` to match a labelled checkbox/radio (e.g. MultiSelect checklist) |
-| `navigate_section` | Click a section tab (`match`: `label` or `id`) |
+| `navigate_section` | Go to a form section (`match`: `label` or `id`). Uses desktop tabs when visible; on narrow viewports (default agent width 393px) the app shows a mobile Next/Back stepper instead — agents handle both layouts. |
 | `scroll_to_field` | Scroll to `#field-{field}` |
 | `wait` | Fixed delay (`ms`) |
 | `wait_save` | Wait for save indicator |
