@@ -1010,27 +1010,28 @@ export const roleDetails: Record<Role, RoleDetails> = {
   // Project roles
   [Role.PROJECT_ADMIN]: {
     name: 'Administrator',
-    description:
-      'Full control over a specific project, including deletion and admin user management',
+    description: 'Can delete the survey and manage any admin users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_MANAGER]: {
     name: 'Manager',
     description:
-      'Can manage project settings, invitations and all data within a project',
+      'Can create survey invites; edit survey roles; manage survey settings; open and close the survey; cannot delete the survey.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
     name: 'Contributor',
-    description: 'Can view all data within a project and contribute their own',
+    description:
+      'Can view and edit any survey responses created by any user (including their own).',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_GUEST]: {
     name: 'Guest',
-    description: 'Can view only their own contributions to a project',
+    description:
+      "Can create and edit their own survey response; cannot view or edit anyone else's responses.",
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },

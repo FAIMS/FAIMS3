@@ -41,6 +41,14 @@ export function CreateProjectInviteForm({
     return <ErrorComponent error="Not authenticated" />;
   }
 
+  // Order least access (top) → most access (bottom).
+  const projectRoleOrder: Role[] = [
+    Role.PROJECT_GUEST,
+    Role.PROJECT_CONTRIBUTOR,
+    Role.PROJECT_MANAGER,
+    Role.PROJECT_ADMIN,
+  ];
+
   const roleOptions = useMemo(() => {
     return Object.entries(roleDetails)
       .filter(
@@ -56,7 +64,16 @@ export function CreateProjectInviteForm({
             }),
           })
       )
-      .map(([value, {name: label}]) => ({label, value}));
+      .sort(
+        ([a], [b]) =>
+          projectRoleOrder.indexOf(a as Role) -
+          projectRoleOrder.indexOf(b as Role)
+      )
+      .map(([value, {name: label, description}]) => ({
+        label,
+        value,
+        description,
+      }));
   }, [user, projectId]);
 
   const fields: Field[] = [
