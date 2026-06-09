@@ -1,10 +1,10 @@
 import React from 'react';
 import z from 'zod';
 import {
-  BaseFieldProps,
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+  BaseFieldParameters,
+  BaseFieldParametersSchema,
+} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
@@ -23,7 +23,7 @@ import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
  * onto top-level `rows` and sets `multiline: true`, so once a notebook is
  * migrated this back-compat path is dormant.
  */
-const TextFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const TextFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Enable speech-to-text input (default: true) */
   enableSpeech: z.boolean().optional().default(true),
   /** Whether to append speech to existing text or replace */
@@ -40,7 +40,7 @@ const TextFieldPropsSchema = BaseFieldPropsSchema.extend({
   InputProps: z.object({rows: z.number().optional()}).optional(),
 });
 
-type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;
+export type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;
 
 /**
  * Unified text field component with optional speech-to-text.
@@ -78,7 +78,7 @@ const TextField: React.FC<TextFieldProps & FormFieldContextProps> = ({
  * Generate a Zod schema for validating the field value.
  * Adds minimum length constraint when field is required.
  */
-const textFieldValueSchema = (props: BaseFieldProps) => {
+const textFieldValueSchema = (props: BaseFieldParameters) => {
   if (props.required) {
     return z.string().min(1, {message: 'This field is required'});
   }
@@ -131,7 +131,7 @@ const EmailField: React.FC<TextFieldProps & FormFieldContextProps> = ({
  * Generate a Zod schema for validating the email field value.
  * Includes email format validation and optional required constraint.
  */
-const emailValueSchema = (props: BaseFieldProps) => {
+const emailValueSchema = (props: BaseFieldParameters) => {
   // If not required, allow empty string
   if (!props.required) {
     // Use a union to allow either valid email or empty string

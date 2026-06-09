@@ -737,7 +737,6 @@
           "landscape-elements",
           "related-survey-area"
         ],
-        "uidesign": "form",
         "label": "Survey Details",
         "description": "Here you will describe the survey session."
       },
@@ -754,16 +753,11 @@
           "take-photo",
           "element-notes"
         ],
-        "uidesign": "form",
         "label": "Description"
       },
       "FORM1SECTION2": {
         "fields": ["take-photo-2", "journal"],
-        "uidesign": "form",
-        "label": "Journal",
-        "is_logic": {
-          "campus-zone": ["Zone Beta; ", "Zone Charlie; "]
-        }
+        "label": "Journal"
       }
     },
     "viewsets": {

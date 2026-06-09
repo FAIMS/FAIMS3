@@ -1,4 +1,4 @@
-import {UISpecification} from '@faims3/data-model';
+import {UiSpecModel} from '@faims3/data-model';
 import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
@@ -13,7 +13,7 @@ import {Typography} from '@mui/material';
 export const InlineSectionDisplay: React.FC<{
   form: FaimsForm;
   formId: string;
-  spec: UISpecification;
+  spec: UiSpecModel;
   config: FormManagerConfig;
   /** Visibility information - undefined means full visibility (disabling this
    * feature) */

@@ -44,7 +44,8 @@ import {
 } from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
-import {BaseFieldProps, FormFieldContextProps} from '../../../formModule/types';
+import {BaseFieldParameters} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -463,7 +464,7 @@ const LinkExistingDialog = ({
 // ============================================================================
 
 const RelatedRecordFieldPreview = (
-  props: BaseFieldProps & FormFieldContextProps
+  props: BaseFieldParameters & FormFieldContextProps
 ) => {
   const typedProps = props as FullRelatedRecordFieldProps;
   const relatedRecordTypeLabel = typedProps.related_type ?? 'Record';
@@ -973,7 +974,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
 // Entry: preview uses static placeholders; runtime wraps the editor in
 // FieldWrapper + validation errors.
-const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
+const RelatedRecordField = (
+  props: BaseFieldParameters & FormFieldContextProps
+) => {
   if (props.config.mode === 'preview') {
     return <RelatedRecordFieldPreview {...props} />;
   } else {

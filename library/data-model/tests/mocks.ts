@@ -10,12 +10,7 @@ import {
   initDataDB,
   upsertFAIMSData,
 } from '../src/data_storage';
-import {
-  DatabaseInterface,
-  ProjectID,
-  ProjectUIModel,
-  Record,
-} from '../src/types';
+import {DatabaseInterface, ProjectID, UiSpecModel, Record} from '../src/types';
 
 const databaseList: any = {};
 
@@ -73,7 +68,7 @@ export const sampleUiSpecForViewId = ({
 }: {
   viewId: string;
   hridFieldId?: 'age' | 'name';
-}): ProjectUIModel => {
+}): UiSpecModel => {
   return {
     fields: {
       name: {
@@ -190,7 +185,7 @@ export const createNRecords = async (
   project_id: string,
   viewId: string,
   n: number
-): Promise<ProjectUIModel> => {
+): Promise<UiSpecModel> => {
   for (let i = 0; i < n; i++) {
     await createRecord(project_id, viewId, {name: `Bob ${i}`, age: i});
   }

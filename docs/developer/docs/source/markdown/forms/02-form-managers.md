@@ -9,7 +9,7 @@ classDiagram
     class FormManager {
         +formName: string
         +form: FaimsForm
-        +uiSpec: ProjectUIModel
+        +uiSpec: UiSpecModel
         +config: FormManagerConfig
         +fieldVisibilityMap: FieldVisibilityMap
         +render()
@@ -28,7 +28,7 @@ classDiagram
 
     class PreviewFormManager {
         +formName: string
-        +uiSpec: ProjectUIModel
+        +uiSpec: UiSpecModel
         +layout: 'inline' | 'tabs'
     }
 
@@ -46,7 +46,7 @@ The base rendering component. Receives a configured TanStack Form instance and r
 | -------------------- | --------------------------------- | ------------------------------ |
 | `formName`           | `string`                          | Form/viewset ID from UISpec    |
 | `form`               | `FaimsForm`                       | TanStack Form instance         |
-| `uiSpec`             | `ProjectUIModel`                  | UI specification               |
+| `uiSpec`             | `UiSpecModel`                     | UI specification               |
 | `config`             | `FormManagerConfig`               | Mode and feature configuration |
 | `fieldVisibilityMap` | `FieldVisibilityMap \| undefined` | Visible fields per section     |
 | `debugMode`          | `boolean`                         | Show form state debugger       |

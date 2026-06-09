@@ -5,8 +5,8 @@ import {
   getVisibleTypes,
   MinimalRecordMetadata,
   PostRecordStatusResponse,
-  ProjectUIModel,
-  ProjectUIViewsets,
+  UiSpecModel,
+  UiSpecForms,
   RecordMetadata,
 } from '@faims3/data-model';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
@@ -103,7 +103,7 @@ interface RecordsTableProps {
   /** Whether the table is in a loading state */
   loading: boolean;
   /** Optional viewsets configuration for the table */
-  viewsets?: ProjectUIViewsets | null;
+  viewsets?: UiSpecForms | null;
   /** Function to handle query changes */
   handleQueryFunction: Function;
   /** Function to handle table refresh */
@@ -276,7 +276,7 @@ function getDataForColumn({
 }: {
   record: WithSynced<RecordMetadata | MinimalRecordMetadata>;
   column: ColumnType;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): string | undefined {
   const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
   if (!record) return fallback;
@@ -357,7 +357,7 @@ export function buildColumnsFromSummaryFields({
   summaryFields,
   uiSpecification,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   summaryFields: string[];
 }): GridColumnType[] {
   if (!summaryFields || !uiSpecification) return [];
@@ -394,7 +394,7 @@ export function buildColumnFromSystemField({
   uiSpecification,
 }: {
   columnType: ColumnType;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): GridColumnType {
   const baseColumn: GridColumnType = {
     field: columnType.toLowerCase(),
@@ -574,7 +574,7 @@ export function buildVerticalStackColumn({
   hasConflict,
 }: {
   summaryFields: string[];
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   columnLabel: string;
   includeKind: boolean;
   hasConflict: boolean;
@@ -691,7 +691,7 @@ function buildColumnDefinitions({
   includeKind,
   hasConflict,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewsetId?: string;
   width: SizeCategory;
   includeKind: boolean;
@@ -922,9 +922,9 @@ const useTableColumns = ({
   size,
   hasConflict,
 }: {
-  uiSpec: ProjectUIModel | null;
+  uiSpec: UiSpecModel | null;
   visibleTypes: string[];
-  viewsets: ProjectUIViewsets | null | undefined;
+  viewsets: UiSpecForms | null | undefined;
   size: SizeCategory;
   hasConflict: boolean;
 }) => {
@@ -1021,7 +1021,7 @@ const useSortedAndPaginatedRows = (
 const useRowHydration = (
   pageRows: MinimalRecordMetadata[],
   projectId: string,
-  uiSpec: ProjectUIModel,
+  uiSpec: UiSpecModel,
   dataDb: DataDbType,
   activeUser: ReturnType<typeof selectActiveUser>
 ) => {

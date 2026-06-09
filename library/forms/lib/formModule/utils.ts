@@ -4,7 +4,7 @@ import {
   FormRelationshipInstance,
   getViewsForViewSet,
   HydratedRevisionDocument,
-  UISpecification,
+  UiSpecModel,
 } from '@faims3/data-model';
 import {getFieldInfo} from '../fieldRegistry';
 import {FieldVisibilityMap} from './formManagers/types';
@@ -50,7 +50,7 @@ export interface ImpliedRelationship {
 export async function getImpliedNavigationRelationships(
   revision: HydratedRevisionDocument,
   engine: DataEngine,
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): Promise<ImpliedRelationship[]> {
   const results: ImpliedRelationship[] = [];
 
@@ -147,7 +147,7 @@ export function completion({
   data,
   visibilityMap,
 }: {
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   formId: string;
   data: FaimsFormData;
   visibilityMap: FieldVisibilityMap;

@@ -29,6 +29,7 @@ import {
   Collapse,
 } from '@mui/material';
 
+import {AdvancedSelectFieldProps} from '@faims3/forms';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -56,10 +57,10 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
+  const params = field['component-parameters'] as AdvancedSelectFieldProps;
   const state = {
-    optionTree: field['component-parameters'].ElementProps
-      ?.optiontree as OptionTreeType,
-    valueType: field['component-parameters'].valuetype || 'full',
+    optionTree: params.ElementProps?.optiontree as unknown as OptionTreeType,
+    valueType: params.valuetype || 'full',
   };
 
   const [newOptionTree, setNewOptionTree] = useState(
@@ -71,11 +72,14 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
 
   const updateFieldFromState = (newState: newState) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    newField['component-parameters'].valuetype = newState.valueType;
+    const newParams = newField[
+      'component-parameters'
+    ] as AdvancedSelectFieldProps;
+    newParams.valuetype = newState.valueType as 'full' | 'child';
 
-    if (newField['component-parameters'].ElementProps) {
-      newField['component-parameters'].ElementProps.optiontree =
-        newState.optionTree;
+    if (newParams.ElementProps) {
+      newParams.ElementProps.optiontree =
+        newState.optionTree as unknown as typeof newParams.ElementProps.optiontree;
     }
 
     dispatch(fieldUpdated({fieldName, newField}));

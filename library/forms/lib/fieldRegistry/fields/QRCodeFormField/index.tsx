@@ -13,7 +13,8 @@ import {Box, Typography} from '@mui/material';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import QRCodeButton from '../../../components/qrCodes/QRCodeButton';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
   EmptyResponsePlaceholder,
@@ -24,7 +25,7 @@ import {FieldReturnType, FieldInfo} from '../../types';
 // Props Schema
 // =============================================================================
 
-const qrCodeFieldPropsSchema = BaseFieldPropsSchema.extend({});
+const qrCodeFieldPropsSchema = BaseFieldParametersSchema.extend({});
 
 type QRCodeFieldProps = z.infer<typeof qrCodeFieldPropsSchema>;
 

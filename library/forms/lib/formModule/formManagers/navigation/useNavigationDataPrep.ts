@@ -4,7 +4,7 @@ import {
   getFieldLabel,
   getFormLabel,
   getViewsetForField,
-  UISpecification,
+  UiSpecModel,
 } from '@faims3/data-model';
 import {useQuery, UseQueryResult} from '@tanstack/react-query';
 import {useMemo} from 'react';
@@ -47,7 +47,7 @@ export interface UseNavigationDataPreparationParams {
   /** Full form configuration with data engine access */
   config: FullFormConfig;
   /** UI specification for the notebook */
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   /** Handler for errors */
   onError: (message: string) => void;
   /** Function to flush pending saves */
@@ -444,7 +444,7 @@ interface GetImpliedNavigationParams {
   recordId: string;
   revisionId: string;
   dataEngine: ReturnType<FullFormConfig['dataEngine']>;
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
 }
 
 async function getImpliedNavigation({

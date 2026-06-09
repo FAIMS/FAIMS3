@@ -44,7 +44,9 @@ import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -61,22 +63,11 @@ import {useState} from 'react';
 // Types & Schema
 // ============================================================================
 
-const RadioOptionSchema = z.object({
-  key: z.string().optional(),
-  value: z.string(),
-  label: z.string(),
+export const RadioGroupFieldPropsSchema = BaseFieldParametersSchema.extend({
+  ElementProps: ChoiceElementPropsSchema,
 });
 
-const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
-  ElementProps: z.object({
-    options: z.array(RadioOptionSchema),
-    enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(),
-  }),
-});
-
-type RadioGroupFieldProps = z.infer<typeof RadioGroupFieldPropsSchema>;
-type RadioOption = z.infer<typeof RadioOptionSchema>;
+export type RadioGroupFieldProps = z.infer<typeof RadioGroupFieldPropsSchema>;
 type FieldProps = RadioGroupFieldProps & FullFieldProps;
 
 // ============================================================================
@@ -225,7 +216,7 @@ export const RadioGroup = (props: FieldProps) => {
             );
 
             // Render a regular option
-            const renderOption = (option: RadioOption) => (
+            const renderOption = (option: ChoiceOption) => (
               <FormControlLabel
                 key={option.key || option.value}
                 value={option.value}

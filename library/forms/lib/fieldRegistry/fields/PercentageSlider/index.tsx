@@ -20,10 +20,8 @@ import Typography from '@mui/material/Typography';
 import {alpha, useTheme} from '@mui/material/styles';
 import React, {useMemo} from 'react';
 import z from 'zod';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
   EmptyResponsePlaceholder,
@@ -32,7 +30,7 @@ import {
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
-const PercentageSliderPropsSchema = BaseFieldPropsSchema.extend({
+export const PercentageSliderPropsSchema = BaseFieldParametersSchema.extend({
   /** Inclusive lower bound (0–100). Defaults to 0. */
   min: z.number().int().min(0).max(100).optional(),
   /** Inclusive upper bound (0–100). Defaults to 100. */
@@ -59,7 +57,7 @@ const PercentageSliderPropsSchema = BaseFieldPropsSchema.extend({
   }
 });
 
-type PercentageSliderProps = z.infer<typeof PercentageSliderPropsSchema>;
+export type PercentageSliderProps = z.infer<typeof PercentageSliderPropsSchema>;
 type PercentageSliderFullProps = PercentageSliderProps & FormFieldContextProps;
 
 function resolveBounds(props: PercentageSliderProps): {

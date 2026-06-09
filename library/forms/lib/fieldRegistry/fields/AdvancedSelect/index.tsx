@@ -39,7 +39,8 @@ import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import React from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -64,14 +65,16 @@ interface RenderTree {
   label?: string;
 }
 
-const AdvancedSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const AdvancedSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     optiontree: z.array(RenderTreeSchema),
   }),
   valuetype: z.enum(['full', 'child']).optional().default('full'),
 });
 
-type AdvancedSelectFieldProps = z.infer<typeof AdvancedSelectFieldPropsSchema>;
+export type AdvancedSelectFieldProps = z.infer<
+  typeof AdvancedSelectFieldPropsSchema
+>;
 type FieldProps = AdvancedSelectFieldProps & FullFieldProps;
 
 // ============================================================================

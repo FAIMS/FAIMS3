@@ -35,7 +35,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
 import {logError} from '../../../logging';
 
-const MapFieldPropsSchema = z.object({
+export const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
   buttonLabelText: z.string().optional(),
   featureType: z.enum(['Point', 'Polygon', 'LineString']).optional(),
@@ -46,7 +46,7 @@ const MapFieldPropsSchema = z.object({
   zoom: z.number().optional(),
 });
 
-type MapFieldProps = z.infer<typeof MapFieldPropsSchema>;
+export type MapFieldProps = z.infer<typeof MapFieldPropsSchema>;
 type FieldProps = MapFieldProps & FullFieldProps;
 
 const createPointFeature = (

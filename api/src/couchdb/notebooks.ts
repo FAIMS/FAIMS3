@@ -58,6 +58,8 @@ import {
   normalizeNotebookUiSpecification,
   normalizeRootDescriptionForStore,
   notebookUiSpecificationValidationMessage,
+  CompiledNotebookUiSpec,
+  compileUiSpecConditionals,
 } from '@faims3/data-model';
 import {initialiseDataDb, localGetProjectsDb, verifyCouchDBConnection} from '.';
 import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
@@ -621,11 +623,25 @@ export const deleteNotebook = async (project_id: string) => {
  * @param projectId
  * @returns The decoded project UI model (not compiled)
  */
-export const getProjectUIModel = async (
+export const getUiSpecModel = async (
   projectId: string
 ): Promise<NotebookUiSpec> => {
   const project = await getProjectById(projectId);
   return project.uiSpecification.uiSpec;
+};
+
+/**
+ * Gets the ready to use compiled ui specification for a given project.
+ *
+ * @param projectId
+ * @returns The decoded project UI model (compiled)
+ */
+export const getCompiledUiSpecModel = async (
+  projectId: string
+): Promise<CompiledNotebookUiSpec> => {
+  const uncompiled = await getUiSpecModel(projectId);
+  compileUiSpecConditionals(uncompiled);
+  return uncompiled as CompiledNotebookUiSpec;
 };
 
 /**

@@ -1,11 +1,11 @@
 import {
+  CompiledUiSpecModel,
   DataEngine,
   FaimsAttachments,
   FormAnnotation,
   FormUpdateData,
   HydratedRecordDocument,
   IAttachmentService,
-  UISpecification,
 } from '@faims3/data-model';
 import {MapConfig} from '../components/maps/types';
 
@@ -37,7 +37,7 @@ export interface DataViewProps {
   // The form ID
   viewsetId: string;
   // The UI Spec
-  uiSpecification: UISpecification;
+  uiSpecification: CompiledUiSpecModel;
   // The hydrated data record (for context)
   hydratedRecord: HydratedRecordDocument;
   // The record HRID
@@ -81,7 +81,7 @@ export type DataViewFieldRenderContext = {
   // The full RecordMetadata object, which may help with more advanced types
   record: HydratedRecordDocument;
   // UI specification
-  uiSpecification: UISpecification;
+  uiSpecification: CompiledUiSpecModel;
   // The form render trace (to help build new entries)
   trace: DataViewTraceEntry[];
   // Controls/triggers

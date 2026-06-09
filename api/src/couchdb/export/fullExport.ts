@@ -14,7 +14,7 @@
 
 import {ProjectID} from '@faims3/data-model';
 import {isoDateOnly, nowIso} from '../../time';
-import {getProjectUIModel} from '../notebooks';
+import {getUiSpecModel} from '../notebooks';
 import {
   appendAttachmentsToArchive,
   createConfiguredArchive,
@@ -89,7 +89,7 @@ export const streamFullExport = async ({
     const archive = createConfiguredArchive(res);
 
     // Get project UI spec to enumerate views
-    const uiSpec = await getProjectUIModel(projectId);
+    const uiSpec = await getUiSpecModel(projectId);
     const viewIds = Object.keys(uiSpec.viewsets);
     metadata.totals.views = viewIds.length;
 

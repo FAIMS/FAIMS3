@@ -60,9 +60,18 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
+import {ChoiceElementProps} from '@faims3/forms';
 import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+
+/**
+ * Subset of choice-field `component-parameters` this editor reads/writes. The
+ * `ElementProps` shape is the shared {@link ChoiceElementProps} used by
+ * RadioGroup, Select and MultiSelect in `@faims3/forms`; keys are optional here
+ * because the editor patches them incrementally.
+ */
+type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
@@ -420,9 +429,12 @@ export const OptionsEditor = ({
   // Configure drag-and-drop sensors - just pointer sensor is fine
   const sensors = useSensors(useSensor(PointerSensor));
 
+  const elementProps = (
+    field['component-parameters'] as ChoiceComponentParameters
+  ).ElementProps;
+
   // Component state
-  const isShowExpandedList =
-    field['component-parameters'].ElementProps?.expandedChecklist ?? true;
+  const isShowExpandedList = elementProps?.expandedChecklist ?? true;
   const isDropdownMode = !isShowExpandedList;
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const fieldComponent = field['component-name'];
@@ -446,14 +458,11 @@ export const OptionsEditor = ({
   } | null>(null);
 
   const options: Array<{label: string; value: string}> =
-    field['component-parameters'].ElementProps?.options || [];
-  const exclusiveOptions: string[] =
-    field['component-parameters'].ElementProps?.exclusiveOptions || [];
-  const enableOther: boolean =
-    field['component-parameters'].ElementProps?.enableOtherOption ?? false;
+    elementProps?.options || [];
+  const exclusiveOptions: string[] = elementProps?.exclusiveOptions || [];
+  const enableOther: boolean = elementProps?.enableOtherOption ?? false;
   const otherOptionPosition: number =
-    field['component-parameters'].ElementProps?.otherOptionPosition ??
-    options.length;
+    elementProps?.otherOptionPosition ?? options.length;
 
   /**
    * made a combined list (options + other) in visual order.
@@ -522,10 +531,13 @@ export const OptionsEditor = ({
     updatedOtherOptionPosition?: number
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newParams = newField[
+      'component-parameters'
+    ] as ChoiceComponentParameters;
 
     // Update field with new options and handle radio button IDs
-    newField['component-parameters'].ElementProps = {
-      ...newField['component-parameters'].ElementProps,
+    newParams.ElementProps = {
+      ...newParams.ElementProps,
       options: updatedOptions.map((o, index) => {
         if (fieldName.includes('radio')) {
           return {
@@ -757,7 +769,7 @@ export const OptionsEditor = ({
       'component-parameters': {
         ...field['component-parameters'],
         ElementProps: {
-          ...field['component-parameters'].ElementProps,
+          ...elementProps,
           options: newOptions,
         },
       },
@@ -806,8 +818,11 @@ export const OptionsEditor = ({
   ) => {
     const selectedMode = event.target.value;
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
+    const newParams = newField[
+      'component-parameters'
+    ] as ChoiceComponentParameters;
+    newParams.ElementProps = {
+      ...(newParams.ElementProps ?? {}),
       expandedChecklist: selectedMode === 'expanded',
     };
     dispatch(fieldUpdated({fieldName, newField}));
@@ -818,11 +833,13 @@ export const OptionsEditor = ({
    */
   const toggleEnableOtherOption = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const newValue =
-      !field['component-parameters'].ElementProps?.enableOtherOption;
+    const newParams = newField[
+      'component-parameters'
+    ] as ChoiceComponentParameters;
+    const newValue = !elementProps?.enableOtherOption;
 
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
+    newParams.ElementProps = {
+      ...(newParams.ElementProps ?? {}),
       enableOtherOption: newValue,
       otherOptionPosition: undefined,
     };

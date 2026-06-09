@@ -6,7 +6,7 @@ import {
   FieldSummary,
   relatedRecordFieldAvpValueSchema,
   relatedRecordSelectorComponentParamsSchema,
-  NotebookUiSpec,
+  CompiledNotebookUiSpec,
 } from '@faims3/data-model';
 
 import {getComponentKey} from './utils';
@@ -87,7 +87,7 @@ export async function stripDeletedRelatedRefsFromRecordData({
   fields: FieldSummary[];
   data: Record<string, unknown>;
   dataDb: StripRelatedRefsDataDb;
-  uiSpecification: NotebookUiSpec;
+  uiSpecification: CompiledNotebookUiSpec;
 }): Promise<void> {
   const engine = new DataEngine({
     dataDb: dataDb as DatabaseInterface<DataDocument>,
@@ -176,7 +176,7 @@ export async function buildExportReadyDataCopy({
   data: Record<string, unknown>;
   viewFieldsMap: Record<string, FieldSummary[]>;
   dataDb: StripRelatedRefsDataDb;
-  uiSpecification: NotebookUiSpec;
+  uiSpecification: CompiledNotebookUiSpec;
 }): Promise<Record<string, unknown>> {
   const copy: Record<string, unknown> = {...data};
   const fields = viewFieldsMap[viewsetId];
