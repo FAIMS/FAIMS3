@@ -289,12 +289,30 @@ export function normalizeChangeSyncInfo(
 }
 
 /**
+ * PouchDB sync/replicate event surface at runtime.
+ *
+ * `@types/pouchdb` omits several replication events (e.g. `change`, `active`);
+ * see https://pouchdb.com/api.html#sync.
+ */
+type ReplicationEventEmitter = {
+  on(
+    event: 'change' | 'paused' | 'active' | 'denied' | 'error',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    listener: (...args: any[]) => any
+  ): PouchReplicationHandle;
+};
+
+function asReplicationEventEmitter(
+  handle: PouchReplicationHandle
+): ReplicationEventEmitter {
+  return handle as unknown as ReplicationEventEmitter;
+}
+
+/**
  * Attach replication event handlers to a sync/replicate handle.
  *
  * Shared by all sync modes so callers register handlers once regardless of
- * direction. The types provided in `@types/pouchdb` are incomplete — e.g. see
- * https://pouchdb.com/api.html#sync — these events are not even available in
- * the types and the interfaces are incomplete/too-restrictive.
+ * direction.
  *
  * @param replication The live sync or replicate object from PouchDB
  * @param eventHandlers Optional handlers for replication lifecycle events
@@ -306,12 +324,10 @@ function attachReplicationEventHandlers(
   defaultDirection: 'push' | 'pull'
 ): PouchReplicationHandle {
   let handle: PouchReplicationHandle = replication;
-  // Attach all provided event handlers — see note above on @types/pouchdb gaps.
+
   if (eventHandlers.change) {
     const onChange = eventHandlers.change;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    handle = handle.on(
+    handle = asReplicationEventEmitter(handle).on(
       'change',
       (info: ChangeSyncInfo | ReplicationChangeStats) => {
         onChange(normalizeChangeSyncInfo(info, defaultDirection));
@@ -319,24 +335,25 @@ function attachReplicationEventHandlers(
     );
   }
   if (eventHandlers.paused) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    handle = handle.on('paused', eventHandlers.paused);
+    handle = asReplicationEventEmitter(handle).on(
+      'paused',
+      eventHandlers.paused
+    );
   }
   if (eventHandlers.active) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    handle = handle.on('active', eventHandlers.active);
+    handle = asReplicationEventEmitter(handle).on(
+      'active',
+      eventHandlers.active
+    );
   }
   if (eventHandlers.denied) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    handle = handle.on('denied', eventHandlers.denied);
+    handle = asReplicationEventEmitter(handle).on(
+      'denied',
+      eventHandlers.denied
+    );
   }
   if (eventHandlers.error) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    handle = handle.on('error', eventHandlers.error);
+    handle = asReplicationEventEmitter(handle).on('error', eventHandlers.error);
   }
   return handle;
 }
