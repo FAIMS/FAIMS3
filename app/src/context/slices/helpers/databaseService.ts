@@ -9,7 +9,10 @@
 import {logError, ProjectDataObject} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
-import {createLocalPouchDatabase} from './databaseHelpers';
+import {
+  createLocalPouchDatabase,
+  PouchReplicationHandle,
+} from './databaseHelpers';
 import {PouchDBWrapper} from './pouchDBWrapper';
 PouchDB.plugin(PouchDBFind);
 
@@ -30,10 +33,7 @@ class DatabaseService {
   private cleanupInProgress: Set<string> = new Set();
   private localDatabases: Map<string, PouchDBWrapper<ProjectDataObject>> =
     new Map();
-  private databaseSyncs: Map<
-    string,
-    PouchDB.Replication.Sync<ProjectDataObject>
-  > = new Map();
+  private databaseSyncs: Map<string, PouchReplicationHandle> = new Map();
   // remote databases are not wrapped
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
@@ -166,7 +166,7 @@ class DatabaseService {
   }
   async registerSync(
     id: string,
-    sync: PouchDB.Replication.Sync<ProjectDataObject>,
+    sync: PouchReplicationHandle,
     {tolerant = true}: RegisterDbOptions = {}
   ) {
     if (this.databaseSyncs.has(id)) {

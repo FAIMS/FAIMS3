@@ -14,6 +14,7 @@ import {
   ProjectStatus,
 } from '@faims3/data-model';
 import {migrateProjectsPersistedState} from './projectsPersistMigration';
+import {migrateProjectsSyncModeV2} from './projectsPersistMigration';
 
 const buildCompiledSpecId = ({
   projectId,
@@ -140,5 +141,99 @@ describe('migrateProjectsPersistedState', () => {
       again.servers[serverId]!.projects[projectId]!.uiDefinition.uiSpec
         .schemaVersion
     ).toBe(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
+  });
+});
+
+describe('migrateProjectsSyncModeV2', () => {
+  it('maps legacy isSyncing boolean to syncMode', () => {
+    const migrated = migrateProjectsSyncModeV2({
+      isInitialised: true,
+      servers: {
+        'server-a': {
+          serverId: 'server-a',
+          serverUrl: 'https://example.test',
+          serverTitle: 'Test',
+          shortCodePrefix: 'T',
+          description: '',
+          projects: {
+            off: {
+              projectId: 'off',
+              serverId: 'server-a',
+              name: 'Off',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'x',
+              uiDefinition: {
+                uiSpec: {
+                  fields: {},
+                  views: {},
+                  viewsets: {},
+                  visible_types: [],
+                },
+                metadata: {
+                  information: {purposeMarkdown: ''},
+                  branding: {},
+                },
+              },
+              database: {
+                localDbId: 'local',
+                isSyncing: false,
+                isSyncingAttachments: false,
+                remote: {
+                  remoteDbId: 'remote',
+                  syncId: undefined,
+                  connectionConfiguration: {
+                    jwtToken: 't',
+                    couchUrl: 'https://couch',
+                    databaseName: 'data-x',
+                  },
+                },
+              },
+            },
+            on: {
+              projectId: 'on',
+              serverId: 'server-a',
+              name: 'On',
+              isActivated: true,
+              status: ProjectStatus.OPEN,
+              uiSpecificationId: 'y',
+              uiDefinition: {
+                uiSpec: {
+                  fields: {},
+                  views: {},
+                  viewsets: {},
+                  visible_types: [],
+                },
+                metadata: {
+                  information: {purposeMarkdown: ''},
+                  branding: {},
+                },
+              },
+              database: {
+                localDbId: 'local2',
+                isSyncing: true,
+                isSyncingAttachments: true,
+                remote: {
+                  remoteDbId: 'remote2',
+                  syncId: 'sync',
+                  connectionConfiguration: {
+                    jwtToken: 't',
+                    couchUrl: 'https://couch',
+                    databaseName: 'data-y',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(migrated.servers['server-a']!.projects.off!.database!.syncMode).toBe(
+      'none'
+    );
+    expect(migrated.servers['server-a']!.projects.on!.database!.syncMode).toBe(
+      'both'
+    );
   });
 });

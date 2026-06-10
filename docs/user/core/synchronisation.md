@@ -8,15 +8,25 @@ While working online, or within range of an offline server, records will be cont
 
 ## Configuring Synchronisation
 
-Synchronisation is on by default. It does not need to be activated and if you are online, records will synchronise. If you wish to turn off synchronisation, go to the Notebook Settings and slide the 'Sync Notebook' toggle to 'Off'.
+When you activate a {{notebook}}, record sync starts automatically. In **{{Notebook}} Settings**, use **Sync mode** to choose how record data moves between your device and the server:
+
+| Mode                             | Behaviour                                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Sync off (local device only)** | Records stay on this device; nothing is sent to or received from the server.                               |
+| **Upload only**                  | Your new and updated records upload to the server. Existing records from other devices are not downloaded. |
+| **Upload and download**          | Full two-way sync (default for smaller {{notebooks}} when online).                                         |
+
+When you activate a {{notebook}} while online, the app may set **Upload only** automatically for {{notebooks}} with very large numbers of records, to save storage and mobile data. If the record count cannot be fetched (offline or error), **Upload and download** is used instead.
+
+On the record list, a banner may suggest switching to **Upload only** when a large {{notebook}} is still using two-way sync.
 
 ### Attachments from Other Users
 
 Users can choose whether or not to synchronise files and attachments created by other users.
 
-If enabled, the {{FAIMS}} will automatically download and show images and attachments created on other devices. As this may be resource intensive and affect your mobile data plan, this setting can be disabled to minimise network usage. Attachments are always uploaded to the server regardless of this setting.
+If enabled, the {{FAIMS}} will automatically download and show images and attachments created on other devices. As this may be resource intensive and affect your mobile data plan, this setting can be disabled to minimise network usage. Attachments are always uploaded to the server regardless of this setting. This option requires **Upload and download** sync mode.
 
-By default, notebooks are set to not download files and attachments created by other users. To activate, go to the Notebook Settings and slide the 'Get attachments from other devices' toggle to 'On'.
+By default, {{notebooks}} are set to not download files and attachments created by other users. To activate, go to the {{Notebook}} Settings and turn **Get attachments from other devices** to **On**.
 
 ## Verifying synchronisation
 
