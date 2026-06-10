@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-10
+
+### Changes
+
+- feat: add directional record sync modes with large-notebook defaults and settings UX ([#2113](https://github.com/FAIMS/FAIMS3/pull/2113))
+- replaced orange flame to notebook so build pipeline can generate the consistent logos ([#2111](https://github.com/FAIMS/FAIMS3/pull/2111))
+- update designer dialog for fixing progress upon navigation ([#2108](https://github.com/FAIMS/FAIMS3/pull/2108))
+- Fix/corrections after mui v9 update ([#2106](https://github.com/FAIMS/FAIMS3/pull/2106))
+- feat: improved knip setup ([#2104](https://github.com/FAIMS/FAIMS3/pull/2104))
+- refactor: unify UiSpec field/component-parameter types under a Zod source of truth in @faims3/data-model ([#2102](https://github.com/FAIMS/FAIMS3/pull/2102))
+- fix: web forms should match optional description ([#2101](https://github.com/FAIMS/FAIMS3/pull/2101))
+- feat: Improved Button Text ([#2099](https://github.com/FAIMS/FAIMS3/pull/2099))
+- add fix to allow clear while drawing line ([#2097](https://github.com/FAIMS/FAIMS3/pull/2097))
+- improve child record display and make font consistent ([#2096](https://github.com/FAIMS/FAIMS3/pull/2096))
+- enhancements for location map buttons ([#2095](https://github.com/FAIMS/FAIMS3/pull/2095))
+- Feat/add warning dialog on finish record ([#2094](https://github.com/FAIMS/FAIMS3/pull/2094))
+- feat(forms): zoom images in advanced helper popup ([#2093](https://github.com/FAIMS/FAIMS3/pull/2093))
+- fix overlay issue in android side nav  ([#2091](https://github.com/FAIMS/FAIMS3/pull/2091))
+- feat: make record list search case insensitive (#2011) ([#2090](https://github.com/FAIMS/FAIMS3/pull/2090))
+- chore(deps): bump uuid from 9.0.0 to 14.0.0 in /app ([#2088](https://github.com/FAIMS/FAIMS3/pull/2088))
+- feat: remove metadataDB and significant refinement to notebook shape, typing and migrations ([#2086](https://github.com/FAIMS/FAIMS3/pull/2086))
+- chore(deps-dev): bump turbo from 2.5.8 to 2.9.14 ([#2085](https://github.com/FAIMS/FAIMS3/pull/2085))
+- Fix docker build of api ([#2083](https://github.com/FAIMS/FAIMS3/pull/2083))
+- fix: wire migrateNotebooksOnStartup to API env ([#2082](https://github.com/FAIMS/FAIMS3/pull/2082))
+- Chore/migrate to mui v9 ([#2081](https://github.com/FAIMS/FAIMS3/pull/2081))
+- Fix vite dependency issue in web development server ([#2080](https://github.com/FAIMS/FAIMS3/pull/2080))
+- feat: add PercentageSlider field for forms and designer ([#2078](https://github.com/FAIMS/FAIMS3/pull/2078))
+- feat(web): highlight public templates and filter by public/private ([#2077](https://github.com/FAIMS/FAIMS3/pull/2077))
+- New/origin/feat/designer restructure and improvements ([#2074](https://github.com/FAIMS/FAIMS3/pull/2074))
+- fix: avoid errant stdout reaching changelog in release script ([#2073](https://github.com/FAIMS/FAIMS3/pull/2073))
+- chore(deps): bump axios from 1.12.2 to 1.15.2 ([#2068](https://github.com/FAIMS/FAIMS3/pull/2068))
+- feat: add AudioRecorder field type (#2004) ([#2059](https://github.com/FAIMS/FAIMS3/pull/2059))
+- chore(deps-dev): bump postcss from 8.5.6 to 8.5.10 ([#2056](https://github.com/FAIMS/FAIMS3/pull/2056))
+- Bump dompurify from 3.2.7 to 3.4.0 ([#2051](https://github.com/FAIMS/FAIMS3/pull/2051))
+- Bump addressable from 2.8.7 to 2.9.0 in /app/android ([#2048](https://github.com/FAIMS/FAIMS3/pull/2048))
+- chore(deps): bump multer from 2.0.2 to 2.1.1 ([#1965](https://github.com/FAIMS/FAIMS3/pull/1965))
+- New E2E testing setup to generate screenshots ([#1596](https://github.com/FAIMS/FAIMS3/pull/1596))
+- Deal with loading states for teams ([#1571](https://github.com/FAIMS/FAIMS3/pull/1571))
+- Make records search case insensitive in the record list ([#2011](https://github.com/FAIMS/FAIMS3/issues/2011))
+- Add an Audio field for sound recording ([#2004](https://github.com/FAIMS/FAIMS3/issues/2004))
+
 ## [1.5.2] - 2026-05-07
 
 ### Changes

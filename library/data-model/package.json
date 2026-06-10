@@ -1,6 +1,6 @@
 {
   "name": "@faims3/data-model",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Database access layer for FAIMS3",
   "license": "Apache",
   "author": "",
