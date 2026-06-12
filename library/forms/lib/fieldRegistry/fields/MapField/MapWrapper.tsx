@@ -344,26 +344,23 @@ function MapWrapper(props: MapProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 80,
-                    height: 80,
-                    backgroundColor: '#dfdfdf',
+                    width: 44,
+                    height: 44,
+                    color: theme.palette.primary.main,
+                    backgroundColor: theme.palette.action.hover,
+                    border: `1px solid ${theme.palette.divider}`,
                     borderRadius: '6px',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease-in-out',
+                    transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: '#e0e0e0',
-                      transform: 'scale(1.1)',
-                      boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
+                      backgroundColor: theme.palette.action.selected,
+                      transform: 'scale(1.05)',
+                      boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
                     },
                   }}
                   onClick={handleClickOpen}
                 >
-                  <EditIcon
-                    sx={{
-                      fontSize: 26,
-                      color: theme.palette.primary.main,
-                    }}
-                  />
+                  <EditIcon sx={{fontSize: 20, color: 'inherit'}} />
                 </Box>
               </Tooltip>
             )}

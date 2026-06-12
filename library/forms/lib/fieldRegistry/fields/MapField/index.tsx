@@ -184,6 +184,41 @@ export function MapFormField(props: FieldProps): JSX.Element {
       });
   };
 
+  // "Location selected" summary chip — captured coordinates (points) or a
+  // feature count (lines/polygons). Rendered beside the edit icon.
+  const locationChip = isLocationSelected ? (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        backgroundColor: theme.palette.success.light + '20',
+        borderColor: theme.palette.success.main,
+      }}
+    >
+      <CheckCircleOutlined color="success" fontSize="small" />
+      <Typography variant="body2" color="text.secondary">
+        {featureType === 'Point' && drawnFeatures?.features?.[0]?.geometry
+          ? `Location selected: ${(
+              drawnFeatures.features[0].geometry as {
+                coordinates: number[];
+              }
+            ).coordinates[1].toFixed(5)}, ${(
+              drawnFeatures.features[0].geometry as {
+                coordinates: number[];
+              }
+            ).coordinates[0].toFixed(5)}`
+          : `${featureType} captured (${
+              drawnFeatures?.features?.length ?? 0
+            } feature${
+              (drawnFeatures?.features?.length ?? 0) !== 1 ? 's' : ''
+            })`}
+      </Typography>
+    </Paper>
+  ) : null;
+
   return (
     <FieldWrapper
       heading={props.label}
@@ -228,66 +263,38 @@ export function MapFormField(props: FieldProps): JSX.Element {
                 </Alert>
               </>
             )}
+            {/* Offline: no edit icon, but still surface the saved location. */}
+            {locationChip && <Box sx={{mt: 0.8}}>{locationChip}</Box>}
           </>
         ) : (
-          <MapWrapper
-            config={mapConfig}
-            label={buttonLabel}
-            featureType={featureType}
-            features={drawnFeatures}
-            zoom={zoom}
-            center={props.center}
-            setFeatures={setFeaturesCallback}
-            geoTiff={props.geoTiff}
-            projection={props.projection}
-            setNoPermission={setNoPermission}
-            isLocationSelected={isLocationSelected}
-            disabled={props.disabled}
-            allowSetToCurrentPoint={props.allowSetToCurrentPoint}
-          />
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: {xs: 'column', sm: 'row'},
+              alignItems: {xs: 'flex-start', sm: 'center'},
+              gap: 1,
+            }}
+          >
+            {/* Chip first: on small screens (column) it sits above the edit
+                icon; on larger screens (row) the icon sits next to it. */}
+            {locationChip}
+            <MapWrapper
+              config={mapConfig}
+              label={buttonLabel}
+              featureType={featureType}
+              features={drawnFeatures}
+              zoom={zoom}
+              center={props.center}
+              setFeatures={setFeaturesCallback}
+              geoTiff={props.geoTiff}
+              projection={props.projection}
+              setNoPermission={setNoPermission}
+              isLocationSelected={isLocationSelected}
+              disabled={props.disabled}
+              allowSetToCurrentPoint={props.allowSetToCurrentPoint}
+            />
+          </Box>
         )}
-        <Box
-          sx={{
-            alignItems: 'center',
-            marginTop: 0.8,
-            display: 'inline-flex',
-            gap: theme.spacing(1),
-          }}
-        >
-          {isLocationSelected && (
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                backgroundColor: theme.palette.success.light + '20',
-                borderColor: theme.palette.success.main,
-              }}
-            >
-              <CheckCircleOutlined color="success" fontSize="small" />
-              <Typography variant="body2" color="text.secondary">
-                {featureType === 'Point' &&
-                drawnFeatures?.features?.[0]?.geometry
-                  ? `Location selected: ${(
-                      drawnFeatures.features[0].geometry as {
-                        coordinates: number[];
-                      }
-                    ).coordinates[1].toFixed(5)}, ${(
-                      drawnFeatures.features[0].geometry as {
-                        coordinates: number[];
-                      }
-                    ).coordinates[0].toFixed(5)}`
-                  : `${featureType} captured (${
-                      drawnFeatures?.features?.length ?? 0
-                    } feature${
-                      (drawnFeatures?.features?.length ?? 0) !== 1 ? 's' : ''
-                    })`}
-              </Typography>
-            </Paper>
-          )}
-        </Box>
       </Box>
 
       {/*  Show error if no permission */}
