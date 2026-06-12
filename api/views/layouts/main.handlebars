@@ -44,7 +44,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 15px;
+        /* Respect iOS notch / home indicator while keeping a 15px floor. */
+        padding:
+          max(15px, env(safe-area-inset-top, 0px))
+          max(15px, env(safe-area-inset-right, 0px))
+          max(15px, env(safe-area-inset-bottom, 0px))
+          max(15px, env(safe-area-inset-left, 0px));
       }
 
       .auth-card {
@@ -89,7 +94,7 @@
         padding: 0.5rem 0.75rem;
         border: 1px solid var(--border-color);
         margin-bottom: 0.25rem;
-        font-size: 0.9rem;
+        font-size: 1rem;
       }
 
       .form-control:focus {
@@ -98,7 +103,7 @@
       }
 
       .form-label {
-        font-size: 0.9rem;
+        font-size: 1rem;
         margin-bottom: 0.25rem;
         font-weight: bold;
       }
@@ -216,6 +221,54 @@
       /* Form Groups */
       .mb-3 {
         margin-bottom: 0.5rem !important;
+      }
+
+      @media (max-width: 480px) {
+        .auth-container {
+          /* Leave a touch less gutter so the card uses more of the viewport. */
+          padding:
+            max(12px, env(safe-area-inset-top, 0px))
+            max(10px, env(safe-area-inset-right, 0px))
+            max(12px, env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-left, 0px));
+        }
+
+        .auth-card {
+          /* Drop the 400px desktop cap on mobile so the card grows to fill
+             viewport - container padding (~340px on 360px phones, ~392px
+             on 412px phones). The container padding still leaves a small
+             gutter so the card never goes edge-to-edge. */
+          max-width: none;
+          padding: 1.75rem 1.25rem;
+        }
+
+        .auth-header h2 {
+          font-size: 1.5rem;
+        }
+        .auth-header p {
+          font-size: 1rem;
+        }
+
+        .auth-button,
+        .auth-button-outline {
+          font-size: 1rem;
+          /* Bigger vertical padding -> ~48px tall, well above the 44px tap-target floor. */
+          padding: 0.85rem;
+        }
+
+        .helper-text,
+        .auth-helper-text {
+          font-size: 0.95rem;
+        }
+
+        .alert {
+          font-size: 0.95rem;
+        }
+
+        /* Loosen field spacing so adjacent inputs don't crowd each other. */
+        .mb-3 {
+          margin-bottom: 0.75rem !important;
+        }
       }
     </style>
     {{{extraStyles}}}

@@ -28,11 +28,15 @@
 
     <div class="mb-3">
         <label for="EmailInput" class="form-label">Email</label>
-        <input type="email" 
-               autocomplete="email" 
-               name="email" 
-               class="form-control" 
-               id="EmailInput" 
+        <input type="email"
+               autocomplete="email"
+               inputmode="email"
+               autocapitalize="off"
+               autocorrect="off"
+               spellcheck="false"
+               name="email"
+               class="form-control"
+               id="EmailInput"
                data-testid="email-input"
                value="{{messages.email}}"
                required>
