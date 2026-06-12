@@ -28,6 +28,7 @@ import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {designerInfoIconSx} from '../designer-style';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
+import { useTextFieldLengthLimit } from '@/hooks/field-hooks';
 
 type FieldState = {
   featureType: string;
@@ -86,6 +87,12 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
     updateFieldFromState(newState);
   };
 
+  const {
+    errorText: buttonLabelErrorTxt,
+    validateAndUpdate: validateAndUpdateButtonLabelText,
+  } = useTextFieldLengthLimit('Button Label Text', 30);
+
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
       <Box sx={{width: '100%', mt: 1.5}}>
@@ -128,9 +135,16 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               variant="outlined"
               label=""
               value={initButtonLabelText}
+              error={!!buttonLabelErrorTxt}
+              helperText={
+                buttonLabelErrorTxt
+              }
               placeholder="Leave empty to use the field label"
               onChange={e =>
-                updateProperty('buttonLabelText', e.target.value)
+                validateAndUpdateButtonLabelText(
+                  e.target.value,
+                  validValue => updateProperty('buttonLabelText', validValue),
+                )
               }
             />
           </SimpleFieldWrapper>

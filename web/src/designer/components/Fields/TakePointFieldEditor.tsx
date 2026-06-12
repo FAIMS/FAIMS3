@@ -13,6 +13,7 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
+import { useTextFieldLengthLimit } from '@/hooks/field-hooks';
 
 /**
  * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
@@ -36,6 +37,12 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
+  const {
+    errorText: buttonLabelErrorTxt,
+    validateAndUpdate: validateAndUpdateButtonLabelText,
+  } = useTextFieldLengthLimit('Button Label Text', 30);
+
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
       <Grid container>
@@ -48,8 +55,12 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
               variant="outlined"
               label=""
               value={buttonLabelText}
+              error={!!buttonLabelErrorTxt}
+              helperText={
+                buttonLabelErrorTxt
+              }
               placeholder="Leave empty to use the field label"
-              onChange={e => updateButtonLabel(e.target.value)}
+              onChange={e => validateAndUpdateButtonLabelText(e.target.value, updateButtonLabel)}
             />
           </SimpleFieldWrapper>
         </Grid>
