@@ -13,7 +13,7 @@ import {Label} from '@/components/ui/label';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {useAuth} from '@/context/auth-provider';
 import {useArchiveProject} from '@/hooks/archive-hooks';
-import {useNavigate} from '@tanstack/react-router';
+import {useCanGoBack, useNavigate, useRouter} from '@tanstack/react-router';
 import {useState} from 'react';
 import {toast} from 'sonner';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
@@ -32,6 +32,8 @@ export function ArchiveProjectDialog({
   const {user} = useAuth();
   const {mutate, isPending} = useArchiveProject();
   const navigate = useNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const [open, setOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
@@ -50,7 +52,12 @@ export function ArchiveProjectDialog({
         onSuccess: () => {
           toast.success(`${NOTEBOOK_NAME_CAPITALIZED} archived`);
           handleOpenChange(false);
-          void navigate({to: '/projects', replace: true});
+    
+          if (canGoBack) {
+            router.history.back();
+          } else {
+            void navigate({to: '/projects', replace: true});
+          }
         },
         onError: e => {
           console.error(e);
