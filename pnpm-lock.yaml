@@ -565,6 +565,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^2.1.8
         version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(happy-dom@15.11.7)(jsdom@22.1.0)(msw@2.11.3(@types/node@24.13.2)(typescript@5.9.3)))
+      env-cmd:
+        specifier: ^10.1.0
+        version: 10.1.0
       esbuild:
         specifier: ^0.25.0
         version: 0.25.10
