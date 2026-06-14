@@ -43,10 +43,10 @@ jobs:
         name: Install pnpm
         with:
           run_install: false
-      - name: Use Node.js 22
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up adopt JDK 1.21
