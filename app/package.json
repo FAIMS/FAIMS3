@@ -136,7 +136,7 @@
     "vite": "^7.3.2",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.8"
   },
   "browserslist": {
     "production": [
@@ -153,5 +153,5 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@11.6.0"
 }

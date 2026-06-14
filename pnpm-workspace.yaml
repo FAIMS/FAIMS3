@@ -21,3 +21,15 @@ onlyBuiltDependencies:
   - msw
   - protobufjs
   - sharp
+
+overrides:
+  '@mui/base': '5.0.0-beta.40'
+  'level': '^7.0.0'
+  'sharp': '^0.34.2'
+
+trustPolicyExclude:
+  - '@wdio/logger@9.18.0'
+  - 'chokidar@4.0.3'
+  - '@wdio/repl@9.16.2'
+  - 'semver'
+  - 'undici-types@6.21.0'
