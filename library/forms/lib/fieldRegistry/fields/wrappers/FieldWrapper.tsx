@@ -288,14 +288,15 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           fullWidth
-          maxWidth="md"
+          maxWidth="sm"
           slotProps={{
             paper: {
               sx: {
                 borderRadius: 2,
-                p: 1,
+                m: {xs: 1.5, sm: 4},
+                width: {xs: 'calc(100% - 24px)', sm: 'calc(100% - 64px)'},
+                maxHeight: {xs: 'calc(100% - 24px)', sm: 'calc(100% - 64px)'},
                 boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-                position: 'relative',
               },
             },
           }}
@@ -303,14 +304,25 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           <DialogTitle
             sx={{
               fontWeight: 'bold',
-              fontSize: '1.2rem',
-              paddingRight: 4,
+              fontSize: {xs: '1.1rem', sm: '1.2rem'},
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1,
+              py: {xs: 1.25, sm: 1.75},
+              px: {xs: 1.75, sm: 2.5},
             }}
           >
-            {heading}
+            <Box
+              component="span"
+              sx={{flex: 1, minWidth: 0, wordBreak: 'break-word'}}
+            >
+              {heading}
+            </Box>
             <IconButton
               onClick={() => setOpenDialog(false)}
-              sx={{position: 'absolute', right: 16, top: 16}}
+              size="small"
+              aria-label="Close"
+              sx={{flexShrink: 0, mt: -0.5, mr: -0.5}}
             >
               <CloseIcon />
             </IconButton>
@@ -320,7 +332,8 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             dividers
             onClick={onHelperImageClick}
             sx={{
-              maxHeight: '60vh',
+              px: {xs: 1.75, sm: 2.5},
+              py: {xs: 1.25, sm: 1.75},
               overflowY: 'auto',
               '& img': {
                 maxWidth: '100%',
@@ -337,7 +350,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           >
             <Box
               sx={{
-                fontSize: '1rem',
+                fontSize: {xs: '0.95rem', sm: '1rem'},
                 lineHeight: 1.6,
               }}
             >
@@ -345,7 +358,13 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             </Box>
           </DialogContent>
 
-          <DialogActions sx={{pt: 2, justifyContent: 'flex-end'}}>
+          <DialogActions
+            sx={{
+              px: {xs: 1.75, sm: 2.5},
+              py: {xs: 1, sm: 1.25},
+              justifyContent: 'flex-end',
+            }}
+          >
             <Button
               onClick={() => setOpenDialog(false)}
               variant="contained"
