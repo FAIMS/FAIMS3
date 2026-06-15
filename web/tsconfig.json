@@ -12,8 +12,8 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "target": "ESNext",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "types": ["vite/client"]
   }
 }

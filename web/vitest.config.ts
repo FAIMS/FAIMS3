@@ -1,4 +1,5 @@
 import {defineConfig} from 'vitest/config';
+import {webdriverio} from '@vitest/browser-webdriverio';
 
 export default defineConfig({
   define: {
@@ -9,11 +10,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    // browser config updated for Vitest 2.x
     browser: {
       enabled: true,
       headless: true,
-      provider: 'webdriverio', // or 'playwright'
+      provider: webdriverio(),
       instances: [
         {
           browser: 'chrome',
