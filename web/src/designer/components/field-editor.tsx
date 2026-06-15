@@ -424,7 +424,11 @@ const FieldEditorComponent = ({
       ref={setNodeRef}
       expanded={expanded}
       onChange={handleAccordionChange}
-      slotProps={{transition: {unmountOnExit: true}}}
+      slotProps={{
+        transition: {
+          unmountOnExit: false,
+        },
+      }}
       disableGutters
       square
       elevation={0}
