@@ -104,21 +104,11 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         borderColor: hasErrors
           ? 'error.main'
           : alpha(theme.palette.text.primary, 0.12),
-        background: hasErrors
-          ? `linear-gradient(180deg, ${alpha(theme.palette.error.light, 0.08)} 0%, ${alpha(
-              theme.palette.error.main,
-              0.03
-            )} 100%)`
-          : alpha(theme.palette.text.primary, 0.01),
-        boxShadow: hasErrors
-          ? `0 0 10px 1px ${alpha(theme.palette.error.main, 0.08)}, inset 0 0 8px ${alpha(
-              theme.palette.error.main,
-              0.03
-            )}`
-          : `0 1px 6px ${alpha(theme.palette.common.black, 0.05)}, inset 0 1px 0 ${alpha(
-              theme.palette.common.white,
-              0.72
-            )}`,
+        background: alpha(theme.palette.text.primary, 0.01),
+        boxShadow: `0 1px 6px ${alpha(theme.palette.common.black, 0.05)}, inset 0 1px 0 ${alpha(
+          theme.palette.common.white,
+          0.72
+        )}`,
         transition: 'all 0.3s ease-in-out',
       }}
     >
@@ -206,20 +196,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       )}
 
       {/* Input Field */}
-      <Box
-        sx={{
-          p: 0.45,
-          borderRadius: 1,
-          background: `linear-gradient(180deg, ${alpha(theme.palette.text.primary, 0.014)} 0%, ${alpha(
-            theme.palette.text.primary,
-            0.006
-          )} 100%)`,
-          border: 'none',
-          boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.66)}`,
-        }}
-      >
-        {children}
-      </Box>
+      <Box sx={{p: 0.45}}>{children}</Box>
 
       {/* Error Messages */}
       {hasErrors && (
