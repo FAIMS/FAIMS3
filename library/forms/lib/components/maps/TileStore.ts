@@ -722,6 +722,7 @@ export class VectorTileStore extends TileStoreBase {
 
   async transformRequest(url: string) {
     const fullURL = url.replace('{key}', this.config.mapSourceKey);
+    console.log('Requesting tile URL:', fullURL);
     const blob = await this.getTileBlob(fullURL);
     if (blob) {
       this.storeTileRecord(fullURL, blob, '_cache');
@@ -778,10 +779,13 @@ export class VectorTileStore extends TileStoreBase {
               extent: extent,
               featureProjection: projection,
             });
-            return features;
+            vTile.setFeatures(features);
           });
         }
       });
+      // the function signature requires that we return
+      // an array of features although we are setting the features
+      // directly above, just return an empty array here to satisfy the signature
       return [];
     });
   }
