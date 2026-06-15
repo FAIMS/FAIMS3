@@ -284,7 +284,6 @@ export const RadioGroup = (props: FieldProps) => {
         </MuiRadioGroup>
         <Button
           variant="outlined"
-          color="warning"
           size="medium"
           onClick={handleClearRequest}
           disabled={disabled || !rawValue}
@@ -299,9 +298,19 @@ export const RadioGroup = (props: FieldProps) => {
             fontSize: '1rem',
             letterSpacing: 0.1,
             width: 'fit-content',
+            color: 'grey.700',
+            borderColor: 'grey.500',
+            '&:hover': {
+              borderColor: 'grey.700',
+              backgroundColor: 'action.hover',
+            },
+            '&.Mui-disabled': {
+              color: 'action.disabled',
+              borderColor: 'action.disabledBackground',
+            },
           }}
         >
-          Clear selection
+          Clear
         </Button>
       </FormControl>
       <Dialog
@@ -385,7 +394,12 @@ const valueSchema = (props: RadioGroupFieldProps) => {
   }
 
   if (props.required) {
-    return optionsSchema;
+    return z
+      .string()
+      .min(1, {message: 'Please select an option'})
+      .refine(value => optionValues.includes(value), {
+        message: 'Please select an option',
+      });
   }
 
   return z.union([optionsSchema, z.null(), z.literal('')]);
