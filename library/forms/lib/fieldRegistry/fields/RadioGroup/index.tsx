@@ -43,6 +43,7 @@ import {
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
+import {alpha} from '@mui/material/styles';
 import {z} from 'zod';
 import {BaseFieldParametersSchema} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
@@ -298,10 +299,10 @@ export const RadioGroup = (props: FieldProps) => {
             fontSize: '1rem',
             letterSpacing: 0.1,
             width: 'fit-content',
-            color: 'grey.700',
-            borderColor: 'grey.500',
+            color: 'text.secondary',
+            borderColor: theme => alpha(theme.palette.text.secondary, 0.5),
             '&:hover': {
-              borderColor: 'grey.700',
+              borderColor: 'text.secondary',
               backgroundColor: 'action.hover',
             },
             '&.Mui-disabled': {
