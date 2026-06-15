@@ -22,6 +22,12 @@ onlyBuiltDependencies:
   - protobufjs
   - sharp
 
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+trustPolicy: 'no-downgrade'
+strictDepBuilds: true
+ignoreScripts: true
+
 overrides:
   '@mui/base': '5.0.0-beta.40'
   'level': '^7.0.0'
