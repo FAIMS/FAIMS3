@@ -15,9 +15,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Box,
-  Button,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
@@ -290,12 +288,33 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           fullWidth
           maxWidth="sm"
           slotProps={{
+            container: {
+              sx: {
+                // Portaled dialogs don't inherit body safe-area padding (App.css).
+                pt: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-top, 0px)))',
+                  sm: 0,
+                },
+                pb: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-bottom, 0px)))',
+                  sm: 0,
+                },
+                pl: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-left, 0px)))',
+                  sm: 0,
+                },
+                pr: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-right, 0px)))',
+                  sm: 0,
+                },
+              },
+            },
             paper: {
               sx: {
                 borderRadius: 2,
-                m: {xs: 1.5, sm: 4},
-                width: {xs: 'calc(100% - 24px)', sm: 'calc(100% - 64px)'},
-                maxHeight: {xs: 'calc(100% - 24px)', sm: 'calc(100% - 64px)'},
+                m: {xs: 0, sm: 4},
+                width: {xs: '100%', sm: 'calc(100% - 64px)'},
+                maxHeight: {xs: '100%', sm: 'calc(100% - 64px)'},
                 boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
               },
             },
@@ -320,9 +339,20 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             </Box>
             <IconButton
               onClick={() => setOpenDialog(false)}
-              size="small"
+              size="medium"
               aria-label="Close"
-              sx={{flexShrink: 0, mt: -0.5, mr: -0.5}}
+              sx={{
+                flexShrink: 0,
+                mt: -0.5,
+                mr: -0.5,
+                bgcolor: alpha(theme.palette.common.black, 0.06),
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+                padding: 1,
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.common.black, 0.1),
+                  boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)',
+                },
+              }}
             >
               <CloseIcon />
             </IconButton>
@@ -357,30 +387,6 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               <RichTextContent content={String(advancedHelperText || '')} />
             </Box>
           </DialogContent>
-
-          <DialogActions
-            sx={{
-              px: {xs: 1.75, sm: 2.5},
-              py: {xs: 1, sm: 1.25},
-              justifyContent: 'flex-end',
-            }}
-          >
-            <Button
-              onClick={() => setOpenDialog(false)}
-              variant="contained"
-              sx={{
-                fontWeight: 'bold',
-                textTransform: 'none',
-                fontSize: isMobile ? '0.85rem' : '0.95rem',
-                px: 2.5,
-                '&:hover': {
-                  color: '#fff',
-                },
-              }}
-            >
-              Close
-            </Button>
-          </DialogActions>
         </Dialog>
       )}
 
