@@ -25,7 +25,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {alpha} from '@mui/material/styles';
 import React, {ReactNode, useState} from 'react';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {RichTextContent} from '../../../components/RichText';
@@ -97,18 +96,12 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       sx={{
         marginBottom: 3,
         position: 'relative',
-        padding: 0.9,
+        padding: hasErrors ? 0.9 : 0,
         borderRadius: 2,
-        borderWidth: 1,
+        borderWidth: hasErrors ? 1 : 0,
         borderStyle: 'solid',
-        borderColor: hasErrors
-          ? 'error.main'
-          : alpha(theme.palette.text.primary, 0.12),
-        background: alpha(theme.palette.text.primary, 0.01),
-        boxShadow: `0 1px 6px ${alpha(theme.palette.common.black, 0.05)}, inset 0 1px 0 ${alpha(
-          theme.palette.common.white,
-          0.72
-        )}`,
+        borderColor: 'error.main',
+        background: 'transparent',
         transition: 'all 0.3s ease-in-out',
       }}
     >
@@ -181,14 +174,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           sx={{
             marginBottom: 1,
             fontSize: {xs: '0.9rem', md: '1rem'},
-            px: 1,
-            py: 0.45,
-            borderRadius: 1,
-            background: `linear-gradient(180deg, ${alpha(theme.palette.text.primary, 0.03)} 0%, ${alpha(
-              theme.palette.text.primary,
-              0.014
-            )} 100%)`,
-            boxShadow: `0 1px 4px ${alpha(theme.palette.common.black, 0.035)}`,
+            color: 'text.secondary',
           }}
         >
           {subheading}
