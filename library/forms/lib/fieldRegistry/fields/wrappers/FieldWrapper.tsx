@@ -23,6 +23,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import React, {ReactNode, useState} from 'react';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {RichTextContent} from '../../../components/RichText';
