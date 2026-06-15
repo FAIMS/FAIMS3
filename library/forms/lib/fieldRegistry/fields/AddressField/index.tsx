@@ -329,6 +329,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
             <Autocomplete<AutosuggestSuggestion | UseAsEnteredOption>
               value={null}
               open={searchOpen && searchQuery.trim().length > 0}
+              popupIcon={searchQuery.trim() ? undefined : null}
               onOpen={() => setSearchOpen(true)}
               onClose={() => setSearchOpen(false)}
               inputValue={searchQuery}
