@@ -124,37 +124,28 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
     >
       {/* Heading (Label) + Info Icon for advanced help */}
       {(!!heading || advancedHelperText) && (
-        <Box
+        <Typography
+          variant="h5"
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            fontWeight: 'bold',
+            fontSize: {xs: '1.1rem', md: '1.25rem'},
             mb: 0.75,
-            flexWrap: 'wrap',
-            gap: 1,
           }}
         >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 'bold',
-              fontSize: {xs: '1.1rem', md: '1.25rem'},
-            }}
-          >
-            {heading}
-            {required && (
-              <span
-                data-testid="required-indicator"
-                style={{
-                  color: theme.palette.error.main,
-                  marginLeft: 2,
-                  fontSize: '1.4em',
-                  fontWeight: 'bold',
-                }}
-              >
-                *
-              </span>
-            )}
-          </Typography>
+          {heading}
+          {required && (
+            <span
+              data-testid="required-indicator"
+              style={{
+                color: theme.palette.error.main,
+                marginLeft: 2,
+                fontSize: '1.4em',
+                fontWeight: 'bold',
+              }}
+            >
+              *
+            </span>
+          )}
 
           {/* More info help icon with dialog */}
           {typeof advancedHelperText === 'string' &&
@@ -165,8 +156,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 size="small"
                 onClick={() => setOpenDialog(true)}
                 sx={{
-                  mt: '4px',
-                  padding: 0,
+                  p: 0,
+                  ml: 0.5,
+                  verticalAlign: 'middle',
                   '&:hover': {
                     backgroundColor: 'transparent',
                   },
@@ -181,7 +173,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 />
               </IconButton>
             )}
-        </Box>
+        </Typography>
       )}
 
       {/* Subheading (Help Text) */}
