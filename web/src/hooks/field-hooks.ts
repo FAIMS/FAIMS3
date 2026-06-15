@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
  * Keeps the full typed value locally for display, but only passes the allowed
  * value to onValid when maxLength is set.
  *
- * @param initialValue - string, Initial text shown in the input.
+ * @param initialValue - string, initial text shown in the input.
  * @param maxLength - number, maximum number of characters to save.
  *
  * @returns errorText - Current validation error message, or undefined if valid.
@@ -44,7 +44,7 @@ export const useTextFieldLengthLimit = (
 
             if (value.length > maxLength) {
                 setErrorText(
-                    `${value.length}/${maxLength}. Only the first ${maxLength} characters will be saved.`
+                    `${value.length} / ${maxLength} characters. Only the first ${maxLength} characters will be saved.`
                 );
             } else {
                 setErrorText(undefined);

@@ -60,7 +60,6 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
               helperText={
                 buttonLabelErrorTxt
               }
-              // inputProps={{ maxLength: 25 }}
               placeholder="Leave empty to use the field label"
               onChange={e => validateAndUpdateButtonLabelText(e.target.value, updateButtonLabel)}
             />
