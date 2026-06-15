@@ -39,8 +39,9 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   const {
     errorText: buttonLabelErrorTxt,
+    inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit('Button Label Text', 30);
+  } = useTextFieldLengthLimit(buttonLabelText);
 
 
   return (
@@ -54,11 +55,12 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
             <DebouncedTextField
               variant="outlined"
               label=""
-              value={buttonLabelText}
+              value={buttonLabelValue}
               error={!!buttonLabelErrorTxt}
               helperText={
                 buttonLabelErrorTxt
               }
+              // inputProps={{ maxLength: 25 }}
               placeholder="Leave empty to use the field label"
               onChange={e => validateAndUpdateButtonLabelText(e.target.value, updateButtonLabel)}
             />

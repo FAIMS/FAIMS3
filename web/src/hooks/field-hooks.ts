@@ -1,52 +1,65 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 /**
  * Hook for limiting text field input length and exposing validation error text.
  *
- * @param fieldLabel - Display name used in the error message.
- * @param defaultMaxLength - Optional default maximum length. If undefined, no length limit is applied.
+ * Keeps the full typed value locally for display, but only passes the allowed
+ * value to onValid when maxLength is set.
+ *
+ * @param initialValue - string, Initial text shown in the input.
+ * @param maxLength - number, maximum number of characters to save.
  *
  * @returns errorText - Current validation error message, or undefined if valid.
- * @returns validateAndUpdate - Checks/slices the input value, then calls onValid with the allowed value.
+ * @returns inputValue - Full text shown in the input.
+ * @returns validateAndUpdate - Updates the input value and calls onValid with the allowed value.
  */
+
+const DEFAULT_MAX_LENGTH = 25
+
 export const useTextFieldLengthLimit = (
-    fieldLabel = 'Text field input',
-    maxLength?: number
+    initialValue?: string,
+    maxLength: number = DEFAULT_MAX_LENGTH,
 ) => {
     const [errorText, setErrorText] = useState<string>();
 
+    // Keep a local input value so the field can show exactly what the user types.
+    // Redux may store a sliced value, so using it directly could overwrite the input
+    // and move the cursor to the end on re-render.
+    const [inputValue, setInputValue] = useState<string>(initialValue ?? '');
+
     const validateAndUpdate = useCallback(
         (
-            value: string | number | boolean,
-            onValid: (validValue: string) => void,
+            value: string,
+            onValid: (validValue: string) => void
         ) => {
-            if (typeof value !== 'string') return;
+            // Update the displayed input value.
+            setInputValue(value);
 
-            // If maxLength is undefined, save/update with the original value.
-            if (maxLength === undefined) {
+            if (typeof maxLength !== 'number' || maxLength < 0) {
+                // No valid length limit, save whatever the user typed.
                 setErrorText(undefined);
                 onValid(value);
                 return;
             }
 
-            // Only the first maxLength characters will be saved/updated.
-            const slicedValue = value.slice(0, maxLength);
-
             if (value.length > maxLength) {
                 setErrorText(
-                    `${fieldLabel} must be ${maxLength} characters or less. Only the first ${maxLength} characters will be saved.`
+                    `${value.length}/${maxLength}. Only the first ${maxLength} characters will be saved.`
                 );
             } else {
                 setErrorText(undefined);
             }
-
+            // Only the first maxLength characters will be saved/updated.
+            const slicedValue = value.slice(0, maxLength);
             onValid(slicedValue);
+
         },
-        [maxLength, fieldLabel]
+        [maxLength]
     );
 
     return {
         errorText,
+        inputValue,
         validateAndUpdate,
     };
 };

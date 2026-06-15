@@ -89,8 +89,9 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   const {
     errorText: buttonLabelErrorTxt,
+    inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit('Button Label Text', 30);
+  } = useTextFieldLengthLimit(initButtonLabelText);
 
 
   return (
@@ -134,7 +135,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               fullWidth
               variant="outlined"
               label=""
-              value={initButtonLabelText}
+              value={buttonLabelValue}
               error={!!buttonLabelErrorTxt}
               helperText={
                 buttonLabelErrorTxt
