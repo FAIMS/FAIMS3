@@ -172,7 +172,6 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
       }),
-    devTools: process.env.NODE_ENV !== 'production',
   });
 
   const queryClient = new QueryClient();
