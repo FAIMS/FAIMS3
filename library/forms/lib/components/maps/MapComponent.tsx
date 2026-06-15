@@ -24,7 +24,7 @@
  */
 
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {Box, Grid} from '@mui/material';
+import {Box} from '@mui/material';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
