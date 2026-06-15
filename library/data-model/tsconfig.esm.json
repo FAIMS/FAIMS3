@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "nodenext",
     "outDir": "./build/esm",
     "declaration": true
   },

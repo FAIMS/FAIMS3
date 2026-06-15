@@ -778,10 +778,11 @@ export class VectorTileStore extends TileStoreBase {
               extent: extent,
               featureProjection: projection,
             });
-            vTile.setFeatures(features);
+            return features;
           });
         }
       });
+      return [];
     });
   }
 }

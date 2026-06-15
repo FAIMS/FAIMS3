@@ -28,6 +28,7 @@ import {DEVELOPER_MODE} from '../src/buildconfig';
 import {initialiseDbAndKeys} from '../src/couchdb';
 import {createRandomRecord} from '../src/couchdb/devtools';
 import {callbackObject} from './mocks';
+import {createNotebookFromSampleFile} from './sampleNotebook';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
@@ -36,7 +37,6 @@ if (DEVELOPER_MODE) {
   it('createRecords', async () => {
     await initialiseDbAndKeys({});
 
-    const {createNotebookFromSampleFile} = await import('./sampleNotebook');
     const projectID = await createNotebookFromSampleFile('Test Notebook');
 
     expect(projectID).not.to.be.undefined;
