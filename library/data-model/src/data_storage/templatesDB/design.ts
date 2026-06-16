@@ -40,7 +40,7 @@ const indexDocument = {
           return;
         }
         var row = {...doc};
-        delete row['ui-specification'];
+        delete row.uiSpecification;
         emit(doc._id, row);
       }),
     },
@@ -56,7 +56,7 @@ const indexDocument = {
           return;
         }
         var row = {...doc};
-        delete row['ui-specification'];
+        delete row.uiSpecification;
         emit(doc.ownedByTeamId, row);
       }),
     },

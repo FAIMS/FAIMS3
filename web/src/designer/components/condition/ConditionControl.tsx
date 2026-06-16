@@ -32,6 +32,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
+import {ChoiceElementProps} from '@faims3/forms';
 import {useMemo, useState} from 'react';
 import {useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -53,8 +54,8 @@ import {getFieldLabel} from './utils';
 const getSelectableOptions = (
   fieldDef: FieldType
 ): SelectableConditionOption[] =>
-  (fieldDef['component-parameters']?.ElementProps?.options ??
-    []) as SelectableConditionOption[];
+  ((fieldDef['component-parameters'] as {ElementProps?: ChoiceElementProps})
+    .ElementProps?.options ?? []) as SelectableConditionOption[];
 
 /** Root condition editor: boolean group (and/or) or single field comparison. */
 export const ConditionControl = (props: ConditionProps) => {
@@ -234,11 +235,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const [condition, setCondition] = useState(initialValue);
 
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
-  const views = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   // work out which fields to show in the select/combobox, remove either
   // the current field or the fields in the current view
@@ -370,7 +369,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
 
   const renderValueEditor = (fieldDef: FieldType) => {
     const cName = fieldDef['component-name'];
-    const params = fieldDef['component-parameters'] || {};
+    const params = (fieldDef['component-parameters'] || {}) as {
+      ElementProps?: ChoiceElementProps;
+    };
     const possibleOptions =
       (params.ElementProps?.options as
         | SelectableConditionOption[]
@@ -529,7 +530,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const isValueValidForField = (): boolean => {
     if (!targetFieldDef) return true;
     const cName = targetFieldDef['component-name'];
-    const params = targetFieldDef['component-parameters'] || {};
+    const params = (targetFieldDef['component-parameters'] || {}) as {
+      ElementProps?: ChoiceElementProps;
+    };
     const possibleOptions =
       (params.ElementProps?.options as
         | SelectableConditionOption[]

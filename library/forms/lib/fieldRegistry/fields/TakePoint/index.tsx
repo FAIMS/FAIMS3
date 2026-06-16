@@ -35,7 +35,7 @@
  */
 
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {FAIMSPosition, logError} from '@faims3/data-model';
+import {logError} from '@faims3/data-model';
 import LocationOn from '@mui/icons-material/LocationOn';
 import {Alert, Box, Paper, Typography} from '@mui/material';
 import Button from '@mui/material/Button';
@@ -43,7 +43,8 @@ import {useTheme} from '@mui/material/styles';
 import {useState} from 'react';
 import {z} from 'zod';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -52,14 +53,14 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
-const TakePointFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const TakePointFieldPropsSchema = BaseFieldParametersSchema.extend({
   buttonLabelText: z.string().optional(),
   enableHighAccuracy: z.boolean().optional(),
   timeout: z.number().optional(),
   maximumAge: z.number().optional(),
 });
 
-type TakePointFieldProps = z.infer<typeof TakePointFieldPropsSchema>;
+export type TakePointFieldProps = z.infer<typeof TakePointFieldPropsSchema>;
 type FieldProps = TakePointFieldProps & FullFieldProps;
 
 // GeoJSON Feature schema for the stored value
@@ -78,6 +79,7 @@ const FAIMSPositionSchema = z.object({
     coordinates: z.tuple([z.number(), z.number()]), // [longitude, latitude]
   }),
 });
+type FAIMSPosition = z.infer<typeof FAIMSPositionSchema>;
 
 // ============================================================================
 // Utility Functions

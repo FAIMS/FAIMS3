@@ -26,13 +26,13 @@ import {
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
-import DebouncedTextField from './debounced-text-field';
 import {designerInfoIconSx} from './designer-style';
 import {
   viewSetHridUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } from '../store/slices/uiSpec';
+import DebouncedTextField from './debounced-text-field';
 
 type ViewSetType = {
   views: string[];
@@ -92,17 +92,11 @@ const SettingSection = ({
 export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
 
-  const fields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
-  );
+  const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
   const viewSet: ViewSetType | undefined = useAppSelector(
-    state =>
-      state.notebook?.['ui-specification']?.present.viewsets?.[viewSetId] ||
-      undefined
+    state => state.notebook?.uiSpec?.present.viewsets?.[viewSetId] || undefined
   );
-  const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -110,13 +104,13 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
   const viewSetFields = React.useMemo(() => {
     const fieldSet = new Set<string>();
     viewSet.views.forEach(viewId => {
-      const view = fviews[viewId];
+      const view = views[viewId];
       if (view) {
         view.fields.forEach(fieldId => fieldSet.add(fieldId));
       }
     });
     return Array.from(fieldSet);
-  }, [viewSet.views, fviews]);
+  }, [viewSet.views, views]);
 
   /**
    * Converts field IDs to option objects for select components
@@ -227,16 +221,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
           onChange={handleSummaryFieldsChange}
           getOptionLabel={option => option.label}
           renderInput={params => (
-            <DebouncedTextField
-              onChange={function (): void {
-                throw new Error('Function not implemented.');
-              }}
-              {...params}
-              InputProps={{
-                ...params.InputProps,
-                sx: {'& .MuiInputLabel-root': {display: 'none'}},
-              }}
-            />
+            <DebouncedTextField {...params} onChange={() => {}} />
           )}
         />
       </SettingSection>
@@ -254,14 +239,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
           onChange={handleHridFieldChange}
           getOptionLabel={option => option.label}
           renderInput={params => (
-            <DebouncedTextField
-              onChange={function (): void {}}
-              {...params}
-              InputProps={{
-                ...params.InputProps,
-                sx: {'& .MuiInputLabel-root': {display: 'none'}},
-              }}
-            />
+            <DebouncedTextField {...params} onChange={() => {}} />
           )}
         />
       </SettingSection>

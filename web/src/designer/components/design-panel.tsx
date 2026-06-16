@@ -72,11 +72,11 @@ export const DesignPanel = () => {
   const basePath = pathname.split('/').slice(0, 2).join('/');
 
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets,
+    state => state.notebook.uiSpec.present.viewsets,
     shallowEqual
   );
   const visibleTypes: string[] = useAppSelector(
-    state => state.notebook['ui-specification'].present.visible_types
+    state => state.notebook.uiSpec.present.visible_types
   );
   const dispatch = useAppDispatch();
 
@@ -109,7 +109,9 @@ export const DesignPanel = () => {
   useEffect(() => {
     const el = formTabsRef.current;
     if (!el) return;
-    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    const scroller = el.querySelector(
+      '.MuiTabs-scroller'
+    ) as HTMLElement | null;
     if (!scroller) return;
 
     const updateOverflow = () => {
@@ -159,7 +161,8 @@ export const DesignPanel = () => {
     color: 'primary.contrastText',
     backgroundColor: 'primary.main',
     fontWeight: 800,
-    boxShadow: (t: Theme) => `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
+    boxShadow: (t: Theme) =>
+      `0 3px 10px ${alpha(t.palette.primary.main, 0.34)}`,
   } as const;
 
   const visibleTabSx = {
@@ -343,7 +346,10 @@ export const DesignPanel = () => {
                 >
                   Forms are top-level data entry pages in your {NOTEBOOK_NAME}.
                 </Typography>
-                <Typography variant="caption" sx={{display: 'block', lineHeight: 1.45}}>
+                <Typography
+                  variant="caption"
+                  sx={{display: 'block', lineHeight: 1.45}}
+                >
                   Define the user interface for your notebook here. Add one or
                   more forms to collect data from users. Each form can have one
                   or more sections, and each section can have one or more form
@@ -353,8 +359,15 @@ export const DesignPanel = () => {
                   variant="caption"
                   sx={{display: 'block', mt: 0.75, lineHeight: 1.45}}
                 >
-                  Tip: Hold <Box component="span" sx={{fontFamily: 'monospace', fontWeight: 800}}>Shift</Box> and scroll your mouse wheel
-                  to move sideways through the form and section tabs.
+                  Tip: Hold{' '}
+                  <Box
+                    component="span"
+                    sx={{fontFamily: 'monospace', fontWeight: 800}}
+                  >
+                    Shift
+                  </Box>{' '}
+                  and scroll your mouse wheel to move sideways through the form
+                  and section tabs.
                 </Typography>
               </Box>
             }
@@ -507,22 +520,21 @@ export const DesignPanel = () => {
                 key={startIndex}
                 path={`${startIndex}`}
                 element={
-                <FormEditor
-                  viewSetId={form}
-                  moveCallback={moveForm}
-                  moveButtonsDisabled={true}
-                  handleChangeCallback={handleCheckboxTabChange}
-                  handleDeleteCallback={handleDeleteFormTabChange}
-                  handleSectionMoveCallback={handleSectionMove}
-                  handleFieldMoveCallback={handleFieldMove}
-                  previewForm={previewForm}
-                  toolbarPortal={formToolbarSlot}
-                />
-              }
-            />
+                  <FormEditor
+                    viewSetId={form}
+                    moveCallback={moveForm}
+                    moveButtonsDisabled={true}
+                    handleChangeCallback={handleCheckboxTabChange}
+                    handleDeleteCallback={handleDeleteFormTabChange}
+                    handleSectionMoveCallback={handleSectionMove}
+                    handleFieldMoveCallback={handleFieldMove}
+                    previewForm={previewForm}
+                    toolbarPortal={formToolbarSlot}
+                  />
+                }
+              />
             );
           })}
-
         </Routes>
       </TabContext>
       <Dialog
@@ -534,12 +546,14 @@ export const DesignPanel = () => {
         fullWidth
         maxWidth="sm"
         fullScreen={addFormDialogFullScreen}
-        PaperProps={{
-          sx: {
-            borderRadius: {xs: 0, sm: 2},
-            boxShadow: {xs: 'none', sm: theme.shadows[12]},
-            overflow: 'hidden',
-            minHeight: {xs: 300, sm: 340},
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: {xs: 0, sm: 2},
+              boxShadow: {xs: 'none', sm: theme.shadows[12]},
+              overflow: 'hidden',
+              minHeight: {xs: 300, sm: 340},
+            },
           },
         }}
       >

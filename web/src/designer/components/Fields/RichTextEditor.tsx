@@ -17,6 +17,7 @@ import {Grid, FormHelperText} from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {useRef} from 'react';
 import {MDXEditorMethods} from '@mdxeditor/editor';
+import {RichTextProps} from '@faims3/forms';
 import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
@@ -24,11 +25,12 @@ import {fieldUpdated} from '../../store/slices/uiSpec';
 /** RichText display field: MDX body stored in `component-parameters.content`. */
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
-  const initContent = field['component-parameters'].content || '';
+  const params = field['component-parameters'] as RichTextProps;
+  const initContent = params.content || '';
   const ref = useRef<MDXEditorMethods>(null);
 
   const updateField = (fieldName: string, newField: FieldType) => {
@@ -36,7 +38,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   };
 
   const state = {
-    content: field['component-parameters'].content || '',
+    content: params.content || '',
   };
 
   type newState = {
@@ -45,7 +47,8 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
 
   const updateFieldFromState = (newState: newState) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    newField['component-parameters'].content = newState.content;
+    const newParams = newField['component-parameters'] as RichTextProps;
+    newParams.content = newState.content;
     updateField(fieldName, newField);
   };
 
@@ -55,8 +58,8 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   };
 
   return (
-    <Grid container item xs={12} sm={8} sx={{m: 'auto'}}>
-      <Grid item xs={12}>
+    <Grid container size={{xs: 12, sm: 8}} sx={{m: 'auto'}}>
+      <Grid size={12}>
         <MdxEditor
           initialMarkdown={initContent}
           editorRef={ref}

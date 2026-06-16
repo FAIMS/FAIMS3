@@ -57,7 +57,7 @@ export default function Notebook() {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" alignItems={'center'} spacing={2}>
+      <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
         <BackButton link={backLink} />
 
         <Typography
@@ -69,7 +69,7 @@ export default function Notebook() {
             textOverflow: 'ellipsis',
           }}
         >
-          {project.name ?? project.metadata.name}
+          {project.name}
         </Typography>
       </Stack>
 

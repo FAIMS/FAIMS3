@@ -21,6 +21,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {AddressFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -35,11 +36,11 @@ type AddressFieldConfig = {
 /** Address plugin toggles: online suggestions vs full manual structured entry. */
 export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
-  const params = field['component-parameters'];
+  const params = field['component-parameters'] as AddressFieldProps;
   const state: AddressFieldConfig = {
     enableAutoSuggestion: params.enableAutoSuggestion ?? true,
     allowFullAddressManualEntry: params.allowFullAddressManualEntry ?? false,
@@ -47,9 +48,9 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   const updateField = (newState: AddressFieldConfig) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].enableAutoSuggestion =
-      newState.enableAutoSuggestion;
-    newField['component-parameters'].allowFullAddressManualEntry =
+    const newParams = newField['component-parameters'] as AddressFieldProps;
+    newParams.enableAutoSuggestion = newState.enableAutoSuggestion;
+    newParams.allowFullAddressManualEntry =
       newState.allowFullAddressManualEntry;
     dispatch(fieldUpdated({fieldName, newField}));
   };
@@ -60,10 +61,10 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid container p={2} rowGap={1}>
-            <Grid item xs={12}>
+          <Grid container sx={{p: 2, rowGap: 1}}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -86,7 +87,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox

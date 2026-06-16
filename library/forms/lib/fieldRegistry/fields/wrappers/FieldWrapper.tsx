@@ -11,13 +11,11 @@
  * It is used across multiple input components to standardize the UI.
  */
 import CloseIcon from '@mui/icons-material/Close';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Box,
-  Button,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
@@ -27,6 +25,7 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import React, {ReactNode, useState} from 'react';
+import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {RichTextContent} from '../../../components/RichText';
 
 /**
@@ -74,6 +73,15 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const open = Boolean(anchorEl);
+  // Image clicked inside the advanced helper dialog — opens PhotoLightbox.
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const onHelperImageClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      e.preventDefault();
+      setZoomImageUrl((target as HTMLImageElement).src);
+    }
+  };
 
   const hasErrors = errors.length > 0;
 
@@ -114,35 +122,28 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
     >
       {/* Heading (Label) + Info Icon for advanced help */}
       {(!!heading || advancedHelperText) && (
-        <Box
-          display="flex"
-          alignItems="center"
-          mb={0.75}
-          flexWrap="wrap"
-          gap={1}
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 'bold',
+            fontSize: {xs: '1.1rem', md: '1.25rem'},
+            mb: 0.75,
+          }}
         >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 'bold',
-              fontSize: {xs: '1.1rem', md: '1.25rem'},
-            }}
-          >
-            {heading}
-            {required && (
-              <span
-                data-testid="required-indicator"
-                style={{
-                  color: theme.palette.error.main,
-                  marginLeft: 2,
-                  fontSize: '1.4em',
-                  fontWeight: 'bold',
-                }}
-              >
-                *
-              </span>
-            )}
-          </Typography>
+          {heading}
+          {required && (
+            <span
+              data-testid="required-indicator"
+              style={{
+                color: theme.palette.error.main,
+                marginLeft: 2,
+                fontSize: '1.4em',
+                fontWeight: 'bold',
+              }}
+            >
+              *
+            </span>
+          )}
 
           {/* More info help icon with dialog */}
           {typeof advancedHelperText === 'string' &&
@@ -153,8 +154,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 size="small"
                 onClick={() => setOpenDialog(true)}
                 sx={{
-                  mt: '4px',
-                  padding: 0,
+                  p: 0,
+                  ml: 0.5,
+                  verticalAlign: 'middle',
                   '&:hover': {
                     backgroundColor: 'transparent',
                   },
@@ -169,7 +171,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 />
               </IconButton>
             )}
-        </Box>
+        </Typography>
       )}
 
       {/* Subheading (Help Text) */}
@@ -276,27 +278,73 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           fullWidth
-          maxWidth="md"
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              p: 1,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-              position: 'relative',
+          maxWidth="sm"
+          slotProps={{
+            container: {
+              sx: {
+                // Portaled dialogs don't inherit body safe-area padding (App.css).
+                pt: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-top, 0px)))',
+                  sm: 0,
+                },
+                pb: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-bottom, 0px)))',
+                  sm: 0,
+                },
+                pl: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-left, 0px)))',
+                  sm: 0,
+                },
+                pr: {
+                  xs: 'max(12px, calc(12px + env(safe-area-inset-right, 0px)))',
+                  sm: 0,
+                },
+              },
+            },
+            paper: {
+              sx: {
+                borderRadius: 2,
+                m: {xs: 0, sm: 4},
+                width: {xs: '100%', sm: 'calc(100% - 64px)'},
+                maxHeight: {xs: '100%', sm: 'calc(100% - 64px)'},
+                boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+              },
             },
           }}
         >
           <DialogTitle
             sx={{
               fontWeight: 'bold',
-              fontSize: '1.2rem',
-              paddingRight: 4,
+              fontSize: {xs: '1.1rem', sm: '1.2rem'},
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1,
+              py: {xs: 1.25, sm: 1.75},
+              px: {xs: 1.75, sm: 2.5},
             }}
           >
-            {heading}
+            <Box
+              component="span"
+              sx={{flex: 1, minWidth: 0, wordBreak: 'break-word'}}
+            >
+              {heading}
+            </Box>
             <IconButton
               onClick={() => setOpenDialog(false)}
-              sx={{position: 'absolute', right: 16, top: 16}}
+              size="medium"
+              aria-label="Close"
+              sx={{
+                flexShrink: 0,
+                mt: -0.5,
+                mr: -0.5,
+                bgcolor: alpha(theme.palette.common.black, 0.06),
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+                padding: 1,
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.common.black, 0.1),
+                  boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)',
+                },
+              }}
             >
               <CloseIcon />
             </IconButton>
@@ -304,8 +352,10 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
 
           <DialogContent
             dividers
+            onClick={onHelperImageClick}
             sx={{
-              maxHeight: '60vh',
+              px: {xs: 1.75, sm: 2.5},
+              py: {xs: 1.25, sm: 1.75},
               overflowY: 'auto',
               '& img': {
                 maxWidth: '100%',
@@ -313,6 +363,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 borderRadius: 1,
                 display: 'block',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                cursor: 'zoom-in',
               },
               '& p': {
                 wordBreak: 'break-word',
@@ -321,32 +372,22 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           >
             <Box
               sx={{
-                fontSize: '1rem',
+                fontSize: {xs: '0.95rem', sm: '1rem'},
                 lineHeight: 1.6,
               }}
             >
               <RichTextContent content={String(advancedHelperText || '')} />
             </Box>
           </DialogContent>
-
-          <DialogActions sx={{pt: 2, justifyContent: 'flex-end'}}>
-            <Button
-              onClick={() => setOpenDialog(false)}
-              variant="contained"
-              sx={{
-                fontWeight: 'bold',
-                textTransform: 'none',
-                fontSize: isMobile ? '0.85rem' : '0.95rem',
-                px: 2.5,
-                '&:hover': {
-                  color: '#fff',
-                },
-              }}
-            >
-              Close
-            </Button>
-          </DialogActions>
         </Dialog>
+      )}
+
+      {/* Click-to-zoom lightbox for images inside the helper dialog. */}
+      {zoomImageUrl && (
+        <PhotoLightbox
+          url={zoomImageUrl}
+          onClose={() => setZoomImageUrl(null)}
+        />
       )}
     </Box>
   );

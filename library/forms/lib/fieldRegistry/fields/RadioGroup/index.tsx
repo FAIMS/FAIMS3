@@ -43,8 +43,11 @@ import {
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
+import {alpha} from '@mui/material/styles';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -61,22 +64,11 @@ import {useState} from 'react';
 // Types & Schema
 // ============================================================================
 
-const RadioOptionSchema = z.object({
-  key: z.string().optional(),
-  value: z.string(),
-  label: z.string(),
+export const RadioGroupFieldPropsSchema = BaseFieldParametersSchema.extend({
+  ElementProps: ChoiceElementPropsSchema,
 });
 
-const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
-  ElementProps: z.object({
-    options: z.array(RadioOptionSchema),
-    enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(),
-  }),
-});
-
-type RadioGroupFieldProps = z.infer<typeof RadioGroupFieldPropsSchema>;
-type RadioOption = z.infer<typeof RadioOptionSchema>;
+export type RadioGroupFieldProps = z.infer<typeof RadioGroupFieldPropsSchema>;
 type FieldProps = RadioGroupFieldProps & FullFieldProps;
 
 // ============================================================================
@@ -225,7 +217,7 @@ export const RadioGroup = (props: FieldProps) => {
             );
 
             // Render a regular option
-            const renderOption = (option: RadioOption) => (
+            const renderOption = (option: ChoiceOption) => (
               <FormControlLabel
                 key={option.key || option.value}
                 value={option.value}
@@ -293,7 +285,6 @@ export const RadioGroup = (props: FieldProps) => {
         </MuiRadioGroup>
         <Button
           variant="outlined"
-          color="warning"
           size="medium"
           onClick={handleClearRequest}
           disabled={disabled || !rawValue}
@@ -308,9 +299,19 @@ export const RadioGroup = (props: FieldProps) => {
             fontSize: '1rem',
             letterSpacing: 0.1,
             width: 'fit-content',
+            color: 'text.secondary',
+            borderColor: theme => alpha(theme.palette.text.secondary, 0.5),
+            '&:hover': {
+              borderColor: 'text.secondary',
+              backgroundColor: 'action.hover',
+            },
+            '&.Mui-disabled': {
+              color: 'action.disabled',
+              borderColor: 'action.disabledBackground',
+            },
           }}
         >
-          Clear selection
+          Clear
         </Button>
       </FormControl>
       <Dialog
@@ -394,7 +395,12 @@ const valueSchema = (props: RadioGroupFieldProps) => {
   }
 
   if (props.required) {
-    return optionsSchema;
+    return z
+      .string()
+      .min(1, {message: 'Please select an option'})
+      .refine(value => optionValues.includes(value), {
+        message: 'Please select an option',
+      });
   }
 
   return z.union([optionsSchema, z.null(), z.literal('')]);

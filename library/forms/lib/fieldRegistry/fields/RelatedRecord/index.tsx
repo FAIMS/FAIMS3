@@ -6,7 +6,7 @@ import {
   HydratedRecord,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
@@ -44,7 +44,8 @@ import {
 } from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
-import {BaseFieldProps, FormFieldContextProps} from '../../../formModule/types';
+import {BaseFieldParameters} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -115,10 +116,12 @@ const RelatedRecordListItem = ({
           <ListItemText
             primary={link.record_id}
             secondary={link.relation_type_vocabPair[0] + ' (Load Error)'}
-            primaryTypographyProps={{
-              variant: 'body2',
-              fontFamily: 'monospace',
-              color: 'error',
+            slotProps={{
+              primary: {
+                variant: 'body2',
+                color: 'error',
+                sx: {fontFamily: 'monospace'},
+              },
             }}
           />
         </ListItemButton>
@@ -130,6 +133,10 @@ const RelatedRecordListItem = ({
   if (data.record.deleted || data.revision.deleted) {
     return null;
   }
+
+  // True when we have a real HRID (templated string), false when we're
+  // falling back to the raw record id because no HRID was configured.
+  const isHumanReadableHrid = data.hrid !== link.record_id;
 
   // 3. Success State: Hydrated Data
   return (
@@ -161,10 +168,17 @@ const RelatedRecordListItem = ({
         </ListItemIcon>
         <ListItemText
           primary={data.hrid}
-          primaryTypographyProps={{
-            variant: 'body2',
-            fontFamily: 'monospace',
-            fontWeight: data.hrid !== link.record_id ? 'bold' : 'normal',
+          slotProps={{
+            primary: {
+              variant: 'body2',
+              sx: {
+                fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+                // Monospace only as a fallback when no real HRID was configured
+                // (i.e. we're showing the opaque record id). Real HRIDs use the
+                // theme's default font.
+                ...(isHumanReadableHrid ? {} : {fontFamily: 'monospace'}),
+              },
+            },
           }}
         />
       </ListItemButton>
@@ -307,12 +321,14 @@ const LinkExistingDialog = ({
           value={searchFilter}
           onChange={e => setSearchFilter(e.target.value)}
           sx={{mb: 2, mt: 1}}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -367,40 +383,50 @@ const LinkExistingDialog = ({
             <List dense disablePadding sx={{maxHeight: 300, overflow: 'auto'}}>
               {filteredRecords
                 .filter(r => r.success)
-                .map(recordResult => (
-                  <ListItem
-                    key={recordResult.record.record._id}
-                    disablePadding
-                    divider
-                  >
-                    <ListItemButton
-                      onClick={async () => {
-                        await handleSelect(recordResult.record);
-                      }}
+                .map(recordResult => {
+                  const isHumanReadableHrid =
+                    recordResult.record.hrid !== recordResult.record.record._id;
+                  return (
+                    <ListItem
+                      key={recordResult.record.record._id}
+                      disablePadding
+                      divider
                     >
-                      <ListItemIcon sx={{minWidth: 40}}>
-                        <LinkIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={recordResult.record.hrid}
-                        secondary={recordResult.record.record._id}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          fontFamily: 'monospace',
-                          fontWeight:
-                            recordResult.record.hrid !==
-                            recordResult.record.record._id
-                              ? 'bold'
-                              : 'normal',
+                      <ListItemButton
+                        onClick={async () => {
+                          await handleSelect(recordResult.record);
                         }}
-                        secondaryTypographyProps={{
-                          variant: 'caption',
-                          fontFamily: 'monospace',
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
+                      >
+                        <ListItemIcon sx={{minWidth: 40}}>
+                          <LinkIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={recordResult.record.hrid}
+                          secondary={recordResult.record.record._id}
+                          slotProps={{
+                            primary: {
+                              variant: 'body2',
+                              sx: {
+                                ...(isHumanReadableHrid
+                                  ? {}
+                                  : {fontFamily: 'monospace'}),
+                                fontWeight: isHumanReadableHrid
+                                  ? 'bold'
+                                  : 'normal',
+                              },
+                            },
+                            secondary: {
+                              variant: 'caption',
+                              // Secondary is always the raw record id, kept
+                              // monospace so it reads as an opaque identifier.
+                              sx: {fontFamily: 'monospace'},
+                            },
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
 
               {/* Load More Button */}
               {hasNextPage && (
@@ -437,7 +463,7 @@ const LinkExistingDialog = ({
 // ============================================================================
 
 const RelatedRecordFieldPreview = (
-  props: BaseFieldProps & FormFieldContextProps
+  props: BaseFieldParameters & FormFieldContextProps
 ) => {
   const typedProps = props as FullRelatedRecordFieldProps;
   const relatedRecordTypeLabel = typedProps.related_type ?? 'Record';
@@ -947,7 +973,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
 // Entry: preview uses static placeholders; runtime wraps the editor in
 // FieldWrapper + validation errors.
-const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
+const RelatedRecordField = (
+  props: BaseFieldParameters & FormFieldContextProps
+) => {
   if (props.config.mode === 'preview') {
     return <RelatedRecordFieldPreview {...props} />;
   } else {

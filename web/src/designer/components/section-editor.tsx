@@ -114,16 +114,16 @@ export const SectionEditor = ({
   toolbarPortal,
 }: Props) => {
   const fView = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews[viewId]
+    state => state.notebook.uiSpec.present.views[viewId]
   );
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
 
   const dispatch = useAppDispatch();
@@ -302,125 +302,129 @@ export const SectionEditor = ({
   return (
     <>
       {renderSectionToolbar(
-      <Stack spacing={1.5} mt={0.75} mb={2}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          flexWrap="wrap"
-          columnGap={1}
-          sx={designerControlActionRowSx}
-        >
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<EditRoundedIcon />}
-            onClick={() => setEditMode(true)}
-            sx={designerControlLabelSx}
-          >
-            Edit name
-          </Button>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title="Move section left">
-              <span>
-                <IconButton
-                  disabled={viewSet.views.indexOf(viewId) === 0}
-                  onClick={() => moveSection('left')}
-                  aria-label="left"
-                  size="small"
-                  sx={designerIconControlButtonSx}
-                >
-                  <ArrowBackRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Move section right">
-              <span>
-                <IconButton
-                  disabled={viewSet.views.indexOf(viewId) === viewSet.views.length - 1}
-                  onClick={() => moveSection('right')}
-                  aria-label="right"
-                  size="small"
-                  sx={designerIconControlButtonSx}
-                >
-                  <ArrowForwardRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Typography variant="caption" sx={designerControlLabelSx}>
-              Reorder
-            </Typography>
-          </Stack>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<ContentCopyRoundedIcon />}
-            onClick={() => setOpenDuplicateDialog(true)}
-            sx={designerControlLabelSx}
-          >
-            Duplicate
-          </Button>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<MoveRoundedIcon />}
-            onClick={() => setOpenMoveDialog(true)}
-            sx={designerControlLabelSx}
-          >
-            Move section to another Form
-          </Button>
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <ConditionModal
-            label="Add conditions to section"
-            initial={fView.condition}
-            onChange={conditionChanged}
-            view={viewId}
-            buttonSx={designerControlLabelSx}
-          />
-
-          {fView.condition && (
-            <>
-              <Typography sx={designerPipeSx}> | </Typography>
-              <Button
-                variant="text"
-                size="small"
-                startIcon={<ClearRoundedIcon />}
-                onClick={() => conditionChanged(null)}
-                sx={designerControlLabelSx}
-              >
-                Clear condition
-              </Button>
-            </>
-          )}
-
-          <Typography sx={designerPipeSx}> | </Typography>
-
-          <Button
-            variant="text"
-            color="error"
-            size="small"
-            startIcon={<DeleteRoundedIcon />}
-            onClick={deleteConfirmation}
+        <Stack spacing={1.5} sx={{mt: 0.75, mb: 2}}>
+          <Stack
+            direction="row"
             sx={{
-              ...designerControlLabelSx,
-              color: 'error.main',
-              '& .MuiButton-startIcon': {color: 'error.main'},
+              ...designerControlActionRowSx,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              columnGap: 1,
             }}
           >
-            Delete
-          </Button>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<EditRoundedIcon />}
+              onClick={() => setEditMode(true)}
+              sx={designerControlLabelSx}
+            >
+              Edit name
+            </Button>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+              <Tooltip title="Move section left">
+                <span>
+                  <IconButton
+                    disabled={viewSet.views.indexOf(viewId) === 0}
+                    onClick={() => moveSection('left')}
+                    aria-label="left"
+                    size="small"
+                    sx={designerIconControlButtonSx}
+                  >
+                    <ArrowBackRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Move section right">
+                <span>
+                  <IconButton
+                    disabled={
+                      viewSet.views.indexOf(viewId) === viewSet.views.length - 1
+                    }
+                    onClick={() => moveSection('right')}
+                    aria-label="right"
+                    size="small"
+                    sx={designerIconControlButtonSx}
+                  >
+                    <ArrowForwardRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Typography variant="caption" sx={designerControlLabelSx}>
+                Reorder
+              </Typography>
+            </Stack>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<ContentCopyRoundedIcon />}
+              onClick={() => setOpenDuplicateDialog(true)}
+              sx={designerControlLabelSx}
+            >
+              Duplicate
+            </Button>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<MoveRoundedIcon />}
+              onClick={() => setOpenMoveDialog(true)}
+              sx={designerControlLabelSx}
+            >
+              Move section to another Form
+            </Button>
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <ConditionModal
+              label="Add conditions to section"
+              initial={fView.condition}
+              onChange={conditionChanged}
+              view={viewId}
+              buttonSx={designerControlLabelSx}
+            />
+
+            {fView.condition && (
+              <>
+                <Typography sx={designerPipeSx}> | </Typography>
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<ClearRoundedIcon />}
+                  onClick={() => conditionChanged(null)}
+                  sx={designerControlLabelSx}
+                >
+                  Clear condition
+                </Button>
+              </>
+            )}
+
+            <Typography sx={designerPipeSx}> | </Typography>
+
+            <Button
+              variant="text"
+              color="error"
+              size="small"
+              startIcon={<DeleteRoundedIcon />}
+              onClick={deleteConfirmation}
+              sx={{
+                ...designerControlLabelSx,
+                color: 'error.main',
+                '& .MuiButton-startIcon': {color: 'error.main'},
+              }}
+            >
+              Delete
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
       )}
       {editMode && (
         <>
@@ -443,35 +447,37 @@ export const SectionEditor = ({
                   data-testid="label"
                   placeholder="Section Name"
                   inputRef={sectionEditInputRef}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Save section name">
-                          <IconButton
-                            size="small"
-                            type="submit"
-                            sx={{
-                              ...designerInlineEditActionIconSx,
-                              color: 'success.main',
-                            }}
-                          >
-                            <DoneRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Cancel name edit">
-                          <IconButton
-                            size="small"
-                            onClick={() => setEditMode(false)}
-                            sx={{
-                              ...designerInlineEditActionIconSx,
-                              color: 'error.main',
-                            }}
-                          >
-                            <CloseRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Save section name">
+                            <IconButton
+                              size="small"
+                              type="submit"
+                              sx={{
+                                ...designerInlineEditActionIconSx,
+                                color: 'success.main',
+                              }}
+                            >
+                              <DoneRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Cancel name edit">
+                            <IconButton
+                              size="small"
+                              onClick={() => setEditMode(false)}
+                              sx={{
+                                ...designerInlineEditActionIconSx,
+                                color: 'error.main',
+                              }}
+                            >
+                              <CloseRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                   value={fView.label}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -550,11 +556,7 @@ export const SectionEditor = ({
           <Button sx={designerCancelButtonSx} onClick={handleCloseDeleteDialog}>
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={deleteSection}
-          >
+          <Button variant="contained" color="error" onClick={deleteSection}>
             Delete
           </Button>
         </DialogActions>
@@ -575,7 +577,7 @@ export const SectionEditor = ({
         maxWidth="sm"
       >
         <DialogTitle sx={designerDialogTitleSx}>
-          <Stack direction="row" alignItems="center" spacing={0.75}>
+          <Stack direction="row" spacing={0.75} sx={{alignItems: 'center'}}>
             <Typography variant="h6" sx={{fontWeight: 800}}>
               Add New Section
             </Typography>

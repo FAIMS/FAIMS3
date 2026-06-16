@@ -31,7 +31,7 @@ import {expect} from 'chai';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   getUserProjectsDetailed,
-  getProjectUIModel,
+  getUiSpecModel,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {mockTokenContentsForUser} from '../src/utils';
@@ -63,8 +63,8 @@ describe('Backup and restore', () => {
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 
       // test record iterator while we're here
-      const projectId = notebooks[0].project_id;
-      const uiSpec = await getProjectUIModel(projectId);
+      const projectId = notebooks[0]._id;
+      const uiSpec = await getUiSpecModel(projectId);
       const dataDb = await mockGetDataDB(projectId);
 
       const iterator = await notebookRecordIterator({

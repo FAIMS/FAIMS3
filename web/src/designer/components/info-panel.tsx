@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @file Project metadata and MDX pre-description editing.
+ * @file Design metadata editor: functional settings and typed information + custom fields.
  */
 
 import {
@@ -25,96 +25,66 @@ import {
   Grid,
   Typography,
   Card,
+  Divider,
 } from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
-import {useEffect, useState, useRef} from 'react';
+import {useState, useRef} from 'react';
 import {useAppSelector, useAppDispatch} from '../state/hooks';
-import {PropertyMap} from '../state/initial';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
-import {propertyUpdated} from '../state/metadata-reducer';
+import {
+  customFieldRemoved,
+  customFieldUpdated,
+  informationUpdated,
+} from '../state/metadata-reducer';
+import {settingsUpdated} from '../store/slices/uiSpec';
 
-/** Notebook metadata editor: core fields, custom key/value pairs, MDX pre-description. */
+/** Notebook design info: settings toggles, typed metadata, and custom key/value pairs. */
 export const InfoPanel = () => {
-  const metadata = useAppSelector(state => state.notebook.metadata);
+  const information = useAppSelector(
+    state => state.notebook.metadata.information
+  );
+  const custom = useAppSelector(state => state.notebook.metadata.custom ?? {});
+  const settings = useAppSelector(
+    state => state.notebook.uiSpec.present.settings
+  );
   const dispatch = useAppDispatch();
 
-  const ref = useRef<MDXEditorMethods>(null);
+  const purposeRef = useRef<MDXEditorMethods>(null);
 
-  const [metadataFieldName, setMetadataFieldName] = useState('');
-  const [metadataFieldValue, setMetadataFieldValue] = useState('');
-  const [extraFields, setExtraFields] = useState<PropertyMap>({});
+  const [customFieldName, setCustomFieldName] = useState('');
+  const [customFieldValue, setCustomFieldValue] = useState('');
   const [alert, setAlert] = useState('');
 
   const derivedFrom =
-    VITE_TEMPLATE_PROTECTIONS && metadata['derived-from']
-      ? (metadata['derived-from'] as string)
+    VITE_TEMPLATE_PROTECTIONS && information.derivedFromTemplateId
+      ? information.derivedFromTemplateId
       : '';
 
-  useEffect(() => {
-    const knownFields = [
-      'name',
-      'pre_description',
-      'behaviours',
-      'meta',
-      'project_lead',
-      'lead_institution',
-      'showQRCodeButton',
-      'access',
-      'accesses',
-      'forms',
-      'filenames',
-      'ispublic',
-      'isrequest',
-      'sections',
-      'schema_version',
-      'notebook_version',
-    ];
-    const unknownFields = Object.keys(metadata).filter(
-      key => !knownFields.includes(key)
-    );
-    const newExtraFields: PropertyMap = {};
-    unknownFields.forEach(key => {
-      newExtraFields[key] = metadata[key];
-    });
-    setExtraFields(newExtraFields);
-  }, [metadata]);
-
-  const setProp = (property: string, value: string) => {
-    dispatch(propertyUpdated({property, value}));
-  };
-
-  const updateMetadataFieldName = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMetadataFieldName(event.target.value);
-  };
-
-  const updateMetadataFieldValue = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMetadataFieldValue(event.target.value);
-  };
-
-  const addNewMetadataField = () => {
+  const addCustomField = () => {
     setAlert('');
-    if (metadataFieldName in metadata) {
-      setAlert(`Field '${metadataFieldName}' already exists.`);
-    } else {
-      setMetadataFieldName('');
-      setMetadataFieldValue('');
-      setProp(metadataFieldName, metadataFieldValue);
+    const key = customFieldName.trim();
+    if (!key) {
+      setAlert('Enter a field name.');
+      return;
     }
+    if (key in custom) {
+      setAlert(`Field '${key}' already exists.`);
+      return;
+    }
+    setCustomFieldName('');
+    setCustomFieldValue('');
+    dispatch(customFieldUpdated({key, value: customFieldValue}));
   };
 
   return (
     <div>
-      <Typography variant="h2">General Information</Typography>
+      <Typography variant="h2">Design information</Typography>
 
-      {derivedFrom?.trim() && (
+      {derivedFrom.trim() && (
         <Typography
           variant="body1"
           sx={{mt: 1}}
@@ -126,193 +96,196 @@ export const InfoPanel = () => {
       )}
 
       <Card variant="outlined" sx={{mt: 2}}>
-        <Grid container spacing={5} p={3}>
-          <Grid container item xs={12} spacing={2.5}>
-            <Grid item xs={12} sm={4}>
-              <DebouncedTextField
-                fullWidth
-                required
-                label="Project Name"
-                name="name"
-                data-testid="name"
-                value={metadata.name}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setProp('name', event.target.value);
-                }}
-              />
-              <FormHelperText>
-                Enter a string between 2 and 100 characters long.
-              </FormHelperText>
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <DebouncedTextField
-                fullWidth
-                label="Project Lead"
-                name="project_lead"
-                value={metadata.project_lead}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setProp('project_lead', event.target.value);
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <DebouncedTextField
-                fullWidth
-                label="Lead Institution"
-                name="lead_institution"
-                value={metadata.lead_institution}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setProp('lead_institution', event.target.value);
-                }}
-              />
-            </Grid>
-          </Grid>
-
+        <Grid container spacing={3} sx={{p: 3}}>
           <Grid item xs={12}>
-            <MdxEditor
-              initialMarkdown={metadata.pre_description as string}
-              editorRef={ref}
-              handleChange={() =>
-                setProp('pre_description', ref.current?.getMarkdown() as string)
+            <Typography variant="h6">Settings</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
+              Functional options that affect how the mobile app behaves for this
+              design.
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={settings.showQrCodeButton}
+                  onChange={e =>
+                    dispatch(
+                      settingsUpdated({showQrCodeButton: e.target.checked})
+                    )
+                  }
+                />
               }
+              label="Enable QR code search of records"
             />
             <FormHelperText>
-              Use the editor above for the project description. If you use
-              source mode, make sure you put blank lines before and after any
-              markdown syntax for compatibility.
+              Useful if your form includes a QR code field.
             </FormHelperText>
           </Grid>
 
-          <Grid
-            container
-            item
-            xs={12}
-            spacing={2.5}
-            justifyContent="space-between"
-          >
-            <Grid container item xs={12} sm={4} spacing={5}>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={metadata.showQRCodeButton === 'true'}
-                      onChange={e =>
-                        setProp(
-                          'showQRCodeButton',
-                          e.target.checked ? 'true' : 'false'
-                        )
-                      }
-                    />
-                  }
-                  label="Enable QR Code Search of Records"
-                />
-                <FormHelperText>
-                  Useful if your form includes a QR code field.
-                </FormHelperText>
-              </Grid>
-              <Grid item xs={12}>
-                <Grid item xs={12} sm={10}>
-                  <DebouncedTextField
-                    fullWidth
-                    label={`${NOTEBOOK_NAME_CAPITALIZED} version`}
-                    name="notebook_version"
-                    value={metadata.notebook_version}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      setProp('notebook_version', event.target.value);
-                    }}
-                  />
-                  <FormHelperText>
-                    Use this field to differentiate between versions of this{' '}
-                    {NOTEBOOK_NAME}; e.g. 1.0, 1.1 and so on.
-                  </FormHelperText>
-                </Grid>
-              </Grid>
+          <Grid item xs={12}>
+            <Divider />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Typography variant="h6">Notebook information</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
+              Optional details about this {NOTEBOOK_NAME}, such as who leads the
+              project. Edit the title and description in Control Centre.
+            </Typography>
+          </Grid>
+
+          <Grid container size={12} spacing={2.5}>
+            <Grid size={{xs: 12, sm: 4}}>
+              <DebouncedTextField
+                fullWidth
+                label="Project lead (label)"
+                name="projectLeadLabel"
+                value={information.projectLeadLabel}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  dispatch(
+                    informationUpdated({projectLeadLabel: event.target.value})
+                  );
+                }}
+              />
             </Grid>
 
-            <Grid item xs={12} sm={8}>
-              <Card variant="outlined">
-                <Grid container p={2.5} spacing={3}>
-                  <Grid
-                    container
-                    item
-                    xs={12}
-                    sm={5}
-                    direction="column"
-                    justifyContent="flex-start"
-                    alignItems="flex-start"
-                  >
-                    <form
-                      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                        e.preventDefault();
-                        addNewMetadataField();
-                      }}
-                    >
-                      <DebouncedTextField
-                        fullWidth
-                        label="Metadata Field Name"
-                        name="metadata_field_name"
-                        size="small"
-                        value={metadataFieldName}
-                        onChange={updateMetadataFieldName}
-                      />
-                      <DebouncedTextField
-                        fullWidth
-                        sx={{mt: 1.5}}
-                        label="Metadata Field Value"
-                        name="metadata_field_value"
-                        size="small"
-                        value={metadataFieldValue}
-                        onChange={updateMetadataFieldValue}
-                      />
-                      <Button
-                        sx={{mt: 2.5}}
-                        variant="contained"
-                        color="primary"
-                        type="submit"
-                      >
-                        Create New Field
-                      </Button>
-                      {alert && (
-                        <Alert
-                          onClose={() => {
-                            setAlert('');
-                          }}
-                          severity="error"
-                          sx={{mt: 2.5}}
-                        >
-                          {alert}
-                        </Alert>
-                      )}
-                    </form>
-                  </Grid>
+            <Grid size={{xs: 12, sm: 4}}>
+              <DebouncedTextField
+                fullWidth
+                label="Lead institution"
+                name="leadInstitution"
+                value={information.leadInstitution}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  dispatch(
+                    informationUpdated({leadInstitution: event.target.value})
+                  );
+                }}
+              />
+            </Grid>
 
-                  <Grid container item xs={12} sm={7} rowGap={1}>
-                    {Object.keys(extraFields).map(key => {
-                      return (
-                        <Grid item xs={12} key={key}>
-                          <DebouncedTextField
-                            fullWidth
-                            label={key}
-                            name={key}
-                            data-testid={'extra-field-' + key}
-                            value={extraFields[key]}
-                            onChange={(
-                              event: React.ChangeEvent<HTMLInputElement>
-                            ) => {
-                              setProp(key, event.target.value);
-                            }}
-                          />
-                        </Grid>
-                      );
-                    })}
-                  </Grid>
-                </Grid>
-              </Card>
+            <Grid size={{xs: 12, sm: 4}}>
+              <DebouncedTextField
+                fullWidth
+                label={`${NOTEBOOK_NAME_CAPITALIZED} version`}
+                name="notebookVersion"
+                value={information.notebookVersion}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  dispatch(
+                    informationUpdated({notebookVersion: event.target.value})
+                  );
+                }}
+              />
               <FormHelperText>
-                Use the form above to create new metadata fields, if needed.
+                Use this field to differentiate between versions of this{' '}
+                {NOTEBOOK_NAME}; e.g. 1.0, 1.1 and so on.
               </FormHelperText>
+            </Grid>
+          </Grid>
+
+          <Grid size={12}>
+            <MdxEditor
+              initialMarkdown={information.purposeMarkdown}
+              editorRef={purposeRef}
+              handleChange={() =>
+                dispatch(
+                  informationUpdated({
+                    purposeMarkdown:
+                      purposeRef.current?.getMarkdown() as string,
+                  })
+                )
+              }
+            />
+            <FormHelperText>
+              Design purpose and scope (former pre-description). If you use
+              source mode, put blank lines before and after markdown syntax for
+              compatibility.
+            </FormHelperText>
+          </Grid>
+
+          <Grid size={12}>
+            <Divider sx={{my: 1}} />
+            <Typography variant="subtitle1" sx={{mb: 1}}>
+              Custom metadata
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
+              Optional organisation-specific fields stored under{' '}
+              <code>metadata.custom</code>.
+            </Typography>
+          </Grid>
+
+          <Grid container item xs={12} spacing={2.5}>
+            <Grid item xs={12} sm={5}>
+              <form
+                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  addCustomField();
+                }}
+              >
+                <DebouncedTextField
+                  fullWidth
+                  label="Custom field name"
+                  name="custom_field_name"
+                  size="small"
+                  value={customFieldName}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    setCustomFieldName(event.target.value)
+                  }
+                />
+                <DebouncedTextField
+                  fullWidth
+                  sx={{mt: 1.5}}
+                  label="Custom field value"
+                  name="custom_field_value"
+                  size="small"
+                  value={customFieldValue}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    setCustomFieldValue(event.target.value)
+                  }
+                />
+                <Button
+                  sx={{mt: 2.5}}
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                >
+                  Add custom field
+                </Button>
+                {alert && (
+                  <Alert
+                    onClose={() => setAlert('')}
+                    severity="error"
+                    sx={{mt: 2.5}}
+                  >
+                    {alert}
+                  </Alert>
+                )}
+              </form>
+            </Grid>
+
+            <Grid container item xs={12} sm={7} rowGap={1}>
+              {Object.keys(custom).map(key => (
+                <Grid item xs={12} key={key}>
+                  <DebouncedTextField
+                    fullWidth
+                    label={key}
+                    name={key}
+                    data-testid={'custom-field-' + key}
+                    value={String(custom[key] ?? '')}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      dispatch(
+                        customFieldUpdated({key, value: event.target.value})
+                      );
+                    }}
+                  />
+                  <Button
+                    size="small"
+                    color="secondary"
+                    sx={{mt: 0.5}}
+                    onClick={() => dispatch(customFieldRemoved({key}))}
+                  >
+                    Remove
+                  </Button>
+                </Grid>
+              ))}
             </Grid>
           </Grid>
         </Grid>

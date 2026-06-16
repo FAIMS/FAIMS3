@@ -8,18 +8,20 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
 import {
+  buildViewsetFieldSummaries,
+  CompiledNotebookUiSpec,
+  compileUiSpecConditionals,
   couchInitialiser,
   DatabaseInterface,
   DataDocument,
   DataEngine,
-  buildViewsetFieldSummaries,
   getNotebookFieldTypes,
   HydratedDataRecord,
   HydratedRecord,
   initDataDB,
+  NotebookUiSpec,
   ProjectDataObject,
   ProjectID,
-  ProjectUIModel,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {processRecordForSpatial} from '../src/couchdb/export/geospatialExport';
@@ -40,8 +42,8 @@ function fieldMeta() {
   } as const;
 }
 
-function testUiSpec(): ProjectUIModel {
-  return {
+function testUiSpec(): CompiledNotebookUiSpec {
+  const base: NotebookUiSpec = {
     fields: {
       relF: {
         'component-namespace': 'faims-custom',
@@ -49,6 +51,7 @@ function testUiSpec(): ProjectUIModel {
         'type-returned': 'faims-core::Relationship',
         ...fieldMeta(),
         'component-parameters': {
+          name: 'relF',
           label: 'Rel',
           fullWidth: true,
           helperText: '',
@@ -67,6 +70,7 @@ function testUiSpec(): ProjectUIModel {
         'type-returned': 'faims-core::Json',
         ...fieldMeta(),
         'component-parameters': {
+          name: 'mapF',
           label: 'Map',
           fullWidth: true,
           helperText: '',
@@ -90,7 +94,11 @@ function testUiSpec(): ProjectUIModel {
       },
     },
     visible_types: ['VA', 'VB'],
+    schemaVersion: '3.0',
+    settings: {showQrCodeButton: false},
   };
+  compileUiSpecConditionals(base);
+  return base as CompiledNotebookUiSpec;
 }
 
 function toHydratedDataRecord(
@@ -145,10 +153,11 @@ describe('export deleted relationship stripping', () => {
   let db: DatabaseInterface<DataDocument>;
   let engine: DataEngine;
   const projectId = 'proj-export-test';
-  let uiSpec: ProjectUIModel;
+  let uiSpec: CompiledNotebookUiSpec;
 
   beforeEach(async () => {
     uiSpec = testUiSpec();
+    compileUiSpecConditionals(uiSpec);
     db = new PouchDB(`export-del-${Date.now()}-${Math.random()}`, {
       adapter: 'memory',
     }) as DatabaseInterface<DataDocument>;
@@ -157,7 +166,10 @@ describe('export deleted relationship stripping', () => {
       content: initDataDB({projectId}),
       config: {forceWrite: true, applyPermissions: false},
     });
-    engine = new DataEngine({dataDb: db, uiSpec});
+    engine = new DataEngine({
+      dataDb: db,
+      uiSpec: uiSpec as CompiledNotebookUiSpec,
+    });
   });
 
   afterEach(async () => {
@@ -330,7 +342,9 @@ describe('export deleted relationship stripping', () => {
       recordId: parentId,
     });
     const record = toHydratedDataRecord(parentHydrated, projectId);
-    const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification: uiSpec});
+    const viewFieldsMap = buildViewsetFieldSummaries({
+      uiSpecification: uiSpec,
+    });
 
     const processed = await processRecordForSpatial(
       record,

@@ -30,7 +30,7 @@ import {
   ImpliedRelationship,
   StaticFormProgress,
 } from '@faims3/forms';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -326,7 +326,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   }
 
   return (
-    <Stack gap={2}>
+    <Stack spacing={2}>
       {
         // Show form progress at top of record view (static)
       }
@@ -383,14 +383,12 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const uiSpecId = useAppSelector(
-    state => selectProjectById(state, projectId)?.uiSpecificationId
-  );
-  if (!uiSpecId) {
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) {
     return null;
   }
 
-  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
   if (!uiSpec) {
     return <div>UI Specification not found</div>;
   }
@@ -470,7 +468,7 @@ export const ViewRecordPage: React.FC = () => {
   // Loading state
   if (isPending || isRefetching) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
+      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
         <CircularProgress />
       </Box>
     );
@@ -479,7 +477,7 @@ export const ViewRecordPage: React.FC = () => {
   // Error state
   if (isError) {
     return (
-      <Box p={2}>
+      <Box sx={{p: 2}}>
         <Typography color="error">
           An error occurred while fetching record data. Error:{' '}
           {error?.message ?? 'unknown'}.
@@ -490,7 +488,7 @@ export const ViewRecordPage: React.FC = () => {
 
   if (!formData) {
     return (
-      <Box p={2}>
+      <Box sx={{p: 2}}>
         <Typography color="error">Record data not found.</Typography>
       </Box>
     );
@@ -501,10 +499,10 @@ export const ViewRecordPage: React.FC = () => {
   const isDeleted = Boolean(formData.context.revision.deleted);
 
   return (
-    <Stack gap={2}>
+    <Stack spacing={2}>
       {/* Header */}
-      <Stack gap={2}>
-        <Stack direction="row" spacing={2} alignItems="center">
+      <Stack spacing={2}>
+        <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           {/* Back to record link */}
           <BackButton link={backLink} />
           <Typography variant="h3" color={theme.palette.text.primary}>

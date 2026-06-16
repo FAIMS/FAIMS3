@@ -18,23 +18,23 @@ import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
 import {NotebookUISpec} from '../../../state/initial';
 import {ConditionType} from '../../../types/condition';
 
-/** Section (fview) RTK reducers merged into `uiSpecificationReducer`. */
+/** Section (view) RTK reducers merged into `uiSpecificationReducer`. */
 export const sectionReducers = {
-  /** Update human-readable `fviews[viewId].label`. */
+  /** Update human-readable `views[viewId].label`. */
   sectionRenamed: (
     state: NotebookUISpec,
     action: PayloadAction<{viewId: string; label: string}>
   ) => {
     const {viewId, label} = action.payload;
-    if (viewId in state.fviews) {
-      state.fviews[viewId].label = label;
+    if (viewId in state.views) {
+      state.views[viewId].label = label;
     } else {
       throw new Error(
         `Can't update unknown section ${viewId} via sectionRenamed action`
       );
     }
   },
-  /** Append empty section `{viewSetId}-{slug(sectionLabel)}` to form and `fviews`. */
+  /** Append empty section `{viewSetId}-{slug(sectionLabel)}` to form and `views`. */
   sectionAdded: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; sectionLabel: string}>
@@ -45,10 +45,10 @@ export const sectionReducers = {
       label: sectionLabel,
       fields: [],
     };
-    if (sectionId in state.fviews) {
+    if (sectionId in state.views) {
       throw new Error(`Section ${sectionLabel} already exists in this form.`);
     } else {
-      state.fviews[sectionId] = newSection;
+      state.views[sectionId] = newSection;
       state.viewsets[viewSetId].views.push(sectionId);
     }
   },
@@ -64,7 +64,7 @@ export const sectionReducers = {
     const {sourceViewId, destinationViewSetId, newSectionLabel} =
       action.payload;
 
-    if (!(sourceViewId in state.fviews)) {
+    if (!(sourceViewId in state.views)) {
       throw new Error(`Source section ${sourceViewId} does not exist.`);
     }
 
@@ -84,13 +84,13 @@ export const sectionReducers = {
     }
 
     const newSectionId = destViewSetId + '-' + slugify(newSectionLabel);
-    if (newSectionId in state.fviews) {
+    if (newSectionId in state.views) {
       throw new Error(
         `Section ${newSectionLabel} already exists in form ${destViewSetId}.`
       );
     }
 
-    const sourceSection = state.fviews[sourceViewId];
+    const sourceSection = state.views[sourceViewId];
 
     const newSection = {
       label: newSectionLabel,
@@ -117,7 +117,7 @@ export const sectionReducers = {
       newSection.fields.push(fieldSlug);
     }
 
-    state.fviews[newSectionId] = newSection;
+    state.views[newSectionId] = newSection;
     state.viewsets[destViewSetId].views.push(newSectionId);
   },
   /** Remove section and all its fields from `state.fields`. */
@@ -127,14 +127,14 @@ export const sectionReducers = {
   ) => {
     const {viewSetID, viewID} = action.payload;
 
-    if (viewID in state.fviews) {
-      const sectionFields: string[] = state.fviews[viewID].fields;
+    if (viewID in state.views) {
+      const sectionFields: string[] = state.views[viewID].fields;
       sectionFields.forEach(field => {
         if (field in state.fields) {
           delete state.fields[field];
         }
       });
-      delete state.fviews[viewID];
+      delete state.views[viewID];
       const newViewSetViews = state.viewsets[viewSetID].views.filter(
         view => view !== viewID
       );
@@ -187,17 +187,17 @@ export const sectionReducers = {
     }
     state.viewsets[viewSetId].views = viewList;
   },
-  /** Set or remove `fviews[viewId].condition` for section visibility. */
+  /** Set or remove `views[viewId].condition` for section visibility. */
   sectionConditionChanged: (
     state: NotebookUISpec,
     action: PayloadAction<{viewId: string; condition: ConditionType | null}>
   ) => {
     const {viewId, condition} = action.payload;
-    if (viewId in state.fviews) {
+    if (viewId in state.views) {
       if (condition === null) {
-        delete state.fviews[viewId].condition;
+        delete state.views[viewId].condition;
       } else {
-        state.fviews[viewId].condition = condition;
+        state.views[viewId].condition = condition;
       }
     }
   },

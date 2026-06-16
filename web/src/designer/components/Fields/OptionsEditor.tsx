@@ -60,9 +60,18 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
+import {ChoiceElementProps} from '@faims3/forms';
 import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+
+/**
+ * Subset of choice-field `component-parameters` this editor reads/writes. The
+ * `ElementProps` shape is the shared {@link ChoiceElementProps} used by
+ * RadioGroup, Select and MultiSelect in `@faims3/forms`; keys are optional here
+ * because the editor patches them incrementally.
+ */
+type ChoiceComponentParameters = {ElementProps?: Partial<ChoiceElementProps>};
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
@@ -215,7 +224,9 @@ const SortableOtherOptionRow = ({
               onClick={onMoveUp}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
-              <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+              <ArrowDropUpRoundedIcon
+                sx={{fontSize: '1.9rem', fontWeight: 700}}
+              />
             </IconButton>
           </span>
         </Tooltip>
@@ -227,7 +238,9 @@ const SortableOtherOptionRow = ({
               onClick={onMoveDown}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
-              <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+              <ArrowDropDownRoundedIcon
+                sx={{fontSize: '1.9rem', fontWeight: 700}}
+              />
             </IconButton>
           </span>
         </Tooltip>
@@ -338,7 +351,9 @@ const SortableItem = ({
               onClick={() => onMove(index, 'up')}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
-              <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+              <ArrowDropUpRoundedIcon
+                sx={{fontSize: '1.9rem', fontWeight: 700}}
+              />
             </IconButton>
           </span>
         </Tooltip>
@@ -350,7 +365,9 @@ const SortableItem = ({
               onClick={() => onMove(index, 'down')}
               sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
-              <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
+              <ArrowDropDownRoundedIcon
+                sx={{fontSize: '1.9rem', fontWeight: 700}}
+              />
             </IconButton>
           </span>
         </Tooltip>
@@ -398,13 +415,13 @@ export const OptionsEditor = ({
 }) => {
   // Get field state from Redux store
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
+    state => state.notebook.uiSpec.present.views
   );
 
   const dispatch = useAppDispatch();
@@ -412,9 +429,12 @@ export const OptionsEditor = ({
   // Configure drag-and-drop sensors - just pointer sensor is fine
   const sensors = useSensors(useSensor(PointerSensor));
 
+  const elementProps = (
+    field['component-parameters'] as ChoiceComponentParameters
+  ).ElementProps;
+
   // Component state
-  const isShowExpandedList =
-    field['component-parameters'].ElementProps?.expandedChecklist ?? true;
+  const isShowExpandedList = elementProps?.expandedChecklist ?? true;
   const isDropdownMode = !isShowExpandedList;
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const fieldComponent = field['component-name'];
@@ -438,14 +458,11 @@ export const OptionsEditor = ({
   } | null>(null);
 
   const options: Array<{label: string; value: string}> =
-    field['component-parameters'].ElementProps?.options || [];
-  const exclusiveOptions: string[] =
-    field['component-parameters'].ElementProps?.exclusiveOptions || [];
-  const enableOther: boolean =
-    field['component-parameters'].ElementProps?.enableOtherOption ?? false;
+    elementProps?.options || [];
+  const exclusiveOptions: string[] = elementProps?.exclusiveOptions || [];
+  const enableOther: boolean = elementProps?.enableOtherOption ?? false;
   const otherOptionPosition: number =
-    field['component-parameters'].ElementProps?.otherOptionPosition ??
-    options.length;
+    elementProps?.otherOptionPosition ?? options.length;
 
   /**
    * made a combined list (options + other) in visual order.
@@ -514,10 +531,13 @@ export const OptionsEditor = ({
     updatedOtherOptionPosition?: number
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newParams = newField[
+      'component-parameters'
+    ] as ChoiceComponentParameters;
 
     // Update field with new options and handle radio button IDs
-    newField['component-parameters'].ElementProps = {
-      ...newField['component-parameters'].ElementProps,
+    newParams.ElementProps = {
+      ...newParams.ElementProps,
       options: updatedOptions.map((o, index) => {
         if (fieldName.includes('radio')) {
           return {
@@ -749,7 +769,7 @@ export const OptionsEditor = ({
       'component-parameters': {
         ...field['component-parameters'],
         ElementProps: {
-          ...field['component-parameters'].ElementProps,
+          ...elementProps,
           options: newOptions,
         },
       },
@@ -798,8 +818,11 @@ export const OptionsEditor = ({
   ) => {
     const selectedMode = event.target.value;
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
+    const newParams = newField[
+      'component-parameters'
+    ] as ChoiceComponentParameters;
+    newParams.ElementProps = {
+      ...(newParams.ElementProps ?? {}),
       expandedChecklist: selectedMode === 'expanded',
     };
     dispatch(fieldUpdated({fieldName, newField}));
@@ -810,11 +833,13 @@ export const OptionsEditor = ({
    */
   const toggleEnableOtherOption = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const newValue =
-      !field['component-parameters'].ElementProps?.enableOtherOption;
+    const newParams = newField[
+      'component-parameters'
+    ] as ChoiceComponentParameters;
+    const newValue = !elementProps?.enableOtherOption;
 
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
+    newParams.ElementProps = {
+      ...(newParams.ElementProps ?? {}),
       enableOtherOption: newValue,
       otherOptionPosition: undefined,
     };
@@ -849,7 +874,7 @@ export const OptionsEditor = ({
         >
           <Grid container spacing={1.5}>
             {/* Options table */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               {options.length === 0 && !enableOther ? (
                 <Typography
                   variant="body2"
@@ -906,7 +931,10 @@ export const OptionsEditor = ({
                               Exclusive
                               <Tooltip title="Marks the option as exclusive — selecting it clears any other selections in this field. Useful for choices like 'None of the above'.">
                                 <InfoIcon
-                                  sx={{...designerInfoIconSx, fontSize: '1.1rem'}}
+                                  sx={{
+                                    ...designerInfoIconSx,
+                                    fontSize: '1.1rem',
+                                  }}
                                 />
                               </Tooltip>
                             </Box>
@@ -959,7 +987,9 @@ export const OptionsEditor = ({
                                 showExclusiveOptions={showExclusiveOptions}
                                 exclusiveOptions={exclusiveOptions}
                                 onExclusiveToggle={handleExclusiveToggle}
-                                onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
+                                onEdit={(val, idx) =>
+                                  handleOpenEditDialog(val, idx)
+                                }
                                 onRemove={removeOption}
                                 onMove={moveOption}
                                 totalItems={options.length}
@@ -975,253 +1005,269 @@ export const OptionsEditor = ({
             </Grid>
 
             {/* Controls under table */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Box sx={{mt: 0.5}}>
-              <form onSubmit={addOption}>
-                <Stack
-                  direction={{xs: 'column', sm: 'row'}}
-                  spacing={1}
-                  alignItems={{xs: 'stretch', sm: 'flex-end'}}
-                  sx={{mb: 1.5}}
-                >
-                  <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
-                    <SimpleFieldWrapper
-                      heading="Add option"
-                      helperText={undefined}
-                    >
-                      <TextField
-                        size="small"
-                        placeholder="Add option"
-                        value={newOption}
-                        onChange={e => setNewOption(e.target.value)}
-                        error={addOptionHasError}
-                        focused={addOptionHasError}
-                        fullWidth
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            ...(addOptionHasError && {
-                              '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'error.main',
-                                borderWidth: 2,
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline':
-                                {
+                <form onSubmit={addOption}>
+                  <Stack
+                    direction={{xs: 'column', sm: 'row'}}
+                    spacing={1}
+                    sx={{mb: 1.5, alignItems: {xs: 'stretch', sm: 'flex-end'}}}
+                  >
+                    <Box sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}>
+                      <SimpleFieldWrapper
+                        heading="Add option"
+                        helperText={undefined}
+                      >
+                        <TextField
+                          size="small"
+                          placeholder="Add option"
+                          value={newOption}
+                          onChange={e => setNewOption(e.target.value)}
+                          error={addOptionHasError}
+                          focused={addOptionHasError}
+                          fullWidth
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              ...(addOptionHasError && {
+                                '& .MuiOutlinedInput-notchedOutline': {
                                   borderColor: 'error.main',
                                   borderWidth: 2,
                                 },
-                            }),
-                          },
-                        }}
-                      />
-                    </SimpleFieldWrapper>
-                  </Box>
-                  <Button
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    type="submit"
-                    sx={{
-                      width: {xs: '100%', sm: 'auto'},
-                      minWidth: 56,
-                      height: 40,
-                      backgroundColor: '#fff',
-                      borderColor: 'divider',
-                      px: 2,
-                      textTransform: 'none',
-                      '&:hover': {
-                        backgroundColor: '#f5f5f5',
-                      },
-                    }}
-                  >
-                    Add
-                  </Button>
-                  <Stack direction="row" spacing={0.65} alignItems="center">
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline':
+                                  {
+                                    borderColor: 'error.main',
+                                    borderWidth: 2,
+                                  },
+                              }),
+                            },
+                          }}
+                        />
+                      </SimpleFieldWrapper>
+                    </Box>
                     <Button
-                      variant="outlined"
                       color="primary"
+                      variant="outlined"
                       size="small"
-                      onClick={toggleEnableOtherOption}
-                      disabled={enableOther}
+                      type="submit"
                       sx={{
                         width: {xs: '100%', sm: 'auto'},
                         minWidth: 56,
                         height: 40,
+                        backgroundColor: '#fff',
+                        borderColor: 'divider',
                         px: 2,
+                        textTransform: 'none',
+                        '&:hover': {
+                          backgroundColor: '#f5f5f5',
+                        },
                       }}
                     >
-                      Add "Other" Option
+                      Add
                     </Button>
-                    <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
-                      <InfoIcon
+                    <Stack
+                      direction="row"
+                      spacing={0.65}
+                      sx={{alignItems: 'center'}}
+                    >
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        size="small"
+                        onClick={toggleEnableOtherOption}
+                        disabled={enableOther}
                         sx={{
-                          ...(designerInfoIconSx as Record<string, unknown>),
-                          ml: 0,
+                          width: {xs: '100%', sm: 'auto'},
+                          minWidth: 56,
+                          height: 40,
+                          px: 2,
                         }}
-                      />
-                    </Tooltip>
-                  </Stack>
-                </Stack>
-              </form>
-
-              {showExpandedCheckListControl && (
-                <FormControl sx={{mb: 0}}>
-                  <FormLabel>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography component="span">
-                        {isMultiSelectField
-                          ? 'Multi-select display mode'
-                          : 'Select-one display mode'}
-                      </Typography>
-                      <Tooltip
-                        title={
-                          isMultiSelectField
-                            ? 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
-                            : 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
-                        }
                       >
+                        Add "Other" Option
+                      </Button>
+                      <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
                         <InfoIcon
                           sx={{
                             ...(designerInfoIconSx as Record<string, unknown>),
+                            ml: 0,
                           }}
                         />
                       </Tooltip>
                     </Stack>
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={isDropdownMode ? 'dropdown' : 'expanded'}
-                    onChange={setDisplayMode}
-                  >
-                    <FormControlLabel
-                      value="expanded"
-                      control={<Radio size="small" />}
-                      label="Expanded checklist"
-                    />
-                    <FormControlLabel
-                      value="dropdown"
-                      control={<Radio size="small" />}
-                      label="Dropdown list"
-                    />
-                  </RadioGroup>
-                </FormControl>
-              )}
+                  </Stack>
+                </form>
 
-              {errorMessage && (
-                <Alert
-                  severity="error"
-                  sx={{
-                    mt: 2,
-                    width: {xs: '100%', sm: '52%', md: '48%'},
-                  }}
-                >
-                  {errorMessage}
-                </Alert>
-              )}
-            </Box>
-          </Grid>
+                {showExpandedCheckListControl && (
+                  <FormControl sx={{mb: 0}}>
+                    <FormLabel>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{alignItems: 'center'}}
+                      >
+                        <Typography component="span">
+                          {isMultiSelectField
+                            ? 'Multi-select display mode'
+                            : 'Select-one display mode'}
+                        </Typography>
+                        <Tooltip
+                          title={
+                            isMultiSelectField
+                              ? 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
+                              : 'Choose how options are shown: as an expanded checklist or as a compact dropdown.'
+                          }
+                        >
+                          <InfoIcon
+                            sx={{
+                              ...(designerInfoIconSx as Record<
+                                string,
+                                unknown
+                              >),
+                            }}
+                          />
+                        </Tooltip>
+                      </Stack>
+                    </FormLabel>
+                    <RadioGroup
+                      row
+                      value={isDropdownMode ? 'dropdown' : 'expanded'}
+                      onChange={setDisplayMode}
+                    >
+                      <FormControlLabel
+                        value="expanded"
+                        control={<Radio size="small" />}
+                        label="Expanded checklist"
+                      />
+                      <FormControlLabel
+                        value="dropdown"
+                        control={<Radio size="small" />}
+                        label="Dropdown list"
+                      />
+                    </RadioGroup>
+                  </FormControl>
+                )}
+
+                {errorMessage && (
+                  <Alert
+                    severity="error"
+                    sx={{
+                      mt: 2,
+                      width: {xs: '100%', sm: '52%', md: '48%'},
+                    }}
+                  >
+                    {errorMessage}
+                  </Alert>
+                )}
+              </Box>
+            </Grid>
           </Grid>
         </Box>
       </Box>
 
-        {/* Edit option dialog */}
-        <Dialog
-          open={!!editingOption}
-          onClose={() => setEditingOption(null)}
-          TransitionProps={{
+      {/* Edit option dialog */}
+      <Dialog
+        open={!!editingOption}
+        onClose={() => setEditingOption(null)}
+        slotProps={{
+          transition: {
             onExited: () => {
               setRenameDialogState(null);
               setLastEditedOption(null);
             },
-          }}
-        >
-          <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
-          <DialogContent sx={designerDialogContentSx}>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Option Text"
-              fullWidth
-              value={editValue}
-              onChange={e => setEditValue(e.target.value)}
-            />
-            {errorMessage && (
-              <Alert severity="error" sx={{mt: 2}}>
-                {errorMessage}
-              </Alert>
-            )}
+          },
+        }}
+      >
+        <DialogTitle sx={designerDialogTitleSx}>Edit Option</DialogTitle>
+        <DialogContent sx={designerDialogContentSx}>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Option Text"
+            fullWidth
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+          />
+          {errorMessage && (
+            <Alert severity="error" sx={{mt: 2}}>
+              {errorMessage}
+            </Alert>
+          )}
 
-            {renameDialogState && (
-              <Alert severity="warning" sx={{mt: 2}}>
-                <Typography variant="body2" sx={{mb: 1}}>
-                  The option "<strong>{lastEditedOption}</strong>" is used in:
-                </Typography>
-                <ul>
-                  {renameDialogState.references.map((r, idx) => (
-                    <li key={idx}>{r}</li>
-                  ))}
-                </ul>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={renameDialogState.updateConditions}
-                      onChange={e =>
-                        setRenameDialogState(prev =>
-                          prev
-                            ? {...prev, updateConditions: e.target.checked}
-                            : null
-                        )
-                      }
-                    />
-                  }
-                  label="Automatically update conditions to use the new option name"
-                  sx={{mt: 1}}
-                />
-              </Alert>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button
-              sx={designerCancelButtonSx}
-              onClick={() => setEditingOption(null)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleEditSubmit} color="primary">
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-        {/* Delete Option Warning Dialog */}
-        <Dialog
-          open={isDeleteDialogOpen}
-          onClose={() => setIsDeleteDialogOpen(false)}
-          TransitionProps={{
+          {renameDialogState && (
+            <Alert severity="warning" sx={{mt: 2}}>
+              <Typography variant="body2" sx={{mb: 1}}>
+                The option "<strong>{lastEditedOption}</strong>" is used in:
+              </Typography>
+              <ul>
+                {renameDialogState.references.map((r, idx) => (
+                  <li key={idx}>{r}</li>
+                ))}
+              </ul>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={renameDialogState.updateConditions}
+                    onChange={e =>
+                      setRenameDialogState(prev =>
+                        prev
+                          ? {...prev, updateConditions: e.target.checked}
+                          : null
+                      )
+                    }
+                  />
+                }
+                label="Automatically update conditions to use the new option name"
+                sx={{mt: 1}}
+              />
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            sx={designerCancelButtonSx}
+            onClick={() => setEditingOption(null)}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleEditSubmit} color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Delete Option Warning Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        slotProps={{
+          transition: {
             onExited: () => {
               setDeleteDialogRefs([]);
             },
-          }}
-        >
-          <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Option</DialogTitle>
-          <DialogContent sx={designerDialogContentSx}>
-            <Alert severity="warning">
-              This option is used in the following conditions:
-              <ul>
-                {deleteDialogRefs.map((ref, idx) => (
-                  <li key={idx}>{ref}</li>
-                ))}
-              </ul>
-              Please remove all dependencies on this option before deleting it.
-            </Alert>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              sx={designerCancelButtonSx}
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
+          },
+        }}
+      >
+        <DialogTitle sx={designerDialogTitleSx}>
+          Cannot Delete Option
+        </DialogTitle>
+        <DialogContent sx={designerDialogContentSx}>
+          <Alert severity="warning">
+            This option is used in the following conditions:
+            <ul>
+              {deleteDialogRefs.map((ref, idx) => (
+                <li key={idx}>{ref}</li>
+              ))}
+            </ul>
+            Please remove all dependencies on this option before deleting it.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            sx={designerCancelButtonSx}
+            onClick={() => setIsDeleteDialogOpen(false)}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </BaseFieldEditor>
   );
 };

@@ -103,7 +103,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
       return;
     }
     projectListItems.push({
-      title: project_info.name ?? project_info.metadata.name,
+      title: project_info.name,
       icon: <DescriptionIcon />,
       to:
         ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
@@ -249,13 +249,17 @@ export default function MainAppBar() {
           variant="temporary"
           anchor="left"
           open={isOpen}
-          ModalProps={{onBackdropClick: toggle}}
-          PaperProps={{
-            sx: {
-              width: drawerWidth,
-              height: '100vh',
-              boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+          onClose={toggle}
+          slotProps={{
+            paper: {
+              sx: {
+                width: drawerWidth,
+                height: '100vh',
+                boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+                borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                // bottom menu items above Android overlay nav bars.
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              },
             },
           }}
         >

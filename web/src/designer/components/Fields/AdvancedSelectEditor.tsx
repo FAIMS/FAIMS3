@@ -29,6 +29,7 @@ import {
   Collapse,
 } from '@mui/material';
 
+import {AdvancedSelectFieldProps} from '@faims3/forms';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -52,14 +53,14 @@ type newState = {
 /** Hierarchical option tree editor and value mode (`full` vs stored id) for `AdvancedSelect`. */
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
+  const params = field['component-parameters'] as AdvancedSelectFieldProps;
   const state = {
-    optionTree: field['component-parameters'].ElementProps
-      ?.optiontree as OptionTreeType,
-    valueType: field['component-parameters'].valuetype || 'full',
+    optionTree: params.ElementProps?.optiontree as unknown as OptionTreeType,
+    valueType: params.valuetype || 'full',
   };
 
   const [newOptionTree, setNewOptionTree] = useState(
@@ -71,11 +72,14 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
 
   const updateFieldFromState = (newState: newState) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    newField['component-parameters'].valuetype = newState.valueType;
+    const newParams = newField[
+      'component-parameters'
+    ] as AdvancedSelectFieldProps;
+    newParams.valuetype = newState.valueType as 'full' | 'child';
 
-    if (newField['component-parameters'].ElementProps) {
-      newField['component-parameters'].ElementProps.optiontree =
-        newState.optionTree;
+    if (newParams.ElementProps) {
+      newParams.ElementProps.optiontree =
+        newState.optionTree as unknown as typeof newParams.ElementProps.optiontree;
     }
 
     dispatch(fieldUpdated({fieldName, newField}));
@@ -157,10 +161,14 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12} sm={9}>
+      <Grid size={{xs: 12, sm: 9}}>
         <Card variant="outlined">
-          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-            <Grid container item xs={12} direction="column" alignItems="center">
+          <Grid size={12} sx={{mx: 1.5, my: 2}}>
+            <Grid
+              container
+              size={12}
+              sx={{flexDirection: 'column', alignItems: 'center'}}
+            >
               <Alert severity="info" sx={{mb: 2}}>
                 <AlertTitle>Example Structure</AlertTitle>
 
@@ -217,8 +225,10 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
 
               <form onSubmit={validateOptionTree}>
                 <DebouncedTextField
-                  InputProps={{style: {fontFamily: 'monospace', fontSize: 14}}}
-                  InputLabelProps={{style: {fontSize: 14}}}
+                  slotProps={{
+                    input: {sx: {fontFamily: 'monospace', fontSize: 14}},
+                    inputLabel: {sx: {fontSize: 14}},
+                  }}
                   label="JSON"
                   helperText="Use this field to type a JSON structure for your optiontree. Click 'Save' or press 'Enter' when done."
                   value={newOptionTree}
@@ -257,9 +267,9 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
         </Card>
       </Grid>
 
-      <Grid item xs={12} sm={3}>
+      <Grid size={{xs: 12, sm: 3}}>
         <Card variant="outlined">
-          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+          <Grid size={12} sx={{mx: 1.5, my: 2}}>
             <FormControl>
               <FormLabel id="value-type">Value Type</FormLabel>
               <RadioGroup

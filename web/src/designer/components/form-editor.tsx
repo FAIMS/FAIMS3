@@ -17,7 +17,7 @@
  */
 
 import {getMapConfig} from '@/constants';
-import {UISpecification} from '@faims3/data-model';
+import {UiSpecModel} from '@faims3/data-model';
 import {PreviewFormManager} from '@faims3/forms';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
@@ -131,10 +131,8 @@ export const FormEditor = ({
   const sectionParam = searchParams.get('section');
   const createSectionParam = searchParams.get('createSection');
 
-  const uiSpec = useAppSelector(
-    state => state.notebook['ui-specification'].present
-  );
-  // we need this to be a ProjectUIModel type for the PreviewFormManager
+  const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
+  // we need this to be a UiSpecModel type for the PreviewFormManager
   // we should also compile this
   const uiSpecInternal = useMemo(
     () => {
@@ -143,35 +141,31 @@ export const FormEditor = ({
       const uiSpecEncoded = cloneDeep(uiSpec);
       return {
         fields: uiSpecEncoded.fields,
-        views: uiSpecEncoded.fviews,
+        views: uiSpecEncoded.views,
         viewsets: uiSpecEncoded.viewsets,
         visible_types: uiSpecEncoded.visible_types,
-      } satisfies UISpecification;
+      } satisfies UiSpecModel;
     },
     // Bit of a hack to force diff on uiSpec even tho ref may no
     [previewForm, uiSpec]
   );
 
   const visibleTypes = useAppSelector(
-    state => state.notebook['ui-specification'].present.visible_types
+    state => state.notebook.uiSpec.present.visible_types
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets[viewSetId],
+    state => state.notebook.uiSpec.present.viewsets[viewSetId],
     (left, right) => {
       return shallowEqual(left, right);
     }
   );
   const sections = viewSet ? viewSet.views : [];
 
-  const views = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
-  const fields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
   const dispatch = useAppDispatch();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -326,12 +320,9 @@ export const FormEditor = ({
       const nextParams = new URLSearchParams(location.search);
       nextParams.set('section', String(newSectionIndex));
       nextParams.delete('createSection');
-      navigate(
-        `${location.pathname}?${nextParams.toString()}`,
-        {
-          replace: true,
-        }
-      );
+      navigate(`${location.pathname}?${nextParams.toString()}`, {
+        replace: true,
+      });
       window.requestAnimationFrame(() => {
         sectionStripRef.current?.scrollTo({
           left: sectionStripRef.current.scrollWidth,
@@ -506,85 +497,58 @@ export const FormEditor = ({
     <Stack
       direction="row"
       spacing={2}
-      alignItems="stretch"
-      sx={[designerResponsiveSectionSx, {width: '100%', minWidth: 0, flexWrap: 'nowrap'}]}
+      sx={[
+        designerResponsiveSectionSx,
+        {width: '100%', minWidth: 0, flexWrap: 'nowrap', alignItems: 'stretch'},
+      ]}
     >
       <Grid
         container
         rowSpacing={1.25}
         columnSpacing={0}
-        pt={1.25}
-        sx={{flex: '1 1 0%', minWidth: 0}}
+        sx={{flex: '1 1 0%', minWidth: 0, pt: 1.25}}
       >
-        <Grid item xs={12}>
+        <Grid size={12}>
           {renderFormToolbar(
-          <Stack spacing={1.5} py={0.75}>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              flexWrap="wrap"
-              columnGap={1}
-              sx={{...designerScrollableControlRowSx, color: 'text.secondary'}}
-            >
-              <Button
-                variant="text"
-                size="small"
-                color="inherit"
-                startIcon={<EditRoundedIcon />}
-                onClick={() => setEditMode(true)}
-                sx={designerControlLabelSx}
+            <Stack spacing={1.5} sx={{py: 0.75}}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  ...designerScrollableControlRowSx,
+                  color: 'text.secondary',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  columnGap: 1,
+                }}
               >
-                Edit name
-              </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  color="inherit"
+                  startIcon={<EditRoundedIcon />}
+                  onClick={() => setEditMode(true)}
+                  sx={designerControlLabelSx}
+                >
+                  Edit name
+                </Button>
 
-              <Typography sx={designerPipeSx}> | </Typography>
+                <Typography sx={designerPipeSx}> | </Typography>
 
-              <Stack direction="row" spacing={1} alignItems="center">
-                {moveButtonsDisabled ? (
-                  <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
-                    <span>
-                      <IconButton
-                        disabled
-                        aria-label="left"
-                        size="small"
-                        sx={designerIconControlButtonSx}
-                      >
-                        <ArrowBackRoundedIcon />
-                      </IconButton>
-                      <IconButton
-                        disabled
-                        aria-label="right"
-                        size="small"
-                        sx={designerIconControlButtonSx}
-                      >
-                        <ArrowForwardRoundedIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                ) : (
-                  <>
-                    <Tooltip title="Move form left">
+                <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+                  {moveButtonsDisabled ? (
+                    <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
                       <span>
                         <IconButton
-                          disabled={visibleTypes.indexOf(viewSetId) === 0}
-                          onClick={() => moveForm(viewSetId, 'left')}
+                          disabled
                           aria-label="left"
                           size="small"
                           sx={designerIconControlButtonSx}
                         >
                           <ArrowBackRoundedIcon />
                         </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Tooltip title="Move form right">
-                      <span>
                         <IconButton
-                          disabled={
-                            visibleTypes.indexOf(viewSetId) ===
-                            visibleTypes.length - 1
-                          }
-                          onClick={() => moveForm(viewSetId, 'right')}
+                          disabled
                           aria-label="right"
                           size="small"
                           sx={designerIconControlButtonSx}
@@ -593,142 +557,178 @@ export const FormEditor = ({
                         </IconButton>
                       </span>
                     </Tooltip>
-                  </>
-                )}
-                <Typography variant="caption" sx={designerControlLabelSx}>
-                  Reorder
-                </Typography>
+                  ) : (
+                    <>
+                      <Tooltip title="Move form left">
+                        <span>
+                          <IconButton
+                            disabled={visibleTypes.indexOf(viewSetId) === 0}
+                            onClick={() => moveForm(viewSetId, 'left')}
+                            aria-label="left"
+                            size="small"
+                            sx={designerIconControlButtonSx}
+                          >
+                            <ArrowBackRoundedIcon />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Move form right">
+                        <span>
+                          <IconButton
+                            disabled={
+                              visibleTypes.indexOf(viewSetId) ===
+                              visibleTypes.length - 1
+                            }
+                            onClick={() => moveForm(viewSetId, 'right')}
+                            aria-label="right"
+                            size="small"
+                            sx={designerIconControlButtonSx}
+                          >
+                            <ArrowForwardRoundedIcon />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </>
+                  )}
+                  <Typography variant="caption" sx={designerControlLabelSx}>
+                    Reorder
+                  </Typography>
+                </Stack>
+
+                <Typography sx={designerPipeSx}> | </Typography>
+
+                <Button
+                  variant="text"
+                  size="small"
+                  color="inherit"
+                  startIcon={<SettingsRoundedIcon />}
+                  onClick={() => setSettingsOpen(true)}
+                  sx={designerControlLabelSx}
+                >
+                  Settings
+                </Button>
+
+                <Typography sx={designerPipeSx}> | </Typography>
+
+                <FormControlLabel
+                  sx={{
+                    ml: 0.25,
+                    whiteSpace: 'nowrap',
+                    '& .MuiFormControlLabel-label': {
+                      color: 'text.secondary',
+                      fontWeight: 700,
+                    },
+                  }}
+                  control={
+                    <Checkbox
+                      checked={visibleTypes.includes(viewSetId)}
+                      size="small"
+                      onChange={e => handleChange(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{alignItems: 'center'}}
+                    >
+                      <Typography variant="body2" sx={{fontWeight: 700}}>
+                        Include "Add New Record" button
+                      </Typography>
+                      <Tooltip title='Controls whether users can create records from this form via "Add New Record".'>
+                        <InfoIcon sx={designerInfoIconSx} />
+                      </Tooltip>
+                    </Stack>
+                  }
+                />
+
+                <Typography sx={designerPipeSx}> | </Typography>
+
+                <Button
+                  variant="text"
+                  color="error"
+                  size="small"
+                  startIcon={<DeleteRoundedIcon />}
+                  onClick={deleteConfirmation}
+                  sx={{...designerControlLabelSx, color: 'error.main'}}
+                >
+                  Delete
+                </Button>
               </Stack>
 
-              <Typography sx={designerPipeSx}> | </Typography>
-
-              <Button
-                variant="text"
-                size="small"
-                color="inherit"
-                startIcon={<SettingsRoundedIcon />}
-                onClick={() => setSettingsOpen(true)}
-                sx={designerControlLabelSx}
-              >
-                Settings
-              </Button>
-
-              <Typography sx={designerPipeSx}> | </Typography>
-
-              <FormControlLabel
-                sx={{
-                  ml: 0.25,
-                  whiteSpace: 'nowrap',
-                  '& .MuiFormControlLabel-label': {
-                    color: 'text.secondary',
-                    fontWeight: 700,
-                  },
-                }}
-                control={
-                  <Checkbox
-                    checked={visibleTypes.includes(viewSetId)}
-                    size="small"
-                    onChange={e => handleChange(e.target.checked)}
+              {editMode && (
+                <>
+                  <Box
+                    onClick={() => setEditMode(false)}
+                    sx={designerInlineEditFocusOverlaySx}
                   />
-                }
-                label={
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography variant="body2" sx={{fontWeight: 700}}>
-                      Include "Add New Record" button
-                    </Typography>
-                    <Tooltip title='Controls whether users can create records from this form via "Add New Record".'>
-                      <InfoIcon sx={designerInfoIconSx} />
-                    </Tooltip>
-                  </Stack>
-                }
-              />
+                  <Box sx={designerInlineEditPanelSx}>
+                    <form
+                      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                        e.preventDefault();
+                        setEditMode(false);
+                      }}
+                    >
+                      <SimpleFieldWrapper heading="Form Name">
+                        <DebouncedTextField
+                          size="small"
+                          margin="none"
+                          name="label"
+                          data-testid="label"
+                          placeholder="Form Name"
+                          inputRef={formEditInputRef}
+                          slotProps={{
+                            input: {
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Tooltip title="Save form name">
+                                    <IconButton
+                                      size="small"
+                                      type="submit"
+                                      sx={{
+                                        ...designerInlineEditActionIconSx,
+                                        color: 'success.main',
+                                      }}
+                                    >
+                                      <DoneRoundedIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Cancel name edit">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => setEditMode(false)}
+                                      sx={{
+                                        ...designerInlineEditActionIconSx,
+                                        color: 'error.main',
+                                      }}
+                                    >
+                                      <CloseRoundedIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                </InputAdornment>
+                              ),
+                            },
+                          }}
+                          value={viewSet.label}
+                          onChange={(
+                            event: React.ChangeEvent<HTMLInputElement>
+                          ) => {
+                            updateFormLabel(event.target.value);
+                          }}
+                          sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+                        />
+                      </SimpleFieldWrapper>
+                    </form>
+                  </Box>
+                </>
+              )}
 
-              <Typography sx={designerPipeSx}> | </Typography>
-
-              <Button
-                variant="text"
-                color="error"
-                size="small"
-                startIcon={<DeleteRoundedIcon />}
-                onClick={deleteConfirmation}
-                sx={{...designerControlLabelSx, color: 'error.main'}}
-              >
-                Delete
-              </Button>
+              {alertMessage && (
+                <Alert severity="error" onClose={() => setAlertMessage('')}>
+                  {alertMessage}
+                </Alert>
+              )}
             </Stack>
-
-            {editMode && (
-              <>
-                <Box
-                  onClick={() => setEditMode(false)}
-                  sx={designerInlineEditFocusOverlaySx}
-                />
-                <Box sx={designerInlineEditPanelSx}>
-                  <form
-                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                      e.preventDefault();
-                      setEditMode(false);
-                    }}
-                  >
-                    <SimpleFieldWrapper heading="Form Name">
-                      <DebouncedTextField
-                        size="small"
-                        margin="none"
-                        name="label"
-                        data-testid="label"
-                        placeholder="Form Name"
-                        inputRef={formEditInputRef}
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Tooltip title="Save form name">
-                                <IconButton
-                                  size="small"
-                                  type="submit"
-                                  sx={{
-                                    ...designerInlineEditActionIconSx,
-                                    color: 'success.main',
-                                  }}
-                                >
-                                  <DoneRoundedIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Cancel name edit">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setEditMode(false)}
-                                  sx={{
-                                    ...designerInlineEditActionIconSx,
-                                    color: 'error.main',
-                                  }}
-                                >
-                                  <CloseRoundedIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </InputAdornment>
-                          ),
-                        }}
-                        value={viewSet.label}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                          updateFormLabel(event.target.value);
-                        }}
-                        sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
-                      />
-                    </SimpleFieldWrapper>
-                  </form>
-                </Box>
-              </>
-            )}
-
-            {alertMessage && (
-              <Alert
-                severity="error"
-                onClose={() => setAlertMessage('')}
-              >
-                {alertMessage}
-              </Alert>
-            )}
-          </Stack>
           )}
           <Dialog
             open={settingsOpen}
@@ -736,11 +736,13 @@ export const FormEditor = ({
             maxWidth="sm"
             fullWidth
             fullScreen={settingsFullScreen}
-            PaperProps={{
-              sx: {
-                borderRadius: {xs: 0, sm: 2},
-                width: '100%',
-                m: {xs: 0, sm: 2},
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: {xs: 0, sm: 2},
+                  width: '100%',
+                  m: {xs: 0, sm: 2},
+                },
               },
             }}
           >
@@ -790,11 +792,7 @@ export const FormEditor = ({
                 <Button sx={designerCancelButtonSx} onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button
-                  variant="contained"
-                  color="error"
-                  onClick={deleteForm}
-                >
+                <Button variant="contained" color="error" onClick={deleteForm}>
                   Delete
                 </Button>
               </DialogActions>
@@ -814,9 +812,11 @@ export const FormEditor = ({
             }}
             fullWidth
             maxWidth="sm"
-            PaperProps={{
-              sx: {
-                minHeight: {xs: 280, sm: 320},
+            slotProps={{
+              paper: {
+                sx: {
+                  minHeight: {xs: 280, sm: 320},
+                },
               },
             }}
           >
@@ -835,7 +835,8 @@ export const FormEditor = ({
                 <SimpleFieldWrapper
                   heading="Section Name"
                   helperText={
-                    addAlertMessage || 'Name the section users will fill in first.'
+                    addAlertMessage ||
+                    'Name the section users will fill in first.'
                   }
                 >
                   <DebouncedTextField
@@ -876,8 +877,15 @@ export const FormEditor = ({
             </DialogActions>
           </Dialog>
 
-          <Box mt={2} mb={1.25}>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}>
+          <Box sx={{mt: 2, mb: 1.25}}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+              }}
+            >
               <HeadingWithInfo
                 title="Sections"
                 tooltip="Sections break a form into logical groups of fields."
@@ -901,10 +909,10 @@ export const FormEditor = ({
             }}
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Box sx={{px: 0, pt: 1.5, pb: 2}}>
-            <Grid container spacing={2} p={0}>
-              <Grid item xs={12}>
+            <Grid container spacing={2} sx={{p: 0}}>
+              <Grid size={12}>
                 <Box
                   ref={sectionStripRef}
                   sx={{
@@ -918,7 +926,9 @@ export const FormEditor = ({
                     pb: 1,
                     scrollbarWidth: 'thin',
                     scrollbarColor: 'rgba(78, 116, 138, 0.38) transparent',
-                    '&::-webkit-scrollbar': {height: hasSectionOverflow ? 8 : 0},
+                    '&::-webkit-scrollbar': {
+                      height: hasSectionOverflow ? 8 : 0,
+                    },
                     '&::-webkit-scrollbar-track': {
                       background: 'transparent',
                       borderRadius: 999,
@@ -978,10 +988,10 @@ export const FormEditor = ({
                           borderRadius: 2,
                           color: 'text.primary',
                           border: '1px solid',
-                          borderColor: isActive
-                            ? 'divider'
+                          borderColor: isActive ? 'divider' : 'transparent',
+                          backgroundColor: isActive
+                            ? 'rgba(17,24,39,0.08)'
                             : 'transparent',
-                          backgroundColor: isActive ? 'rgba(17,24,39,0.08)' : 'transparent',
                           transition:
                             'background-color 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease',
                           '& .section-step-dot': {
@@ -992,8 +1002,12 @@ export const FormEditor = ({
                               : '0 1px 2px rgba(0,0,0,0.11)',
                           },
                           '&:hover': {
-                            backgroundColor: isActive ? 'rgba(17,24,39,0.11)' : 'rgba(17,24,39,0.02)',
-                            borderColor: isActive ? 'divider' : 'rgba(17,24,39,0.08)',
+                            backgroundColor: isActive
+                              ? 'rgba(17,24,39,0.11)'
+                              : 'rgba(17,24,39,0.02)',
+                            borderColor: isActive
+                              ? 'divider'
+                              : 'rgba(17,24,39,0.08)',
                             boxShadow: '0 4px 10px rgba(15,23,32,0.10)',
                             '& .section-step-dot': {
                               transform: 'translateY(-1px) scale(1.02)',
@@ -1044,7 +1058,8 @@ export const FormEditor = ({
                                 : 'rgba(0,0,0,0.14)',
                               borderRadius: 999,
                               opacity: isLast || sections.length <= 1 ? 0 : 1,
-                              transition: 'background 0.2s ease, opacity 0.2s ease',
+                              transition:
+                                'background 0.2s ease, opacity 0.2s ease',
                             }}
                           />
                         </Box>
@@ -1073,7 +1088,7 @@ export const FormEditor = ({
 
               {sections.length === 0 ? (
                 addSectionDialogOpen ? null : (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <Card
                       variant="outlined"
                       sx={{
@@ -1089,7 +1104,7 @@ export const FormEditor = ({
                       <Stack
                         direction={{xs: 'column', sm: 'row'}}
                         spacing={1.25}
-                        alignItems={{xs: 'stretch', sm: 'flex-end'}}
+                        sx={{alignItems: {xs: 'stretch', sm: 'flex-end'}}}
                       >
                         <Box sx={{width: {xs: '100%', sm: 360}}}>
                           <SimpleFieldWrapper heading="Section Name">
@@ -1115,7 +1130,11 @@ export const FormEditor = ({
                           variant="contained"
                           startIcon={<AddRoundedIcon />}
                           onClick={() => setAddSectionDialogOpen(true)}
-                          sx={{height: 40, textTransform: 'none', whiteSpace: 'nowrap'}}
+                          sx={{
+                            height: 40,
+                            textTransform: 'none',
+                            whiteSpace: 'nowrap',
+                          }}
                         >
                           Add Section
                         </Button>
@@ -1129,7 +1148,7 @@ export const FormEditor = ({
                   </Grid>
                 )
               ) : (
-                <Grid item xs={12}>
+                <Box sx={{width: '100%'}}>
                   <SectionEditor
                     viewSetId={viewSetId}
                     viewId={viewSet.views[activeStep] || viewSet.views[0]}
@@ -1142,7 +1161,7 @@ export const FormEditor = ({
                     moveFieldCallback={moveFieldToSection}
                     toolbarPortal={sectionToolbarSlot}
                   />
-                </Grid>
+                </Box>
               )}
             </Grid>
           </Box>
@@ -1173,7 +1192,8 @@ export const FormEditor = ({
               borderRadius: 2,
               overflow: 'hidden',
               backgroundColor: 'background.paper',
-              boxShadow: theme => `0 2px 16px ${alpha(theme.palette.common.black, 0.07)}`,
+              boxShadow: theme =>
+                `0 2px 16px ${alpha(theme.palette.common.black, 0.07)}`,
               maxHeight: {md: 'calc(100vh - 148px)'},
             }}
           >
@@ -1203,7 +1223,11 @@ export const FormEditor = ({
                 }}
               >
                 <CircularProgress size={32} thickness={4} />
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{fontWeight: 600}}
+                >
                   Loading preview…
                 </Typography>
               </Box>
@@ -1216,7 +1240,10 @@ export const FormEditor = ({
                 </Alert>
               </Box>
             ) : (
-              <Box key={viewSetId} sx={{maxHeight: {md: 'calc(100vh - 196px)'}, overflow: 'auto'}}>
+              <Box
+                key={viewSetId}
+                sx={{maxHeight: {md: 'calc(100vh - 196px)'}, overflow: 'auto'}}
+              >
                 <ThemeProvider theme={defaultTheme}>
                   {/* resets CSS baseline within this scope */}
                   <CssBaseline />

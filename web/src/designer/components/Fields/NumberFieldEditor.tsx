@@ -18,7 +18,7 @@ import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 /** Integer vs floating `numberType` and HTML input binding for `NumberField`. */
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -97,12 +97,20 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
               onChange={handleNumberTypeChange}
               name="number-type-radio-group"
             >
-              <FormControlLabel value="integer" control={<Radio />} label="Integer" />
-              <FormControlLabel value="floating" control={<Radio />} label="Decimal" />
+              <FormControlLabel
+                value="integer"
+                control={<Radio />}
+                label="Integer"
+              />
+              <FormControlLabel
+                value="floating"
+                control={<Radio />}
+                label="Decimal"
+              />
             </RadioGroup>
             <FormHelperText>
-              Integer shows stepper controls and accepts whole numbers only. Decimal
-              allows fractional values.
+              Integer shows stepper controls and accepts whole numbers only.
+              Decimal allows fractional values.
             </FormHelperText>
           </FormControl>
         </Box>
@@ -115,7 +123,10 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
             p: 2,
           }}
         >
-          <Typography variant="h6" sx={{mb: 1.5, fontWeight: 700, fontSize: '1rem'}}>
+          <Typography
+            variant="h6"
+            sx={{mb: 1.5, fontWeight: 700, fontSize: '1rem'}}
+          >
             Number limits
           </Typography>
           <FormHelperText sx={{mt: 0, mb: 1.25}}>

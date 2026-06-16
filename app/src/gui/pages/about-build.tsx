@@ -133,7 +133,14 @@ export default function AboutBuild() {
     <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
       <BoxTab title={'Fieldmark Configuration'} bgcolor={grey[100]} />
-      <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}} mb={2}>
+      <Box
+        sx={{
+          bgcolor: grey[100],
+          p: 2,
+          overflowX: 'scroll',
+          mb: 2,
+        }}
+      >
         <pre>
           <table>
             <tbody>
@@ -166,11 +173,10 @@ export default function AboutBuild() {
         <Grid
           container
           direction="row"
-          justifyContent="flex-start"
-          alignItems="left"
           spacing={2}
+          sx={{justifyContent: 'flex-start', alignItems: 'flex-start'}}
         >
-          <Grid item md={4} sm={6} xs={12}>
+          <Grid size={{md: 4, sm: 6, xs: 12}}>
             <Typography variant={'h5'} gutterBottom>
               Having issues?
             </Typography>
@@ -179,7 +185,7 @@ export default function AboutBuild() {
               Refresh the app (this is similar to a browser refresh)
             </Typography>
           </Grid>
-          <Grid item md={8} sm={6} xs={12}>
+          <Grid size={{md: 8, sm: 6, xs: 12}}>
             <Button
               variant="contained"
               color={'primary'}
@@ -195,14 +201,14 @@ export default function AboutBuild() {
               Refresh the app
             </Button>
           </Grid>
-          <Grid item md={4} sm={6} xs={12}>
+          <Grid size={{md: 4, sm: 6, xs: 12}}>
             <Typography variant={'body2'}>
               Refresh local database connections. Use this if you see errors
               indicating that that the app can't read or write data. No data
               will be lost by doing this.
             </Typography>
           </Grid>
-          <Grid item md={8} sm={6} xs={12}>
+          <Grid size={{md: 8, sm: 6, xs: 12}}>
             <Button
               variant="contained"
               color={'warning'}
@@ -218,10 +224,10 @@ export default function AboutBuild() {
             </Button>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={{xs: 12}}>
             <Divider />
           </Grid>
-          <Grid item md={4} sm={6} xs={12}>
+          <Grid size={{md: 4, sm: 6, xs: 12}}>
             <Typography variant={'h5'} gutterBottom>
               Backup from this device
             </Typography>
@@ -232,9 +238,9 @@ export default function AboutBuild() {
               well-supported by all device+browser combinations.
             </Typography>
           </Grid>
-          <Grid item md={8} sm={6} xs={12}>
-            <Grid container spacing={2} alignItems={'center'}>
-              <Grid item>
+          <Grid size={{md: 8, sm: 6, xs: 12}}>
+            <Grid container spacing={2} sx={{alignItems: 'center'}}>
+              <Grid>
                 <Button
                   disableElevation
                   size={'small'}
@@ -251,12 +257,12 @@ export default function AboutBuild() {
           {/* For debugging only - testing database damage handling this will close all databases */}
           {false && (
             <>
-              <Grid item md={4} sm={6} xs={12}>
+              <Grid size={{md: 4, sm: 6, xs: 12}}>
                 <Typography variant={'h5'} gutterBottom>
                   Do Damage!
                 </Typography>
               </Grid>
-              <Grid item md={8} sm={6} xs={12}>
+              <Grid size={{md: 8, sm: 6, xs: 12}}>
                 <Button
                   variant="contained"
                   color={'error'}
@@ -274,11 +280,11 @@ export default function AboutBuild() {
           )}
           {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>
-              <Grid item xs={12}>
+              <Grid size={{xs: 12}}>
                 <Divider />
               </Grid>
               <Divider flexItem orientation={'horizontal'} />
-              <Grid item md={4} sm={6} xs={12}>
+              <Grid size={{md: 4, sm: 6, xs: 12}}>
                 <Typography variant={'h5'} gutterBottom>
                   Developer Tools
                 </Typography>
@@ -290,10 +296,10 @@ export default function AboutBuild() {
                   inspect the raw data stored on this device.
                 </Typography>
               </Grid>
-              <Grid item md={8} sm={6} xs={12}>
-                <Grid container spacing={2} alignItems={'center'}>
+              <Grid size={{md: 8, sm: 6, xs: 12}}>
+                <Grid container spacing={2} sx={{alignItems: 'center'}}>
                   {SHOW_WIPE && (
-                    <Grid item>
+                    <Grid>
                       <Button
                         onClick={() => setWipeDialogOpen(true)}
                         color={'error'}
@@ -313,9 +319,7 @@ export default function AboutBuild() {
                           <AlertTitle>Are you sure?</AlertTitle>
                           Go ahead and wipe all local databases?
                         </Alert>
-                        <DialogActions
-                          style={{justifyContent: 'space-between'}}
-                        >
+                        <DialogActions className="dialog-actions-spread">
                           <Button
                             onClick={() => setWipeDialogOpen(false)}
                             autoFocus
@@ -348,7 +352,7 @@ export default function AboutBuild() {
                   )}
                   {SHOW_POUCHDB_BROWSER && (
                     <>
-                      <Grid item>
+                      <Grid>
                         <Button
                           size={'small'}
                           variant="contained"
@@ -361,7 +365,7 @@ export default function AboutBuild() {
                           Open Raw Database Interface
                         </Button>
                       </Grid>
-                      <Grid item>
+                      <Grid>
                         <FormControl>
                           <FormControlLabel
                             control={

@@ -52,10 +52,7 @@ import {ConditionTranslation} from '../condition/ConditionTranslation';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
-import {
-  getSpeechSettings,
-  updateSpeechSettings,
-} from './SpeechSettingsEditor';
+import {getSpeechSettings, updateSpeechSettings} from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
 import {
   designerCheckboxSx,
@@ -98,7 +95,7 @@ type StateType = {
 };
 
 /** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
- /**
+/**
  * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
  * Type-specific panels pass extra controls as `children`.
  */
@@ -109,11 +106,9 @@ export const BaseFieldEditor = ({
   children,
 }: Props) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
-  const uiSpec = useAppSelector(
-    state => state.notebook['ui-specification'].present
-  );
+  const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   const dispatch = useAppDispatch();
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
 
@@ -127,7 +122,9 @@ export const BaseFieldEditor = ({
   const internalRenameInFlight = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
-  const [localHelperText, setLocalHelperText] = useState(field['component-parameters'].helperText || '');
+  const [localHelperText, setLocalHelperText] = useState(
+    field['component-parameters'].helperText || ''
+  );
 
   // Always-fresh ref so the debounce below never closes over a stale field
   const fieldRef = useRef(field);
@@ -135,7 +132,9 @@ export const BaseFieldEditor = ({
 
   const debouncedHelperTextDispatch = useCallback(
     debounce((value: string) => {
-      const newField = JSON.parse(JSON.stringify(fieldRef.current)) as FieldType;
+      const newField = JSON.parse(
+        JSON.stringify(fieldRef.current)
+      ) as FieldType;
       newField['component-parameters'].helperText = value;
       dispatch(fieldUpdated({fieldName, newField}));
     }, 300),
@@ -350,7 +349,8 @@ export const BaseFieldEditor = ({
   const isSpeechEnabled = checkSpeechEnabled(field);
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
   const isChoiceField =
-    field['component-name'] === 'Select' || field['component-name'] === 'MultiSelect';
+    field['component-name'] === 'Select' ||
+    field['component-name'] === 'MultiSelect';
   // Always use the unified wrapper pattern so labels are rendered as headings
   // above inputs (no floating labels), even for legacy/deprecated field types.
   const useUnifiedFieldWrapper = true;
@@ -358,7 +358,7 @@ export const BaseFieldEditor = ({
   return (
     <Grid container spacing={2}>
       {/* ── Top card: Label / Field ID / Helper Text / type-specific children ── */}
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card
           variant="outlined"
           sx={
@@ -371,8 +371,8 @@ export const BaseFieldEditor = ({
           }
         >
           <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Box display="flex" flexDirection="column" gap={2}>
+            <Grid size={{xs: 12, md: 4}}>
+              <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                 {isChoiceField ? (
                   <>
                     <SimpleFieldWrapper heading="Label">
@@ -384,7 +384,9 @@ export const BaseFieldEditor = ({
                         onChange={e => handleLabelChange(e.target.value)}
                         onBlur={handleLabelBlur}
                         inputRef={labelInputRef}
-                        inputProps={{'data-field-label-input': 'true'}}
+                        slotProps={{
+                          htmlInput: {'data-field-label-input': 'true'},
+                        }}
                       />
                     </SimpleFieldWrapper>
                     <SimpleFieldWrapper heading="Field ID">
@@ -395,21 +397,24 @@ export const BaseFieldEditor = ({
                         value={localFieldName}
                         onChange={handleIdChange}
                         inputRef={idInputRef}
-                        InputProps={{
-                          endAdornment:
-                            state.label && slugify(state.label) !== localFieldName ? (
-                              <InputAdornment position="end">
-                                <Tooltip title="Sync with field name">
-                                  <IconButton
-                                    size="small"
-                                    onClick={syncFieldID}
-                                    edge="end"
-                                  >
-                                    <SyncIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              </InputAdornment>
-                            ) : undefined,
+                        slotProps={{
+                          input: {
+                            endAdornment:
+                              state.label &&
+                              slugify(state.label) !== localFieldName ? (
+                                <InputAdornment position="end">
+                                  <Tooltip title="Sync with field name">
+                                    <IconButton
+                                      size="small"
+                                      onClick={syncFieldID}
+                                      edge="end"
+                                    >
+                                      <SyncIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </InputAdornment>
+                              ) : undefined,
+                          },
                         }}
                       />
                     </SimpleFieldWrapper>
@@ -427,7 +432,9 @@ export const BaseFieldEditor = ({
                             onChange={e => handleLabelChange(e.target.value)}
                             onBlur={handleLabelBlur}
                             inputRef={labelInputRef}
-                            inputProps={{'data-field-label-input': 'true'}}
+                            slotProps={{
+                              htmlInput: {'data-field-label-input': 'true'},
+                            }}
                           />
                         </SimpleFieldWrapper>
                         <SimpleFieldWrapper heading="Field ID">
@@ -438,21 +445,24 @@ export const BaseFieldEditor = ({
                             value={localFieldName}
                             onChange={handleIdChange}
                             inputRef={idInputRef}
-                            InputProps={{
-                              endAdornment:
-                                state.label && slugify(state.label) !== localFieldName ? (
-                                  <InputAdornment position="end">
-                                    <Tooltip title="Sync with field name">
-                                      <IconButton
-                                        size="small"
-                                        onClick={syncFieldID}
-                                        edge="end"
-                                      >
-                                        <SyncIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </InputAdornment>
-                                ) : undefined,
+                            slotProps={{
+                              input: {
+                                endAdornment:
+                                  state.label &&
+                                  slugify(state.label) !== localFieldName ? (
+                                    <InputAdornment position="end">
+                                      <Tooltip title="Sync with field name">
+                                        <IconButton
+                                          size="small"
+                                          onClick={syncFieldID}
+                                          edge="end"
+                                        >
+                                          <SyncIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </InputAdornment>
+                                  ) : undefined,
+                              },
                             }}
                           />
                         </SimpleFieldWrapper>
@@ -466,7 +476,9 @@ export const BaseFieldEditor = ({
                           onChange={e => handleLabelChange(e.target.value)}
                           onBlur={handleLabelBlur}
                           inputRef={labelInputRef}
-                          inputProps={{'data-field-label-input': 'true'}}
+                          slotProps={{
+                            htmlInput: {'data-field-label-input': 'true'},
+                          }}
                         />
                         <TextField
                           fullWidth
@@ -474,21 +486,24 @@ export const BaseFieldEditor = ({
                           value={localFieldName}
                           onChange={handleIdChange}
                           inputRef={idInputRef}
-                          InputProps={{
-                            endAdornment:
-                              state.label && slugify(state.label) !== localFieldName ? (
-                                <InputAdornment position="end">
-                                  <Tooltip title="Sync with field name">
-                                    <IconButton
-                                      size="small"
-                                      onClick={syncFieldID}
-                                      edge="end"
-                                    >
-                                      <SyncIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </InputAdornment>
-                              ) : undefined,
+                          slotProps={{
+                            input: {
+                              endAdornment:
+                                state.label &&
+                                slugify(state.label) !== localFieldName ? (
+                                  <InputAdornment position="end">
+                                    <Tooltip title="Sync with field name">
+                                      <IconButton
+                                        size="small"
+                                        onClick={syncFieldID}
+                                        edge="end"
+                                      >
+                                        <SyncIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </InputAdornment>
+                                ) : undefined,
+                            },
                           }}
                         />
                       </>
@@ -498,8 +513,8 @@ export const BaseFieldEditor = ({
               </Box>
             </Grid>
             {showHelperText && (
-              <Grid item xs={12} md={8}>
-                <Box display="flex" flexDirection="column" gap={2}>
+              <Grid size={{xs: 12, md: 8}}>
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                   {useUnifiedFieldWrapper ? (
                     <SimpleFieldWrapper heading="Helper Text">
                       <TextField
@@ -528,109 +543,126 @@ export const BaseFieldEditor = ({
                       }}
                     />
                   )}
-                {hasAdvancedSupport && (
-                  <>
-                    <Box>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={showAdvanced}
-                            onChange={e => setShowAdvanced(e.target.checked)}
-                            sx={designerCheckboxSx}
-                          />
-                        }
-                        label="Include advanced helper text"
-                      />
-                    </Box>
-
-                    {showAdvanced && (
-                      <Card
-                        variant="outlined"
-                        sx={
-                          useUnifiedFieldWrapper
-                            ? {
-                                p: 2,
-                                overflow: 'visible',
-                                borderColor: 'divider',
-                                boxShadow: theme =>
-                                  `0 1px 6px ${alpha(
-                                    theme.palette.common.black,
-                                    0.08
-                                  )}, inset 0 1px 2px ${alpha(
-                                    theme.palette.common.black,
-                                    0.04
-                                  )}`,
-                              }
-                            : {mt: 2, p: 2, overflow: 'visible'}
-                        }
-                      >
-                        <Box
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="space-between"
-                        >
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            Advanced Helper Text (Markdown)
-                          </Typography>
-                          <IconButton
-                            onClick={() => setExpanded(!expanded)}
-                            size="small"
-                            aria-label="Toggle advanced editor"
-                          >
-                            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                          </IconButton>
-                        </Box>
-
-                        <Collapse
-                          in={expanded}
-                          sx={{
-                            overflow: 'visible',
-                            '& .MuiCollapse-wrapper': {overflow: 'visible'},
-                            '& .MuiCollapse-wrapperInner': {overflow: 'visible'},
-                          }}
-                        >
-                          <Box mt={2} sx={{overflow: 'visible'}}>
-                            <MdxEditor
-                              initialMarkdown={state.advancedHelperText}
-                              handleChange={debounce(
-                                markdown =>
-                                  updateProperty('advancedHelperText', markdown),
-                                500,
-                                {leading: false, trailing: true}
-                              )}
-                              editorRef={mdxEditorRef}
+                  {hasAdvancedSupport && (
+                    <>
+                      <Box>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={showAdvanced}
+                              onChange={e => setShowAdvanced(e.target.checked)}
+                              sx={designerCheckboxSx}
                             />
-                            <Alert
-                              severity="info"
-                              sx={{...(designerInfoCalloutSx as Record<string, unknown>), mt: 2}}
+                          }
+                          label="Include advanced helper text"
+                        />
+                      </Box>
+
+                      {showAdvanced && (
+                        <Card
+                          variant="outlined"
+                          sx={
+                            useUnifiedFieldWrapper
+                              ? {
+                                  p: 2,
+                                  overflow: 'visible',
+                                  borderColor: 'divider',
+                                  boxShadow: theme =>
+                                    `0 1px 6px ${alpha(
+                                      theme.palette.common.black,
+                                      0.08
+                                    )}, inset 0 1px 2px ${alpha(
+                                      theme.palette.common.black,
+                                      0.04
+                                    )}`,
+                                }
+                              : {mt: 2, p: 2, overflow: 'visible'}
+                          }
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <Typography
+                              variant="subtitle2"
+                              sx={{fontWeight: 'bold'}}
                             >
-                              This markdown-based helper will appear in a dialog
-                              when users click the info icon next to the field
-                              label in the app. You can resize inserted images by
-                              dragging their resize handles.
-                            </Alert>
+                              Advanced Helper Text (Markdown)
+                            </Typography>
+                            <IconButton
+                              onClick={() => setExpanded(!expanded)}
+                              size="small"
+                              aria-label="Toggle advanced editor"
+                            >
+                              {expanded ? (
+                                <ExpandLessIcon />
+                              ) : (
+                                <ExpandMoreIcon />
+                              )}
+                            </IconButton>
                           </Box>
-                        </Collapse>
-                      </Card>
-                    )}
-                  </>
-                )}
+
+                          <Collapse
+                            in={expanded}
+                            sx={{
+                              overflow: 'visible',
+                              '& .MuiCollapse-wrapper': {overflow: 'visible'},
+                              '& .MuiCollapse-wrapperInner': {
+                                overflow: 'visible',
+                              },
+                            }}
+                          >
+                            <Box sx={{mt: 2, overflow: 'visible'}}>
+                              <MdxEditor
+                                initialMarkdown={state.advancedHelperText}
+                                handleChange={debounce(
+                                  markdown =>
+                                    updateProperty(
+                                      'advancedHelperText',
+                                      markdown
+                                    ),
+                                  500,
+                                  {leading: false, trailing: true}
+                                )}
+                                editorRef={mdxEditorRef}
+                              />
+                              <Alert
+                                severity="info"
+                                sx={{
+                                  ...(designerInfoCalloutSx as Record<
+                                    string,
+                                    unknown
+                                  >),
+                                  mt: 2,
+                                }}
+                              >
+                                This markdown-based helper will appear in a
+                                dialog when users click the info icon next to
+                                the field label in the app. You can resize
+                                inserted images by dragging their resize
+                                handles.
+                              </Alert>
+                            </Box>
+                          </Collapse>
+                        </Card>
+                      )}
+                    </>
+                  )}
                 </Box>
               </Grid>
             )}
 
-            {children && (
-              <Grid item xs={12}>
-                {children}
-              </Grid>
-            )}
+            {children && <Grid size={12}>{children}</Grid>}
           </Grid>
         </Card>
       </Grid>
 
       {/* ── General field settings card ── */}
       {showExtraConfig && (
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card variant="outlined" sx={{overflow: 'hidden'}}>
             <Grid container>
               {/* LEFT: Required + Condition button + condition display.
@@ -641,9 +673,7 @@ export const BaseFieldEditor = ({
                   is visible, and we don't want Required/Add condition to
                   ride at the top of that empty space. */}
               <Grid
-                item
-                xs={12}
-                md={4}
+                size={{xs: 12, md: 4}}
                 sx={{
                   p: 2,
                   display: 'flex',
@@ -656,10 +686,12 @@ export const BaseFieldEditor = ({
               >
                 <Stack
                   direction="row"
-                  alignItems="center"
-                  justifyContent="space-around"
-                  gap={2}
-                  flexWrap="wrap"
+                  sx={{
+                    alignItems: 'center',
+                    justifyContent: 'space-around',
+                    gap: 2,
+                    flexWrap: 'wrap',
+                  }}
                 >
                   <FormControlLabel
                     sx={{mr: 0}}
@@ -673,7 +705,7 @@ export const BaseFieldEditor = ({
                       />
                     }
                     label={
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography variant="body2" sx={{fontWeight: 600}}>
                         Required
                       </Typography>
                     }
@@ -716,11 +748,10 @@ export const BaseFieldEditor = ({
               {/* RIGHT: Advanced controls + voice-to-text. Takes the
                   remaining two-thirds of the row since it has four toggles
                   plus the speech section to lay out. */}
-              <Grid item xs={12} md={8} sx={{p: 2}}>
+              <Grid size={{xs: 12, md: 8}} sx={{p: 2}}>
                 <Typography
                   variant="body2"
-                  fontWeight={700}
-                  sx={{mb: 0.5, color: 'text.primary'}}
+                  sx={{mb: 0.5, color: 'text.primary', fontWeight: 700}}
                 >
                   Advanced controls
                 </Typography>
@@ -753,7 +784,9 @@ export const BaseFieldEditor = ({
                       />
                     }
                     label={
-                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                      <Box
+                        sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                      >
                         <Typography variant="body2">
                           Display in child records
                         </Typography>
@@ -777,7 +810,9 @@ export const BaseFieldEditor = ({
                       />
                     }
                     label={
-                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                      <Box
+                        sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                      >
                         <Typography variant="body2">
                           Copy value to new records
                         </Typography>
@@ -801,7 +836,9 @@ export const BaseFieldEditor = ({
                       />
                     }
                     label={
-                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                      <Box
+                        sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                      >
                         <Typography variant="body2">Annotation</Typography>
                         <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
                           <InfoIcon sx={designerInfoIconSx} />
@@ -823,7 +860,9 @@ export const BaseFieldEditor = ({
                       />
                     }
                     label={
-                      <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                      <Box
+                        sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                      >
                         <Typography variant="body2">Uncertainty</Typography>
                         <Tooltip title="Allows users to indicate confidence in the entered value.">
                           <InfoIcon sx={designerInfoIconSx} />
@@ -837,7 +876,7 @@ export const BaseFieldEditor = ({
                 {(state.annotation || state.uncertainty) && (
                   <Grid container spacing={1.5} sx={{mt: 0.5}}>
                     {state.annotation && (
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{xs: 12, sm: 6}}>
                         <SimpleFieldWrapper heading="Annotation Label">
                           <DebouncedTextField
                             fullWidth
@@ -853,7 +892,7 @@ export const BaseFieldEditor = ({
                       </Grid>
                     )}
                     {state.uncertainty && (
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{xs: 12, sm: 6}}>
                         <SimpleFieldWrapper heading="Uncertainty Label">
                           <DebouncedTextField
                             fullWidth
@@ -889,11 +928,13 @@ export const BaseFieldEditor = ({
                         mb: 0.75,
                       }}
                     >
-                      <MicIcon sx={{fontSize: '1rem', color: 'text.secondary'}} />
+                      <MicIcon
+                        sx={{fontSize: '1rem', color: 'text.secondary'}}
+                      />
                       <Typography
                         variant="body2"
-                        fontWeight={700}
                         color="text.primary"
+                        sx={{fontWeight: 700}}
                       >
                         Voice-to-text
                       </Typography>
@@ -914,7 +955,9 @@ export const BaseFieldEditor = ({
                         />
                       }
                       label={
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                        <Box
+                          sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                        >
                           <Typography variant="body2">
                             Enable voice-to-text input for this field
                           </Typography>
@@ -943,10 +986,15 @@ export const BaseFieldEditor = ({
                           }
                           label={
                             <Box
-                              sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.4,
+                              }}
                             >
                               <Typography variant="body2">
-                                Append text to the end of input instead of replacing
+                                Append text to the end of input instead of
+                                replacing
                               </Typography>
                               <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input replaces the current value.">
                                 <InfoIcon sx={designerInfoIconSx} />
@@ -966,8 +1014,8 @@ export const BaseFieldEditor = ({
               <Box sx={{px: 2, pb: 2, pt: 0}}>
                 <Divider sx={{mb: 1.5}} />
                 <Grid container spacing={1}>
-                  <Grid item xs={12} sm={6}>
-                    <Box display="flex" alignItems="center">
+                  <Grid size={{xs: 12, sm: 6}}>
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -982,14 +1030,12 @@ export const BaseFieldEditor = ({
                         label="Protected Field"
                       />
                       <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
-                        <InfoIcon
-                          sx={designerInfoIconSx}
-                        />
+                        <InfoIcon sx={designerInfoIconSx} />
                       </Tooltip>
                     </Box>
                   </Grid>
                   {state.protection && (
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{xs: 12, sm: 6}}>
                       <FormControlLabel
                         control={
                           <Checkbox

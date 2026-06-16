@@ -1,28 +1,32 @@
 import {HRID_STRING} from '../datamodel';
-import {ProjectUIModel, ProjectUIViewset, FAIMSTypeName} from '../types';
+import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
+import {compileExpression, getDependantFields} from './conditionals';
 import {
-  compileIsLogic,
-  compileExpression,
-  getDependantFields,
-} from './conditionals';
-import {HridFieldMap, ValuesObject} from './types';
+  CompiledUiSpecModel,
+  CompiledUiSpecSections,
+  HridFieldMap,
+  NotebookUiSpec,
+  UiSpecModel,
+  UiSpecForm,
+  ValuesObject,
+} from './types';
 
 /**
  * Retrieves a viewset from the UI specification by its ID
  * @param {Object} params - The parameters object
- * @param {ProjectUIModel} params.uiSpecification - The UI specification containing viewsets
+ * @param {UiSpecModel} params.uiSpecification - The UI specification containing viewsets
  * @param {string} params.viewSetId - The ID of the viewset to retrieve
- * @returns {ProjectUIViewset} The requested viewset
+ * @returns {UiSpecForm} The requested viewset
  * @throws {Error} If the viewset ID is not found in the specification
  */
 export const getViewsetByViewsetId = ({
   uiSpecification,
   viewSetId,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewSetId: string;
-}): ProjectUIViewset => {
+}): UiSpecForm => {
   const viewSet = uiSpecification.viewsets[viewSetId];
   if (!viewSet) {
     throw new Error(
@@ -35,7 +39,7 @@ export const getViewsetByViewsetId = ({
 /**
  * Retrieves a view from the UI specification by its ID
  * @param {Object} params - The parameters object
- * @param {ProjectUIModel} params.uiSpecification - The UI specification containing views
+ * @param {UiSpecModel} params.uiSpecification - The UI specification containing views
  * @param {string} params.viewId - The ID of the view to retrieve
  * @returns {Object} The requested view
  * @throws {Error} If the view ID is not found in the specification
@@ -44,7 +48,7 @@ export const getViewByViewId = ({
   uiSpecification,
   viewId,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewId: string;
 }) => {
   const view = uiSpecification.views[viewId];
@@ -67,7 +71,7 @@ export const getFieldNamesForView = ({
   uiSpecification,
   viewId,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewId: string;
 }) => {
   return getViewByViewId({uiSpecification, viewId}).fields;
@@ -76,7 +80,7 @@ export const getFieldNamesForView = ({
 /**
  * Gets all field names across all views in a viewset
  * @param {Object} params - The parameters object
- * @param {ProjectUIModel} params.uiSpecification - The UI specification containing viewsets
+ * @param {UiSpecModel} params.uiSpecification - The UI specification containing viewsets
  * @param {string} params.viewSetId - The ID of the viewset to get fields from
  * @returns {string[]} Combined array of field names from all views in the viewset
  */
@@ -84,7 +88,7 @@ export const getFieldNamesForViewset = ({
   uiSpecification,
   viewSetId,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewSetId: string;
 }): string[] => {
   const viewset = getViewsetByViewsetId({uiSpecification, viewSetId});
@@ -102,7 +106,7 @@ export const getFieldNamesForViewset = ({
  * Gets the HRID field name for a viewset, either from explicit configuration or
  * by finding a field that starts with the HRID prefix
  * @param {Object} params - The parameters object
- * @param {ProjectUIModel} params.uiSpecification - The UI specification
+ * @param {UiSpecModel} params.uiSpecification - The UI specification
  * containing viewsets
  * @param {string} params.viewSetId - The ID of the viewset to search for HRID
  * field
@@ -112,7 +116,7 @@ export const getHridFieldNameForViewset = ({
   uiSpecification,
   viewSetId,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewSetId: string;
 }): string | undefined => {
   // Try and find the viewSet
@@ -144,7 +148,7 @@ export const getHridFieldNameForViewset = ({
 /**
  * Finds the view and viewset IDs that contain a specific field by field name
  * @param {Object} params - The parameters object
- * @param {ProjectUIModel} params.uiSpecification - The UI specification to search
+ * @param {UiSpecModel} params.uiSpecification - The UI specification to search
  * @param {string} params.fieldName - The field name to locate
  * @returns {Object} Object containing the matching viewId and viewSetId
  * @throws {Error} If no view contains the field or if no viewset contains the matching view
@@ -153,7 +157,7 @@ export const getIdsByFieldName = ({
   uiSpecification,
   fieldName,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   fieldName: string;
 }): {viewId: string; viewSetId: string} => {
   // Get all views
@@ -200,12 +204,10 @@ export const getIdsByFieldName = ({
 
 /**
  * Creates a mapping of viewset IDs to their corresponding HRID field names
- * @param {ProjectUIModel} uiSpecification - The UI specification to analyze
+ * @param {UiSpecModel} uiSpecification - The UI specification to analyze
  * @returns {Record<string, string|undefined>} Map of viewset IDs to HRID field names
  */
-export const getHridFieldMap = (
-  uiSpecification: ProjectUIModel
-): HridFieldMap => {
+export const getHridFieldMap = (uiSpecification: UiSpecModel): HridFieldMap => {
   // Get all viewset IDs from the specification
   const viewSetIds = Object.keys(uiSpecification.viewsets);
 
@@ -226,11 +228,11 @@ export const getHridFieldMap = (
 
 /**
  * Creates a mapping of field names to their containing view and viewset IDs
- * @param {ProjectUIModel} uiSpecification - The UI specification to analyze
+ * @param {UiSpecModel} uiSpecification - The UI specification to analyze
  * @returns {Record<string, {viewId: string, viewSetId: string}>} Map of field names to their location IDs
  */
 export const getFieldToIdsMap = (
-  uiSpecification: ProjectUIModel
+  uiSpecification: UiSpecModel
 ): Record<string, {viewId: string; viewSetId: string}> => {
   // Initialize the mapping object
   const fieldMap: Record<string, {viewId: string; viewSetId: string}> = {};
@@ -287,7 +289,7 @@ export const getNotebookFieldTypes = ({
   uiSpecification,
   viewID,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewID: string;
 }) => {
   if (!(viewID in uiSpecification.viewsets)) {
@@ -312,10 +314,10 @@ export const getNotebookFieldTypes = ({
         viewId: view,
         // include a hint as to whether this is a spatial field
         isSpatial: SPATIAL_FIELDS.some(f => f === fieldInfo['component-name']),
-        annotation: fieldInfo.meta.annotation.include
+        annotation: fieldInfo.meta?.annotation.include
           ? slugify(fieldInfo.meta.annotation.label)
           : '',
-        uncertainty: fieldInfo.meta.uncertainty.include
+        uncertainty: fieldInfo.meta?.uncertainty.include
           ? slugify(fieldInfo.meta.uncertainty.label)
           : '',
       });
@@ -332,7 +334,7 @@ export const getNotebookFieldTypes = ({
 export const buildViewsetFieldSummaries = ({
   uiSpecification,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Record<string, FieldSummary[]> => {
   // Get all view IDs
   const allViewIds = Array.from(Object.keys(uiSpecification.viewsets));
@@ -360,7 +362,7 @@ export const buildViewsetFieldSummaries = ({
 export const isValidForSpatialExport = ({
   uiSpecification,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): boolean => {
   const viewInfo = buildViewsetFieldSummaries({uiSpecification});
   let hasSpatial = false;
@@ -384,7 +386,7 @@ export const currentlyVisibleViews = ({
   uiSpec,
   viewsetId,
 }: {
-  uiSpec: ProjectUIModel;
+  uiSpec: CompiledUiSpecModel;
   values: ValuesObject;
   viewsetId: string;
 }) => {
@@ -402,7 +404,7 @@ export const currentlyVisibleFields = ({
   uiSpec,
   viewsetId,
 }: {
-  uiSpec: ProjectUIModel;
+  uiSpec: CompiledUiSpecModel;
   values: ValuesObject;
   viewsetId: string;
 }) => {
@@ -435,7 +437,7 @@ export const currentlyVisibleMap = ({
   uiSpec,
   viewsetId,
 }: {
-  uiSpec: ProjectUIModel;
+  uiSpec: CompiledUiSpecModel;
   values: ValuesObject;
   viewsetId: string;
 }) => {
@@ -451,12 +453,12 @@ export const currentlyVisibleMap = ({
 /**
  * Retrieves the keys of fields that are marked as required from the given project UI model.
  * @param {string} viewset - name of the viewset we are interested in
- * @param {ProjectUIModel} uiSpec - The project UI Spec
+ * @param {UiSpecModel} uiSpec - The project UI Spec
  * @returns {string[]} An array of keys representing the fields that are marked as required.
  */
 export const requiredFields = (
   viewset: string,
-  uiSpec: ProjectUIModel,
+  uiSpec: CompiledUiSpecModel,
   values: ValuesObject
 ): string[] => {
   const visibleFields = currentlyVisibleFields({
@@ -474,7 +476,7 @@ export const requiredFields = (
 // of branching logic.
 
 export function getFieldsMatchingCondition(
-  ui_specification: ProjectUIModel,
+  uiSpec: CompiledUiSpecModel,
   values: {[field_name: string]: any},
   fieldNames: string[],
   viewName: string,
@@ -482,18 +484,20 @@ export function getFieldsMatchingCondition(
 ) {
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
-  modified = modified.filter((f: string) =>
-    is_controller_field(ui_specification, f)
-  );
-  const allFields = getFieldsForView(ui_specification, viewName);
+  modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
+  const allFields = getFieldsForView(uiSpec, viewName);
   // run the checks if there are modified control fields or the original views are empty
   if (modified.length > 0 || fieldNames.length === 0) {
     // filter the whole set of views
     const result = allFields.filter(field => {
-      const fieldDetails = ui_specification.fields[field];
+      const fieldDetails = uiSpec.fields[field];
+      // Visibility condition function (compiled specs always set one; default
+      // to visible if absent, mirroring getViewsMatchingCondition).
+      const visibleByCondition = fieldDetails.conditionFn
+        ? fieldDetails.conditionFn(values)
+        : true;
       return (
-        // Visibility condition function
-        fieldDetails.conditionFn(values) &&
+        visibleByCondition &&
         // Hidden explicitly in element props - e.g. templated field
         !fieldDetails['component-parameters']?.hidden
       );
@@ -506,7 +510,7 @@ export function getFieldsMatchingCondition(
 }
 
 export function getViewsMatchingCondition(
-  ui_specification: ProjectUIModel,
+  uiSpec: CompiledUiSpecModel,
   values: {[field_name: string]: any},
   views: string[],
   viewsetName: string,
@@ -514,15 +518,13 @@ export function getViewsMatchingCondition(
 ) {
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
-  modified = modified.filter((f: string) =>
-    is_controller_field(ui_specification, f)
-  );
-  const allViews = getViewsForViewSet(ui_specification, viewsetName);
+  modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
+  const allViews = getViewsForViewSet(uiSpec, viewsetName);
   // run the checks if there are modified control fields or the original views are empty
   if (modified.length > 0 || views.length === 0) {
     // filter the whole set of views
     const result = allViews.filter(view => {
-      const fn = ui_specification.views[view].conditionFn;
+      const fn = uiSpec.views[view].conditionFn;
       if (fn !== undefined) return fn(values);
       else return true;
     });
@@ -536,25 +538,14 @@ export function getViewsMatchingCondition(
 // check whether this field is a 'controller' field for branching
 // logic, return true if it is, false otherwise
 //
-function is_controller_field(ui_specification: ProjectUIModel, field: string) {
-  // we have two possible sources
-  // - old logic_select property on the field
-  // - new conditional_sources property on the ui_specification
-
+function is_controller_field(uiSpec: CompiledUiSpecModel, field: string) {
   // check that this is a field, touched can contain non-field stuff
-  if (ui_specification.fields[field] === undefined) {
+  if (uiSpec.fields[field] === undefined) {
     return false;
   }
 
-  // here we return true if there is any logic_select property
-  // which might be a false positive but shouldn't cost too much
-  if ('logic_select' in ui_specification.fields[field]) return true;
-  else if (
-    ui_specification.conditional_sources &&
-    ui_specification.conditional_sources.has(field)
-  )
-    return true;
-  else return false;
+  // a controller field is one referenced by a conditional expression
+  return Boolean(uiSpec.conditional_sources?.has(field));
 }
 
 // compile all conditional expressions in this UiSpec and store the
@@ -563,49 +554,39 @@ function is_controller_field(ui_specification: ProjectUIModel, field: string) {
 // so that we can react to changes in these fields and update the visible
 // fields/views
 //
-export function compileUiSpecConditionals(uiSpecification: ProjectUIModel) {
+export function compileUiSpecConditionals(
+  uiSpecification: UiSpecModel | NotebookUiSpec
+) {
   // conditionals can appear on views or fields
   // compile each one and add compiled fn as a property on the field/view
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
 
-  let depFields: string[] = [];
+  // Compiled functions and conditional_sources are attached in place: callers
+  // may read the passed-in spec directly rather than the (typed) return value.
+  const depFields: string[] = [];
 
   for (const field in uiSpecification.fields) {
-    if (uiSpecification.fields[field].is_logic)
-      uiSpecification.fields[field].conditionFn = compileIsLogic(
-        uiSpecification.fields[field].is_logic
-      );
-    else
-      uiSpecification.fields[field].conditionFn = compileExpression(
-        uiSpecification.fields[field].condition
-      );
-    depFields = [
-      ...depFields,
-      ...getDependantFields(uiSpecification.fields[field].condition),
-    ];
+    const fieldDef = uiSpecification.fields[field];
+    fieldDef.conditionFn = compileExpression(fieldDef.condition);
+    depFields.push(...getDependantFields(fieldDef.condition));
   }
 
+  const views: CompiledUiSpecSections = {};
   for (const view in uiSpecification.views) {
-    if (uiSpecification.views[view].is_logic)
-      uiSpecification.views[view].conditionFn = compileIsLogic(
-        uiSpecification.views[view].is_logic
-      );
-    else
-      uiSpecification.views[view].conditionFn = compileExpression(
-        uiSpecification.views[view].condition
-      );
-    depFields = [
-      ...depFields,
-      ...getDependantFields(uiSpecification.views[view].condition),
-    ];
+    const viewDef = uiSpecification.views[view];
+    viewDef.conditionFn = compileExpression(viewDef.condition);
+    views[view] = viewDef;
+    depFields.push(...getDependantFields(viewDef.condition));
   }
-  // add dependant fields as a property on the uiSpec
-  uiSpecification.conditional_sources = new Set(depFields);
+
+  // dependant fields are the conditional sources reacted to on value change
+  const conditional_sources = new Set(depFields);
+  uiSpecification.conditional_sources = conditional_sources;
 }
 
 export function getFieldsForViewSet(
-  ui_specification: ProjectUIModel,
+  ui_specification: UiSpecModel,
   viewset_name: string
 ): {[key: string]: {[key: string]: any}} {
   const views = ui_specification.viewsets[viewset_name].views;
@@ -619,14 +600,11 @@ export function getFieldsForViewSet(
   return fields;
 }
 
-export function getFieldLabel(
-  ui_specification: ProjectUIModel,
-  field_name: string
-) {
-  if (field_name in ui_specification.fields) {
-    return ui_specification.fields[field_name]['component-parameters'].label;
+export function getFieldLabel(uiSpec: UiSpecModel, fieldName: string) {
+  if (fieldName in uiSpec.fields) {
+    return uiSpec.fields[fieldName]['component-parameters'].label ?? fieldName;
   } else {
-    return field_name;
+    return fieldName;
   }
 }
 
@@ -634,7 +612,7 @@ export function getFormLabel({
   uiSpec,
   formId,
 }: {
-  uiSpec: ProjectUIModel;
+  uiSpec: UiSpecModel;
   formId: string;
 }) {
   if (formId in uiSpec.viewsets) {
@@ -644,7 +622,7 @@ export function getFormLabel({
   }
 }
 
-export function getVisibleTypes(ui_specification: ProjectUIModel) {
+export function getVisibleTypes(ui_specification: UiSpecModel) {
   if (ui_specification)
     return (
       ui_specification.visible_types ||
@@ -664,7 +642,7 @@ export function getVisibleTypes(ui_specification: ProjectUIModel) {
  *          vertical stack display
  */
 export function getSummaryFieldInformation(
-  uiSpecification: ProjectUIModel,
+  uiSpecification: UiSpecModel,
   viewsetId: string
 ): {
   enabled: boolean;
@@ -688,10 +666,7 @@ export function getSummaryFieldInformation(
   };
 }
 
-export function getFieldsForView(
-  uiSpecification: ProjectUIModel,
-  viewId: string
-) {
+export function getFieldsForView(uiSpecification: UiSpecModel, viewId: string) {
   if (viewId in uiSpecification.views) {
     return uiSpecification.views[viewId].fields;
   } else {
@@ -706,14 +681,14 @@ export function getFieldNamesFromFields(fields: {
 }
 
 export function getViewsForViewSet(
-  uiSpecification: ProjectUIModel,
+  uiSpecification: UiSpecModel,
   viewsetId: string
 ) {
   return uiSpecification.viewsets[viewsetId].views;
 }
 
 export function getViewsetForField(
-  uiSpecification: ProjectUIModel,
+  uiSpecification: UiSpecModel,
   fieldName: string
 ) {
   // find which section (view) it is in
@@ -731,7 +706,7 @@ export function getViewsetForField(
 }
 
 export function getReturnedTypesForViewSet(
-  uiSpecification: ProjectUIModel,
+  uiSpecification: UiSpecModel,
   viewsetId: string
 ): {[field_name: string]: FAIMSTypeName} {
   const fields = getFieldsForViewSet(uiSpecification, viewsetId);

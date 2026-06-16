@@ -6,5 +6,5 @@ export type {
   NotebookUISpec,
   NotebookWithHistory,
   FieldType,
-  ComponentParameters,
+  ComponentParametersEnvelope,
 } from '../state/initial';

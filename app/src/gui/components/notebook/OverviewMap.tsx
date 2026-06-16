@@ -19,12 +19,13 @@
  */
 
 import {
+  CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDocument,
   DataEngine,
   MinimalRecordMetadata,
+  NotebookUiSpec,
   ProjectID,
-  ProjectUIModel,
 } from '@faims3/data-model';
 import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
 import {
@@ -59,7 +60,8 @@ import {localGetDataDb} from '../../../utils/database';
 import {formatTimestamp} from '../../../utils/formUtilities';
 
 interface OverviewMapProps {
-  uiSpec: ProjectUIModel;
+  /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
+  uiSpec: CompiledNotebookUiSpec;
   project_id: ProjectID;
   serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};
@@ -100,7 +102,7 @@ interface FeatureCollection {
 /**
  * Get the names of all GIS fields in a UI Specification
  */
-const getGISFields = (uiSpec: ProjectUIModel): string[] => {
+const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
   const fields = Object.getOwnPropertyNames(uiSpec.fields);
   return fields.filter(
     (field: string) =>
@@ -120,7 +122,7 @@ interface SelectedRecordPopoverContentProps {
   feature: FeatureProps;
   project_id: ProjectID;
   serverId: string;
-  uiSpec: ProjectUIModel;
+  uiSpec: NotebookUiSpec;
   dataEngine: DataEngine;
 }
 
@@ -229,10 +231,10 @@ const SelectedRecordPopoverContent = ({
       <CardContent sx={{'&:last-child': {pb: 2}}}>
         <Typography
           variant="subtitle1"
-          fontWeight="600"
           gutterBottom
           title={hydrated.hrid}
           sx={{
+            fontWeight: 600,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -243,7 +245,11 @@ const SelectedRecordPopoverContent = ({
         <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
           {formLabel}
         </Typography>
-        <Typography variant="caption" color="text.secondary" display="block">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{display: 'block'}}
+        >
           Created {createdDate}
           {hydrated.record.createdBy ? ` by ${hydrated.record.createdBy}` : ''}
         </Typography>
@@ -384,7 +390,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const dataDb = localGetDataDb(project_id);
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec: uiSpec,
+      uiSpec,
     });
   }, [project_id, uiSpec]);
 

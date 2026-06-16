@@ -38,6 +38,7 @@ const OnboardingComponent = ({
 
   return (
     <Box
+      data-testid="onboarding-component"
       sx={{
         display: 'flex',
         justifyContent: 'center',
@@ -47,7 +48,11 @@ const OnboardingComponent = ({
         backgroundColor: '#f5f5f5',
       }}
     >
-      <Stack direction="column" spacing={4} alignItems="center" width="100%">
+      <Stack
+        direction="column"
+        spacing={4}
+        sx={{alignItems: 'center', width: '100%'}}
+      >
         {servers.length > 1 && (
           <Paper
             elevation={2}

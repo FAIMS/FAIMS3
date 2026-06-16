@@ -21,10 +21,8 @@ import {
   AddressValueSchema,
 } from '../../../addressTypes';
 import type {FullFormConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {DataViewFieldRender} from '../../../rendering/types';
 import {logWarn} from '../../../logging';
@@ -37,7 +35,7 @@ const AddressValueNullableSchema = AddressValueSchema.nullable();
 /**
  * Props schema for AddressField - uses base field props only.
  */
-const AddressFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const AddressFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Enables online autosuggest UI when a service is injected. Defaults to true. */
   enableAutoSuggestion: z.boolean().optional(),
   /**
@@ -48,7 +46,7 @@ const AddressFieldPropsSchema = BaseFieldPropsSchema.extend({
   allowFullAddressManualEntry: z.boolean().optional(),
 });
 
-type AddressFieldProps = z.infer<typeof AddressFieldPropsSchema>;
+export type AddressFieldProps = z.infer<typeof AddressFieldPropsSchema>;
 type AddressFieldFullProps = AddressFieldProps & FormFieldContextProps;
 
 const SUGGEST_DEBOUNCE_MS = 300;
@@ -142,6 +140,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
     return manualOnly && allowStructured;
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AutosuggestSuggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const sessionTokenRef = useRef<string | null>(null);
@@ -306,13 +305,13 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
         {/* Free-text-only: single text box (no pencil/summary when value is non-structured) */}
         {showFreeTextOnly && (
           <TextField
-            label={label}
             value={String(manualText ?? displayName ?? '')}
             placeholder="Enter address"
             fullWidth
             variant="outlined"
             disabled={disabled}
             onBlur={handleBlur}
+            slotProps={{htmlInput: {'aria-label': label ?? 'Address'}}}
             onChange={e => {
               const v = e.target.value;
               setFieldData({
@@ -329,6 +328,10 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
           <Stack spacing={1}>
             <Autocomplete<AutosuggestSuggestion | UseAsEnteredOption>
               value={null}
+              open={searchOpen && searchQuery.trim().length > 0}
+              popupIcon={searchQuery.trim() ? undefined : null}
+              onOpen={() => setSearchOpen(true)}
+              onClose={() => setSearchOpen(false)}
               inputValue={searchQuery}
               onInputChange={(_, value) => setSearchQuery(value)}
               onChange={(_, option) => {
@@ -401,19 +404,25 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
               renderInput={params => (
                 <TextField
                   {...params}
-                  label="Search for an address"
                   placeholder="Start typing an address..."
                   onBlur={handleBlur}
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {suggestLoading ? (
-                          <CircularProgress color="inherit" size={20} />
-                        ) : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
+                  slotProps={{
+                    ...params.slotProps,
+                    htmlInput: {
+                      ...(params.slotProps?.htmlInput ?? {}),
+                      'aria-label': 'Search for an address',
+                    },
+                    input: {
+                      ...(params.slotProps?.input ?? {}),
+                      endAdornment: (
+                        <>
+                          {suggestLoading ? (
+                            <CircularProgress color="inherit" size={20} />
+                          ) : null}
+                          {(params.slotProps?.input as any)?.endAdornment}
+                        </>
+                      ),
+                    },
                   }}
                 />
               )}
@@ -433,7 +442,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
 
         {/* Summary row + edit/expand icon (left): display mode (after autocomplete) or manual-only structured */}
         {showSummaryRow && (
-          <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
             {!disabled && (
               <IconButton
                 size="small"
@@ -463,7 +472,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
           in={editPanelOpen && (hasStructured || allowFullAddressManualEntry)}
         >
           <Stack spacing={2} sx={{mt: 2}}>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1} sx={{flexWrap: 'wrap'}}>
               <Button
                 size="small"
                 startIcon={<ClearIcon />}

@@ -1,8 +1,9 @@
 import {Edit as EditIcon} from '@mui/icons-material';
 import {Alert, Box, Button, Card, Grid, Typography} from '@mui/material';
 import {MutableRefObject, useMemo, useRef, useState} from 'react';
+import {TemplatedStringProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {ComponentParameters, FieldType} from '../../state/initial';
+import {FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
 import {fieldUpdated} from '../../store/slices/uiSpec';
@@ -22,10 +23,10 @@ export const TemplatedStringFieldEditor = ({
   viewsetId,
 }: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields
+    state => state.notebook.uiSpec.present.fields
   );
   const dispatch = useAppDispatch();
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
@@ -33,14 +34,12 @@ export const TemplatedStringFieldEditor = ({
   const [alertMessage, setAlertMessage] = useState('');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
-  const state = field['component-parameters'];
+  const state = field['component-parameters'] as TemplatedStringProps;
 
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets[viewsetId]
+    state => state.notebook.uiSpec.present.viewsets[viewsetId]
   );
-  const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].present.fviews
-  );
+  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -48,13 +47,13 @@ export const TemplatedStringFieldEditor = ({
   const viewSetFields = useMemo(() => {
     const fieldSet = new Set<string>();
     viewSet.views.forEach(viewId => {
-      const view = fviews[viewId];
+      const view = views[viewId];
       if (view) {
         view.fields.forEach(fieldId => fieldSet.add(fieldId));
       }
     });
     return Array.from(fieldSet);
-  }, [viewSet.views, fviews]);
+  }, [viewSet.views, views]);
 
   // Define system variables
   const systemVariables = [
@@ -71,11 +70,8 @@ export const TemplatedStringFieldEditor = ({
   ];
 
   const getFieldLabel = (f: FieldType) => {
-    return (
-      f['component-parameters'].InputLabelProps?.label ||
-      f['component-parameters'].name ||
-      ''
-    );
+    const params = f['component-parameters'] as TemplatedStringProps;
+    return params.InputLabelProps?.label || params.name || '';
   };
 
   const fieldVariables = viewSetFields.map(name => {
@@ -87,13 +83,14 @@ export const TemplatedStringFieldEditor = ({
     };
   });
 
-  const updateFieldFromState = (newState: ComponentParameters) => {
+  const updateFieldFromState = (newState: TemplatedStringProps) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].InputLabelProps = {
+    const newParams = newField['component-parameters'] as TemplatedStringProps;
+    newParams.InputLabelProps = {
       label: newState.label || fieldName,
     };
-    newField['component-parameters'].helperText = newState.helperText;
-    newField['component-parameters'].template = newState.template;
+    newParams.helperText = newState.helperText;
+    newParams.template = newState.template;
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
@@ -109,17 +106,17 @@ export const TemplatedStringFieldEditor = ({
   return (
     <Grid container spacing={2}>
       {alertMessage && (
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Alert onClose={() => setAlertMessage('')} severity="error">
             {alertMessage}
           </Alert>
         </Grid>
       )}
 
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined">
           <Grid container spacing={2} sx={{p: 2}}>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{xs: 12, sm: 6}}>
               <DebouncedTextField
                 name="label"
                 variant="outlined"
@@ -130,7 +127,7 @@ export const TemplatedStringFieldEditor = ({
                 helperText="Enter a label for the field"
               />
             </Grid>
-            <Grid item sm={6} xs={12}>
+            <Grid size={{xs: 12, sm: 6}}>
               <DebouncedTextField
                 name="helperText"
                 variant="outlined"
@@ -147,7 +144,7 @@ export const TemplatedStringFieldEditor = ({
         </Card>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined">
           <Box sx={{p: 2}}>
             <Typography variant="subtitle2" sx={{mb: 2}}>
@@ -155,7 +152,7 @@ export const TemplatedStringFieldEditor = ({
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs>
+              <Grid size="grow">
                 <DebouncedTextField
                   name="template"
                   inputRef={textAreaRef}
@@ -168,7 +165,7 @@ export const TemplatedStringFieldEditor = ({
                   helperText="Enter the template or use the visual builder"
                 />
               </Grid>
-              <Grid item>
+              <Grid size="auto">
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}

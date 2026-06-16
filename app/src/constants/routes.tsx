@@ -19,7 +19,7 @@
  */
 
 import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_PLURAL} from '../buildconfig';
+import {NOTEBOOK_NAME_PLURAL} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';

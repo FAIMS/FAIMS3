@@ -51,7 +51,7 @@ export default function NotebookActivationSwitch({
   };
 
   return (
-    <Box my={1}>
+    <Box sx={{display: 'flex', alignItems: 'center', height: '100%'}}>
       <Button
         onClick={handleOpen}
         color="primary"
@@ -73,8 +73,8 @@ export default function NotebookActivationSwitch({
         primaryActionVariant="contained"
         cancelButtonText="Cancel"
       >
-        <Box mb={2}>
-          <Typography variant="body2" paragraph>
+        <Box sx={{mb: 2}}>
+          <Typography variant="body2" sx={{mb: 2}}>
             <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
             ensures that you are safe to work offline at any point by
             downloading any existing records onto your device.

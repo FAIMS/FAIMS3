@@ -27,10 +27,8 @@ import React, {useCallback, useMemo, useState} from 'react';
 import Dropzone, {FileRejection} from 'react-dropzone';
 import {z} from 'zod';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
   useAttachments,
@@ -44,7 +42,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
-const fileUploaderPropsSchema = BaseFieldPropsSchema.extend({
+const fileUploaderPropsSchema = BaseFieldParametersSchema.extend({
   multiple: z.boolean().optional().default(true),
   maximum_number_of_files: z.number().optional().default(0),
   maximum_file_size: z.number().optional(), // in bytes
@@ -322,8 +320,10 @@ const UnavailableFilePlaceholder: React.FC<{filename: string}> = ({
       <ListItemText
         primary={filename}
         secondary="File not available - enable download in Settings"
-        secondaryTypographyProps={{
-          sx: {color: theme.palette.warning.main},
+        slotProps={{
+          secondary: {
+            sx: {color: theme.palette.warning.main},
+          },
         }}
       />
     </ListItem>
@@ -433,18 +433,20 @@ const FileItem: React.FC<{
             minWidth: 0,
             flex: 1,
           }}
-          primaryTypographyProps={{
-            sx: {
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              fontSize: {xs: '0.875rem', sm: '1rem'},
+          slotProps={{
+            primary: {
+              sx: {
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                fontSize: {xs: '0.875rem', sm: '1rem'},
+              },
             },
-          }}
-          secondaryTypographyProps={{
-            sx: {
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              fontSize: {xs: '0.75rem', sm: '0.875rem'},
+            secondary: {
+              sx: {
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                fontSize: {xs: '0.75rem', sm: '0.875rem'},
+              },
             },
           }}
           onClick={onClick}

@@ -21,6 +21,7 @@ import {
   Radio,
   RadioGroup,
 } from '@mui/material';
+import {TextFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
@@ -31,21 +32,19 @@ import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 /** Inspector for single-line text fields (initial value, HTML input type, wraps {@link BaseFieldEditor}). */
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
   const initVal = field['initialValue'] as string | number;
+  const params = field['component-parameters'] as TextFieldProps;
   // Long answer = either the unified shape (TextField / legacy FAIMSTextField
   // with `multiline: true`) or the un-migrated legacy `MultipleTextField`
   // (where multiline was implicit). Treat all of those as long.
   const isLongAnswer =
-    field['component-parameters'].multiline === true ||
+    params.multiline === true ||
     field['component-name'] === 'MultipleTextField';
-  const rows =
-    (field['component-parameters'].rows as number | undefined) ||
-    field['component-parameters'].InputProps?.rows ||
-    4;
+  const rows = params.rows || params.InputProps?.rows || 4;
 
   const updateField = (updater: (nextField: typeof field) => void) => {
     const newField = withUpdatedField(field, nextField => {
@@ -100,14 +99,16 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12} md={8}>
+      <Grid size={{xs: 12, md: 8}}>
         <Card variant="outlined">
           <Box sx={{px: 2, py: 2}}>
             <FormControl>
               <RadioGroup
                 row
                 value={isLongAnswer ? 'long' : 'short'}
-                onChange={e => setAnswerMode(e.target.value as 'short' | 'long')}
+                onChange={e =>
+                  setAnswerMode(e.target.value as 'short' | 'long')
+                }
               >
                 <FormControlLabel
                   value="short"
@@ -126,7 +127,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
       </Grid>
 
       {isLongAnswer && (
-        <Grid item xs={12} md={6}>
+        <Grid size={{xs: 12, md: 6}}>
           <Card variant="outlined">
             <Box sx={{px: 2, py: 2}}>
               <SimpleFieldWrapper
@@ -147,7 +148,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
         </Grid>
       )}
 
-      <Grid item xs={12} md={isLongAnswer ? 6 : 12}>
+      <Grid size={{xs: 12, md: isLongAnswer ? 6 : 12}}>
         <Card variant="outlined">
           <Box sx={{px: 2, py: 2}}>
             <SimpleFieldWrapper

@@ -1,10 +1,10 @@
 import {
   couchInitialiser,
   initDataDB,
+  NotebookDefinition,
   ProjectDataObject,
-  ProjectDocument,
+  ProjectListItem,
   ProjectStatus,
-  ProjectUIModel,
   PublicServerInfo,
 } from '@faims3/data-model';
 import {
@@ -17,6 +17,7 @@ import {
   CONDUCTOR_URLS,
   DELETE_ON_DEACTIVATION,
   FORCE_REMOTE_DELETION,
+  NOTEBOOK_NAME,
 } from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
@@ -26,15 +27,23 @@ import {
   buildPouchIdentifier,
   buildSyncId,
   createLocalPouchDatabase,
-  createPouchDbSync,
+  createPouchDbReplication,
   createRemotePouchDbFromConnectionInfo,
-  fetchProjectMetadataAndSpec,
+  fetchNotebookDetails,
   getRemoteDatabaseNameFromId,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
+import {replaceProjectReplication} from './helpers/replicationLifecycle';
 import {syncStateService} from './helpers/syncStateService';
+import {addAlert} from './alertSlice';
+import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
+import type {SyncMode} from '../../sync/syncMode';
+import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
+import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
+
+export type {SyncMode};
 
 /**
  * Per server+project: consecutive successful directory responses where the server
@@ -116,9 +125,8 @@ function clearAbsentDirectoryRetry(serverId: string) {
   }
 }
 
-function projectDocIsArchivedOnServer(doc: ProjectDocument): boolean {
-  const s = doc.status as ProjectStatus | string;
-  return s === ProjectStatus.ARCHIVED;
+function projectDocIsArchivedOnServer(doc: {status: ProjectStatus}): boolean {
+  return doc.status === ProjectStatus.ARCHIVED;
 }
 
 /**
@@ -126,7 +134,7 @@ function projectDocIsArchivedOnServer(doc: ProjectDocument): boolean {
  * missing from the listing, or present with archived lifecycle.
  */
 function shouldAccumulateRemoteCleanupStreak(
-  directoryEntry: ProjectDocument | undefined
+  directoryEntry: ProjectListItem | undefined
 ): boolean {
   if (directoryEntry === undefined) {
     return true;
@@ -168,13 +176,13 @@ export interface DatabaseConnectionConfig extends DatabaseAuth {
 /**
  * This manages a remote couch connection - a remote connection is a combination
  * of the remote database ID (see databaseService to retrieve it), the sync
- * object (which is only instantiated/active if isSyncing = true)
+ * object (which is only instantiated/active if syncMode !== 'none')
  */
 export interface RemoteCouchConnection {
   // ID of the remote DB - use databaseService to fetch
   remoteDbId: string;
   // The sync object ID - use databaseService to fetch - can be undefined if
-  // isSyncing = false
+  // syncMode = 'none'
   syncId: string | undefined;
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
@@ -183,11 +191,11 @@ export interface DatabaseConnection {
   // A reference to the local data database - retrieve from databaseService
   localDbId: string;
 
-  // This defines whether the database synchronisation is active
-  isSyncing: boolean;
+  /** Record replication direction; `none` = local Pouch only. */
+  syncMode: SyncMode;
 
   // Is pouch configured to download attachments? Attachment download is managed
-  // through a filter on the sync object
+  // through a filter on the pull side of replication
   isSyncingAttachments: boolean;
 
   // Remote database connection (this is always defined since we will always
@@ -195,34 +203,25 @@ export interface DatabaseConnection {
   remote: RemoteCouchConnection;
 }
 
-// This is metadata which is defined as part of the design file
-export interface KnownProjectMetadata {
-  // The project / notebook display name
-  name: string;
-  // The description
-  description?: string;
-}
-
-// This represents the true metadata which is a combination of mandatory + user added
-export type ProjectMetadata = KnownProjectMetadata & {[key: string]: any};
-
 // Maps a project ID -> project
 export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
-/** This is the subset of project information which is modifiable/trivial */
+/** Superficial notebook details synced from the API (design bundle is typed). */
 export interface ProjectInformation {
-  // Name of the project
+  /** Display title (project document root). */
   name: string;
-
-  // This is metadata information about the project
-  metadata: ProjectMetadata;
-
-  // The UI Specification which is NOT compiled - see compiledSpecId for the
-  // reference to the compiledSpecService instance of the compiled spec.
-  rawUiSpecification: ProjectUIModel;
-
-  // What is the status of the project?
+  /** Operational description (project document root). */
+  description?: string;
+  /** Source template when created from a template. */
+  templateId?: string;
+  /** Inlined uiSpecification from GET /api/notebooks/:id (current notebook schema). */
+  uiDefinition: NotebookDefinition;
+  /** Survey lifecycle. */
   status: ProjectStatus;
+  /** Last update from the server, when known. */
+  updatedAt?: string;
+  /** Server record count from GET /api/notebooks/:id when known. */
+  recordCount?: number;
 }
 
 // A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
@@ -304,6 +303,16 @@ export const initialProjectState: ProjectsState = {
   // start out uninitialised
   isInitialised: false,
 };
+
+/**
+ * Merge an incoming `recordCount` with a stored value.
+ */
+function mergeRecordCount(
+  incoming: number | undefined,
+  existing: number | undefined
+): number | undefined {
+  return incoming !== undefined ? incoming : existing;
+}
 
 const projectsSlice = createSlice({
   name: 'projects',
@@ -451,7 +460,7 @@ const projectsSlice = createSlice({
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
-        payload.rawUiSpecification
+        payload.uiDefinition.uiSpec
       );
 
       // Update the couch DB URL (since we presume this to be an
@@ -466,16 +475,19 @@ const projectsSlice = createSlice({
         serverId: payload.serverId,
 
         // Superficial details
-        metadata: payload.metadata,
         name: payload.name,
+        description: payload.description,
+        templateId: payload.templateId,
+        updatedAt: payload.updatedAt,
+        uiDefinition: payload.uiDefinition,
 
         uiSpecificationId: compiledSpecId,
-        rawUiSpecification: payload.rawUiSpecification,
 
         // Default not activated with no database
         isActivated: false,
         database: undefined,
         status: payload.status,
+        recordCount: payload.recordCount,
       };
     },
 
@@ -631,7 +643,7 @@ const projectsSlice = createSlice({
       });
       compiledSpecService.compileAndRegisterSpec(
         compiledSpecId,
-        payload.rawUiSpecification
+        payload.uiDefinition.uiSpec
       );
 
       server.couchDbUrl = payload.couchDbUrl;
@@ -642,10 +654,17 @@ const projectsSlice = createSlice({
 
         // Superficial details updated only! You cannot change activated/sync
         // status here - these are controlled actions
-        metadata: payload.metadata,
+        name: payload.name,
+        description: payload.description,
+        templateId: payload.templateId,
+        updatedAt: payload.updatedAt,
+        uiDefinition: payload.uiDefinition,
         uiSpecificationId: compiledSpecId,
-        rawUiSpecification: payload.rawUiSpecification,
         status: payload.status,
+        recordCount: mergeRecordCount(
+          payload.recordCount,
+          server.projects[payload.projectId].recordCount
+        ),
       };
     },
 
@@ -668,15 +687,19 @@ const projectsSlice = createSlice({
         connectionConfiguration,
         remoteDbId,
         syncId,
+        syncMode,
+        recordCount,
       } = action.payload;
 
       // updates the state with all of this new information
       state.servers[serverId].projects[project.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
@@ -684,7 +707,7 @@ const projectsSlice = createSlice({
         // These are updated
         isActivated: true,
         database: {
-          isSyncing: true,
+          syncMode,
           isSyncingAttachments: false,
           localDbId: localDatabaseId,
           remote: {
@@ -693,6 +716,7 @@ const projectsSlice = createSlice({
             syncId: syncId,
           },
         },
+        recordCount: mergeRecordCount(recordCount, project.recordCount),
       };
     },
 
@@ -768,17 +792,21 @@ const projectsSlice = createSlice({
 
       // Cleanup sync state
       syncStateService.removeSyncState(payload.serverId, payload.projectId);
+      clearPushOnlyBannerDismissal(payload);
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
+        recordCount: project.recordCount,
 
         // These are updated (to indicate de-activation)
         isActivated: false,
@@ -799,7 +827,7 @@ const projectsSlice = createSlice({
         connectionConfiguration: DatabaseConnectionConfig;
         remoteDbId: string;
         syncId: string | undefined;
-        isSyncing: boolean;
+        syncMode: SyncMode;
         isSyncingAttachments: boolean;
         localDbId: string;
       }>
@@ -810,7 +838,7 @@ const projectsSlice = createSlice({
         connectionConfiguration,
         remoteDbId,
         syncId,
-        isSyncing,
+        syncMode,
         isSyncingAttachments,
         localDbId,
       } = action.payload;
@@ -824,18 +852,21 @@ const projectsSlice = createSlice({
       // updates the state with all of this new information
       state.servers[serverId].projects[projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
+        recordCount: project.recordCount,
 
         // These are updated
         isActivated: true,
         database: {
-          isSyncing,
+          syncMode,
           isSyncingAttachments,
           localDbId,
           remote: {
@@ -847,81 +878,31 @@ const projectsSlice = createSlice({
       };
     },
 
-    // update the state after we have turned off sync for a project
-    stopSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
-      // check project/server exists
+    setSyncModeSuccess: (state, action: PayloadAction<Project>) => {
       const project = action.payload;
-
-      if (!project.database)
+      if (!project.database) {
         throw new Error('Project database not properly initialised');
-
-      // updates the state to indicate no syncing
+      }
       state.servers[project.serverId].projects[project.projectId] = {
-        // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
-
-        // Project remains activated, but syncing is stopped
+        recordCount: project.recordCount,
         isActivated: true,
         database: {
-          // Update sync state to indicate no syncing
-          isSyncing: false,
-          // Retain attachment sync setting for when sync is resumed
+          syncMode: project.database.syncMode,
           isSyncingAttachments: project.database.isSyncingAttachments,
-          // Retain local database reference
           localDbId: project.database.localDbId,
-          // Retain remote connection info for future re-sync
           remote: {
-            // Keep connection configuration for when sync is resumed
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            // No sync object when syncing is paused
-            syncId: undefined,
-          },
-        },
-      };
-    },
-
-    // update the state after we have turned sync back on for a project
-    resumeSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
-      // check project/server exists
-      const project = action.payload;
-
-      if (!project.database)
-        throw new Error('Project database not properly initialised');
-
-      // updates the state with all of this new information
-      state.servers[project.serverId].projects[project.projectId] = {
-        // These are retained
-        metadata: project.metadata,
-        projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
-        uiSpecificationId: project.uiSpecificationId,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-
-        // These are updated
-        isActivated: true,
-        database: {
-          // Set syncing to true
-          isSyncing: true,
-          // Retain attachment sync setting
-          isSyncingAttachments: project.database.isSyncingAttachments,
-          // Retain local database reference
-          localDbId: project.database.localDbId,
-          remote: {
-            // Keep existing connection configuration
-            connectionConfiguration:
-              project.database.remote.connectionConfiguration,
-            remoteDbId: project.database.remote.remoteDbId,
-            // Set new sync ID
             syncId: project.database.remote.syncId,
           },
         },
@@ -994,8 +975,8 @@ const projectsSlice = createSlice({
 
       // Remove if needed
       const oldSyncId = project.database.remote.syncId;
-      if (project.database.isSyncing && oldSyncId) {
-        databaseService.closeAndRemoveSync(oldSyncId);
+      if (isReplicating(project.database.syncMode) && oldSyncId) {
+        void databaseService.closeAndRemoveSync(oldSyncId);
 
         updatedSyncId = buildSyncId({
           localId: project.database.localDbId,
@@ -1006,47 +987,40 @@ const projectsSlice = createSlice({
           payload.projectId,
           payload.serverId
         );
-        // creates the sync object (PouchDB.Replication.Sync)
-        const sync = createPouchDbSync({
-          // STOP syncing attachments
+        const replication = createPouchDbReplication({
+          syncMode: project.database.syncMode,
           attachmentDownload: false,
-          // local is fine to continue using!
           localDb,
-          // reuse existing remote db
           remoteDb,
           eventHandlers: handlers,
         });
-
-        // Register the sync
-        databaseService.registerSync(updatedSyncId, sync);
+        void databaseService.registerSync(updatedSyncId, replication);
       }
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
+        recordCount: project.recordCount,
 
         // These are updated
         isActivated: true,
         database: {
-          // retain
-          isSyncing: project.database.isSyncing,
-          // This is UPDATED
+          syncMode: project.database.syncMode,
           isSyncingAttachments: false,
-          // This is retained
           localDbId: project.database.localDbId,
           remote: {
-            // reuse connection and remote
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            // new sync
             syncId: updatedSyncId,
           },
         },
@@ -1122,8 +1096,12 @@ const projectsSlice = createSlice({
 
       // Remove if needed
       const oldSyncId = project.database.remote.syncId;
-      if (project.database.isSyncing && oldSyncId) {
-        databaseService.closeAndRemoveSync(oldSyncId);
+      if (
+        isReplicating(project.database.syncMode) &&
+        syncModeIncludesPull(project.database.syncMode) &&
+        oldSyncId
+      ) {
+        void databaseService.closeAndRemoveSync(oldSyncId);
 
         updatedSyncId = buildSyncId({
           localId: project.database.localDbId,
@@ -1134,47 +1112,40 @@ const projectsSlice = createSlice({
           payload.projectId,
           payload.serverId
         );
-        // creates the sync object (PouchDB.Replication.Sync)
-        const sync = createPouchDbSync({
-          // START syncing attachments
+        const replication = createPouchDbReplication({
+          syncMode: project.database.syncMode,
           attachmentDownload: true,
-          // local is fine to continue using!
           localDb,
-          // reuse existing remote db
           remoteDb,
           eventHandlers: handlers,
         });
-
-        // Register the sync
-        databaseService.registerSync(updatedSyncId, sync);
+        void databaseService.registerSync(updatedSyncId, replication);
       }
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
-        metadata: project.metadata,
         projectId: project.projectId,
-        rawUiSpecification: project.rawUiSpecification,
+        uiDefinition: project.uiDefinition,
         uiSpecificationId: project.uiSpecificationId,
+        description: project.description,
+        templateId: project.templateId,
+        updatedAt: project.updatedAt,
         serverId: project.serverId,
         status: project.status,
         name: project.name,
+        recordCount: project.recordCount,
 
         // These are updated
         isActivated: true,
         database: {
-          // retained
-          isSyncing: project.database.isSyncing,
-          // This is UPDATED
+          syncMode: project.database.syncMode,
           isSyncingAttachments: true,
-          // This is retained
           localDbId: project.database.localDbId,
           remote: {
-            // reuse connection and remote
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            // new sync
             syncId: updatedSyncId,
           },
         },
@@ -1464,25 +1435,23 @@ export const updateDatabaseCredentials = createAsyncThunk<
 
         // Step 5: Create new sync if needed
         let updatedSyncId: string | undefined = undefined;
-        if (project.database.isSyncing) {
+        if (isReplicating(project.database.syncMode)) {
           const handlers = createSyncStateHandlers(
             project.projectId,
             project.serverId
           );
-          const sync = createPouchDbSync({
-            // re-use existing attachment sync setting
+          const replication = createPouchDbReplication({
+            syncMode: project.database.syncMode,
             attachmentDownload: project.database.isSyncingAttachments,
-            // use the same local database
-            localDb: localDb,
+            localDb,
             remoteDb,
             eventHandlers: handlers,
           });
-          // register the sync
           updatedSyncId = buildSyncId({
             localId: project.database.localDbId,
             remoteId: remoteDbId,
           });
-          databaseService.registerSync(updatedSyncId, sync);
+          databaseService.registerSync(updatedSyncId, replication);
         }
 
         // Step 6: Update Redux state with new configuration
@@ -1493,7 +1462,7 @@ export const updateDatabaseCredentials = createAsyncThunk<
             connectionConfiguration,
             remoteDbId,
             syncId: updatedSyncId,
-            isSyncing: project.database.isSyncing,
+            syncMode: project.database.syncMode,
             isSyncingAttachments: project.database.isSyncingAttachments,
             localDbId: project.database.localDbId,
           })
@@ -1598,21 +1567,29 @@ export const activateProject = createAsyncThunk<
     );
   await databaseService.registerRemoteDatabase(remoteDbId, remoteDb);
 
-  // creates the sync object (PouchDB.Replication.Sync)
+  const activationSync = await resolveActivationSyncMode({
+    serverUrl: server.serverUrl,
+    projectId: payload.projectId,
+    token: payload.jwtToken,
+  });
+  const initialSyncMode = activationSync.syncMode;
   const handlers = createSyncStateHandlers(payload.projectId, payload.serverId);
-  const sync = createPouchDbSync({
-    attachmentDownload: false,
-    localDb,
-    remoteDb,
-    eventHandlers: handlers,
-  });
-  const syncId = buildSyncId({
-    localId: localDatabaseId,
-    remoteId: remoteDbId,
-  });
-  await databaseService.registerSync(syncId, sync);
+  let syncId: string | undefined;
+  if (isReplicating(initialSyncMode)) {
+    const replication = createPouchDbReplication({
+      syncMode: initialSyncMode,
+      attachmentDownload: false,
+      localDb,
+      remoteDb,
+      eventHandlers: handlers,
+    });
+    syncId = buildSyncId({
+      localId: localDatabaseId,
+      remoteId: remoteDbId,
+    });
+    await databaseService.registerSync(syncId, replication);
+  }
 
-  // now call the reducer to update the state
   dispatch(
     activateProjectSuccess({
       project,
@@ -1620,9 +1597,22 @@ export const activateProject = createAsyncThunk<
       localDatabaseId,
       connectionConfiguration,
       remoteDbId,
-      syncId,
+      syncId: syncId ?? undefined,
+      syncMode: initialSyncMode,
+      recordCount: activationSync.recordCount,
     })
   );
+
+  if (activationSync.usedPushOnlyDefault) {
+    dispatch(
+      addAlert({
+        severity: 'info',
+        title: 'Sync mode changed',
+        autoHideDuration: 12000,
+        message: `This ${NOTEBOOK_NAME} has a large number of records. Sync has been set to "upload only" to reduce device stress. Other users' records won't be available unless you change the sync mode in the ${NOTEBOOK_NAME}'s Settings.`,
+      })
+    );
+  }
 
   // Perform async initialisation outside of reducer
   await couchInitialiser({
@@ -1638,7 +1628,9 @@ interface ActivateProjectSuccessPayload {
   localDatabaseId: string;
   connectionConfiguration: DatabaseConnectionConfig;
   remoteDbId: string;
-  syncId: string;
+  syncId: string | undefined;
+  syncMode: SyncMode;
+  recordCount?: number;
 }
 
 /**
@@ -1762,7 +1754,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         );
       }
 
-      const directoryResults = (await response.json()) as ProjectDocument[];
+      const directoryResults = (await response.json()) as ProjectListItem[];
 
       // Fetch all project metadata in parallel
       const metadataResults = await Promise.allSettled(
@@ -1778,8 +1770,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           }
 
           try {
-            const meta = await fetchProjectMetadataAndSpec({
-              compile: false,
+            const meta = await fetchNotebookDetails({
               projectId,
               serverUrl: server.serverUrl,
               token,
@@ -1849,13 +1840,17 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           if (value.details?.dataDb?.base_url) {
             actions.push(
               updateProjectDetails({
-                name: existingProject.name,
-                metadata: existingProject.metadata,
+                ...existingProject,
                 projectId: value.projectId,
                 serverId,
-                rawUiSpecification: existingProject.rawUiSpecification,
                 couchDbUrl: value.details.dataDb.base_url,
-                status: existingProject.status,
+                status: value.details.status ?? existingProject.status,
+                name: value.details.name ?? existingProject.name,
+                description:
+                  value.details.description ?? existingProject.description,
+                templateId:
+                  value.details.templateId ?? existingProject.templateId,
+                updatedAt: value.details.updatedAt ?? existingProject.updatedAt,
               })
             );
           }
@@ -1873,10 +1868,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           actions.push(
             addProject({
               name: meta.name,
-              metadata: meta.metadata as ProjectMetadata,
+              description: meta.description,
+              templateId: meta.templateId,
+              updatedAt: meta.updatedAt,
+              uiDefinition: meta.uiDefinition,
               projectId,
               serverId,
-              rawUiSpecification: meta.decodedSpec,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status,
             })
@@ -1885,15 +1882,18 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           actions.push(
             updateProjectDetails({
               name: meta.name ?? existingProject.name,
-              metadata:
-                (meta.metadata as ProjectMetadata | undefined) ??
-                existingProject.metadata,
+              description: meta.description ?? existingProject.description,
+              templateId: meta.templateId ?? existingProject.templateId,
+              updatedAt: meta.updatedAt ?? existingProject.updatedAt,
+              uiDefinition: meta.uiDefinition,
               projectId,
               serverId,
-              rawUiSpecification:
-                meta.decodedSpec ?? existingProject.rawUiSpecification,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status ?? existingProject.status,
+              recordCount: mergeRecordCount(
+                meta.recordCount,
+                existingProject.recordCount
+              ),
             })
           );
         }
@@ -2068,188 +2068,104 @@ export const initialiseAllProjects = createAsyncThunk<void>(
 );
 
 /**
- * A syncing database is one where the sync object exists between the local
- * and remote pouch DBs. This stops this sync by destroying this sync
- * object. Updates databaseService registrations and store states.
+ * Change record replication mode for an activated notebook.
  */
-export const stopSyncingProject = createAsyncThunk<void, ProjectIdentity>(
-  'projects/stopSyncingProject',
-  async (payload, {dispatch, getState}) => {
-    const state = getState() as RootState;
-    const projectState = state.projects;
+export const setSyncMode = createAsyncThunk<
+  void,
+  ProjectIdentity & {syncMode: SyncMode}
+>('projects/setSyncMode', async (payload, {dispatch, getState}) => {
+  const state = getState() as RootState;
+  const projectState = state.projects;
+  const {syncMode, ...identity} = payload;
 
-    // Check the server exists
-    const server = serverById(projectState, payload.serverId);
-    if (!server) {
-      // abort
-      throw new Error(
-        `You cannot stop syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
-    }
-
-    // check the project exists
-    const project = projectByIdentity(projectState, payload);
-    if (!project) {
-      // abort
-      throw new Error(
-        `You cannot stop syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
-    }
-
-    // check it's already active
-    if (!project.isActivated) {
-      throw new Error(
-        `You cannot stop syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
-    }
-
-    // check database and remote are defined
-    if (!project.database || !project.database.remote) {
-      throw new Error(
-        `You cannot stop syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
-      );
-    }
-
-    // If already not syncing, nothing to do
-    if (!project.database.isSyncing) {
-      return;
-    }
-
-    // cleanup existing sync
-    const syncId = project.database.remote.syncId;
-    if (!syncId) {
-      throw new Error(
-        `Failed to stop syncing project due to missing sync. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
-    }
-    // async...
-    await databaseService.closeAndRemoveSync(syncId);
-
-    // Create updated project with new sync state
-    const updatedProject: Project = {
-      ...project,
-      database: {
-        ...project.database,
-        isSyncing: false,
-        remote: {
-          ...project.database.remote,
-        },
-      },
-    };
-
-    // update store
-    dispatch(stopSyncingProjectSuccess(updatedProject));
+  const server = serverById(projectState, identity.serverId);
+  if (!server) {
+    throw new Error(
+      `You cannot change sync mode for a server which does not exist. Server ID: ${identity.serverId}. Project ID: ${identity.projectId}`
+    );
   }
-);
 
-/**
- * A syncing database is one where the sync object exists between the local
- * and remote pouch DBs. This stops resumes this sync by establishing this
- * sync object. Updates databaseService registrations and store states.
- */
-export const resumeSyncingProject = createAsyncThunk<void, ProjectIdentity>(
-  'projects/resumeSyncingProject',
-  async (payload, {dispatch, getState}) => {
-    const state = getState() as RootState;
-    const projectState = state.projects;
+  const project = projectByIdentity(projectState, identity);
+  if (!project) {
+    throw new Error(
+      `You cannot change sync mode for a project which does not exist. Server ID: ${identity.serverId}. Project ID: ${identity.projectId}`
+    );
+  }
 
-    console.log('resumeSyncingProject', payload);
+  if (!project.isActivated) {
+    throw new Error(
+      `You cannot change sync mode for an inactive project. Server ID: ${identity.serverId}. Project ID: ${identity.projectId}`
+    );
+  }
 
-    // Check the server exists
-    const server = serverById(projectState, payload.serverId);
-    if (!server) {
-      // abort
-      throw new Error(
-        `You cannot resume syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
+  if (!project.database || !project.database.remote) {
+    throw new Error(
+      `You cannot change sync mode without a database connection. Server ID: ${identity.serverId}. Project ID: ${identity.projectId}.`
+    );
+  }
+
+  if (project.database.syncMode === syncMode) {
+    return;
+  }
+
+  const oldSyncId = project.database.remote.syncId;
+  let newSyncId: string | undefined;
+
+  if (!isReplicating(syncMode)) {
+    if (oldSyncId) {
+      await databaseService.closeAndRemoveSync(oldSyncId);
     }
-
-    // check the project exists
-    const project = projectByIdentity(projectState, payload);
-    if (!project) {
-      // abort
-      throw new Error(
-        `You cannot resume syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
-    }
-
-    // check it's already active
-    if (!project.isActivated) {
-      throw new Error(
-        `You cannot resume syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-      );
-    }
-
-    // check database and remote are defined
-    if (!project.database || !project.database.remote) {
-      throw new Error(
-        `You cannot resume syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
-      );
-    }
-
-    // If already syncing, nothing to do
-    if (project.database.isSyncing) {
-      return;
-    }
-
-    // fetch the existing local DB
+    syncStateService.removeSyncState(identity.serverId, identity.projectId);
+  } else {
     const localDb = databaseService.getLocalDatabase(
       project.database.localDbId
     );
     if (!localDb) {
       throw new Error(
-        `The local DB with ID ${project.database.localDbId} does not exist, so cannot resume syncing.`
+        `The local DB with ID ${project.database.localDbId} does not exist, so cannot change sync mode.`
       );
     }
 
-    // fetch the existing remote DB
     const remoteDb = databaseService.getRemoteDatabase(
       project.database.remote.remoteDbId
     );
     if (!remoteDb) {
       throw new Error(
-        `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot resume syncing.`
+        `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot change sync mode.`
       );
     }
 
     const handlers = createSyncStateHandlers(
-      payload.projectId,
-      payload.serverId
+      identity.projectId,
+      identity.serverId
     );
-    // creates the sync object (PouchDB.Replication.Sync)
-    const sync = createPouchDbSync({
-      // Use existing setting for attachments
+    const result = await replaceProjectReplication({
+      syncMode,
       attachmentDownload: project.database.isSyncingAttachments,
-      // Use existing local DB
       localDb,
-      // Use existing remote DB
       remoteDb,
+      localDbId: project.database.localDbId,
+      remoteDbId: project.database.remote.remoteDbId,
       eventHandlers: handlers,
+      oldSyncId,
     });
-
-    // Register the sync
-    const syncId = buildSyncId({
-      localId: project.database.localDbId,
-      remoteId: project.database.remote.remoteDbId,
-    });
-    await databaseService.registerSync(syncId, sync);
-
-    // Create updated project with new sync state
-    const updatedProject: Project = {
-      ...project,
-      database: {
-        ...project.database,
-        isSyncing: true,
-        remote: {
-          ...project.database.remote,
-          syncId: syncId,
-        },
-      },
-    };
-
-    dispatch(resumeSyncingProjectSuccess(updatedProject));
+    newSyncId = result.syncId;
   }
-);
+
+  const updatedProject: Project = {
+    ...project,
+    database: {
+      ...project.database,
+      syncMode,
+      remote: {
+        ...project.database.remote,
+        syncId: newSyncId,
+      },
+    },
+  };
+
+  dispatch(setSyncModeSuccess(updatedProject));
+});
 
 /**
  * As part of initialisation, rebuilds and registers all databases (local,
@@ -2296,21 +2212,25 @@ export const rebuildDbs = async (
             });
 
             // and the sync (if needed)
-            if (dbInfo.isSyncing && dbInfo.remote.syncId) {
+            if (isReplicating(dbInfo.syncMode) && dbInfo.remote.syncId) {
               const handlers = createSyncStateHandlers(
                 project.projectId,
                 project.serverId
               );
-              // creates the sync object (PouchDB.Replication.Sync)
-              const sync = createPouchDbSync({
+              const replication = createPouchDbReplication({
+                syncMode: dbInfo.syncMode,
                 attachmentDownload: dbInfo.isSyncingAttachments,
                 localDb,
                 remoteDb,
                 eventHandlers: handlers,
               });
-              await databaseService.registerSync(dbInfo.remote.syncId, sync, {
-                tolerant: true,
-              });
+              await databaseService.registerSync(
+                dbInfo.remote.syncId,
+                replication,
+                {
+                  tolerant: true,
+                }
+              );
             }
           }
           // otherwise we are all good - just local db needed
@@ -2335,7 +2255,7 @@ export const compileSpecs = (state: Readonly<ProjectsState>): void => {
     for (const project of Object.values(server.projects)) {
       compiledSpecService.compileAndRegisterSpec(
         project.uiSpecificationId,
-        project.rawUiSpecification
+        project.uiDefinition.uiSpec
       );
     }
   }
@@ -2361,10 +2281,11 @@ export function createSyncStateHandlers(
       syncStateService.setActive(serverId, projectId);
     },
     change: info => {
+      const change = info.change;
       syncStateService.recordChange(serverId, projectId, {
-        pending: info.change.pending ?? 0,
-        docsRead: info.change.docs_read,
-        docsWritten: info.change.docs_written,
+        pending: change.pending ?? 0,
+        docsRead: change.docs_read ?? 0,
+        docsWritten: change.docs_written ?? 0,
         direction: info.direction,
       });
     },
@@ -2381,11 +2302,7 @@ export function createSyncStateHandlers(
 }
 
 // Private reducers
-const {
-  activateProjectSuccess,
-  stopSyncingProjectSuccess,
-  resumeSyncingProjectSuccess,
-} = projectsSlice.actions;
+const {activateProjectSuccess, setSyncModeSuccess} = projectsSlice.actions;
 
 // Public reducers
 export const {

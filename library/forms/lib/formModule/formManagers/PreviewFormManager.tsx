@@ -1,7 +1,8 @@
 import {
+  CompiledUiSpecModel,
   compileUiSpecConditionals,
   currentlyVisibleMap,
-  ProjectUIModel,
+  type UiSpecModel,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -24,8 +25,8 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   initialFormData?: FaimsFormData;
   /** The name/ID of the form to preview */
   formName: string;
-  /** The UI specification containing form structure */
-  uiSpec: ProjectUIModel;
+  /** Decoded UI spec (`fields`, `views`, `viewsets`, `visible_types`) */
+  uiSpec: UiSpecModel;
   layout: 'tabs' | 'inline';
   mapConfig: () => MapConfig;
   /** Optional section id to focus in tabbed preview mode. */
@@ -45,7 +46,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   const uiSpec = useMemo(() => {
     const spec = {...props.uiSpec};
     compileUiSpecConditionals(spec);
-    return spec;
+    return spec as CompiledUiSpecModel;
   }, [props.uiSpec]);
 
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(

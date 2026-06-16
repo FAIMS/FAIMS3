@@ -6,19 +6,19 @@
  */
 
 import {
+  CompiledNotebookUiSpec,
   DatabaseInterface,
   FieldSummary,
   HydratedDataRecord,
   ProjectDataObject,
   ProjectID,
-  ProjectUIModel,
   buildViewsetFieldSummaries,
   notebookRecordIterator,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
-import {getProjectUIModel} from '../notebooks';
+import {getCompiledUiSpecModel} from '../notebooks';
 import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
 import {convertDataForOutput} from './utils';
 
@@ -50,7 +50,7 @@ interface ExtractedGeometry {
  */
 interface SpatialExportContext {
   dataDb: DatabaseInterface<ProjectDataObject>;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: CompiledNotebookUiSpec;
   viewFieldsMap: Record<string, FieldSummary[]>;
   hasSpatialFields: boolean;
 }
@@ -78,7 +78,7 @@ async function initSpatialExportContext(
   projectId: ProjectID
 ): Promise<SpatialExportContext> {
   const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
   const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
 
   const hasSpatialFields = Object.keys(viewFieldsMap).some(viewsetID =>
@@ -138,7 +138,7 @@ export async function processRecordForSpatial(
   viewFieldsMap: Record<string, FieldSummary[]>,
   filenames: string[],
   dataDb: DatabaseInterface<ProjectDataObject>,
-  uiSpecification: ProjectUIModel
+  uiSpecification: CompiledNotebookUiSpec
 ): Promise<ProcessedRecord> {
   const hrid = record.hrid || record.record_id;
   const viewID = record.type;

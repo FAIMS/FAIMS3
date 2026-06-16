@@ -22,6 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
+import {DateTimeFieldProps} from '@faims3/forms';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
@@ -31,7 +32,7 @@ import {designerInfoIconSx} from '../designer-style';
 /** Shared date-time editor: auto-pick current time and optional "Now" button display. */
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
   const fieldComponent = field['component-name'];
@@ -54,17 +55,15 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
-  const isAutoPick =
-    field['component-parameters'].isAutoPick ??
-    field['component-parameters'].is_auto_pick ??
-    false;
-  const showNowButton = field['component-parameters'].show_now_button ?? false;
+  const params = field['component-parameters'] as DateTimeFieldProps;
+  const isAutoPick = params.isAutoPick ?? params.is_auto_pick ?? false;
+  const showNowButton = params.show_now_button ?? false;
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item sm={8} xs={12}>
+      <Grid size={{xs: 12, sm: 8}}>
         <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+          <Grid size={12} sx={{mx: 1.5, my: 2}}>
             <Stack spacing={1}>
               {supportsAutoPick && (
                 <FormControlLabel
@@ -77,7 +76,11 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                     />
                   }
                   label={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{alignItems: 'center'}}
+                    >
                       <Typography component="span">
                         Time pre-populated <strong>*</strong>
                       </Typography>
@@ -111,7 +114,11 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                     />
                   }
                   label={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{alignItems: 'center'}}
+                    >
                       <Typography
                         component="span"
                         sx={{whiteSpace: 'normal', overflowWrap: 'anywhere'}}
@@ -121,8 +128,8 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                           {isDatePicker
                             ? "Select today's date"
                             : isMonthPicker
-                            ? 'Select current month'
-                            : 'Select current date and time'}
+                              ? 'Select current month'
+                              : 'Select current date and time'}
                         </strong>
                         " button
                       </Typography>
@@ -131,8 +138,8 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                           isDatePicker
                             ? 'Adds a quick button to set this field to today’s date.'
                             : isMonthPicker
-                            ? 'Adds a quick button to set this field to the current month.'
-                            : 'Adds a quick button to set this field to the current date and time.'
+                              ? 'Adds a quick button to set this field to the current month.'
+                              : 'Adds a quick button to set this field to the current date and time.'
                         }
                       >
                         <InfoIcon

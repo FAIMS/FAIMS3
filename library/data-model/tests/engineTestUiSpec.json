@@ -1,5 +1,5 @@
 {
-  "ui-specification": {
+  "uiSpec": {
     "fields": {
       "First": {
         "component-namespace": "faims-custom",
@@ -15,7 +15,6 @@
           "name": "First",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -48,7 +47,6 @@
           "required": false,
           "name": "Second"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -79,7 +77,6 @@
           "required": false,
           "name": "First-1"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -110,7 +107,6 @@
           "required": false,
           "name": "Second-1"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -141,7 +137,6 @@
           "required": false,
           "name": "First-2"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -172,7 +167,6 @@
           "required": false,
           "name": "Second-2"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -203,7 +197,6 @@
           "required": false,
           "name": "First-3"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -234,7 +227,6 @@
           "required": false,
           "name": "Second-3"
         },
-        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -253,7 +245,7 @@
         }
       }
     },
-    "fviews": {
+    "views": {
       "A-A": {
         "label": "A",
         "fields": ["First-1", "Second-1"]
@@ -281,17 +273,18 @@
         "views": ["B-A", "B-B"]
       }
     },
-    "visible_types": ["A", "B"]
+    "visible_types": ["A", "B"],
+    "settings": {
+      "showQrCodeButton": false
+    },
+    "schemaVersion": "5.0"
   },
   "metadata": {
-    "filenames": [],
-    "lead_institution": "",
-    "meta": {},
-    "name": "Test",
-    "pre_description": "",
-    "project_id": "1762748536440-testing-engine",
-    "project_lead": "",
-    "project_status": "New",
-    "sections": {}
+    "information": {
+      "notebookVersion": "",
+      "purposeMarkdown": "",
+      "projectLeadLabel": "",
+      "leadInstitution": ""
+    }
   }
 }

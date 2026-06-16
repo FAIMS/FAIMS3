@@ -36,6 +36,7 @@ import {
 } from '@mui/material';
 import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {nowMs} from '@/lib/time';
 import DebouncedTextField from './debounced-text-field';
 import {
   designerCancelButtonSx,
@@ -75,8 +76,7 @@ let blockCounter = 0;
  * @returns {string} A unique identifier string
  */
 export const generateBlockId = (): string => {
-  // Get current timestamp
-  const timestamp = Date.now();
+  const timestamp = nowMs();
 
   // Increment counter
   blockCounter++;
@@ -266,8 +266,8 @@ const TemplateBlockEditor: React.FC<{
 
   return (
     <Box sx={{pl: 3, borderLeft: '2px solid', borderColor: 'divider', mb: 2}}>
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm="auto">
+      <Grid container spacing={2} sx={{alignItems: 'center'}}>
+        <Grid size={{xs: 12, sm: 'auto'}}>
           <FormControl fullWidth sx={{minWidth: 120}}>
             <InputLabel>Block Type</InputLabel>
             <Select
@@ -286,7 +286,7 @@ const TemplateBlockEditor: React.FC<{
         </Grid>
 
         {block.type === 'variable' && (
-          <Grid item xs={12} sm>
+          <Grid size={{xs: 12, sm: 'grow'}}>
             <FormControl fullWidth>
               <InputLabel>Variable</InputLabel>
               <Select
@@ -306,7 +306,7 @@ const TemplateBlockEditor: React.FC<{
         )}
 
         {block.type === 'text' && (
-          <Grid item xs>
+          <Grid size="grow">
             <DebouncedTextField
               fullWidth
               value={block.content}
@@ -318,7 +318,7 @@ const TemplateBlockEditor: React.FC<{
         )}
 
         {(block.type === 'if' || block.type === 'unless') && (
-          <Grid item xs={12} sm={4}>
+          <Grid size={{xs: 12, sm: 4}}>
             <FormControl fullWidth>
               <InputLabel>Variable</InputLabel>
               <Select
@@ -336,7 +336,7 @@ const TemplateBlockEditor: React.FC<{
           </Grid>
         )}
 
-        <Grid item>
+        <Grid size="auto">
           <Box sx={{display: 'flex', alignItems: 'center'}}>
             {onMoveUp && !isFirst && (
               <IconButton onClick={onMoveUp} size="small">
@@ -505,7 +505,7 @@ const TemplatePreview: React.FC<{
       {usedVariables.length > 0 ? (
         <Grid container spacing={2}>
           {usedVariables.map(variable => (
-            <Grid item xs={12} sm={6} key={variable.name}>
+            <Grid size={{xs: 12, sm: 6}} key={variable.name}>
               <DebouncedTextField
                 fullWidth
                 label={variable.displayName}
@@ -642,10 +642,10 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle sx={designerDialogTitleSx}>
-        <Grid container alignItems="center" spacing={1}>
-          <Grid item>Template Builder</Grid>
+        <Grid container spacing={1} sx={{alignItems: 'center'}}>
+          <Grid size="auto">Template Builder</Grid>
           {parseError && (
-            <Grid item>
+            <Grid size="auto">
               <Tooltip title={parseError}>
                 <ErrorIcon color="error" />
               </Tooltip>
@@ -695,9 +695,9 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
         >
           <Typography
             variant="caption"
-            display="block"
             gutterBottom
             color="text.secondary"
+            sx={{display: 'block'}}
           >
             Template String:
           </Typography>

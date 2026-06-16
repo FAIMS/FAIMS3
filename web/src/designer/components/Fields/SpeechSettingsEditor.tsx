@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {TextFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {fieldUpdated} from '../../store/slices/uiSpec';
@@ -35,10 +36,13 @@ interface SpeechSettingsEditorProps {
 /**
  * Helper to get speech settings from a field's component-parameters
  */
-export const getSpeechSettings = (field: FieldType): SpeechSettings => ({
-  enableSpeech: field['component-parameters'].enableSpeech ?? true,
-  speechAppendMode: field['component-parameters'].speechAppendMode ?? false,
-});
+export const getSpeechSettings = (field: FieldType): SpeechSettings => {
+  const params = field['component-parameters'] as TextFieldProps;
+  return {
+    enableSpeech: params.enableSpeech ?? true,
+    speechAppendMode: params.speechAppendMode ?? false,
+  };
+};
 
 /**
  * Helper to update speech settings in a field's component-parameters
@@ -86,7 +90,7 @@ export const SpeechSettingsEditor = ({
   fieldName,
 }: SpeechSettingsEditorProps) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -101,7 +105,7 @@ export const SpeechSettingsEditor = ({
   };
 
   return (
-    <Grid item xs={12}>
+    <Grid size={12}>
       <Card variant="outlined">
         <CardHeader
           avatar={<MicIcon color="action" />}
@@ -110,8 +114,8 @@ export const SpeechSettingsEditor = ({
           }
           sx={{pb: 0}}
         />
-        <Grid container p={2} pt={1} rowGap={1}>
-          <Grid item xs={12}>
+        <Grid container sx={{p: 2, pt: 1, rowGap: 1}}>
+          <Grid size={12}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -133,7 +137,7 @@ export const SpeechSettingsEditor = ({
           </Grid>
 
           {settings.enableSpeech && (
-            <Grid item xs={12} sx={{pl: 4}}>
+            <Grid size={12} sx={{pl: 4}}>
               <FormControlLabel
                 control={
                   <Checkbox
