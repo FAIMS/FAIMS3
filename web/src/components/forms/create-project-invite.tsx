@@ -15,7 +15,7 @@ import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
-import {INVITE_TOKEN_HINTS} from '@/constants';
+import {INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -41,14 +41,6 @@ export function CreateProjectInviteForm({
     return <ErrorComponent error="Not authenticated" />;
   }
 
-  // Order least access (top) → most access (bottom).
-  const projectRoleOrder: Role[] = [
-    Role.PROJECT_GUEST,
-    Role.PROJECT_CONTRIBUTOR,
-    Role.PROJECT_MANAGER,
-    Role.PROJECT_ADMIN,
-  ];
-
   const roleOptions = useMemo(() => {
     return Object.entries(roleDetails)
       .filter(
@@ -66,13 +58,13 @@ export function CreateProjectInviteForm({
       )
       .sort(
         ([a], [b]) =>
-          projectRoleOrder.indexOf(a as Role) -
-          projectRoleOrder.indexOf(b as Role)
+          (roleDetails[a as Role].order ?? 0) -
+          (roleDetails[b as Role].order ?? 0)
       )
       .map(([value, {name: label, description}]) => ({
         label,
         value,
-        description,
+        description: brandNotebook(description),
       }));
   }, [user, projectId]);
 

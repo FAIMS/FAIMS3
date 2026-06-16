@@ -977,6 +977,11 @@ export interface RoleDetails {
   scope: RoleScope;
   // If resource scoped - can specify this here
   resource?: Resource;
+  /**
+   * Sort order within a resource's role picker (lower = less access, shown
+   * first). Set this when adding a role that appears in an invite/role dropdown.
+   */
+  order?: number;
 }
 
 // Map each role to its details
@@ -1010,30 +1015,35 @@ export const roleDetails: Record<Role, RoleDetails> = {
   // Project roles
   [Role.PROJECT_ADMIN]: {
     name: 'Administrator',
-    description: 'Can delete the survey and manage any admin users.',
+    description:
+      'Full control over the {notebook}, including managing users and roles, editing settings, opening or closing it, and deleting it.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 3,
   },
   [Role.PROJECT_MANAGER]: {
     name: 'Manager',
     description:
-      'Can create survey invites, edit survey roles, manage survey settings, and open or close the survey. Cannot delete the survey.',
+      'Can create {notebook} invites, edit {notebook} roles, manage {notebook} settings, and open or close the {notebook}.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 2,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
     name: 'Contributor',
     description:
-      'Can view and edit any survey responses created by any user, including their own.',
+      'Can view and edit any {notebook} responses created by any user, including their own.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 1,
   },
   [Role.PROJECT_GUEST]: {
     name: 'Guest',
     description:
-      "Can create and edit their own survey response, but cannot view or edit anyone else's responses.",
+      "Can create and edit their own {notebook} response, but cannot view or edit anyone else's responses.",
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 0,
   },
 
   // Template roles
@@ -1054,27 +1064,27 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.TEAM_ADMIN]: {
     name: 'Team Administrator',
     description:
-      'Can remove people from teams and surveys, create invites, edit user roles, and archive or delete surveys and templates.',
+      'Can remove users from teams and {notebooks}, create invites, edit user roles, and archive or delete {notebooks} and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MANAGER]: {
     name: 'Team Manager',
     description:
-      'Can create templates, surveys, and invites, open and close surveys, and edit user roles. Cannot remove users.',
+      'Can create templates, {notebooks}, and invites, open and close {notebooks}, and edit user roles. Cannot remove users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
     name: 'Team Member (Contributor)',
     description:
-      'Can contribute to all surveys in the team and view team details, users, surveys and templates.',
+      'Can contribute to all {notebooks} in the team and view team details, users, {notebooks} and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER_CREATOR]: {
     name: 'Team Member (Creator)',
-    description: 'Can create new projects within a team',
+    description: 'Can create new {notebooks} within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
