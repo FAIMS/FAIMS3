@@ -194,7 +194,7 @@ export function Form<
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder={`Select ${name}`} />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="max-w-md">
                                 {options.map(({label, value, description}) => (
                                   <SelectItem
                                     key={value}
