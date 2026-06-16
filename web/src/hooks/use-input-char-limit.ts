@@ -14,12 +14,12 @@ import { useCallback, useState } from 'react';
  * @returns validateAndUpdate - Updates the input value and calls onValid with the allowed value.
  */
 
-const DEFAULT_MAX_LENGTH = 25
+const DEFAULT_MAX_CHAR_LENGTH = 25
 
 export const useTextFieldLengthLimit = (
     {
         initialValue,
-        maxLength = DEFAULT_MAX_LENGTH,
+        maxLength = DEFAULT_MAX_CHAR_LENGTH,
     }:
         {
             initialValue?: string,

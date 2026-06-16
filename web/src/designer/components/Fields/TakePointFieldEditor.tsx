@@ -13,7 +13,7 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
-import { useTextFieldLengthLimit } from '@/hooks/field-hooks';
+import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
 
 /**
  * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.

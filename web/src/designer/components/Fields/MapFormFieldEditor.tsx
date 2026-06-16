@@ -28,7 +28,7 @@ import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {designerInfoIconSx} from '../designer-style';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
-import { useTextFieldLengthLimit } from '@/hooks/field-hooks';
+import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
 
 type FieldState = {
   featureType: string;
