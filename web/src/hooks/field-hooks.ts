@@ -17,8 +17,14 @@ import { useCallback, useState } from 'react';
 const DEFAULT_MAX_LENGTH = 25
 
 export const useTextFieldLengthLimit = (
-    initialValue?: string,
-    maxLength: number = DEFAULT_MAX_LENGTH,
+    {
+        initialValue,
+        maxLength = DEFAULT_MAX_LENGTH,
+    }:
+        {
+            initialValue?: string,
+            maxLength?: number,
+        }
 ) => {
     const [errorText, setErrorText] = useState<string>();
 
@@ -35,8 +41,8 @@ export const useTextFieldLengthLimit = (
             // Update the displayed input value.
             setInputValue(value);
 
+            // No valid length limit, save whatever the user typed.
             if (typeof maxLength !== 'number' || maxLength < 0) {
-                // No valid length limit, save whatever the user typed.
                 setErrorText(undefined);
                 onValid(value);
                 return;
@@ -44,7 +50,7 @@ export const useTextFieldLengthLimit = (
 
             if (value.length > maxLength) {
                 setErrorText(
-                    `${value.length} / ${maxLength} characters. Only the first ${maxLength} characters will be saved.`
+                    `Maximum length exceeded (${value.length} / ${maxLength}). Extra characters will not be saved.`
                 );
             } else {
                 setErrorText(undefined);

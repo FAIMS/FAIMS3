@@ -41,7 +41,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     errorText: buttonLabelErrorTxt,
     inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit(buttonLabelText);
+  } = useTextFieldLengthLimit({ initialValue: buttonLabelText });
 
 
   return (
