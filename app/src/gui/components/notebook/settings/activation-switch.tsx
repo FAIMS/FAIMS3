@@ -63,7 +63,12 @@ export default function NotebookActivationSwitch({
       </Button>
       <FaimsDialog
         open={open}
-        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${project.name || NOTEBOOK_NAME_PLURAL_CAPITALIZED}`}
+        title={
+          <>
+            {ACTIVATE_ACTIVE_VERB_LABEL}{' '}
+            <em>{project.name || NOTEBOOK_NAME_PLURAL_CAPITALIZED}</em>
+          </>
+        }
         icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
         onPrimaryAction={handleActivationClick}

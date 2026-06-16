@@ -33,7 +33,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 type FaimsDialogProps = {
   open: boolean;
-  title: string;
+  title: React.ReactNode;
   icon?: React.ReactNode;
   children: React.ReactNode;
   onClose: () => void;
@@ -49,7 +49,7 @@ type FaimsDialogProps = {
 
  *
  * @param {boolean} open - Controls whether the dialog is open or closed.
- * @param {string} title - The title displayed at the top of the dialog.
+ * @param {React.ReactNode} title - The title displayed at the top of the dialog.
  * @param {React.ReactNode} [icon] - Optional icon displayed above the title.
  * @param {React.ReactNode} children - The content of the dialog.
  * @param {Function} onClose - Callback function to handle the closing of the dialog.
