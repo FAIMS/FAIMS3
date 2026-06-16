@@ -194,7 +194,7 @@ export function Form<
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder={`Select ${name}`} />
                               </SelectTrigger>
-                              <SelectContent className="w-[var(--radix-select-trigger-width)]">
+                              <SelectContent>
                                 {options.map(({label, value, description}) => (
                                   <SelectItem
                                     key={value}
