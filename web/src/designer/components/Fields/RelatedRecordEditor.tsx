@@ -74,7 +74,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
   const componentParams = field['component-parameters'];
 
   const getLinkedPairs = (): PairList => {
-    return componentParams.relation_linked_vocabPair ?? [];
+    return (componentParams.relation_linked_vocabPair as PairList) ?? [];
   };
 
   const pairs = getLinkedPairs();

@@ -615,7 +615,12 @@ const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
             custom: {org_tag: 'field-school'},
           },
         },
-      } satisfies PouchDB.Core.ExistingDocument<TemplateV5Fields>,
+        // Cast: this fixture intentionally carries a minimal migrated field
+        // (`component-name`/`-namespace` only). The v3→v4 field rename does not
+        // synthesise `component-parameters`/`type-returned`, so the migrated
+        // output legitimately omits them and would not satisfy the (now typed)
+        // FieldDefinition shape.
+      } as unknown as PouchDB.Core.ExistingDocument<TemplateV5Fields>,
     },
     equalityFunction: (actual, expected) => {
       expect(actual.createdAt).toEqual(expect.any(String));

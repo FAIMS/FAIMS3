@@ -9,8 +9,11 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 interface Alert {
   severity: AlertColor;
   key: string;
+  title?: string;
   message?: string;
   element?: JSX.Element[];
+  /** Snackbar visibility in ms; defaults by severity when omitted. */
+  autoHideDuration?: number;
 }
 
 interface AlertState {

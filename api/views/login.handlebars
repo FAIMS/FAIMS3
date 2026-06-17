@@ -34,6 +34,10 @@
         id='InputIdentifier'
         data-testid="email-input"
         autocomplete='email'
+        inputmode='email'
+        autocapitalize='off'
+        autocorrect='off'
+        spellcheck='false'
         required
       />
       {{#if messages.error.email}}

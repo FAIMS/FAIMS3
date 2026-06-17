@@ -9,24 +9,19 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
-import {randomUuid} from '../utils';
-import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
 import {getDataDB, shouldDisplayRecord} from '../callbacks';
-import {TokenContents} from '../permission/types';
 import {logError} from '../logging';
+import {TokenContents} from '../permission/types';
 import {
   Annotations,
   DatabaseInterface,
   DataDbType,
-  FAIMSTypeName,
   ProjectDataObject,
   ProjectID,
   ProjectRevisionListing,
-  ProjectUIModel,
   Record,
   RecordID,
   RecordMetadata,
-  RecordReference,
   RecordRevisionListing,
   Relationship,
   Revision,
@@ -34,6 +29,8 @@ import {
   RevisionID,
   UnhydratedRecord,
 } from '../types';
+import {UiSpecModel} from '../uiSpecification/types';
+import {randomUuid} from '../utils';
 import {
   addNewRevisionFromForm,
   FormData,
@@ -48,7 +45,7 @@ import {
   REVISIONS_INDEX,
   updateHeads,
 } from './internals';
-import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
+import {getAllRecordsWithRegex} from './queries';
 
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + randomUuid();
@@ -314,7 +311,10 @@ export async function setRecordAsDeleted({
   userId: string;
 }): Promise<RevisionID> {
   const date = new Date();
-  const baseRevision = await getRevision({dataDb, revisionId: baseRevisionId});
+  const baseRevision = await getRevision({
+    dataDb,
+    revisionId: baseRevisionId,
+  });
   const newRevisionId = generateFAIMSRevisionID();
   const newRevision: Revision = {
     _id: newRevisionId,
@@ -350,7 +350,10 @@ export async function setRecordAsUndeleted({
   userId: string;
 }): Promise<RevisionID> {
   const date = new Date();
-  const baseRevision = await getRevision({dataDb, revisionId: baseRevisionId});
+  const baseRevision = await getRevision({
+    dataDb,
+    revisionId: baseRevisionId,
+  });
   const newRevId = generateFAIMSRevisionID();
   const newRevision: Revision = {
     _id: newRevId,
@@ -385,7 +388,7 @@ export async function getRecordMetadata({
   dataDb: DataDbType;
   recordId: RecordID;
   revisionId: RevisionID;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Promise<RecordMetadata> {
   try {
     const record = await getRecord({dataDb, recordId});
@@ -431,7 +434,7 @@ export async function getHRIDforRecordID({
 }: {
   dataDb: DataDbType;
   recordId: RecordID;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Promise<string> {
   try {
     const record = await getRecord({dataDb, recordId});
@@ -446,110 +449,6 @@ export async function getHRIDforRecordID({
   } catch (err) {
     console.warn('Failed to get hrid', err);
     return recordId;
-  }
-}
-
-/**
- * getPossibleRelatedRecords - get all records of a given type but remove any that
- *   are already children of some parent if relation_type is Child
- *
- * @param projectId - project identifier
- * @param type - type of record we are looking for
- * @param relationType - 'faims-core::Child' or 'faims-core::Linked'
- * @param recordId - record id that might be the parent/source of this link
- * @param fieldId - field that will hold the relationship
- * @param relationLinkedVocabPair - names of the relationship
- * @returns  a promise resolving to an array of RecordReference objects
- */
-export async function getPossibleRelatedRecords({
-  projectId,
-  dataDb,
-  type,
-  relationLinkedVocabPair = null,
-  relationType,
-  recordId,
-  fieldId,
-  uiSpecification,
-}: {
-  projectId: ProjectID;
-  dataDb: DataDbType;
-  type: FAIMSTypeName;
-  relationType: string;
-  recordId: string;
-  fieldId: string;
-  relationLinkedVocabPair: string[] | null;
-  uiSpecification: ProjectUIModel;
-}): Promise<RecordReference[]> {
-  try {
-    let relation_vocab: string[] | null = null;
-    if (relationType !== 'faims-core::Child') {
-      relation_vocab = [
-        DEFAULT_RELATION_LINK_VOCABULARY,
-        DEFAULT_RELATION_LINK_VOCABULARY,
-      ]; //default value of the linked items
-      if (
-        relationLinkedVocabPair !== null &&
-        relationLinkedVocabPair.length > 0
-      )
-        relation_vocab = relationLinkedVocabPair; //get the name from relation_linked_vocabPair
-    }
-
-    const records: RecordReference[] = [];
-    await listRecordMetadata({
-      projectId,
-      dataDb,
-      uiSpecification,
-    }).then(record_list => {
-      for (const key in record_list) {
-        const metadata = record_list[key];
-
-        let is_parent = false;
-        const relationship = metadata['relationship'];
-
-        if (relationType === 'faims-core::Child') {
-          //check if record has the parent, record should only have one parent
-          if (
-            relationship === undefined ||
-            relationship['parent'] === undefined ||
-            relationship['parent'] === null ||
-            relationship['parent'].record_id === undefined
-          )
-            is_parent = false;
-          else if (relationship['parent'].record_id !== recordId)
-            is_parent = true;
-          else if (
-            relationship['parent'].record_id === recordId &&
-            relationship['parent'].field_id !== fieldId
-          )
-            is_parent = true;
-        }
-        if (!metadata.deleted && metadata.type === type && !is_parent) {
-          const hrid =
-            metadata.hrid !== '' && metadata.hrid !== undefined
-              ? metadata.hrid
-              : metadata.record_id;
-          if (relation_vocab === null)
-            records.push({
-              project_id: projectId,
-              record_id: metadata.record_id,
-              record_label: hrid,
-            });
-          else
-            records.push({
-              project_id: projectId,
-              record_id: metadata.record_id,
-              record_label: hrid,
-              relation_type_vocabPair: relation_vocab, // pass the value of the vocab
-            });
-        }
-      }
-    });
-    return records;
-  } catch (err) {
-    // TODO: What are we doing here, why would things error?
-    const records = await getAllRecordsOfType(projectId, type);
-    logError(err);
-    return records;
   }
 }
 
@@ -607,7 +506,7 @@ export async function getMetadataForSomeRecords({
   projectId: ProjectID;
   recordIds: RecordID[];
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -650,7 +549,7 @@ export async function getMetadataForAllRecords({
   tokenContents: TokenContents;
   projectId: ProjectID;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -686,7 +585,7 @@ export async function getRecordsWithRegex({
   projectId: ProjectID;
   regex: string;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -721,7 +620,7 @@ export async function getMinimalRecordDataWithRegex({
   projectId: ProjectID;
   regex: string;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<UnhydratedRecord[]> {
   try {
@@ -765,7 +664,7 @@ export async function getMinimalRecordData({
   tokenContents: TokenContents;
   projectId: ProjectID;
   filterDeleted: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<UnhydratedRecord[]> {
   try {
@@ -816,7 +715,7 @@ export const hydrateRecord = async ({
   projectId: string;
   dataDb: DataDbType;
   record: RecordRevisionIndexDocument;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   includeAttachments?: boolean;
 }): Promise<HydratedDataRecord> => {
   try {
@@ -932,7 +831,7 @@ export const notebookRecordIterator = async ({
   // overhead - these are buffered as File like objects straight into the
   // response. Use the nano couchdb node client to use attachment.getAsStream
   includeAttachments?: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }) => {
   const batchSize = 20;
   const getNextBatch = async (bookmark: string | null) => {

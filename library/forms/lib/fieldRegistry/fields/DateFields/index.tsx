@@ -21,20 +21,20 @@ import {
 } from '@mui/material';
 import React, {HTMLInputTypeAttribute, useEffect} from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
   EmptyResponsePlaceholder,
 } from '../../../rendering/fields';
 import {FieldInfo, FieldReturnType} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {logError} from '../../../logging';
 
 // =============================================================================
 // Props Schema
 // =============================================================================
 
-const dateTimePropsSchema = BaseFieldPropsSchema.extend({
+export const dateTimePropsSchema = BaseFieldParametersSchema.extend({
   fullWidth: z.boolean().optional().default(true),
   variant: z
     .enum(['outlined', 'filled', 'standard'])
@@ -52,7 +52,7 @@ const dateTimePropsSchema = BaseFieldPropsSchema.extend({
   show_now_button: z.boolean().optional().default(false),
 });
 
-type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
+export type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
 
 // Full props including injected form context
 type DateTimeFieldFullProps = FullFieldProps & DateTimeFieldProps;
@@ -204,24 +204,6 @@ const MonthPickerField: React.FC<DateTimeFieldFullProps> = props => (
 // =============================================================================
 // View Components
 // =============================================================================
-
-function toDatetimeLocalFormat(isoString: string): string {
-  // Returns format: yyyy-MM-ddThh:mm:ss (local time)
-  try {
-    const date = new Date(isoString);
-    const offset = date.getTimezoneOffset() * 60000;
-    const localDate = new Date(date.getTime() - offset);
-    return localDate.toISOString().slice(0, 19);
-  } catch (e) {
-    logError(
-      new Error(
-        `Failed to convert input isoString to datetime format for input text field. Input: ${isoString}.`
-      ),
-      {error: e}
-    );
-    return '';
-  }
-}
 
 /**
  * Converts a datetime-local input value to ISO string for storage.

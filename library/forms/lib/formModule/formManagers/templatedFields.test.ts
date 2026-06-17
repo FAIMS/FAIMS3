@@ -1,4 +1,4 @@
-import type {UISpecification} from '@faims3/data-model';
+import type {UiSpecModel} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {recomputeDerivedFields} from './templatedFields';
 
@@ -7,7 +7,7 @@ const meta = {
   uncertainty: {include: false, label: 'uncertainty'},
 };
 
-function makeAddressTemplateSpec(): UISpecification {
+function makeAddressTemplateSpec(): UiSpecModel {
   return {
     fields: {
       addr: {
@@ -57,7 +57,7 @@ function makeAddressTemplateSpec(): UISpecification {
       },
     },
     visible_types: ['FORM'],
-  } as UISpecification;
+  } as UiSpecModel;
 }
 
 describe('recomputeDerivedFields (templateFunction)', () => {

@@ -12,7 +12,7 @@ import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
-import {getProjectUIModel} from '../notebooks';
+import {getCompiledUiSpecModel} from '../notebooks';
 import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,
@@ -211,7 +211,7 @@ export const appendAllCSVsToArchive = async ({
 }): Promise<MultiViewCSVAppendStats> => {
   // Fetch DB and UI spec
   const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
 
   // Get all view IDs
   const viewIds = Object.keys(uiSpecification.viewsets);
@@ -416,7 +416,7 @@ export const appendCSVToArchive = async ({
   const dataDb = await getDataDb(projectId);
 
   // Grab the UI spec
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
 
   // Get field information
   const fields = getNotebookFieldTypes({uiSpecification, viewID});
@@ -533,7 +533,7 @@ export const streamNotebookRecordsAsCSV = async (
   const dataDb = await getDataDb(projectId);
 
   // Grab the UI spec
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
 
   // Loop through records in an efficient iterator
   const iterator = await notebookRecordIterator({

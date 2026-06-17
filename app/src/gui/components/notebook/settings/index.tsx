@@ -18,7 +18,7 @@
  *   The settings component for a notebook presents user changeable options
  */
 
-import {ProjectID, ProjectUIModel} from '@faims3/data-model';
+import {ProjectID, UiSpecModel} from '@faims3/data-model';
 import {
   Box,
   Button,
@@ -54,10 +54,15 @@ import {
   DE_ACTIVATE_ACTIVE_VERB,
   DE_ACTIVATE_VERB,
 } from '../../workspace/notebooks';
+import {
+  syncModeIncludesPull,
+  syncModeIncludesPush,
+} from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
+import SyncModeHelpDialog from './syncModeHelpDialog';
 
-export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
+export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   const nav = useNavigate();
   const {projectId} = useParams<{projectId: ProjectID}>();
   if (!projectId) return <></>;
@@ -66,6 +71,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   if (!project) return <></>;
 
   const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
+  const syncMode = project.database?.syncMode ?? 'none';
+  const pullSyncEnabled = syncModeIncludesPull(syncMode);
+  const pushSyncEnabled = syncModeIncludesPush(syncMode);
   const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
   const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
     React.useState(false);
@@ -107,9 +115,17 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             elevation={0}
             sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
           >
-            <Typography variant={'h6'} sx={{mb: 2}}>
-              Sync {NOTEBOOK_NAME_CAPITALIZED}
-            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mb: 2,
+              }}
+            >
+              <Typography variant={'h6'}>Sync Mode</Typography>
+              <SyncModeHelpDialog recordCount={project.recordCount} />
+            </Box>
             <NotebookSyncSwitch project={project} showHelperText={true} />
           </Box>
 
@@ -128,6 +144,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 control={
                   <Switch
                     checked={isSyncingAttachments}
+                    disabled={!pullSyncEnabled}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
                         color: theme.palette.icon.main,
@@ -169,14 +186,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 }
               />
               <Typography variant={'body2'}>
-                This control is app and device specific. If this option is
-                enabled, Fieldmark™ will automatically download and show images
-                and attachments created by other devices. Be aware that this may
-                be resource intensive and use your mobile data plan. Disable
-                this setting to minimise network usage. This setting will not
-                affect uploading of your data from this device to the central
-                server. Attachments are always uploaded to the server regardless
-                of this setting.
+                {pullSyncEnabled
+                  ? 'This control is app and device specific. If this option is enabled, Fieldmark™ will automatically download and show images and attachments created by other devices. Be aware that this may be resource intensive and use your mobile data plan. Disable this setting to minimise network usage. This setting will not affect uploading of your data from this device to the central server. Attachments are always uploaded to the server regardless of this setting.'
+                  : 'Attachment download requires two-way sync. Change sync mode above to enable this option.'}
               </Typography>
             </Box>
           </Box>
@@ -188,9 +200,10 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
                 {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME} will remove it
-                from your device and delete all records on your device. Ensure
-                all your records have a green sync status before{' '}
-                {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
+                from your device and delete all records on your device.{' '}
+                {syncMode === 'none'
+                  ? 'Ensure any records you need on the server have been synced before deactivating.'
+                  : 'Ensure all your records have a green sync status (uploaded) before deactivating.'}
               </Typography>
               <Button
                 variant={'outlined'}
@@ -231,7 +244,11 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                   color="primary"
                 />
               }
-              label="I have checked that all records have a green sync status."
+              label={
+                pushSyncEnabled
+                  ? 'I have checked that all records have a green sync status.'
+                  : 'I understand local records will be removed from this device.'
+              }
             />
           </Stack>
         </DialogContent>

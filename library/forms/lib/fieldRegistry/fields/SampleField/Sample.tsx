@@ -1,15 +1,15 @@
 import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
 import {
-  BaseFieldProps,
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+  BaseFieldParameters,
+  BaseFieldParametersSchema,
+} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
-const SampleField = (props: BaseFieldProps & FormFieldContextProps) => {
+const SampleField = (props: BaseFieldParameters & FormFieldContextProps) => {
   // You may wish to cast this value
   const value = props.state.value?.data || undefined;
 
@@ -51,7 +51,7 @@ export const sampleFieldSpec: FieldInfo = {
   name: 'SampleField',
   returns: 'faims-core::String',
   component: SampleField,
-  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldPropsSchema: BaseFieldParametersSchema,
   fieldDataSchemaFunction: valueSchema,
   // You can override this to provide a customised view only rendering
   view: {component: DefaultRenderer, config: {}},

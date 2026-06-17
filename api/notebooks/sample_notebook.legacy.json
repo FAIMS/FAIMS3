@@ -868,12 +868,10 @@
           "interpretation",
           "comments"
         ],
-        "uidesign": "form",
         "label": "SECTION1"
       },
       "FORM3SECTION1": {
         "fields": ["hridFORM3", "dimension", "measurement"],
-        "uidesign": "form",
         "label": "Dimension"
       },
       "FORM2SECTION1": {
@@ -885,7 +883,6 @@
           "take-photo-2",
           "artefact-comment"
         ],
-        "uidesign": "form",
         "label": "SECTION1"
       }
     },

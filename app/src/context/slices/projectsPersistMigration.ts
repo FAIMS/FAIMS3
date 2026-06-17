@@ -1,14 +1,33 @@
 /**
- * redux-persist migration for the projects slice (persist version 0 → 1).
+ * @file projectsPersistMigration.ts
  *
- * Older app builds stored each project with a loose `metadata` bag plus
- * `rawUiSpecification` (decoded {@link ProjectUIModel}). Current builds expect
- * a typed {@link NotebookDefinition} on `uiDefinition`, with `description` and
- * `templateId` at the project root.
+ * redux-persist migrations for the **projects** slice.
  *
- * Called from `projectsPersistConfig` in `store.tsx` (`createMigrate` version 1).
- * After migration, `isInitialised` is reset to `false` so sync re-runs against
- * the server with the modern shape.
+ * Wired from `projectsPersistConfig` in `store.tsx` via `createMigrate`. When a
+ * user upgrades the app, redux-persist rehydrates IndexedDB state and runs each
+ * migration step from the stored `_persist.version` up to the configured
+ * version (currently **2**).
+ *
+ * These functions must be **pure transforms** of persisted JSON: no network I/O,
+ * no PouchDB handles, and no Redux dispatches. Structured logging
+ * (`[redux-persist-migration]`) is the only intentional side effect.
+ *
+ * **Version 1** — {@link migrateProjectsPersistedState}
+ * - Replaces legacy per-project `metadata` + `rawUiSpecification` with a typed
+ *   {@link NotebookDefinition} on `uiDefinition`, and lifts `description` /
+ *   `templateId` to the project root.
+ * - Resets `isInitialised` to `false` so the app re-fetches the directory and
+ *   recompiles specs against the modern shape (see `initialize()`).
+ * - Per-project failures are **dropped** (logged) rather than aborting the whole
+ *   migration.
+ *
+ * **Version 2** — {@link migrateProjectsSyncModeV2}
+ * - Maps legacy `database.isSyncing: boolean` to {@link SyncMode} on
+ *   `database.syncMode` (`true` → `'both'`, `false` → `'none'`).
+ * - Preserves all other project fields; does not reset `isInitialised`.
+ *
+ * @see store.tsx — `projectsPersistConfig.version` and migrate map
+ * @see projectsPersistMigration.test.ts — regression tests for v1 and v2
  */
 import {
   normalizeNotebookUiSpecification,
@@ -20,31 +39,43 @@ import type {
   Project,
   ProjectsState,
   ProjectIdToProjectMap,
+  DatabaseConnection,
 } from './projectSlice';
+import {syncModeFromLegacyIsSyncing} from '../../sync/syncMode';
 import {notebookDefinitionFromLegacyPersistedProject} from './helpers/notebookDefinition';
 
+/** Fallback projects state when persisted data is missing or unusable. */
 const emptyProjectsState: ProjectsState = {
   servers: {},
   isInitialised: false,
 };
 
+/** Log prefix shared with `store.tsx` migrate wrappers for grep-friendly traces. */
 const PERSIST_MIGRATION_LOG = '[redux-persist-migration]';
 
+/** Info-level migration progress (counts, server ids, version transitions). */
 const logMigrationInfo = (
   event: string,
   fields?: Record<string, unknown>
 ): void => logInfo(`${PERSIST_MIGRATION_LOG} ${event}`, fields ?? {});
 
+/** Warn-level migration events (skipped projects, partial data loss). */
 const logMigrationWarn = (
   event: string,
   fields?: Record<string, unknown>
 ): void => logWarn(`${PERSIST_MIGRATION_LOG} ${event}`, fields ?? {});
 
+/** Counters aggregated across a single migration run for the completion log. */
 type PersistMigrationStats = {
+  /** Projects rebuilt from legacy metadata / rawUiSpecification. */
   legacyMigrated: number;
+  /** Projects that only needed uiDefinition re-normalisation. */
   normalized: number;
+  /** normalize-only path failed; fell back to full legacy migration. */
   lightNormalizeFallback: number;
+  /** No uiDefinition, metadata, or rawUiSpecification to migrate. */
   skippedNoPayload: number;
+  /** Normalisation or legacy extraction threw. */
   skippedError: number;
 };
 
@@ -72,7 +103,7 @@ type LegacyPersistedProject = {
   database?: Project['database'];
   metadata?: Record<string, unknown>;
   rawUiSpecification?: Project['uiDefinition'] extends infer _U
-    ? import('@faims3/data-model').ProjectUIModel
+    ? import('@faims3/data-model').UiSpecModel
     : never;
   uiDefinition?: NotebookDefinition;
   description?: string;
@@ -80,10 +111,12 @@ type LegacyPersistedProject = {
   updatedAt?: string;
 };
 
+/** Type guard for corrupt or non-object persisted blobs. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Total project count across all servers (for before/after migration logs). */
 function countProjects(servers: ProjectsState['servers'] | undefined): number {
   if (!servers) {
     return 0;
@@ -94,6 +127,7 @@ function countProjects(servers: ProjectsState['servers'] | undefined): number {
   );
 }
 
+/** Log and count a single project that could not be migrated (v1). */
 function logProjectMigrationError(
   projectId: string,
   serverId: string,
@@ -251,11 +285,20 @@ function migrateServerProjects(
 }
 
 /**
- * redux-persist migration 1: legacy `metadata` + `rawUiSpecification` →
- * `uiDefinition`, with root-level `description` / `templateId`.
+ * redux-persist **migration 1**: legacy notebook shape → current {@link Project}.
  *
- * Safe on corrupt or non-object persisted blobs (returns {@link emptyProjectsState}).
- * Per-project failures are dropped rather than failing the whole migration.
+ * Transforms the entire persisted `projects` slice:
+ * - `metadata` + `rawUiSpecification` → `uiDefinition` ({@link NotebookDefinition})
+ * - Root-level `description` and `templateId` backfilled from metadata or spec
+ * - `database` left unchanged (sync mode migration is v2)
+ *
+ * Safe on corrupt or non-object persisted blobs (returns
+ * {@link emptyProjectsState}). Per-project failures are dropped rather than
+ * failing the whole migration. Always sets `isInitialised: false` on success so
+ * startup re-runs directory initialisation.
+ *
+ * @param state Raw rehydrated state from redux-persist (unknown at runtime)
+ * @returns Migrated {@link ProjectsState}
  */
 export function migrateProjectsPersistedState(state: unknown): ProjectsState {
   const stats = emptyPersistMigrationStats();
@@ -339,5 +382,95 @@ export function migrateProjectsPersistedState(state: unknown): ProjectsState {
     ...inbound,
     servers: migratedServers,
     isInitialised: false,
+  };
+}
+
+/**
+ * Persisted {@link DatabaseConnection} before sync-mode work (v2).
+ *
+ * Older builds stored a boolean `isSyncing` instead of {@link SyncMode}.
+ */
+type LegacyDatabaseConnection = DatabaseConnection & {
+  isSyncing?: boolean;
+};
+
+/**
+ * Map one persisted database connection to the current shape.
+ *
+ * If `syncMode` is already present, the record is returned unchanged. Otherwise
+ * `isSyncing` is converted via {@link syncModeFromLegacyIsSyncing} (default
+ * `true` when the legacy field is absent, matching historical “sync on” default).
+ */
+function migrateDatabaseConnection(
+  database: LegacyDatabaseConnection | undefined
+): DatabaseConnection | undefined {
+  if (!database) {
+    return undefined;
+  }
+  if ('syncMode' in database && database.syncMode) {
+    return database as DatabaseConnection;
+  }
+  const legacyIsSyncing = database.isSyncing ?? true;
+  const {isSyncing: _removed, ...rest} = database;
+  return {
+    ...rest,
+    syncMode: syncModeFromLegacyIsSyncing(legacyIsSyncing),
+  };
+}
+
+/** Apply {@link migrateDatabaseConnection} when a project has an active database. */
+function migrateProjectSyncMode(project: Project): Project {
+  if (!project.database) {
+    return project;
+  }
+  return {
+    ...project,
+    database: migrateDatabaseConnection(
+      project.database as LegacyDatabaseConnection
+    ),
+  };
+}
+
+/**
+ * redux-persist **migration 2**: `database.isSyncing` boolean → `syncMode` enum.
+ *
+ * Expands record replication from on/off to directional modes in app code;
+ * persisted upgrades map the legacy boolean to:
+ * - `isSyncing: true` (or missing) → `'both'`
+ * - `isSyncing: false` → `'none'`
+ *
+ * Does not alter UI definitions, activation flags, or `isInitialised`. Safe on
+ * corrupt inbound state (returns {@link emptyProjectsState}).
+ *
+ * @param state Output of migration 1 (or v0 state that already used `syncMode`)
+ * @returns Projects state with `database.syncMode` on every activated project
+ */
+export function migrateProjectsSyncModeV2(state: unknown): ProjectsState {
+  logMigrationInfo('begin', {persistVersion: 2});
+
+  if (!isPlainObject(state)) {
+    return emptyProjectsState;
+  }
+
+  const inbound = state as unknown as ProjectsState;
+  const servers = inbound.servers ?? {};
+  const migratedServers: ProjectsState['servers'] = {};
+
+  for (const [serverId, server] of Object.entries(servers)) {
+    if (!server) {
+      continue;
+    }
+    const projects: ProjectIdToProjectMap = {};
+    for (const [projectId, project] of Object.entries(server.projects ?? {})) {
+      projects[projectId] = migrateProjectSyncMode(project);
+    }
+    migratedServers[serverId] = {...server, projects};
+  }
+
+  logMigrationInfo('complete', {persistVersion: 2});
+
+  return {
+    ...inbound,
+    servers: migratedServers,
   };
 }

@@ -3,7 +3,7 @@ import {
   migrateNotebook,
   NotebookDefinition,
   normalizeNotebookUiSpecification,
-  ProjectUIModel,
+  UiSpecModel,
 } from '@faims3/data-model';
 import type {ProjectInformation} from '../projectSlice';
 
@@ -13,7 +13,7 @@ import type {ProjectInformation} from '../projectSlice';
  */
 export function notebookDefinitionFromLegacyPersistedProject(project: {
   metadata?: Record<string, unknown>;
-  rawUiSpecification?: ProjectUIModel;
+  rawUiSpecification?: UiSpecModel;
 }): NotebookDefinition {
   const legacyMetadata = project.metadata ?? {};
   const raw = project.rawUiSpecification;
@@ -45,5 +45,6 @@ export function projectInformationFromGetNotebook(
     status: notebook.status,
     updatedAt: notebook.updatedAt,
     uiDefinition,
+    recordCount: notebook.recordCount,
   };
 }

@@ -123,7 +123,7 @@ interface DataViewFieldRenderContext {
   fieldId: string;
   hrid: string; // Human-readable record ID
   record: HydratedRecordDocument;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   trace: DataViewTraceEntry[]; // Nesting history
   tools: DataViewTools; // Navigation, services
   formData: FormUpdateData;

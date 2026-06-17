@@ -655,7 +655,12 @@ export const EditableFormManager: React.FC<
   const navigationButtonsWithAttachmentLock = useMemo(() => {
     return navigationButtons.map(b => {
       const base = isAttachmentSaving
-        ? {...b, disabled: true, loading: true, statusText: 'saving attachment…'}
+        ? {
+            ...b,
+            disabled: true,
+            loading: true,
+            statusText: 'saving attachment…',
+          }
         : b;
       return b.requiresFinishGuard
         ? {...base, onClick: guardFinish(b.onClick)}

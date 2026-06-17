@@ -51,7 +51,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {getDataDb} from '../couchdb';
-import {getProjectUIModel} from '../couchdb/notebooks';
+import {getCompiledUiSpecModel} from '../couchdb/notebooks';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {canDeleteRecord, canEditRecord, canReadRecord} from '../recordAuth';
@@ -140,7 +140,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
 
       try {
         const dataDb = await getDataDb(projectId);
-        const uiSpec = await getProjectUIModel(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
         const engine = new DataEngine({
           dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
           uiSpec,
@@ -194,7 +194,7 @@ recordsRouter.get(
 
     try {
       const dataDb = await getDataDb(projectId);
-      const uiSpec = await getProjectUIModel(projectId);
+      const uiSpec = await getCompiledUiSpecModel(projectId);
       const engine = new DataEngine({
         dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
         uiSpec,
@@ -256,7 +256,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
 
       try {
         const dataDb = await getDataDb(projectId);
-        const uiSpec = await getProjectUIModel(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
         const engine = new DataEngine({
           dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
           uiSpec,
@@ -313,7 +313,7 @@ recordsRouter.get(
 
     try {
       const dataDb = await getDataDb(projectId);
-      const uiSpec = await getProjectUIModel(projectId);
+      const uiSpec = await getCompiledUiSpecModel(projectId);
       const engine = new DataEngine({
         dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
         uiSpec,
@@ -371,7 +371,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
 
       try {
         const dataDb = await getDataDb(projectId);
-        const uiSpec = await getProjectUIModel(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
         const engine = new DataEngine({
           dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
           uiSpec,
@@ -428,7 +428,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
 
       try {
         const dataDb = await getDataDb(projectId);
-        const uiSpec = await getProjectUIModel(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
         const engine = new DataEngine({
           dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
           uiSpec,

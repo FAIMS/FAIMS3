@@ -22,6 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
+import {DateTimeFieldProps} from '@faims3/forms';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
@@ -54,11 +55,9 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
-  const isAutoPick =
-    field['component-parameters'].isAutoPick ??
-    field['component-parameters'].is_auto_pick ??
-    false;
-  const showNowButton = field['component-parameters'].show_now_button ?? false;
+  const params = field['component-parameters'] as DateTimeFieldProps;
+  const isAutoPick = params.isAutoPick ?? params.is_auto_pick ?? false;
+  const showNowButton = params.show_now_button ?? false;
 
   return (
     <BaseFieldEditor fieldName={fieldName}>

@@ -21,6 +21,8 @@
 import {StateWithHistory} from 'redux-undo';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  type BaseFieldParameters,
+  type FieldDefinition,
   type NotebookDefinition,
   type NotebookInformation,
   type NotebookMetadata,
@@ -36,112 +38,46 @@ export type {
   NotebookSettings,
 };
 
-/** Merged props for FAIMS form components (`component-parameters` in notebook JSON). */
-export type ComponentParameters = {
-  fullWidth?: boolean;
-  name?: string;
-  id?: string;
-  helperText?: string;
-  helpertext?: string; // was allowed for TakePhoto
-  advancedHelperText?: string;
-  variant?: string;
-  label?: string;
-  multiline?: boolean;
-  multiple?: boolean;
-  SelectProps?: unknown;
-  ElementProps?: {
-    expandedChecklist?: boolean;
-    // These items must correspond to values in the options[]. Only one of such
-    // can be selecting, greying out/excluding other options
-    exclusiveOptions?: string[];
-    enableOtherOption?: boolean;
-    otherOptionPosition?: number;
-    options?: {
-      value: string;
-      label: string;
-      RadioProps?: unknown;
-    }[];
-    optiontree?: unknown;
-  };
-  InputLabelProps?: {label: string};
-  InputProps?: {rows?: number; type?: string};
-  FormLabelProps?: {children?: string};
-  FormHelperTextProps?: {children?: string};
-  FormControlLabelProps?: {label: string};
-  // default false
-  allowSetToCurrentPoint?: boolean;
-  initialValue?: unknown;
-  related_type?: string;
-  hideCreateAnotherButton?: boolean;
-  relation_type?: string;
-  related_type_label?: string;
-  relation_linked_vocabPair?: [string, string][];
-  numberType?: 'integer' | 'floating';
-  required?: boolean;
-  template?: string;
-  num_digits?: number;
-  form_id?: string;
-  isAutoPick?: boolean;
-  is_auto_pick?: boolean;
-  show_now_button?: boolean;
-  zoom?: number;
-  featureType?: string;
-  buttonLabelText?: string;
-  variant_style?: string;
-  html_tag?: string;
-  content?: string;
-  hrid?: boolean;
-  select?: boolean;
-  geoTiff?: string;
-  type?: string;
-  min?: number;
-  max?: number;
-  rows?: number;
-  valuetype?: string;
-  protection?: 'protected' | 'allow-hiding' | 'none';
-  hidden?: boolean;
-  allowLinkToExisting?: boolean;
-  /** Enable speech-to-text input (default: true) */
-  enableSpeech?: boolean;
-  /** Whether to append speech to existing text or replace */
-  speechAppendMode?: boolean;
-  /** Enable online address auto-suggestion providers */
-  enableAutoSuggestion?: boolean;
-  /** Allow manual structured address entry as fallback */
-  allowFullAddressManualEntry?: boolean;
+/**
+ * The component-parameters envelope shared by every designer field.
+ *
+ * It guarantees the {@link BaseFieldParameters} common to all fields and leaves
+ * the remaining per-field-type parameters open (`unknown`). Each editor narrows
+ * this envelope to the precise props type its field exports from
+ * `@faims3/forms` (e.g. `NumberFieldProps`, `ChoiceElementProps`) rather than
+ * the designer maintaining a duplicate flattened union of every field's params.
+ */
+export type ComponentParametersEnvelope = BaseFieldParameters & {
+  [key: string]: unknown;
 };
 
-/** Single field definition: component binding, parameters, optional visibility condition. */
-export type FieldType = {
-  'component-namespace': string;
-  'component-name': string;
-  'type-returned': string;
-  'component-parameters': ComponentParameters;
-  initialValue?: unknown;
-  access?: string[];
+/**
+ * Single field definition as used in the designer.
+ *
+ * The canonical runtime shape lives in `@faims3/data-model`
+ * ({@link FieldDefinition}); here we only add the designer-specific authoring
+ * and field-chooser metadata, and narrow two properties:
+ * - `component-parameters` to the {@link ComponentParametersEnvelope} (base
+ *   params + open extras), and
+ * - `condition` to the designer's {@link ConditionType} (allowing `null`).
+ */
+export type FieldType = Omit<
+  FieldDefinition,
+  'component-parameters' | 'condition'
+> & {
+  'component-parameters': ComponentParametersEnvelope;
   condition?: ConditionType | null;
-  persistent?: boolean;
-  displayParent?: boolean;
+
+  // Designer-only authoring / field-chooser metadata (not part of the runtime
+  // field definition).
   designerIdentifier?: string;
   humanReadableName?: string;
-  category?: string;
-
   humanReadableDescription?: string;
+  category?: string;
   showInChooser?: boolean;
   order?: number;
   deprecated?: boolean;
   deprecationMessage?: string;
-
-  meta?: {
-    annotation: {
-      include: boolean;
-      label: string;
-    };
-    uncertainty: {
-      include: boolean;
-      label: string;
-    };
-  };
 };
 
 /** Editable UI spec body: fields, sections (`views`), forms (`viewsets`), settings, schema version. */
@@ -151,7 +87,6 @@ export type NotebookUISpec = {
     [key: string]: {
       fields: string[];
       description?: string;
-      uidesign?: string;
       label: string;
       condition?: ConditionType;
     };

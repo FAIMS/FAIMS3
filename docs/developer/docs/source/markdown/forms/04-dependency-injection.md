@@ -88,7 +88,7 @@ Factory functions allow:
 
 ```typescript
 interface DataEngine {
-  uiSpec: ProjectUIModel;
+  uiSpec: UiSpecModel;
 
   form: {
     createRecord(params): Promise<RecordResult>;

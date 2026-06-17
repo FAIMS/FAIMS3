@@ -1,16 +1,27 @@
 import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
 import {
-  BaseFieldProps,
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+  BaseFieldParameters,
+  BaseFieldParametersSchema,
+} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
+export const TemplatedStringPropsSchema = BaseFieldParametersSchema.extend({
+  /** Mustache template rendered into the field's read-only value. */
+  template: z.string().optional(),
+  /** Legacy label container retained for un-migrated templated-string fields. */
+  InputLabelProps: z
+    .object({label: z.string().optional()})
+    .passthrough()
+    .optional(),
+});
+export type TemplatedStringProps = z.infer<typeof TemplatedStringPropsSchema>;
+
 const TemplatedStringField = (
-  props: BaseFieldProps & FormFieldContextProps
+  props: BaseFieldParameters & FormFieldContextProps
 ) => {
   const rawValue = props.state.value?.data ?? undefined;
   const value: string | undefined = rawValue as string | undefined;
@@ -49,7 +60,7 @@ export const templatedStringFieldSpec: FieldInfo = {
   name: 'TemplatedStringField',
   returns: 'faims-core::String',
   component: TemplatedStringField,
-  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldPropsSchema: TemplatedStringPropsSchema,
   fieldDataSchemaFunction: valueSchema,
   view: {component: DefaultRenderer, config: {}},
 };

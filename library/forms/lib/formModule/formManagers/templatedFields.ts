@@ -1,7 +1,7 @@
 import {
   getFieldToIdsMap,
   HydratedRecordDocument,
-  UISpecification,
+  UiSpecModel,
   ValuesObject,
 } from '@faims3/data-model';
 import Mustache from 'mustache';
@@ -187,7 +187,7 @@ function valueForTemplateExpansion({
 }: {
   fieldName: string;
   value: unknown;
-  uiSpecification: UISpecification;
+  uiSpecification: UiSpecModel;
 }): unknown {
   const fieldDetails = uiSpecification.fields[fieldName];
   if (!fieldDetails) {
@@ -233,7 +233,7 @@ function renderTemplate({
   values: ValuesObject;
   context: RecordContext;
   excludedFields: string[];
-  uiSpecification: UISpecification;
+  uiSpecification: UiSpecModel;
 }): string {
   // generate context vars from record context
   const contextVars = contextToTemplate(context);
@@ -275,7 +275,7 @@ export function recomputeDerivedFields({
   context,
 }: {
   values: ValuesObject;
-  uiSpecification: UISpecification;
+  uiSpecification: UiSpecModel;
   formId: string;
   context: RecordContext;
 }): {changes: boolean; updates: Record<string, string>} {
@@ -358,7 +358,7 @@ export function onChangeTemplatedFields({
 }: {
   form: FaimsForm;
   formId: string;
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   context: RecordContext;
   runListeners: boolean;
 }): boolean {

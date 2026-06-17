@@ -1,5 +1,6 @@
 import {
   Action,
+  CompiledNotebookUiSpec,
   DatabaseInterface,
   DataDbType,
   DataDocument,
@@ -7,8 +8,7 @@ import {
   fetchAndHydrateRecord,
   isAuthorized,
   MinimalRecordMetadata,
-  NotebookUiSpec,
-  ProjectUIModel,
+  UiSpecModel,
 } from '@faims3/data-model';
 import {QueryClient, useQuery} from '@tanstack/react-query';
 import _ from 'lodash';
@@ -429,7 +429,7 @@ export const useRecordList = ({
   projectId: string;
   filterDeleted: boolean;
   metadataRefreshIntervalMs?: number | undefined | false;
-  uiSpecification: NotebookUiSpec;
+  uiSpecification: CompiledNotebookUiSpec;
   enableProfiling?: boolean;
 }) => {
   // Profiling helper
@@ -632,7 +632,7 @@ export const useIndividualHydratedRecord = ({
   projectId: string;
   recordId: string;
   revisionId: string;
-  uiSpec: ProjectUIModel;
+  uiSpec: UiSpecModel;
 }) => {
   // Work out our context e.g. active user, token, data db etc
   const activeUser = useAppSelector(selectActiveUser);
@@ -785,7 +785,7 @@ export const useUiSpecLayout = ({
   dataDb,
 }: {
   recordId: string;
-  uiSpec: NotebookUiSpec;
+  uiSpec: CompiledNotebookUiSpec;
   dataDb: DataDbType;
 }) => {
   // Query to fetch the relevant viewset

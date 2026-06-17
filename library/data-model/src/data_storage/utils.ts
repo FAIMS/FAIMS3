@@ -178,7 +178,7 @@ export async function batchWriteDocuments<T extends {}>({
             doc._rev = existing._rev;
             await db.put(doc);
             successful++;
-          } catch (conflictErr) {
+          } catch (_conflictErr) {
             console.warn(`Failed to resolve conflict for ${doc._id}`);
             failed++;
           }
