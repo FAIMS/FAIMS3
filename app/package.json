@@ -86,7 +86,7 @@
     "jsonpointer": "5.0.1",
     "levelup": "^5.1.1",
     "lodash": "4.18.1",
-    "markdown-it": "^14.1.1",
+    "markdown-it": "^14.2.0",
     "moment": "2.29.4",
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",

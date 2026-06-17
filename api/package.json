@@ -48,7 +48,7 @@
     "handlebars": "4.7.9",
     "istanbul": "^0.4.5",
     "jose": "^4.15.5",
-    "markdown-it": "^14.1.1",
+    "markdown-it": "^14.2.0",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
     "node-cache": "^5.1.2",
