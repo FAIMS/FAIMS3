@@ -1,7 +1,7 @@
 # Select one option
 
-*How to add and configure a Select one option field in the {{Notebook}}
-Editor.*
+_How to add and configure a Select one option field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -55,8 +55,8 @@ structure to the Select Field. Below the Markdown syntax info banner,
 you will find the **Add Option** input and a table listing all current
 options.
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting          | What It Does                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------- |
 | **Options list** | The choices displayed as radio buttons. Each option appears as a row in the table. |
 
 **Managing options:**

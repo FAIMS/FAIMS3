@@ -1,7 +1,7 @@
 # Auto Incrementing Field
 
-*How to add and configure an Auto Incrementing Field in the {{Notebook}}
-Editor.*
+_How to add and configure an Auto Incrementing Field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -47,8 +47,8 @@ Field ID, and add any desired Helper Text.
 
 The Auto Incrementing Field provides one configurable setting:
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting                            | What It Does                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **Number of digits in identifier** | The number of digits in the generated identifier, with leading zeros for padding (e.g., 5 digits produces "00001"). |
 
 ### Shared Field Options

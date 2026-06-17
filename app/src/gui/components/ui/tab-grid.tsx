@@ -12,7 +12,11 @@ import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
-import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
+import {
+  ACTIVATED_LABEL,
+  NOT_ACTIVATED_LABEL,
+  notebookListDataGridSx,
+} from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
 
 /**
@@ -43,14 +47,20 @@ export default function TabProjectGrid({
   // we need a state variable to track pagination model since we want to use a
   // controlled component style to force pagination to behave how we want
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 1,
+    page: 0,
     pageSize: projects.length,
   });
 
   // Update pagination settings when the projects changes
   useEffect(() => {
-    setPaginationModel({page: 1, pageSize: projects.length});
-  }, [projects]);
+    setPaginationModel(prev => {
+      const next = {page: 0, pageSize: projects.length};
+      if (prev.page === next.page && prev.pageSize === next.pageSize) {
+        return prev;
+      }
+      return next;
+    });
+  }, [projects.length]);
 
   const history = useNavigate();
 
@@ -70,12 +80,12 @@ export default function TabProjectGrid({
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
         <TabList
           onChange={(_, value: string) => handleChange(value)}
-          TabIndicatorProps={{
-            style: {
+          sx={{
+            backgroundColor: theme.palette.background.tabsBackground,
+            '& .MuiTabs-indicator': {
               backgroundColor: theme.palette.secondary.contrastText,
             },
           }}
-          sx={{backgroundColor: theme.palette.background.tabsBackground}}
         >
           {['1', '2'].map(tab => (
             <Tab
@@ -95,13 +105,17 @@ export default function TabProjectGrid({
       </Box>
       {['1', '2'].map(tab => (
         <TabPanel key={tab} value={tab} sx={{px: 0}}>
-          <div style={{flexGrow: 1}}>
+          <div style={{width: '100%', minWidth: 0}}>
             <DataGrid
               onRowClick={handleRowClick}
               key={`notebook_list_datagrid_${tab}`}
               rows={tab === '1' ? activatedProjects : availableProjects}
               columns={tab === '1' ? activatedColumns : notActivatedColumns}
-              sx={{cursor: tab === '1' ? 'pointer' : 'default'}}
+              sx={{
+                width: '100%',
+                cursor: tab === '1' ? 'pointer' : 'default',
+                ...notebookListDataGridSx,
+              }}
               getRowId={({projectId}) => projectId}
               rowHeight={75}
               hideFooter

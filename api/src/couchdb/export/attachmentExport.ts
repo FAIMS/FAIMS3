@@ -5,7 +5,7 @@ import {
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {getDataDb, getNanoDataDb} from '..';
-import {getProjectUIModel} from '../notebooks';
+import {getUiSpecModel} from '../notebooks';
 import {
   MAX_FIELD_ID_LENGTH,
   MAX_HRID_LENGTH,
@@ -65,7 +65,7 @@ export const appendAttachmentsToArchive = async ({
   };
 
   // Get UI spec to know all valid view IDs
-  const uiSpec = await getProjectUIModel(projectId);
+  const uiSpec = await getUiSpecModel(projectId);
   const allViewIds = Object.keys(uiSpec.viewsets);
 
   // Initialize per-view counts
@@ -427,11 +427,17 @@ export const generateFilenameForAttachment = ({
     'text/plain': 'txt',
     'application/pdf': 'pdf',
     'application/json': 'json',
+    'audio/mp4': 'm4a',
+    'audio/webm': 'webm',
+    'audio/ogg': 'ogg',
+    'audio/mpeg': 'mp3',
+    'audio/wav': 'wav',
   };
 
   // Determine MIME type from File object or explicit parameter
-  const type = file?.type || fileMimeType || undefined;
-
+  const rawType = file?.type || fileMimeType || undefined;
+  // Strip codec suffixes (e.g. "audio/webm;codecs=opus" -> "audio/webm")
+  const type = rawType?.split(';')[0].trim();
   // Look up extension, default to 'dat' for unknown types
   const extension = type ? (fileTypes[type] ?? 'dat') : 'dat';
 

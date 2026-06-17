@@ -1,4 +1,3 @@
-
 # Demonstration Notebooks
 
 The following notebooks are available for all users:
@@ -8,10 +7,10 @@ The following notebooks are available for all users:
 
 Click on the links about for detailed instructions for using each {{Notebook}}.
 
-````{warning}
+```{warning}
 1. Other users will be able to see all records that you create in the demonstration {{notebooks}}
 2. The demo server is wiped frequently and records are deleted. Do not collect real data in demonstration {{notebooks}}.
-````
+```
 
 ```{toctree}
 ---

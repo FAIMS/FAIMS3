@@ -41,8 +41,10 @@ flowchart LR
 ### Structure
 
 ```typescript
-const FieldSpecList: FieldInfo[] = [
+// Canonical field specifications. To add a new field type, add it here.
+const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   textFieldSpec,
+  emailFieldSpec,
   richTextFieldSpec,
   selectFieldSpec,
   takePhotoFieldSpec,
@@ -54,18 +56,39 @@ const FieldSpecList: FieldInfo[] = [
   checkboxFieldSpec,
   radioGroupFieldSpec,
   takePointFieldSpec,
+  mapFieldSpec,
+  qrCodeFieldSpec,
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
+  percentageSliderFieldSpec,
+  numberFieldSpec,
+  addressFieldSpec,
+  audioRecorderFieldSpec,
 ];
 
 const FIELD_REGISTRY: Map<string, FieldInfo> = new Map();
 
 // Build registry on module load
 for (const spec of FieldSpecList) {
-  const key = `${spec.namespace}::${spec.name}`;
-  FIELD_REGISTRY.set(key, spec);
+  FIELD_REGISTRY.set(`${spec.namespace}::${spec.name}`, spec);
 }
 ```
 
+### Legacy aliases
+
+Some old `namespace::name` keys are remapped to a canonical spec for backward
+compatibility with un-migrated notebooks (e.g. `faims-custom::FAIMSTextField`
+and `formik-material-ui::MultipleTextField` both resolve to the unified
+`textFieldSpec`; `ControlledNumber` → `numberFieldSpec`; `DateTimeNow` →
+`dateTimePickerFieldSpec`). The same spec object is shared — there are no
+duplicated definitions. See `LEGACY_FIELD_ALIASES` in `registry.ts`.
+
 ### Resolution
+
+Resolution always succeeds: an unknown `namespace::name` falls back to the text
+field (rather than returning `undefined`), and the caller is told whether a
+fallback occurred.
 
 ```typescript
 export const getFieldInfo = ({
@@ -74,9 +97,11 @@ export const getFieldInfo = ({
 }: {
   namespace: string;
   name: string;
-}): FieldInfo | undefined => {
+}): {fieldInfo: FieldInfo<any>; fallback: boolean} => {
   const key = `${namespace}::${name}`;
-  return FIELD_REGISTRY.get(key);
+  const fieldInfo = FIELD_REGISTRY.get(key);
+  if (fieldInfo) return {fieldInfo, fallback: false};
+  return {fieldInfo: textFieldSpec, fallback: true};
 };
 ```
 
@@ -140,18 +165,22 @@ this type. Should correspond to the props that designer allows.
 
 ```typescript
 import {z} from 'zod';
-import {BaseFieldPropsSchema} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
 
-const myFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const myFieldPropsSchema = BaseFieldParametersSchema.extend({
   // Add field-specific props
   placeholder: z.string().optional(),
   maxLength: z.number().optional(),
   customOption: z.boolean().default(false),
 });
 
-type MyFieldProps = z.infer<typeof myFieldPropsSchema>;
+export type MyFieldProps = z.infer<typeof myFieldPropsSchema>;
 type MyFieldFullProps = MyFieldProps & FormFieldContextProps;
 ```
+
+Export the schema and `MyFieldProps`, and surface them from
+`lib/fieldRegistry/fieldParams.ts`, so the designer's editor can be typed against
+the same contract. Define each once — avoid alias re-exports.
 
 ### Step 3: Implement Edit Component
 
@@ -275,12 +304,15 @@ const FieldSpecList: FieldInfo[] = [
 ];
 ```
 
-## Base Field Props
+## Base Field Parameters
 
-All fields inherit these props:
+All fields inherit these parameters. The schema is the single source of truth
+for the base parameter envelope and lives in `@faims3/data-model` (so both the
+forms layer and the designer reference one definition):
 
 ```typescript
-const BaseFieldPropsSchema = z.object({
+// @faims3/data-model
+export const BaseFieldParametersSchema = z.object({
   label: z.string().optional(),
   name: z.string(),
   helperText: z.string().optional(),
@@ -288,7 +320,11 @@ const BaseFieldPropsSchema = z.object({
   advancedHelperText: z.string().optional(),
   disabled: z.boolean().optional(),
 });
+export type BaseFieldParameters = z.infer<typeof BaseFieldParametersSchema>;
 ```
+
+`FullFieldProps` (in `lib/formModule/types.ts`) is simply
+`BaseFieldParameters & FormFieldContextProps`.
 
 ## FormFieldContextProps
 

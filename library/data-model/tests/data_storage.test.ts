@@ -94,7 +94,7 @@ describe('round-trip reading and writing to db', () => {
       fc.pre(name.trim() !== '');
       try {
         await cleanDataDBS();
-      } catch (err) {
+      } catch {
         fail('Failed to clean dbs');
       }
 
@@ -138,7 +138,7 @@ describe('round-trip reading and writing to db', () => {
 test('updating an existing record with extended data', async () => {
   try {
     await cleanDataDBS();
-  } catch (err) {
+  } catch {
     fail('Failed to clean dbs');
   }
 
@@ -238,7 +238,7 @@ describe('CRUD for data', () => {
       fc.pre(name.trim() !== '');
       try {
         await cleanDataDBS();
-      } catch (err) {
+      } catch {
         fail('Failed to clean dbs');
       }
 
@@ -366,7 +366,7 @@ describe('listing revisions', () => {
     fc.pre(name.trim() !== '');
     try {
       await cleanDataDBS();
-    } catch (err) {
+    } catch {
       fail('Failed to clean dbs');
     }
 

@@ -2,21 +2,21 @@ import {API_URL, REFRESH_INTERVAL, WEB_URL} from '@/constants';
 import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
+  GetCurrentUserResponse,
   PutLogoutInput,
   TokenContents,
   TokenPayload,
 } from '@faims3/data-model';
+import {nowMs} from '@/lib/time';
 import {jwtDecode} from 'jwt-decode';
 import {createContext, useContext, useEffect, useState} from 'react';
 
+/**
+ * Authenticated session: JWT plus the user payload from GET /api/users/current
+ * ({@link GetCurrentUserResponse} — no `profiles`; admin list rows use {@link GetListAllUsersItem}).
+ */
 export interface User {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    isVerified: boolean;
-    profiles: Map<string, boolean>;
-  };
+  user: GetCurrentUserResponse;
   token: string;
   refreshToken: string;
   decodedToken: TokenContents | null;
@@ -52,7 +52,7 @@ function decodeToken(token: string): TokenContents | null {
     const payload = jwtDecode<TokenPayload & {exp: number}>(token);
 
     // Minute buffer is considered expired
-    if (payload.exp * 1000 < Date.now() - 60 * 1000) {
+    if (payload.exp * 1000 < nowMs() - 60 * 1000) {
       console.error('Access token has expired.');
       return null;
     }
@@ -111,7 +111,7 @@ export const isUserExpired = (user: User | null) => {
   // Safe backout if no token present
   if (!user || !user.decodedToken || !user.token) return true;
   // Consider a token expired if it's within 1 minute of expiry
-  return user.decodedToken.exp * 1000 < Date.now();
+  return user.decodedToken.exp * 1000 < nowMs();
 };
 
 /**
@@ -179,12 +179,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       const userData = await getCurrentUser({token});
       const decodedToken = decodeToken(token);
 
-      const updatedUser = {
+      const updatedUser: User = {
         user: userData,
         token,
         refreshToken,
         decodedToken,
-      } satisfies User;
+      };
 
       setStoredUser(updatedUser);
       setUser(updatedUser);
@@ -231,12 +231,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       console.error('Failed to fetch updated user data!', e);
     }
 
-    const updatedUser = {
+    const updatedUser: User = {
       user: userData,
       token,
       refreshToken: user.refreshToken,
       decodedToken,
-    } satisfies User;
+    };
 
     setStoredUser(updatedUser);
     setUser(updatedUser);

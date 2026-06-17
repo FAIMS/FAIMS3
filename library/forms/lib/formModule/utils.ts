@@ -4,7 +4,7 @@ import {
   FormRelationshipInstance,
   getViewsForViewSet,
   HydratedRevisionDocument,
-  UISpecification,
+  UiSpecModel,
 } from '@faims3/data-model';
 import {getFieldInfo} from '../fieldRegistry';
 import {FieldVisibilityMap} from './formManagers/types';
@@ -50,7 +50,7 @@ export interface ImpliedRelationship {
 export async function getImpliedNavigationRelationships(
   revision: HydratedRevisionDocument,
   engine: DataEngine,
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): Promise<ImpliedRelationship[]> {
   const results: ImpliedRelationship[] = [];
 
@@ -60,10 +60,13 @@ export async function getImpliedNavigationRelationships(
   const hydrateRelationship = async (
     rel: FormRelationshipInstance,
     type: 'parent' | 'linked'
-  ): Promise<ImpliedRelationship> => {
+  ): Promise<ImpliedRelationship | null> => {
     const hydrated = await engine.hydrated.getHydratedRecord({
       recordId: rel.recordId,
     });
+    if (hydrated.revision.deleted) {
+      return null;
+    }
     const formLabel =
       uiSpec.viewsets[hydrated.record.formId]?.label ?? hydrated.record.formId;
 
@@ -87,7 +90,9 @@ export async function getImpliedNavigationRelationships(
         hydrateRelationship(rel, 'parent')
       )
     );
-    results.push(...parentResults);
+    results.push(
+      ...parentResults.filter((r): r is ImpliedRelationship => r !== null)
+    );
   }
 
   // Process all linked relationships in parallel
@@ -100,7 +105,9 @@ export async function getImpliedNavigationRelationships(
         hydrateRelationship(rel, 'linked')
       )
     );
-    results.push(...linkedResults);
+    results.push(
+      ...linkedResults.filter((r): r is ImpliedRelationship => r !== null)
+    );
   }
 
   return results;
@@ -140,13 +147,14 @@ export function completion({
   data,
   visibilityMap,
 }: {
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   formId: string;
   data: FaimsFormData;
   visibilityMap: FieldVisibilityMap;
 }): CompletionResult {
   let fieldCount = 0;
   let completedCount = 0;
+  const incompleteRequired: string[] = [];
 
   const allViews = getViewsForViewSet(uiSpec, formId);
   for (const sectionId of allViews) {
@@ -179,15 +187,11 @@ export function completion({
 
       // Get the form data for this field
       const fieldData = data?.[fieldId];
-      if (!fieldData) {
-        // no data for this field so it's not complete
-        continue;
-      }
-
-      // Check if the field is complete
-      const isComplete = completionFunc(fieldData);
+      const isComplete = !!fieldData && completionFunc(fieldData);
       if (isComplete) {
         completedCount += 1;
+      } else {
+        incompleteRequired.push(fieldId);
       }
     }
   }
@@ -198,12 +202,14 @@ export function completion({
       progress: 1.0,
       requiredCount: 0,
       completedCount: 0,
+      incompleteRequired: [],
     };
   }
 
   return {
     progress: completedCount / fieldCount,
     requiredCount: fieldCount,
-    completedCount: completedCount,
+    completedCount,
+    incompleteRequired,
   };
 }

@@ -1,7 +1,7 @@
 import {
   getFieldLabel,
   getFieldsForView,
-  type UISpecification,
+  type UiSpecModel,
 } from '@faims3/data-model';
 import {
   Box,
@@ -17,10 +17,10 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import SyncIcon from '@mui/icons-material/Sync';
 import {useStore} from '@tanstack/react-form';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
+import {logError} from '../../logging';
 import {
   FieldVisibilityMap,
   FormManagerConfig,
@@ -29,7 +29,6 @@ import {
 import {FaimsForm} from '../types';
 import {getFieldId} from '../utils';
 import {FormSection} from './FormSection';
-import {logError} from '../../logging';
 
 // ============================================================================
 // Constants
@@ -116,10 +115,7 @@ const scrollToElement = (element: HTMLElement | null): void => {
  * @param sectionId - The identifier of the section/view
  * @returns The display label for the section
  */
-const getSectionLabel = (
-  uiSpec: UISpecification,
-  sectionId: string
-): string => {
+const getSectionLabel = (uiSpec: UiSpecModel, sectionId: string): string => {
   return uiSpec.views[sectionId]?.label ?? sectionId;
 };
 
@@ -138,7 +134,7 @@ const getSectionLabel = (
 const groupErrorsBySection = (
   errors: Record<string, string[]>,
   sections: string[],
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): Record<string, string[]> => {
   const result: Record<string, string[]> = {};
 
@@ -210,7 +206,7 @@ const getStepColor = (
 const checkHasErrors = (
   sectionId: string,
   errors: Record<string, string[]>,
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): boolean => {
   const fields = getFieldsForView(uiSpec, sectionId);
   return Object.keys(errors).some(errorField => fields.includes(errorField));
@@ -231,7 +227,7 @@ const checkHasErrors = (
 const checkSectionVisited = (
   sectionId: string,
   fieldMeta: Record<string, {isTouched: boolean; errors: unknown[]}>,
-  uiSpec: UISpecification
+  uiSpec: UiSpecModel
 ): boolean => {
   const fields = getFieldsForView(uiSpec, sectionId);
   return fields.some(fieldName => fieldMeta[fieldName]?.isTouched === true);
@@ -294,7 +290,7 @@ interface ErrorSummaryPanelProps {
   /** Map of field names to their validation error messages */
   errors: Record<string, string[]>;
   /** UI specification for field label lookups */
-  uiSpec: UISpecification;
+  uiSpec: UiSpecModel;
   /** Currently active/visible section ID */
   activeSection: string;
   /** All section IDs in display order */
@@ -629,7 +625,7 @@ interface TabbedSectionDisplayProps {
   /** Unique identifier for this form within the viewsets */
   formId: string;
   /** UI specification defining form structure, fields, and views */
-  spec: UISpecification;
+  spec: UiSpecModel;
   /** Configuration for the form manager (renderers, validators, etc.) */
   config: FormManagerConfig;
   /**
@@ -797,6 +793,19 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
     }
   }, [visibleSections, activeSection]);
 
+  // kkeep section in sync with an externally selected section id
+  // from Designer (when provided).
+  const previewSectionId =
+    config.mode === 'preview' ? config.previewSectionId : undefined;
+  useEffect(() => {
+    if (config.mode !== 'preview') return;
+    const targetSection = previewSectionId;
+    if (!targetSection) return;
+    if (!visibleSections.includes(targetSection)) return;
+    if (targetSection === activeSection) return;
+    setActiveSection(targetSection);
+  }, [config.mode, previewSectionId, visibleSections, activeSection]);
+
   /**
    * Optionally marks all fields in the current section as touched and triggers validation.
    *
@@ -933,7 +942,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         // ================================================================
         // Desktop View - Horizontal tabs with step indicators
         // ================================================================
-        <Box py={1}>
+        <Box sx={{py: 1}}>
           <Box
             sx={{
               overflowX: 'visible',

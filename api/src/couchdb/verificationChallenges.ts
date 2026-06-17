@@ -13,9 +13,9 @@ import {
   VerificationChallengeExistingDocument,
   VerificationChallengeFields,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
+import {expiryMsFromNow, nowMs} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
@@ -26,19 +26,6 @@ const VERIFICATION_CHALLENGE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum number of verification attempts
 const VERIFICATION_RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours window for rate limiting
 const VERIFICATION_COOLDOWN_MS = 30 * 60 * 1000; // 30 minute cooldown after max attempts
-
-/**
- * Generates an expiry timestamp for a verification challenge.
- *
- * This function calculates the expiry timestamp based on the current time
- * and a predefined expiry duration.
- *
- * @param expiryMs The duration in milliseconds until the challenge expires
- * @returns {number} The expiry timestamp in milliseconds since the Unix epoch.
- */
-function generateExpiryTimestamp(expiryMs: number): number {
-  return Date.now() + expiryMs;
-}
 
 /**
  * Creates a new email verification challenge for a given user.
@@ -65,10 +52,10 @@ export const createVerificationChallenge = async ({
   const hash = hashChallengeCode(code);
 
   // Create a unique document ID with the verification prefix
-  const dbId = AUTH_RECORD_ID_PREFIXES.verification + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.verification + crypto.randomUUID();
 
   // Calculate expiry timestamp
-  const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
+  const expiryTimestampMs = expiryMsFromNow(expiryMs);
 
   // Create the verification challenge document
   const newVerificationChallenge: VerificationChallengeFields = {
@@ -78,7 +65,7 @@ export const createVerificationChallenge = async ({
     code: hash,
     used: false,
     expiryTimestampMs,
-    createdTimestampMs: Date.now(),
+    createdTimestampMs: nowMs(),
   };
 
   // Save the document to the database

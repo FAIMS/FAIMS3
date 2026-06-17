@@ -151,8 +151,8 @@ export default function ClusterCard(props: ClusterCardProps) {
     <MainCard
       title={
         <Grid container>
-          <Grid item xs>
-            <Typography variant={'h4'} fontWeight={700} sx={{mb: 0}}>
+          <Grid size="grow">
+            <Typography variant={'h4'} sx={{mb: 0, fontWeight: 700}}>
               {props.listing_name}
             </Typography>
             <Typography variant={'subtitle1'}>
@@ -189,7 +189,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                     },
                   }}
                 >
-                  Add New User
+                  Add another account
                 </Button>
               </Box>
               <Divider sx={{my: 2}} />
@@ -224,15 +224,17 @@ export default function ClusterCard(props: ClusterCardProps) {
                   {/* User Header - Username, Active Status, and Action Button */}
                   <Stack
                     direction={isMobile ? 'column' : 'row'}
-                    alignItems={isMobile ? 'flex-start' : 'center'}
-                    justifyContent="space-between"
                     spacing={1}
+                    sx={{
+                      alignItems: isMobile ? 'flex-start' : 'center',
+                      justifyContent: 'space-between',
+                    }}
                   >
                     <Stack
                       direction="row"
-                      alignItems="center"
                       spacing={1}
                       sx={{
+                        alignItems: 'center',
                         width: isMobile ? '100%' : 'auto',
                         justifyContent: isMobile
                           ? 'space-between'
@@ -386,12 +388,14 @@ export default function ClusterCard(props: ClusterCardProps) {
             anchorEl={anchorEl}
             open={open}
             onClose={handleActionMenuClose}
-            PaperProps={{
-              elevation: 3,
-              sx: {
-                minWidth: 200,
-                maxWidth: '90vw',
-                mt: 1,
+            slotProps={{
+              paper: {
+                elevation: 3,
+                sx: {
+                  minWidth: 200,
+                  maxWidth: '90vw',
+                  mt: 1,
+                },
               },
             }}
             transformOrigin={{horizontal: 'right', vertical: 'top'}}

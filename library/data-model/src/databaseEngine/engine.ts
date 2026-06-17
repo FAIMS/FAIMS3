@@ -1,8 +1,11 @@
-import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
-import {DatabaseInterface, UISpecification} from '../types';
-import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
-import {differenceSets} from '../utils';
+import {DatabaseInterface} from '../types';
+import {
+  CompiledNotebookUiSpec,
+  getHridFieldMap,
+  HridFieldMap,
+} from '../uiSpecification';
+import {differenceSets, randomUuid} from '../utils';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
@@ -67,7 +70,7 @@ function getCurrentTimestamp(): string {
  * @returns A new UUID-based record ID
  */
 export function generateRecordID(): string {
-  return 'rec-' + uuidv4();
+  return 'rec-' + randomUuid();
 }
 
 /**
@@ -76,7 +79,7 @@ export function generateRecordID(): string {
  * @returns A new UUID-based revision ID
  */
 export function generateRevisionID(): string {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 /**
@@ -85,7 +88,7 @@ export function generateRevisionID(): string {
  * @returns A new UUID-based AVP ID
  */
 export function generateAvpID(): string {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -94,7 +97,7 @@ export function generateAvpID(): string {
  * @returns A new UUID-based Attachment ID
  */
 export function generateAttID(): string {
-  return 'att-' + uuidv4();
+  return 'att-' + randomUuid();
 }
 
 /**
@@ -139,7 +142,7 @@ export interface DataEngineConfig {
   // The name of the PouchDB database
   dataDb: DatabaseInterface<DataDocument>;
   // UI Specification related to this project
-  uiSpec: UISpecification;
+  uiSpec: CompiledNotebookUiSpec;
 }
 
 // What options for conflict?
@@ -181,7 +184,7 @@ export class DataEngine {
    * UI Specification
    * NOTE: Currently unused, but placeholder for future where we may validate.
    */
-  public readonly uiSpec: UISpecification;
+  public readonly uiSpec: CompiledNotebookUiSpec;
 
   /**
    * Query operations - optimised bulk data retrieval using views
@@ -205,6 +208,22 @@ export class DataEngine {
       this.query,
       this.uiSpec
     );
+  }
+
+  /**
+   * Deletes a record by appending a new head revision with {@link deleted} set.
+   * Existing field data and relationship are carried forward from {@link baseRevisionId}.
+   */
+  async deleteRecord({
+    recordId,
+    baseRevisionId,
+    userId,
+  }: {
+    recordId: string;
+    baseRevisionId: string;
+    userId: string;
+  }): Promise<string> {
+    return this.form.deleteRecord({recordId, baseRevisionId, userId});
   }
 }
 
@@ -702,7 +721,7 @@ class HydratedOperations {
 
   constructor(
     private readonly core: CoreOperations,
-    private readonly uiSpec: UISpecification
+    private readonly uiSpec: CompiledNotebookUiSpec
   ) {
     this.hridFieldMap = getHridFieldMap(this.uiSpec);
   }
@@ -906,6 +925,11 @@ class HydratedOperations {
   async updateRevision(
     revision: HydratedRevisionDocument
   ): Promise<HydratedRevisionDocument> {
+    const existing = await this.core.getRevision(revision._id);
+    if (existing.deleted === true) {
+      throw new Exceptions.RecordDeletedError(revision.recordId);
+    }
+
     // Map from hydrated -> DB format
     const dbRelationship = revision.relationship
       ? {
@@ -1009,7 +1033,7 @@ class FormOperations {
     private readonly core: CoreOperations,
     private readonly hydrated: HydratedOperations,
     private readonly query: QueryOperations,
-    private readonly uiSpec: UISpecification
+    private readonly uiSpec: CompiledNotebookUiSpec
   ) {}
 
   /**
@@ -1132,6 +1156,10 @@ class FormOperations {
     // Fetch the revision
     const parentRevision = await this.core.getRevision(revisionId);
 
+    if (parentRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
+
     // Check that the revision record ID matches
     if (parentRevision.record_id !== recordId) {
       throw new Exceptions.RevisionMismatchError(recordId, revisionId);
@@ -1164,6 +1192,53 @@ class FormOperations {
 
     // All done
     return newRevision;
+  }
+
+  /**
+   * Deletes a record by appending a new head revision marked deleted. Copies
+   * AVPs, type, and relationship from {@link baseRevisionId}.
+   *
+   * @returns The new revision document id (head)
+   */
+  async deleteRecord({
+    recordId,
+    baseRevisionId,
+    userId,
+  }: {
+    recordId: string;
+    baseRevisionId: string;
+    userId: string;
+  }): Promise<string> {
+    const baseRevision = await this.core.getRevision(baseRevisionId);
+    if (baseRevision.record_id !== recordId) {
+      throw new Exceptions.RevisionMismatchError(recordId, baseRevisionId);
+    }
+    if (baseRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
+
+    const newRevisionId = generateRevisionID();
+    await this.core.createRevision({
+      _id: newRevisionId,
+      avps: baseRevision.avps,
+      created: getCurrentTimestamp(),
+      created_by: userId,
+      parents: [baseRevisionId],
+      record_id: recordId,
+      revision_format_version: 1,
+      type: baseRevision.type,
+      relationship: baseRevision.relationship,
+      ugc_comment: baseRevision.ugc_comment,
+      deleted: true,
+    });
+
+    await this.updateRecordHeads({
+      recordId,
+      oldHeadId: baseRevisionId,
+      newHeadId: newRevisionId,
+    });
+
+    return newRevisionId;
   }
 
   /**
@@ -1208,6 +1283,10 @@ class FormOperations {
   }): Promise<ExistingRevisionDBDocument> {
     // Step 1: Fetch the current revision
     const currentRevision = await this.core.getRevision(revisionId);
+
+    if (currentRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
 
     // What parents does the revision have?
     const parents = currentRevision.parents;
@@ -1843,18 +1922,30 @@ class QueryOperations {
       endKey?: string;
       limit?: number;
       descending?: boolean;
+      /** When set, fetch only these revision IDs (e.g. for a page of records). */
+      keys?: string[];
     } = {}
   ): Promise<RevisionMetadataQueryResult> {
-    const {startKey, endKey, limit, descending = false} = options;
+    const {
+      startKey,
+      endKey,
+      limit,
+      descending = false,
+      keys: keysOpt,
+    } = options;
 
     const viewResult = await this.db.query<MinimalRevisionMetadataInternal>(
       'index/revisionMetadata',
       {
         include_docs: true,
-        ...(startKey !== undefined ? {startkey: startKey} : {}),
-        ...(endKey !== undefined ? {endkey: endKey} : {}),
-        ...(limit !== undefined ? {limit} : {}),
-        descending,
+        ...(keysOpt !== undefined && keysOpt.length > 0
+          ? {keys: keysOpt}
+          : {
+              ...(startKey !== undefined ? {startkey: startKey} : {}),
+              ...(endKey !== undefined ? {endkey: endKey} : {}),
+              ...(limit !== undefined ? {limit} : {}),
+              descending,
+            }),
       }
     );
 
@@ -1943,41 +2034,80 @@ class QueryOperations {
    * List minimal record metadata for listing pages.
    * Uses optimised views to avoid fetching full documents where possible.
    *
-   * This fetches:
-   * - All records via 'index/record' view
-   * - All revision metadata via 'index/revisionMetadata' view
-   *
-   * Then joins them to produce minimal metadata without hydrating AVPs.
+   * When limit or startKey are provided, paginates at the DB: only a page of
+   * records and their revision metadata is fetched. Otherwise fetches all
+   * records and all revision metadata (legacy behaviour).
    *
    * @param projectId - The project identifier
    * @param options.recordIds - Optional array of specific record IDs to retrieve
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
    * @param options.filterFunction - Custom optional filter function e.g. permissions
+   * @param options.limit - Max records to return (DB-level pagination when used with startKey)
+   * @param options.startKey - Cursor for next page (recordId); use nextStartKey from previous response
+   * @param options.formId - Optional form type filter (applied after join when paginating)
    *
-   * @returns Minimal record metadata for listing pages
+   * @returns Minimal record metadata for listing pages; nextStartKey set when more results exist
    */
   async listMinimalRecordMetadata({
     projectId,
     recordIds,
     filterDeleted = false,
     filterFunction,
+    limit,
+    startKey,
+    formId,
   }: {
     projectId: string;
     recordIds?: string[];
     filterDeleted?: boolean;
     filterFunction?: (rec: MinimalRecordMetadata) => boolean;
+    limit?: number;
+    startKey?: string;
+    formId?: string;
   }): Promise<MinimalRecordMetadataResult> {
     let errorCount = 0;
+    const usePagination =
+      ((limit !== undefined && limit !== null) ||
+        (startKey !== undefined && startKey !== '')) &&
+      recordIds === undefined;
+
+    const startTime = performance.now();
 
     // Step 1: Fetch all revision metadata (optimised view - no full docs)
-    const startTime = performance.now();
-    const [recordViewResult, revisionMetadataResult] = await Promise.all([
-      this.db.query<RecordDBDocument>('index/record', {
+    let recordViewResult: PouchDB.Query.Response<RecordDBDocument>;
+    let revisionMetadataResult: RevisionMetadataQueryResult;
+
+    if (usePagination) {
+      // Pagination path: fetch only a page of records, then revision metadata for those heads only
+      const pageSize = limit ?? 25;
+      recordViewResult = await this.db.query<RecordDBDocument>('index/record', {
+        include_docs: true,
+        limit: pageSize + 1,
+        ...(startKey !== undefined && startKey !== ''
+          ? {startkey: startKey, skip: 1}
+          : {}),
+      });
+      const headRevisionIds = recordViewResult.rows
+        .map(row => row.doc?.heads?.[0])
+        .filter((id): id is string => id !== undefined && id !== null);
+      revisionMetadataResult = await this.listRevisionMetadata({
+        keys: headRevisionIds,
+      });
+    } else {
+      // Legacy path: fetch records (all or by keys), then only their revision metadata
+      recordViewResult = await this.db.query<RecordDBDocument>('index/record', {
         include_docs: true,
         ...(recordIds ? {keys: recordIds} : {}),
-      }),
-      this.listRevisionMetadata(),
-    ]);
+      });
+      const headRevisionIds = recordViewResult.rows
+        .map(row => row.doc?.heads?.[0])
+        .filter((id): id is string => id !== undefined && id !== null);
+      revisionMetadataResult =
+        headRevisionIds.length > 0
+          ? await this.listRevisionMetadata({keys: headRevisionIds})
+          : {revisions: [], count: 0};
+    }
+
     console.log(
       `[listMinimalRecordMetadata] revision/record query ${(
         performance.now() - startTime
@@ -2039,14 +2169,37 @@ class QueryOperations {
       });
     }
 
-    const filteredRecords = filterFunction
+    let filteredRecords = filterFunction
       ? records.filter(filterFunction)
       : records;
 
+    if (formId) {
+      filteredRecords = filteredRecords.filter(r => r.type === formId);
+    }
+
+    // Order matches index/record (emit doc._id); keep it for correct startKey/nextStartKey.
+    let nextStartKey: string | undefined;
+    if (
+      usePagination &&
+      limit !== undefined &&
+      limit !== null &&
+      recordViewResult.rows.length > limit
+    ) {
+      nextStartKey = recordViewResult.rows[limit].id;
+    }
+    const pageRecords =
+      usePagination &&
+      limit !== undefined &&
+      limit !== null &&
+      filteredRecords.length > limit
+        ? filteredRecords.slice(0, limit)
+        : filteredRecords;
+
     return {
-      records: filteredRecords,
-      count: filteredRecords.length,
+      records: pageRecords,
+      count: pageRecords.length,
       errorCount,
+      ...(nextStartKey !== undefined ? {nextStartKey} : {}),
     };
   }
 
@@ -2064,6 +2217,7 @@ class QueryOperations {
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
    * @param options.filterFunction - Custom optional filter function e.g. permissions
    * @param options.batchSize - Batch size for AVP queries (default: 100)
+   * @param options.caseInsensitive - Whether the regex match is case insensitive (default: false)
    *
    * @returns Search results with minimal record metadata
    */
@@ -2073,12 +2227,14 @@ class QueryOperations {
     filterDeleted = false,
     filterFunction,
     batchSize = 100,
+    caseInsensitive = false,
   }: {
     projectId: string;
     regex: string;
     filterDeleted?: boolean;
     filterFunction?: (rec: MinimalRecordMetadata) => boolean;
     batchSize?: number;
+    caseInsensitive?: boolean;
   }): Promise<RecordSearchResult> {
     const startTime = performance.now();
 
@@ -2086,6 +2242,7 @@ class QueryOperations {
     const matchingRecordIds = await this.findAvpRecordIdsByRegex({
       regex,
       batchSize,
+      caseInsensitive,
     });
 
     console.log(
@@ -2126,20 +2283,25 @@ class QueryOperations {
    *
    * @param options.regex - Regular expression pattern to match
    * @param options.batchSize - Batch size for queries (default: 100)
+   * @param options.caseInsensitive - Compile the regex with the 'i' flag (default: false)
    *
    * @returns Deduplicated record IDs and match count
    */
   private async findAvpRecordIdsByRegex({
     regex,
     batchSize = 100,
+    caseInsensitive = false,
   }: {
     regex: string;
     batchSize?: number;
+    caseInsensitive?: boolean;
   }): Promise<{recordIds: string[]; avpMatchCount: number}> {
     const recordIdSet = new Set<string>();
     let skip = 0;
     let totalAvpMatches = 0;
     let batchCount: number;
+
+    const pattern = caseInsensitive ? new RegExp(regex, 'i') : regex;
 
     // Query in batches since find requires a limit argument
     do {
@@ -2149,7 +2311,10 @@ class QueryOperations {
         selector: {
           avp_format_version: 1,
           // Handle both scalar and array data values
-          $or: [{data: {$regex: regex}}, {data: {$elemMatch: {$regex: regex}}}],
+          $or: [
+            {data: {$regex: pattern}},
+            {data: {$elemMatch: {$regex: pattern}}},
+          ],
         },
         // Only fetch the field we need
         fields: ['record_id'],

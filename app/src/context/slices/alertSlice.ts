@@ -4,14 +4,16 @@
 
 import {AlertColor} from '@mui/material/Alert/Alert';
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {v4 as uuidv4} from 'uuid';
 
 // Types
 interface Alert {
   severity: AlertColor;
   key: string;
+  title?: string;
   message?: string;
   element?: JSX.Element[];
+  /** Snackbar visibility in ms; defaults by severity when omitted. */
+  autoHideDuration?: number;
 }
 
 interface AlertState {
@@ -31,7 +33,7 @@ const alertsSlice = createSlice({
     addAlert: (state, action: PayloadAction<Omit<Alert, 'key'>>) => {
       state.alerts.push({
         ...action.payload,
-        key: uuidv4(),
+        key: crypto.randomUUID(),
       });
     },
     deleteAlert: (state, action: PayloadAction<{key: string}>) => {

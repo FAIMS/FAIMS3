@@ -1,16 +1,19 @@
 # Address
 
-*How to add and configure an Address field in the Notebook Editor.*
+_How to add and configure an Address field in the Notebook Editor._
 
 ---
 
 ## What This Field Does
 
-An Address field provides structured address capture, storing data in
-a geocoding-compatible format with separate components for street,
-suburb, state, and postcode. Use it for site addresses, museum
-locations, or any context where a structured postal address is needed
-for correspondence or spatial analysis.
+An Address field captures a postal address. When online autosuggest is
+available, the field can search and select an address from suggestions.
+When autosuggest is unavailable (or a manual override is needed), the
+field supports manual entry (either as free text or as structured
+components, depending on configuration).
+
+Data is stored as a geocoding-compatible JSON object (GeocodeJSON-like)
+with a human-readable `display_name` plus optional structured components.
 
 > **Note:** This field is a **beta feature**. It was developed for a
 > specific client requirement and may have rough edges. Test
@@ -55,18 +58,45 @@ Annotation, Uncertainty, Conditions, Copy value to new records,
 and Display in child records — see
 [Field Options](../shared-settings/field-options.md).
 
-## Tips
+## Address Field Behaviours
 
-- **Data is stored as structured JSON** with separate components
-  (house number, road, suburb, state, postcode), not as a single
-  text string. This format is better for downstream analysis but requires
-  JSON post-processing when exporting to CSV.
-- **Only five of the nine address components are exposed in the
-  UI** (House Number, Stree Name, Suburb, State, Postcode). Four other fields (Country, Country Code, Town, and Municipality) are stored
-  in the data structure but not editable through the form interface.
-- **Auto-complete availability varies by platform and region** — do
-  not assume address suggestions will always appear. Manual entry
-  is always available as a fallback.
-- **Allow a brief pause between fields** when entering address
-  data — rapid tabbing between components may trigger a race
-  condition that can cause data loss.
+The Address field supports multiple input flows depending on connectivity,
+service availability, and your configuration.
+
+### Online search (autosuggest)
+
+When the app is online and an autosuggest service is configured, the field
+shows a search box. Typing displays suggestions; selecting a suggestion
+saves a structured address and a `display_name`.
+
+### Manual override (structured)
+
+If the field is configured to allow structured manual entry, users can
+open the structured address editor (pencil icon / “Enter manually”) and
+fill out the address components (House Number, Street Name, Suburb, State,
+Postcode). This is used:
+
+- When autosuggest is unavailable (offline / no service), or
+- When autosuggest is available but the user wants to override or correct
+  the selected result.
+
+### Fallback when search can’t find a result
+
+If autosuggest is available but the user can’t find a suitable suggestion:
+
+- **Structured manual entry enabled** (Designer option: **“Allow structured manual entry when autosuggest is unavailable”**): a
+  button below the search box allows users to **enter the address manually**
+  using the structured component editor.
+- **Structured manual entry disabled** (Designer option **off**): the suggestion dropdown includes a
+  special option: **“Use this address as entered”**, which stores the current typed search
+  text as a free-text address.
+
+## Data Format
+
+The stored value is JSON with these key fields:
+
+- **`display_name`**: the string shown in the form and in read-only views.
+- **`address` (optional)**: structured components when set via autosuggest or
+  structured manual entry.
+- **`manuallyEnteredAddress` (optional)**: free-text entry (mutually exclusive
+  with `address`).

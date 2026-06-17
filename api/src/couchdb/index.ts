@@ -33,13 +33,13 @@ import {
   initDataDB,
   initDirectoryDB,
   initInvitesDB,
-  initMetadataDB,
   initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
   initTeamsDB,
   initTemplatesDB,
   InvitesDB,
+  GetDbById,
   migrateDbs,
   MigrationsDB,
   PeopleDB,
@@ -48,7 +48,6 @@ import {
   ProjectDataObject,
   ProjectDocument,
   ProjectID,
-  ProjectMetaObject,
   TeamsDB,
   TemplateDB,
 } from '@faims3/data-model';
@@ -284,58 +283,6 @@ export const getTeamsDB = (): TeamsDB => {
   }
   return _teamsDB;
 };
-/**
- * Returns the metadata DB for a given project - involves fetching the project
- * doc and then fetching the corresponding metadata db
- * @param projectID The project Id to use
- * @returns The metadata DB for this project
- */
-export const getMetadataDb = async (
-  projectID: ProjectID
-): Promise<DatabaseInterface<ProjectMetaObject>> => {
-  // Gets the projects DB
-  const projectsDB = localGetProjectsDb();
-  if (!projectsDB) {
-    throw new Exceptions.InternalSystemError(
-      'Could not fetch the projects DB. Contact system administrator.'
-    );
-  }
-
-  // Get the project doc for the given ID
-  const projectDoc = await projectsDB.get(projectID);
-
-  // 404 if project doc not found
-  if (!projectDoc) {
-    throw new Exceptions.ItemNotFoundException(
-      'Cannot find the given project ID in the projects database.'
-    );
-  }
-
-  // Now get the metadata DB from the project document (and be backwards
-  // compatible)
-  let db: PossibleConnectionInfo;
-  db = projectDoc.metadataDb;
-  if (!db) {
-    const doc = projectDoc as any;
-    db = doc.metadata_db;
-    if (!db) {
-      throw new Exceptions.InternalSystemError(
-        "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
-      );
-    }
-  }
-
-  // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
-  const pouch_options = pouchOptions();
-
-  // Authorise against this DB
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    pouch_options.auth = LOCAL_COUCHDB_AUTH;
-  }
-
-  return new PouchDB(dbUrl, pouch_options);
-};
 
 /**
  * Returns the data DB for a given project - involves fetching the project
@@ -386,36 +333,51 @@ export const getDataDb = async (
   return new PouchDB(dbUrl, pouch_options);
 };
 
+const openCouchDatabaseByName = (dbName: string): DatabaseInterface => {
+  const pouch_options = pouchOptions();
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + dbName;
+  if (LOCAL_COUCHDB_AUTH !== undefined) {
+    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  }
+  return new PouchDB(dbUrl, pouch_options);
+};
+
 /**
- * Initialises the database level configuration for a project's metadata DB. Can
- * create the DB if it doesn't already exist.
+ * Opens an authenticated CouchDB handle for migrations and other server-side
+ * callers.
+ *
+ * - With {@link dbType}: {@link id} is interpreted per kind (e.g. project id for DATA).
+ * - Without {@link dbType}: {@link id} is the Couch database name to open directly.
  */
-export const initialiseMetadataDb = async ({
-  projectId,
-  force = false,
-}: {
-  projectId: string;
-  force?: boolean;
-}): Promise<DatabaseInterface<ProjectMetaObject>> => {
-  // Are we in a testing environment?
-  const isTesting = process.env.NODE_ENV === 'test';
-
-  // Get the metadata DB
-  const metaDb = await getMetadataDb(projectId);
-
-  try {
-    await couchInitialiser({
-      db: metaDb,
-      content: initMetadataDB({projectId}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
-    });
-  } catch (e) {
-    throw new Exceptions.InternalSystemError(
-      `An error occurred while initialising the metadata DB for project ${projectId}!... ${e}`
-    );
+export const getDbById: GetDbById = async ({dbType, id}) => {
+  if (dbType === undefined) {
+    return openCouchDatabaseByName(id);
   }
 
-  return metaDb;
+  switch (dbType) {
+    case DatabaseType.AUTH:
+      return getAuthDB();
+    case DatabaseType.DATA:
+      return getDataDb(id as ProjectID);
+    case DatabaseType.DIRECTORY:
+      return getDirectoryDB();
+    case DatabaseType.INVITES:
+      return getInvitesDB();
+    case DatabaseType.PEOPLE:
+      return getUsersDB();
+    case DatabaseType.PROJECTS:
+      return localGetProjectsDb();
+    case DatabaseType.TEMPLATES:
+      return getTemplatesDb();
+    case DatabaseType.TEAMS:
+      return getTeamsDB();
+    default: {
+      const _exhaustive: never = dbType;
+      throw new Exceptions.InternalSystemError(
+        `Unsupported database type for getDbById: ${_exhaustive}`
+      );
+    }
+  }
 };
 
 /**
@@ -629,7 +591,6 @@ export const initialiseDbAndKeys = async ({
     const projectId = project._id;
 
     // Now initialise the DBs (potentially updating security documents etc)
-    await initialiseMetadataDb({projectId, force});
     await initialiseDataDb({projectId, force});
   }
 
@@ -669,7 +630,11 @@ export const initialiseAndMigrateDBs = async ({
       dbType: DatabaseType.DIRECTORY,
       dbName: DIRECTORY_DB_NAME,
     },
-    {db: getInvitesDB(), dbType: DatabaseType.INVITES, dbName: INVITE_DB_NAME},
+    {
+      db: getInvitesDB(),
+      dbType: DatabaseType.INVITES,
+      dbName: INVITE_DB_NAME,
+    },
     {db: getUsersDB(), dbType: DatabaseType.PEOPLE, dbName: PEOPLE_DB_NAME},
     {
       db: localGetProjectsDb(),
@@ -685,7 +650,12 @@ export const initialiseAndMigrateDBs = async ({
 
   // Migrate these first
   const migrationsDb = getMigrationDb();
-  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+  await migrateDbs({
+    dbs,
+    migrationDb: migrationsDb,
+    userId: 'system',
+    getDbById,
+  });
 
   // Now migrate all data/metadata DBs
   const projects = await getAllProjectsDirectory();
@@ -695,21 +665,20 @@ export const initialiseAndMigrateDBs = async ({
     // Project ID
     const projectId = project._id;
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-    const metadataDb = (await getMetadataDb(projectId)) as DatabaseInterface;
     dbs.concat([
       {
         db: dataDb,
         dbType: DatabaseType.DATA,
         dbName: dataDb.name,
       },
-      {
-        db: metadataDb,
-        dbType: DatabaseType.METADATA,
-        dbName: metadataDb.name,
-      },
     ]);
   }
-  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+  await migrateDbs({
+    dbs,
+    migrationDb: migrationsDb,
+    userId: 'system',
+    getDbById,
+  });
 
   // For users, we also establish an admin user, if not already present
   // do this after all migrations so we know the db is up to date
@@ -738,6 +707,18 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   }
 
   return _nanoInstance;
+};
+
+/** Lists all database names on the configured CouchDB server. */
+export const listCouchDatabaseNames = async (): Promise<string[]> => {
+  const nano = await getNanoInstance();
+  return nano.db.list();
+};
+
+/** Permanently deletes a CouchDB database by name. */
+export const destroyCouchDatabase = async (dbName: string): Promise<void> => {
+  const nano = await getNanoInstance();
+  await nano.db.destroy(dbName);
 };
 
 /**

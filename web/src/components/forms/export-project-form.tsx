@@ -2,11 +2,8 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
-  decodeUiSpec,
-  EncodedUISpecification,
   GetExportNotebookResponse,
   isValidForSpatialExport,
-  ProjectUIViewsets,
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
@@ -32,17 +29,17 @@ const ExportProjectForm = () => {
     return null;
   }
 
-  const isValidForSpatial = useMemo(() => {
-    const uiSpecification = data['ui-specification'] as unknown;
-    const decodedUiSpec = decodeUiSpec(
-      uiSpecification as EncodedUISpecification
-    );
-    return isValidForSpatialExport({
-      uiSpecification: decodedUiSpec,
-    });
-  }, [data]);
+  const uiSpec = data.uiSpecification.uiSpec;
 
-  const viewSets = data['ui-specification'].viewsets as ProjectUIViewsets;
+  const isValidForSpatial = useMemo(
+    () =>
+      isValidForSpatialExport({
+        uiSpecification: uiSpec,
+      }),
+    [uiSpec]
+  );
+
+  const viewSets = uiSpec.viewsets;
 
   // Tabular export form (CSV)
   const tabularFields: Field[] = [
@@ -56,13 +53,12 @@ const ExportProjectForm = () => {
       name: 'form',
       label: 'Form',
       schema: z.string().min(1, 'Please select a form'),
-      options:
-        data && data['ui-specification']?.viewsets
-          ? Object.keys(viewSets).map(name => ({
-              label: viewSets[name].label || name,
-              value: name,
-            }))
-          : [],
+      options: data?.uiSpecification.uiSpec.viewsets
+        ? Object.keys(viewSets).map(name => ({
+            label: viewSets[name].label || name,
+            value: name,
+          }))
+        : [],
     },
   ];
 

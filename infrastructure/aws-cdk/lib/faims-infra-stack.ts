@@ -169,10 +169,11 @@ export class FaimsInfraStack extends cdk.Stack {
       headingAppName: config.uiConfiguration.headingAppName,
       webDomainName: domains.web,
       docsDomainName: domains.docs,
-      docsManagementWebsiteTitle: 'Control Centre',
+      managementWebsiteTitle: config.web.title,
       androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       offlineMaps: config.uiConfiguration.offlineMaps,
+      addressAutosuggest: config.uiConfiguration.addressAutosuggest,
       supportEmail: config.supportLinks.supportEmail,
       privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
       contactUrl: config.supportLinks.contactUrl,
@@ -180,6 +181,9 @@ export class FaimsInfraStack extends cdk.Stack {
       maximumLongLivedDurationDays:
         config.security.maximumLongLivedTokenDurationDays,
       bugsnagKey: config.bugMonitoring.bugsnagKey,
+      forceRemoteDeletion:
+        config.uiConfiguration.forceRemoteDeletion ?? 'never',
+      deleteOnDeactivation: config.uiConfiguration.deleteOnDeactivation,
     });
 
     // Backup setup

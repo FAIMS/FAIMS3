@@ -4,7 +4,7 @@ import VectorTileLayer from 'ol/layer/VectorTile';
 import Map from 'ol/Map';
 import {CreateDomIcon} from '../dom-icon';
 import src from '../icons/layers.svg';
-import { logWarn } from '../../../logging';
+import {logWarn} from '../../../logging';
 
 /**
  * localStorage key for persisting the user's layer preference

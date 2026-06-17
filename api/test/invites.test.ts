@@ -27,7 +27,6 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
-  EncodedProjectUIModel,
   PostRegisterInput,
   registerClient,
   Resource,
@@ -62,15 +61,9 @@ import {
   localUserName,
   localUserToken,
 } from './utils';
-// set up the database module @faims3/data-model with our callbacks to get databases
-registerClient(callbackObject);
+import {EMPTY_UI_SPECIFICATION} from './sampleNotebook';
 
-const uispec: EncodedProjectUIModel = {
-  fields: [],
-  fviews: {},
-  viewsets: {},
-  visible_types: [],
-};
+registerClient(callbackObject);
 
 describe('Invite Tests', () => {
   beforeEach(beforeApiTests);
@@ -78,7 +71,12 @@ describe('Invite Tests', () => {
   // DB METHOD TESTS
   describe('Database Methods Tests', () => {
     it('can create an invite for a project', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -130,7 +128,12 @@ describe('Invite Tests', () => {
     });
 
     it('can get an invite by ID', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -152,7 +155,12 @@ describe('Invite Tests', () => {
     });
 
     it('can get invites for a resource', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -187,7 +195,12 @@ describe('Invite Tests', () => {
     });
 
     it('can delete an invite', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -204,7 +217,12 @@ describe('Invite Tests', () => {
     });
 
     it('can check if an invite is valid', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
 
       // Create valid invite
       const validInvite = await createResourceInvite({
@@ -272,7 +290,12 @@ describe('Invite Tests', () => {
     });
 
     it('can use an invite and record usage', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -391,7 +414,12 @@ describe('Invite Tests', () => {
   // API ENDPOINT TESTS
   describe('API Endpoint Tests', () => {
     it('GET /api/invites/:inviteId returns invite details', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -416,12 +444,22 @@ describe('Invite Tests', () => {
     });
 
     it('GET /api/invites/notebook/:projectId requires authentication', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       await request(app).get(`/api/invites/notebook/${projectId}`).expect(401);
     });
 
     it('GET /api/invites/notebook/:projectId returns project invites', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
 
       await createResourceInvite({
         resourceType: Resource.PROJECT,
@@ -504,7 +542,12 @@ describe('Invite Tests', () => {
     });
 
     it('POST /api/invites/notebook/:projectId creates a project invite', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
 
       const response = await request(app)
         .post(`/api/invites/notebook/${projectId}`)
@@ -602,7 +645,12 @@ describe('Invite Tests', () => {
     });
 
     it('DELETE /api/invites/notebook/:projectId/:inviteId deletes a project invite', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
       const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
@@ -659,7 +707,12 @@ describe('Invite Tests', () => {
     });
 
     it('Non-admins cannot create project admin invites', async () => {
-      const projectId = await createNotebook('test-notebook', uispec, {});
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
 
       // Add contributor role to local user
       const localUserDb = await getExpressUserFromEmailOrUserId(localUserName);
@@ -839,7 +892,13 @@ describe('Registration', () => {
       action: 'register',
     };
 
-    const project_id = await createNotebook('Test Notebook', uispec, {});
+    const {EMPTY_UI_SPECIFICATION} = await import('./sampleNotebook');
+    const project_id = await createNotebook({
+      projectName: 'Test Notebook',
+      uiSpecification: EMPTY_UI_SPECIFICATION,
+      description: '',
+      createdBy: 'admin',
+    });
     const role = Role.PROJECT_GUEST;
 
     if (project_id) {

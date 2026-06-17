@@ -12,13 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Tracks whether the notebook has unsaved edits. Set `true` by metadata/UI-spec actions;
+ * reset via {@link resetFlag} after save.
+ */
+
 import {createSlice} from '@reduxjs/toolkit';
 import {initialState} from './initial';
-import {propertyUpdated, rolesUpdated} from './metadata-reducer';
+import {
+  customFieldRemoved,
+  customFieldUpdated,
+  informationUpdated,
+} from './metadata-reducer';
 import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
+  fieldReordered,
   fieldRenamed,
   fieldUpdated,
   formVisibilityUpdated,
@@ -27,76 +37,45 @@ import {
   sectionDeleted,
   sectionMoved,
   sectionRenamed,
+  settingsUpdated,
   viewSetAdded,
   viewSetDeleted,
   viewSetMoved,
   viewSetRenamed,
-} from './uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 const modifiedStatusReducer = createSlice({
   name: 'modifiedStatus',
   initialState: initialState.modified,
   reducers: {
+    /** Set dirty flag explicitly (typically `false` after persisting). */
     resetFlag: (_state, action) => {
       const newStatus = action.payload as boolean;
       return newStatus;
     },
   },
   extraReducers: builder => {
-    //Metadata reducers
     builder
-      .addCase(propertyUpdated, () => {
-        return true;
-      })
-      .addCase(rolesUpdated, () => {
-        return true;
-      })
-      //UISpec reducers
-      .addCase(fieldUpdated, () => {
-        return true;
-      })
-      .addCase(fieldMoved, () => {
-        return true;
-      })
-      .addCase(fieldRenamed, () => {
-        return true;
-      })
-      .addCase(fieldAdded, () => {
-        return true;
-      })
-      .addCase(fieldDeleted, () => {
-        return true;
-      })
-      .addCase(sectionRenamed, () => {
-        return true;
-      })
-      .addCase(sectionAdded, () => {
-        return true;
-      })
-      .addCase(sectionDeleted, () => {
-        return true;
-      })
-      .addCase(sectionMoved, () => {
-        return true;
-      })
-      .addCase(sectionConditionChanged, () => {
-        return true;
-      })
-      .addCase(viewSetAdded, () => {
-        return true;
-      })
-      .addCase(viewSetDeleted, () => {
-        return true;
-      })
-      .addCase(viewSetMoved, () => {
-        return true;
-      })
-      .addCase(viewSetRenamed, () => {
-        return true;
-      })
-      .addCase(formVisibilityUpdated, () => {
-        return true;
-      });
+      .addCase(informationUpdated, () => true)
+      .addCase(customFieldUpdated, () => true)
+      .addCase(customFieldRemoved, () => true)
+      .addCase(settingsUpdated, () => true)
+      .addCase(fieldUpdated, () => true)
+      .addCase(fieldMoved, () => true)
+      .addCase(fieldReordered, () => true)
+      .addCase(fieldRenamed, () => true)
+      .addCase(fieldAdded, () => true)
+      .addCase(fieldDeleted, () => true)
+      .addCase(sectionRenamed, () => true)
+      .addCase(sectionAdded, () => true)
+      .addCase(sectionDeleted, () => true)
+      .addCase(sectionMoved, () => true)
+      .addCase(sectionConditionChanged, () => true)
+      .addCase(viewSetAdded, () => true)
+      .addCase(viewSetDeleted, () => true)
+      .addCase(viewSetMoved, () => true)
+      .addCase(viewSetRenamed, () => true)
+      .addCase(formVisibilityUpdated, () => true);
   },
 });
 

@@ -36,11 +36,10 @@ import {
   userProjectRoles,
 } from '@faims3/data-model';
 import {assert, expect} from 'chai';
-import * as fs from 'fs';
-import {validateLocalUser} from '../src/auth/strategies/localStrategy';
+import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
+import {validateLocalUser} from '../src/auth/strategies/localStrategy';
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
-import {createNotebook} from '../src/couchdb/notebooks';
 import {
   createUser,
   getUserInfoForProject,
@@ -48,7 +47,6 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
-import {addLocalPasswordForUser} from '../src/auth/helpers';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
@@ -383,15 +381,10 @@ describe('user creation', () => {
 
   it('listing users for notebooks', async () => {
     await initialiseDbAndKeys({force: false});
-    registerAdminUser();
+    await registerAdminUser();
 
-    const jsonText = fs.readFileSync(
-      './notebooks/sample_notebook.json',
-      'utf-8'
-    );
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-    const name = 'Test Notebook';
-    const project_id = await createNotebook(name, uiSpec, metadata);
+    const {createNotebookFromSampleFile} = await import('./sampleNotebook');
+    const project_id = await createNotebookFromSampleFile('Test Notebook');
     const username = 'bobalooba';
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -409,15 +402,17 @@ describe('user creation', () => {
       });
       await saveCouchUser(user);
 
-      const userInfo = await getUserInfoForProject({projectId: project_id});
+      const projectUserInfo = await getUserInfoForProject({
+        projectId: project_id,
+      });
 
-      expect(userInfo.roles).to.include(Role.PROJECT_ADMIN);
-      expect(userInfo.roles).to.include(Role.PROJECT_MANAGER);
-      expect(userInfo.roles).to.include(Role.PROJECT_CONTRIBUTOR);
+      expect(projectUserInfo.roles).to.include(Role.PROJECT_ADMIN);
+      expect(projectUserInfo.roles).to.include(Role.PROJECT_MANAGER);
+      expect(projectUserInfo.roles).to.include(Role.PROJECT_CONTRIBUTOR);
       // should have the admin user and this new one
-      expect(userInfo.users.length).to.equal(2);
-      expect(userInfo.users[1].username).to.equal(username);
-      expect(userInfo.users[1].roles[0].value).to.be.false;
+      expect(projectUserInfo.users.length).to.equal(2);
+      expect(projectUserInfo.users[1].username).to.equal(username);
+      expect(projectUserInfo.users[1].roles[0].value).to.be.false;
     }
   });
 });

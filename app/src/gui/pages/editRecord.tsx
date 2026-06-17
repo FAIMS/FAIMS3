@@ -18,6 +18,7 @@ import {
 } from '@faims3/forms';
 import {
   Alert,
+  Button,
   CircularProgress,
   Snackbar,
   Stack,
@@ -36,7 +37,9 @@ import {
   APP_NAME,
   CAPACITOR_PLATFORM,
   DEBUG_APP,
+  getAddressAutosuggestService,
   getMapConfig,
+  NOTEBOOK_NAME,
 } from '../../buildconfig';
 import {
   getEditRecordRoute,
@@ -48,7 +51,7 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {useUiSpecLayout} from '../../utils/customHooks';
+import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
@@ -108,15 +111,11 @@ export const EditRecordPage = () => {
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
   if (!serverId || !projectId) return <></>;
-  const uiSpecificationId = useAppSelector(
-    state => selectProjectById(state, projectId)?.uiSpecificationId
-  );
-  if (!uiSpecificationId) return <></>;
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const uiSpec = uiSpecificationId
-    ? compiledSpecService.getSpec(uiSpecificationId)
-    : undefined;
+  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
   if (!uiSpec) return <div>UI Specification not found</div>;
 
   // These are handlers passed back from the editable form to assist with
@@ -200,7 +199,11 @@ export const EditRecordPage = () => {
   });
 
   // Query to fetch the relevant viewset
-  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
+  const relevantUiSpec = useUiSpecLayout({
+    dataDb,
+    recordId,
+    uiSpec,
+  });
 
   // Generate attachment service for this project
   const attachmentEngine = () => {
@@ -224,16 +227,23 @@ export const EditRecordPage = () => {
     onIssue: handleAutoIncrementIssue,
   });
 
+  const {isOnline} = useIsOnline();
+
   const formConfig: FullFormConfig = useMemo(
     () => {
+      const addressAutosuggestService = getAddressAutosuggestService();
       return {
         mode: 'full' as const,
         platform: CAPACITOR_PLATFORM,
         appName: APP_NAME,
         recordId,
+        projectId,
+        decodedToken: activeUser.parsedToken,
         recordMode: mode,
         dataEngine,
         attachmentEngine,
+        ...(addressAutosuggestService && {addressAutosuggestService}),
+        getIsOnline: () => isOnline,
         mapConfig: getMapConfig,
         navigation: {
           navigateToRecordList: {
@@ -331,7 +341,9 @@ export const EditRecordPage = () => {
       recordId,
       mode,
       activeUser.username,
+      activeUser.parsedToken,
       relevantUiSpec.data,
+      isOnline,
     ]
   );
 
@@ -372,6 +384,28 @@ export const EditRecordPage = () => {
               {error?.message ?? 'unknown'}.
             </p>
           </div>
+        ) : formData?.context.revision.deleted ? (
+          <Stack spacing={2} sx={{p: 2}}>
+            <Alert severity="warning">
+              This record has been deleted and cannot be edited.
+            </Alert>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                navigate(
+                  getViewRecordRoute({projectId, recordId: recordId!, serverId})
+                )
+              }
+            >
+              Open read-only view
+            </Button>
+            <Button
+              variant="text"
+              onClick={() => navigate(getNotebookRoute({serverId, projectId}))}
+            >
+              {`Back to ${NOTEBOOK_NAME}`}
+            </Button>
+          </Stack>
         ) : (
           <>
             {resolvingAutoIncrementer !== null && (

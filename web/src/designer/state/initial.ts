@@ -12,121 +12,81 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Core Redux state types for the notebook designer: typed metadata partition,
+ * UI specification (fields/views/viewsets), and the undo-wrapped notebook shape.
+ */
+
 // eslint-disable-next-line n/no-extraneous-import
 import {StateWithHistory} from 'redux-undo';
-import {ConditionType} from '../components/condition/types';
+import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  type BaseFieldParameters,
+  type FieldDefinition,
+  type NotebookDefinition,
+  type NotebookInformation,
+  type NotebookMetadata,
+  type NotebookSettings,
+} from '@faims3/data-model';
+import {ConditionType} from '../types/condition';
 
-export type NotebookMetadata = PropertyMap;
+export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
+export type {
+  NotebookDefinition,
+  NotebookInformation,
+  NotebookMetadata,
+  NotebookSettings,
+};
 
-export type PropertyMap = {
+/**
+ * The component-parameters envelope shared by every designer field.
+ *
+ * It guarantees the {@link BaseFieldParameters} common to all fields and leaves
+ * the remaining per-field-type parameters open (`unknown`). Each editor narrows
+ * this envelope to the precise props type its field exports from
+ * `@faims3/forms` (e.g. `NumberFieldProps`, `ChoiceElementProps`) rather than
+ * the designer maintaining a duplicate flattened union of every field's params.
+ */
+export type ComponentParametersEnvelope = BaseFieldParameters & {
   [key: string]: unknown;
 };
 
-export type ComponentParameters = {
-  fullWidth?: boolean;
-  name?: string;
-  id?: string;
-  helperText?: string;
-  helpertext?: string; // was allowed for TakePhoto
-  advancedHelperText?: string;
-  variant?: string;
-  label?: string;
-  multiline?: boolean;
-  multiple?: boolean;
-  SelectProps?: unknown;
-  ElementProps?: {
-    expandedChecklist?: boolean;
-    // These items must correspond to values in the options[]. Only one of such
-    // can be selecting, greying out/excluding other options
-    exclusiveOptions?: string[];
-    enableOtherOption?: boolean;
-    otherOptionPosition?: number;
-    options?: {
-      value: string;
-      label: string;
-      RadioProps?: unknown;
-    }[];
-    optiontree?: unknown;
-  };
-  InputLabelProps?: {label: string};
-  InputProps?: {rows?: number; type?: string};
-  FormLabelProps?: {children?: string};
-  FormHelperTextProps?: {children?: string};
-  FormControlLabelProps?: {label: string};
-  // default false
-  allowSetToCurrentPoint?: boolean;
-  initialValue?: unknown;
-  related_type?: string;
-  hideCreateAnotherButton?: boolean;
-  relation_type?: string;
-  related_type_label?: string;
-  relation_linked_vocabPair?: [string, string][];
-  numberType?: 'integer' | 'floating';
-  required?: boolean;
-  template?: string;
-  num_digits?: number;
-  form_id?: string;
-  is_auto_pick?: boolean;
-  zoom?: number;
-  featureType?: string;
-  buttonLabelText?: string;
-  variant_style?: string;
-  html_tag?: string;
-  content?: string;
-  hrid?: boolean;
-  select?: boolean;
-  geoTiff?: string;
-  type?: string;
-  min?: number;
-  max?: number;
-  rows?: number;
-  valuetype?: string;
-  protection?: 'protected' | 'allow-hiding' | 'none';
-  hidden?: boolean;
-  allowLinkToExisting?: boolean;
-  /** Enable speech-to-text input (default: true) */
-  enableSpeech?: boolean;
-  /** Whether to append speech to existing text or replace */
-  speechAppendMode?: boolean;
-};
-
-export type FieldType = {
-  'component-namespace': string;
-  'component-name': string;
-  'type-returned': string;
-  'component-parameters': ComponentParameters;
-  initialValue?: unknown;
-  access?: string[];
+/**
+ * Single field definition as used in the designer.
+ *
+ * The canonical runtime shape lives in `@faims3/data-model`
+ * ({@link FieldDefinition}); here we only add the designer-specific authoring
+ * and field-chooser metadata, and narrow two properties:
+ * - `component-parameters` to the {@link ComponentParametersEnvelope} (base
+ *   params + open extras), and
+ * - `condition` to the designer's {@link ConditionType} (allowing `null`).
+ */
+export type FieldType = Omit<
+  FieldDefinition,
+  'component-parameters' | 'condition'
+> & {
+  'component-parameters': ComponentParametersEnvelope;
   condition?: ConditionType | null;
-  persistent?: boolean;
-  displayParent?: boolean;
+
+  // Designer-only authoring / field-chooser metadata (not part of the runtime
+  // field definition).
   designerIdentifier?: string;
   humanReadableName?: string;
-  category?: string;
-
   humanReadableDescription?: string;
+  category?: string;
   showInChooser?: boolean;
   order?: number;
-
-  meta?: {
-    annotation: {
-      include: boolean;
-      label: string;
-    };
-    uncertainty: {
-      include: boolean;
-      label: string;
-    };
-  };
+  deprecated?: boolean;
+  deprecationMessage?: string;
 };
 
+/** Editable UI spec body: fields, sections (`views`), forms (`viewsets`), settings, schema version. */
 export type NotebookUISpec = {
   fields: {[key: string]: FieldType};
-  fviews: {
+  views: {
     [key: string]: {
       fields: string[];
       description?: string;
-      uidesign?: string;
       label: string;
       condition?: ConditionType;
     };
@@ -135,58 +95,58 @@ export type NotebookUISpec = {
     [key: string]: {
       views: string[];
       label: string;
-      // New optional settings
       summary_fields?: string[];
       layout?: 'inline' | 'tabs';
       hridField?: string;
-      publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
     };
   };
   visible_types: string[];
+  settings: NotebookSettings;
+  schemaVersion: string;
 };
 
-export type NotebookModified = {
-  flag: boolean;
-};
-
+/** Root designer store: notebook slice + dirty flag for save prompts. */
 export type AppState = {
   modified: boolean;
   notebook: NotebookWithHistory;
 };
 
-export type Notebook = {
-  metadata: NotebookMetadata;
-  'ui-specification': NotebookUISpec;
-};
+/** Flat notebook definition as persisted via PUT /uiSpecification. */
+export type Notebook = NotebookDefinition;
 
+/** Notebook with `uiSpec` wrapped for undo/redo in the designer. */
 export type NotebookWithHistory = {
   metadata: NotebookMetadata;
-  'ui-specification': StateWithHistory<NotebookUISpec>;
+  uiSpec: StateWithHistory<NotebookUISpec>;
 };
 
-// an empty notebook
+export const defaultNotebookInformation = (): NotebookInformation => ({
+  notebookVersion: '1.0',
+  purposeMarkdown: '',
+  projectLeadLabel: '',
+  leadInstitution: '',
+});
+
+export const defaultNotebookMetadata = (): NotebookMetadata => ({
+  information: defaultNotebookInformation(),
+});
+
+export const defaultNotebookUISpec = (): NotebookUISpec => ({
+  fields: {},
+  views: {},
+  viewsets: {},
+  visible_types: [],
+  settings: {showQrCodeButton: false},
+  schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+});
+
+/** Default empty designer state. */
 export const initialState: AppState = {
   modified: false,
   notebook: {
-    metadata: {
-      notebook_version: '1.0',
-      schema_version: '2.0',
-      name: '',
-      filenames: [],
-      lead_institution: '',
-      showQRCodeButton: false,
-      pre_description: '',
-      project_lead: '',
-      project_status: 'New',
-      sections: {},
-    },
-    'ui-specification': {
-      present: {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: [],
-      },
+    metadata: defaultNotebookMetadata(),
+    uiSpec: {
+      present: defaultNotebookUISpec(),
       past: [],
       future: [],
     },

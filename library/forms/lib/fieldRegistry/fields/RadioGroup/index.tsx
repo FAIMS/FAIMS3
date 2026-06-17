@@ -31,12 +31,23 @@
  * - disabled: Whether the field is disabled.
  */
 
-import {FormControlLabel, TextField} from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  TextField,
+} from '@mui/material';
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
+import {alpha} from '@mui/material/styles';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
+import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
@@ -47,27 +58,17 @@ import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {useState} from 'react';
 
 // ============================================================================
 // Types & Schema
 // ============================================================================
 
-const RadioOptionSchema = z.object({
-  key: z.string().optional(),
-  value: z.string(),
-  label: z.string(),
+export const RadioGroupFieldPropsSchema = BaseFieldParametersSchema.extend({
+  ElementProps: ChoiceElementPropsSchema,
 });
 
-const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
-  ElementProps: z.object({
-    options: z.array(RadioOptionSchema),
-    enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(),
-  }),
-});
-
-type RadioGroupFieldProps = z.infer<typeof RadioGroupFieldPropsSchema>;
-type RadioOption = z.infer<typeof RadioOptionSchema>;
+export type RadioGroupFieldProps = z.infer<typeof RadioGroupFieldPropsSchema>;
 type FieldProps = RadioGroupFieldProps & FullFieldProps;
 
 // ============================================================================
@@ -94,8 +95,7 @@ export const RadioGroup = (props: FieldProps) => {
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-  const otherOptionPosition =
-    ElementProps.otherOptionPosition ?? ElementProps.options.length;
+  const otherOptionPosition = ElementProps.options.length;
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
   const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
@@ -105,6 +105,7 @@ export const RadioGroup = (props: FieldProps) => {
       predefinedValues,
       setFieldData,
     });
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
@@ -129,6 +130,17 @@ export const RadioGroup = (props: FieldProps) => {
       const newValue = displayValue === selectedValue ? '' : selectedValue;
       setFieldData(newValue);
     }
+  };
+
+  const handleClearRequest = () => {
+    if (!rawValue) return;
+    setConfirmClearOpen(true);
+  };
+
+  const handleConfirmClear = () => {
+    setOtherSelected(false);
+    setFieldData('');
+    setConfirmClearOpen(false);
   };
 
   return (
@@ -205,7 +217,7 @@ export const RadioGroup = (props: FieldProps) => {
             );
 
             // Render a regular option
-            const renderOption = (option: RadioOption) => (
+            const renderOption = (option: ChoiceOption) => (
               <FormControlLabel
                 key={option.key || option.value}
                 value={option.value}
@@ -271,7 +283,64 @@ export const RadioGroup = (props: FieldProps) => {
             return items;
           })()}
         </MuiRadioGroup>
+        <Button
+          variant="outlined"
+          size="medium"
+          onClick={handleClearRequest}
+          disabled={disabled || !rawValue}
+          sx={{
+            mt: 1,
+            px: 1.75,
+            py: 0.625,
+            minHeight: 40,
+            borderRadius: 1.5,
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '1rem',
+            letterSpacing: 0.1,
+            width: 'fit-content',
+            color: 'text.secondary',
+            borderColor: theme => alpha(theme.palette.text.secondary, 0.5),
+            '&:hover': {
+              borderColor: 'text.secondary',
+              backgroundColor: 'action.hover',
+            },
+            '&.Mui-disabled': {
+              color: 'action.disabled',
+              borderColor: 'action.disabledBackground',
+            },
+          }}
+        >
+          Clear
+        </Button>
       </FormControl>
+      <Dialog
+        open={confirmClearOpen}
+        onClose={() => setConfirmClearOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Clear selected option?</DialogTitle>
+        <DialogContent>
+          Are you sure you want to clear this selected option?
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setConfirmClearOpen(false)}
+            sx={{textTransform: 'none'}}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="warning"
+            variant="contained"
+            onClick={handleConfirmClear}
+            sx={{textTransform: 'none'}}
+          >
+            Clear
+          </Button>
+        </DialogActions>
+      </Dialog>
     </FieldWrapper>
   );
 };
@@ -326,7 +395,12 @@ const valueSchema = (props: RadioGroupFieldProps) => {
   }
 
   if (props.required) {
-    return optionsSchema;
+    return z
+      .string()
+      .min(1, {message: 'Please select an option'})
+      .refine(value => optionValues.includes(value), {
+        message: 'Please select an option',
+      });
   }
 
   return z.union([optionsSchema, z.null(), z.literal('')]);

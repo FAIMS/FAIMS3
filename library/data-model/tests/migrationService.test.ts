@@ -6,6 +6,7 @@ import {
   DB_MIGRATIONS,
   DB_TARGET_VERSIONS,
   DatabaseType,
+  GetDbById,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
   MigrationFunc,
   MigrationsDB,
@@ -150,15 +151,20 @@ describe('Migration System Tests', () => {
         migrationLog: [],
       };
 
-      // Should identify the migration from v1 to v2
+      // Should identify each step from v1 to PEOPLE target version
       const migrations = identifyMigrations({migrationDoc: mockMigrationDoc});
-      expect(migrations.length).toBe(3);
+      const peopleTarget =
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+      expect(migrations.length).toBe(peopleTarget - mockMigrationDoc.version);
       expect(migrations[0].dbType).toBe(DatabaseType.PEOPLE);
       expect(migrations[0].from).toBe(1);
       expect(migrations[0].to).toBe(2);
 
       // Should return empty array if already at target version
-      const upToDateDoc = {...mockMigrationDoc, version: 4};
+      const upToDateDoc = {
+        ...mockMigrationDoc,
+        version: DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion,
+      };
       expect(identifyMigrations({migrationDoc: upToDateDoc})).toEqual([]);
     });
 
@@ -168,7 +174,7 @@ describe('Migration System Tests', () => {
         _rev: '1-abc',
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
-        version: 20, // Higher than target (3)
+        version: 20, // Higher than PEOPLE target
         status: 'healthy' as const,
         migrationLog: [],
       };
@@ -210,12 +216,14 @@ describe('Migration System Tests', () => {
    */
   describe('performMigration', () => {
     let testDb: DatabaseInterface;
+    let getDbById: GetDbById;
 
     beforeEach(async () => {
       // Create a fresh in-memory database for each test
       testDb = new PouchDB('test-migration-db', {
         adapter: 'memory',
       }) as DatabaseInterface;
+      getDbById = async () => testDb;
 
       // Add some test documents
       await testDb.bulkDocs([
@@ -248,7 +256,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check that correct documents were processed
       expect(result.processedCount).toBe(3);
@@ -295,7 +307,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check results (should include original 3 docs + 250 batch docs)
       expect(result.processedCount).toBe(253);
@@ -325,7 +341,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Should have an issue for the problem document, but continue with others
       expect(result.issues.length).toBe(1);
@@ -348,7 +368,11 @@ describe('Migration System Tests', () => {
       // Try to perform migration on broken DB
       const migrationFunc: MigrationFunc = () => ({action: 'none'});
 
-      const result = await performMigration({db: brokenDb, migrationFunc});
+      const result = await performMigration({
+        db: brokenDb,
+        migrationFunc,
+        getDbById: async () => brokenDb,
+      });
 
       // Should have a database-level issue
       expect(result.issues.length).toBeGreaterThan(0);
@@ -375,7 +399,11 @@ describe('Migration System Tests', () => {
       };
 
       // Perform the migration
-      const result = await performMigration({db: testDb, migrationFunc});
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
 
       // Check statistics
       expect(result.processedCount).toBe(4); // All docs including the new one
@@ -398,6 +426,50 @@ describe('Migration System Tests', () => {
       const doc2 = await testDb.get<any>('doc2');
       expect(doc2.data).toBe('unchanged');
     });
+
+    it('should pass getDbById to migration functions via context', async () => {
+      const otherDb = new PouchDB('test-migration-other-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      const getDbById = jest.fn().mockResolvedValue(otherDb);
+
+      const migrationFunc: MigrationFunc = async (doc, context) => {
+        if (doc._id !== 'doc1') {
+          return {action: 'none'};
+        }
+        const db = await context!.getDbById({
+          dbType: DatabaseType.PEOPLE,
+          id: doc._id,
+        });
+        const person = await db.get(doc._id);
+        return {
+          action: 'update',
+          updatedRecord: {
+            ...doc,
+            mirroredName: (person as {name?: string}).name,
+          },
+        };
+      };
+
+      await otherDb.put({_id: 'doc1', name: 'Alice from other db'});
+
+      const result = await performMigration({
+        db: testDb,
+        migrationFunc,
+        getDbById,
+      });
+
+      expect(getDbById).toHaveBeenCalledWith({
+        dbType: DatabaseType.PEOPLE,
+        id: 'doc1',
+      });
+      expect(result.issues).toEqual([]);
+
+      const doc1 = await testDb.get<{mirroredName?: string}>('doc1');
+      expect(doc1.mirroredName).toBe('Alice from other db');
+
+      await otherDb.destroy();
+    });
   });
 
   /**
@@ -406,6 +478,7 @@ describe('Migration System Tests', () => {
   describe('migrateDbs', () => {
     let testMigrationDb: DatabaseInterface;
     let testPeopleDb: DatabaseInterface;
+    let getDbById: GetDbById;
 
     beforeEach(async () => {
       // Create in-memory databases
@@ -415,6 +488,7 @@ describe('Migration System Tests', () => {
       testPeopleDb = new PouchDB('test-people-db', {
         adapter: 'memory',
       }) as DatabaseInterface;
+      getDbById = async () => testPeopleDb;
 
       // Add design documents to migrations db
       await couchInitialiser({
@@ -481,6 +555,7 @@ describe('Migration System Tests', () => {
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
         userId: 'test-user',
+        getDbById,
       });
 
       // Check that a migration document was created
@@ -577,6 +652,7 @@ describe('Migration System Tests', () => {
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
         userId: 'test-user',
+        getDbById: async () => realPeopleDb,
       });
 
       // Check that migration document was updated
@@ -589,10 +665,14 @@ describe('Migration System Tests', () => {
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
-      expect(migrationDoc.version).toBe(4); // Should be at target version
+      expect(migrationDoc.version).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion
+      );
       expect(migrationDoc.migrationLog.length).toBe(2); // Should have added a new log entry
       expect(migrationDoc.migrationLog[1].from).toBe(1);
-      expect(migrationDoc.migrationLog[1].to).toBe(4);
+      expect(migrationDoc.migrationLog[1].to).toBe(
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion
+      );
       expect(migrationDoc.migrationLog[1].status).toBe('success');
     });
 
@@ -601,7 +681,7 @@ describe('Migration System Tests', () => {
       const upToDateMigrationDoc: MigrationsDBFields = {
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
-        version: 4, // Already at target version
+        version: DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion,
         status: 'healthy',
         migrationLog: [
           {
@@ -640,6 +720,15 @@ describe('Migration System Tests', () => {
             status: 'success',
             notes: 'Upgrade to v2',
           },
+          {
+            from: 4,
+            to: 5,
+            startedAtTimestampMs: Date.now() - 1000,
+            completedAtTimestampMs: Date.now() - 500,
+            launchedBy: 'system',
+            status: 'success',
+            notes: 'Upgrade to v5',
+          },
         ],
       };
 
@@ -661,6 +750,7 @@ describe('Migration System Tests', () => {
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
+        getDbById,
       });
 
       // Check that migration document was not modified
@@ -673,7 +763,9 @@ describe('Migration System Tests', () => {
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
-      expect(migrationDoc.migrationLog.length).toBe(4); // Should still have just the original log entries
+      expect(migrationDoc.migrationLog.length).toBe(
+        upToDateMigrationDoc.migrationLog.length
+      ); // Should still have just the original log entries
 
       // Check that documents were not modified
       const currentDocs = await testPeopleDb.allDocs({include_docs: true});
@@ -726,6 +818,7 @@ describe('Migration System Tests', () => {
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
+        getDbById,
       });
 
       // Check that migration document reflects the failure
@@ -794,6 +887,7 @@ describe('Migration System Tests', () => {
             },
           ],
           migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
         });
 
         // Check that migration documents were created for both databases

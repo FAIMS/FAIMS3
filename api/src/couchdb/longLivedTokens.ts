@@ -10,11 +10,11 @@ import {
   AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
   GetLongLivedTokenIndex,
+  isPeopleUserAccountDisabled,
   LongLivedTokenExistingDocument,
   LongLivedTokenFields,
   safeWriteDocument,
 } from '@faims3/data-model';
-import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../buildconfig';
 import {
@@ -22,6 +22,7 @@ import {
   ItemNotFoundException,
   InvalidRequestException,
 } from '../exceptions';
+import {expiryMsFromNow, nowMs} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
@@ -44,14 +45,15 @@ export function isValidExpiry(expiryTimestampMs: number | undefined): boolean {
 
   // If unlimited duration is allowed, any future date is valid
   if (MAXIMUM_LONG_LIVED_DURATION_DAYS === undefined) {
-    return expiryTimestampMs > Date.now();
+    return expiryTimestampMs > nowMs();
   }
 
   // Check if the expiry date is within the maximum allowed duration
-  const maxAllowedTimestamp =
-    Date.now() + MAXIMUM_LONG_LIVED_DURATION_DAYS * DAY_IN_MS;
+  const maxAllowedTimestamp = expiryMsFromNow(
+    MAXIMUM_LONG_LIVED_DURATION_DAYS * DAY_IN_MS
+  );
   return (
-    expiryTimestampMs > Date.now() && expiryTimestampMs <= maxAllowedTimestamp
+    expiryTimestampMs > nowMs() && expiryTimestampMs <= maxAllowedTimestamp
   );
 }
 
@@ -63,7 +65,7 @@ export function getMaxAllowedExpiryTimestamp(): number | undefined {
   if (MAXIMUM_LONG_LIVED_DURATION_DAYS === undefined) {
     return undefined;
   }
-  return Date.now() + MAXIMUM_LONG_LIVED_DURATION_DAYS * DAY_IN_MS;
+  return expiryMsFromNow(MAXIMUM_LONG_LIVED_DURATION_DAYS * DAY_IN_MS);
 }
 
 /**
@@ -94,8 +96,8 @@ export const createNewLongLivedToken = async ({
   const authDB = getAuthDB();
   const token = generateVerificationCode(LONG_LIVED_TOKEN_LENGTH);
   const tokenHash = hashChallengeCode(token);
-  const dbId = AUTH_RECORD_ID_PREFIXES.longlived + uuidv4();
-  const currentTimestamp = Date.now();
+  const dbId = AUTH_RECORD_ID_PREFIXES.longlived + crypto.randomUUID();
+  const createdTimestampMs = nowMs();
 
   const newLongLivedToken: LongLivedTokenFields = {
     documentType: 'longlived',
@@ -104,8 +106,8 @@ export const createNewLongLivedToken = async ({
     title,
     description,
     enabled: true,
-    createdTimestampMs: currentTimestamp,
-    updatedTimestampMs: currentTimestamp,
+    createdTimestampMs,
+    updatedTimestampMs: createdTimestampMs,
     expiryTimestampMs: expiryTimestampMs,
     lastUsedTimestampMs: undefined,
   };
@@ -147,7 +149,7 @@ export const updateLongLivedToken = async (
     }
 
     // Always update the timestamp
-    tokenDoc.updatedTimestampMs = Date.now();
+    tokenDoc.updatedTimestampMs = nowMs();
 
     // Update doc
     await safeWriteDocument({db: authDB, data: tokenDoc});
@@ -180,7 +182,7 @@ export const revokeLongLivedToken = async (
     }
 
     tokenDoc.enabled = false;
-    tokenDoc.updatedTimestampMs = Date.now();
+    tokenDoc.updatedTimestampMs = nowMs();
     await safeWriteDocument({db: authDB, data: tokenDoc});
     return tokenDoc;
   } catch (error) {
@@ -225,7 +227,7 @@ export const validateLongLivedToken = async (
       };
     }
 
-    if (tokenDoc.expiryTimestampMs && tokenDoc.expiryTimestampMs < Date.now()) {
+    if (tokenDoc.expiryTimestampMs && tokenDoc.expiryTimestampMs < nowMs()) {
       return {
         valid: false,
         validationError: 'Token has expired.',
@@ -240,9 +242,16 @@ export const validateLongLivedToken = async (
       };
     }
 
+    if (isPeopleUserAccountDisabled(user)) {
+      return {
+        valid: false,
+        validationError: 'User account is disabled.',
+      };
+    }
+
     // Update last used timestamp if requested
     if (updateLastUsed) {
-      tokenDoc.lastUsedTimestampMs = Date.now();
+      tokenDoc.lastUsedTimestampMs = nowMs();
       try {
         await safeWriteDocument({
           db: getAuthDB(),

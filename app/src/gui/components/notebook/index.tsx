@@ -1,15 +1,5 @@
-import styled from '@emotion/styled';
 import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
-import {
-  Alert,
-  AlertTitle,
-  AppBar,
-  Box,
-  Paper,
-  Tab,
-  Tabs,
-  TabScrollButton,
-} from '@mui/material';
+import {Alert, AlertTitle, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
@@ -37,6 +27,7 @@ import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
+import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
@@ -51,9 +42,9 @@ type TabIndex = 0 | 1 | 2 | 3 | 4;
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
   ['other_records', 1],
-  ['details', 2],
-  ['settings', 3],
-  ['map', 4],
+  ['map', 2],
+  ['details', 3],
+  ['settings', 4],
 ]);
 const INDEX_TO_TAB = new Map<TabIndex, TabIndexLabel>(
   Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
@@ -108,16 +99,6 @@ function a11yProps(index: number, id: string) {
     'aria-controls': `${id}-tabpanel-${index}`,
   };
 }
-
-const MyTabScrollButton = styled(TabScrollButton)({
-  '&.Mui-disabled': {
-    width: 0,
-  },
-  overflow: 'hidden',
-  transition: 'width 0.3s',
-  width: 25,
-  marginLeft: 0,
-});
 
 /**
  * NotebookComponentProps defines the properties for the NotebookComponent component.
@@ -196,10 +177,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const viewsets = uiSpecification.viewsets;
 
   const templateId = useAppSelector(
-    state =>
-      selectProjectById(state, project.projectId)?.metadata?.['template_id'] as
-        | string
-        | undefined
+    state => selectProjectById(state, project.projectId)?.templateId
   );
 
   /**
@@ -217,6 +195,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setTabIndex(newValue);
     // Update the param
     setTabValue(newValue);
+  };
+
+  const goToSyncSettings = () => {
+    setTabIndex(4);
+    setTabValue(4);
   };
 
   // recordLabel based on viewsets
@@ -239,12 +222,15 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
       {project.status === ProjectStatus.CLOSED && (
         <Alert variant="standard" severity="warning" sx={{mb: 1}}>
           <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
-          This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
-          uploaded, but no additional data can be collected. It is recommended
-          to {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} in the
-          settings tab below.
+          Ensure your records have a green sync status and then{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} via the settings
+          tab. No additional data can be collected for this {NOTEBOOK_NAME}.
         </Alert>
       )}
+      <PushOnlySyncBanner
+        project={project}
+        onGoToSyncSettings={goToSyncSettings}
+      />
       <Box>
         {isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>
@@ -266,20 +252,22 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             />
           </Box>
         )}
+        {/* Note that the Tab bar below is set to auto scroll, so on sm screens
+        there is a gap on the left due to the hidden left scroll button, this appears
+        if you scroll right.  There doesn't seem to be a way to push the content all
+        the way to the left when the scroll button is hidden.
+        
+        Previous margin adjustments have been removed */}
         <Box
-          mb={2}
           sx={{
-            marginLeft: {sm: '-16px', md: 0},
-            marginRight: {sm: '-16px', md: 0},
+            mb: 2,
           }}
           component={Paper}
           elevation={0}
           variant={isMedium ? 'outlined' : 'elevation'}
         >
-          <AppBar
-            position="static"
+          <Paper
             sx={{
-              paddingLeft: '16px',
               backgroundColor: theme.palette.background.tabsBackground,
             }}
           >
@@ -288,14 +276,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               onChange={handleTabChange}
               aria-label={`${NOTEBOOK_NAME} tabs`}
               indicatorColor="secondary"
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: theme.palette.secondary.contrastText,
-                },
-              }}
               sx={{
                 backgroundColor: theme.palette.background.tabsBackground,
                 justifyItems: 'space-between',
+                '& .MuiTabs-indicator': {
+                  backgroundColor: theme.palette.secondary.contrastText,
+                },
 
                 // Make more compact if needed
 
@@ -310,10 +296,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                     }
                   : {},
               }}
-              ScrollButtonComponent={MyTabScrollButton}
               textColor="inherit"
               variant="scrollable"
-              scrollButtons={true}
+              scrollButtons="auto"
               allowScrollButtonsMobile={true}
             >
               <Tab
@@ -337,7 +322,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 {...a11yProps(4, NOTEBOOK_NAME)}
               />
             </Tabs>
-          </AppBar>
+          </Paper>
         </Box>
 
         {
@@ -375,14 +360,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         </TabPanel>
 
         <TabPanel value={tabIndex} index={2} id={'map'}>
-          {uiSpecification !== null && (
-            <OverviewMap
-              serverId={project.serverId}
-              records={records}
-              project_id={project.projectId}
-              uiSpec={uiSpecification}
-            />
-          )}
+          <OverviewMap
+            serverId={project.serverId}
+            records={records}
+            project_id={project.projectId}
+            uiSpec={uiSpecification}
+          />
         </TabPanel>
 
         <TabPanel value={tabIndex} index={3} id={'details'}>

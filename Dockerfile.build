@@ -16,11 +16,11 @@ ENV NODE_RUN_DIR=${NODE_RUN_DIR}
 
 # Setup pnpm
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 RUN corepack enable
 
 # install some dependencies
-RUN apk update && apk add --no-cache libc6-compat
+# RUN apk update && apk add --no-cache libc6-compat
 
 # create this layer to use to avoid repeatedly installing
 FROM alpine AS base
@@ -33,17 +33,14 @@ FROM base AS pruner
 # work in /app folder
 WORKDIR /app
 
-# install turbo global
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm add -g turbo@^2.0.11
-
 # copy everything into pruner
 COPY . .
 
 # prune using turbo for only faims3 and it's dependencies. This produces an
 # /app/out folder which has /full (all needed deps) or /json (package*.json
 # only)
-RUN turbo prune ${PACKAGE_NAME} --docker
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm dlx turbo@^2.0.11 prune ${PACKAGE_NAME} --docker
 
 # INSTALL PACKAGES [builder]
 # ============================
@@ -58,10 +55,6 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
-# install turbo global and dependencies with cache
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm add -g turbo@^2.0.11
-
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
@@ -70,7 +63,7 @@ COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/out/json/ json
 
 # build packages using turbo
-RUN turbo run build --filter=${PACKAGE_NAME}
+RUN pnpm exec turbo run build --filter=${PACKAGE_NAME}
 
 # Package all necessary files to run app into pruner out
 COPY bundle.sh .

@@ -19,6 +19,7 @@
  */
 
 import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
 import {createUseStyles} from 'react-jss';
@@ -70,13 +71,17 @@ export default function SystemAlert() {
     return null;
   }
 
+  const autoHideDuration =
+    currentAlert.autoHideDuration ??
+    (currentAlert.severity === 'error' ? 10000 : 6000);
+
   return (
     <ThemeProvider theme={theme}>
       <div className={classes.root}>
         <Snackbar
           key={currentAlert.key || 'default-snackbar-key'}
           open={!!currentAlert}
-          autoHideDuration={currentAlert.severity === 'error' ? 10000 : 6000}
+          autoHideDuration={autoHideDuration}
           onClose={() => handleClose(currentAlert.key)}
           anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
         >
@@ -91,7 +96,10 @@ export default function SystemAlert() {
               transform: 'scale(1)',
             }}
           >
-            {'message' in currentAlert
+            {currentAlert.title ? (
+              <AlertTitle>{currentAlert.title}</AlertTitle>
+            ) : null}
+            {'message' in currentAlert && currentAlert.message
               ? currentAlert.message
               : currentAlert.element}
           </Alert>

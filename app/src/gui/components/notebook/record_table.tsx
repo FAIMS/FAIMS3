@@ -5,8 +5,8 @@ import {
   getVisibleTypes,
   MinimalRecordMetadata,
   PostRecordStatusResponse,
-  ProjectUIModel,
-  ProjectUIViewsets,
+  UiSpecModel,
+  UiSpecForms,
   RecordMetadata,
 } from '@faims3/data-model';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
@@ -27,7 +27,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import {useTheme} from '@mui/material/styles';
 import {
   DataGrid,
   GridCellParams,
@@ -44,7 +43,7 @@ import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {buildHydrateKeys} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
-import {prettifyFieldName} from '../../../utils/formUtilities';
+import {formatDate, prettifyFieldName} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
 import CircularLoading from '../ui/circular_loading';
@@ -104,7 +103,7 @@ interface RecordsTableProps {
   /** Whether the table is in a loading state */
   loading: boolean;
   /** Optional viewsets configuration for the table */
-  viewsets?: ProjectUIViewsets | null;
+  viewsets?: UiSpecForms | null;
   /** Function to handle query changes */
   handleQueryFunction: Function;
   /** Function to handle table refresh */
@@ -277,7 +276,7 @@ function getDataForColumn({
 }: {
   record: WithSynced<RecordMetadata | MinimalRecordMetadata>;
   column: ColumnType;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): string | undefined {
   const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
   if (!record) return fallback;
@@ -286,9 +285,7 @@ function getDataForColumn({
     if ('createdBy' in record) {
       switch (column) {
         case 'LAST_UPDATED':
-          return record.updated
-            ? record.updated.toLocaleString().replace('T', ' ')
-            : fallback;
+          return record.updated ? formatDate(record.updated) : fallback;
 
         case 'LAST_UPDATED_BY':
           return record.updatedBy || fallback;
@@ -297,9 +294,7 @@ function getDataForColumn({
           return record.conflicts ? 'Yes' : 'No';
 
         case 'CREATED':
-          return record.created
-            ? record.created.toLocaleString().replace('T', ' ')
-            : fallback;
+          return record.created ? formatDate(record.created) : fallback;
 
         case 'CREATED_BY':
           return record.createdBy || fallback;
@@ -362,26 +357,29 @@ export function buildColumnsFromSummaryFields({
   summaryFields,
   uiSpecification,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   summaryFields: string[];
 }): GridColumnType[] {
   if (!summaryFields || !uiSpecification) return [];
 
-  return summaryFields.map(field => ({
-    field: field,
-    sortable: false,
-    headerName: prettifyFieldName(field),
-    type: 'string',
-    filterable: false,
-    flex: 1,
-    valueGetter: params => {
-      const data = 'data' in params.row ? params.row.data ?? {} : {};
-      return getDisplayDataFromRecordMetadata({
-        field,
-        data: data,
-      });
-    },
-  }));
+  return summaryFields.map(
+    field =>
+      ({
+        field: field,
+        sortable: false,
+        headerName: prettifyFieldName(field),
+        type: 'string',
+        filterable: false,
+        flex: 1,
+        valueGetter: (value: any, row: any) => {
+          const data = row?.data ?? {};
+          return getDisplayDataFromRecordMetadata({
+            field,
+            data: data,
+          });
+        },
+      }) as GridColumnType
+  );
 }
 
 /**
@@ -396,9 +394,9 @@ export function buildColumnFromSystemField({
   uiSpecification,
 }: {
   columnType: ColumnType;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): GridColumnType {
-  const baseColumn = {
+  const baseColumn: GridColumnType = {
     field: columnType.toLowerCase(),
     headerName: COLUMN_TO_LABEL_MAP.get(columnType) || columnType,
     type: 'string',
@@ -412,8 +410,8 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'dateTime',
-        valueGetter: params => {
-          const rawValue = params.row.updated;
+        valueGetter: (value: any, row: any) => {
+          const rawValue = row.updated;
           return rawValue ? new Date(rawValue) : null;
         },
       };
@@ -422,9 +420,9 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        valueGetter: params => {
+        valueGetter: (value: any, row: any) => {
           return getDataForColumn({
-            record: params.row,
+            record: row,
             column: columnType,
             uiSpecification,
           });
@@ -455,9 +453,9 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        valueGetter: params => {
+        valueGetter: (value: any, row: any) => {
           return getDataForColumn({
-            record: params.row,
+            record: row,
             column: columnType,
             uiSpecification,
           });
@@ -470,7 +468,7 @@ export function buildColumnFromSystemField({
         type: 'boolean',
         flex: 0,
         minWidth: 125,
-        renderCell: (params: GridCellParams) => (
+        renderCell: (params: any) => (
           <Box sx={{display: 'flex', alignItems: 'center'}}>
             {params.row.conflicts && (
               <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
@@ -576,7 +574,7 @@ export function buildVerticalStackColumn({
   hasConflict,
 }: {
   summaryFields: string[];
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   columnLabel: string;
   includeKind: boolean;
   hasConflict: boolean;
@@ -693,7 +691,7 @@ function buildColumnDefinitions({
   includeKind,
   hasConflict,
 }: {
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   viewsetId?: string;
   width: SizeCategory;
   includeKind: boolean;
@@ -924,9 +922,9 @@ const useTableColumns = ({
   size,
   hasConflict,
 }: {
-  uiSpec: ProjectUIModel | null;
+  uiSpec: UiSpecModel | null;
   visibleTypes: string[];
-  viewsets: ProjectUIViewsets | null | undefined;
+  viewsets: UiSpecForms | null | undefined;
   size: SizeCategory;
   hasConflict: boolean;
 }) => {
@@ -1023,7 +1021,7 @@ const useSortedAndPaginatedRows = (
 const useRowHydration = (
   pageRows: MinimalRecordMetadata[],
   projectId: string,
-  uiSpec: ProjectUIModel,
+  uiSpec: UiSpecModel,
   dataDb: DataDbType,
   activeUser: ReturnType<typeof selectActiveUser>
 ) => {
@@ -1105,9 +1103,8 @@ export function RecordsTable(props: RecordsTableProps) {
     project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
 
-  const theme = useTheme();
   const history = useNavigate();
-  const styles = useDataGridStyles(theme);
+  const styles = useDataGridStyles();
 
   // Get UI specification
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
@@ -1220,6 +1217,8 @@ export function RecordsTable(props: RecordsTableProps) {
     [history, project_id, serverId]
   );
 
+  console.log('RecordsTable render');
+
   return (
     <Box component={Paper} elevation={3} sx={styles.wrapper}>
       <DataGrid
@@ -1244,7 +1243,8 @@ export function RecordsTable(props: RecordsTableProps) {
         onRowClick={handleRowClick}
         getRowClassName={params => (params.row.conflicts ? 'conflict-row' : '')}
         // Custom toolbar with sort control
-        slots={{toolbar: NotebookDataGridToolbar}}
+        showToolbar={true}
+        slots={{toolbar: NotebookDataGridToolbar as any}}
         slotProps={{
           filterPanel: {sx: {maxWidth: '96vw'}},
           toolbar: {
@@ -1253,9 +1253,8 @@ export function RecordsTable(props: RecordsTableProps) {
             additionalControls: (
               <SortControl value={sortOption} onChange={handleSortChange} />
             ),
-          },
+          } as any,
         }}
-        sx={styles.grid}
       />
     </Box>
   );

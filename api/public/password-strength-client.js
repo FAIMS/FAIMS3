@@ -54,7 +54,7 @@
       bar.style.width = '0%';
       bar.style.backgroundColor = '';
       label.textContent = '';
-      time.textContent = '';
+      if (time) time.textContent = '';
       suggestions.textContent = '';
       return;
     }
@@ -66,7 +66,7 @@
       bar.style.backgroundColor = config.color;
       label.textContent = config.label;
       label.className = 'strength-label ' + config.class;
-      time.textContent = '';
+      if (time) time.textContent = '';
       suggestions.innerHTML = `<span class="text-danger">Password must be at least ${MINIMUM_LENGTH} characters long</span>`;
       return;
     }
@@ -89,10 +89,12 @@
     label.textContent = config.label;
     label.className = 'strength-label ' + config.class;
 
-    // Update crack time
-    const crackTime =
-      result.crack_times_display.offline_slow_hashing_1e4_per_second;
-    time.textContent = `Time to crack: ${crackTime}`;
+    // Update crack-time hint (rough estimate from zxcvbn).
+    if (time) {
+      const crackTime =
+        result.crack_times_display.offline_slow_hashing_1e4_per_second;
+      time.textContent = `Time to crack: ${crackTime}`;
+    }
 
     // Update suggestions
     const feedback = [];

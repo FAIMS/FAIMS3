@@ -1,7 +1,7 @@
 # Templated String
 
-*How to add and configure a Templated String field in the {{Notebook}}
-Editor.*
+_How to add and configure a Templated String field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -51,10 +51,10 @@ defines the generated value using field variable references. A
 **VISUAL BUILDER** button opens an interactive builder for constructing
 templates without typing the syntax manually.
 
-| Setting | What It Does |
-| ------- | ------------ |
-| **Template** | A text area where you define the template using literal text and field variable references in double-brace syntax (e.g., `{{Feature-ID}}-{{Feature-type}}`). |
-| **VISUAL BUILDER** | Opens an interactive builder for constructing the template by selecting fields and adding text segments without manual syntax. |
+| Setting            | What It Does                                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Template**       | A text area where you define the template using literal text and field variable references in double-brace syntax (e.g., `{{Feature-ID}}-{{Feature-type}}`). |
+| **VISUAL BUILDER** | Opens an interactive builder for constructing the template by selecting fields and adding text segments without manual syntax.                               |
 
 The template supports:
 

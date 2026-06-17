@@ -1,4 +1,5 @@
 import {Field, Form} from '@/components/form';
+import {NOTEBOOK_NAME} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
@@ -34,15 +35,28 @@ export function AddProjectToTeamForm({
 
   const teamsAvailable = teams.data?.teams;
 
-  if (!canAddProjectToTeam || !teamsAvailable) {
-    return <></>;
+  if (!canAddProjectToTeam) {
+    return (
+      <>
+        You do not have permission to change the ownership of this{' '}
+        {NOTEBOOK_NAME}
+      </>
+    );
+  }
+
+  if (teams.isLoading) {
+    return <>Loading teams...</>;
+  }
+
+  if (!teams.isLoading && !teamsAvailable) {
+    return <>No teams available to assign this {NOTEBOOK_NAME} to.</>;
   }
 
   const fields: Field[] = [
     {
       name: 'teamId',
       label: 'Team',
-      options: teamsAvailable.map(t => ({
+      options: teamsAvailable?.map(t => ({
         label: t.name,
         value: t._id,
       })),

@@ -47,14 +47,12 @@ import ListItemText from '@mui/material/ListItemText';
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
   OFFLINE_MAPS,
 } from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {
-  selectIsAuthenticated,
-} from '../../context/slices/authSlice';
+import {selectIsAuthenticated} from '../../context/slices/authSlice';
 import {
   Project,
   selectActiveServerProjects,
@@ -105,7 +103,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
       return;
     }
     projectListItems.push({
-      title: project_info.name ?? project_info.metadata.name,
+      title: project_info.name,
       icon: <DescriptionIcon />,
       to:
         ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
@@ -116,7 +114,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
     });
   });
   return {
-    title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+    title: `${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.NOTEBOOK_LIST_ROUTE,
@@ -146,7 +144,7 @@ export default function MainAppBar() {
     },
     projectList === null
       ? {
-          title: `Loading ${NOTEBOOK_NAME}s...`,
+          title: `Loading ${NOTEBOOK_NAME_PLURAL}...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
@@ -154,7 +152,7 @@ export default function MainAppBar() {
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-            title: `Active ${NOTEBOOK_NAME_CAPITALIZED}s`,
+            title: `Active ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
             icon: <AccountTree />,
             to: '/',
             disabled: true,
@@ -251,13 +249,17 @@ export default function MainAppBar() {
           variant="temporary"
           anchor="left"
           open={isOpen}
-          ModalProps={{onBackdropClick: toggle}}
-          PaperProps={{
-            sx: {
-              width: drawerWidth,
-              height: '100vh',
-              boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+          onClose={toggle}
+          slotProps={{
+            paper: {
+              sx: {
+                width: drawerWidth,
+                height: '100vh',
+                boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+                borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                // bottom menu items above Android overlay nav bars.
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              },
             },
           }}
         >

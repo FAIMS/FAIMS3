@@ -26,7 +26,7 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
       columns={columns.filter(c => c.id !== 'team')}
       data={data || []}
       loading={isPending}
-      onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
+      onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
       button={
         canAddProjectInTeam && <CreateProjectDialog specifiedTeam={teamId} />
       }

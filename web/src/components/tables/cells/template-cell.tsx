@@ -50,7 +50,7 @@ export const TemplateCellComponent = ({
           ? templateId
           : isLoading
             ? 'Loading...'
-            : template?.name ?? templateId}
+            : (template?.name ?? templateId)}
       </Link>
     </div>
   );

@@ -1,4 +1,10 @@
-import React, {useMemo, useState} from 'react';
+import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
+import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
+import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
+import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-template-from-project-dialog';
+import {DesignerDialog} from '@/components/dialogs/designer-dialog';
+import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
+import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -8,22 +14,23 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '@/constants';
 import {useAuth} from '@/context/auth-provider';
+import {
+  toDesignerNotebookWithHistory,
+  useDesignerSaveMutation,
+} from '@/designer/integration';
+import type {NotebookWithHistory} from '@/designer/state/initial';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
-import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {DesignerDialog} from '@/components/dialogs/designer-dialog';
-import type {
-  NotebookWithHistory,
-  NotebookUISpec,
-} from '@/designer/state/initial';
-import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
-import {generateTestRecordsForProject} from '@/hooks/project-hooks';
+import {
+  Action,
+  getUserResourcesForAction,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {Input} from '@mui/material';
-import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
-import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
+import {useQueryClient} from '@tanstack/react-query';
+import {useMemo, useState} from 'react';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -46,42 +53,15 @@ const ProjectActions = (): JSX.Element => {
   const [generateCount, setGenerateCount] = useState('10');
   // Prepare notebook data for the Designer
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    if (!data) return undefined;
-    return {
-      metadata: data.metadata,
-      'ui-specification': {
-        present: data['ui-specification'] as unknown as NotebookUISpec,
-        past: [],
-        future: [],
-      },
-    };
+    return toDesignerNotebookWithHistory(data);
   }, [data]);
 
-  // save updated notebook JSON
-  const saveFile = useMutation<unknown, Error, File>({
-    mutationFn: async file => {
-      const jsonText = await file.text();
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user?.token}`,
-          },
-          body: jsonText,
-        }
-      );
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`Save failed: ${res.status} ${err}`);
-      }
-      return res.json();
-    },
-    onSuccess: updated => {
-      queryClient.setQueryData(['projects', projectId], () => updated);
-      queryClient.invalidateQueries({queryKey: ['projects', projectId]});
-    },
+  // PUT notebook JSON from the designer; react-query updates cache on success.
+  const saveProjectNotebook = useDesignerSaveMutation({
+    resourceType: 'projects',
+    apiResourceType: 'notebooks',
+    resourceId: projectId,
+    token: user?.token,
   });
 
   // need to invalidate the project query after upload
@@ -90,9 +70,14 @@ const ProjectActions = (): JSX.Element => {
   };
 
   const handleEditorClose = (file?: File) => {
-    if (file) saveFile.mutate(file);
+    if (file) saveProjectNotebook.mutate(file);
     setEditorOpen(false);
   };
+
+  const canUpdateProjectDetails = useIsAuthorisedTo({
+    action: Action.UPDATE_PROJECT_DETAILS,
+    resourceId: projectId,
+  });
 
   const canEditProject = useIsAuthorisedTo({
     action: Action.UPDATE_PROJECT_UISPEC,
@@ -110,11 +95,30 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
-  const canCreateTemplateInTeam =
+  /** Matches {@link CreateTemplateFromProjectForm}: global create or any permitted team. */
+  const canCreateTemplateFromProject =
+    useIsAuthorisedTo({action: Action.CREATE_TEMPLATE}) ||
     getUserResourcesForAction({
       decodedToken: user?.decodedToken,
       action: Action.CREATE_TEMPLATE_IN_TEAM,
     }).length > 0;
+
+  const canReadProjectMetadata = useIsAuthorisedTo({
+    action: Action.READ_PROJECT_METADATA,
+    resourceId: projectId,
+  });
+
+  const canGenerateTestRecords = useIsAuthorisedTo({
+    action: Action.GENERATE_RANDOM_PROJECT_RECORDS,
+    resourceId: projectId,
+  });
+
+  const projectIsClosed = data?.status === ProjectStatus.CLOSED;
+
+  const canChangeArchive = useIsAuthorisedTo({
+    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
+    resourceId: projectId,
+  });
 
   const handleCreateTestRecords = async () => {
     if (user)
@@ -128,16 +132,13 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {DEVELOPER_MODE && (
+        {DEVELOPER_MODE && canGenerateTestRecords && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Generate Test Records</ListLabel>
-                <ListDescription>
-                  Generate test records for this {NOTEBOOK_NAME}
-                </ListDescription>
               </ListItem>
-              <ListItem>
+              <ListItem className="flex flex-wrap items-center gap-2">
                 <Input
                   type="number"
                   value={generateCount}
@@ -155,14 +156,30 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
+        {canUpdateProjectDetails && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED} details</ListLabel>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  Update {NOTEBOOK_NAME_CAPITALIZED} title and short
+                  description.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditProjectDetailsDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         {canEditProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-                <ListDescription>
-                  Edit this {NOTEBOOK_NAME} in the Notebook Editor.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <Button
@@ -179,12 +196,9 @@ const ProjectActions = (): JSX.Element => {
 
         {canAddProjectToTeam && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
-                <ListDescription>
-                  Assign this {NOTEBOOK_NAME} to a team.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
@@ -193,41 +207,41 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        <Card className="flex-1">
-          <List className="flex flex-col gap-4">
-            <ListItem>
-              <ListLabel>Download JSON</ListLabel>
-              <ListDescription>
-                Download the JSON file for this {NOTEBOOK_NAME_CAPITALIZED}.
-              </ListDescription>
-            </ListItem>
-            <ListItem>
-              <Button variant="outline">
-                <a
-                  href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify({
-                      'ui-specification': data?.['ui-specification'],
-                      metadata: data?.metadata,
-                    })
-                  )}`}
-                  download={`${projectId}.json`}
-                >
-                  Download JSON
-                </a>
-              </Button>
-            </ListItem>
-          </List>
-        </Card>
+        {canReadProjectMetadata && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem>
+                <ListLabel>Download JSON</ListLabel>
+                <ListDescription>
+                  Download the {NOTEBOOK_NAME} design JSON file.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <Button variant="outline" disabled={isLoading}>
+                  <a
+                    href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                      JSON.stringify(data?.uiSpecification ?? {}, null, 2)
+                    )}`}
+                    download={`${projectId}.json`}
+                  >
+                    Download JSON
+                  </a>
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
 
         {canEditProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
                 <ListDescription>
-                  Replace the {NOTEBOOK_NAME} JSON file.
+                  Upload a JSON design file to replace the existing{' '}
+                  {NOTEBOOK_NAME} design.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -237,18 +251,13 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canCreateTemplateInTeam && (
+        {canCreateTemplateFromProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
                   Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
                 </ListLabel>
-                <ListDescription>
-                  Create a new template from the current {NOTEBOOK_NAME}. You
-                  will then be able to create copies of this {NOTEBOOK_NAME}{' '}
-                  from the template.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <CreateTemplateFromProjectDialog projectId={projectId} />
@@ -262,10 +271,32 @@ const ProjectActions = (): JSX.Element => {
             <ProjectStatusDialog projectId={projectId} />
           </Card>
         )}
+
+        {canChangeArchive && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem className="flex flex-col items-start gap-2">
+                <ListLabel className="block">
+                  Archive {NOTEBOOK_NAME_CAPITALIZED}
+                </ListLabel>
+                {!projectIsClosed && (
+                  <ListDescription>
+                    To archive, you must close the {NOTEBOOK_NAME} first
+                  </ListDescription>
+                )}
+                <ArchiveProjectDialog
+                  projectId={projectId}
+                  disabled={!projectIsClosed}
+                />
+              </ListItem>
+            </List>
+          </Card>
+        )}
       </div>
       <DesignerDialog
         open={editorOpen}
         notebook={initialNotebook}
+        exportBaseName={data?.name}
         onClose={handleEditorClose}
       />
     </>

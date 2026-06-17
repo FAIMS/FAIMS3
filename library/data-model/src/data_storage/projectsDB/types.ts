@@ -1,53 +1,161 @@
+import {z} from 'zod';
 import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
+import {PersistedRootDescriptionSchema} from '../rootMetadata';
+import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
+import {NotebookDefinitionSchema} from '../../uiSpecification';
 
-// V1
-export type ProjectV1Fields = {
-  name: string;
-  description?: string;
+/** Couch connection descriptor for per-project data/metadata databases. */
+export const PossibleConnectionInfoSchema: z.ZodType<PossibleConnectionInfo> =
+  z.object({
+    base_url: z.string().optional(),
+    proto: z.string().optional(),
+    host: z.string().optional(),
+    port: z.number().optional(),
+    db_name: z.string().optional(),
+    auth: z
+      .object({
+        username: z.string(),
+        password: z.string(),
+      })
+      .optional(),
+    jwt_token: z.string().optional(),
+  });
 
+// =============
+// V1 Definition
+// =============
+
+export const ProjectV1FieldsSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
   // Was the project created from a template?
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-
+  template_id: z.string().optional(),
+  data_db: PossibleConnectionInfoSchema.optional(),
+  metadata_db: PossibleConnectionInfoSchema.optional(),
+  last_updated: z.string().optional(),
+  created: z.string().optional(),
+  status: z.string().optional(),
   // Team ownership? Undefined means owned by an individual
-  ownedByTeamId?: string;
-};
-export type ProjectV1Document = PouchDB.Core.Document<ProjectV1Fields>;
+  ownedByTeamId: z.string().optional(),
+});
+export type ProjectV1Fields = z.infer<typeof ProjectV1FieldsSchema>;
 
-// V2
-export enum ProjectStatus {
-  CLOSED = 'CLOSED',
+export const ProjectV1DocumentSchema = CouchDocumentSchema.extend(
+  ProjectV1FieldsSchema.shape
+);
+export type ProjectV1Document = z.infer<typeof ProjectV1DocumentSchema>;
+
+/** Stored project status before the ARCHIVED lifecycle value existed (projects DB v2). */
+export enum ProjectStatusV2 {
   OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
 }
 
-export type ProjectV2Fields = {
-  // Project name
-  name: string;
+/**
+ * Current survey lifecycle on the project document (projects DB v3+).
+ * Name kept as {@link ProjectStatus} (not `ProjectStatusV3`) for stable imports.
+ */
+export enum ProjectStatus {
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+  ARCHIVED = 'ARCHIVED',
+}
 
-  // Project status (default:= CLOSED)
-  status: ProjectStatus;
+// =============
+// V2 Definition
+// =============
 
-  // Data and metadata connections (mandatory)
-  dataDb: PossibleConnectionInfo;
-  metadataDb: PossibleConnectionInfo;
+export const ProjectV2FieldsSchema = z.object({
+  name: z.string(),
+  status: z.nativeEnum(ProjectStatusV2),
+  dataDb: PossibleConnectionInfoSchema,
+  metadataDb: PossibleConnectionInfoSchema,
+  ownedByTeamId: z.string().optional(),
+  templateId: z.string().optional(),
+});
+export type ProjectV2Fields = z.infer<typeof ProjectV2FieldsSchema>;
 
-  // Team ownership? Undefined means owned by an individual
-  ownedByTeamId?: string;
+export const ProjectV2DocumentSchema = CouchDocumentSchema.extend(
+  ProjectV2FieldsSchema.shape
+);
+export type ProjectV2Document = z.infer<typeof ProjectV2DocumentSchema>;
 
-  // Was the project created from a template?
-  templateId?: string;
-};
-export type ProjectV2Document = PouchDB.Core.Document<ProjectV2Fields>;
+// =============
+// V3 Definition
+// =============
 
-// Current (V2)
-export type ProjectDBFields = ProjectV2Fields;
-export type ProjectDocument = PouchDB.Core.Document<ProjectDBFields>;
-export type ExistingProjectDocument =
-  PouchDB.Core.ExistingDocument<ProjectDBFields>;
+export const ProjectV3FieldsSchema = ProjectV2FieldsSchema.omit({
+  status: true,
+}).extend({
+  status: z.nativeEnum(ProjectStatus),
+});
+export type ProjectV3Fields = z.infer<typeof ProjectV3FieldsSchema>;
 
-// DB Type (V2)
+export const ProjectV3DocumentSchema = CouchDocumentSchema.extend(
+  ProjectV3FieldsSchema.shape
+);
+export type ProjectV3Document = z.infer<typeof ProjectV3DocumentSchema>;
+
+// =============
+// V4 Definition
+// =============
+
+/**
+ * Projects DB v4 — extend this schema when adding new persisted project fields.
+ * Update alongside {@link projectsV3toV4Migration}.
+ */
+export const ProjectV4FieldsSchema = z.object({
+  // User metadata about projects - update with PUT /:id { ...name, ...description }
+  name: z.string(),
+  description: PersistedRootDescriptionSchema,
+
+  // Team / lineage
+  templateId: z.string().optional(),
+  ownedByTeamId: z.string().optional(),
+
+  // New information about projects - tracked automatically
+  createdBy: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+
+  // Project lifecycle
+  status: z.nativeEnum(ProjectStatus),
+
+  // Project connection information
+  dataDb: PossibleConnectionInfoSchema,
+
+  // UI Specification (now stored in the project)
+  // NOTE: This is never 'encoded' anymore - no more fviews etc.
+  uiSpecification: NotebookDefinitionSchema,
+});
+export type ProjectV4Fields = z.infer<typeof ProjectV4FieldsSchema>;
+
+export const ProjectV4DocumentSchema = CouchDocumentSchema.extend(
+  ProjectV4FieldsSchema.shape
+);
+export type ProjectV4Document = z.infer<typeof ProjectV4DocumentSchema>;
+
+// =============
+// Current exports
+// =============
+
+export const ProjectDBFieldsSchema = ProjectV4FieldsSchema;
+export type ProjectDBFields = z.infer<typeof ProjectDBFieldsSchema>;
+
+export const ProjectDocumentSchema = ProjectV4DocumentSchema;
+export type ProjectDocument = z.infer<typeof ProjectDocumentSchema>;
+
+export const ExistingProjectDocumentSchema = CouchExistingDocumentSchema.extend(
+  ProjectDBFieldsSchema.shape
+);
+export type ExistingProjectDocument = z.infer<
+  typeof ExistingProjectDocumentSchema
+>;
+
+/** Stored project shape without the form payload (matches listing view value). */
+export const ProjectListItemSchema = ExistingProjectDocumentSchema.omit({
+  uiSpecification: true,
+});
+export type ProjectListItem = z.infer<typeof ProjectListItemSchema>;
+
 export type ProjectDB = DatabaseInterface<ProjectDBFields>;

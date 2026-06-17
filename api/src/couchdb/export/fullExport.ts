@@ -13,7 +13,8 @@
  */
 
 import {ProjectID} from '@faims3/data-model';
-import {getProjectUIModel} from '../notebooks';
+import {isoDateOnly, nowIso} from '../../time';
+import {getUiSpecModel} from '../notebooks';
 import {
   appendAttachmentsToArchive,
   createConfiguredArchive,
@@ -74,7 +75,7 @@ export const streamFullExport = async ({
   // Initialize metadata structure
   const metadata: FullExportMetadata = {
     projectId,
-    exportedAt: new Date().toISOString(),
+    exportedAt: nowIso(),
     exportedBy: userId,
     config,
     views: [],
@@ -88,7 +89,7 @@ export const streamFullExport = async ({
     const archive = createConfiguredArchive(res);
 
     // Get project UI spec to enumerate views
-    const uiSpec = await getProjectUIModel(projectId);
+    const uiSpec = await getUiSpecModel(projectId);
     const viewIds = Object.keys(uiSpec.viewsets);
     metadata.totals.views = viewIds.length;
 
@@ -372,7 +373,7 @@ export const streamFullExport = async ({
  * Helper to generate a suggested filename for the full export
  */
 export const generateFullExportFilename = (projectId: string): string => {
-  const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const timestamp = isoDateOnly();
   const slug = slugifyLabel(projectId);
   return `${slug}-export-${timestamp}.zip`;
 };

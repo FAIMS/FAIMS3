@@ -18,6 +18,12 @@
       "url": "/api"
     }
   ],
+  "tags": [
+    {
+      "name": "Records",
+      "description": "Notebook record metadata and full-record reads; mutating routes are omitted from this spec until records CRUD is enabled in the API."
+    }
+  ],
   "components": {
     "securitySchemes": {
       "Auth": {
@@ -87,15 +93,80 @@
         }
       }
     },
+    "/directory/": {
+      "get": {
+        "summary": "List notebooks visible to the caller (directory)",
+        "description": "Returns project (notebook) documents from the directory that the authenticated user may read metadata for (`LIST_PROJECTS`). By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them.",
+        "tags": ["Utilities"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, includes archived notebooks. Default excludes `ARCHIVED`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ProjectDirectoryEntry"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
     "/notebooks/": {
       "get": {
         "summary": "Get a list of notebooks",
-        "description": "Get a list of the notebooks managed by this server",
+        "description": "Returns notebooks (projects) the caller can access. Optional `teamId` filters by team. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived notebooks alongside others.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
           {
             "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, restrict to notebooks owned by this team"
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, includes notebooks with status `ARCHIVED`. Default excludes them."
           }
         ],
         "responses": {
@@ -115,7 +186,7 @@
       },
       "post": {
         "summary": "Create a new notebook",
-        "description": "Create a new notebook by uploading JSON metadata and ui-specification",
+        "description": "Creates a notebook (project) in the projects DB. Supply either `uiSpecification` (from scratch) or `template_id` (from template), not both. Optional `description` (max 250 characters) and `teamId` for team-owned surveys. Requires `CREATE_PROJECT` or `CREATE_PROJECT_IN_TEAM` as appropriate.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -124,12 +195,19 @@
           }
         ],
         "requestBody": {
-          "description": "Notebook metadata and ui-specification",
+          "description": "From-scratch or from-template creation payload",
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/definitions/Notebook"
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/PostCreateNotebookFromScratch"
+                  },
+                  {
+                    "$ref": "#/definitions/PostCreateNotebookFromTemplate"
+                  }
+                ]
               }
             }
           }
@@ -137,8 +215,12 @@
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "$ref": "#/definitions/Notebook"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PostCreateNotebookResponse"
+                }
+              }
             }
           },
           "401": {
@@ -150,15 +232,17 @@
     "/notebooks/{id}/": {
       "get": {
         "summary": "Get a notebook",
-        "description": "Get a notebook by id",
+        "description": "Returns the full projects DB document for the notebook, including inlined `uiSpecification` (design bundle with `uiSpec` and `metadata`). Adds `recordCount` when records can be counted. Surveys not migrated to projects DB v4 return 404.",
         "tags": ["Notebooks"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Notebook id",
+            "description": "Notebook (project) id",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "produces": ["application/json"],
@@ -173,27 +257,32 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/definitions/Notebook"
+                  "$ref": "#/definitions/GetNotebookResponse"
                 }
               }
             }
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Notebook not found or not migrated"
           }
         }
       },
       "put": {
-        "summary": "Update a notebook",
-        "description": "Update a notebook by identifier",
+        "summary": "Update notebook name and description",
+        "description": "Merges inconsequential root fields (`name`, `description`) on the project document. Does not change `uiSpecification`; use `PUT /notebooks/{id}/uiSpecification` for the design bundle. Team ownership uses `PUT /notebooks/{id}/team`. Requires `UPDATE_PROJECT_DETAILS` on the project.",
         "tags": ["Notebooks"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Notebook identifier",
+            "description": "Notebook (project) identifier",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "produces": ["application/json"],
@@ -203,12 +292,12 @@
           }
         ],
         "requestBody": {
-          "description": "Notebook metadata and ui-specification",
+          "description": "Fields to merge",
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/definitions/Notebook"
+                "$ref": "#/definitions/PutUpdateNotebookMetadataInput"
               }
             }
           }
@@ -219,7 +308,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/definitions/Notebook"
+                  "$ref": "#/definitions/PutUpdateNotebookResponse"
                 }
               }
             }
@@ -230,18 +319,20 @@
         }
       }
     },
-    "/notebooks/{id}/records": {
-      "get": {
-        "summary": "Get a list of records",
-        "description": "Get a list of records for a notebook",
+    "/notebooks/{id}/uiSpecification": {
+      "put": {
+        "summary": "Replace notebook uiSpecification",
+        "description": "Full replace of the design bundle (`uiSpec` + `metadata`). Accepts current NotebookDefinition JSON at the request root (not wrapped in a `uiSpecification` property) or legacy wire JSON that the server migrates. Requires `UPDATE_PROJECT_UISPEC` on the project. Returns the updated project document.",
         "tags": ["Notebooks"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Notebook identifier",
+            "description": "Notebook (project) identifier",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "produces": ["application/json"],
@@ -250,13 +341,25 @@
             "Auth": []
           }
         ],
+        "requestBody": {
+          "description": "NotebookDefinition JSON (metadata + uiSpec at root)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/NotebookDefinitionUpload"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/RecordList"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateNotebookResponse"
+                }
               }
             }
           },
@@ -266,10 +369,333 @@
         }
       }
     },
+    "/notebooks/{id}/team": {
+      "put": {
+        "summary": "Change notebook owning team",
+        "description": "Updates which team owns the notebook (`ownedByTeamId`). Requires `CHANGE_PROJECT_TEAM` on the project. Returns 200 with no body.",
+        "tags": ["Notebooks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Target team",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutChangeNotebookTeamInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Team updated"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/status": {
+      "put": {
+        "summary": "Set notebook lifecycle status",
+        "description": "Sets survey status to `OPEN`, `CLOSED`, or `ARCHIVED`. This endpoint replaces the removed `PUT /notebooks/{id}/archive` and `POST /notebooks/{id}/restore` routes: use `ARCHIVED` to archive and `CLOSED` to restore from archive. **Permissions:** transitions between open and closed (while not archived) require `CHANGE_PROJECT_STATUS`. Setting `ARCHIVED`, or changing `ARCHIVED` → `CLOSED`, requires `CHANGE_PROJECT_ARCHIVE_STATUS`. Idempotent: requesting the current status returns 200 with no document change. **Validation:** `OPEN` is rejected while the notebook is `ARCHIVED`; set `CLOSED` first.",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutChangeNotebookStatusInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated (including no-op when already at the requested status)"
+          },
+          "400": {
+            "description": "Invalid transition (e.g. requesting OPEN while archived)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Caller lacks the permission required for this transition"
+          },
+          "404": {
+            "description": "Notebook id not found"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/delete": {
+      "post": {
+        "summary": "Permanently destroy notebook server data",
+        "description": "Irreversibly removes CouchDB project databases, invites, and people-db project roles for this notebook. The notebook must already be archived; requires operations-level permission. Request body must include `confirmName` exactly matching the notebook name (trimmed).",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PostDestroyNotebookInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notebook destroyed"
+          },
+          "400": {
+            "description": "Confirmation name does not match, or notebook not in a state that allows deletion"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/records": {
+      "get": {
+        "summary": "List all records (legacy full export shape)",
+        "description": "Returns `{ records }` with full export-oriented payloads for every record in the notebook (internal regex listing). Requires export permission on the project. Related-record fields omit references to soft-deleted records when building the export payload. For paginated, permission-filtered **metadata** only, use GET `/notebooks/{id}/records/metadata` instead. For single-record CRUD, use GET `/notebooks/{id}/records/{recordId}`.",
+        "tags": ["Notebooks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Notebook not found"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/records/metadata": {
+      "get": {
+        "summary": "List record metadata (CRUD API)",
+        "description": "Paginated metadata for records the caller may read (filters, soft-delete handling). For legacy export-shaped data use GET /notebooks/{id}/records instead.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Restrict to records for this form / viewset id"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500, default server-chosen)"
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor from a previous response’s nextStartKey"
+          },
+          {
+            "name": "filterDeleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When false, include soft-deleted records (default true)"
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordsCRUDListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/records/{recordId}": {
+      "get": {
+        "summary": "Get record detail",
+        "description": "Full form data for one record; optional revisionId. PUT and DELETE are omitted while CRUD mutations are disabled.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Specific revision to load (defaults to current head)"
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordsDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed to read this record"
+          },
+          "404": {
+            "description": "Record or revision not found"
+          }
+        }
+      }
+    },
     "/notebooks/{id}/records/export": {
       "get": {
-        "summary": "Generate download token for notebook records export",
-        "description": "Generates a signed JWT token and redirects to download endpoint for exporting notebook records in specified format. Supports CSV, ZIP, GeoJSON, and KML formats and a FULL export containing all formats.",
+        "summary": "Request signed URL for notebook records export",
+        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeMetadata.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -288,7 +714,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Form/view identifier (required for CSV format, optional for other formats.)"
+            "description": "Form/view identifier (required for CSV; optional for ZIP when scoping attachments)"
           },
           {
             "name": "format",
@@ -298,7 +724,57 @@
               "type": "string",
               "enum": ["csv", "zip", "geojson", "kml", "full"]
             },
-            "description": "Export format. CSV requires viewID parameter."
+            "description": "Export format. CSV requires viewID."
+          },
+          {
+            "name": "includeTabular",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include tabular CSV exports (default true)"
+          },
+          {
+            "name": "includeAttachments",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include attachment ZIP (default true)"
+          },
+          {
+            "name": "includeGeoJSON",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include GeoJSON (default true)"
+          },
+          {
+            "name": "includeKML",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include KML (default true)"
+          },
+          {
+            "name": "includeMetadata",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include metadata (default true)"
           }
         ],
         "security": [
@@ -307,8 +783,18 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Redirect to download endpoint with JWT token"
+          "200": {
+            "description": "Signed download URL (token expires in a few minutes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ExportNotebookSignedUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or incomplete parameters"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -443,7 +929,7 @@
     "/notebooks/{id}/users": {
       "get": {
         "summary": "Get users for a notebook",
-        "description": "Get a list of users with access to a notebook",
+        "description": "Returns roles and users who may be assigned for this notebook. Disabled user accounts are omitted from the selectable user list.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -477,7 +963,7 @@
       },
       "post": {
         "summary": "Add a user to a notebook",
-        "description": "Add a user to a notebook",
+        "description": "Add or remove a project role for a user (`addrole`). Project roles cannot be assigned to disabled user accounts.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -525,48 +1011,125 @@
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed (e.g. assigning a role to a disabled account)"
           }
         }
       }
     },
-    "/notebooks/template": {
-      "post": {
-        "summary": "Create a new notebook from an existing template",
-        "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks.",
-        "tags": ["Notebooks"],
+    "/users/": {
+      "get": {
+        "summary": "List all user accounts",
+        "description": "Returns people-db user documents (sanitized) for admins with `VIEW_USER_LIST`. Disabled accounts are omitted by default; pass `includeArchived=true` to include users with `disabled: true`.",
+        "tags": ["Users"],
         "produces": ["application/json"],
         "security": [
           {
             "Auth": []
           }
         ],
-        "requestBody": {
-          "description": "Template ID and project name for the new notebook",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostCreateNotebookFromTemplate"
-              }
-            }
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, includes disabled user accounts in the list."
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/definitions/PostCreateNotebookFromTemplateResponse"
+                  "$ref": "#/definitions/GetListAllUsersResponse"
                 }
               }
             }
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/users/{id}/disable": {
+      "post": {
+        "summary": "Disable a user account",
+        "description": "Sets `disabled: true` on the target user. Cannot disable yourself or a cluster admin. Requires `DISABLE_USER_ACCOUNT` on the target user id.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User id or email identifying the account",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account disabled"
           },
-          "500": {
-            "description": "Internal server error"
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed (e.g. self, cluster admin)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users/{id}/enable": {
+      "post": {
+        "summary": "Re-enable a user account",
+        "description": "Sets `disabled: false` on the target user. Requires `ENABLE_USER_ACCOUNT` on the target user id.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User id or email identifying the account",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account enabled"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          },
+          "404": {
+            "description": "User not found"
           }
         }
       }
@@ -574,7 +1137,7 @@
     "/users/{id}/admin": {
       "post": {
         "summary": "Set server admin status for a user",
-        "description": "Set server cluster-admin status for a user. Requires cluster-admin role.",
+        "description": "Set server cluster-admin status for a user. Requires cluster-admin role. Disabled accounts cannot have global roles changed until they are re-enabled.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -634,12 +1197,34 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Gets a list of templates from the templates DB.",
+        "description": "Lists template summaries (no `uiSpecification` form payload in each row). Use GET `/api/templates/{id}` for full detail including the form. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team. Each item may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team — so clients can show the owning team name without calling the teams API (e.g. for public catalogue templates).",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
           {
             "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, only templates associated with this team"
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, returns archived templates only; when omitted or `false`, returns non-archived templates only."
           }
         ],
         "responses": {
@@ -660,7 +1245,7 @@
       },
       "post": {
         "summary": "Create a new template",
-        "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
+        "description": "Creates a new template. The payload is validated before processing. Requires `CREATE_TEMPLATE` or `CREATE_TEMPLATE_IN_TEAM` as appropriate. Setting `isPublic` to true additionally requires `CREATE_PUBLIC_TEMPLATE` (operations or system administrators), same grant as `CHANGE_TEMPLATE_VISIBILITY`.",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -699,7 +1284,7 @@
     "/templates/{id}": {
       "get": {
         "summary": "Get a specific template",
-        "description": "Gets a specific template by ID from the templates DB.",
+        "description": "Gets a specific template by ID from the templates DB. The response may include `ownedByTeamDisplayName` when the template has `ownedByTeamId` and the server can resolve the team (same behaviour as the list endpoint).",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -736,7 +1321,7 @@
       },
       "put": {
         "summary": "Update an existing template",
-        "description": "Updates an existing template. The payload is validated before processing. Requires appropriate permissions.",
+        "description": "Updates an existing template (name and/or description). The payload is validated before processing. Requires `UPDATE_TEMPLATE_DETAILS` on the template resource. Team ownership uses `PUT /templates/{id}/team`.",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -783,10 +1368,249 @@
         }
       }
     },
+    "/templates/{id}/team": {
+      "put": {
+        "summary": "Change template owning team",
+        "description": "Updates which team owns the template (`ownedByTeamId`). Requires `CHANGE_TEMPLATE_TEAM` on the template resource. Returns the updated template document.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Target team",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutChangeTemplateTeamInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/uiSpecification": {
+      "put": {
+        "summary": "Replace template uiSpecification",
+        "description": "Full replace of the design bundle (`uiSpec` + `metadata`). Accepts current NotebookDefinition JSON at the request root (not wrapped in a `uiSpecification` property) or legacy wire JSON that the server migrates. Requires `UPDATE_TEMPLATE_DETAILS` on the template. Returns the updated template document.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "description": "NotebookDefinition JSON (metadata + uiSpec at root)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/NotebookDefinitionUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/visibility": {
+      "put": {
+        "summary": "Set template public catalogue visibility",
+        "description": "Sets whether the template is listed in the public catalogue (`isPublic`). Does not change other template fields. Requires `CHANGE_TEMPLATE_VISIBILITY` (operations or system administrators). Returns the updated template document.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Public visibility flag",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutTemplateSetVisibilityInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          }
+        }
+      }
+    },
+    "/templates/{id}/references": {
+      "get": {
+        "summary": "Count notebooks referencing this template",
+        "description": "Returns how many notebooks (projects) still reference this template id. Requires `READ_TEMPLATE_DETAILS` on the template.",
+        "tags": ["Templates"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetTemplateSurveyReferencesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/archive": {
+      "put": {
+        "summary": "Archive or restore a template",
+        "description": "Sets the template’s top-level `archived` flag. Use `{ \"archive\": true }` to archive and `{ \"archive\": false }` to restore from archive (replaces removed `POST /templates/{id}/restore`). Restore is rejected unless the template is currently archived. Requires `CHANGE_TEMPLATE_STATUS` on the template.",
+        "tags": ["Templates"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutArchiveTemplateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "400": {
+            "description": "Invalid request (e.g. restore when not archived)"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          }
+        }
+      }
+    },
     "/templates/{id}/delete": {
       "post": {
         "summary": "Delete an existing template",
-        "description": "Deletes the latest revision of an existing template. Requires appropriate permissions.",
+        "description": "Deletes the latest revision of an existing template. The template must already be archived. Requires `DELETE_TEMPLATE` on the template.",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -1251,28 +2075,321 @@
     },
     "NotebookMeta": {
       "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
+      "description": "Notebook list row (see GET /notebooks/). Project document without `uiSpecification`, plus `is_admin`.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/ProjectListItem"
         },
-        "name": {
-          "type": "string"
+        {
+          "type": "object",
+          "properties": {
+            "is_admin": {
+              "type": "boolean",
+              "description": "True when the caller has project admin on this notebook"
+            }
+          },
+          "required": ["is_admin"]
+        }
+      ]
+    },
+    "ProjectListItem": {
+      "type": "object",
+      "description": "Stored project (notebook) fields returned in list responses; omits `uiSpecification`.",
+      "properties": {
+        "_id": {"type": "string"},
+        "_rev": {"type": "string"},
+        "name": {"type": "string"},
+        "description": {
+          "type": "string",
+          "maxLength": 250,
+          "description": "Optional root description (projects DB v4+)"
+        },
+        "status": {"$ref": "#/definitions/ProjectNotebookStatus"},
+        "templateId": {"type": "string"},
+        "ownedByTeamId": {"type": "string"},
+        "createdBy": {"type": "string"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"},
+        "dataDb": {"$ref": "#/definitions/PossibleConnectionInfo"}
+      },
+      "required": [
+        "_id",
+        "name",
+        "status",
+        "createdBy",
+        "createdAt",
+        "updatedAt",
+        "dataDb"
+      ]
+    },
+    "ProjectDocument": {
+      "description": "Full project document as stored in the projects DB (includes `uiSpecification`).",
+      "allOf": [
+        {"$ref": "#/definitions/ProjectListItem"},
+        {
+          "type": "object",
+          "properties": {
+            "uiSpecification": {"$ref": "#/definitions/NotebookDefinition"}
+          },
+          "required": ["uiSpecification"]
+        }
+      ]
+    },
+    "GetNotebookResponse": {
+      "description": "GET /notebooks/{id} — project document plus optional record count.",
+      "allOf": [
+        {"$ref": "#/definitions/ProjectDocument"},
+        {
+          "type": "object",
+          "properties": {
+            "recordCount": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "PutUpdateNotebookMetadataInput": {
+      "type": "object",
+      "description": "PUT /notebooks/{id} — partial merge of name and/or description.",
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "description": {
+          "type": "string",
+          "maxLength": 250
         }
       }
     },
-    "Notebook": {
+    "PutUpdateNotebookResponse": {
+      "$ref": "#/definitions/ProjectDocument"
+    },
+    "PutChangeNotebookTeamInput": {
       "type": "object",
       "properties": {
-        "metadata": {
-          "type": "object"
+        "teamId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Team that will own the notebook"
+        }
+      },
+      "required": ["teamId"]
+    },
+    "PostCreateNotebookFromScratch": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "description": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "uiSpecification": {
+          "$ref": "#/definitions/NotebookUiSpecificationInput"
+        },
+        "teamId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional owning team"
+        }
+      },
+      "required": ["name", "uiSpecification"]
+    },
+    "PostCreateNotebookResponse": {
+      "type": "object",
+      "properties": {
+        "notebook": {
+          "type": "string",
+          "description": "New project (notebook) id"
+        }
+      },
+      "required": ["notebook"]
+    },
+    "NotebookUiSpecificationInput": {
+      "type": "object",
+      "description": "Loose JSON object for create payloads; legacy wire format or current NotebookDefinition (may be wrapped — server normalizes).",
+      "additionalProperties": true
+    },
+    "NotebookDefinition": {
+      "type": "object",
+      "description": "Inlined design bundle on stored project/template documents.",
+      "properties": {
+        "uiSpec": {"$ref": "#/definitions/NotebookUiSpec"},
+        "metadata": {"$ref": "#/definitions/NotebookDesignMetadata"}
+      },
+      "required": ["uiSpec", "metadata"]
+    },
+    "NotebookDefinitionUpload": {
+      "description": "PUT .../uiSpecification body: NotebookDefinition fields at the JSON root (must not include a nested `uiSpecification` property).",
+      "allOf": [{"$ref": "#/definitions/NotebookDefinition"}]
+    },
+    "NotebookUiSpec": {
+      "type": "object",
+      "description": "Decoded form model (`fields`, `views`, `viewsets`, `visible_types`) plus settings and schemaVersion.",
+      "properties": {
+        "fields": {"type": "object", "additionalProperties": true},
+        "views": {"type": "object", "additionalProperties": true},
+        "viewsets": {"type": "object", "additionalProperties": true},
+        "visible_types": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "showQrCodeButton": {"type": "boolean"}
+          }
+        },
+        "schemaVersion": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "NotebookDesignMetadata": {
+      "type": "object",
+      "properties": {
+        "information": {
+          "type": "object",
+          "properties": {
+            "notebookVersion": {"type": "string"},
+            "purposeMarkdown": {"type": "string"},
+            "projectLeadLabel": {"type": "string"},
+            "leadInstitution": {"type": "string"},
+            "derivedFromTemplateId": {"type": "string"}
+          }
+        },
+        "custom": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["information"]
+    },
+    "PossibleConnectionInfo": {
+      "type": "object",
+      "description": "CouchDB connection descriptor for per-project data DB.",
+      "properties": {
+        "db_name": {"type": "string"},
+        "base_url": {"type": "string"},
+        "proto": {"type": "string"},
+        "host": {"type": "string"},
+        "port": {"type": "number"}
+      },
+      "additionalProperties": true
+    },
+    "PostDestroyNotebookInput": {
+      "type": "object",
+      "properties": {
+        "confirmName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Must match the notebook display name exactly (trimmed)"
+        }
+      },
+      "required": ["confirmName"]
+    },
+    "ProjectNotebookStatus": {
+      "type": "string",
+      "enum": ["OPEN", "CLOSED", "ARCHIVED"],
+      "description": "Survey lifecycle status stored on the project (notebook) document"
+    },
+    "PutChangeNotebookStatusInput": {
+      "type": "object",
+      "description": "Request body for PUT /notebooks/{id}/status",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/ProjectNotebookStatus"
+        }
+      },
+      "required": ["status"]
+    },
+    "ProjectDirectoryEntry": {
+      "type": "object",
+      "description": "Project (notebook) document as stored in the projects database; fields vary by version.",
+      "additionalProperties": true
+    },
+    "PeopleUserListItem": {
+      "type": "object",
+      "description": "Sanitized people-db user row from GET /users/",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
         },
         "name": {
           "type": "string"
         },
-        "ui-specification": {
-          "type": "object"
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "globalRoles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "projectRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "teamRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "templateRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "disabled": {
+          "type": "boolean"
         }
       }
+    },
+    "GetListAllUsersResponse": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PeopleUserListItem"
+      }
+    },
+    "GetTemplateSurveyReferencesResponse": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of notebooks whose directory still references this template id"
+        }
+      },
+      "required": ["count"]
+    },
+    "PutArchiveTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "archive": {
+          "type": "boolean",
+          "description": "When true, archive the template; when false, restore from archive"
+        }
+      },
+      "required": ["archive"]
     },
     "RecordList": {
       "type": "object",
@@ -1331,6 +2448,232 @@
         }
       }
     },
+    "FormRelationshipInstance": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "description": "Related record id"
+        },
+        "fieldId": {
+          "type": "string",
+          "description": "Field id on the parent that defines the link"
+        },
+        "relationTypeVocabPair": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Vocabulary pair defining relationship type"
+        }
+      },
+      "required": ["recordId", "fieldId", "relationTypeVocabPair"]
+    },
+    "FormRelationship": {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FormRelationshipInstance"
+          }
+        },
+        "linked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FormRelationshipInstance"
+          }
+        }
+      }
+    },
+    "PostRecordsCreateRequest": {
+      "type": "object",
+      "properties": {
+        "formId": {
+          "type": "string",
+          "description": "Form / viewset id for the new record"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Optional creator user id (defaults to authenticated user)"
+        },
+        "relationship": {
+          "$ref": "#/definitions/FormRelationship"
+        }
+      },
+      "required": ["formId"]
+    },
+    "PostRecordsCreateResponse": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string"
+        },
+        "revisionId": {
+          "type": "string"
+        }
+      },
+      "required": ["recordId", "revisionId"]
+    },
+    "RecordsCRUDListItem": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "recordId": {
+          "type": "string"
+        },
+        "revisionId": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp"
+        },
+        "updatedBy": {
+          "type": "string"
+        },
+        "conflicts": {
+          "type": "boolean"
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "description": "Form / viewset id"
+        },
+        "relationship": {
+          "$ref": "#/definitions/FormRelationship"
+        }
+      },
+      "required": [
+        "projectId",
+        "recordId",
+        "revisionId",
+        "created",
+        "createdBy",
+        "updated",
+        "updatedBy",
+        "conflicts",
+        "deleted",
+        "type"
+      ]
+    },
+    "RecordsCRUDListResponse": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RecordsCRUDListItem"
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when more results exist; pass as startKey on the next request"
+        }
+      },
+      "required": ["records"]
+    },
+    "PutRecordsUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string",
+          "description": "Base revision for the update"
+        },
+        "update": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Map of field id → value (and optional annotations) per data-model form update shape"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["new", "parent"],
+          "description": "AVP linkage mode (default parent)"
+        }
+      },
+      "required": ["revisionId", "update"]
+    },
+    "PutRecordsUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string",
+          "description": "New revision id after update"
+        }
+      },
+      "required": ["revisionId"]
+    },
+    "PostRecordsRevisionForkRequest": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string",
+          "description": "Existing revision to fork from"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Optional user id for the new revision (defaults to authenticated user)"
+        }
+      },
+      "required": ["revisionId"]
+    },
+    "PostRecordsRevisionForkResponse": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string"
+        }
+      },
+      "required": ["revisionId"]
+    },
+    "RecordsDetailResponse": {
+      "type": "object",
+      "description": "Shape matches GetRecordResponse in @faims3/data-model (revisionId, formId, data, context with hydrated record/revision)",
+      "properties": {
+        "revisionId": {
+          "type": "string"
+        },
+        "formId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Includes hrid, record, and revision documents"
+        }
+      },
+      "required": ["revisionId", "formId", "data", "context"]
+    },
+    "ExportNotebookSignedUrlResponse": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Absolute URL for GET /api/notebooks/download/{token}"
+        }
+      },
+      "required": ["url"]
+    },
     "UserList": {
       "type": "object",
       "properties": {
@@ -1375,14 +2718,43 @@
     },
     "GetListTemplatesResponse": {
       "type": "object",
+      "description": "Template list items are lean summaries (no `uiSpecification`) plus optional `ownedByTeamDisplayName` from the server.",
       "properties": {
         "templates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TemplateDocument"
+            "allOf": [
+              {
+                "$ref": "#/definitions/TemplateListItem"
+              },
+              {
+                "$ref": "#/definitions/TemplateApiResponseExtensions"
+              }
+            ]
           }
         }
       }
+    },
+    "TemplateListItem": {
+      "type": "object",
+      "description": "Template summary for GET /api/templates (excludes uiSpecification).",
+      "properties": {
+        "_id": {"type": "string"},
+        "_rev": {"type": "string"},
+        "name": {"type": "string"},
+        "description": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "version": {"type": "number"},
+        "archived": {"type": "boolean"},
+        "isPublic": {"type": "boolean"},
+        "ownedByTeamId": {"type": "string"},
+        "createdBy": {"type": "string"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"}
+      },
+      "required": ["_id", "_rev", "name", "version", "archived"]
     },
     "GetTemplateByIdResponse": {
       "$ref": "#/definitions/TemplateDocument"
@@ -1394,51 +2766,93 @@
           "type": "string",
           "minLength": 1
         },
-        "metadata": {
-          "type": "object"
+        "description": {
+          "type": "string",
+          "maxLength": 250
         },
-        "ui_specification": {
-          "type": "object"
+        "uiSpecification": {
+          "$ref": "#/definitions/NotebookUiSpecificationInput"
         },
         "teamId": {
           "type": "string",
-          "description": "Optional team ID"
+          "description": "Optional owning team"
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "When true, template is visible in the public catalogue (requires CREATE_PUBLIC_TEMPLATE)"
         }
       },
-      "required": ["name", "metadata", "ui_specification"]
+      "required": ["name", "uiSpecification"]
     },
     "PostCreateTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
+      "$ref": "#/definitions/TemplateStoredDocument"
     },
     "PutUpdateTemplateInput": {
       "type": "object",
       "properties": {
-        "metadata": {
-          "type": "object"
-        },
-        "ui-specification": {
-          "type": "object"
-        },
         "name": {
           "type": "string",
           "minLength": 1
         },
-        "teamId": {
+        "description": {
           "type": "string"
         }
       },
       "required": []
     },
-    "PutUpdateTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
+    "PutChangeTemplateTeamInput": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Team that will own the template"
+        }
+      },
+      "required": ["teamId"]
     },
-    "TemplateDocument": {
+    "PutUpdateTemplateResponse": {
+      "$ref": "#/definitions/TemplateStoredDocument"
+    },
+    "PutTemplateSetVisibilityInput": {
+      "type": "object",
+      "properties": {
+        "isPublic": {
+          "type": "boolean",
+          "description": "When true, the template is included in the public catalogue for users with permission to read public template details."
+        }
+      },
+      "required": ["isPublic"]
+    },
+    "TemplateApiResponseExtensions": {
+      "type": "object",
+      "description": "Optional fields returned only by GET /templates and GET /templates/{id}. Not persisted on the template document.",
+      "properties": {
+        "ownedByTeamDisplayName": {
+          "type": "string",
+          "description": "Display name of the owning team (`name` from the teams DB), injected when `ownedByTeamId` is set and the team record exists."
+        }
+      }
+    },
+    "TemplateStoredDocument": {
+      "description": "Template as stored in CouchDB (create/update responses).",
       "allOf": [
         {
           "$ref": "#/definitions/TemplateDetails"
         },
         {
           "$ref": "#/definitions/CouchDocumentFields"
+        }
+      ]
+    },
+    "TemplateDocument": {
+      "description": "Stored template plus optional GET-only fields (e.g. team display name).",
+      "allOf": [
+        {
+          "$ref": "#/definitions/TemplateStoredDocument"
+        },
+        {
+          "$ref": "#/definitions/TemplateApiResponseExtensions"
         }
       ]
     },
@@ -1457,16 +2871,17 @@
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 5
+          "minLength": 1
         },
-        "ui_specification": {
-          "$ref": "#/definitions/UiSpecification"
+        "description": {
+          "type": "string",
+          "maxLength": 250
         },
-        "metadata": {
-          "$ref": "#/definitions/NotebookMetadata"
+        "uiSpecification": {
+          "$ref": "#/definitions/NotebookDefinition"
         }
       },
-      "required": ["name", "ui_specification", "metadata"]
+      "required": ["name", "uiSpecification"]
     },
     "TemplateDerivedDetails": {
       "type": "object",
@@ -1474,7 +2889,19 @@
         "version": {
           "type": "number",
           "default": 1
-        }
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "When true, the template is archived and cannot be used to create new notebooks until restored"
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "When true, listed in the public template catalogue"
+        },
+        "ownedByTeamId": {"type": "string"},
+        "createdBy": {"type": "string"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"}
       }
     },
     "CouchDocumentFields": {
@@ -1503,23 +2930,24 @@
     },
     "PostCreateNotebookFromTemplate": {
       "type": "object",
+      "description": "Alternate POST /notebooks/ body when creating from a template.",
       "properties": {
-        "template_id": {
-          "type": "string"
+        "name": {"type": "string", "minLength": 1},
+        "description": {
+          "type": "string",
+          "maxLength": 250
         },
-        "project_name": {
-          "type": "string"
+        "template_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "teamId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional owning team"
         }
       },
-      "required": ["template_id", "project_name"]
-    },
-    "PostCreateNotebookFromTemplateResponse": {
-      "type": "object",
-      "properties": {
-        "notebook": {
-          "type": "string"
-        }
-      }
+      "required": ["name", "template_id"]
     },
     "GetListTeamsResponse": {
       "type": "object",

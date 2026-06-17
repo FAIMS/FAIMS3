@@ -1,11 +1,11 @@
 import {colors, createTheme} from '@mui/material';
+import {bssBrand} from '@faims3/data-model';
 import typography from '../fieldmark/typography';
+import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
 
-const primaryMainColor = '#000000';
-
-const theme = createTheme({
+const baseTheme = createTheme({
   stepperColors: {
-    current: '#000000',
+    current: bssBrand.primaryMain,
     visited: '#07a907',
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
@@ -19,9 +19,9 @@ const theme = createTheme({
       tabsBackground: '#F0F0F0FF',
     },
     primary: {
-      main: primaryMainColor,
+      main: bssBrand.primaryMain,
       light: '#FFFFFF',
-      dark: '#000000',
+      dark: bssBrand.primaryDark,
     },
     text: {
       primary: colors.blueGrey[900],
@@ -29,7 +29,7 @@ const theme = createTheme({
       helpText: colors.blueGrey[600],
     },
     stepper: {
-      current: '#000000',
+      current: bssBrand.primaryMain,
       visited: '#07a907',
       error: '#EE1616FF',
       notVisited: '#BDBDBD',
@@ -41,6 +41,10 @@ const theme = createTheme({
     secondary: {
       main: '#12B0FB',
       contrastText: '#F4F4F4',
+    },
+    success: {
+      main: bssBrand.successMain,
+      contrastText: '#FFFFFF',
     },
     alert: {
       warningBackground: '#FFFFFF',
@@ -72,7 +76,11 @@ const theme = createTheme({
     },
   },
   typography,
+});
+
+const theme = createTheme(baseTheme, {
   components: {
+    ...buildSharedComponentOverrides(baseTheme),
     MuiAppBar: {
       styleOverrides: {
         root: {
@@ -117,7 +125,7 @@ const theme = createTheme({
           color: '#000000',
           '&.Mui-selected': {
             color: '#FFFFFF',
-            backgroundColor: primaryMainColor,
+            backgroundColor: bssBrand.primaryMain,
             fontWeight: '700',
           },
           '&:not(.Mui-selected)': {

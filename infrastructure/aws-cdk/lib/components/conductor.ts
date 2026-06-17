@@ -261,6 +261,9 @@ export class FaimsConductor extends Construct {
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
         PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
+        MIGRATE_NOTEBOOKS_ON_STARTUP: props.config.migrateNotebooksOnStartup
+          ? 'true'
+          : 'false',
 
         // Bugsnag (optional)
         ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),

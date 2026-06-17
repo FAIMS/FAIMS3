@@ -23,6 +23,7 @@ import {
   GetCurrentUserResponse,
   GetListAllUsersResponse,
   GetListAllUsersResponseSchema,
+  isPeopleUserAccountDisabled,
   PostUpdateUserInputSchema,
   removeGlobalRole,
   Role,
@@ -34,6 +35,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUsers,
   removeUser,
@@ -75,6 +77,12 @@ api.post(
     if (!foundUser) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
+      );
+    }
+
+    if (isPeopleUserAccountDisabled(foundUser)) {
+      throw new Exceptions.ForbiddenException(
+        'This user account is disabled. Re-enable it before changing global roles.'
       );
     }
 
@@ -133,12 +141,21 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  async (req: any, res: Response<GetListAllUsersResponse>) => {
+  processRequest({
+    query: z.object({
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
+  async (req, res: Response<GetListAllUsersResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }
 
-    const allUsers = await getUsers();
+    const includeArchived = req.query.includeArchived === 'true';
+    const allUsers = filterPeopleUsersForList(
+      await getUsers(),
+      includeArchived
+    );
 
     // We explicitly parse here so as to make sure we strip out anything we don't want!
     try {
@@ -148,6 +165,74 @@ api.get(
         `User data from database could not be parsed into the correct model. Error: ${e}.`
       );
     }
+  }
+);
+
+api.post(
+  '/:id/disable',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.DISABLE_USER_ACCOUNT,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async ({params: {id}, user}, res) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const target = await getCouchUserFromEmailOrUserId(id);
+    if (!target) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+
+    if (target.user_id === user.user_id) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to disable your own account.'
+      );
+    }
+
+    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: target})) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to disable cluster admins.'
+      );
+    }
+
+    target.disabled = true;
+    await saveCouchUser(target);
+    res.status(200).send();
+  }
+);
+
+api.post(
+  '/:id/enable',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.ENABLE_USER_ACCOUNT,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async ({params: {id}}, res) => {
+    const target = await getCouchUserFromEmailOrUserId(id);
+    if (!target) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+
+    target.disabled = false;
+    await saveCouchUser(target);
+    res.status(200).send();
   }
 );
 

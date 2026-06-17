@@ -27,12 +27,16 @@ export enum DatabaseType {
   DATA = 'DATA',
   DIRECTORY = 'DIRECTORY',
   INVITES = 'INVITES',
-  METADATA = 'METADATA',
   PEOPLE = 'PEOPLE',
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
+  TEAMS = 'TEAMS',
 }
 ```
+
+Per-project **`metadata-{id}`** Couch databases are **not** migrated by this framework; they are retired when **projects DB v4** inlines `uiSpecification` onto each project document (see [Notebook definition](./NotebookDefinition.md)).
+
+**Operator guide** for deploying that change: [Metadata migration guide](./MetadataMigrationGuide.md).
 
 ### Versioning
 

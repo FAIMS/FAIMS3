@@ -52,8 +52,9 @@ For a quick guide on how to create a new field, see [Quickstart: add a new field
 See [05-field-system.md](./05-field-system.md) for detailed instructions.
 
 1. Create field directory: `library/forms/lib/fieldRegistry/fields/MyField/`
-2. Define props schema extending `BaseFieldPropsSchema`
+2. Define props schema extending `BaseFieldParametersSchema` (from `@faims3/data-model`); export the schema and its inferred type, and surface them via `fieldRegistry/fieldParams.ts`
 3. Implement edit component using `FieldWrapper`
 4. Implement view component
 5. Create `FieldInfo` export with validation schema function
 6. Register in `registry.ts`
+7. Add a designer prototype in `web/src/designer/fields.tsx` (and a typed editor if it has custom options)

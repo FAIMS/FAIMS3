@@ -38,12 +38,12 @@ import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
+import {logWarn} from '../../logging';
 import {createCenterControl} from './controls/center-control';
+import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
 import {createLayerToggle} from './controls/layer-toggle';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
-import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
-import { logWarn } from '../../logging';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -497,34 +497,32 @@ export const MapComponent = (props: MapComponentProps) => {
 
   return (
     <>
-      <Grid container spacing={2} sx={{height: '100%'}}>
-        <Box sx={{height: '100%', width: '100%'}}>
-          <Box
-            ref={refCallback} // will create the map
-            sx={{
-              height: '97%',
-              width: '100%',
-            }}
-          />
-          <Box
-            sx={{
-              height: '3%',
-              paddingLeft: '50px',
-            }}
-          >
-            {attribution && (
-              <div
-                dangerouslySetInnerHTML={{__html: attribution}}
-                style={{
-                  fontSize: '10px',
-                  lineHeight: 1.1,
-                  color: '#666',
-                }}
-              />
-            )}
-          </Box>
+      <Box sx={{height: '100%', width: '100%'}}>
+        <Box
+          ref={refCallback} // will create the map
+          sx={{
+            height: '97%',
+            width: '100%',
+          }}
+        />
+        <Box
+          sx={{
+            height: '3%',
+            paddingLeft: '50px',
+          }}
+        >
+          {attribution && (
+            <div
+              dangerouslySetInnerHTML={{__html: attribution}}
+              style={{
+                fontSize: '10px',
+                lineHeight: 1.1,
+                color: '#666',
+              }}
+            />
+          )}
         </Box>
-      </Grid>
+      </Box>
     </>
   );
 };

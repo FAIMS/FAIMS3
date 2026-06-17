@@ -19,7 +19,7 @@
  */
 
 import {chunk} from 'lodash';
-import {v4 as uuidv4} from 'uuid';
+import {randomUuid} from '../utils';
 import {HRID_STRING} from '../datamodel/core';
 import {
   getAttachmentDumperForType,
@@ -40,7 +40,6 @@ import {
   FAIMSAttachment,
   FAIMSTypeName,
   ProjectID,
-  ProjectUIModel,
   Record,
   RecordDbType,
   RecordID,
@@ -56,6 +55,7 @@ import {
   getIdsByFieldName,
   HridFieldMap,
 } from '../uiSpecification';
+import {UiSpecModel} from '../uiSpecification/types';
 import {createHash} from './utils';
 
 // INDEX NAMES
@@ -85,11 +85,11 @@ export interface FormData {
 }
 
 export function generateFAIMSRevisionID(): RevisionID {
-  return 'frev-' + uuidv4();
+  return 'frev-' + randomUuid();
 }
 
 export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
-  return 'avp-' + uuidv4();
+  return 'avp-' + randomUuid();
 }
 
 /**
@@ -227,9 +227,9 @@ export async function queryCouch<DocType extends {}>({
  * @throws Error if the specified record cannot be found in the database
  */
 export async function updateHeads({
-  newRevisionId: newRevisionId,
-  baseRevisionId: baseRevisionId,
-  recordId: recordId,
+  newRevisionId,
+  baseRevisionId,
+  recordId,
   dataDb,
 }: {
   dataDb: DataDbType;
@@ -448,7 +448,7 @@ export async function getHRID({
   dataDb,
 }: {
   revision: Revision;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<string | null> {
   let hridFieldName = undefined;
@@ -577,7 +577,7 @@ export async function fetchAndHydrateRecord({
   recordId: string;
   revisionId?: string;
   dataDb: DataDbType;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
 }): Promise<RecordMetadata | undefined> {
   // Grab field map for HRID
   const hridFieldMap = getHridFieldMap(uiSpecification);
@@ -675,7 +675,7 @@ export async function listRecordMetadata({
   projectId: ProjectID;
   recordIds?: RecordID[];
   hydrate?: boolean;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
@@ -809,7 +809,7 @@ export async function hydrateIndividualRecord({
 }: {
   record: UnhydratedRecord;
   hridFieldMap?: HridFieldMap;
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata> {
   // Only needs to be done if not provided

@@ -32,11 +32,10 @@ import sinon from 'sinon';
 // We import the modules themselves so sinon can stub their exported functions.
 // This works because ts-node compiles to CommonJS, making exports mutable.
 
-import * as usersModule from '../src/couchdb/users';
-import * as invitesModule from '../src/couchdb/invites';
-import * as teamsModule from '../src/couchdb/teams';
 import * as keySigningModule from '../src/auth/keySigning/create';
 import * as buildconfig from '../src/buildconfig';
+import * as teamsModule from '../src/couchdb/teams';
+import * as usersModule from '../src/couchdb/users';
 
 // Import the functions under test — must come after the module imports above
 // so that when helpers.ts is loaded, the stubs are already in place on the
@@ -102,9 +101,6 @@ const displayNameFn = (profile: any): string =>
 
 /** A minimal SSO profile */
 const baseProfile = {id: 'sso-id-1', displayName: 'Test User'};
-
-/** A minimal upgraded Express user (returned by upgradeCouchUserToExpressUser) */
-const expressUser = {_id: 'user-123', name: 'Test User'};
 
 // ─── identifyUser ─────────────────────────────────────────────────────────────
 describe('identifyUser', () => {
@@ -221,12 +217,13 @@ describe('applyProvisionPolicy', () => {
 
   let createUserStub: sinon.SinonStub;
   let createTeamStub: sinon.SinonStub;
-  let saveCouchUserStub: sinon.SinonStub;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
   beforeEach(() => {
     createUserStub = sinon.stub(usersModule, 'createUser');
     createTeamStub = sinon.stub(teamsModule, 'createTeamDocument');
-    saveCouchUserStub = sinon.stub(usersModule, 'saveCouchUser');
+    // stub saveCouchUser to prevent real DB calls in applyProvisionPolicy tests
+    sinon.stub(usersModule, 'saveCouchUser').resolves();
 
     // Default: createUser returns a valid new user
     const newUser = buildNewUser();
@@ -420,9 +417,6 @@ describe('ssoVerify', () => {
   let saveCouchUserStub: sinon.SinonStub;
   let createUserStub: sinon.SinonStub;
   let createTeamStub: sinon.SinonStub;
-  let upgradeUserStub: sinon.SinonStub;
-  let getInviteStub: sinon.SinonStub;
-  let isInviteValidStub: sinon.SinonStub;
   let done: sinon.SinonSpy;
 
   beforeEach(() => {
@@ -430,17 +424,13 @@ describe('ssoVerify', () => {
     saveCouchUserStub = sinon.stub(usersModule, 'saveCouchUser');
     createUserStub = sinon.stub(usersModule, 'createUser');
     createTeamStub = sinon.stub(teamsModule, 'createTeamDocument');
-    upgradeUserStub = sinon.stub(
-      keySigningModule,
-      'upgradeCouchUserToExpressUser'
-    );
-    getInviteStub = sinon.stub(invitesModule, 'getInvite');
-    isInviteValidStub = sinon.stub(invitesModule, 'isInviteValid');
+    // upgradeCouchUserToExpressUser is no longer called by ssoVerify;
+    // stub it anyway to prevent any accidental real calls
+    sinon.stub(keySigningModule, 'upgradeCouchUserToExpressUser');
 
     // Sensible defaults
     setPolicy('reject'); // safe default — prevents accidental provisioning
     saveCouchUserStub.resolves();
-    upgradeUserStub.resolves(expressUser);
     createTeamStub.resolves({_id: 'team-new'});
 
     done = sinon.spy();
@@ -498,7 +488,7 @@ describe('ssoVerify', () => {
   // ── Login: existing user ──────────────────────────────────────────────────────
 
   describe('login: existing user', () => {
-    it('calls done with null error and the upgraded express user', async () => {
+    it('calls done with null error and the raw db user', async () => {
       const existingUser = buildExistingUser();
       getCouchUserStub.resolves(existingUser);
 
@@ -511,7 +501,9 @@ describe('ssoVerify', () => {
       expect(done.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
       expect(err).to.be.null;
-      expect(user).to.equal(expressUser);
+      // ssoVerify returns a raw PeopleDBDocument; upgradeCouchUserToExpressUser
+      // is called later by completePostAuth in the route callback layer
+      expect(user).to.equal(existingUser);
     });
 
     it('links the SSO profile when not already present', async () => {
@@ -583,7 +575,7 @@ describe('ssoVerify', () => {
       expect(createUserStub.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
       expect(err).to.be.null;
-      expect(user).to.equal(expressUser);
+      expect(user).to.equal(newUser);
     });
 
     it('creates a new user and team and calls done with success when policy is own-team', async () => {
@@ -601,7 +593,7 @@ describe('ssoVerify', () => {
       expect(createTeamStub.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
       expect(err).to.be.null;
-      expect(user).to.equal(expressUser);
+      expect(user).to.equal(newUser);
     });
 
     it('calls done with error when provisioning fails', async () => {
@@ -625,37 +617,9 @@ describe('ssoVerify', () => {
 
   describe('register: new user', () => {
     beforeEach(() => {
+      // invite validation is now handled by completePostAuth in the route layer,
+      // not by ssoVerify — no invite stubs needed here
       getCouchUserStub.resolves(null);
-      getInviteStub.resolves({id: 'invite-1', role: Role.GENERAL_USER});
-      isInviteValidStub.returns({isValid: true});
-    });
-
-    it('calls done with error when invite does not exist', async () => {
-      getInviteStub.resolves(null);
-
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'register', inviteId: 'bad-invite'}),
-        done,
-      });
-
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.instanceOf(Error);
-      expect(user).to.be.undefined;
-    });
-
-    it('calls done with error when invite is not valid', async () => {
-      isInviteValidStub.returns({isValid: false, reason: 'expired'});
-
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'register', inviteId: 'expired-invite'}),
-        done,
-      });
-
-      const [err, user] = done.firstCall.args;
-      expect(err).to.be.instanceOf(Error);
-      expect(user).to.be.undefined;
     });
 
     it('creates a new user and calls done with success', async () => {
@@ -671,7 +635,7 @@ describe('ssoVerify', () => {
       expect(createUserStub.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
       expect(err).to.be.null;
-      expect(user).to.equal(expressUser);
+      expect(user).to.equal(newUser);
     });
 
     it('links the SSO profile to the newly created user', async () => {
@@ -691,11 +655,6 @@ describe('ssoVerify', () => {
   // ── Register: user already exists (upgrade path) ──────────────────────────────
 
   describe('register: existing user (login upgrade path)', () => {
-    beforeEach(() => {
-      getInviteStub.resolves({id: 'invite-1', role: Role.GENERAL_USER});
-      isInviteValidStub.returns({isValid: true});
-    });
-
     it('logs in the existing user without creating a new one', async () => {
       const existingUser = buildExistingUser({profiles: {}});
       getCouchUserStub.resolves(existingUser);
@@ -709,7 +668,7 @@ describe('ssoVerify', () => {
       expect(createUserStub.called).to.be.false;
       const [err, user] = done.firstCall.args;
       expect(err).to.be.null;
-      expect(user).to.equal(expressUser);
+      expect(user).to.equal(existingUser);
     });
 
     it('links the SSO profile to the existing user if not already linked', async () => {

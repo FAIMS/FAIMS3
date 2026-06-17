@@ -12,7 +12,7 @@ interface ParsedArgs {
 const parseArgs = (args: string[]): ParsedArgs => {
   const parsed: ParsedArgs = {
     force: false,
-    help: false
+    help: false,
   };
 
   for (let i = 2; i < args.length; i++) {

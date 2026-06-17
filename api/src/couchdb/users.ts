@@ -22,6 +22,7 @@ import {
   addGlobalRole,
   CouchDBUsername,
   ExistingPeopleDBDocument,
+  isPeopleUserAccountDisabled,
   NotebookAuthSummary,
   PeopleDBDocument,
   PeopleDBFields,
@@ -65,8 +66,22 @@ export const generateInitialUser = ({
     // Profiles are injected later
     profiles: {},
     teamRoles: [],
+    disabled: false,
   };
 };
+
+/**
+ * @param includeArchived When true, returns all people; when false, omits disabled accounts.
+ */
+export function filterPeopleUsersForList(
+  users: ExistingPeopleDBDocument[],
+  includeArchived: boolean
+): ExistingPeopleDBDocument[] {
+  if (includeArchived) {
+    return users;
+  }
+  return users.filter(u => !isPeopleUserAccountDisabled(u));
+}
 
 /**
  * Registers the admin user into the people DB
@@ -194,6 +209,45 @@ export async function getUsersForResource({
     if (option.doc) filtered.push(option.doc);
     return filtered;
   }, [] as ExistingPeopleDBDocument[]);
+}
+
+/**
+ * Drops every `templateRoles` entry pointing at the given template id for all
+ * affected people documents. Run when a template is permanently deleted so roles
+ * in Couch stay consistent with JWT regeneration on next login.
+ */
+export async function stripTemplateRolesForTemplateId(
+  templateId: string
+): Promise<void> {
+  const users = await getUsersForResource({resourceId: templateId});
+  for (const user of users) {
+    const roles = user.templateRoles ?? [];
+    const next = roles.filter(r => r.resourceId !== templateId);
+    if (next.length === roles.length) {
+      continue;
+    }
+    user.templateRoles = next;
+    await saveCouchUser(user);
+  }
+}
+
+/**
+ * Removes every `projectRoles` entry for the given project id (permanent survey
+ * deletion). Uses the same by-resource index as {@link getUsersForResource}.
+ */
+export async function stripProjectRolesForProjectId(
+  projectId: string
+): Promise<void> {
+  const users = await getUsersForResource({resourceId: projectId});
+  for (const user of users) {
+    const roles = user.projectRoles ?? [];
+    const next = roles.filter(r => r.resourceId !== projectId);
+    if (next.length === roles.length) {
+      continue;
+    }
+    user.projectRoles = next;
+    await saveCouchUser(user);
+  }
 }
 
 /**
@@ -343,7 +397,7 @@ export async function getUserInfoForProject({
   const roles = roleDetails.map(r => r.role);
 
   // TODO filter this better?
-  const allUsers = await getUsers();
+  const allUsers = filterPeopleUsersForList(await getUsers(), false);
 
   const userList: NotebookAuthSummary = {
     // What roles does the notebook have

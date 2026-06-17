@@ -1,5 +1,27 @@
 import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
+import {
+  prepareNotebookUiSpecificationInputForApi,
+  type ProjectStatus,
+  type PutUpdateNotebookMetadataInput,
+} from '@faims3/data-model';
+import {rootDescriptionForApi} from '@/lib/rootDescriptionField';
+
+export function errorMessageFromNotebookJsonBody(
+  json: unknown,
+  fallbackStatusText: string
+): string {
+  if (
+    json &&
+    typeof json === 'object' &&
+    json !== null &&
+    'error' in json &&
+    typeof (json as {error?: {message?: unknown}}).error?.message === 'string'
+  ) {
+    return (json as {error: {message: string}}).error.message;
+  }
+  return fallbackStatusText;
+}
 
 /**
  * Creates a new project from a template
@@ -11,11 +33,13 @@ import {readFileAsText} from '@/lib/utils';
 export const createProjectFromTemplate = async ({
   user,
   name,
+  description,
   template,
   teamId,
 }: {
   user: User;
   name: string;
+  description?: string;
   template: string;
   teamId?: string;
 }) =>
@@ -28,6 +52,7 @@ export const createProjectFromTemplate = async ({
     body: JSON.stringify({
       template_id: template,
       name,
+      ...rootDescriptionForApi(description),
       teamId,
     }),
   });
@@ -42,15 +67,32 @@ export const createProjectFromTemplate = async ({
 export const createProjectFromFile = async ({
   user,
   name,
+  description,
   file,
   teamId,
 }: {
   user: User;
   name: string;
+  description?: string;
   file: File;
   teamId?: string;
 }) => {
   const jsonString = await readFileAsText(file);
+  if (!jsonString) {
+    return new Response(null, {status: 400, statusText: 'Error reading file'});
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(jsonString);
+  } catch {
+    return new Response(null, {status: 400, statusText: 'Invalid JSON file'});
+  }
+
+  const prepared = prepareNotebookUiSpecificationInputForApi(payload);
+  if (!prepared.ok) {
+    return new Response(null, {status: 400, statusText: prepared.message});
+  }
 
   return await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
     method: 'POST',
@@ -58,9 +100,65 @@ export const createProjectFromFile = async ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({name, teamId, ...JSON.parse(jsonString)}),
+    body: JSON.stringify({
+      name,
+      ...rootDescriptionForApi(description),
+      teamId,
+      uiSpecification: prepared.uiSpecification,
+    }),
   });
 };
+
+/** PUT /api/notebooks/:projectId — merge name and/or description only. */
+export const updateNotebookMetadataRequest = async ({
+  user,
+  projectId,
+  name,
+  description,
+}: {
+  user: User;
+  projectId: string;
+  name?: string;
+  description?: string;
+}) => {
+  const body: PutUpdateNotebookMetadataInput = {};
+  if (name !== undefined) body.name = name;
+  if (description !== undefined) body.description = description;
+
+  return await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+};
+
+/** PUT /api/notebooks/:projectId/uiSpecification — full design bundle replace. */
+export const updateNotebookUiSpecificationRequest = async ({
+  user,
+  projectId,
+  uiSpecification,
+}: {
+  user: User;
+  projectId: string;
+  uiSpecification: unknown;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/uiSpecification`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify(uiSpecification),
+    }
+  );
 
 export const modifyTeamForProject = async ({
   projectId,
@@ -126,5 +224,74 @@ export const generateTestRecordsForProject = async ({
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Save failed: ${res.status} ${err}`);
+  }
+};
+
+async function messageFromFailedNotebookResponse(
+  response: Response
+): Promise<string> {
+  let message = response.statusText;
+  try {
+    const body = (await response.json()) as {error?: {message?: string}};
+    if (body?.error?.message) message = body.error.message;
+  } catch {
+    /* ignore */
+  }
+  return message;
+}
+
+/**
+ * PUT /api/notebooks/:projectId/status — set notebook lifecycle (OPEN, CLOSED, ARCHIVED).
+ */
+export const putNotebookStatus = async ({
+  user,
+  projectId,
+  status,
+}: {
+  user: User;
+  projectId: string;
+  status: ProjectStatus;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/status`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({status}),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
+  }
+};
+
+/**
+ * POST /api/notebooks/:projectId/delete — permanently delete an archived notebook.
+ */
+export const postDeleteArchivedNotebook = async ({
+  user,
+  projectId,
+  confirmName,
+}: {
+  user: User;
+  projectId: string;
+  confirmName: string;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/delete`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({confirmName}),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
   }
 };

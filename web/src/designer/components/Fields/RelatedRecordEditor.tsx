@@ -37,6 +37,7 @@ import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 type PairList = [string, string][];
 
@@ -54,12 +55,13 @@ type RelatedRecordConfig = {
   hideCreateAnotherButton: boolean;
 };
 
+/** Related record selector: target form, cardinality, relation type, linked vocab pairs. */
 export const RelatedRecordEditor = ({fieldName}: Props) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].present.viewsets
+    state => state.notebook.uiSpec.present.viewsets
   );
   const dispatch = useAppDispatch();
 
@@ -72,7 +74,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
   const componentParams = field['component-parameters'];
 
   const getLinkedPairs = (): PairList => {
-    return componentParams.relation_linked_vocabPair ?? [];
+    return (componentParams.relation_linked_vocabPair as PairList) ?? [];
   };
 
   const pairs = getLinkedPairs();
@@ -91,10 +93,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
   };
 
   const updateField = (name: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName: name, newField},
-    });
+    dispatch(fieldUpdated({fieldName: name, newField}));
   };
 
   const updateFieldFromState = (newState: RelatedRecordConfig) => {
@@ -174,10 +173,10 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card variant="outlined">
-          <Grid container p={2} rowSpacing={3}>
-            <Grid item xs={12} sm={3}>
+          <Grid container rowSpacing={3} sx={{p: 2}}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -192,7 +191,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -211,7 +210,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -232,7 +231,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControl required sx={{minWidth: 150}}>
                 <InputLabel id="relationType-label">
                   Select Relation Type
@@ -249,7 +248,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControl required sx={{minWidth: 150}}>
                 <InputLabel id="relatedType-label">
                   Select Related Form
@@ -269,7 +268,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{xs: 12, sm: 3}}>
               <FormControl required sx={{minWidth: 150}}>
                 <DebouncedTextField
                   name="related-type-label"
@@ -288,19 +287,20 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
       </Grid>
 
       {state.relationType === 'faims-core::Linked' && (
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card variant="outlined" sx={{display: 'flex'}}>
-            <Grid container p={2} columnSpacing={3} rowSpacing={3}>
-              <Grid item xs={12} sm={6}>
+            <Grid container columnSpacing={3} rowSpacing={3} sx={{p: 2}}>
+              <Grid size={{xs: 12, sm: 6}}>
                 <Alert severity="info">
                   Add and remove Linking Pairs as needed.
                 </Alert>
                 <form onSubmit={addPair}>
                   <Grid
                     container
-                    item
-                    style={{display: 'flex'}}
-                    direction={{xs: 'column', sm: 'row'}}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: {xs: 'column', sm: 'row'},
+                    }}
                   >
                     <DebouncedTextField
                       label="Performed Before"
@@ -327,7 +327,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                 </form>
                 {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{xs: 12, sm: 6}}>
                 <List>
                   {pairs.map((pair, index) => (
                     <ListItem

@@ -35,7 +35,7 @@ export interface Field {
   description?: string;
   schema: z.ZodSchema;
   type?: string;
-  options?: {label: string; value: string}[];
+  options?: {label: string; value: string; description?: string}[];
   excludedBy?: string;
   excludedByFunction?: {
     field: string;
@@ -46,6 +46,8 @@ export interface Field {
   max?: number | string;
   step?: number;
   placeholder?: string;
+  /** HTML `maxLength` for text inputs */
+  maxLength?: number;
 }
 
 interface Divider {
@@ -151,6 +153,7 @@ export function Form<
                 max,
                 step,
                 placeholder,
+                maxLength,
               },
               index
             ) => {
@@ -192,8 +195,12 @@ export function Form<
                                 <SelectValue placeholder={`Select ${name}`} />
                               </SelectTrigger>
                               <SelectContent>
-                                {options.map(({label, value}) => (
-                                  <SelectItem key={value} value={value}>
+                                {options.map(({label, value, description}) => (
+                                  <SelectItem
+                                    key={value}
+                                    value={value}
+                                    description={description}
+                                  >
                                     {label}
                                   </SelectItem>
                                 ))}
@@ -225,6 +232,13 @@ export function Form<
                               max={
                                 type === 'number' || type === 'datetime-local'
                                   ? max
+                                  : undefined
+                              }
+                              maxLength={
+                                type !== 'number' &&
+                                type !== 'datetime-local' &&
+                                maxLength !== undefined
+                                  ? maxLength
                                   : undefined
                               }
                               step={type === 'number' ? step : undefined}

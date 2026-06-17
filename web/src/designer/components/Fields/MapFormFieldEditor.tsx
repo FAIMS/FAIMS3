@@ -11,22 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoIcon from '@mui/icons-material/Info';
 import {
-  Card,
+  Box,
   Checkbox,
-  FormControl,
   FormControlLabel,
-  Grid,
-  InputLabel,
   MenuItem,
-  Select,
+  Stack,
+  TextField,
   Tooltip,
 } from '@mui/material';
+import {MapFieldProps} from '@faims3/forms';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated} from '../../store/slices/uiSpec';
+import {designerInfoIconSx} from '../designer-style';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 type FieldState = {
   featureType: string;
@@ -35,49 +37,48 @@ type FieldState = {
   buttonLabelText: string;
 };
 
+/** Map geometry type, zoom, GeoTIFF path, and “use current location” toggle for `MapFormField`. */
 export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
-  const initZoom = field['component-parameters'].zoom;
-  const initFeatureType = field['component-parameters'].featureType;
-  const initAllowSetToCurrentPoint =
-    field['component-parameters'].allowSetToCurrentPoint ?? false;
-  const initButtonLabelText =
-    field['component-parameters'].buttonLabelText ?? '';
+  const params = field['component-parameters'] as unknown as MapFieldProps;
+  const initZoom = params.zoom;
+  const initFeatureType = params.featureType;
+  const initAllowSetToCurrentPoint = params.allowSetToCurrentPoint ?? false;
+  const initButtonLabelText = params.buttonLabelText ?? '';
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state: FieldState = {
-    featureType: field['component-parameters'].featureType || '',
-    zoom: field['component-parameters'].zoom || 0,
-    allowSetToCurrentPoint:
-      field['component-parameters'].allowSetToCurrentPoint ?? false,
-    buttonLabelText: field['component-parameters'].buttonLabelText ?? '',
+    featureType: params.featureType || '',
+    zoom: params.zoom || 0,
+    allowSetToCurrentPoint: params.allowSetToCurrentPoint ?? false,
+    buttonLabelText: params.buttonLabelText ?? '',
   };
 
   const updateFieldFromState = (newState: FieldState) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    newField['component-parameters'].featureType = newState.featureType;
-    newField['component-parameters'].zoom = newState.zoom;
+    const newParams = newField[
+      'component-parameters'
+    ] as unknown as MapFieldProps;
+    newParams.featureType =
+      newState.featureType as MapFieldProps['featureType'];
+    newParams.zoom = newState.zoom;
     // Only set allowSetToCurrentPoint for Point type, otherwise ensure it's false
-    newField['component-parameters'].allowSetToCurrentPoint =
+    newParams.allowSetToCurrentPoint =
       newState.featureType === 'Point'
         ? newState.allowSetToCurrentPoint
         : false;
     // Store buttonLabelText, or remove if empty
     if (newState.buttonLabelText.trim()) {
-      newField['component-parameters'].buttonLabelText =
-        newState.buttonLabelText;
+      newParams.buttonLabelText = newState.buttonLabelText;
     } else {
-      delete newField['component-parameters'].buttonLabelText;
+      delete newParams.buttonLabelText;
     }
     updateField(fieldName, newField);
   };
@@ -89,84 +90,71 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
-        <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid container p={2} rowGap={2}>
-            <Grid item sm={6} xs={12}>
-              <DebouncedTextField
-                variant="outlined"
-                label="Zoom Level"
-                type="number"
-                value={initZoom}
-                inputProps={{min: 0}}
-                onChange={e =>
-                  updateProperty('zoom', parseFloat(e.target.value))
-                }
-              />
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <FormControl sx={{minWidth: 150}}>
-                <InputLabel id="featureType-label">
-                  Select Feature Type
-                </InputLabel>
-                <Select
-                  labelId="featureType-label"
-                  label="Select Feature Type"
-                  value={initFeatureType}
-                  onChange={e => updateProperty('featureType', e.target.value)}
-                  required
-                >
-                  <MenuItem value="Polygon">Polygon</MenuItem>
-                  <MenuItem value="Point">Point</MenuItem>
-                  <MenuItem value="LineString">LineString</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <DebouncedTextField
-                variant="outlined"
-                label="Button Label Text"
-                value={initButtonLabelText}
-                placeholder="Leave empty to use the field label"
-                onChange={e =>
-                  updateProperty('buttonLabelText', e.target.value)
-                }
-                helperText="Custom text for the location button. If empty, the field label will be used."
-              />
-            </Grid>
-            {initFeatureType === 'Point' && (
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={initAllowSetToCurrentPoint}
-                      onChange={e =>
-                        updateProperty(
-                          'allowSetToCurrentPoint',
-                          e.target.checked
-                        )
-                      }
-                    />
-                  }
-                  label={
-                    <span
-                      style={{display: 'flex', alignItems: 'center', gap: 4}}
-                    >
-                      Display set to current point button
-                      <Tooltip title="Enabling this option allows users to directly set their current location as the selected point.">
-                        <HelpOutlineIcon
-                          fontSize="small"
-                          sx={{color: 'action.active', cursor: 'help'}}
-                        />
-                      </Tooltip>
-                    </span>
+      <Box sx={{width: '100%', mt: 1.5}}>
+        <Stack spacing={2}>
+          <SimpleFieldWrapper heading="Feature Type">
+            <TextField
+              select
+              fullWidth
+              label=""
+              value={initFeatureType}
+              onChange={e => updateProperty('featureType', e.target.value)}
+              required
+            >
+              <MenuItem value="Polygon">Polygon</MenuItem>
+              <MenuItem value="Point">Point</MenuItem>
+              <MenuItem value="LineString">LineString</MenuItem>
+            </TextField>
+          </SimpleFieldWrapper>
+
+          <SimpleFieldWrapper heading="Zoom Level">
+            <DebouncedTextField
+              fullWidth
+              variant="outlined"
+              label=""
+              type="number"
+              value={initZoom}
+              slotProps={{htmlInput: {min: 0}}}
+              onChange={e => updateProperty('zoom', parseFloat(e.target.value))}
+            />
+          </SimpleFieldWrapper>
+
+          <SimpleFieldWrapper
+            heading="Button Label Text"
+            helperText="Custom text for the location button. If empty, the field label will be used."
+          >
+            <DebouncedTextField
+              fullWidth
+              variant="outlined"
+              label=""
+              value={initButtonLabelText}
+              placeholder="Leave empty to use the field label"
+              onChange={e => updateProperty('buttonLabelText', e.target.value)}
+            />
+          </SimpleFieldWrapper>
+
+          {initFeatureType === 'Point' && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={initAllowSetToCurrentPoint}
+                  onChange={e =>
+                    updateProperty('allowSetToCurrentPoint', e.target.checked)
                   }
                 />
-              </Grid>
-            )}
-          </Grid>
-        </Card>
-      </Grid>
+              }
+              label={
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                  Display set to current location button
+                  <Tooltip title="Enabling this option allows users to directly set their current location as the selected location.">
+                    <InfoIcon sx={designerInfoIconSx} />
+                  </Tooltip>
+                </span>
+              }
+            />
+          )}
+        </Stack>
+      </Box>
     </BaseFieldEditor>
   );
 };

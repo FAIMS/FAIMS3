@@ -21,7 +21,7 @@ Or open the **{{FAIMS}} app** on a web browser on your desktop, or on a mobile d
 
 ## 2) Register and Login
 
-When you open up the app for the first time you will see the **login** screen as shown here:  
+When you open up the app for the first time you will see the **login** screen as shown here:
 
 ```{screenshot} getting-started/app-login-mobile.png
 :alt: Login Screen
@@ -31,7 +31,7 @@ When you open up the app for the first time you will see the **login** screen as
 Depending on the version of {{FAIMS}} that you are using, you may see the server selection option
 at the top of the screen or your server might be pre-configured.
 Server selection is used to connect the app to one of a number of {{FAIMS}} servers; you might see
-the main server and one or more enterprise servers.  Select the server for your organisation if
+the main server and one or more enterprise servers. Select the server for your organisation if
 that is configured.
 
 From here you can login if you already have an account, or refer to your {{notebook}} invitation and:
@@ -41,13 +41,13 @@ From here you can login if you already have an account, or refer to your {{noteb
 
 to **register** an account and get access to that {{Notebook}}.
 
-````{note}
+```{note}
 If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](login.md).
-````
+```
 
 ### a) Invitation Codes
 
-An **access code** contains a server prefix and six character code, eg  _FMRK-ABC123_, and gives you access to a specific {{notebook}}. Enter the six character code (eg _ABC123_) on the **Login** screen:
+An **access code** contains a server prefix and six character code, eg _FMRK-ABC123_, and gives you access to a specific {{notebook}}. Enter the six character code (eg _ABC123_) on the **Login** screen:
 
 ```{screenshot} getting-started/access-code-mobile.png
 :alt: Access Code Screen
@@ -68,9 +68,9 @@ If you don't already have an account on the {{FAIMS}} server, you will be able t
 
 At this point, registration just gives you access to this one {{notebook}} but you may be given access to others in the future.
 
-````{note}
+```{note}
 You need an account on {{FAIMS}} to collect data so that the records that you create can be associated with you. The {{FAIMS}} server keeps minimal information about you: your name and email address. These are only used within the projects that you collect data for and will never be used for marketing or other purposes.
-````
+```
 
 ## 3) Activating your {{Notebook}}
 
@@ -81,9 +81,9 @@ After registering or logging in, you will see the main workspace screen in the a
 :align: right
 ```
 
-The {{notebook}} that you have just gained access to should appear in the _Not Active_ list.  
+The {{notebook}} that you have just gained access to should appear in the _Not Active_ list.
 
-A {{notebook}} needs to be _activated_ on your device in order for you to be able to collect data.  
+A {{notebook}} needs to be _activated_ on your device in order for you to be able to collect data.
 
 To activate a {{notebook}} on your device:
 
@@ -101,7 +101,7 @@ For more information see [Activating {{Notebook}}s](activating-notebooks.md).
 
 ## 4) Using your {{Notebook}}
 
-Once your {{notebook}} is activated, you can begin to create records and these will be automatically saved to the server.  You may also be able to see records from other users, depending on your role with respect to this {{notebook}}.  
+Once your {{notebook}} is activated, you can begin to create records and these will be automatically saved to the server. You may also be able to see records from other users, depending on your role with respect to this {{notebook}}.
 
 As each {{notebook}} is a customised data collection tool, instructions for entering data will differ for each user.
 

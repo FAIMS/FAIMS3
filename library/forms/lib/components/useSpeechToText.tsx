@@ -1,7 +1,7 @@
 import {useState, useCallback, useEffect, useRef} from 'react';
 import {SpeechRecognition} from '@capgo/capacitor-speech-recognition';
 import type {PluginListenerHandle} from '@capacitor/core';
-import { logInfo, logWarn } from '../logging';
+import {logInfo, logWarn} from '../logging';
 
 /**
  * Speech recognition status states

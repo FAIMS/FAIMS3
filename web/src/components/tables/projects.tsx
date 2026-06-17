@@ -1,9 +1,38 @@
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {TeamCellComponent} from './cells/team-cell';
 import {TemplateCellComponent} from './cells/template-cell';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
+
+function truncatedDescriptionCell(description: string | undefined) {
+  if (!description) return null;
+  const maxLength = 100;
+  const isTruncated = description.length > maxLength;
+  const displayText = isTruncated
+    ? description.slice(0, maxLength) + '…'
+    : description;
+
+  if (!isTruncated) return <span>{displayText}</span>;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help">{displayText}</span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-sm">
+          <p>{description}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
   {
@@ -30,33 +59,32 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
   },
   {
     id: 'template',
-    accessorKey: 'template_id',
+    accessorKey: 'templateId',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Template" />
     ),
     cell: ({
       row: {
-        original: {template_id},
+        original: {templateId},
       },
     }) => {
-      return template_id ? (
-        <TemplateCellComponent templateId={template_id} />
+      return templateId ? (
+        <TemplateCellComponent templateId={templateId} />
       ) : null;
     },
   },
   {
-    accessorKey: 'metadata.project_lead',
+    accessorKey: 'createdBy',
     header: ({column}) => (
-      <DataTableColumnHeader
-        column={column}
-        title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
-      />
+      <DataTableColumnHeader column={column} title="Created by" />
     ),
   },
   {
-    accessorKey: 'metadata.pre_description',
+    accessorKey: 'description',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Description" />
     ),
+    cell: ({getValue}) =>
+      truncatedDescriptionCell(getValue<string | undefined>()),
   },
 ];

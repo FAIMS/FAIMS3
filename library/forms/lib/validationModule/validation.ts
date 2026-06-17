@@ -1,18 +1,19 @@
-import {z, ZodTypeAny, ZodObject, ZodRawShape} from 'zod';
 import {
+  CompiledUiSpecModel,
   currentlyVisibleFields,
   getFieldNamesForViewset,
-  UISpecification,
+  UiSpecModel,
   ValuesObject,
 } from '@faims3/data-model';
+import {z, ZodObject, ZodRawShape, ZodTypeAny} from 'zod';
+import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry';
+import {logWarn} from '../logging';
 import {
   FieldValidationResult,
   ValidationResult as FormValidationResult,
   ValidationError,
   ValidationSettings,
 } from './types';
-import {getFieldInfo} from '../fieldRegistry';
-import {logWarn} from '../logging';
 
 /**
  * Default validation settings.
@@ -92,7 +93,7 @@ export const FormValidation = {
     data,
     config = DEFAULT_VALIDATION_SETTINGS,
   }: {
-    uiSpec: UISpecification;
+    uiSpec: CompiledUiSpecModel;
     formId: string;
     data?: ValuesObject;
     config?: ValidationSettings;
@@ -202,7 +203,7 @@ export const FormValidation = {
     config = DEFAULT_VALIDATION_SETTINGS,
   }: {
     existingSchema: CompiledFormSchema;
-    uiSpec: UISpecification;
+    uiSpec: CompiledUiSpecModel;
     formId: string;
     data?: ValuesObject;
     config?: ValidationSettings;
@@ -288,7 +289,7 @@ export const FormValidation = {
     data,
     config = DEFAULT_VALIDATION_SETTINGS,
   }: {
-    uiSpec: UISpecification;
+    uiSpec: CompiledUiSpecModel;
     formId: string;
     data?: ValuesObject;
     config?: ValidationSettings;
@@ -331,7 +332,7 @@ export const FormValidation = {
     uiSpec,
     fieldId,
   }: {
-    uiSpec: UISpecification;
+    uiSpec: UiSpecModel;
     fieldId: string;
   }): ZodTypeAny | undefined {
     const details = uiSpec.fields[fieldId];
@@ -339,6 +340,15 @@ export const FormValidation = {
       logWarn(`Field ${fieldId} not found in UI specification`);
       return undefined;
     }
+    const ignoredAtRuntime = FORCE_IGNORED_FIELDS.some(
+      ignored =>
+        ignored.name === details['component-name'] &&
+        ignored.namespace === details['component-namespace']
+    );
+    if (ignoredAtRuntime) {
+      return z.unknown().optional().nullable();
+    }
+
     const required =
       (details['component-parameters']?.['required'] as Boolean | undefined) ??
       false;
@@ -409,7 +419,7 @@ export const FormValidation = {
     config = DEFAULT_VALIDATION_SETTINGS,
   }: {
     data: ValuesObject;
-    uiSpec: UISpecification;
+    uiSpec: CompiledUiSpecModel;
     formId: string;
     config?: ValidationSettings;
   }): FormValidationResult {
@@ -444,7 +454,7 @@ export const FormValidation = {
     config = DEFAULT_VALIDATION_SETTINGS,
   }: {
     data: ValuesObject;
-    uiSpec: UISpecification;
+    uiSpec: CompiledUiSpecModel;
     formId: string;
     config?: ValidationSettings;
   }): FormValidationResult {
@@ -486,12 +496,21 @@ export const FormValidation = {
     fieldId,
   }: {
     data: ValuesObject;
-    uiSpec: UISpecification;
+    uiSpec: UiSpecModel;
     fieldId: string;
   }): FieldValidationResult {
     const details = uiSpec.fields[fieldId];
     if (!details) {
       logWarn(`Field "${fieldId}" not found in UI specification`);
+      return {valid: true};
+    }
+
+    const ignoredAtRuntime = FORCE_IGNORED_FIELDS.some(
+      ignored =>
+        ignored.name === details['component-name'] &&
+        ignored.namespace === details['component-namespace']
+    );
+    if (ignoredAtRuntime) {
       return {valid: true};
     }
 

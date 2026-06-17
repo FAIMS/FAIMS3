@@ -19,13 +19,13 @@
  */
 
 import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
-import {NOTEBOOK_NAME} from '../buildconfig';
+import {NOTEBOOK_NAME_PLURAL} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
 export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
-export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME}s/`;
+export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME_PLURAL}/`;
 export const INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q = 'tab';
 export const NOTEBOOK_LIST_ROUTE = '/';
 export const RECORD_LIST = '/records';
@@ -40,7 +40,6 @@ export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
 export const HELP = '/help';
-export const CREATE_NEW_SURVEY = '/create-new-survey';
 export const USER_ACTIVE_TESTR = '/test';
 export const POUCH_EXPLORER = '/pouchDB';
 
@@ -57,7 +56,7 @@ export function getNotebookRoute({
 /**
  * Generates a route to a record in the format
  *
- * @returns /surveys/<server>/<project>/records/<recordId>/revision/<revisionId>
+ * @returns /<notebook-plural>/<server>/<project>/records/<recordId>/revision/<revisionId>
  */
 export function getEditRecordRoute({
   serverId,
@@ -91,7 +90,7 @@ export function getEditRecordRoute({
 /**
  * Generates a route to a record in the format
  *
- * @returns /surveys/<server>/<project>/view-record/<recordId>?revisionId=<revisionId>
+ * @returns /<notebook-plural>/<server>/<project>/view-record/<recordId>?revisionId=<revisionId>
  */
 export function getViewRecordRoute({
   serverId,

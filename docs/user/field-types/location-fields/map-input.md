@@ -1,6 +1,6 @@
 # Map field
 
-*How to add and configure a Map field in the Notebook Editor.*
+_How to add and configure a Map field in the Notebook Editor._
 
 ---
 
@@ -52,12 +52,12 @@ Field ID, and add any desired Helper Text.
 The Map Input provides settings for controlling the map display and
 drawing mode:
 
-| Setting | What It Does |
-| ------- | ------------ |
-| **Zoom Level** | The initial zoom level of the map when the field is opened. Higher values show more detail. |
-| **Select Feature** | The type of geometry the collector can draw: Point, LineString, or Polygon. Each field supports only one geometry type. |
-| **Button Label Text** | Custom text for the location button. If left empty, the field label will be used. |
-| **Display set to current point button** | Includes a button in the map input screen to select the current point if the map is configured for point input |
+| Setting                                 | What It Does                                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Zoom Level**                          | The initial zoom level of the map when the field is opened. Higher values show more detail.                             |
+| **Select Feature**                      | The type of geometry the collector can draw: Point, LineString, or Polygon. Each field supports only one geometry type. |
+| **Button Label Text**                   | Custom text for the location button. If left empty, the field label will be used.                                       |
+| **Display set to current point button** | Includes a button in the map input screen to select the current point if the map is configured for point input          |
 
 ### Shared Field Options
 

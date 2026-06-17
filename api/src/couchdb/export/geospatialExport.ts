@@ -6,6 +6,7 @@
  */
 
 import {
+  CompiledNotebookUiSpec,
   DatabaseInterface,
   FieldSummary,
   HydratedDataRecord,
@@ -17,7 +18,8 @@ import {
 import archiver from 'archiver';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
-import {getProjectUIModel} from '../notebooks';
+import {getCompiledUiSpecModel} from '../notebooks';
+import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
 import {convertDataForOutput} from './utils';
 
 /**
@@ -48,7 +50,7 @@ interface ExtractedGeometry {
  */
 interface SpatialExportContext {
   dataDb: DatabaseInterface<ProjectDataObject>;
-  uiSpecification: any;
+  uiSpecification: CompiledNotebookUiSpec;
   viewFieldsMap: Record<string, FieldSummary[]>;
   hasSpatialFields: boolean;
 }
@@ -76,7 +78,7 @@ async function initSpatialExportContext(
   projectId: ProjectID
 ): Promise<SpatialExportContext> {
   const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
   const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
 
   const hasSpatialFields = Object.keys(viewFieldsMap).some(viewsetID =>
@@ -130,11 +132,14 @@ export const projectHasSpatialFields = async (
  * @param filenames - Array to track generated filenames for attachments
  * @returns Processed record with hrid, base properties, and extracted geometries
  */
-function processRecordForSpatial(
+/** Exported for tests — builds GeoJSON/KML feature properties from a hydrated record. */
+export async function processRecordForSpatial(
   record: HydratedDataRecord,
   viewFieldsMap: Record<string, FieldSummary[]>,
-  filenames: string[]
-): ProcessedRecord {
+  filenames: string[],
+  dataDb: DatabaseInterface<ProjectDataObject>,
+  uiSpecification: CompiledNotebookUiSpec
+): Promise<ProcessedRecord> {
   const hrid = record.hrid || record.record_id;
   const viewID = record.type;
 
@@ -150,7 +155,13 @@ function processRecordForSpatial(
   };
 
   const geometries: ExtractedGeometry[] = [];
-  const data = record.data;
+  const data = await buildExportReadyDataCopy({
+    viewsetId: viewID,
+    data: record.data as Record<string, unknown>,
+    viewFieldsMap,
+    dataDb,
+    uiSpecification,
+  });
   const fieldInfos = viewFieldsMap[viewID];
 
   if (!fieldInfos) {
@@ -556,10 +567,12 @@ export const appendGeoJSONToArchive = async ({
 
   while (!done) {
     if (record) {
-      const {baseProperties, geometries} = processRecordForSpatial(
+      const {baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
-        filenames
+        filenames,
+        context.dataDb,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {
@@ -620,10 +633,12 @@ export const appendKMLToArchive = async ({
 
   while (!done) {
     if (record) {
-      const {hrid, baseProperties, geometries} = processRecordForSpatial(
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
-        filenames
+        filenames,
+        context.dataDb,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {
@@ -706,10 +721,12 @@ export const appendBothSpatialFormatsToArchive = async ({
 
   while (!done) {
     if (record) {
-      const {hrid, baseProperties, geometries} = processRecordForSpatial(
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
-        filenames
+        filenames,
+        context.dataDb,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {
@@ -792,10 +809,12 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
   while (!done) {
     if (record) {
-      const {baseProperties, geometries} = processRecordForSpatial(
+      const {baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
-        filenames
+        filenames,
+        context.dataDb,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {
@@ -845,10 +864,12 @@ export const streamNotebookRecordsAsKML = async (
 
   while (!done) {
     if (record) {
-      const {hrid, baseProperties, geometries} = processRecordForSpatial(
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
         record,
         context.viewFieldsMap,
-        filenames
+        filenames,
+        context.dataDb,
+        context.uiSpecification
       );
 
       for (const geom of geometries) {

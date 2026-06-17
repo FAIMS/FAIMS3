@@ -1,31 +1,31 @@
 import {Typography} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 
 type PropType = {
   fieldName: string;
   viewId: string;
 };
 
+/** Digit width for auto-increment (scoped to `viewId` via reducer when field is created). */
 export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].present.fields[fieldName]
+    state => state.notebook.uiSpec.present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
   const digits = field['component-parameters'].num_digits || 4;
 
   const updateDigits = (value: number) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    // ensure that the form_id in the field is set correctly
-    newField['component-parameters'].form_id = viewId;
-    newField['component-parameters'].num_digits = value;
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
+    const newField = withUpdatedField(field, nextField => {
+      nextField['component-parameters'].form_id = viewId;
+      nextField['component-parameters'].num_digits = value;
     });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (
@@ -39,15 +39,19 @@ export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
         record. Users select a range of values for the counter on their device.
         Often used as part of a Templated String Field.
       </Typography>
-      <DebouncedTextField
-        name="digits"
-        variant="outlined"
-        label="Number of digits in identifier"
-        type="number"
-        value={digits}
+      <SimpleFieldWrapper
+        heading="Number of digits in identifier"
         helperText="Identifier will be padded with zeros up to this many digits."
-        onChange={e => updateDigits(parseInt(e.target.value))}
-      />
+      >
+        <DebouncedTextField
+          name="digits"
+          variant="outlined"
+          label=""
+          type="number"
+          value={digits}
+          onChange={e => updateDigits(parseInt(e.target.value))}
+        />
+      </SimpleFieldWrapper>
     </BaseFieldEditor>
   );
 };

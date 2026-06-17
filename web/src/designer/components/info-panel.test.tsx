@@ -12,17 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Smoke tests for {@link InfoPanel} with Redux + theme providers.
+ */
+
 import {describe, expect, test} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {InfoPanel} from './info-panel';
 
-import {store} from '../state/store';
+import {createDesignerStore} from '../createDesignerStore';
 import {Provider} from 'react-redux';
 import {ThemeProvider} from '@mui/material/styles';
 import globalTheme from '../theme/index';
 import {ReactNode} from 'react';
+import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
+import {AppState} from '../state/initial';
 
-const WithProviders = ({children}: {children: ReactNode}) => (
+const WithProviders = ({
+  children,
+  store,
+}: {
+  children: ReactNode;
+  store: ToolkitStore<AppState>;
+}) => (
   <ThemeProvider theme={globalTheme}>
     <Provider store={store}>{children}</Provider>
   </ThemeProvider>
@@ -30,13 +42,14 @@ const WithProviders = ({children}: {children: ReactNode}) => (
 
 describe('Info Panel', () => {
   test('render the info panel', () => {
+    const store = createDesignerStore();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <InfoPanel />
       </WithProviders>
     );
 
-    expect(screen.getByText('General Information')).toBeDefined();
+    expect(screen.getByText('Design information')).toBeDefined();
     //const name = screen.getByTestId('name').querySelector('input');
     // TODO: this is unreliable - fails on first run but passes on repeat...
     // if (name) {
@@ -44,7 +57,7 @@ describe('Info Panel', () => {
     //   expect(store.getState().notebook.metadata.name).toBe('Different Name');
     // }
     // check some content
-    screen.getByText('Enable QR Code Search of Records');
+    screen.getByText('Enable QR code search of records');
     // TODO: fix this test
     // // try adding some metadata
     // act(() => {

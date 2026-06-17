@@ -2,7 +2,7 @@ services:
   api:
     env_file:
       - ./api/.env
-    environment: 
+    environment:
       # Override this so that the API refers to the internal DNS name
       - COUCHDB_INTERNAL_URL=http://couchdb:5984
     build:
@@ -10,7 +10,7 @@ services:
       dockerfile: Dockerfile
       target: api
     ports:
-      - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
+      - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
       - ./api/src:/usr/src/api/src
       - ./api/views:/usr/src/api/views
@@ -26,7 +26,8 @@ services:
     depends_on:
       - couchdb
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${CONDUCTOR_INTERNAL_PORT}/" ]
+      test:
+        ['CMD', 'curl', '-f', 'http://localhost:${CONDUCTOR_INTERNAL_PORT}/']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,7 +38,7 @@ services:
     build:
       target: web
     ports:
-      - "0.0.0.0:3001:3001"
+      - '0.0.0.0:3001:3001'
     volumes:
       - ./web/src:/usr/src/web/src
       - ./web/.env:/usr/src/web/.env
@@ -51,7 +52,7 @@ services:
       dockerfile: Dockerfile
       target: app
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - ./app/assets:/usr/src/app/assets
       - ./app/public:/usr/src/app/public
@@ -64,7 +65,7 @@ services:
     command: pnpm run start-app -- --force
     depends_on:
       - api
-      
+
   couchdb:
     env_file:
       - ./api/.env
@@ -76,7 +77,7 @@ services:
         source: couchdb_data
         target: /opt/couchdb/data
     ports:
-      - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984"
-      
+      - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
+
 volumes:
   couchdb_data:

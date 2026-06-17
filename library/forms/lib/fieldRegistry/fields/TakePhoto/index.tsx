@@ -23,10 +23,8 @@ import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
   useAttachments,
@@ -44,7 +42,7 @@ const MAX_IMAGE_WIDTH = 1920;
 // Types & Schema
 // ============================================================================
 
-const takePhotoPropsSchema = BaseFieldPropsSchema.extend({});
+const takePhotoPropsSchema = BaseFieldParametersSchema.extend({});
 type TakePhotoProps = z.infer<typeof takePhotoPropsSchema>;
 type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
 

@@ -5,10 +5,18 @@ import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {
+  Action,
+  getUserResourcesForAction,
+  prepareNotebookUiSpecificationInputForApi,
+} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
+import {
+  optionalRootDescriptionField,
+  rootDescriptionForApi,
+} from '@/lib/rootDescriptionField';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -37,6 +45,10 @@ export function CreateTemplateForm({
     action: Action.CREATE_TEMPLATE,
   });
 
+  const canCreatePublicTemplate = useIsAuthorisedTo({
+    action: Action.CREATE_PUBLIC_TEMPLATE,
+  });
+
   // get the teams that we have permission to create
   // templates in
   const teamsAvailable =
@@ -62,6 +74,7 @@ export function CreateTemplateForm({
         message: 'Template name must be at least 5 characters.',
       }),
     },
+    optionalRootDescriptionField(),
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
@@ -75,6 +88,30 @@ export function CreateTemplateForm({
         .optional(),
     },
   ];
+
+  if (canCreatePublicTemplate) {
+    fields.push({
+      name: 'visibility',
+      label: 'Template visibility',
+      description:
+        'Public templates are available for all signed-in users who can browse templates.',
+      options: [
+        {
+          label: 'Private',
+          value: 'private',
+          description:
+            'Only people with access (for example your team) can view this template.',
+        },
+        {
+          label: 'Public',
+          value: 'public',
+          description:
+            'This template will be available to view and use for all users. Public permissions are read only.',
+        },
+      ],
+      schema: z.enum(['private', 'public']),
+    });
+  }
 
   if (!justOneTeam) {
     fields.push({
@@ -90,31 +127,33 @@ export function CreateTemplateForm({
 
   const onSubmit = async (values: {
     name: string;
+    description?: string;
     file?: File;
     team?: string;
+    visibility?: 'private' | 'public';
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, file, team} = values;
-    let jsonPayload: Record<string, any> = {};
+    const {name, description, file, team, visibility} = values;
+    const isPublic = canCreatePublicTemplate && visibility === 'public';
+    let uiSpecification: unknown = blankNotebook;
 
     if (file) {
-      // parse the user-uploaded file
       const text = await readFileAsText(file);
       if (!text) {
         return {type: 'submit', message: 'Error reading file'};
       }
+      let parsed: unknown;
       try {
-        jsonPayload = JSON.parse(text);
+        parsed = JSON.parse(text);
       } catch {
         return {type: 'submit', message: 'Invalid JSON file'};
       }
-    } else {
-      // pull in the sample's metadata + ui-spec
-      jsonPayload = {
-        metadata: (blankNotebook as any).metadata,
-        'ui-specification': (blankNotebook as any)['ui-specification'],
-      };
+      const prepared = prepareNotebookUiSpecificationInputForApi(parsed);
+      if (!prepared.ok) {
+        return {type: 'submit', message: prepared.message};
+      }
+      uiSpecification = prepared.uiSpecification;
     }
 
     let chosenTeamId = specifiedTeam;
@@ -136,7 +175,9 @@ export function CreateTemplateForm({
           body: JSON.stringify({
             teamId: chosenTeamId,
             name,
-            ...jsonPayload,
+            ...rootDescriptionForApi(description),
+            isPublic,
+            uiSpecification,
           }),
         }
       );
@@ -178,7 +219,12 @@ export function CreateTemplateForm({
           fields={fields}
           onSubmit={onSubmit}
           submitButtonText="Create Template"
-          defaultValues={{team: defaultValues?.teamId}}
+          defaultValues={{
+            team: defaultValues?.teamId,
+            ...(canCreatePublicTemplate
+              ? {visibility: 'private' as const}
+              : {}),
+          }}
         />
       </>
     );

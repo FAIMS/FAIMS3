@@ -26,10 +26,10 @@ import {
   InputAdornment,
   InputLabel,
   MenuItem,
+  OutlinedInput,
   Select,
   SelectChangeEvent,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import React, {useState} from 'react';
@@ -38,6 +38,7 @@ import {
   IS_WEB_PLATFORM,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../buildconfig';
 import {useNotification} from '../../context/popup';
 import {addAlert} from '../../context/slices/alertSlice';
@@ -149,7 +150,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       title={
         <>
           <Typography variant="h6" gutterBottom>
-            Register for {NOTEBOOK_NAME_CAPITALIZED}s
+            Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
           <Typography variant="body1" gutterBottom>
             Enter the short code which was shared with you to get access to a{' '}
@@ -159,7 +160,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       }
     >
       <Stack spacing={2} sx={{p: 2}}>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
           {
             // Only show selector if condition is true i.e. more than one listing
           }
@@ -189,21 +190,18 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
             </FormControl>
           )}
 
-          <TextField
+          <OutlinedInput
             value={shortCode}
             placeholder="Enter code"
-            variant="outlined"
             onChange={updateShortCode}
             size="small"
             fullWidth
-            InputProps={{
-              sx: {fontFamily: 'monospace'},
-              startAdornment: (
-                <InputAdornment position="start">
-                  {selectedPrefix} -
-                </InputAdornment>
-              ),
-            }}
+            sx={{fontFamily: 'monospace'}}
+            startAdornment={
+              <InputAdornment position="start">
+                {selectedPrefix} -
+              </InputAdornment>
+            }
           />
 
           <Button
@@ -265,11 +263,11 @@ export function QRCodeRegistration(props: ShortCodeProps) {
     <MainCard
       title={
         <Grid container>
-          <Grid item xs>
+          <Grid size="grow">
             <Typography variant={'overline'}>
-              Register for {NOTEBOOK_NAME_CAPITALIZED}s
+              Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
             </Typography>
-            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
+            <Typography variant={'body2'} sx={{fontWeight: 700, mb: 0}}>
               Scan a QRCode to get access to a {NOTEBOOK_NAME}.
             </Typography>
           </Grid>
@@ -283,7 +281,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
           margin: 'auto',
         }}
       >
-        <Grid item xs={12}>
+        <Grid size={{xs: 12}}>
           <QRCodeButton label="Scan QR Code" onScanResult={handleRegister} />
         </Grid>
       </Grid>

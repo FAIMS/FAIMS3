@@ -1,6 +1,6 @@
 # Form Design Patterns
 
-*Practical patterns for combining field types in fieldwork forms.*
+_Practical patterns for combining field types in fieldwork forms._
 
 ---
 

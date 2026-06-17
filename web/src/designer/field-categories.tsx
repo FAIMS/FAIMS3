@@ -1,3 +1,7 @@
+/**
+ * @file Field chooser categories: enum keys, display labels, icons, and sort order.
+ */
+
 import React from 'react';
 import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
 import LooksOneRoundedIcon from '@mui/icons-material/LooksOneRounded';
@@ -9,6 +13,7 @@ import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 import RemoveRedEyeRoundedIcon from '@mui/icons-material/RemoveRedEyeRounded';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 
+/** Stable category id stored on each {@link FieldType} template. */
 export enum CategoryKey {
   TEXT = 'text',
   NUMBERS = 'numbers',

@@ -1,7 +1,7 @@
 # Select Field (Hierarchical)
 
-*How to add and configure a Select Field (Hierarchical) in the {{Notebook}}
-Editor.*
+_How to add and configure a Select Field (Hierarchical) in the {{Notebook}}
+Editor._
 
 ---
 
@@ -61,8 +61,8 @@ Editor UI, pre-populated with a simple template. Expanding
 the blue "Example Structure" info box displays an example of
 a valid JSON structure with two levels.
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting        | What It Does                                                                                                                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Value type** | Controls what is stored when a selection is made: "full" stores the complete path (e.g., "Ceramics > Coarseware > Cooking pot"), while "child" stores only the selected node name (e.g., "Cooking pot"). |
 
 The **hierarchy tree** (the `optiontree` structure) is not configurable

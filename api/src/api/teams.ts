@@ -33,6 +33,7 @@ import {
   Resource,
   Role,
   roleDetails,
+  isPeopleUserAccountDisabled,
   TeamMembershipInputSchema,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -46,6 +47,7 @@ import {
   updateTeam,
 } from '../couchdb/teams';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUsersForTeam,
   saveCouchUser,
@@ -224,7 +226,10 @@ api.get(
     await getTeamById(teamId);
 
     // Get all users who have roles for this team
-    const teamUsers = await getUsersForTeam({teamId});
+    const teamUsers = filterPeopleUsersForList(
+      await getUsersForTeam({teamId}),
+      false
+    );
 
     // Define available team roles
     const availableRoles = Object.entries(roleDetails)
@@ -283,8 +288,21 @@ api.post(
       );
     }
 
-    // Cannot modify your own roles as protection
-    if (targetUser.user_id === req.user.user_id) {
+    if (action === 'ADD_ROLE' && isPeopleUserAccountDisabled(targetUser)) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot assign team roles to a disabled user account.'
+      );
+    }
+
+    // Cannot modify your own roles as protection unless you have specific permission
+    if (
+      targetUser.user_id === req.user.user_id &&
+      !userCanDo({
+        user: req.user,
+        action: Action.CHANGE_OWN_ROLE_IN_TEAM,
+        resourceId: teamId,
+      })
+    ) {
       throw new Exceptions.ForbiddenException(
         'You cannot change your own role within a team.'
       );

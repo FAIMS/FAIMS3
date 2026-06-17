@@ -19,6 +19,7 @@
  */
 
 import {vi} from 'vitest';
+import {Role} from '@faims3/data-model';
 
 const testUser: ActiveUser = {
   username: 'testUser',
@@ -28,7 +29,7 @@ const testUser: ActiveUser = {
     username: 'testUser',
     server: 'test-server',
     exp: 0,
-    resourceRoles: [],
+    resourceRoles: [{role: Role.PROJECT_GUEST, resourceId: 'test-id'}],
     globalRoles: [],
   },
   expiresAt: 0,
@@ -99,7 +100,10 @@ vi.mock('../../context/slices/authSlice', () => ({
     token: 'test-token',
     parsedToken: {
       username: 'testuser',
+      server: 'test-server',
       exp: Date.now() / 1000 + 3600, // expires in 1 hour
+      resourceRoles: [{role: Role.PROJECT_GUEST, resourceId: 'test-id'}],
+      globalRoles: [],
     },
     expiresAt: Date.now() / 1000 + 3600,
   })),
@@ -188,7 +192,6 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
           <Provider store={testStore}>
             <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
           </Provider>
-          ;
         </QueryClientProvider>
       </NotificationContext.Provider>
     </Router>

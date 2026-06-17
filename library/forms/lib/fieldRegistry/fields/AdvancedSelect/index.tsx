@@ -32,16 +32,15 @@
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import TreeItem, {TreeItemProps, useTreeItem} from '@mui/lab/TreeItem';
+import TreeItem, {TreeItemProps} from '@mui/lab/TreeItem';
 import TreeView from '@mui/lab/TreeView';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import clsx from 'clsx';
 import React from 'react';
 import {z} from 'zod';
-import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -66,101 +65,21 @@ interface RenderTree {
   label?: string;
 }
 
-const AdvancedSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const AdvancedSelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     optiontree: z.array(RenderTreeSchema),
   }),
   valuetype: z.enum(['full', 'child']).optional().default('full'),
 });
 
-type AdvancedSelectFieldProps = z.infer<typeof AdvancedSelectFieldPropsSchema>;
+export type AdvancedSelectFieldProps = z.infer<
+  typeof AdvancedSelectFieldPropsSchema
+>;
 type FieldProps = AdvancedSelectFieldProps & FullFieldProps;
 
 // ============================================================================
 // Custom Tree Item Components
 // ============================================================================
-
-/**
- * Extended content props that include our custom selection handler and metadata.
- * These are passed through ContentProps and merged with TreeItemContentProps at runtime.
- */
-interface CustomContentAdditionalProps {
-  onSelectValue: (
-    nodeId: string,
-    type: string | undefined,
-    name: string,
-    label: string | undefined
-  ) => void;
-  type?: string;
-  name: string;
-}
-
-/**
- * Custom content component for tree items.
- * Handles click events to both expand/collapse and trigger selection.
- */
-const CustomContent = React.forwardRef<HTMLDivElement, any>((props, ref) => {
-  const {
-    className,
-    classes,
-    label,
-    nodeId,
-    icon: iconProp,
-    expansionIcon,
-    displayIcon,
-    onSelectValue,
-    type,
-    name,
-  } = props;
-
-  const {
-    disabled,
-    expanded,
-    selected,
-    focused,
-    handleExpansion,
-    handleSelection,
-    preventSelection,
-  } = useTreeItem(nodeId);
-
-  const icon = iconProp || expansionIcon || displayIcon;
-
-  const handleMouseDown = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
-    preventSelection(event);
-  };
-
-  const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    handleExpansion(event);
-    handleSelection(event);
-    if (onSelectValue) {
-      onSelectValue(nodeId, type, name, label as string | undefined);
-    }
-  };
-
-  return (
-    <div
-      className={clsx(className, classes.root, {
-        'Mui-expanded': expanded,
-        'Mui-selected': selected,
-        'Mui-focused': focused,
-        'Mui-disabled': disabled,
-      })}
-      onClick={handleClick}
-      onMouseDown={handleMouseDown}
-      ref={ref}
-    >
-      <div className="MuiTreeItem-contentBar" />
-      <div className={classes.iconContainer}>{icon}</div>
-      <div className={classes.label}>
-        <Typography>{(label as string) ?? name}</Typography>
-      </div>
-    </div>
-  );
-});
-
-CustomContent.displayName = 'CustomContent';
 
 interface CustomTreeItemProps extends TreeItemProps {
   onSelectValue: (
@@ -174,24 +93,18 @@ interface CustomTreeItemProps extends TreeItemProps {
 }
 
 const CustomTreeItem = (props: CustomTreeItemProps) => {
-  const {onSelectValue, type, name, label} = props;
-
-  // Pass custom props through ContentProps - they get merged with
-  // TreeItemContentProps at runtime
-  const contentProps: CustomContentAdditionalProps = {
-    onSelectValue: (nodeId: string) =>
-      onSelectValue(nodeId, type, name, label as string | undefined),
-    type,
-    name,
-  };
+  const {onSelectValue, type, name, label, nodeId, ...treeItemProps} = props;
 
   return (
     <TreeItem
-      key={props.nodeId}
-      {...props}
-      // TODO validate this - typing is not working
-      ContentComponent={CustomContent as any}
-      ContentProps={contentProps as any}
+      key={nodeId}
+      {...treeItemProps}
+      nodeId={nodeId}
+      label={label ?? name}
+      onClick={(event: React.MouseEvent<HTMLLIElement>) => {
+        event.stopPropagation();
+        onSelectValue(nodeId, type, name, label as string | undefined);
+      }}
     />
   );
 };

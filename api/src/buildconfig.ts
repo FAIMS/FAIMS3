@@ -21,7 +21,6 @@
 
 import {slugify} from '@faims3/data-model';
 import {existsSync} from 'fs';
-import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
   EmailConfig,
@@ -33,7 +32,10 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
-import {ProvisionSSOUsersPolicy, ProvisionSSOUsersPolicySchema} from './auth/types';
+import {
+  ProvisionSSOUsersPolicy,
+  ProvisionSSOUsersPolicySchema,
+} from './auth/types';
 console.log(`Using API version from package.json: ${packageVersion}`);
 export const API_VERSION = packageVersion;
 
@@ -235,7 +237,7 @@ function cookie_secret(): string {
   const cookie = process.env.FAIMS_COOKIE_SECRET;
   if (cookie === '' || cookie === undefined) {
     console.log('FAIMS_COOKIE_SECRET not set, using generated secret');
-    return uuidv4();
+    return crypto.randomUUID();
   } else {
     return cookie;
   }
@@ -434,7 +436,7 @@ function enable_local_login(): boolean {
 function migrateNotebooks(): boolean {
   const migrate = process.env.MIGRATE_NOTEBOOKS_ON_STARTUP;
   if (migrate === undefined) {
-    return false;
+    return true;
   } else {
     return migrate.toLowerCase() === 'true';
   }
@@ -740,4 +742,3 @@ function bugsnagApiKey(): string | undefined {
 }
 
 export const BUGSNAG_API_KEY = bugsnagApiKey();
-

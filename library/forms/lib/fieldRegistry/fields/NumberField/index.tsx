@@ -1,10 +1,8 @@
 import {TextField as MuiTextField} from '@mui/material';
 import React from 'react';
 import z from 'zod';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -13,12 +11,18 @@ import FieldWrapper from '../wrappers/FieldWrapper';
  * Extended props schema for NumberField.
  * Supports both integer and floating-point number types.
  */
-const NumberFieldPropsSchema = BaseFieldPropsSchema.extend({
+export const NumberFieldPropsSchema = BaseFieldParametersSchema.extend({
   /** Number type: 'integer' uses stepper, 'floating' allows decimals */
   numberType: z.enum(['integer', 'floating']).optional().default('integer'),
+  /** Minimum allowed value (inclusive) */
+  min: z.number().optional(),
+  /** Maximum allowed value (inclusive) */
+  max: z.number().optional(),
+  /** MUI input props; `type: 'number'` binds the native numeric input. */
+  InputProps: z.object({type: z.string().optional()}).passthrough().optional(),
 });
 
-type NumberFieldProps = z.infer<typeof NumberFieldPropsSchema>;
+export type NumberFieldProps = z.infer<typeof NumberFieldPropsSchema>;
 type NumberFieldFullProps = NumberFieldProps & FormFieldContextProps;
 
 /**
@@ -38,6 +42,8 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
     advancedHelperText,
     disabled,
     numberType = 'integer',
+    min,
+    max,
   } = props;
 
   // Value can be number or null
@@ -84,9 +90,12 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
         variant="outlined"
         disabled={disabled}
         type="number"
-        inputProps={{
-          // Step controls decimal precision
-          step: numberType === 'integer' ? 1 : 'any',
+        slotProps={{
+          htmlInput: {
+            step: numberType === 'integer' ? 1 : 'any',
+            min: min !== undefined ? min : undefined,
+            max: max !== undefined ? max : undefined,
+          },
         }}
       />
     </FieldWrapper>
@@ -100,7 +109,7 @@ const NumberField: React.FC<NumberFieldFullProps> = props => {
 const valueSchema = (props: NumberFieldProps) => {
   const numberType = props.numberType ?? 'integer';
 
-  let schema;
+  let schema: z.ZodNumber;
 
   if (numberType === 'integer') {
     schema = z.number().int({
@@ -109,6 +118,18 @@ const valueSchema = (props: NumberFieldProps) => {
   } else {
     schema = z.number({
       message: 'Please enter a valid number',
+    });
+  }
+
+  if (props.min !== undefined) {
+    schema = schema.min(props.min, {
+      message: `Must be ${props.min} or more`,
+    });
+  }
+
+  if (props.max !== undefined) {
+    schema = schema.max(props.max, {
+      message: `Must be ${props.max} or less`,
     });
   }
 

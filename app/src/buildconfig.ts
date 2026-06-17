@@ -20,8 +20,14 @@
  */
 
 import {Capacitor} from '@capacitor/core';
-import {MapStylesheetNameType} from '@faims3/forms';
-import {MapConfig} from '@faims3/forms';
+import {
+  type IAutosuggestAddressService,
+  MapboxAutosuggestAddressService,
+  MapTilerAutosuggestAddressService,
+  MapStylesheetNameType,
+  MapConfig,
+} from '@faims3/forms';
+import pluralize from 'pluralize';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -122,6 +128,31 @@ function pouch_batch_size(): number {
   } catch (err) {
     logError(err);
     return 10;
+  }
+}
+
+// This number requires more tuning based on upcoming load testing results. 500
+// is probably okay for most devices to two-way sync, but this is a more
+// conservative estimate.
+const DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD = 500;
+
+/*
+ * Record count above which activation defaults to push-only sync (when online).
+ * See VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD.
+ */
+function sync_push_only_record_threshold(): number {
+  const raw = import.meta.env.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
+  if (raw === '' || raw === undefined) {
+    return DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
+  }
+  try {
+    const parsed = parseInt(raw, 10);
+    return Number.isNaN(parsed)
+      ? DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD
+      : parsed;
+  } catch (err) {
+    logError(err);
+    return DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
   }
 }
 
@@ -268,6 +299,25 @@ function get_notebook_name_capitalized(): string {
   const notebook_name = get_notebook_name();
 
   return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
+}
+
+/**
+ * Retrieves the plural form of the notebook name.
+ *
+ * @returns {string} - The pluralised notebook name.
+ */
+function get_notebook_name_plural(): string {
+  return pluralize(get_notebook_name());
+}
+
+/**
+ * Retrieves the plural form of the notebook name with the first letter capitalised.
+ *
+ * @returns {string} - The capitalised pluralised notebook name.
+ */
+function get_notebook_name_plural_capitalized(): string {
+  const plural = get_notebook_name_plural();
+  return plural.charAt(0).toUpperCase() + plural.slice(1);
 }
 
 /**
@@ -477,6 +527,53 @@ function migrateOldDatabases(): boolean {
   );
 }
 
+/**
+ * When the directory lists a notebook as archived or the id is absent, the app
+ * may drop that notebook from the device after successful directory responses.
+ * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
+ *   (IndexedDB) so no local notebook data remains — security.
+ * - `never` (default): same teardown as manual deactivate (sync off, remote and
+ *   local Pouch **closed** but not destroyed), then remove from the app list so
+ *   on-disk data can be recovered if needed.
+ * Absent ids: the app confirms deletion with several consecutive successful
+ * directory responses (automatic re-polls); archived rows need one response.
+ * Set via VITE_FORCE_REMOTE_DELETION in .env / CDK; default is never.
+ */
+export type ForceRemoteDeletionMode = 'allow' | 'never';
+
+function forceRemoteDeletion(): ForceRemoteDeletionMode {
+  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
+  if (v === 'allow') {
+    return 'allow';
+  }
+  if (v !== undefined && v !== '' && v !== 'never') {
+    logError(
+      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+    );
+  }
+  return 'never';
+}
+
+/**
+ * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+ * When false or unset, deactivation only closes sync and DB handles (IndexedDB may remain).
+ * Set via VITE_DELETE_ON_DEACTIVATION; default is false.
+ */
+function deleteOnDeactivation(): boolean {
+  const v = import.meta.env.VITE_DELETE_ON_DEACTIVATION;
+  if (v === '' || v === undefined) {
+    return false;
+  }
+  if (FALSEY_STRINGS.includes(v.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(v.toLowerCase())) {
+    return true;
+  } else {
+    logError('VITE_DELETE_ON_DEACTIVATION badly defined, assuming false');
+    return false;
+  }
+}
+
 // Attachment service configuration
 
 /**
@@ -497,8 +594,183 @@ function getAttachmentDocumentIdPrefix(): string | undefined {
   return prefix || undefined;
 }
 
+// Address autosuggest configuration (KEY_SOURCE-style dispatch)
+
+/**
+ * Source for address autosuggest service. NONE disables autocomplete; MAPBOX
+ * uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY); MAPTILER
+ * uses MapTiler Search and Geocoding API (VITE_AUTOSUGGEST_MAPTILER_KEY, or
+ * VITE_MAP_SOURCE_KEY when map source is maptiler).
+ */
+export enum AutosuggestSource {
+  /** No address autosuggest; AddressField uses manual entry only. */
+  NONE = 'NONE',
+  /** Mapbox Search Box API (suggest + retrieve). */
+  MAPBOX = 'MAPBOX',
+  /** MapTiler Search and Geocoding API (forward + by-id). */
+  MAPTILER = 'MAPTILER',
+}
+
+/**
+ * Resolves VITE_AUTOSUGGEST_SOURCE to AutosuggestSource. Invalid or unset
+ * defaults to NONE.
+ */
+function getAutosuggestSourceConfig(): AutosuggestSource {
+  const raw = import.meta.env.VITE_AUTOSUGGEST_SOURCE as string | undefined;
+  if (raw === undefined || raw === '') {
+    return AutosuggestSource.NONE;
+  }
+  const upper = raw.toUpperCase();
+  if (upper in AutosuggestSource) {
+    return AutosuggestSource[upper as keyof typeof AutosuggestSource];
+  }
+  logError(
+    `VITE_AUTOSUGGEST_SOURCE invalid (${raw}), using NONE. Valid: NONE, MAPBOX, MAPTILER.`
+  );
+  return AutosuggestSource.NONE;
+}
+
+/**
+ * Returns Mapbox access token when AUTOSUGGEST_SOURCE is MAPBOX.
+ * Required for MAPBOX; if missing, address autosuggest is effectively disabled.
+ */
+function getMapboxAccessToken(): string | undefined {
+  const token = import.meta.env.VITE_AUTOSUGGEST_MAPBOX_KEY as
+    | string
+    | undefined;
+  if (token === undefined || token.trim() === '') {
+    return undefined;
+  }
+  return token.trim();
+}
+
+const DEFAULT_MAPBOX_ADDRESS_COUNTRY = ['AU'];
+
+/**
+ * Returns Mapbox address search country filter (ISO 3166-1 alpha-2).
+ * Optional env VITE_MAPBOX_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
+ * Defaults to Australia when unset.
+ */
+function getMapboxAddressCountry(): string[] {
+  const raw = import.meta.env.VITE_MAPBOX_ADDRESS_COUNTRY as string | undefined;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+  }
+  return raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+/**
+ * Returns MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER. Uses
+ * VITE_AUTOSUGGEST_MAPTILER_KEY if set; otherwise when map source is maptiler
+ * uses VITE_MAP_SOURCE_KEY so a single key can serve both tiles and geocoding.
+ * If neither is set, returns undefined and autosuggest is disabled.
+ */
+function getMapTilerApiKey(): string | undefined {
+  const dedicated = import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY as
+    | string
+    | undefined;
+  if (dedicated !== undefined && dedicated.trim() !== '') {
+    return dedicated.trim();
+  }
+  const mapSource = import.meta.env.VITE_MAP_SOURCE as string | undefined;
+  const mapKey = import.meta.env.VITE_MAP_SOURCE_KEY as string | undefined;
+  if (
+    mapSource === 'maptiler' &&
+    mapKey !== undefined &&
+    mapKey.trim() !== ''
+  ) {
+    return mapKey.trim();
+  }
+  return undefined;
+}
+
+/**
+ * Returns MapTiler address search country filter (ISO 3166-1 alpha-2).
+ * Optional env VITE_MAPTILER_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
+ * Defaults to Australia when unset.
+ */
+function getMapTilerAddressCountry(): string[] {
+  const raw = import.meta.env.VITE_MAPTILER_ADDRESS_COUNTRY as
+    | string
+    | undefined;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+  }
+  return raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
+
+function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService | null {
+  if (addressAutosuggestServiceInstance !== null) {
+    return addressAutosuggestServiceInstance;
+  }
+  const source = getAutosuggestSourceConfig();
+  if (source === AutosuggestSource.NONE) {
+    return null;
+  }
+  if (source === AutosuggestSource.MAPBOX) {
+    const apiKey = getMapboxAccessToken();
+    if (!apiKey) {
+      logError(
+        'VITE_AUTOSUGGEST_SOURCE is MAPBOX but VITE_AUTOSUGGEST_MAPBOX_KEY is not set; address autosuggest disabled.'
+      );
+      return null;
+    }
+    addressAutosuggestServiceInstance = new MapboxAutosuggestAddressService({
+      apiKey,
+      language: 'en',
+      limit: 10,
+      types: 'address',
+      country: getMapboxAddressCountry(),
+    });
+    return addressAutosuggestServiceInstance;
+  }
+  if (source === AutosuggestSource.MAPTILER) {
+    const apiKey = getMapTilerApiKey();
+    if (!apiKey) {
+      logError(
+        'VITE_AUTOSUGGEST_SOURCE is MAPTILER but no MapTiler API key available (set VITE_AUTOSUGGEST_MAPTILER_KEY or, when using MapTiler for maps, VITE_MAP_SOURCE_KEY); address autosuggest disabled.'
+      );
+      return null;
+    }
+    addressAutosuggestServiceInstance = new MapTilerAutosuggestAddressService({
+      apiKey,
+      language: 'en',
+      limit: 10,
+      types: ['address'],
+      country: getMapTilerAddressCountry(),
+    });
+    return addressAutosuggestServiceInstance;
+  }
+  return null;
+}
+
+/**
+ * Returns a factory for the address autosuggest service based on
+ * VITE_AUTOSUGGEST_SOURCE and provider-specific env (VITE_AUTOSUGGEST_MAPBOX_KEY or VITE_AUTOSUGGEST_MAPTILER_KEY / VITE_MAP_SOURCE_KEY for MapTiler).
+ * Use as FullFormConfig.addressAutosuggestService. When NONE or config missing,
+ * the factory returns undefined so AddressField skips autocomplete.
+ */
+export function getAddressAutosuggestService():
+  | (() => IAutosuggestAddressService)
+  | undefined {
+  const instance = createAddressAutosuggestServiceInstance();
+  if (instance === null) {
+    return undefined;
+  }
+  return () => instance;
+}
+
 export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
 export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
+export const AUTOSUGGEST_SOURCE = getAutosuggestSourceConfig();
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
@@ -507,14 +779,23 @@ export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
+export const SYNC_PUSH_ONLY_RECORD_THRESHOLD =
+  sync_push_only_record_threshold();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const SHOW_POUCHDB_BROWSER = show_pouchdb_browser();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
+
+/** Max characters shown for root description on the notebook listing page. */
+export const NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH = 50;
+
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
+export const NOTEBOOK_NAME_PLURAL = get_notebook_name_plural();
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
+  get_notebook_name_plural_capitalized();
 export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
@@ -529,6 +810,8 @@ export const SUPPORT_EMAIL = get_support_email();
 export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
 export const CONTACT_URL = get_app_contact_url();
 export const MIGRATE_OLD_DATABASES = migrateOldDatabases();
+export const FORCE_REMOTE_DELETION = forceRemoteDeletion();
+export const DELETE_ON_DEACTIVATION = deleteOnDeactivation();
 export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
   | 'ios'
   | 'android'

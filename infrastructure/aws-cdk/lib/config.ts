@@ -26,6 +26,42 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
+/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
+ * require the corresponding API key. */
+const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
+
+/** Configuration for address autosuggest in the app (KEY_SOURCE-style
+ * dispatch). */
+const AddressAutosuggestConfigSchema = z
+  .object({
+    /** Source for address autosuggest. NONE disables; MAPBOX requires
+     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
+     * mapSource is maptiler). */
+    source: AddressAutosuggestSourceSchema.default('NONE'),
+    /** Mapbox access token (required when source is MAPBOX). */
+    mapboxKey: z.string().min(1).optional(),
+    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
+    mapboxAddressCountry: z.string().optional(),
+    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
+     * mapSource is maptiler and mapSourceKey is set—then that key is used.
+     * Provide this when you want a separate key for autosuggest than for map
+     * tiles. */
+    maptilerKey: z.string().min(1).optional(),
+    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
+    maptilerAddressCountry: z.string().optional(),
+  })
+  .refine(
+    data => {
+      if (data.source === 'MAPBOX') return !!data.mapboxKey;
+      return true;
+    },
+    {
+      message: 'When source is MAPBOX, mapboxKey is required.',
+    }
+  );
+
 // For each provider we should have these secrets in the secrets manager
 // const AuthProviderSecretSchema = z.object({
 //   clientID: z.string(),
@@ -95,7 +131,7 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
       'Service Provider entity ID - identifies your application to the IdP'
     ),
   // Callback configuration (at least one needed)
-  callbackUrl: z
+  callbackURL: z
     .string()
     .optional()
     .describe(
@@ -105,7 +141,20 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .string()
     .optional()
     .default('/saml/callback')
-    .describe('Callback path if callbackUrl not specified'),
+    .describe('Callback path if callbackURL not specified'),
+  authnRequestBinding: z
+    .enum(['HTTP-Redirect', 'HTTP-POST'])
+    .optional()
+    .default('HTTP-POST')
+    .describe(
+      'Outbound AuthnRequest binding for passport-saml: HTTP-POST (default) or HTTP-Redirect'
+    ),
+  skipRequestCompression: z
+    .boolean()
+    .optional()
+    .describe(
+      'If true, do not DEFLATE outbound SAMLRequest (passport-saml); e.g. VANguard FAS'
+    ),
   // If you want the metadata document signed using your PK
   signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
@@ -126,7 +175,13 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .enum(['sha1', 'sha256', 'sha512'])
     .optional()
     .default('sha256'),
-  digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+  digestAlgorithm: z
+    .enum(['sha1', 'sha256', 'sha512'])
+    .optional()
+    .default('sha256')
+    .describe(
+      'XML digest for signed SAML requests (passport-saml; default sha256). Use sha1 only if your IdP requires it.'
+    ),
   wantAssertionsSigned: z.boolean().optional().default(true),
   // SAML behavior options
   identifierFormat: z
@@ -167,17 +222,29 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .default(28800000)
     .describe('How long request IDs are valid (default 8 hours)'),
   // Logout
-  logoutUrl: z
+  logoutURL: z
     .string()
     .optional()
     .describe('IdP logout URL (defaults to entryPoint)'),
-  logoutCallbackUrl: z.string().optional().describe('SP logout callback URL'),
+  logoutCallbackURL: z.string().optional().describe('SP logout callback URL'),
   // IdP validation
   idpIssuer: z
     .string()
     .optional()
     .describe('Expected IdP issuer for logout validation'),
   audience: z.string().optional().describe('Expected SAML response Audience'),
+  metadataErrorURL: z
+    .string()
+    .optional()
+    .describe(
+      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
+    ),
+  ssoErrorPageTitle: z.string().optional(),
+  ssoErrorPageHeading: z.string().optional(),
+  ssoErrorPageLead: z.string().optional(),
+  ssoErrorPageDetailMarkdown: z.string().optional(),
+  ssoErrorPageReturnURL: z.string().optional(),
+  ssoErrorPageReturnLabel: z.string().optional(),
 });
 
 const AuthProvidersConfigSchema = z
@@ -368,9 +435,14 @@ const ConductorConfigSchema = z.object({
   /** Allow localhost typical addresses in the redirects for conductor? NOT
    * recommended for production use cases (for security reasons). */
   localhostWhitelist: z.boolean().default(false),
+  /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
+   * migrations on startup. */
+  migrateNotebooksOnStartup: z.boolean().default(true),
 });
 
-const WebConfigSchema = z.object({});
+const WebConfigSchema = z.object({
+  title: z.string().default('Control Centre'),
+});
 
 /** Documentation site (Sphinx user docs) configuration */
 const DocsConfigSchema = z.object({});
@@ -414,22 +486,51 @@ const AppSupportLinksSchema = z.object({
   docsUrl: z.string().url().optional(),
 });
 
-export const UiConfiguration = z.object({
-  /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
-  /** The notebook list type for the app */
-  notebookListType: z.enum(['tabs', 'headings']),
-  /** The display name for notebooks e.g. survey, notebook */
-  notebookName: z.string(),
-  /** The name of the App in app store etc - heading by default */
-  appName: z.string(),
-  /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
-  appId: z.string(),
-  /** Override the heading text in banner */
-  headingAppName: z.string().optional(),
-  /** Offline maps settings */
-  offlineMaps: OfflineMapsConfigSchema,
-});
+export const UiConfiguration = z
+  .object({
+    /** The UI Theme for the app */
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
+    /** The notebook list type for the app */
+    notebookListType: z.enum(['tabs', 'headings']),
+    /** The display name for notebooks e.g. survey, notebook */
+    notebookName: z.string(),
+    /** The name of the App in app store etc - heading by default */
+    appName: z.string(),
+    /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
+    appId: z.string(),
+    /** Override the heading text in banner */
+    headingAppName: z.string().optional(),
+    /** Offline maps settings */
+    offlineMaps: OfflineMapsConfigSchema,
+    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
+    addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
+      source: 'NONE',
+    }),
+    /**
+     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
+     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
+     */
+    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
+    /**
+     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
+     */
+    deleteOnDeactivation: z.boolean().optional(),
+  })
+  .refine(
+    data => {
+      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
+      if (data.addressAutosuggest.maptilerKey?.trim()) return true;
+      return (
+        data.offlineMaps.mapSource === 'maptiler' &&
+        !!data.offlineMaps.mapSourceKey?.trim()
+      );
+    },
+    {
+      message:
+        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
+    }
+  );
 
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
@@ -511,6 +612,9 @@ export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
+export type AddressAutosuggestConfig = z.infer<
+  typeof AddressAutosuggestConfigSchema
+>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config

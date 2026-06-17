@@ -296,8 +296,8 @@ interface FieldInfo {
   fieldPropsSchema?: z.ZodTypeAny;
 }
 
-// Example
-const textFieldPropsSchema = BaseFieldPropsSchema.extend({
+// Example (BaseFieldParametersSchema is imported from @faims3/data-model)
+const textFieldPropsSchema = BaseFieldParametersSchema.extend({
   multiline: z.boolean().optional(),
   InputProps: z
     .object({

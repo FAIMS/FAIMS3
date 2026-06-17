@@ -1,3 +1,7 @@
+/**
+ * @file Visual Mustache template builder (blocks, preview) used by {@link TemplatedStringFieldEditor}.
+ */
+
 import {
   Add as AddIcon,
   Code as CodeIcon,
@@ -32,7 +36,13 @@ import {
 } from '@mui/material';
 import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {nowMs} from '@/lib/time';
 import DebouncedTextField from './debounced-text-field';
+import {
+  designerCancelButtonSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
+} from './designer-style';
 
 /*
 Patch mustache to not escape values.
@@ -66,8 +76,7 @@ let blockCounter = 0;
  * @returns {string} A unique identifier string
  */
 export const generateBlockId = (): string => {
-  // Get current timestamp
-  const timestamp = Date.now();
+  const timestamp = nowMs();
 
   // Increment counter
   blockCounter++;
@@ -148,7 +157,11 @@ const parseTemplate = (
 /**
  * Converts a Mustache AST token into our TemplateBlock format
  */
-const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
+type MustacheToken = [string, string, ...unknown[]];
+
+const convertMustacheTokenToBlock = (
+  token: MustacheToken
+): TemplateBlock | null => {
   const [tokenType, content, ...rest] = token;
 
   try {
@@ -167,21 +180,29 @@ const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
           content: content,
         };
 
-      case '#':
+      case '#': {
+        const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
         return {
           id: generateBlockId(),
           type: 'if',
           content: content,
-          children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
+          children: childTokens
+            .map(convertMustacheTokenToBlock)
+            .filter(isTemplateBlock),
         };
+      }
 
-      case '^':
+      case '^': {
+        const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
         return {
           id: generateBlockId(),
           type: 'unless',
           content: content,
-          children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
+          children: childTokens
+            .map(convertMustacheTokenToBlock)
+            .filter(isTemplateBlock),
         };
+      }
 
       default:
         return null;
@@ -245,8 +266,8 @@ const TemplateBlockEditor: React.FC<{
 
   return (
     <Box sx={{pl: 3, borderLeft: '2px solid', borderColor: 'divider', mb: 2}}>
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm="auto">
+      <Grid container spacing={2} sx={{alignItems: 'center'}}>
+        <Grid size={{xs: 12, sm: 'auto'}}>
           <FormControl fullWidth sx={{minWidth: 120}}>
             <InputLabel>Block Type</InputLabel>
             <Select
@@ -265,7 +286,7 @@ const TemplateBlockEditor: React.FC<{
         </Grid>
 
         {block.type === 'variable' && (
-          <Grid item xs={12} sm>
+          <Grid size={{xs: 12, sm: 'grow'}}>
             <FormControl fullWidth>
               <InputLabel>Variable</InputLabel>
               <Select
@@ -285,7 +306,7 @@ const TemplateBlockEditor: React.FC<{
         )}
 
         {block.type === 'text' && (
-          <Grid item xs>
+          <Grid size="grow">
             <DebouncedTextField
               fullWidth
               value={block.content}
@@ -297,7 +318,7 @@ const TemplateBlockEditor: React.FC<{
         )}
 
         {(block.type === 'if' || block.type === 'unless') && (
-          <Grid item xs={12} sm={4}>
+          <Grid size={{xs: 12, sm: 4}}>
             <FormControl fullWidth>
               <InputLabel>Variable</InputLabel>
               <Select
@@ -315,7 +336,7 @@ const TemplateBlockEditor: React.FC<{
           </Grid>
         )}
 
-        <Grid item>
+        <Grid size="auto">
           <Box sx={{display: 'flex', alignItems: 'center'}}>
             {onMoveUp && !isFirst && (
               <IconButton onClick={onMoveUp} size="small">
@@ -401,7 +422,9 @@ const TemplatePreview: React.FC<{
   systemVariables: Variable[];
   onTemplateError?: (error: string | null) => void;
 }> = ({template, variables, systemVariables, onTemplateError}) => {
-  const [previewValues, setPreviewValues] = useState<Record<string, any>>({});
+  const [previewValues, setPreviewValues] = useState<Record<string, unknown>>(
+    {}
+  );
   const [previewError, setPreviewError] = useState<string | null>(null);
   const allVariables = [...variables, ...systemVariables];
 
@@ -482,7 +505,7 @@ const TemplatePreview: React.FC<{
       {usedVariables.length > 0 ? (
         <Grid container spacing={2}>
           {usedVariables.map(variable => (
-            <Grid item xs={12} sm={6} key={variable.name}>
+            <Grid size={{xs: 12, sm: 6}} key={variable.name}>
               <DebouncedTextField
                 fullWidth
                 label={variable.displayName}
@@ -618,11 +641,11 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>
-        <Grid container alignItems="center" spacing={1}>
-          <Grid item>Template Builder</Grid>
+      <DialogTitle sx={designerDialogTitleSx}>
+        <Grid container spacing={1} sx={{alignItems: 'center'}}>
+          <Grid size="auto">Template Builder</Grid>
           {parseError && (
-            <Grid item>
+            <Grid size="auto">
               <Tooltip title={parseError}>
                 <ErrorIcon color="error" />
               </Tooltip>
@@ -631,7 +654,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
         </Grid>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent sx={designerDialogContentSx}>
         {/* Instructions */}
         <Paper sx={{p: 2, mb: 3, bgcolor: 'background.default'}}>
           <Typography variant="subtitle2" gutterBottom>
@@ -672,9 +695,9 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
         >
           <Typography
             variant="caption"
-            display="block"
             gutterBottom
             color="text.secondary"
+            sx={{display: 'block'}}
           >
             Template String:
           </Typography>
@@ -788,7 +811,9 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} sx={designerCancelButtonSx}>
+          Cancel
+        </Button>
         <Button
           onClick={handleSave}
           variant="contained"

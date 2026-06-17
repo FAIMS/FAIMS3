@@ -12,7 +12,7 @@ const PrimitiveStylingWrapper: React.FC<{
 /** Used to provide a consistent styling for empty/fallback primitives */
 const EmptyStylingWrapper: React.FC<{text: string}> = props => {
   return (
-    <Typography variant="body1" fontStyle={'italic'} color={'GrayText'}>
+    <Typography variant="body1" color={'GrayText'} sx={{fontStyle: 'italic'}}>
       {props.text}
     </Typography>
   );

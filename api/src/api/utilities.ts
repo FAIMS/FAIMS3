@@ -19,6 +19,7 @@
 
 import {
   Action,
+  ErrorResponse,
   PostExchangeTokenInputSchema,
   PostExchangeTokenResponse,
   PostLongLivedTokenExchangeInputSchema,
@@ -30,6 +31,7 @@ import {
 import express, {Response} from 'express';
 import multer from 'multer';
 import {processRequest} from 'zod-express-middleware';
+import {z} from 'zod';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
@@ -63,6 +65,7 @@ import {
 } from '../middleware';
 import patch from '../utils/patchExpressAsync';
 import {validateLongLivedToken} from '../couchdb/longLivedTokens';
+import {nowIso} from '../time';
 import {hashChallengeCode} from '../utils';
 
 // TODO: configure this directory
@@ -122,12 +125,18 @@ api.get(
   '/directory/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
+  processRequest({
+    query: z.object({
+      /** When `"true"`, includes surveys with status ARCHIVED. Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res) => {
-    // get the directory of notebooks on this server
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const projects = await getUserProjectsDirectory(req.user);
+    const includeArchived = req.query.includeArchived === 'true';
+    const projects = await getUserProjectsDirectory(req.user, includeArchived);
     res.json(projects);
   }
 );
@@ -186,7 +195,7 @@ api.post(
   '/auth/refresh',
   optionalAuthenticationJWT,
   processRequest({body: PostRefreshTokenInputSchema}),
-  async (req, res: Response<PostRefreshTokenResponse>) => {
+  async (req, res: Response<PostRefreshTokenResponse | ErrorResponse>) => {
     // If the user is logged in - then record the user ID as an additional
     // security measure - don't allow a user who currently has a JWT of user
     // A, to use a refresh token for user B, but if the user is not logged in
@@ -202,9 +211,14 @@ api.post(
 
     // If the refresh token is not valid, let user know
     if (!valid) {
-      throw new Exceptions.InvalidRequestException(
-        `Validation of refresh token failed. Validation error: ${validationError}.`
-      );
+      // Explicitly return a response here so that we're not reporting an error eg. to BugSnag
+      res.status(400).json({
+        error: {
+          message: `Validation of refresh token failed. Validation error: ${validationError}.`,
+          status: 400,
+        },
+      });
+      return;
     }
 
     // We know the refresh is valid, generate a JWT (no refresh) for this
@@ -261,7 +275,7 @@ api.post(
     // Log the token usage for security auditing
     if (!RUNNING_UNDER_TEST) {
       console.log(
-        `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${new Date().toISOString()}`
+        `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${nowIso()}`
       );
     }
 
@@ -339,7 +353,7 @@ api.post(
             <li><strong>From Address:</strong> ${EMAIL_CONFIG.fromEmail}</li>
             <li><strong>From Name:</strong> ${EMAIL_CONFIG.fromName}</li>
             <li><strong>Test Address:</strong> ${TEST_EMAIL_ADDRESS}</li>
-            <li><strong>Time Generated:</strong> ${new Date().toISOString()}</li>
+            <li><strong>Time Generated:</strong> ${nowIso()}</li>
             <li><strong>Requested by:</strong> ${req.user._id}</li>
           </ul>
           <p>If you received this email, the email service is configured correctly.</p>
@@ -356,7 +370,7 @@ Service Information:
 - From Address: ${EMAIL_CONFIG.fromEmail}
 - From Name: ${EMAIL_CONFIG.fromName}
 - Test Address: ${TEST_EMAIL_ADDRESS}
-- Time Generated: ${new Date().toISOString()}
+- Time Generated: ${nowIso()}
 - Requested by: ${req.user._id}
 
 If you received this email, the email service is configured correctly.

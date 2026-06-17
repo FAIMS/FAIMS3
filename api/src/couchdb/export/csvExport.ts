@@ -1,4 +1,6 @@
 import {
+  DatabaseInterface,
+  DataDocument,
   FieldSummary,
   getNotebookFieldTypes,
   HydratedDataRecord,
@@ -10,9 +12,11 @@ import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
-import {getProjectUIModel} from '../notebooks';
+import {getCompiledUiSpecModel} from '../notebooks';
+import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,
+  getComponentKey,
   MAX_CSV_FILENAME_LENGTH,
   truncateWithHash,
 } from './utils';
@@ -67,43 +71,61 @@ function generateRecordPrefixInformation(record: HydratedDataRecord) {
 // Type for a field header generator function
 type FieldHeaderGenerator = (fieldName: string) => string[];
 
-// Registry of field type header generators
-const FIELD_TYPE_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> = {
-  'faims-pos::Location': (fieldName: string) => [
-    fieldName,
-    `${fieldName}_latitude`,
-    `${fieldName}_longitude`,
-    `${fieldName}_accuracy`,
-  ],
+// Registry of component header generators (keyed by namespace::name)
+const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
+  {
+    'faims-custom::TakePoint': (fieldName: string) => [
+      fieldName,
+      `${fieldName}_latitude`,
+      `${fieldName}_longitude`,
+      `${fieldName}_accuracy`,
+    ],
 
-  'faims-core::JSON': (fieldName: string) => [
-    fieldName,
-    `${fieldName}_latitude`,
-    `${fieldName}_longitude`,
-  ],
+    'faims-custom::AddressField': (fieldName: string) => [
+      fieldName,
+      `${fieldName}_house_number`,
+      `${fieldName}_road`,
+      `${fieldName}_suburb`,
+      `${fieldName}_town`,
+      `${fieldName}_state`,
+      `${fieldName}_postcode`,
+      `${fieldName}_country`,
+      `${fieldName}_country_code`,
+      `${fieldName}_manual`,
+    ],
 
-  'faims-attachment::Files': (fieldName: string) => [fieldName],
+    'mapping-plugin::MapFormField': (fieldName: string) => [
+      fieldName,
+      `${fieldName}_latitude`,
+      `${fieldName}_longitude`,
+    ],
 
-  'faims-core::Relationship': (fieldName: string) => [fieldName],
-};
+    'faims-custom::TakePhoto': (fieldName: string) => [fieldName],
+    'faims-custom::FileUploader': (fieldName: string) => [fieldName],
 
-// Default generator for unregistered field types
+    'faims-custom::RelatedRecordSelector': (fieldName: string) => [fieldName],
+  };
+
+// Default generator for unregistered components
 const defaultHeaderGenerator: FieldHeaderGenerator = (fieldName: string) => [
   fieldName,
 ];
 
 /**
- * Get the header generator for a given field type
+ * Get the header generator for a given component (namespace + name).
  */
-function getHeaderGeneratorForFieldType(
-  fieldType: string
+function getHeaderGeneratorForComponent(
+  componentNamespace: string,
+  componentName: string
 ): FieldHeaderGenerator {
-  return FIELD_TYPE_HEADER_GENERATORS[fieldType] || defaultHeaderGenerator;
+  const key = getComponentKey(componentNamespace, componentName);
+  return FIELD_COMPONENT_HEADER_GENERATORS[key] || defaultHeaderGenerator;
 }
 
 /**
- * Generate CSV headers from UI specification fields. Uses the registered field
- * type header generators to produce the additional headers for each data type.
+ * Generate CSV headers from UI specification fields. Uses the registered
+ * component header generators (by namespace + name) to produce the additional
+ * headers for each field type.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -113,10 +135,10 @@ export function getHeaderInfoFromUiSpecification({
   const additionalHeaders: string[] = [];
 
   for (const field of fields) {
-    // Get the appropriate header generator for this field type
-    const generator = getHeaderGeneratorForFieldType(field.type);
-
-    // Generate base headers for this field type
+    const generator = getHeaderGeneratorForComponent(
+      field.componentNamespace,
+      field.componentName
+    );
     const fieldHeaders = generator(field.name);
     additionalHeaders.push(...fieldHeaders);
 
@@ -189,7 +211,7 @@ export const appendAllCSVsToArchive = async ({
 }): Promise<MultiViewCSVAppendStats> => {
   // Fetch DB and UI spec
   const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
 
   // Get all view IDs
   const viewIds = Object.keys(uiSpecification.viewsets);
@@ -266,9 +288,17 @@ export const appendAllCSVsToArchive = async ({
         const hrid = record.hrid || record.record_id;
         const row = [...generateRecordPrefixInformation(record)];
 
+        const rowData = {...record.data} as Record<string, unknown>;
+        await stripDeletedRelatedRefsFromRecordData({
+          fields: viewState.fields,
+          data: rowData,
+          dataDb: dataDb as DatabaseInterface<DataDocument>,
+          uiSpecification,
+        });
+
         const outputData = convertDataForOutput(
           viewState.fields,
-          record.data,
+          rowData,
           record.annotations,
           hrid,
           viewState.filenames,
@@ -386,7 +416,7 @@ export const appendCSVToArchive = async ({
   const dataDb = await getDataDb(projectId);
 
   // Grab the UI spec
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
 
   // Get field information
   const fields = getNotebookFieldTypes({uiSpecification, viewID});
@@ -433,9 +463,17 @@ export const appendCSVToArchive = async ({
       const hrid = record.hrid || record.record_id;
       const row = [...generateRecordPrefixInformation(record)];
 
+      const rowData = {...record.data} as Record<string, unknown>;
+      await stripDeletedRelatedRefsFromRecordData({
+        fields,
+        data: rowData,
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpecification,
+      });
+
       const outputData = convertDataForOutput(
         fields,
-        record.data,
+        rowData,
         record.annotations,
         hrid,
         filenames,
@@ -495,7 +533,7 @@ export const streamNotebookRecordsAsCSV = async (
   const dataDb = await getDataDb(projectId);
 
   // Grab the UI spec
-  const uiSpecification = await getProjectUIModel(projectId);
+  const uiSpecification = await getCompiledUiSpecModel(projectId);
 
   // Loop through records in an efficient iterator
   const iterator = await notebookRecordIterator({
@@ -534,10 +572,18 @@ export const streamNotebookRecordsAsCSV = async (
       // Start by generating the general record info
       const row = [...generateRecordPrefixInformation(record)];
 
+      const rowData = {...record.data} as Record<string, unknown>;
+      await stripDeletedRelatedRefsFromRecordData({
+        fields,
+        data: rowData,
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpecification,
+      });
+
       // Then ask each field to dump out its data
       const outputData = convertDataForOutput(
         fields,
-        record.data,
+        rowData,
         record.annotations,
         hrid,
         filenames,

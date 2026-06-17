@@ -41,11 +41,17 @@ Here is the overall process and requirements for a new field.
 ### Define the Component Props Schema
 
 The field is configured with a set of properties that will be part of the field
-definition in the JSON UISpec. There is a base set of properties defined as
-`BaseFieldPropsSchema`:
+definition in the JSON UISpec. There is a base set of properties shared by every
+field, defined as `BaseFieldParametersSchema`. This now lives in
+`@faims3/data-model` (it is the single source of truth for the base parameter
+envelope — the designer types its redux field on top of it too), so import it
+from there:
 
 ```typescript
-export const BaseFieldPropsSchema = z.object({
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+
+// for reference, the schema is:
+export const BaseFieldParametersSchema = z.object({
   label: z.string().optional(),
   name: z.string(),
   helperText: z.string().optional(),
@@ -59,12 +65,14 @@ that includes the field name, label, required and disabled flags and helper text
 settings.
 
 If your new field has no special settings then you can use this schema directly
-(and it's associated type `BaseFieldProps`). Otherwise you would extend this
+(and its associated type `BaseFieldParameters`). Otherwise you extend this
 schema with your new options. For example, the select field adds a list of
 options:
 
 ```typescript
-const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+import {BaseFieldParametersSchema} from '@faims3/data-model';
+
+export const SelectFieldPropsSchema = BaseFieldParametersSchema.extend({
   ElementProps: z.object({
     options: z.array(
       z.object({
@@ -76,10 +84,17 @@ const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   }),
   select_others: z.string().optional(),
 });
-type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
+export type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
 ```
 
 This schema will be used to validate fields of this type in the UISpec.
+
+> **Export the schema and its inferred type.** The designer consumes these per
+> field so its editors are typed against the exact same contract the renderer
+> uses (see [Add the Field to Designer](#add-the-field-to-designer)). Export
+> `SelectFieldPropsSchema` and `SelectFieldProps` from the field module, then
+> surface them from the `lib/fieldRegistry/fieldParams.ts` barrel. Define each
+> schema/type **once** at the field module — do not create alias re-exports.
 
 ### Define the Field Component
 
@@ -212,7 +227,7 @@ export type DataViewFieldRenderContext = {
   // The full RecordMetadata object, which may help with more advanced types
   record: HydratedRecordDocument;
   // UI specification
-  uiSpecification: ProjectUIModel;
+  uiSpecification: UiSpecModel;
   // The form render trace (to help build new entries)
   trace: DataViewTraceEntry[];
   // Controls/triggers
@@ -320,9 +335,9 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
 ```
 
 Note: `FieldInfo<FieldProps>` this generic type informs the type system what
-kind of props the component expects. It has the `BaseFieldProps` default type,
-but you can provide better typing by using the more specific type - i.e. your
-custom props type as above.
+kind of props the component expects. It defaults to the base `FullFieldProps`
+type, but you can provide better typing by using the more specific type - i.e.
+your custom props type as above.
 
 The field namespace and name are used to select this field from the UISpec, they
 should be unique in combination in the system. Generally the namespace would be
@@ -353,9 +368,9 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
 ### Add the Field to Designer
 
 To allow the field to be added to a new notebook it needs to be added to the
-designer. This has it's own register of field types (yes that's redundant) in
-`designer/src/fields.tsx`. The entry here is a prototype of the
-JSON that needs to be added to a notebook to create the field. Eg.:
+designer. This has its own register of field prototypes (yes that's redundant)
+in `web/src/designer/fields.tsx`. The entry here is a prototype of the JSON that
+needs to be added to a notebook to create the field. Eg.:
 
 ```typescript
 AddressField: {
@@ -363,30 +378,36 @@ AddressField: {
     'component-name': 'AddressField',
     'type-returned': 'faims-core::JSON',
     'component-parameters': {
-      helperText: 'Enter your address',
-      required: false,
       name: 'Address',
       label: 'Address',
+      helperText: 'Enter your address',
+      required: false,
     },
-    validationSchema: [['yup.object'], ['yup.nullable']],
   },
 ```
 
-The first two lines match with the arguments to `registerField` and allow this
-field to be selected. The `type-returned` property defines what type is
+The first two lines match the `namespace`/`name` of your `FieldInfo` and allow
+this field to be selected. The `type-returned` property defines what type is
 returned by the field, however it isn't used (at present).
 
-The `component-parameters` property defines properties that will be passed
-to the component via the `props` argument. Here is where you can add
-configuration options if needed. You should include the standard
-set of options shown here at a minimum.
+The `component-parameters` property defines the default properties that will be
+passed to the component. `name` is required (the designer assigns the real field
+id when the field is created); include the standard base parameters shown here
+at a minimum, plus sensible defaults for any field-specific options.
+
+> **Designer typing.** The designer's redux field stores `component-parameters`
+> as an open envelope (`BaseFieldParameters` + unknown extras). Each field editor
+> narrows that envelope to the **forms-defined props type** you exported above —
+> e.g. `field['component-parameters'] as SelectFieldProps` — rather than the
+> designer redeclaring the field's parameters. This keeps a single definition of
+> the parameter shape, shared between renderer and designer.
 
 If you have no additional options for your field then no more work is needed. If
-there are extra options then you need to create component in the designer to
+there are extra options then you need to create a component in the designer to
 customise this field. Look at eg.
-`designer/src/components/Fields/MapFormFieldEditor.tsx` for an example. The
-component will probably extend the `BaseFieldEditor` component and add any extra
-options that are needed.
+`web/src/designer/components/Fields/MapFormFieldEditor.tsx` for an example. The
+component will probably wrap the `BaseFieldEditor` component, import your
+`*Props` type from `@faims3/forms`, and add any extra options that are needed.
 
 ### Create a Sample Notebook and Test
 

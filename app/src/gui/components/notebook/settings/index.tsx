@@ -18,24 +18,28 @@
  *   The settings component for a notebook presents user changeable options
  */
 
-import {ProjectID, ProjectUIModel} from '@faims3/data-model';
+import {ProjectID, UiSpecModel} from '@faims3/data-model';
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   FormControlLabel,
   Grid,
   Paper,
+  Stack,
   Switch,
   Typography,
 } from '@mui/material';
 import React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../../buildconfig';
 import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {
@@ -50,10 +54,15 @@ import {
   DE_ACTIVATE_ACTIVE_VERB,
   DE_ACTIVATE_VERB,
 } from '../../workspace/notebooks';
+import {
+  syncModeIncludesPull,
+  syncModeIncludesPush,
+} from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
+import SyncModeHelpDialog from './syncModeHelpDialog';
 
-export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
+export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   const nav = useNavigate();
   const {projectId} = useParams<{projectId: ProjectID}>();
   if (!projectId) return <></>;
@@ -62,9 +71,15 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   if (!project) return <></>;
 
   const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
+  const syncMode = project.database?.syncMode ?? 'none';
+  const pullSyncEnabled = syncModeIncludesPull(syncMode);
+  const pushSyncEnabled = syncModeIncludesPush(syncMode);
   const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
+  const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
+    React.useState(false);
 
   const handleDeactivateClick = () => {
+    setDeactivateSyncAcknowledged(false);
     setOpenDeactivateDialog(true);
   };
 
@@ -76,11 +91,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
       })
     );
     setOpenDeactivateDialog(false);
+    setDeactivateSyncAcknowledged(false);
     nav(NOTEBOOK_LIST_ROUTE);
   };
 
   const handleDeactivateCancel = () => {
     setOpenDeactivateDialog(false);
+    setDeactivateSyncAcknowledged(false);
   };
 
   return (
@@ -91,17 +108,24 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
         columnSpacing={{xs: 1, sm: 2, md: 3}}
         sx={{mb: {xs: 1, sm: 2, md: 3}}}
       >
-        <Grid item xs={12} sm={12} md={6} lg={4}>
+        <Grid size={{xs: 12, sm: 12, md: 6, lg: 4}}>
           <Box
             component={Paper}
             variant={'outlined'}
             elevation={0}
-            p={2}
-            mb={{xs: 1, sm: 2, md: 3}}
+            sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
           >
-            <Typography variant={'h6'} sx={{mb: 2}}>
-              Sync {NOTEBOOK_NAME_CAPITALIZED}
-            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mb: 2,
+              }}
+            >
+              <Typography variant={'h6'}>Sync Mode</Typography>
+              <SyncModeHelpDialog recordCount={project.recordCount} />
+            </Box>
             <NotebookSyncSwitch project={project} showHelperText={true} />
           </Box>
 
@@ -109,8 +133,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             component={Paper}
             variant={'outlined'}
             elevation={0}
-            p={2}
-            mb={{xs: 1, sm: 2, md: 3}}
+            sx={{p: 2, mb: {xs: 1, sm: 2, md: 3}}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
               Get attachments from other devices
@@ -121,6 +144,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 control={
                   <Switch
                     checked={isSyncingAttachments}
+                    disabled={!pullSyncEnabled}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
                         color: theme.palette.icon.main,
@@ -162,28 +186,24 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 }
               />
               <Typography variant={'body2'}>
-                This control is app and device specific. If this option is
-                enabled, Fieldmark™ will automatically download and show images
-                and attachments created by other devices. Be aware that this may
-                be resource intensive and use your mobile data plan. Disable
-                this setting to minimise network usage. This setting will not
-                affect uploading of your data from this device to the central
-                server. Attachments are always uploaded to the server regardless
-                of this setting.
+                {pullSyncEnabled
+                  ? 'This control is app and device specific. If this option is enabled, Fieldmark™ will automatically download and show images and attachments created by other devices. Be aware that this may be resource intensive and use your mobile data plan. Disable this setting to minimise network usage. This setting will not affect uploading of your data from this device to the central server. Attachments are always uploaded to the server regardless of this setting.'
+                  : 'Attachment download requires two-way sync. Change sync mode above to enable this option.'}
               </Typography>
             </Box>
           </Box>
 
-          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
+          <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>
               {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
-                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME_CAPITALIZED} will
-                remove it from your active notebooks list. Make sure all your
-                data has been synced to the server before{' '}
-                {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
+                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME} will remove it
+                from your device and delete all records on your device.{' '}
+                {syncMode === 'none'
+                  ? 'Ensure any records you need on the server have been synced before deactivating.'
+                  : 'Ensure all your records have a green sync status (uploaded) before deactivating.'}
               </Typography>
               <Button
                 variant={'outlined'}
@@ -195,7 +215,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             </Box>
           </Box>
         </Grid>
-        <Grid item xs={12} sm={12} md={6} lg={8}>
+        <Grid size={{xs: 12, sm: 12, md: 6, lg: 8}}>
           <AutoIncrementerSettingsList
             project={project}
             uiSpec={props.uiSpec}
@@ -209,16 +229,36 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
           {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} this{' '}
-            {NOTEBOOK_NAME_CAPITALIZED}? {DE_ACTIVATE_ACTIVE_VERB} may result in
-            unintended data loss if your records have not been uploaded to the
-            server.
-          </DialogContentText>
+          <Stack spacing={2}>
+            <Typography variant="body1">
+              Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} the{' '}
+              {NOTEBOOK_NAME} and remove it from your device?
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={deactivateSyncAcknowledged}
+                  onChange={(_, checked) =>
+                    setDeactivateSyncAcknowledged(checked)
+                  }
+                  color="primary"
+                />
+              }
+              label={
+                pushSyncEnabled
+                  ? 'I have checked that all records have a green sync status.'
+                  : 'I understand local records will be removed from this device.'
+              }
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeactivateCancel}>Cancel</Button>
-          <Button onClick={handleDeactivateConfirm} color="error">
+          <Button
+            onClick={handleDeactivateConfirm}
+            color="error"
+            disabled={!deactivateSyncAcknowledged}
+          >
             {DE_ACTIVATE_VERB}
           </Button>
         </DialogActions>

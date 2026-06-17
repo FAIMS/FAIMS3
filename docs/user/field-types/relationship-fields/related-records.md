@@ -1,7 +1,7 @@
 # Add Related Record
 
-*How to add and configure an Add Related Record field in the {{Notebook}}
-Editor.*
+_How to add and configure an Add Related Record field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -53,14 +53,14 @@ Field ID, and add any desired Helper Text.
 The Related Records field provides several settings for defining how
 records are connected:
 
-| Setting | What It Does |
-| ------- | ------------ |
-| **Multiple** | When enabled, allows linking to more than one related record. |
-| **Allow linking to existing records** | When enabled, collectors can link to records that already exist rather than only creating new ones. |
-| **Hide the 'Create Another' Button** | When unchecked (default), displays a button allowing users to quickly create another related record after saving one. Check this to hide that button. |
-| **Select Relation Type** | Choose **Child** for hierarchical parent-child relationships or **Linked** for peer-to-peer associations. |
-| **Select Related Form** | Selects which form type this field links to (e.g., "Context", "Find", "Sample"). |
-| **Related Type Label** | A human-readable label for the related form type, displayed in the UI (e.g., "Context Record"). |
+| Setting                               | What It Does                                                                                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Multiple**                          | When enabled, allows linking to more than one related record.                                                                                         |
+| **Allow linking to existing records** | When enabled, collectors can link to records that already exist rather than only creating new ones.                                                   |
+| **Hide the 'Create Another' Button**  | When unchecked (default), displays a button allowing users to quickly create another related record after saving one. Check this to hide that button. |
+| **Select Relation Type**              | Choose **Child** for hierarchical parent-child relationships or **Linked** for peer-to-peer associations.                                             |
+| **Select Related Form**               | Selects which form type this field links to (e.g., "Context", "Find", "Sample").                                                                      |
+| **Related Type Label**                | A human-readable label for the related form type, displayed in the UI (e.g., "Context Record").                                                       |
 
 ### Shared Field Options
 

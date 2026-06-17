@@ -38,15 +38,33 @@ graph TD
 
 ## Notebook design / specification
 
-The most significant form of configuration in the application is the specification for the notebook. This defines **what** to render, and **how** it should be rendered. A notebook specification includes the following components, as shown in the diagram below
+The most significant form of configuration is the **notebook definition**, stored on each survey (`ProjectDocument.uiSpecification`) and template (`TemplateDocument.uiSpecification`). See [Notebook definition](./NotebookDefinition.md) for the full model.
 
-- metadata (`metadata`): a set of key value pairs which contain
-  - important notebook metadata such as name, description, author etc
-  - configuration switches such as QR code behaviour (TODO document this further)
-  - arbitrary user metadata key-value pairs
-- field definitions (`ui-specification.fields`): a set of fields with a unique name, this includes detailed specifications on how to render the field, it's allowable returned values etc
-- forms (`ui-specification.viewsets`): top level forms which display as discrete forms in the application e.g. Site, Building - these are a collection of views, which are a collection of fields
-- views/sections (`ui-specification.fviews`): a sub-section within a form, which contain a collection of Fields identified from the field definitions list by their unique identifier
+At a high level:
+
+| Layer                          | Where                                  | Examples                                                                             |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------ |
+| Survey / template **resource** | Couch document **root**                | `name`, optional `description` (max 250 chars), `status`, `templateId`, audit fields |
+| **Design bundle**              | `uiSpecification`                      | `uiSpec` (forms/fields) + `metadata` (design prose, custom tags)                     |
+| **Functional toggles**         | `uiSpecification.uiSpec.settings`      | `showQrCodeButton` (QR search on record list)                                        |
+| **Design documentation**       | `uiSpecification.metadata.information` | `purposeMarkdown`, `projectLeadLabel`, `leadInstitution`, `notebookVersion`          |
+| **Org extensions**             | `uiSpecification.metadata.custom`      | Optional arbitrary keys                                                              |
+
+The form graph uses **`uiSpec.fields`**, **`uiSpec.viewsets`**, and **`uiSpec.views`** (decoded from legacy `fviews` on import). Inner field keys remain legacy-shaped (`component-namespace`, `type-returned`, …).
+
+**When to use**: Behaviour that applies to one survey/template, is editable in the Designer, and should travel with JSON export/import belongs in **`uiSpecification`**. Survey title and optional short root description are updated via **`PUT /api/notebooks/:id`** (partial body) without replacing the whole design.
+
+**Backwards compatibility**: Upload and API bodies may still use legacy top-level `{ metadata, 'ui-specification' }`; the server migrates to the most recent notebook schema version before persistence. See [Notebook migrations](./NotebookMigrations.md).
+
+```mermaid
+graph TD
+    P[Project or Template document] --> R[Root: name, optional description, audit, status, dataDb]
+    P --> U[uiSpecification]
+    U --> US[uiSpec: fields, views, viewsets, settings, schemaVersion]
+    U --> M[metadata.information + optional custom]
+    US --> VS[viewsets → views → field refs]
+    US --> FD[fields definitions]
+```
 
 **When should this be used**: The notebook specification is a powerful form of configuration for the behaviour of a _specific_ notebook. When the behaviour to be configured applies to a) a specific notebook b) individual fields/forms/sections c) some notebooks but not all d) should be configurable by the user within a given deployment, then the notebook specification should be used.
 
@@ -54,32 +72,11 @@ The most significant form of configuration in the application is the specificati
 
 A user/developer can therefore change notebook behaviour in the following ways
 
-- changing the metadata for special values (TODO - define these as a special subset of metadata e.g. settings)
-- changing the fields or configuration of those fields
-- changing the configuration of forms and sections within that form
+- editing **`uiSpec.settings`** or **`metadata.information`** in the Designer (or JSON upload via `PUT …/uiSpecification`)
+- changing fields or form/section layout under **`uiSpec`**
+- changing survey **`name`** and optional root **`description`** via Control Centre without touching the form graph
 
 Ideally, any configuration available in the notebook specification should be exposed in a user-friendly way in the Designer application.
-
-The diagram below shows a simplified structural diagram of a notebook specification JSON document.
-
-```mermaid
-graph TD
-    A[Notebook Schema JSON] -->|described by| B[metadata]
-    A -->|specified by| C[ui-specification]
-
-    C -->|defines fields| D[field definitions]
-    C -->|contains| E[views]
-
-    E -->|contains| F[Main Form]
-    F -->|has section| G[Section 1]
-    F -->|has section| H[Section 2]
-
-    G -->|uses fields| I[field references]
-    H -->|uses fields| J[field references]
-
-    I -.->|by ID| D
-    J -.->|by ID| D
-```
 
 ## App UI theme
 

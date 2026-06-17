@@ -1,13 +1,27 @@
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
+import type {ColumnDef} from '@tanstack/react-table';
 import {DataTable} from '@/components/data-table/data-table';
-import {columns} from '@/components/tables/templates';
+import {getTemplatesTableColumns} from '@/components/tables/templates';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplates} from '@/hooks/queries';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
+import {
+  filterTemplatesByVisibility,
+  PUBLIC_TEMPLATE_ROW_CLASS,
+  TemplateVisibilityFilterSelect,
+  type TemplateVisibilityFilterValue,
+} from '@/components/tables/template-visibility-filter';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {
+  Action,
+  getUserResourcesForAction,
+  globalRolesGrantAction,
+  type GetListTemplatesResponse,
+} from '@faims3/data-model';
+
+type TemplateListRow = GetListTemplatesResponse['templates'][number];
 
 export const Route = createFileRoute('/_protected/templates/')({
   component: RouteComponent,
@@ -23,6 +37,8 @@ function RouteComponent() {
   const {user} = useAuth();
   const {isPending, data} = useGetTemplates({user});
   const navigate = useNavigate();
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<TemplateVisibilityFilterValue>('all');
 
   // can they create templates outside team?
   const canCreateGlobally = useIsAuthorisedTo({
@@ -52,15 +68,46 @@ function RouteComponent() {
     paths,
   });
 
+  const columns = useMemo(
+    () =>
+      getTemplatesTableColumns({
+        includeVisibility: globalRolesGrantAction(
+          user?.decodedToken ?? {
+            globalRoles: [],
+            resourceRoles: [],
+          },
+          Action.CHANGE_TEMPLATE_VISIBILITY
+        ),
+      }),
+    [user?.decodedToken]
+  );
+
+  const filteredTemplates = useMemo(
+    () => filterTemplatesByVisibility(data, visibilityFilter),
+    [data, visibilityFilter]
+  );
+
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      loading={isPending}
-      onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
-      button={
-        (canCreateGlobally || canCreateInSomeTeam) && <CreateTemplateDialog />
-      }
-    />
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
+      <DataTable
+        columns={columns as ColumnDef<TemplateListRow, unknown>[]}
+        data={filteredTemplates}
+        loading={isPending}
+        toolbarExtra={
+          <TemplateVisibilityFilterSelect
+            value={visibilityFilter}
+            onValueChange={setVisibilityFilter}
+          />
+        }
+        getRowClassName={(row: TemplateListRow) =>
+          row.isPublic === true ? PUBLIC_TEMPLATE_ROW_CLASS : undefined
+        }
+        onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
+        button={
+          (canCreateGlobally || canCreateInSomeTeam) && <CreateTemplateDialog />
+        }
+      />
+    </div>
   );
 }

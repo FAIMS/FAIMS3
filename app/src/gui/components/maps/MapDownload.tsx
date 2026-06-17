@@ -143,7 +143,7 @@ export const MapDownload = () => {
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12} sx={{marginBottom: 2}}>
+      <Grid size={12} sx={{marginBottom: 2}}>
         <Alert severity="info">
           Offline maps is an experimental feature. Please report any unexpected
           behaviour.
@@ -178,7 +178,7 @@ export const MapDownload = () => {
         </Stack>
       </Grid>
 
-      <Grid item xs={12} sm={4} md={3}>
+      <Grid size={{xs: 12, sm: 4, md: 3}}>
         <Accordion
           sx={{width: '100%'}}
           expanded={downloadListOpen}
@@ -235,7 +235,7 @@ export const MapDownload = () => {
         </Accordion>
       </Grid>
 
-      <Grid item xs={12} md={9} sm={8} height={600}>
+      <Grid size={{xs: 12, md: 9, sm: 8}} sx={{height: 600}}>
         <MapComponent parentSetMap={setMap} config={mapConfig} />
       </Grid>
     </Grid>

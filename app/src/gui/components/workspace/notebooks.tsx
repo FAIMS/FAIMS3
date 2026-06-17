@@ -31,6 +31,7 @@ import {
   DialogTitle,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
@@ -41,10 +42,11 @@ import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
 import {
   CAPACITOR_PLATFORM,
-  IS_WEB_PLATFORM,
   NOTEBOOK_LIST_TYPE,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
@@ -55,35 +57,50 @@ import {
   selectServers,
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {
+  formatNotebookListDescription,
+  isNotebookListDescriptionTruncated,
+} from '../../../lib/notebookListDisplay';
 import {useIsOnline} from '../../../utils/customHooks';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import HeadingProjectGrid from '../ui/heading-grid';
-import Tabs from '../ui/tab-grid';
 import {
   QRCodeButtonOnly,
   ShortCodeOnlyComponent,
 } from '../authentication/shortCodeOnly';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
+import Tabs from '../ui/tab-grid';
 
-// Survey status naming conventions
+// Notebook status naming conventions (labels are fixed English; surrounding UI uses NOTEBOOK_NAME* from build config).
 
-// E.g. "This survey is not active"
+// E.g. "This notebook is not active"
 export const NOT_ACTIVATED_LABEL = 'Not Active';
 
-// E.g. "This survey is active"
+// E.g. "This notebook is active"
 export const ACTIVATED_LABEL = 'Active';
 
-// E.g. "This survey has been activated"
+// E.g. "This notebook has been activated"
 export const ACTIVATED_VERB_PAST = 'Activated';
 
-// E.g. "Please activate this survey"
+// E.g. "Please activate this notebook"
 export const ACTIVATE_VERB_LABEL = 'Activate';
 
-// E.g. "This survey is currently activating" or "Before activating, consider ..."
+// E.g. "This notebook is currently activating" or "Before activating, consider ..."
 export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 
-// E.g. "You cannot currently de-activate a survey"
+// E.g. "You cannot currently de-activate a notebook"
 export const DE_ACTIVATE_VERB = 'De-activate';
 export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
+
+export const notebookListDataGridSx = {
+  '& .MuiDataGrid-cell': {
+    padding: '8px 16px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  '& .MuiDataGrid-row': {
+    minHeight: '75px !important',
+  },
+};
 
 export default function NoteBooks() {
   // get the active user - this will allow us to check roles against it
@@ -102,7 +119,7 @@ export default function NoteBooks() {
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
-    // don't show de-activated closed surveys
+    // don't show de-activated closed notebooks
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
@@ -113,11 +130,13 @@ export default function NoteBooks() {
       await dispatch(initialiseProjects({serverId: activeServerId}));
     },
     onSuccess: () => {
-      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`);
     },
     onError: err => {
       console.log(err);
-      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`);
+      notify.showError(
+        `Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`
+      );
     },
   });
   const showRefreshButton = isOnline.isOnline;
@@ -136,27 +155,50 @@ export default function NoteBooks() {
       headerName: 'Name',
       type: 'string',
       flex: 0.4,
-      renderCell: ({row}) => (
-        <Box>
+      renderCell: ({row}) => {
+        const listDescription = formatNotebookListDescription(row.description);
+        const descriptionTypography = (
           <Typography
-            variant={is_xs ? 'body2' : 'body1'}
-            fontWeight={row.isActivated ? 'bold' : 'normal'}
-            color={row.isActivated ? 'black' : grey[800]}
+            variant="caption"
             sx={{
-              padding: '8px 0px',
+              display: 'block',
+              ...(isNotebookListDescriptionTruncated(row.description)
+                ? {cursor: 'help'}
+                : {}),
             }}
           >
-            {row.name ??
-              // Just as a backwards compat thing, consider looking for name in
-              // metadata
-              row.metadata.name ??
-              'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
+            {listDescription}
           </Typography>
-          <Typography variant="caption" sx={{display: 'block', mt: 1}}>
-            {row.metadata.description}
-          </Typography>
-        </Box>
-      ),
+        );
+
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0,
+            }}
+          >
+            <Typography
+              variant={is_xs ? 'body2' : 'body1'}
+              sx={{
+                fontWeight: row.isActivated ? 'bold' : 'normal',
+                color: row.isActivated ? 'black' : grey[800],
+              }}
+            >
+              {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
+            </Typography>
+            {listDescription &&
+              (isNotebookListDescriptionTruncated(row.description) ? (
+                <Tooltip title={row.description?.trim() ?? ''}>
+                  <span>{descriptionTypography}</span>
+                </Tooltip>
+              ) : (
+                descriptionTypography
+              ))}
+          </Box>
+        );
+      },
     },
   ];
   const activatedColumns = baseColumns;
@@ -198,9 +240,10 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activatedProjects.length}{' '}
+      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME}{' '}
+      currently {ACTIVATED_LABEL} on this device.{' '}
+      {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -231,15 +274,22 @@ export default function NoteBooks() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   return (
-    <Box component={Paper} elevation={0} p={2}>
+    <Box
+      component={Paper}
+      elevation={0}
+      sx={{p: 2, width: '100%', minWidth: 0}}
+    >
       <Stack
         direction={isMobile ? 'column' : 'row'}
-        alignItems={isMobile ? 'stretch' : 'center'}
-        justifyContent={isMobile ? 'space-evenly' : 'space-between'}
         spacing={2}
-        sx={{mt: 1, mb: 2}}
+        sx={{
+          mt: 1,
+          mb: 2,
+          alignItems: isMobile ? 'stretch' : 'center',
+          justifyContent: isMobile ? 'space-evenly' : 'space-between',
+        }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" sx={{flex: 1}}>
+        <Stack direction="row" spacing={1} sx={{flex: 1, alignItems: 'center'}}>
           <Button
             variant="contained"
             disabled={!showRefreshButton || doRefresh.isPending}
@@ -275,7 +325,7 @@ export default function NoteBooks() {
           }}
         >
           Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
-          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME}s
+          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME_PLURAL}
         </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
@@ -390,17 +440,17 @@ export default function NoteBooks() {
       >
         <DialogTitle>
           <Typography variant="h4">
-            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_CAPITALIZED}s
+            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
         </DialogTitle>
         <DialogContent>
-          <Typography paragraph>
+          <Typography sx={{mb: 2}}>
             <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
             ensures that you are safe to work offline at any point by
             downloading any existing records onto your device. Please do this
             with a stable internet connection.
           </Typography>
-          <Typography paragraph>
+          <Typography sx={{mb: 2}}>
             <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
             offloads records from your device, to{' '}
             {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:

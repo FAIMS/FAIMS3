@@ -1,25 +1,18 @@
+import {
+  BaseFieldParametersSchema,
+  relatedRecordFieldAvpEntrySchema,
+  relatedRecordSelectorComponentParamsSchema,
+} from '@faims3/data-model';
 import z from 'zod';
 import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {FormFieldContextProps} from '../../../formModule/types';
 
 // ============================================================================
 // Component Specific Types & Schemas
 // ============================================================================
-export const relatedTypeSchema = z.enum([
-  'faims-core::Child',
-  'faims-core::Linked',
-]);
-export type RelatedType = z.infer<typeof relatedTypeSchema>;
-export const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
-  related_type: z.string(),
-  relation_type: relatedTypeSchema,
-  multiple: z.boolean().optional().default(false),
-  allowLinkToExisting: z.boolean().optional().default(false),
-  hideCreateAnotherButton: z.boolean().optional().default(false),
-});
+export const relatedRecordPropsSchema = BaseFieldParametersSchema.merge(
+  relatedRecordSelectorComponentParamsSchema
+);
 
 export type RelatedRecordFieldProps = z.infer<typeof relatedRecordPropsSchema>;
 export type RelatedRecordProps = RelatedRecordFieldProps &
@@ -29,9 +22,8 @@ export interface FullRelatedRecordFieldProps extends RelatedRecordProps {
   config: FullFormManagerConfig;
 }
 
-export const fieldValueEntrySchema = z.object({
-  record_id: z.string(),
-  project_id: z.string().optional(),
+/** Form validation: vocabulary pair must be a full pair (stricter than AVP/storage). */
+export const fieldValueEntrySchema = relatedRecordFieldAvpEntrySchema.extend({
   relation_type_vocabPair: z.tuple([z.string(), z.string()]),
 });
 

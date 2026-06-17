@@ -81,9 +81,23 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     issuer: z.string(),
     // Callback configuration
     /** Full callback URL for SAML responses */
-    callbackUrl: z.string().optional(),
-    /** Callback path if callbackUrl not specified (default: /saml/callback) */
+    callbackURL: z.string().optional(),
+    /** Callback path if callbackURL not specified (default: /saml/callback) */
     path: z.string().optional(),
+    /**
+     * How the SP sends the AuthnRequest to the IdP (passport-saml `authnRequestBinding`).
+     * `HTTP-POST` (default): HTML form auto-post to IdP (POST binding for outbound auth request).
+     * `HTTP-Redirect`: 302 to IdP with SAMLRequest query param.
+     */
+    authnRequestBinding: z
+      .enum(['HTTP-Redirect', 'HTTP-POST'])
+      .optional()
+      .default('HTTP-POST'),
+    /**
+     * When true, passport-saml does not DEFLATE-compress outbound SAMLRequest /
+     * LogoutRequest before base64 (required by some IdPs e.g. VANguard FAS).
+     */
+    skipRequestCompression: z.boolean().optional(),
     /** Sign the metadata document with PK? */
     signMetadata: z
       .string()
@@ -104,8 +118,11 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     // Signature configuration
     /** Signature algorithm: 'sha1', 'sha256', or 'sha512' (default: sha256) */
     signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
-    /** Digest algorithm: 'sha1', 'sha256', or 'sha512' */
-    digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
+    /** Digest for signed request references; passport-saml defaults to sha1 if omitted here */
+    digestAlgorithm: z
+      .enum(['sha1', 'sha256', 'sha512'])
+      .optional()
+      .default('sha256'),
     /** Request signed assertions from IdP (default: true) */
     wantAssertionsSigned: z.boolean().optional(),
     // SAML behavior options
@@ -128,14 +145,27 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     requestIdExpirationPeriodMs: z.number().optional(),
     // Logout
     /** IdP logout URL (defaults to entryPoint) */
-    logoutUrl: z.string().optional(),
+    logoutURL: z.string().optional(),
     /** SP logout callback URL */
-    logoutCallbackUrl: z.string().optional(),
+    logoutCallbackURL: z.string().optional(),
     // IdP validation
     /** Expected IdP issuer for logout validation */
     idpIssuer: z.string().optional(),
     /** Expected SAML response Audience */
     audience: z.string().optional(),
+    /**
+     * If set, used as SPSSODescriptor @errorURL in SAML metadata instead of the
+     * default Conductor URL for this provider's SSO error page.
+     */
+    metadataErrorURL: z.string().optional(),
+    /** Optional overrides for the per-provider SSO error page (`/auth/{id}/sso-error`) */
+    ssoErrorPageTitle: z.string().optional(),
+    ssoErrorPageHeading: z.string().optional(),
+    ssoErrorPageLead: z.string().optional(),
+    /** Optional Markdown body (rendered with the markdown helper) */
+    ssoErrorPageDetailMarkdown: z.string().optional(),
+    ssoErrorPageReturnURL: z.string().optional(),
+    ssoErrorPageReturnLabel: z.string().optional(),
   }
 );
 

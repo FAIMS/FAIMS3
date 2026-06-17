@@ -1,29 +1,29 @@
 {
-    "appId": "org.fedarch.faims3",
-    "appName": "Fieldmark",
-    "npmClient": "pnpm",
-    "webDir": "build",
-    "plugins": {
-        "SplashScreen": {
-            "launchShowDuration": 0
-        },
-        "StatusBar": {
-            "style": "Light",
-            "backgroundColor": "#FAFAFB",
-            "overlaysWebView": false
-        },
-        "CapacitorHttp": {
-            "enabled": true
-        }
+  "appId": "org.fedarch.faims3",
+  "appName": "Fieldmark",
+  "npmClient": "pnpm",
+  "webDir": "build",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
     },
-    "server": {
-        "url": "http://localhost:3000",
-        "cleartext": true,
-        "allowNavigation": [],
-        "iosScheme": "org.fedarch.faims3"
+    "StatusBar": {
+      "style": "Light",
+      "backgroundColor": "#FAFAFB",
+      "overlaysWebView": false
     },
-    "android": {
-        "webContentsDebuggingEnabled": true
-    },
-    "cordova": {}
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "server": {
+    "url": "http://localhost:3000",
+    "cleartext": true,
+    "allowNavigation": [],
+    "iosScheme": "org.fedarch.faims3"
+  },
+  "android": {
+    "webContentsDebuggingEnabled": true
+  },
+  "cordova": {}
 }

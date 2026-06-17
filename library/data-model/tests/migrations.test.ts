@@ -1,10 +1,16 @@
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
-import {EncodedProjectUIModel, Resource, Role} from '../src';
+import {DatabaseInterface, Resource, Role} from '../src';
+import {
+  PROJECT_METADATA_PREFIX,
+  UI_SPECIFICATION_NAME,
+} from '../src/datamodel/database';
 import {
   AUTH_RECORD_ID_PREFIXES,
   DB_MIGRATIONS,
   DatabaseType,
+  MigrationContext,
+  projectsV3toV4Migration,
   EmailCodeV1ExistingDocument,
   EmailCodeV3ExistingDocument,
   EmailCodeV4ExistingDocument,
@@ -13,9 +19,12 @@ import {
   PeopleV2Document,
   PeopleV3Document,
   PeopleV4Document,
+  PeopleV5Document,
   ProjectStatus,
+  ProjectStatusV2,
   ProjectV1Fields,
   ProjectV2Fields,
+  ProjectV3Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
   RefreshRecordV3ExistingDocument,
@@ -23,12 +32,18 @@ import {
   V2InviteDBFields,
   V3InviteDBFields,
   VerificationChallengeV3ExistingDocument,
+  LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
 } from '../src/data_storage';
 import {
   TemplateV1Fields,
   TemplateV2Fields,
+  TemplateV3Fields,
+  TemplateV4Fields,
+  TemplateV5Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
+import {NotebookDefinitionV1} from '../src/data_storage/migrations/notebookMigrations/migrateV2';
+import {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION} from '../src/uiSpecification/normalize';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -54,7 +69,11 @@ type MigrationTestCase = {
     inputDoc: PouchDB.Core.ExistingDocument<any>,
     expectedUpdatedRecord: PouchDB.Core.ExistingDocument<any>
   ) => boolean;
+  /** Optional cross-db context (e.g. metadata DB for projects v3→v4). */
+  context?: MigrationContext;
 };
+
+type LegacyNotebookShape = NotebookDefinitionV1['ui-specification'];
 
 // Test cases for templatesV1toV2Migration
 const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
@@ -79,7 +98,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies NotebookDefinitionV1['ui-specification'],
       ownedByTeamId: 'team_456',
     } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
@@ -100,7 +119,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team_456',
       } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -127,7 +146,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
       action: 'update',
@@ -145,7 +164,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: undefined,
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -168,7 +187,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
       action: 'update',
@@ -183,7 +202,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: undefined,
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -223,7 +242,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team_complex',
     } satisfies PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
@@ -256,7 +275,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team_complex',
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -279,7 +298,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
     } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
     expectedResult: {
       action: 'update',
@@ -294,7 +313,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: undefined,
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
     },
@@ -319,7 +338,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         fviews: {},
         viewsets: {},
         visible_types: ['text', 'number', 'select'],
-      } satisfies EncodedProjectUIModel,
+      } satisfies LegacyNotebookShape,
       ownedByTeamId: 'team_add',
       customField1: 'This should be dropped',
       customField2: 42,
@@ -339,7 +358,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           fviews: {},
           viewsets: {},
           visible_types: ['text', 'number', 'select'],
-        } satisfies EncodedProjectUIModel,
+        } satisfies LegacyNotebookShape,
         ownedByTeamId: 'team_add',
         // Additional fields should be dropped
       } satisfies PouchDB.Core.ExistingDocument<TemplateV2Fields>,
@@ -360,6 +379,255 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         }
       }
       return true;
+    },
+  },
+];
+
+const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV2toV3Migration - archived sentinel to top-level flag',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-arch',
+      _rev: '1-rev',
+      version: 3,
+      name: 'Archived tpl',
+      metadata: {
+        name: 'Archived tpl',
+        project_status: 'archived',
+        pre_description: 'x',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies LegacyNotebookShape,
+      ownedByTeamId: 'team-a',
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-arch',
+        _rev: '1-rev',
+        version: 3,
+        name: 'Archived tpl',
+        metadata: {
+          name: 'Archived tpl',
+          pre_description: 'x',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies LegacyNotebookShape,
+        ownedByTeamId: 'team-a',
+        archived: true,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - active sentinel stripped',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-act',
+      _rev: '2-rev',
+      version: 1,
+      name: 'Active',
+      metadata: {project_status: 'active', notebook_version: '1'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies LegacyNotebookShape,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-act',
+        _rev: '2-rev',
+        version: 1,
+        name: 'Active',
+        metadata: {notebook_version: '1'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies LegacyNotebookShape,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - legacy New (and any non-archived) stripped from metadata',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-new',
+      _rev: '3-rev',
+      version: 1,
+      name: 'Demo',
+      metadata: {name: 'Demo', project_status: 'New'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies LegacyNotebookShape,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-new',
+        _rev: '3-rev',
+        version: 1,
+        name: 'Demo',
+        metadata: {name: 'Demo'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies LegacyNotebookShape,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+];
+
+const TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV3toV4Migration - adds isPublic false',
+    dbType: DatabaseType.TEMPLATES,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'tpl-v4',
+      _rev: '4-rev',
+      version: 2,
+      name: 'My tpl',
+      metadata: {pre_description: 'x'},
+      archived: false,
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies LegacyNotebookShape,
+      ownedByTeamId: 'team-z',
+    } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-v4',
+        _rev: '4-rev',
+        version: 2,
+        name: 'My tpl',
+        metadata: {pre_description: 'x'},
+        archived: false,
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies LegacyNotebookShape,
+        ownedByTeamId: 'team-z',
+        isPublic: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
+    },
+  },
+];
+
+const TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV4toV5Migration - maps metadata and ui-spec into uiSpecification',
+    dbType: DatabaseType.TEMPLATES,
+    from: 4,
+    to: 5,
+    inputDoc: {
+      _id: 'tpl-v5',
+      _rev: '5-rev',
+      version: 2,
+      name: 'My tpl',
+      metadata: {
+        pre_description: 'Design purpose',
+        project_lead: 'Lead Name',
+        lead_institution: 'Example University',
+        notebook_version: '2.1.0',
+        schema_version: '3.0',
+        showQRCodeButton: 'true',
+        template_id: 'tpl-v5',
+        org_tag: 'field-school',
+      },
+      archived: false,
+      isPublic: true,
+      'ui-specification': {
+        fields: {f1: {'component-name': 'FAIMSTextField'}},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies LegacyNotebookShape,
+      ownedByTeamId: 'team-z',
+    } as PouchDB.Core.ExistingDocument<TemplateV4Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-v5',
+        _rev: '5-rev',
+        version: 2,
+        name: 'My tpl',
+        description: 'Design purpose',
+        createdBy: 'admin',
+        createdAt: '1970-01-01T00:00:00.000Z',
+        updatedAt: '1970-01-01T00:00:00.000Z',
+        archived: false,
+        isPublic: true,
+        ownedByTeamId: 'team-z',
+        uiSpecification: {
+          uiSpec: {
+            fields: {
+              f1: {
+                'component-namespace': 'faims-custom',
+                'component-name': 'TextField',
+              },
+            },
+            views: {},
+            viewsets: {},
+            visible_types: [],
+            settings: {showQrCodeButton: true},
+            schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+          },
+          metadata: {
+            information: {
+              notebookVersion: '2.1.0',
+              purposeMarkdown: 'Design purpose',
+              projectLeadLabel: 'Lead Name',
+              leadInstitution: 'Example University',
+            },
+            custom: {org_tag: 'field-school'},
+          },
+        },
+        // Cast: this fixture intentionally carries a minimal migrated field
+        // (`component-name`/`-namespace` only). The v3→v4 field rename does not
+        // synthesise `component-parameters`/`type-returned`, so the migrated
+        // output legitimately omits them and would not satisfy the (now typed)
+        // FieldDefinition shape.
+      } as unknown as PouchDB.Core.ExistingDocument<TemplateV5Fields>,
+    },
+    equalityFunction: (actual, expected) => {
+      expect(actual.createdAt).toEqual(expect.any(String));
+      expect(actual.updatedAt).toEqual(expect.any(String));
+      const {createdAt: _a, updatedAt: _b, ...restActual} = actual;
+      const {createdAt: _c, updatedAt: _d, ...restExpected} = expected;
+      return areDocsEqual(restActual, restExpected);
     },
   },
 ];
@@ -401,7 +669,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_123',
         _rev: '1-abc123',
         name: 'Research Project Alpha',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -450,7 +718,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_456',
         _rev: '1-def456',
         name: 'Minimal Project',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -501,7 +769,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_789',
         _rev: '1-ghi789',
         name: 'Personal Project',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -556,7 +824,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_complex',
         _rev: '1-complex',
         name: 'Complex Connection Project',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -603,7 +871,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         db_name: 'meta_status',
         port: 443,
       },
-      status: 'archived', // This should be replaced by ProjectStatus.OPEN
+      status: 'archived', // Replaced by ProjectStatusV2.OPEN regardless of v1 string
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
     expectedResult: {
       action: 'update',
@@ -611,7 +879,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_status',
         _rev: '1-status',
         name: 'Status Override Project',
-        status: ProjectStatus.OPEN, // The status should always be set to OPEN regardless of previous value
+        status: ProjectStatusV2.OPEN, // Always OPEN from v1 migration regardless of previous value
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -650,7 +918,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_missing_dbs',
         _rev: '1-missing',
         name: 'Project With Missing DBs',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: undefined, // Migration preserves undefined values
         metadataDb: undefined,
         ownedByTeamId: undefined,
@@ -684,7 +952,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_extra',
         _rev: '1-extra',
         name: 'Project With Extra Fields',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {url: 'https://example.com/db/data_extra'},
         metadataDb: {url: 'https://example.com/db/meta_extra'},
         templateId: undefined,
@@ -709,6 +977,61 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       }
       return true;
     },
+  },
+];
+
+const PROJECT_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'projectsV2toV3Migration - OPEN to v3 OPEN',
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'proj_v3_1',
+      _rev: '1-a',
+      name: 'Survey A',
+      status: ProjectStatusV2.OPEN,
+      dataDb: {db_name: 'data-proj_v3_1'},
+      metadataDb: {db_name: 'metadata-proj_v3_1'},
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v3_1',
+        _rev: '1-a',
+        name: 'Survey A',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_v3_1'},
+        metadataDb: {db_name: 'metadata-proj_v3_1'},
+      } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
+  },
+  {
+    name: 'projectsV2toV3Migration - CLOSED to v3 CLOSED',
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'proj_v3_2',
+      _rev: '1-b',
+      name: 'Survey B',
+      status: ProjectStatusV2.CLOSED,
+      dataDb: {db_name: 'data-proj_v3_2'},
+      metadataDb: {db_name: 'metadata-proj_v3_2'},
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v3_2',
+        _rev: '1-b',
+        name: 'Survey B',
+        status: ProjectStatus.CLOSED,
+        dataDb: {db_name: 'data-proj_v3_2'},
+        metadataDb: {db_name: 'metadata-proj_v3_2'},
+      } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
   },
 ];
 
@@ -1454,6 +1777,44 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+const PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'peopleV4toV5Migration - adds disabled false',
+    dbType: DatabaseType.PEOPLE,
+    from: 4,
+    to: 5,
+    inputDoc: {
+      _id: 'user_v4',
+      _rev: '1-abc',
+      user_id: 'user_v4',
+      name: 'Test User',
+      emails: [{email: 't@example.com', verified: true}],
+      profiles: {},
+      projectRoles: [],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV4Document,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_v4',
+        _rev: '1-abc',
+        user_id: 'user_v4',
+        name: 'Test User',
+        emails: [{email: 't@example.com', verified: true}],
+        profiles: {},
+        projectRoles: [],
+        teamRoles: [],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER],
+        disabled: false,
+      } satisfies PeopleV5Document,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
 // Test cases for authV2toV3Migration
 const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Test case 1: Refresh token should remain unchanged
@@ -1650,10 +2011,15 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
 MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PROJECT_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V4_TO_V5_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**
@@ -1661,7 +2027,7 @@ describe('Migration Specific Tests', () => {
    */
   describe('Migration Functions', () => {
     MIGRATION_TEST_CASES.forEach(testCase => {
-      it(`should correctly apply ${testCase.name}`, () => {
+      it(`should correctly apply ${testCase.name}`, async () => {
         // Find the migration function
         const migration = DB_MIGRATIONS.find(
           m =>
@@ -1672,8 +2038,10 @@ describe('Migration Specific Tests', () => {
 
         expect(migration).toBeDefined();
 
-        // Apply the migration function
-        const result = migration!.migrationFunction(testCase.inputDoc);
+        // Apply the migration function (may be async for cross-db migrations)
+        const result = await Promise.resolve(
+          migration!.migrationFunction(testCase.inputDoc, testCase.context)
+        );
 
         // Check that the result matches expected
         expect(result.action).toBe(testCase.expectedResult.action);
@@ -1707,6 +2075,141 @@ describe('Migration Specific Tests', () => {
           expect(result).toEqual(testCase.expectedResult);
         }
       });
+    });
+
+    it('projectsV3toV4Migration throws without getDbById context', async () => {
+      const inputDoc = {
+        _id: 'proj_no_context',
+        _rev: '1-a',
+        name: 'Survey',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_no_context'},
+        metadataDb: {db_name: 'metadata-proj_no_context'},
+      } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>; // v3 shape fixture
+
+      await expect(projectsV3toV4Migration(inputDoc)).rejects.toThrow(
+        /requires MigrationContext\.getDbById/
+      );
+    });
+
+    it('projectsV3toV4Migration throws when project has no metadataDb', async () => {
+      const inputDoc = {
+        _id: 'proj_no_meta_db',
+        _rev: '1-a',
+        name: 'Survey',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_no_meta_db'},
+        metadataDb: {db_name: ''},
+      } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+
+      const getDbById = jest.fn();
+      await expect(
+        projectsV3toV4Migration(inputDoc, {getDbById})
+      ).rejects.toThrow(/has no metadataDb/);
+      expect(getDbById).not.toHaveBeenCalled();
+    });
+
+    it('projectsV3toV4Migration reads metadata DB via getDbById', async () => {
+      const metaDb = new PouchDB('proj-meta-migration-test', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      await metaDb.put({
+        _id: `${PROJECT_METADATA_PREFIX}-pre_description`,
+        is_attachment: false,
+        metadata: 'Loaded from metadata DB',
+      });
+      await metaDb.put({
+        _id: `${PROJECT_METADATA_PREFIX}-showQRCodeButton`,
+        is_attachment: false,
+        metadata: 'false',
+      });
+      await metaDb.put({
+        _id: `${PROJECT_METADATA_PREFIX}-schema_version`,
+        is_attachment: false,
+        metadata: '3.0',
+      });
+      await metaDb.put({
+        _id: UI_SPECIFICATION_NAME,
+        fields: {field_a: {'component-name': 'FAIMSTextField'}},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['main'],
+      });
+
+      const getDbById = jest.fn().mockResolvedValue(metaDb);
+      const inputDoc = {
+        _id: 'proj_meta_load',
+        _rev: '1-x',
+        name: 'Survey from project row',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_meta_load'},
+        metadataDb: {db_name: 'metadata-proj_meta_load'},
+      } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+
+      const result = await projectsV3toV4Migration(inputDoc, {getDbById});
+
+      expect(getDbById).toHaveBeenCalledWith({
+        id: LEGACY_INLINE_NOTEBOOK_DB_PREFIX + 'proj_meta_load',
+      });
+      expect(result.action).toBe('update');
+      if (result.action !== 'update') {
+        return;
+      }
+
+      expect(result.updatedRecord.name).toBe('Survey from project row');
+      expect(result.updatedRecord.description).toBe('Loaded from metadata DB');
+      expect(result.updatedRecord.metadataDb).toBeUndefined();
+      expect(
+        result.updatedRecord.uiSpecification.uiSpec.fields.field_a[
+          'component-name'
+        ]
+      ).toBe('TextField');
+      expect(
+        result.updatedRecord.uiSpecification.uiSpec.settings.showQrCodeButton
+      ).toBe(false);
+      expect(
+        result.updatedRecord.uiSpecification.metadata.information
+          .purposeMarkdown
+      ).toBe('Loaded from metadata DB');
+      expect(result.updatedRecord.createdBy).toBe('admin');
+
+      await metaDb.destroy();
+    });
+
+    it('projectsV3toV4Migration uses migrationCreatedBy from context', async () => {
+      const metaDb = new PouchDB('proj-meta-created-by', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      await metaDb.put({
+        _id: UI_SPECIFICATION_NAME,
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      });
+
+      const inputDoc = {
+        _id: 'proj_custom_creator',
+        _rev: '1-x',
+        name: 'Survey',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_custom_creator'},
+        metadataDb: {db_name: 'metadata-proj_custom_creator'},
+      } satisfies PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+
+      const result = await projectsV3toV4Migration(inputDoc, {
+        getDbById: async () => metaDb,
+        migrationCreatedBy: 'ops-admin',
+      });
+
+      expect(result.action).toBe('update');
+      if (result.action === 'update') {
+        expect(result.updatedRecord.createdBy).toBe('ops-admin');
+      }
+
+      await metaDb.destroy();
     });
   });
 });

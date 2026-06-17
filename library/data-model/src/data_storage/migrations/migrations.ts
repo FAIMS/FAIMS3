@@ -18,9 +18,23 @@ import {
   PeopleV2Document,
   PeopleV3Document,
   PeopleV4Document,
+  PeopleV5Document,
 } from '../peopleDB';
-import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
-import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
+import {
+  ProjectStatus,
+  ProjectStatusV2,
+  ProjectV1Fields,
+  ProjectV2Fields,
+  ProjectV3Fields,
+  ProjectV4Fields,
+} from '../projectsDB';
+import {
+  TemplateV1Fields,
+  TemplateV2Fields,
+  TemplateV3Fields,
+  TemplateV4Fields,
+  TemplateV5Fields,
+} from '../templatesDB/types';
 import {
   DBTargetVersions,
   DatabaseType,
@@ -28,6 +42,17 @@ import {
   MigrationDetails,
   MigrationFunc,
 } from './types';
+import {
+  buildSurveyNotebookDefinitionFromLegacy,
+  deriveRootDescription,
+  migrationTimestamps,
+  readLegacyNotebookFromMetadataDb,
+} from './uiSpecificationMigration';
+
+import {
+  LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
+  resolveMigrationCreatedBy,
+} from './hooks';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -134,6 +159,21 @@ export const peopleV3toV4Migration: MigrationFunc = doc => {
   const outputDoc: PeopleV4Document = {
     ...inputDoc,
     emails: inputDoc.emails.map(email => ({email, verified: false})),
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Adds `disabled` for account soft-off; existing users default to active.
+ */
+export const peopleV4toV5Migration: MigrationFunc = doc => {
+  const inputDoc = doc as unknown as PeopleV4Document;
+
+  const outputDoc: PeopleV5Document = {
+    ...inputDoc,
+    // All pre-v5 accounts are active; disabling is applied only via the API after migration.
+    disabled: false,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -261,12 +301,101 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
     templateId: inputDoc.template_id,
 
     // default to open
-    status: ProjectStatus.OPEN,
+    status: ProjectStatusV2.OPEN,
 
     // we check these to be defined above (just force the migration here - it is
     // probably the best option as deleting a project could result in data loss)
     dataDb: inputDoc.data_db ?? (undefined as any),
     metadataDb: inputDoc.metadata_db ?? (undefined as any),
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Projects DB v3: widens `status` from {@link ProjectStatusV2} to {@link ProjectStatus}
+ * (adds ARCHIVED). Existing v2 OPEN/CLOSED strings are mapped to the same v3 values.
+ */
+export const projectsV2toV3Migration: MigrationFunc = doc => {
+  const input =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV2Fields>;
+
+  const status: ProjectStatus =
+    input.status === ProjectStatusV2.OPEN
+      ? ProjectStatus.OPEN
+      : input.status === ProjectStatusV2.CLOSED
+        ? ProjectStatus.CLOSED
+        : ProjectStatus.CLOSED;
+
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV3Fields> = {
+    _id: input._id,
+    _rev: input._rev,
+    name: input.name,
+    status,
+    dataDb: input.dataDb,
+    metadataDb: input.metadataDb,
+    ...(input.ownedByTeamId !== undefined
+      ? {ownedByTeamId: input.ownedByTeamId}
+      : {}),
+    ...(input.templateId !== undefined ? {templateId: input.templateId} : {}),
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Projects DB v4 — inlines metadata DB + `ui-specification` into
+ * {@link ProjectV4Fields.uiSpecification}; drops `metadataDb`.
+ */
+export const projectsV3toV4Migration: MigrationFunc = async (doc, context) => {
+  const input =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV3Fields>;
+
+  if (!input.metadataDb?.db_name) {
+    throw new Error(
+      `Project ${input._id} has no metadataDb; cannot migrate to projects DB v4.`
+    );
+  }
+
+  if (!context?.getDbById) {
+    throw new Error(
+      `projectsV3toV4Migration requires MigrationContext.getDbById (project ${input._id}).`
+    );
+  }
+
+  const metaDB = await context.getDbById({
+    // Grab the metadata DB directly
+    id: LEGACY_INLINE_NOTEBOOK_DB_PREFIX + input._id,
+  });
+
+  const {metadata: legacyMetadata, encodedUiSpec} =
+    await readLegacyNotebookFromMetadataDb(metaDB, input._id);
+
+  const name =
+    input.name?.trim() || String(legacyMetadata.name ?? '').trim() || input._id;
+
+  const uiSpecification = buildSurveyNotebookDefinitionFromLegacy({
+    legacyMetadata,
+    encodedUiSpec,
+  });
+
+  const {createdAt, updatedAt} = migrationTimestamps();
+
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV4Fields> = {
+    _id: input._id,
+    _rev: input._rev,
+    name,
+    description: deriveRootDescription(legacyMetadata),
+    status: input.status,
+    dataDb: input.dataDb,
+    createdBy: resolveMigrationCreatedBy(context),
+    createdAt,
+    updatedAt,
+    uiSpecification,
+    ...(input.ownedByTeamId !== undefined
+      ? {ownedByTeamId: input.ownedByTeamId}
+      : {}),
+    ...(input.templateId !== undefined ? {templateId: input.templateId} : {}),
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -356,7 +485,102 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
     version: inputDoc.version,
 
     // Pull out name from metadata (defaulting in weird cases to a suitable ID)
-    name: inputDoc.metadata?.name ?? `template-${inputDoc._id}`,
+    name:
+      (inputDoc.metadata as {name?: string})?.name ??
+      `template-${inputDoc._id}`,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Promotes template archive state from metadata.project_status to top-level `archived`.
+ * Strips `project_status` from metadata entirely. Only the literal `'archived'`
+ * maps to `archived: true`; any other value (including `'active'`, `'New'`, etc.)
+ * becomes `archived: false`.
+ */
+export const templatesV2toV3Migration: MigrationFunc = doc => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV2Fields>;
+  const meta = {...(inputDoc.metadata ?? {})};
+  const ps = (meta as {project_status?: string}).project_status;
+  const archived = ps === 'archived';
+  if ('project_status' in meta) {
+    delete meta.project_status;
+  }
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV3Fields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name: inputDoc.name,
+    version: inputDoc.version,
+    metadata: meta,
+    'ui-specification': inputDoc['ui-specification'],
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    archived,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Adds `isPublic` for visibility (default private for existing docs).
+ */
+export const templatesV3toV4Migration: MigrationFunc = doc => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV3Fields>;
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV4Fields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name: inputDoc.name,
+    version: inputDoc.version,
+    metadata: inputDoc.metadata ?? {},
+    'ui-specification': inputDoc['ui-specification'],
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    archived: inputDoc.archived ?? false,
+    isPublic: false,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Templates DB v5 — inlines `metadata` + `ui-specification` into
+ * {@link TemplateV5Fields.uiSpecification}; adds root audit/description fields.
+ */
+export const templatesV4toV5Migration: MigrationFunc = (doc, context) => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV4Fields>;
+
+  const legacyMetadata = {...(inputDoc.metadata ?? {})};
+  const uiSpecification = buildSurveyNotebookDefinitionFromLegacy({
+    legacyMetadata,
+    encodedUiSpec: inputDoc['ui-specification'],
+  });
+
+  const name =
+    inputDoc.name?.trim() ||
+    String(legacyMetadata.name ?? '').trim() ||
+    `template-${inputDoc._id}`;
+
+  const {createdAt, updatedAt} = migrationTimestamps();
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV5Fields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name,
+    description: deriveRootDescription(legacyMetadata),
+    version: inputDoc.version,
+    createdBy: resolveMigrationCreatedBy(context),
+    createdAt,
+    updatedAt,
+    uiSpecification,
+    ...(inputDoc.ownedByTeamId !== undefined
+      ? {ownedByTeamId: inputDoc.ownedByTeamId}
+      : {}),
+    archived: inputDoc.archived ?? false,
+    isPublic: inputDoc.isPublic ?? false,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -412,14 +636,10 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
-  // invites v3
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
-  [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
-  // people v3
-  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 4},
-  // projects v2
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 2},
+  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 4},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
@@ -447,6 +667,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     migrationFunction: peopleV3toV4Migration,
   },
   {
+    dbType: DatabaseType.PEOPLE,
+    from: 4,
+    to: 5,
+    description:
+      'Adds optional disabled flag for user accounts (defaults existing to active)',
+    migrationFunction: peopleV4toV5Migration,
+  },
+  {
     dbType: DatabaseType.INVITES,
     from: 1,
     to: 2,
@@ -463,6 +691,22 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     migrationFunction: projectsV1toV2Migration,
   },
   {
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    description:
+      'Widens project status from ProjectStatusV2 to ProjectStatus (adds ARCHIVED).',
+    migrationFunction: projectsV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.PROJECTS,
+    from: 3,
+    to: 4,
+    description:
+      'Inlines metadata DB + ui-specification into Project.uiSpecification; adds description and audit fields; removes metadataDb.',
+    migrationFunction: projectsV3toV4Migration,
+  },
+  {
     dbType: DatabaseType.INVITES,
     from: 2,
     to: 3,
@@ -477,6 +721,30 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds the name property to the template document (from the metadata)',
     migrationFunction: templatesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    description:
+      'Adds top-level archived flag; removes metadata.project_status (any value)',
+    migrationFunction: templatesV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 3,
+    to: 4,
+    description:
+      'Adds isPublic flag for template visibility (existing templates default to private)',
+    migrationFunction: templatesV3toV4Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 4,
+    to: 5,
+    description:
+      'Inlines template metadata + ui-specification into Template.uiSpecification; adds description and audit fields.',
+    migrationFunction: templatesV4toV5Migration,
   },
   {
     dbType: DatabaseType.AUTH,
