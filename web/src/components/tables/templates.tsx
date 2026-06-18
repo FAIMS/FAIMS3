@@ -2,7 +2,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {cn} from '@/lib/utils';
-import {displayUnixTimestampMs} from '@/lib/time';
+import {displayDateTime} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import type {TemplateApiListItem} from '@faims3/data-model';
 import {
@@ -88,7 +88,7 @@ const createdAtColumn: ColumnDef<Column> = {
   cell: ({getValue}) => {
     const v = getValue<string | undefined>();
     return v
-      ? displayUnixTimestampMs({timestamp: new Date(v).getTime()})
+      ? displayDateTime({timestamp: new Date(v).getTime()})
       : null;
   },
 };

@@ -1,7 +1,7 @@
 import {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {displayUnixTimestampMs} from '@/lib/time';
+import {displayDateTime} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import {TemplateCellComponent} from './cells/template-cell';
 import {
@@ -88,7 +88,7 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
     cell: ({getValue}) => {
       const v = getValue<string | undefined>();
       return v
-        ? displayUnixTimestampMs({timestamp: new Date(v).getTime()})
+        ? displayDateTime({timestamp: new Date(v).getTime()})
         : null;
     },
   },
