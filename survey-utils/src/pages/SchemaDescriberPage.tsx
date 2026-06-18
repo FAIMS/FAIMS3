@@ -2,13 +2,13 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { parseSpecFile } from '../specParser';
 import { buildExportData, exportJson, exportCsv, exportWord, exportWordDetailed } from '../exports';
-import type { SpecReviewRow, SpecMetadata, UiSpecification } from '../types';
+import type { SpecReviewRow, NotebookMetadata, UiSpecification } from '../types';
 import { UploadPanel } from '../UploadPanel';
 import { SummaryTable } from '../SummaryTable';
 
 export function SchemaDescriberPage() {
   const [rows, setRows] = useState<SpecReviewRow[]>([]);
-  const [metadata, setMetadata] = useState<SpecMetadata | undefined>(undefined);
+  const [metadata, setMetadata] = useState<NotebookMetadata | undefined>(undefined);
   const [spec, setSpec] = useState<UiSpecification | null>(null);
   const [error, setError] = useState<string | null>(null);
 

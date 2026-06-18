@@ -11,7 +11,7 @@ import {
   HeadingLevel,
   TextRun,
 } from 'docx';
-import type { SpecReviewRow, SpecExportData, SpecMetadata, UiSpecification, FieldSpec } from './types';
+import type { SpecReviewRow, SpecExportData, NotebookMetadata, UiSpecification, FieldSpec } from './types';
 import type { SurveyDiffResult } from './surveyDiff';
 import { surveyDiffToMarkdown, formatSelectOptionLine } from './surveyDiff';
 import {
@@ -31,7 +31,7 @@ const SPACING_AFTER_PARAGRAPH = 120;
 /** Build export data (rows + metadata + timestamp) */
 export function buildExportData(
   rows: SpecReviewRow[],
-  metadata?: SpecMetadata
+  metadata?: NotebookMetadata
 ): SpecExportData {
   return {
     metadata,
@@ -54,7 +54,7 @@ function downloadBlob(blob: Blob, filename: string) {
 export function exportJson(data: SpecExportData) {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
-  const name = (data.metadata?.name ?? 'survey-spec') + '-review.json';
+  const name = (data.metadata?.information?.projectLeadLabel ?? 'survey-spec') + '-review.json';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
 }
 
@@ -70,16 +70,16 @@ export function exportCsv(data: SpecExportData) {
   );
   const csv = [headers.join(','), ...rows].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const name = (data.metadata?.name ?? 'survey-spec') + '-review.csv';
+  const name = (data.metadata?.information?.projectLeadLabel ?? 'survey-spec') + '-review.csv';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
 }
 
-/** Keys we show in the Word metadata block (only these four, with pre_description → Description) */
-const METADATA_KEYS: Array<{ key: keyof SpecMetadata; label: string }> = [
-  { key: 'name', label: 'Name' },
-  { key: 'project_lead', label: 'Project lead' },
-  { key: 'lead_institution', label: 'Lead institution' },
-  { key: 'pre_description', label: 'Description' },
+/** Fields shown in the Word metadata block, mapped from the v5.0 NotebookInformation shape. */
+const METADATA_FIELDS: Array<{ key: 'projectLeadLabel' | 'leadInstitution' | 'purposeMarkdown' | 'notebookVersion'; label: string }> = [
+  { key: 'projectLeadLabel', label: 'Project lead' },
+  { key: 'leadInstitution', label: 'Lead institution' },
+  { key: 'notebookVersion', label: 'Notebook version' },
+  { key: 'purposeMarkdown', label: 'Description' },
 ];
 
 /** Build form → sections → question count from rows */
@@ -129,21 +129,21 @@ function buildWordPreambleChildren(data: SpecExportData): (Paragraph | Table)[] 
         spacing: { after: SPACING_AFTER_HEADING },
       })
     );
-    for (const { key, label } of METADATA_KEYS) {
-      const value =
-        key === 'pre_description'
-          ? (metadata.pre_description ?? metadata.description)
-          : metadata[key];
-      if (value != null && value !== '') {
-        sectionChildren.push(
-          new Paragraph({
-            spacing: { after: SPACING_AFTER_PARAGRAPH },
-            children: [
-              new TextRun({ text: `${label}: `, bold: true }),
-              new TextRun({ text: String(value) }),
-            ],
-          })
-        );
+    const info = metadata.information;
+    if (info && typeof info === 'object') {
+      for (const { key, label } of METADATA_FIELDS) {
+        const value = info[key];
+        if (value != null && value !== '') {
+          sectionChildren.push(
+            new Paragraph({
+              spacing: { after: SPACING_AFTER_PARAGRAPH },
+              children: [
+                new TextRun({ text: `${label}: `, bold: true }),
+                new TextRun({ text: String(value) }),
+              ],
+            })
+          );
+        }
       }
     }
     sectionChildren.push(new Paragraph({ text: '', spacing: { after: SPACING_AFTER_PARAGRAPH } }));
@@ -310,11 +310,17 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
   return Packer.toBlob(doc);
 }
 
-/** Strip HTML/Markdown-ish content to plain text for Word (images → placeholder) */
+/** Regex that matches a base64 data URI anywhere in a string (image, font, any MIME). */
+const DATA_URI_RE = /data:[a-z][a-z0-9!#$&\-^_]*\/[a-z0-9!#$&\-^_+.]*;base64,[A-Za-z0-9+/=]+/gi;
+
+/** Strip HTML/Markdown-ish content to plain text for Word (images and data URIs → placeholder) */
 function stripHtmlToPlainText(html: string): string {
   let s = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   s = s.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  s = s.replace(/<img[^>]*>/gi, '[image]');
+  // Strip img tags before generic tag removal; catches both <img …> and <img …/>
+  s = s.replace(/<img[\s\S]*?>/gi, '[image]');
+  // Strip any remaining bare data URIs (e.g. in src="" that survived or in attributes)
+  s = s.replace(DATA_URI_RE, '[image]');
   s = s.replace(/<br\s*\/?>/gi, '\n');
   s = s.replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n');
   s = s.replace(/<[^>]+>/g, '');
@@ -328,8 +334,12 @@ function stripHtmlToPlainText(html: string): string {
 }
 
 function normalizeBlockContent(raw: string): string {
-  const t = raw.trim();
+  let t = raw.trim();
   if (!t) return '';
+  // Strip markdown-style images: ![alt](url) — catches data URIs and regular URLs
+  t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, '[image]');
+  // Strip any bare data URIs remaining outside of HTML/markdown constructs
+  t = t.replace(DATA_URI_RE, '[image]');
   if (t.includes('<')) return stripHtmlToPlainText(t);
   return t;
 }
@@ -370,6 +380,71 @@ function relatedRecordTargetLine(spec: UiSpecification, relatedType: string): st
   const vs = spec.viewsets[relatedType];
   const label = vs?.label ?? relatedType;
   return `${label} (viewset: ${relatedType})`;
+}
+
+/**
+ * Format a ConditionalExpression into a compact, human-readable string.
+ * Handles both compound (operator + conditions[]) and leaf (operator + field + value) nodes.
+ */
+function formatConditionExpr(expr: unknown, depth = 0): string {
+  if (!expr || typeof expr !== 'object' || Array.isArray(expr)) return String(expr ?? '');
+  const e = expr as Record<string, unknown>;
+  const op = typeof e.operator === 'string' ? e.operator : '?';
+  const opUpper = op.toUpperCase();
+
+  // Compound: AND / OR over child conditions
+  if (Array.isArray(e.conditions) && e.conditions.length > 0) {
+    const parts = e.conditions.map((c: unknown) => formatConditionExpr(c, depth + 1));
+    const joined = parts.join(` ${opUpper} `);
+    return depth > 0 ? `(${joined})` : joined;
+  }
+
+  // Leaf: comparison against a field
+  const field = typeof e.field === 'string' ? e.field : '?';
+  const value = e.value;
+  const valueStr =
+    value === null || value === undefined
+      ? 'empty'
+      : typeof value === 'string'
+        ? `"${value}"`
+        : Array.isArray(value)
+          ? `[${value.map(v => (typeof v === 'string' ? `"${v}"` : String(v))).join(', ')}]`
+          : String(value);
+
+  // Map common operators to readable symbols / phrases
+  const opMap: Record<string, string> = {
+    equal: '=',
+    equals: '=',
+    '==': '=',
+    'not-equal': '≠',
+    notEqual: '≠',
+    '!=': '≠',
+    greater: '>',
+    greaterThan: '>',
+    less: '<',
+    lessThan: '<',
+    greaterOrEqual: '≥',
+    lessOrEqual: '≤',
+    contains: 'contains',
+    startsWith: 'starts with',
+    endsWith: 'ends with',
+    in: 'in',
+    notIn: 'not in',
+    truthy: 'is truthy',
+    falsy: 'is falsy',
+    set: 'is set',
+    notSet: 'is not set',
+    exists: 'exists',
+    notExists: 'does not exist',
+    checked: 'is checked',
+    unchecked: 'is unchecked',
+  };
+  const readable = opMap[op] ?? op;
+
+  if (['truthy', 'falsy', 'set', 'notSet', 'exists', 'notExists', 'checked', 'unchecked'].includes(op)) {
+    return `${field} ${readable}`;
+  }
+  return `${field} ${readable} ${valueStr}`;
 }
 
 function buildOptionsParagraphs(field: FieldSpec): Paragraph[] {
@@ -428,16 +503,44 @@ function buildDetailedQuestionParagraphs(
     })
   );
 
+  // Required / optional
+  const isRequired = params?.required === true;
+  paras.push(
+    plainLabelLineParagraph('Required', isRequired ? 'Yes' : 'No')
+  );
+
+  // Map field: geometry type
+  if (field['component-name'] === 'MapFormField') {
+    const featureTypeLabels: Record<string, string> = {
+      Point: 'Point',
+      LineString: 'Line (LineString)',
+      Polygon: 'Polygon',
+    };
+    const ft = typeof params?.featureType === 'string' ? params.featureType : 'Point';
+    paras.push(plainLabelLineParagraph('Geometry type', featureTypeLabels[ft] ?? ft));
+  }
+
+  // Primary helper text
   const helper = params ? getPrimaryHelperText(params) : '';
   if (helper.trim()) {
     paras.push(plainLabelLineParagraph('Helper text', helper));
   }
 
-  paras.push(...buildOptionsParagraphs(field));
-
+  // Advanced helper text (directly after primary helper so both helpers are grouped)
   const adv = params?.advancedHelperText;
   if (typeof adv === 'string' && adv.trim()) {
     paras.push(...monoBlockParagraphs('Advanced helper text', normalizeBlockContent(adv)));
+  }
+
+  paras.push(...buildOptionsParagraphs(field));
+
+  // Condition
+  const condition = field.condition;
+  if (condition != null) {
+    const condStr = formatConditionExpr(condition);
+    if (condStr.trim()) {
+      paras.push(plainLabelLineParagraph('Visible when', condStr));
+    }
   }
 
   paras.push(
@@ -513,6 +616,23 @@ export async function buildWordDetailedDocument(data: SpecExportData, spec: UiSp
         })
       );
 
+      // Section-level visibility condition
+      const sectionCondition = (spec.views[viewId] as Record<string, unknown>)?.condition;
+      if (sectionCondition != null) {
+        const condStr = formatConditionExpr(sectionCondition);
+        if (condStr.trim()) {
+          sectionChildren.push(
+            new Paragraph({
+              spacing: { after: SPACING_AFTER_PARAGRAPH },
+              children: [
+                new TextRun({ text: 'Section visible when: ', bold: true, italics: true }),
+                new TextRun({ text: condStr, italics: true }),
+              ],
+            })
+          );
+        }
+      }
+
       for (const fname of view.fields) {
         const field = spec.fields[fname];
         if (!field) continue;
@@ -531,14 +651,14 @@ export async function buildWordDetailedDocument(data: SpecExportData, spec: UiSp
 /** Summary table Word export (historical behaviour; filename *-review.docx) */
 export async function exportWord(data: SpecExportData) {
   const blob = await buildWordDocument(data);
-  const name = (data.metadata?.name ?? 'survey-spec') + '-review.docx';
+  const name = (data.metadata?.information?.projectLeadLabel ?? 'survey-spec') + '-review.docx';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
 }
 
 /** Detailed narrative Word export */
 export async function exportWordDetailed(data: SpecExportData, spec: UiSpecification) {
   const blob = await buildWordDetailedDocument(data, spec);
-  const name = (data.metadata?.name ?? 'survey-spec') + '-review-detailed.docx';
+  const name = (data.metadata?.information?.projectLeadLabel ?? 'survey-spec') + '-review-detailed.docx';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
 }
 

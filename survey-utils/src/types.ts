@@ -1,6 +1,6 @@
 /**
- * Minimal types for FAIMS UI specification (survey/notebook).
- * Matches the encoded format: fields, fviews (or views), viewsets, visible_types.
+ * Types for FAIMS UI specification (notebook) — schema version 5.0 only.
+ * Wire terminology: 'views' = sections, 'viewsets' = forms.
  */
 
 export interface ComponentParams {
@@ -17,6 +17,10 @@ export interface ComponentParams {
   relation_type?: string;
   /** RichText / static markdown or HTML body */
   content?: string;
+  /** MapFormField: geometry type captured by this field */
+  featureType?: 'Point' | 'Polygon' | 'LineString';
+  /** MapFormField: show "use current location" button */
+  allowSetToCurrentPoint?: boolean;
   ElementProps?: {
     options?: Array<{ value: string; label: string; key?: string }>;
     optiontree?: OptionTreeNode[];
@@ -51,46 +55,69 @@ export interface FieldSpec {
   [key: string]: unknown;
 }
 
+/** A section: a named group of fields (wire key: 'views'). */
 export interface ViewSpec {
   label?: string;
   fields: string[];
   description?: string;
+  condition?: unknown;
   [key: string]: unknown;
 }
 
+/** A form: a named form type composed of one or more sections (wire key: 'viewsets'). */
 export interface ViewsetSpec {
   label?: string;
   views: string[];
+  is_visible?: boolean;
+  summary_fields?: string[];
+  hridField?: string;
+  layout?: 'inline' | 'tabs';
   [key: string]: unknown;
 }
 
+/** UI behaviour toggles. */
+export interface NotebookSettings {
+  showQrCodeButton: boolean;
+}
+
+/**
+ * The UI specification model — schema version 5.0.
+ * 'views' = sections, 'viewsets' = forms (wire terminology retained from original spec).
+ */
 export interface UiSpecification {
   fields: Record<string, FieldSpec>;
-  fviews?: Record<string, ViewSpec>;
-  views?: Record<string, ViewSpec>;
+  views: Record<string, ViewSpec>;
   viewsets: Record<string, ViewsetSpec>;
-  visible_types?: string[];
+  visible_types: string[];
+  settings: NotebookSettings;
+  schemaVersion: string;
 }
 
-/** Metadata from a full notebook JSON (when present) */
-export interface SpecMetadata {
-  name?: string;
-  project_id?: string;
-  project_lead?: string;
-  lead_institution?: string;
-  project_status?: string;
-  pre_description?: string;
-  [key: string]: unknown;
+/** Non-functional design documentation bundled with the form definition. */
+export interface NotebookInformation {
+  notebookVersion: string;
+  /** Long-form design intent (formerly `pre_description`). */
+  purposeMarkdown: string;
+  /** Responsible-person label for the design (formerly `project_lead`). */
+  projectLeadLabel: string;
+  leadInstitution: string;
+  derivedFromTemplateId?: string;
 }
 
-export interface NotebookJson {
-  'ui-specification'?: UiSpecification;
-  metadata?: SpecMetadata;
+/** Notebook metadata: design information plus optional org extensions. */
+export interface NotebookMetadata {
+  information: NotebookInformation;
+  custom?: Record<string, unknown>;
+}
+
+/** Full notebook definition — schema version 5.0. */
+export interface NotebookDefinition {
+  uiSpec: UiSpecification;
+  metadata: NotebookMetadata;
 }
 
 /** One row in the review table */
 export interface SpecReviewRow {
-  /** Display name / title of the question (from field label) */
   questionTitle: string;
   form: string;
   section: string;
@@ -99,9 +126,9 @@ export interface SpecReviewRow {
   notes?: string;
 }
 
-/** Export payload: table rows + optional metadata */
+/** Export payload: table rows + optional metadata + timestamp */
 export interface SpecExportData {
-  metadata?: SpecMetadata;
+  metadata?: NotebookMetadata;
   rows: SpecReviewRow[];
   exportedAt: string;
 }

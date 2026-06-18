@@ -4,40 +4,45 @@ import type {
   ComponentParams,
   OptionTreeNode,
   SpecReviewRow,
-  SpecMetadata,
+  NotebookMetadata,
 } from './types';
 
 /**
- * Normalize uploaded JSON: accept full notebook or raw ui-specification.
+ * Normalize uploaded JSON: accept a full NotebookDefinition ({ uiSpec, metadata })
+ * or a raw UiSpecification object. Only schema version 5.0 format is supported.
  */
 export function normalizeUiSpec(json: unknown): UiSpecification | null {
   if (!json || typeof json !== 'object') return null;
   const obj = json as Record<string, unknown>;
-  const rawSpec = obj['ui-specification'] ?? obj;
+
+  // Accept NotebookDefinition shape: { uiSpec: { fields, views, viewsets, ... }, metadata: { ... } }
+  const rawSpec =
+    obj.uiSpec && typeof obj.uiSpec === 'object' ? obj.uiSpec : obj;
+
   if (!rawSpec || typeof rawSpec !== 'object') return null;
   const spec = rawSpec as UiSpecification;
   if (!spec.fields || !spec.viewsets) return null;
-  const views = spec.fviews ?? spec.views;
-  if (!views || typeof views !== 'object') return null;
-  return { ...spec, views, fviews: views } as UiSpecification;
+  if (!spec.views || typeof spec.views !== 'object') return null;
+  return spec;
 }
 
-/** Extract metadata from full notebook JSON if present */
-export function extractMetadata(json: unknown): SpecMetadata | undefined {
+/** Extract metadata from a NotebookDefinition JSON if present. */
+export function extractMetadata(json: unknown): NotebookMetadata | undefined {
   if (!json || typeof json !== 'object') return undefined;
   const obj = json as Record<string, unknown>;
-  const meta = obj.metadata ?? obj['metadata'];
+  const meta = obj.metadata;
   if (!meta || typeof meta !== 'object') return undefined;
-  return meta as SpecMetadata;
+  const m = meta as Record<string, unknown>;
+  if (!m.information || typeof m.information !== 'object') return undefined;
+  return meta as NotebookMetadata;
 }
 
-/** Resolved views/fviews map with normalized field name lists */
+/** Resolved views map with normalised field name lists */
 export function getViewsMap(spec: UiSpecification): Record<string, { label?: string; fields: string[] }> {
-  const v = spec.fviews ?? spec.views;
   const out: Record<string, { label?: string; fields: string[] }> = {};
-  if (!v || typeof v !== 'object') return out;
-  for (const id of Object.keys(v)) {
-    const x = v[id];
+  if (!spec.views || typeof spec.views !== 'object') return out;
+  for (const id of Object.keys(spec.views)) {
+    const x = spec.views[id];
     out[id] = { label: x?.label, fields: normalizeFieldNameList(x?.fields) };
   }
   return out;
@@ -171,7 +176,7 @@ export function getFieldTypeLabel(field: FieldSpec): string {
 }
 
 /**
- * Derive the list of review rows from a normalized UI specification.
+ * Derive the list of review rows from a normalised UI specification.
  * Order: by visible_types, then by viewset view order, then by view field order.
  */
 export function deriveReviewTable(spec: UiSpecification): SpecReviewRow[] {
@@ -212,12 +217,13 @@ export function deriveReviewTable(spec: UiSpecification): SpecReviewRow[] {
 
 /**
  * Parse uploaded file content and return review rows or an error message.
+ * Only schema version 5.0 notebooks are supported.
  */
 export function parseSpecFile(content: string): {
   ok: true;
   rows: SpecReviewRow[];
   spec: UiSpecification;
-  metadata?: SpecMetadata;
+  metadata?: NotebookMetadata;
 } | {
   ok: false;
   error: string;
@@ -233,7 +239,8 @@ export function parseSpecFile(content: string): {
   if (!spec) {
     return {
       ok: false,
-      error: 'Not a valid UI specification: expected fields, views/fviews, and viewsets',
+      error:
+        'Not a valid UI specification: expected a NotebookDefinition ({ uiSpec: { fields, views, viewsets, ... }, metadata }) or a raw UiSpecification with fields, views, and viewsets.',
     };
   }
 

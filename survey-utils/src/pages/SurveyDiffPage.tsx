@@ -353,7 +353,9 @@ export function SurveyDiffPage() {
 
   const downloadMd = useCallback(() => {
     if (!diffResult) return;
-    const metaName = leftParsed?.ok && leftParsed.metadata?.name ? String(leftParsed.metadata.name) : '';
+    const metaName = leftParsed?.ok && leftParsed.metadata?.information?.projectLeadLabel
+      ? String(leftParsed.metadata.information.projectLeadLabel)
+      : '';
     const base = metaName ? `survey-diff-${metaName.slice(0, 48)}` : 'survey-diff';
     exportSurveyDiffMarkdownFile(diffResult, base.replace(/\s+/g, '-'));
   }, [diffResult, leftParsed]);
@@ -452,8 +454,9 @@ export function SurveyDiffPage() {
         </>
       ) : (
         <p className="diff-hint-block">
-          Upload valid UI specifications on both sides to see the diff. Each file can be a full notebook JSON
-          or a raw <code>ui-specification</code> object.
+          Upload valid UI specifications on both sides to see the diff. Each file should be a
+          schema version 5.0 notebook JSON (<code>&#123; uiSpec, metadata &#125;</code>) or a raw
+          UiSpecification object.
         </p>
       )}
 

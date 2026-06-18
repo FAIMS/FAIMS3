@@ -545,8 +545,8 @@ function diffSectionsForForm(
       continue;
     }
 
-    const vL = left.fviews?.[sectionId] ?? left.views?.[sectionId];
-    const vR = right.fviews?.[sectionId] ?? right.views?.[sectionId];
+    const vL = left.views?.[sectionId];
+    const vR = right.views?.[sectionId];
     const metaChanges = diffValues(viewMeta(vL), viewMeta(vR), 'section');
     const fLRaw = normalizeFieldNameList(vL?.fields);
     const fRRaw = normalizeFieldNameList(vR?.fields);
