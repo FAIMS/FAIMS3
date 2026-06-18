@@ -48,7 +48,7 @@ import {
 } from '../../types/condition';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
-import {buildFieldLocationMaps, getFieldLabel} from './utils';
+import {getFieldLabel} from './utils';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */
 const getSelectableOptions = (
@@ -249,36 +249,35 @@ export const FieldConditionControl = (props: ConditionProps) => {
   // (mirrors TemplatedStringFieldEditor's viewSetFields). Then remove either
   // the current field or the fields in the current view.
   const selectFields = useMemo(() => {
-    const {sectionToForm, fieldToSection} = buildFieldLocationMaps(
-      views,
-      viewsets
-    );
-
-    const currentSectionId = props.view
-      ? props.view
-      : props.field
-        ? fieldToSection.get(props.field)?.sectionId
-        : undefined;
-    const formId = currentSectionId
-      ? sectionToForm.get(currentSectionId)?.formId
-      : undefined;
-    const viewset = formId ? viewsets[formId] : undefined;
-
-    // Fall back to all fields only when the form can't be resolved (e.g. a
-    // nested boolean condition with no field/view context).
-    const formFields = viewset
-      ? Array.from(
-          new Set(viewset.views.flatMap(id => views[id]?.fields ?? []))
-        )
-      : Object.keys(allFields);
-
-    if (props.field) {
-      return formFields.filter(f => f !== props.field);
-    } else if (props.view) {
-      const view = views[props.view];
-      return formFields.filter(f => view.fields.indexOf(f) < 0);
+    // Which section's condition are we editing?
+    let sectionId: string | undefined;
+    if (props.view) {
+      sectionId = props.view;
+    } else if (props.field) {
+      const field = props.field;
+      sectionId = Object.keys(views).find(id =>
+        views[id].fields.includes(field)
+      );
+    } else {
+      // Standalone use, no context: nothing to scope to, show all fields.
+      return Object.keys(allFields);
     }
-    return formFields;
+
+    // The form (viewset) that owns the section. Conditions can only reference
+    // fields in the same form, so if it can't be resolved, show nothing rather
+    // than leaking other forms' fields.
+    const viewset = Object.values(viewsets).find(
+      vs => sectionId !== undefined && vs.views.includes(sectionId)
+    );
+    const formFields = viewset
+      ? viewset.views.flatMap(id => views[id]?.fields ?? [])
+      : [];
+
+    // Exclude the current field, or the current section's own fields.
+    const ownSectionFields = props.view ? (views[props.view]?.fields ?? []) : [];
+    return props.field
+      ? formFields.filter(f => f !== props.field)
+      : formFields.filter(f => !ownSectionFields.includes(f));
   }, [allFields, views, viewsets, props.field, props.view]);
 
   const targetFieldDef = condition.field ? allFields[condition.field] : null;
