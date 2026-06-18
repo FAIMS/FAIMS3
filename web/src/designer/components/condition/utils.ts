@@ -52,7 +52,14 @@ export type FieldDependencyReference = {
   templateUsage?: string;
 };
 
-const buildFieldLocationMaps = (allViews: ViewMap, viewsets: ViewSetMap) => {
+/**
+ * Builds lookup maps from the UI spec: section (view) → its form (viewset), and
+ * field → its section. Used to resolve which form a field or section belongs to.
+ */
+export const buildFieldLocationMaps = (
+  allViews: ViewMap,
+  viewsets: ViewSetMap
+) => {
   const sectionToForm = new Map<string, {formId: string; formLabel: string}>();
   const fieldToSection = new Map<
     string,

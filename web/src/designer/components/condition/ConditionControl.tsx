@@ -48,7 +48,7 @@ import {
 } from '../../types/condition';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
-import {getFieldLabel} from './utils';
+import {buildFieldLocationMaps, getFieldLabel} from './utils';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */
 const getSelectableOptions = (
@@ -238,16 +238,48 @@ export const FieldConditionControl = (props: ConditionProps) => {
     state => state.notebook.uiSpec.present.fields
   );
   const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const viewsets = useAppSelector(
+    state => state.notebook.uiSpec.present.viewsets
+  );
 
-  // work out which fields to show in the select/combobox, remove either
-  // the current field or the fields in the current view
-  let selectFields = Object.keys(allFields);
-  if (props.field) {
-    selectFields = selectFields.filter(f => f !== props.field);
-  } else if (props.view) {
-    const view = views[props.view];
-    selectFields = selectFields.filter(f => view.fields.indexOf(f) < 0);
-  }
+  // Work out which fields to show in the select/combobox. Conditions can only
+  // reference fields within the same form, so scope the list to the current
+  // form (viewset): resolve the entry context (props.field or props.view) to
+  // its containing form, then gather every field across that form's sections
+  // (mirrors TemplatedStringFieldEditor's viewSetFields). Then remove either
+  // the current field or the fields in the current view.
+  const selectFields = useMemo(() => {
+    const {sectionToForm, fieldToSection} = buildFieldLocationMaps(
+      views,
+      viewsets
+    );
+
+    const currentSectionId = props.view
+      ? props.view
+      : props.field
+        ? fieldToSection.get(props.field)?.sectionId
+        : undefined;
+    const formId = currentSectionId
+      ? sectionToForm.get(currentSectionId)?.formId
+      : undefined;
+    const viewset = formId ? viewsets[formId] : undefined;
+
+    // Fall back to all fields only when the form can't be resolved (e.g. a
+    // nested boolean condition with no field/view context).
+    const formFields = viewset
+      ? Array.from(
+          new Set(viewset.views.flatMap(id => views[id]?.fields ?? []))
+        )
+      : Object.keys(allFields);
+
+    if (props.field) {
+      return formFields.filter(f => f !== props.field);
+    } else if (props.view) {
+      const view = views[props.view];
+      return formFields.filter(f => view.fields.indexOf(f) < 0);
+    }
+    return formFields;
+  }, [allFields, views, viewsets, props.field, props.view]);
 
   const targetFieldDef = condition.field ? allFields[condition.field] : null;
 
