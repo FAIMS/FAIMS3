@@ -42,6 +42,7 @@ type FaimsDialogProps = {
   primaryActionLoading?: boolean;
   primaryActionColor?: 'primary' | 'secondary' | 'error';
   primaryActionVariant?: 'contained' | 'outlined';
+  primaryActionTestId?: string;
   cancelButtonText?: string;
 };
 
@@ -72,6 +73,7 @@ export default function FaimsDialog({
   primaryActionLoading = false,
   primaryActionColor = 'primary',
   primaryActionVariant = 'contained',
+  primaryActionTestId,
   cancelButtonText = 'Cancel',
 }: FaimsDialogProps) {
   return (
@@ -102,6 +104,7 @@ export default function FaimsDialog({
           color={primaryActionColor}
           onClick={onPrimaryAction}
           disabled={primaryActionLoading}
+          data-testid={primaryActionTestId}
         >
           {primaryActionText}
         </Button>

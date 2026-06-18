@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: pushgateway
+    honor_labels: true
+    static_configs:
+      - targets: ['pushgateway:9091']
+
+  # Phase/coordinator gauges (faims_test_phase, faims_ready_agents, …) and agent
+  # histograms are pushed to pushgateway by the ephemeral ECS coordinator task.
+  # Local dev also scrapes host.docker.internal:4000/metrics directly.
+
+  - job_name: couchdb
+    static_configs:
+      - targets: ['couchdb-exporter:9984']

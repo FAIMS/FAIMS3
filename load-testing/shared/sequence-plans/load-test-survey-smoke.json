@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "load-test-survey-smoke",
+  "description": "Quick smoke test for the 1780544113233 load-test survey notebook using load-test-survey-site-minimal collection profile.",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "site_smoke",
+      "kind": "online_collection",
+      "durationMs": 120000,
+      "config": {
+        "recordIntervalMs": 15000,
+        "maxRecords": 3,
+        "collectionProfile": "load-test-survey-site-minimal.json"
+      }
+    }
+  ]
+}

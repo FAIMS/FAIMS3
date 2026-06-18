@@ -58,6 +58,7 @@ export default function NotebookActivationSwitch({
         size="small"
         variant="outlined"
         disableElevation
+        data-testid="notebook-activate-button"
       >
         {ACTIVATE_VERB_LABEL}
       </Button>
@@ -71,6 +72,7 @@ export default function NotebookActivationSwitch({
         primaryActionLoading={isWorking}
         primaryActionColor="primary"
         primaryActionVariant="contained"
+        primaryActionTestId="notebook-activate-confirm"
         cancelButtonText="Cancel"
       >
         <Box sx={{mb: 2}}>

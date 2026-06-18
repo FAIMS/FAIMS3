@@ -132,6 +132,7 @@ export default function AddRecordButtons({
             <Button
               variant="contained"
               color="primary"
+              data-testid="add-record-button"
               sx={{
                 fontWeight: 'bold',
                 backgroundColor: theme.palette.icon.main,

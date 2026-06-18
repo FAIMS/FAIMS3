@@ -25,7 +25,9 @@
     "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts",
     "migrate-test-backups": "ts-node src/scripts/migrateBackupJsonl.ts test/backup-short.jsonl test/backup.jsonl",
     "migrate-notebook-json": "ts-node src/scripts/migrateNotebookJson.ts",
-    "seed-test-dataset": "env-cmd ts-node src/scripts/seedTestDataset.ts"
+    "seed-test-dataset": "env-cmd ts-node src/scripts/seedTestDataset.ts",
+    "seed-load-test-accounts": "env-cmd ts-node src/scripts/seedLoadTestAccounts.ts",
+    "env-from-cdk": "bash scripts/env-from-cdk-stack.sh"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",

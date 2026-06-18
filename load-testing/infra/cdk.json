@@ -1,0 +1,21 @@
+{
+  "app": "npx ts-node --prefer-ts-exts bin/load-test-infra.ts",
+  "watch": {
+    "include": ["**"],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "**/*.d.ts",
+      "**/*.js",
+      "tsconfig.json",
+      "package*.json",
+      "node_modules",
+      "build",
+      "cdk.out",
+      "ec2-bundle/**"
+    ]
+  },
+  "context": {
+    "@aws-cdk/core:stackRelativeExports": true
+  }
+}

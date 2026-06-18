@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "name": "sixty-agent-30min-triple-split",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding"
+    },
+    {
+      "id": "baseline_fieldwork",
+      "split": {
+        "branches": [
+          {
+            "id": "baseline_online",
+            "steps": [
+              {
+                "id": "baseline_online_survey",
+                "kind": "online_collection",
+                "durationMs": 480000
+              }
+            ]
+          },
+          {
+            "id": "baseline_offline",
+            "steps": [
+              {
+                "id": "baseline_offline_survey",
+                "kind": "offline_collection",
+                "durationMs": 480000,
+                "config": {
+                  "recordIntervalMs": 8000
+                }
+              }
+            ]
+          },
+          {
+            "id": "baseline_patchy",
+            "steps": [
+              {
+                "id": "baseline_patchy_survey",
+                "kind": "patchy_network",
+                "durationMs": 480000
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sync_consolidation",
+      "kind": "online_collection",
+      "durationMs": 180000
+    },
+    {
+      "id": "peak_stress",
+      "split": {
+        "branches": [
+          {
+            "id": "peak_online",
+            "steps": [
+              {
+                "id": "peak_online_survey",
+                "kind": "online_collection",
+                "durationMs": 420000,
+                "config": {
+                  "recordIntervalMs": 4000
+                }
+              }
+            ]
+          },
+          {
+            "id": "peak_offline",
+            "steps": [
+              {
+                "id": "peak_offline_survey",
+                "kind": "offline_collection",
+                "durationMs": 420000,
+                "config": {
+                  "recordIntervalMs": 6000,
+                  "reconnectJitterMaxMs": 8000
+                }
+              }
+            ]
+          },
+          {
+            "id": "peak_patchy",
+            "steps": [
+              {
+                "id": "peak_patchy_survey",
+                "kind": "patchy_network",
+                "durationMs": 420000,
+                "config": {
+                  "cycleMs": 20000,
+                  "cycleJitterMs": 6000,
+                  "offlineDurationMs": 10000,
+                  "offlineJitterMs": 3000,
+                  "recordIntervalMs": 4000
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "rotating_triple_split",
+      "split": {
+        "branches": [
+          {
+            "id": "rotate_online",
+            "steps": [
+              {
+                "id": "rotate_online_survey",
+                "kind": "online_collection",
+                "durationMs": 600000,
+                "config": {
+                  "recordIntervalMs": 4500
+                }
+              }
+            ]
+          },
+          {
+            "id": "rotate_offline",
+            "steps": [
+              {
+                "id": "rotate_offline_survey",
+                "kind": "offline_collection",
+                "durationMs": 600000,
+                "config": {
+                  "recordIntervalMs": 7000,
+                  "reconnectJitterMaxMs": 12000
+                }
+              }
+            ]
+          },
+          {
+            "id": "rotate_patchy",
+            "steps": [
+              {
+                "id": "rotate_patchy_survey",
+                "kind": "patchy_network",
+                "durationMs": 600000,
+                "config": {
+                  "cycleMs": 25000,
+                  "cycleJitterMs": 8000,
+                  "offlineDurationMs": 12000,
+                  "offlineJitterMs": 4000,
+                  "recordIntervalMs": 4500
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "all_online_finale",
+      "kind": "online_collection",
+      "durationMs": 120000,
+      "config": {
+        "recordIntervalMs": 4000
+      }
+    }
+  ]
+}

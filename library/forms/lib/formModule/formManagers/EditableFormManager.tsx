@@ -6,6 +6,7 @@ import {
   getFormLabel,
   HydratedRecordDocument,
 } from '@faims3/data-model';
+import {FAIMS_MEASURES, perf} from '@faims3/instrumentation';
 import CheckIcon from '@mui/icons-material/Check';
 import {
   Alert,
@@ -229,6 +230,7 @@ export const EditableFormManager: React.FC<
 
     isSavingRef.current = true;
     setIsSaving(true);
+    perf.mark(`${FAIMS_MEASURES.RECORD_SAVE_UI}.start`);
 
     try {
       const revisionToUpdate = await ensureWorkingRevision();
@@ -248,6 +250,13 @@ export const EditableFormManager: React.FC<
         update: form.state.values ?? {},
         mode: props.mode,
       });
+      perf.mark(FAIMS_MEASURES.RECORD_SAVE_LOCAL);
+      perf.mark(`${FAIMS_MEASURES.RECORD_SAVE_UI}.end`);
+      perf.measure(
+        FAIMS_MEASURES.RECORD_SAVE_UI,
+        `${FAIMS_MEASURES.RECORD_SAVE_UI}.start`,
+        `${FAIMS_MEASURES.RECORD_SAVE_UI}.end`
+      );
 
       pendingValuesRef.current = false;
     } catch (error) {
@@ -804,7 +813,11 @@ export const EditableFormManager: React.FC<
             ) : (
               <>
                 <CheckIcon sx={{fontSize: 16, color: 'success.main'}} />
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  data-testid="save-record-indicator"
+                >
                   Saved
                 </Typography>
               </>
@@ -861,6 +874,8 @@ export const EditableFormManager: React.FC<
         title={`Are you sure you want to finish ${formLabel}?`}
         cancelLabel="Go back and review"
         confirmLabel="Finish anyway"
+        confirmTestId="finish-anyway-button"
+        cancelTestId="finish-go-back-button"
       >
         <Typography
           variant="body2"

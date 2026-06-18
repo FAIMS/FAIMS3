@@ -16,6 +16,10 @@ COPY api/package.json ./api/
 COPY app/package.json ./app/
 COPY web/package.json ./web/
 COPY library/data-model/package.json ./library/data-model/
+COPY library/instrumentation/package.json ./library/instrumentation/
+COPY load-testing/shared/package.json ./load-testing/shared/
+COPY load-testing/coordinator/package.json ./load-testing/coordinator/
+COPY load-testing/agents/package.json ./load-testing/agents/
 
 # Turbo config
 COPY turbo.json ./
@@ -25,13 +29,12 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
   pnpm install --frozen-lockfile
 
 
-# Build stage
+# Build stage (FAIMS app/api/web)
 FROM base AS builder
 
 # Copy source code
 COPY . .
 
-# Build the app and api
 RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
 
 # API service
@@ -78,4 +81,4 @@ RUN corepack enable
 WORKDIR /usr/src
 COPY --from=builder /usr/src .
 EXPOSE 3001
-CMD [pnpm", "run", "web-dev"]
+CMD ["pnpm", "run", "web-dev"]

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "name": "load-test-survey-site-minimal",
+  "description": "Minimal Site workflow for the 1780544113233 load-test survey notebook. Fills a few General-section fields, exercises section navigation, then finishes (many required map/photo fields are skipped — finish_anyway handles the guard).",
+  "formType": "Site",
+  "onFailure": "finish_anyway",
+  "record": {
+    "steps": [
+      {
+        "action": "fill",
+        "field": "Enter-address-of-site-if-known",
+        "value": "Load test site {{recordIndex}} at {{isoTimestamp}}"
+      },
+      {
+        "action": "scroll_to_field",
+        "field": "Site-Hazards"
+      },
+      {
+        "action": "toggle",
+        "field": "Site-Hazards",
+        "option": "None",
+        "checked": true
+      },
+      {
+        "action": "scroll_to_field",
+        "field": "How-accessible-is-this-site"
+      },
+      {
+        "action": "toggle",
+        "field": "How-accessible-is-this-site",
+        "option": "High access",
+        "checked": true
+      },
+      {
+        "action": "fill",
+        "field": "Site-accessibility-comments",
+        "value": "Automated load test — agent {{agentId}}",
+        "optional": true
+      },
+      {
+        "action": "wait_save"
+      },
+      {
+        "action": "navigate_section",
+        "section": "Add objects to site",
+        "match": "label"
+      },
+      {
+        "action": "navigate_section",
+        "section": "General",
+        "match": "label"
+      },
+      {
+        "action": "finish",
+        "strategy": "finish_anyway"
+      }
+    ]
+  }
+}

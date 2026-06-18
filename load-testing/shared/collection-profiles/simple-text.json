@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "simple-text",
+  "description": "Fill the first targeted text field and finish. Use when the notebook has a Description (or similar) field.",
+  "onFailure": "finish_anyway",
+  "record": {
+    "steps": [
+      {
+        "action": "fill",
+        "field": "Description",
+        "value": "load-test-{{recordIndex}}-{{timestamp}}"
+      },
+      {
+        "action": "wait_save"
+      },
+      {
+        "action": "finish",
+        "strategy": "finish_anyway"
+      }
+    ]
+  }
+}

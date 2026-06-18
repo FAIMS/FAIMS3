@@ -1499,6 +1499,8 @@ export const activateProject = createAsyncThunk<
   void,
   ProjectIdentity & DatabaseAuth
 >('projects/activateProject', async (payload, {dispatch, getState}) => {
+  // NOTE: Could wrap this thunk in perf.wrap('survey.activate.total', ...) and
+  // mark SURVEY_ACTIVATE_START / SURVEY_ACTIVATE_SYNC_COMPLETE via @faims3/instrumentation.
   // First, activate the project, then add the design docs (synchronous)
   //dispatch(activateProjectSync(payload));
 
@@ -2276,6 +2278,10 @@ export function createSyncStateHandlers(
   projectId: string,
   serverId: string
 ): SyncEventHandlers {
+  // NOTE: Sync event handlers fire frequently during replication. Instrumentation
+  // here (e.g. perf.mark on change/active/denied for push/pull/reconnect/conflict)
+  // could have serious performance implications and would need thorough testing
+  // to confirm relevance before adding.
   return {
     active: () => {
       syncStateService.setActive(serverId, projectId);

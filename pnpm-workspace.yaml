@@ -4,8 +4,12 @@ packages:
   - web
   - library/data-model
   - library/forms
+  - library/instrumentation
+  - load-testing/shared
+  - load-testing/coordinator
+  - load-testing/agents
+  - load-testing/infra
   - infrastructure/aws-cdk
-  - e2e
 onlyBuiltDependencies:
   - '@scarf/scarf'
   - '@swc/core'

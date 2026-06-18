@@ -1,0 +1,30 @@
+{
+  "name": "@faims3/load-testing-agents",
+  "version": "1.5.2",
+  "description": "FAIMS load test Playwright agents",
+  "license": "Apache",
+  "private": true,
+  "main": "./build/src/worker.js",
+  "types": "./build/src/worker.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "pnpm run build && env-cmd node build/src/worker.js",
+    "start": "node build/src/worker.js",
+    "install-browsers": "playwright install chromium",
+    "lint": "oxlint -c ../../.oxlintrc.json ."
+  },
+  "dependencies": {
+    "@faims3/instrumentation": "workspace:*",
+    "@faims3/load-testing-shared": "workspace:*",
+    "env-cmd": "^10.1.0",
+    "playwright": "^1.51.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
+}

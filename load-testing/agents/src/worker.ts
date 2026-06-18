@@ -1,0 +1,161 @@
+import {fork, type ChildProcess} from 'child_process';
+import {randomUUID} from 'crypto';
+import {join} from 'path';
+import {CoordinatorClient, type MetricReport} from '@faims3/load-testing-shared';
+import {parseAgentEnv} from './config.js';
+import {MetricsClient} from './metrics-client.js';
+import {normalizeMetricReport} from './normalize-metric.js';
+import type {IpcMessage} from './types.js';
+
+const SESSION_SCRIPT = join(__dirname, 'browser-session.js');
+
+/** Fork browser sessions, forward metrics/errors, and signal coordinator lifecycle. */
+async function main(): Promise<void> {
+  const env = parseAgentEnv();
+  const workerId = process.env.WORKER_ID ?? randomUUID();
+  const agentId = process.env.AGENT_ID ?? `agent-${workerId.slice(0, 8)}`;
+  const sessionsPerAgent = env.SESSIONS_PER_AGENT;
+
+  const client = new CoordinatorClient(env.COORDINATOR_URL);
+  const metricsClient = new MetricsClient(env.COORDINATOR_URL, agentId);
+
+  console.log(`[worker] registering agent ${agentId} with ${sessionsPerAgent} sessions`);
+
+  await client.register({
+    agentId,
+    workerId,
+    sessionCount: sessionsPerAgent,
+  });
+
+  const children: ChildProcess[] = [];
+  const sessionFinished = new Set<number>();
+  let readyCount = 0;
+  let doneCount = 0;
+  let failedCount = 0;
+  let readySent = false;
+
+  const childEnv = {
+    ...process.env,
+    AGENT_ID: agentId,
+    COORDINATOR_URL: env.COORDINATOR_URL,
+  };
+
+  /** Exit when all sessions finish; notify coordinator on success. */
+  function maybeFinish(): void {
+    if (doneCount < sessionsPerAgent) return;
+    if (failedCount > 0) {
+      console.error(
+        `[worker] ${failedCount}/${sessionsPerAgent} session(s) failed for ${agentId}`
+      );
+      process.exit(1);
+    }
+    console.log(`[worker] all sessions complete for ${agentId}`);
+    void client
+      .agentDone({agentId})
+      .then(() => {
+        console.log(`[worker] notified coordinator that ${agentId} is done`);
+      })
+      .catch(err => {
+        console.error('[worker] failed to notify coordinator:', err);
+      })
+      .finally(() => process.exit(0));
+  }
+
+  for (let i = 0; i < sessionsPerAgent; i++) {
+    const sessionIndex = i;
+    const child = fork(SESSION_SCRIPT, [], {
+      env: {...childEnv, SESSION_INDEX: String(sessionIndex)},
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+    });
+
+    child.on('message', (msg: IpcMessage) => {
+      void handleMessage(msg, metricsClient);
+      if (msg.type === 'ready') {
+        readyCount += 1;
+        console.log(
+          `[worker] session ${msg.sessionId ?? sessionIndex} ready (${readyCount}/${sessionsPerAgent})`
+        );
+      }
+      if (msg.type === 'phase_complete') {
+        const phase = (msg.payload as {phase?: string} | undefined)?.phase ?? '?';
+        console.log(
+          `[worker] session ${msg.sessionId ?? sessionIndex} finished ${phase}`
+        );
+      }
+      if (msg.type === 'done') {
+        sessionFinished.add(sessionIndex);
+        doneCount += 1;
+        const success =
+          (msg.payload as {success?: boolean} | undefined)?.success !== false;
+        if (!success) failedCount += 1;
+        maybeFinish();
+      }
+      // Coordinator run starts only after every forked session reports browser ready.
+      if (readyCount >= sessionsPerAgent && !readySent) {
+        readySent = true;
+        console.log(`[worker] notifying coordinator that ${agentId} is ready`);
+        void client.ready({agentId}).catch(err => {
+          console.error('[worker] failed to notify coordinator:', err);
+        });
+      }
+    });
+
+    child.on('exit', (code, signal) => {
+      if (sessionFinished.has(sessionIndex)) return;
+      sessionFinished.add(sessionIndex);
+      doneCount += 1;
+      failedCount += 1;
+      console.error(
+        `[worker] session ${sessionIndex} exited before completion (code=${code}, signal=${signal})`
+      );
+      void metricsClient.send({
+        type: 'session_error',
+        errorType: 'child_crash',
+        message: `exit code ${code}, signal ${signal}`,
+      });
+      maybeFinish();
+    });
+
+    children.push(child);
+  }
+
+  /** Forward IPC metrics and session errors to the coordinator. */
+  async function handleMessage(
+    msg: IpcMessage,
+    metrics: MetricsClient
+  ): Promise<void> {
+    try {
+      if (msg.type === 'metric' && msg.payload) {
+        const report = normalizeMetricReport(msg.payload as MetricReport);
+        await metrics.send(report);
+      }
+      if (msg.type === 'error') {
+        const message = String(
+          (msg.payload as {message?: string})?.message ?? 'unknown'
+        );
+        console.error(`[worker] session ${msg.sessionId ?? '?'} error: ${message}`);
+        await metricsClient.send({
+          type: 'session_error',
+          errorType: 'session_error',
+          message,
+          sessionId: msg.sessionId,
+        });
+      }
+    } catch (err) {
+      console.warn(
+        '[worker] failed to forward session message to coordinator:',
+        (err as Error).message
+      );
+    }
+  }
+
+  process.on('SIGTERM', () => {
+    for (const child of children) child.kill('SIGTERM');
+    process.exit(0);
+  });
+}
+
+void main().catch(err => {
+  console.error('[worker] fatal:', err);
+  process.exit(1);
+});

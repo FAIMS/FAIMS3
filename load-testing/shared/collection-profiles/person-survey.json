@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "name": "person-survey",
+  "description": "Multi-section Person form workflow for the sample notebook uiSpec.",
+  "formType": "Person",
+  "onFailure": "finish_anyway",
+  "record": {
+    "steps": [
+      {
+        "action": "group",
+        "label": "Main section",
+        "steps": [
+          {
+            "action": "fill",
+            "field": "First-name",
+            "value": "LoadTest-{{recordIndex}}"
+          },
+          {
+            "action": "fill",
+            "field": "Last-name",
+            "value": "Agent-{{agentId}}"
+          },
+          {
+            "action": "fill",
+            "field": "Occupation",
+            "value": "field archaeologist"
+          },
+          {
+            "action": "wait_save"
+          }
+        ]
+      },
+      {
+        "action": "navigate_section",
+        "section": "Detail",
+        "match": "label"
+      },
+      {
+        "action": "fill",
+        "field": "Description",
+        "value": "Load test entry {{timestamp}}"
+      },
+      {
+        "action": "select",
+        "field": "Selection",
+        "option": "Primary **option**"
+      },
+      {
+        "action": "wait_save"
+      },
+      {
+        "action": "finish",
+        "strategy": "finish_anyway"
+      }
+    ]
+  }
+}

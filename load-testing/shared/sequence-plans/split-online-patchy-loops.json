@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "name": "split-online-patchy-loops",
+  "description": "Onboarding, then 5×(45s: half online / half patchy split), then 60s all-online finale. Shorter timers for quicker loop validation.",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "label": "Register, activate notebook, initial sync",
+      "advance": "all_agents_done",
+      "config": {}
+    },
+    {
+      "id": "mixed_cycles",
+      "label": "Five rounds of 50/50 online vs patchy (45s each branch)",
+      "loop": {
+        "count": 5,
+        "steps": [
+          {
+            "id": "online_vs_patchy",
+            "label": "Half agents online, half on patchy connectivity",
+            "split": {
+              "assignment": "agent_index_mod",
+              "branches": [
+                {
+                  "id": "online_half",
+                  "label": "Steady online",
+                  "weight": 1,
+                  "steps": [
+                    {
+                      "id": "cycle_online",
+                      "kind": "online_collection",
+                      "label": "Online surveying",
+                      "durationMs": 45000,
+                      "advance": "timer",
+                      "config": {
+                        "recordIntervalMs": 4000
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "patchy_half",
+                  "label": "Patchy connectivity",
+                  "weight": 1,
+                  "steps": [
+                    {
+                      "id": "cycle_patchy",
+                      "kind": "patchy_network",
+                      "label": "Patchy surveying (~15s cycles)",
+                      "durationMs": 45000,
+                      "advance": "timer",
+                      "config": {
+                        "cycleMs": 15000,
+                        "cycleJitterMs": 4000,
+                        "offlineDurationMs": 6000,
+                        "offlineJitterMs": 2000,
+                        "recordIntervalMs": 4000
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "advance": "all_agents_done"
+          }
+        ]
+      }
+    },
+    {
+      "id": "all_online_finale",
+      "kind": "online_collection",
+      "label": "Everyone online — final survey push",
+      "durationMs": 60000,
+      "advance": "timer",
+      "config": {
+        "recordIntervalMs": 4000
+      }
+    }
+  ]
+}

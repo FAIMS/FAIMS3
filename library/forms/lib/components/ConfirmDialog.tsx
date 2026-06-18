@@ -35,6 +35,10 @@ export interface ConfirmDialogProps {
   confirmLoading?: boolean;
   /** MUI dialog max width. Default: "xs". */
   maxWidth?: 'xs' | 'sm' | 'md';
+  /** Optional test id for the confirm button. */
+  confirmTestId?: string;
+  /** Optional test id for the cancel button. */
+  cancelTestId?: string;
 }
 
 /**
@@ -55,6 +59,8 @@ export function ConfirmDialog({
   confirmColor = 'error',
   confirmLoading = false,
   maxWidth = 'xs',
+  confirmTestId,
+  cancelTestId,
 }: ConfirmDialogProps) {
   return (
     <Dialog
@@ -78,6 +84,7 @@ export function ConfirmDialog({
           variant="contained"
           disableElevation
           disabled={confirmLoading}
+          data-testid={confirmTestId}
         >
           {confirmLabel}
         </Button>
@@ -87,6 +94,7 @@ export function ConfirmDialog({
           variant="contained"
           disableElevation
           disabled={confirmLoading}
+          data-testid={cancelTestId}
         >
           {cancelLabel}
         </Button>

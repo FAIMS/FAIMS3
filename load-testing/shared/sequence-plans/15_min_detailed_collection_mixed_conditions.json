@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "name": "15_min_detailed_collection_mixed_conditions",
+  "description": "15 minutes of Site workflow fieldwork with load-test-survey-site-minimal profile: 5 min all online, 5 min 50/50 online/offline split, 5 min equal online/patchy/offline split.",
+  "steps": [
+    {
+      "id": "onboarding",
+      "kind": "onboarding",
+      "label": "Register, activate notebook, initial sync",
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "all_online",
+      "kind": "online_collection",
+      "label": "All agents online — steady Site surveying",
+      "durationMs": 300000,
+      "advance": "timer",
+      "config": {
+        "recordIntervalMs": 15000,
+        "collectionProfile": "load-test-survey-site-minimal.json"
+      }
+    },
+    {
+      "id": "half_online_half_offline",
+      "label": "50/50 online vs offline split",
+      "split": {
+        "assignment": "agent_index_mod",
+        "branches": [
+          {
+            "id": "online_half",
+            "label": "Online branch",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "split_online_survey",
+                "kind": "online_collection",
+                "label": "Online Site surveying",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "recordIntervalMs": 15000,
+                  "collectionProfile": "load-test-survey-site-minimal.json"
+                }
+              }
+            ]
+          },
+          {
+            "id": "offline_half",
+            "label": "Offline branch",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "split_offline_survey",
+                "kind": "offline_collection",
+                "label": "Offline Site surveying + reconnect sync",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "recordIntervalMs": 20000,
+                  "reconnectJitterMaxMs": 10000,
+                  "syncTimeoutMs": 600000,
+                  "collectionProfile": "load-test-survey-site-minimal.json"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "advance": "all_agents_done"
+    },
+    {
+      "id": "triple_mixed_conditions",
+      "label": "Equal online / patchy / offline split",
+      "split": {
+        "assignment": "agent_index_mod",
+        "branches": [
+          {
+            "id": "online_third",
+            "label": "Online third",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "triple_online_survey",
+                "kind": "online_collection",
+                "label": "Online Site surveying",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "recordIntervalMs": 15000,
+                  "collectionProfile": "load-test-survey-site-minimal.json"
+                }
+              }
+            ]
+          },
+          {
+            "id": "patchy_third",
+            "label": "Patchy third",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "triple_patchy_survey",
+                "kind": "patchy_network",
+                "label": "Patchy connectivity Site surveying",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "cycleMs": 30000,
+                  "cycleJitterMs": 10000,
+                  "offlineDurationMs": 15000,
+                  "offlineJitterMs": 5000,
+                  "recordIntervalMs": 15000,
+                  "collectionProfile": "load-test-survey-site-minimal.json"
+                }
+              }
+            ]
+          },
+          {
+            "id": "offline_third",
+            "label": "Offline third",
+            "weight": 1,
+            "steps": [
+              {
+                "id": "triple_offline_survey",
+                "kind": "offline_collection",
+                "label": "Offline Site surveying + reconnect sync",
+                "durationMs": 300000,
+                "advance": "timer",
+                "config": {
+                  "recordIntervalMs": 20000,
+                  "reconnectJitterMaxMs": 12000,
+                  "syncTimeoutMs": 600000,
+                  "collectionProfile": "load-test-survey-site-minimal.json"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "advance": "all_agents_done"
+    }
+  ]
+}
