@@ -14,7 +14,11 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@app-themes/*": ["../app/src/gui/themes/*"]
+    }
   },
   "include": ["src"]
 }

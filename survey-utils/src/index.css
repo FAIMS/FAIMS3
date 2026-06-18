@@ -181,6 +181,30 @@ body {
   border-color: #999;
 }
 
+.export-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.export-preview-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: #444;
+  user-select: none;
+}
+
+.export-preview-toggle input {
+  margin: 0;
+}
+
+.export-progress {
+  font-size: 0.875rem;
+  color: #555;
+  font-style: italic;
+}
+
 /* Summary table — column widths: name small, content largest */
 .summary-section {
   background: #fff;

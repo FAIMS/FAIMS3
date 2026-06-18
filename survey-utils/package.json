@@ -9,14 +9,25 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@faims3/data-model": "workspace:*",
+    "@faims3/forms": "workspace:*",
+    "@mui/icons-material": "9.0.1",
+    "@mui/material": "9.0.1",
+    "@tanstack/react-query": "^5.62.16",
+    "buffer": "^6.0.3",
     "docx": "^9.5.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.0"
+    "html-to-image": "^1.11.13",
+    "mermaid": "^11.6.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.2.0",
     "typescript": "^5.2.0",
     "vite": "^5.0.0"

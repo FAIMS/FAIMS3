@@ -10,7 +10,12 @@ import {
   AlignmentType,
   HeadingLevel,
   TextRun,
+  ImageRun,
 } from 'docx';
+import type { FieldPreviewCapture } from './fieldPreview/captureFieldPreview';
+import type { FieldPreviewResult } from './fieldPreview/fieldPreviewTypes';
+import { type DiagramImage } from './formGraph/captureFormGraphImage';
+import type { FormGraphEdge, FormRelationshipGraph } from './formGraph/buildFormRelationshipGraph';
 import type { SpecReviewRow, SpecExportData, NotebookMetadata, UiSpecification, FieldSpec } from './types';
 import type { SurveyDiffResult } from './surveyDiff';
 import { surveyDiffToMarkdown, formatSelectOptionLine } from './surveyDiff';
@@ -480,10 +485,132 @@ function buildOptionsParagraphs(field: FieldSpec): Paragraph[] {
   return out;
 }
 
+const WORD_DIAGRAM_MAX_WIDTH = 520;
+
+function buildDiagramParagraph(diagram: DiagramImage): Paragraph {
+  const scale = diagram.width > WORD_DIAGRAM_MAX_WIDTH ? WORD_DIAGRAM_MAX_WIDTH / diagram.width : 1;
+  const width = Math.round(diagram.width * scale);
+  const height = Math.round(diagram.height * scale);
+  return new Paragraph({
+    spacing: { after: SPACING_AFTER_PARAGRAPH },
+    children: [
+      new ImageRun({
+        type: 'png',
+        data: diagram.data,
+        transformation: { width, height },
+      }),
+    ],
+  });
+}
+
+const WORD_PREVIEW_MAX_WIDTH = 480;
+
+function relationLabelForExport(edge: FormGraphEdge): string {
+  return edge.relationType === 'faims-core::Child'
+    ? 'has child'
+    : edge.relationType === 'faims-core::Linked'
+      ? 'linked'
+      : edge.relationType.replace(/^faims-core::/, '');
+}
+
+function buildFormRelationshipTable(graph: FormRelationshipGraph): Table {
+  const labelById = new Map(graph.nodes.map(node => [node.id, node.label]));
+  const rows = [
+    new TableRow({
+      tableHeader: true,
+      children: ['From form', 'Relationship', 'To form'].map(
+        text =>
+          new TableCell({
+            children: [new Paragraph({ text, alignment: AlignmentType.CENTER })],
+            shading: { fill: 'E8E8E8' },
+          })
+      ),
+    }),
+    ...graph.edges.map(
+      edge =>
+        new TableRow({
+          children: [
+            labelById.get(edge.from) ?? edge.from,
+            relationLabelForExport(edge),
+            labelById.get(edge.to) ?? edge.to,
+          ].map(
+            text =>
+              new TableCell({
+                children: [new Paragraph({ text: String(text) })],
+              })
+          ),
+        })
+    ),
+  ];
+
+  return new Table({
+    width: { size: 90, type: WidthType.PERCENTAGE },
+    borders: tableBorder(),
+    rows,
+  });
+}
+
+function buildFormRelationshipGraphSection(
+  diagram: DiagramImage | null,
+  edgeCount: number,
+  graph: FormRelationshipGraph
+): (Paragraph | Table)[] {
+  const children: (Paragraph | Table)[] = [
+    new Paragraph({
+      text: 'Form relationships',
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: SPACING_AFTER_HEADING },
+    }),
+    new Paragraph({
+      text: `Related record fields connect ${edgeCount} relationship${edgeCount === 1 ? '' : 's'} between forms (parent/child and linked).`,
+      spacing: { after: SPACING_AFTER_PARAGRAPH },
+    }),
+  ];
+
+  if (diagram) {
+    children.push(buildDiagramParagraph(diagram));
+  } else {
+    children.push(
+      plainLabelLineParagraph(
+        'Diagram image',
+        'Could not render — relationship table below.'
+      )
+    );
+    children.push(
+      new Paragraph({
+        text: '',
+        spacing: { after: SPACING_AFTER_PARAGRAPH },
+      })
+    );
+    children.push(buildFormRelationshipTable(graph));
+  }
+
+  children.push(new Paragraph({ text: '', spacing: { after: SPACING_AFTER_HEADING } }));
+  return children;
+}
+
+
+function buildFieldPreviewParagraph(preview: FieldPreviewCapture): Paragraph {
+  const scale = preview.width > WORD_PREVIEW_MAX_WIDTH ? WORD_PREVIEW_MAX_WIDTH / preview.width : 1;
+  const width = Math.round(preview.width * scale);
+  const height = Math.round(preview.height * scale);
+  return new Paragraph({
+    spacing: { after: SPACING_AFTER_PARAGRAPH },
+    children: [
+      new ImageRun({
+        type: 'png',
+        data: preview.data,
+        transformation: { width, height },
+      }),
+    ],
+  });
+}
+
 function buildDetailedQuestionParagraphs(
   spec: UiSpecification,
   fieldName: string,
-  field: FieldSpec
+  field: FieldSpec,
+  options?: { preview?: FieldPreviewResult; includePreviews?: boolean }
 ): Paragraph[] {
   const params = field['component-parameters'];
   const titleLabel = params ? getLabel(params) || fieldName : fieldName;
@@ -502,6 +629,10 @@ function buildDetailedQuestionParagraphs(
       ],
     })
   );
+
+  if (options?.includePreviews && options.preview?.status === 'image') {
+    paras.push(buildFieldPreviewParagraph(options.preview.capture));
+  }
 
   // Required / optional
   const isRequired = params?.required === true;
@@ -569,9 +700,36 @@ function buildDetailedQuestionParagraphs(
   return paras;
 }
 
+export interface WordDetailedExportOptions {
+  /** Map of field name → preview capture result. */
+  fieldPreviews?: Map<string, FieldPreviewResult>;
+  /** Rendered Mermaid form-relationship diagram (image may be null if capture failed). */
+  formRelationshipDiagram?: {
+    diagram: DiagramImage | null;
+    edgeCount: number;
+    graph: FormRelationshipGraph;
+  } | null;
+}
+
 /** Detailed Word doc: preamble + per-form / per-section / per-field narrative */
-export async function buildWordDetailedDocument(data: SpecExportData, spec: UiSpecification): Promise<Blob> {
+export async function buildWordDetailedDocument(
+  data: SpecExportData,
+  spec: UiSpecification,
+  options?: WordDetailedExportOptions
+): Promise<Blob> {
   const sectionChildren: (Paragraph | Table)[] = [...buildWordPreambleChildren(data)];
+  const includePreviews = Boolean(options?.fieldPreviews);
+  const relationship = options?.formRelationshipDiagram;
+
+  if (relationship) {
+    sectionChildren.push(
+      ...buildFormRelationshipGraphSection(
+        relationship.diagram,
+        relationship.edgeCount,
+        relationship.graph
+      )
+    );
+  }
 
   sectionChildren.push(
     new Paragraph({
@@ -582,7 +740,9 @@ export async function buildWordDetailedDocument(data: SpecExportData, spec: UiSp
   );
   sectionChildren.push(
     new Paragraph({
-      text: 'Each form and section below lists fields in order. Rich HTML is reduced to plain text; images are omitted as [image].',
+      text: includePreviews
+        ? 'Each form and section below lists fields in order with a preview screenshot. Rich HTML in metadata is reduced to plain text; images in helper text are omitted as [image].'
+        : 'Each form and section below lists fields in order. Rich HTML is reduced to plain text; images are omitted as [image].',
       spacing: { after: SPACING_AFTER_PARAGRAPH },
     })
   );
@@ -636,7 +796,12 @@ export async function buildWordDetailedDocument(data: SpecExportData, spec: UiSp
       for (const fname of view.fields) {
         const field = spec.fields[fname];
         if (!field) continue;
-        sectionChildren.push(...buildDetailedQuestionParagraphs(spec, fname, field));
+        sectionChildren.push(
+          ...buildDetailedQuestionParagraphs(spec, fname, field, {
+            includePreviews,
+            preview: options?.fieldPreviews?.get(fname),
+          })
+        );
       }
     }
   }
@@ -656,8 +821,12 @@ export async function exportWord(data: SpecExportData) {
 }
 
 /** Detailed narrative Word export */
-export async function exportWordDetailed(data: SpecExportData, spec: UiSpecification) {
-  const blob = await buildWordDetailedDocument(data, spec);
+export async function exportWordDetailed(
+  data: SpecExportData,
+  spec: UiSpecification,
+  options?: WordDetailedExportOptions
+) {
+  const blob = await buildWordDetailedDocument(data, spec, options);
   const name = (data.metadata?.information?.projectLeadLabel ?? 'survey-spec') + '-review-detailed.docx';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
 }

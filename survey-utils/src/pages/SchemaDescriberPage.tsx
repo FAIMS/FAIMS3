@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { captureAllFieldPreviews } from '../fieldPreview/captureAllFieldPreviews';
+import { buildFormRelationshipDiagram } from '../formGraph/buildFormRelationshipDiagram';
 import { parseSpecFile } from '../specParser';
 import { buildExportData, exportJson, exportCsv, exportWord, exportWordDetailed } from '../exports';
 import type { SpecReviewRow, NotebookMetadata, UiSpecification } from '../types';
@@ -11,6 +13,9 @@ export function SchemaDescriberPage() {
   const [metadata, setMetadata] = useState<NotebookMetadata | undefined>(undefined);
   const [spec, setSpec] = useState<UiSpecification | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [includePreviews, setIncludePreviews] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<string | null>(null);
 
   const handleSpecLoaded = useCallback((content: string) => {
     if (!content.trim()) {
@@ -52,10 +57,28 @@ export function SchemaDescriberPage() {
   }, [rows, metadata]);
 
   const handleExportWordDetailed = useCallback(async () => {
-    if (!spec) return;
-    const data = buildExportData(rows, metadata);
-    await exportWordDetailed(data, spec);
-  }, [rows, metadata, spec]);
+    if (!spec || exporting) return;
+    setExporting(true);
+    setExportProgress(includePreviews ? 'Preparing export…' : null);
+    try {
+      const data = buildExportData(rows, metadata);
+      const fieldPreviews = includePreviews
+        ? await captureAllFieldPreviews(spec, (completed, total) => {
+            setExportProgress(`Capturing field previews (${completed}/${total})…`);
+          })
+        : undefined;
+      setExportProgress('Building form relationship diagram…');
+      const formRelationshipResult = await buildFormRelationshipDiagram(spec);
+      setExportProgress('Building Word document…');
+      await exportWordDetailed(data, spec, {
+        fieldPreviews,
+        formRelationshipDiagram: formRelationshipResult,
+      });
+    } finally {
+      setExporting(false);
+      setExportProgress(null);
+    }
+  }, [rows, metadata, spec, includePreviews, exporting]);
 
   const hasData = rows.length > 0;
 
@@ -76,18 +99,33 @@ export function SchemaDescriberPage() {
       {hasData && (
         <section className="export-bar">
           <span className="export-label">Export:</span>
-          <button type="button" className="export-btn" onClick={handleExportJson}>
+          <button type="button" className="export-btn" onClick={handleExportJson} disabled={exporting}>
             JSON
           </button>
-          <button type="button" className="export-btn" onClick={handleExportCsv}>
+          <button type="button" className="export-btn" onClick={handleExportCsv} disabled={exporting}>
             CSV
           </button>
-          <button type="button" className="export-btn" onClick={handleExportWordSummary}>
+          <button type="button" className="export-btn" onClick={handleExportWordSummary} disabled={exporting}>
             Summary (Word)
           </button>
-          <button type="button" className="export-btn" onClick={handleExportWordDetailed}>
-            Detailed review (Word)
+          <label className="export-preview-toggle">
+            <input
+              type="checkbox"
+              checked={includePreviews}
+              onChange={e => setIncludePreviews(e.target.checked)}
+              disabled={exporting}
+            />
+            Include field previews
+          </label>
+          <button
+            type="button"
+            className="export-btn"
+            onClick={handleExportWordDetailed}
+            disabled={exporting}
+          >
+            {exporting ? 'Exporting…' : 'Detailed review (Word)'}
           </button>
+          {exportProgress && <span className="export-progress">{exportProgress}</span>}
         </section>
       )}
       <SummaryTable rows={rows} />
