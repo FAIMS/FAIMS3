@@ -634,6 +634,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           )}
           style={{minWidth: 200}}
           clearOnEscape
+          noOptionsText={props.view ? 'No fields in this form outside this section' : props.field ? 'No other fields in this form' : 'No fields available'}
         />
 
         <FormControl
