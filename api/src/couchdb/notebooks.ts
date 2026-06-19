@@ -61,7 +61,12 @@ import {
   CompiledNotebookUiSpec,
   compileUiSpecConditionals,
 } from '@faims3/data-model';
-import {initialiseDataDb, localGetProjectsDb, verifyCouchDBConnection} from '.';
+import {
+  getNanoDataDb,
+  initialiseDataDb,
+  localGetProjectsDb,
+  verifyCouchDBConnection,
+} from '.';
 import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
@@ -687,17 +692,21 @@ export async function countRecordsInNotebook(
   }
 }
 
+/**
+ * Returns the storage size in bytes of a notebook's data database.
+ *
+ * PouchDB does not surface database sizes, so this uses CouchDB's GET /{db}
+ * info endpoint via nano. `sizes.active` is the size of the live data, matching
+ * the value shown in CouchDB Fauxton. (Use `sizes.file` instead if you want the
+ * on-disk size including view indexes and not-yet-compacted revisions.)
+ */
 export async function getByteCount(
-    project_id: ProjectID
+  project_id: ProjectID
 ): Promise<number> {
-  const dataDB = await getDataDB(project_id);
-  // I can see what I want in sizes.active in CouchDB Fauxton, but it's not clear how to get it via the PouchDB API. This view is an approximation that sums the sizes of all attachments, which is likely to be the dominant contributor to database size for most projects.
   try {
-    const res = await dataDB.query('index/attachmentSizeSum');
-    if (res.rows.length === 0) {
-      return 0;
-    }
-    return res.rows[0].value;
+    const dataDb = await getNanoDataDb(project_id);
+    const info = await dataDb.info();
+    return info.sizes.active;
   } catch (error) {
     console.log(error);
     return 0;
