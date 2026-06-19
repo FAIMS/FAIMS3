@@ -251,6 +251,7 @@ export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 /** GET /api/notebooks/:id — full project document plus optional record count. */
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
   recordCount: z.number().optional(),
+  byteCount: z.number(),
 });
 export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 

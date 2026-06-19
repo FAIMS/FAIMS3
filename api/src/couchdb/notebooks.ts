@@ -687,6 +687,23 @@ export async function countRecordsInNotebook(
   }
 }
 
+export async function getByteCount(
+    project_id: ProjectID
+): Promise<number> {
+  const dataDB = await getDataDB(project_id);
+  // I can see what I want in sizes.active in CouchDB Fauxton, but it's not clear how to get it via the PouchDB API. This view is an approximation that sums the sizes of all attachments, which is likely to be the dominant contributor to database size for most projects.
+  try {
+    const res = await dataDB.query('index/attachmentSizeSum');
+    if (res.rows.length === 0) {
+      return 0;
+    }
+    return res.rows[0].value;
+  } catch (error) {
+    console.log(error);
+    return 0;
+  }
+}
+
 /*
  * For saving and loading attachment with type faims-attachment::Files
  */

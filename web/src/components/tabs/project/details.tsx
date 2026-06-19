@@ -118,6 +118,12 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
         label: 'Current record count',
         getValue: p => (p.recordCount != null ? String(p.recordCount) : '—'),
       },
+      {
+          key: 'byteCount',
+          label: 'Current byte count',
+          getValue: p => (p.byteCount != null ? String(p.byteCount) : '—'),
+      },
+
     ],
     []
   );
