@@ -245,6 +245,7 @@ export type PostExchangeTokenResponse = z.infer<
 /** GET /api/notebooks list row (project summary + access flags; no uiSpecification). */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
   is_admin: z.boolean(),
+  byteCount: z.number(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 

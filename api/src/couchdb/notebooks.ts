@@ -246,7 +246,7 @@ export const getUserProjectsDirectory = async (
  * each row (including `uiSpecification`), which would defeat the lean list.
  *
  * @param user - only return notebooks that this user can see
- * @returns notebook list rows (from each row's `value`) plus `is_admin`
+ * @returns notebook list rows (from each row's `value`) plus `is_admin` and `byteCount`
  */
 export const getUserProjectsDetailed = async (
   user: Express.User,
@@ -288,7 +288,7 @@ export const getUserProjectsDetailed = async (
       });
     });
 
-  return userProjects.map(project => {
+  return await Promise.all(userProjects.map(async project => {
     const projectId = project._id;
     return {
       ...project,
@@ -297,8 +297,9 @@ export const getUserProjectsDetailed = async (
         projectId,
         role: Role.PROJECT_ADMIN,
       }),
+      byteCount: await getByteCount(projectId),
     } satisfies GetNotebookListResponse[number];
-  });
+  }));
 };
 
 /**

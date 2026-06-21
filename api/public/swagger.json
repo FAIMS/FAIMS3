@@ -2086,6 +2086,11 @@
             "is_admin": {
               "type": "boolean",
               "description": "True when the caller has project admin on this notebook"
+            },
+            "byteCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Optional size of the notebook’s data in bytes (projects DB v4+)"
             }
           },
           "required": ["is_admin"]

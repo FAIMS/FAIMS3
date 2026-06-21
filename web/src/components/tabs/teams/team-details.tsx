@@ -3,9 +3,11 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetTeam} from '@/hooks/queries';
+import {useGetProjects, useGetProjectsForTeam, useGetTeam} from '@/hooks/queries';
 import {useMemo} from 'react';
 import {displayUnixTimestampMs} from '@/lib/time';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from "@/constants";
+import {formatFileSize, ProjectStatus} from "@faims3/data-model";
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -24,8 +26,8 @@ const detailsFields = [
  */
 const TeamDetails = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
-
   const {data: rawData, isPending} = useGetTeam({user, teamId});
+  const {isPending: isProjectsPending, data: projects} = useGetProjectsForTeam({user, teamId, includeArchived: true});
 
   const data = useMemo(() => {
     return rawData
@@ -56,6 +58,22 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
             )}
           </ListItem>
         ))}
+        {[ProjectStatus.OPEN, ProjectStatus.ARCHIVED, ProjectStatus.CLOSED].map(status => {
+          const projectsWithStatus = projects ? projects.filter(p => p.status === status) : [];
+          const byteCount = projectsWithStatus.reduce((acc, p) => acc + (p.byteCount ?? 0), 0);
+          return (
+            <ListItem key={status}>
+              <ListLabel>{NOTEBOOK_NAME_PLURAL_CAPITALIZED} with status {status}</ListLabel>
+              {isProjectsPending ? (
+                <Skeleton/>
+              ) : (
+                <ListDescription>
+                  {projects ? projects.filter(p => p.status === status).length : 'Unknown...'} - {formatFileSize(byteCount)}
+                </ListDescription>
+              )}
+            </ListItem>
+          );
+        })}
       </List>
     </Card>
   );
