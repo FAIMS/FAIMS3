@@ -39,7 +39,7 @@ setup_node_version() {
     echo "Loading nvm..."
     source "$HOME/.nvm/nvm.sh"
 
-    # Try to use Node 
+    # Try to use Node
     echo "Attempting to switch to Node.js ${required_major_version}..."
     if nvm use $required_major_version 2>/dev/null; then
       echo "Successfully switched to Node.js ${required_major_version} using nvm"
@@ -280,7 +280,7 @@ Now, from the Conductor home page (http://localhost:8080/) scroll down to "Copy
 Bearer Token to Clipboard". Paste this value into your .env file as the
 value of USER_TOKEN.
 
-Then run: 
+Then run:
 
 $> pnpm run load-notebooks
 
@@ -293,4 +293,12 @@ EOF
   echo "App (live reloading /app): http://localhost:3000"
   echo "Web (live reloading /web): http://localhost:3001"
   echo "CouchDB: http://localhost:5984/_utils"
+
+  echo ""
+  echo "Starting shared-library watchers (data-model + forms)..."
+  echo "Press Ctrl-C to stop watching; containers keep running."
+  trap 'kill 0' EXIT
+  pnpm --filter=@faims3/data-model run watch &
+  pnpm --filter=@faims3/forms run watch &
+  wait
 fi
