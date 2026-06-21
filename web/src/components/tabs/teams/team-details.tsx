@@ -8,6 +8,7 @@ import {useMemo} from 'react';
 import {displayUnixTimestampMs} from '@/lib/time';
 import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from "@/constants";
 import {formatFileSize, ProjectStatus} from "@faims3/data-model";
+import {statusDisplay} from "@/lib/status-display";
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -58,29 +59,35 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
             )}
           </ListItem>
         ))}
-        {[ProjectStatus.OPEN, ProjectStatus.ARCHIVED, ProjectStatus.CLOSED].map(status => {
-          const projectsWithStatus = projects ? projects.filter(p => p.status === status) : [];
-          const byteCount = projectsWithStatus.reduce((acc, p) => acc + (p.byteCount ?? 0), 0);
-          return (
-            <ListItem key={status}>
-              <ListLabel>{NOTEBOOK_NAME_PLURAL_CAPITALIZED} with status {status}</ListLabel>
-              {isProjectsPending ? (
-                <Skeleton/>
-              ) : (
-                <ListDescription>
-                  {projects ? projects.filter(p => p.status === status).length : 'Unknown...'} - {formatFileSize(byteCount)}
-                </ListDescription>
-              )}
-            </ListItem>
-          );
-        })}
         <ListItem>
           <ListLabel>{NOTEBOOK_NAME_PLURAL_CAPITALIZED}</ListLabel>
           {isProjectsPending ? (
             <Skeleton/>
           ) : (
             <ListDescription>
+              <details>
+                <summary>
               {projects ? `${projects.length} - ${formatFileSize(projects.reduce((acc, p) => acc + (p.byteCount ?? 0), 0))}` : 'Unknown...'}
+                </summary>
+              <List className="pt-2 pl-4">
+                {[ProjectStatus.OPEN, ProjectStatus.ARCHIVED, ProjectStatus.CLOSED].map(status => {
+                  const projectsWithStatus = projects ? projects.filter(p => p.status === status) : [];
+                  const byteCount = projectsWithStatus.reduce((acc, p) => acc + (p.byteCount ?? 0), 0);
+                  return (
+                    <ListItem key={status}>
+                      <ListLabel>{statusDisplay(status)}</ListLabel>
+                      {isProjectsPending ? (
+                        <Skeleton/>
+                      ) : (
+                        <ListDescription>
+                          {projects ? projects.filter(p => p.status === status).length : 'Unknown...'} - {formatFileSize(byteCount)}
+                        </ListDescription>
+                      )}
+                    </ListItem>
+                  );
+                })}
+              </List>
+              </details>
             </ListDescription>
           )}
         </ListItem>
