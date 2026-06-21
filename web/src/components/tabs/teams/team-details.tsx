@@ -74,6 +74,16 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
             </ListItem>
           );
         })}
+        <ListItem>
+          <ListLabel>{NOTEBOOK_NAME_PLURAL_CAPITALIZED}</ListLabel>
+          {isProjectsPending ? (
+            <Skeleton/>
+          ) : (
+            <ListDescription>
+              {projects ? `${projects.length} - ${formatFileSize(projects.reduce((acc, p) => acc + (p.byteCount ?? 0), 0))}` : 'Unknown...'}
+            </ListDescription>
+          )}
+        </ListItem>
       </List>
     </Card>
   );
