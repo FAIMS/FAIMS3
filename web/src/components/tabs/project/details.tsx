@@ -7,7 +7,7 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetProject} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
-import type {GetNotebookResponse} from '@faims3/data-model';
+import {formatFileSize, GetNotebookResponse} from '@faims3/data-model';
 import {ProjectStatus} from '@faims3/data-model';
 import {displayIsoTimestamp} from '@/lib/time';
 
@@ -121,7 +121,7 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
       {
           key: 'byteCount',
           label: 'Current byte count',
-          getValue: p => (p.byteCount != null ? String(p.byteCount) : '—'),
+          getValue: p => (p.byteCount != null ? `${p.byteCount} bytes (${formatFileSize(p.byteCount)})` : '—'),
       },
 
     ],
