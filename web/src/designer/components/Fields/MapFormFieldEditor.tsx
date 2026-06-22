@@ -29,7 +29,10 @@ import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {designerInfoIconSx} from '../designer-style';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
-import {DEFAULT_MAX_CHAR_LENGTH, useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
+import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
+
+// Max allowable num of characters for the map action button
+const MAX_NUM_CHARACTERS_BUTTON_LENGTH = 40;
 
 type FieldState = {
   featureType: string;
@@ -93,7 +96,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
     errorText: buttonLabelErrorTxt,
     inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit({ maxLength: DEFAULT_MAX_CHAR_LENGTH, initialValue: initButtonLabelText });
+  } = useTextFieldLengthLimit({ maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH, initialValue: initButtonLabelText });
 
 
   return (

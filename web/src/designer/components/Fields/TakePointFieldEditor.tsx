@@ -13,8 +13,11 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
-import {DEFAULT_MAX_CHAR_LENGTH, useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
+import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
 import { TakePointFieldProps } from '@faims3/forms';
+
+// Max allowable num of characters for the map action button
+const MAX_NUM_CHARACTERS_BUTTON_LENGTH = 40;
 
 /**
  * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
@@ -42,7 +45,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     errorText: buttonLabelErrorTxt,
     inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit({ maxLength: DEFAULT_MAX_CHAR_LENGTH, initialValue: buttonLabelText });
+  } = useTextFieldLengthLimit({ maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH, initialValue: buttonLabelText });
 
 
   return (
