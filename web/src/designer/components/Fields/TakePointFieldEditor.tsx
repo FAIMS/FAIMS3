@@ -13,7 +13,8 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
-import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
+import {DEFAULT_MAX_CHAR_LENGTH, useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
+import { TakePointFieldProps } from '@faims3/forms';
 
 /**
  * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
@@ -24,7 +25,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const buttonLabelText = field['component-parameters'].buttonLabelText ?? '';
+  const buttonLabelText = (field['component-parameters'] as unknown as TakePointFieldProps).buttonLabelText ?? '';
 
   const updateButtonLabel = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -41,7 +42,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     errorText: buttonLabelErrorTxt,
     inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit({ initialValue: buttonLabelText });
+  } = useTextFieldLengthLimit({ maxLength: DEFAULT_MAX_CHAR_LENGTH, initialValue: buttonLabelText });
 
 
   return (
