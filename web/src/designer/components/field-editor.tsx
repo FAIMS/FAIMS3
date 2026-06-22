@@ -266,8 +266,7 @@ const FieldEditorComponent = ({
     addFieldCallback(fieldName);
   };
 
-  const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
+  const handleOpenDuplicateDialog = () => {
     const currentLabel = getFieldLabel();
     setDuplicateTitle(currentLabel + ' Copy');
     setOpenDuplicateDialog(true);
