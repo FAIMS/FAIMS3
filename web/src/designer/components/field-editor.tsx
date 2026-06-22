@@ -266,7 +266,12 @@ const FieldEditorComponent = ({
     addFieldCallback(fieldName);
   };
 
-  const handleOpenDuplicateDialog = () => {
+  const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
+    // if the field is collapsed, we need to open it up so that the
+    // dialog will show. If it is open already, we don't want to do anything
+    if (expanded) {
+      event.stopPropagation();
+    }
     const currentLabel = getFieldLabel();
     setDuplicateTitle(currentLabel + ' Copy');
     setOpenDuplicateDialog(true);
