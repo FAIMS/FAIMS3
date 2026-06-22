@@ -43,6 +43,7 @@ export const useTextFieldLengthLimit = (
 
             // No valid length limit, save whatever the user typed.
             if (typeof maxLength !== 'number' || maxLength < 0) {
+                console.error("Invalid maxLength value in useTextFieldLengthLimit: maxLength must be a positive integer.");
                 setErrorText(undefined);
                 onValid(value);
                 return;
