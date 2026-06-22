@@ -358,12 +358,76 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 };
 
 /**
+ * Component to display individual revision details in the History tab
+ * @param recordId - ID of the record
+ * @param revisionId - ID of the revision to display
+ * @param dataEngine - DataEngine instance for fetching revision data
+ */
+const HistoryTabRevision: React.FC<{
+  recordId: RecordID;
+  revisionId: string;
+  dataEngine: DataEngine;
+}> = ({recordId, revisionId, dataEngine}) => {
+  const {data: revisionData, isError, isPending, error} = useQuery({
+    queryKey: ['revisionData', recordId, revisionId],
+    queryFn: async () =>
+      dataEngine.form.getExistingFormData({
+        recordId,
+        revisionId,
+      }),
+    networkMode: 'always',
+    refetchOnMount: 'always',
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  if (isPending) {
+    return (
+      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{p: 2}}>
+        <Typography color="error">
+          An error occurred while fetching revision data. Error:{' '}
+          {error?.message ?? 'unknown'}.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!revisionData) {
+    return (
+      <Box sx={{p: 2}}>
+        <Typography color="error">Revision data not found.</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      <Typography variant="h6">Revision ID: {revisionId}</Typography>
+      {/* <pre>
+        {JSON.stringify(revisionData.context.revision, null, 2)}
+      </pre> */}
+      <Typography variant="body1">
+        Created by: {revisionData.context.revision.createdBy}
+      </Typography>
+      <Typography variant="body1">
+        Created at: {new Date(revisionData.context.revision.created).toLocaleString()}
+      </Typography>
+    </Stack>
+  );
+}
+
+/**
  * Content for the History tab - displays revision history and metadata
  * @param props.recordId - ID of the record to fetch history for
  * @param props.dataEngine - DataEngine instance for fetching data
- * @param props.uiSpec - UI specification for rendering the data
- * @param props.projectId - Current project ID
- * @param props.serverId - Current server ID
  */
 const HistoryTabContent: React.FC<{
   recordId: RecordID;
@@ -419,19 +483,9 @@ const HistoryTabContent: React.FC<{
   return (
     <Stack spacing={2}>
       <Typography variant="h5">Revision History</Typography>
-      {JSON.stringify(formData.context, null, 2)}
-      {/*{formData.context.revisions.map(rev => (*/}
-      {/*  <Box key={rev._id} sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2}}>*/}
-      {/*    <Typography variant="subtitle1">Revision ID: {rev._id}</Typography>*/}
-      {/*    <Typography variant="body2">Modified by: {rev.modifiedBy}</Typography>*/}
-      {/*    <Typography variant="body2">Modified at: {new Date(rev.modifiedAt).toLocaleString()}</Typography>*/}
-      {/*    {rev.deleted && (*/}
-      {/*      <Alert severity="warning" sx={{mt: 1}}>*/}
-      {/*        This revision represents a deleted record.*/}
-      {/*      </Alert>*/}
-      {/*    )}*/}
-      {/*  </Box>*/}
-      {/*))}*/}
+      {formData.context.record.revisions.map(rev => (
+        <HistoryTabRevision key={rev} revisionId={rev} recordId={recordId} dataEngine={dataEngine} />
+      ))}
     </Stack>
   );
 }
