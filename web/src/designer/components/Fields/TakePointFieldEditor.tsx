@@ -14,7 +14,7 @@ import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
-import { TakePointFieldProps } from '@faims3/forms';
+import {TakePointFieldProps} from '@faims3/forms';
 
 // Max allowable num of characters for the map action button
 const MAX_NUM_CHARACTERS_BUTTON_LENGTH = 40;
@@ -28,7 +28,9 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const buttonLabelText = (field['component-parameters'] as unknown as TakePointFieldProps).buttonLabelText ?? '';
+  const buttonLabelText =
+    (field['component-parameters'] as unknown as TakePointFieldProps)
+      .buttonLabelText ?? '';
 
   const updateButtonLabel = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -45,8 +47,10 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     errorText: buttonLabelErrorTxt,
     inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit({ maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH, initialValue: buttonLabelText });
-
+  } = useTextFieldLengthLimit({
+    maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH,
+    initialValue: buttonLabelText,
+  });
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
@@ -61,11 +65,14 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
               label=""
               value={buttonLabelValue}
               error={!!buttonLabelErrorTxt}
-              helperText={
-                buttonLabelErrorTxt
-              }
+              helperText={buttonLabelErrorTxt}
               placeholder="Leave empty to use the field label"
-              onChange={e => validateAndUpdateButtonLabelText(e.target.value, updateButtonLabel)}
+              onChange={e =>
+                validateAndUpdateButtonLabelText(
+                  e.target.value,
+                  updateButtonLabel
+                )
+              }
             />
           </SimpleFieldWrapper>
         </Grid>

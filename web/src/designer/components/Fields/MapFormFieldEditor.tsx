@@ -96,8 +96,10 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
     errorText: buttonLabelErrorTxt,
     inputValue: buttonLabelValue,
     validateAndUpdate: validateAndUpdateButtonLabelText,
-  } = useTextFieldLengthLimit({ maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH, initialValue: initButtonLabelText });
-
+  } = useTextFieldLengthLimit({
+    maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH,
+    initialValue: initButtonLabelText,
+  });
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
@@ -140,14 +142,11 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
               label=""
               value={buttonLabelValue}
               error={!!buttonLabelErrorTxt}
-              helperText={
-                buttonLabelErrorTxt
-              }
+              helperText={buttonLabelErrorTxt}
               placeholder="Leave empty to use the field label"
               onChange={e =>
-                validateAndUpdateButtonLabelText(
-                  e.target.value,
-                  validValue => updateProperty('buttonLabelText', validValue),
+                validateAndUpdateButtonLabelText(e.target.value, validValue =>
+                  updateProperty('buttonLabelText', validValue)
                 )
               }
             />
