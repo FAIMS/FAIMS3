@@ -71,6 +71,7 @@ import {theme} from '../themes';
 const RECORD_TABS = {
   VIEW: 'view',
   INFO: 'info',
+  HISTORY: 'history',
 } as const;
 
 type RecordTab = (typeof RECORD_TABS)[keyof typeof RECORD_TABS];
@@ -357,6 +358,85 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 };
 
 /**
+ * Content for the History tab - displays revision history and metadata
+ * @param props.recordId - ID of the record to fetch history for
+ * @param props.dataEngine - DataEngine instance for fetching data
+ * @param props.uiSpec - UI specification for rendering the data
+ * @param props.projectId - Current project ID
+ * @param props.serverId - Current server ID
+ */
+const HistoryTabContent: React.FC<{
+  recordId: RecordID;
+  dataEngine: DataEngine;
+}> = props => {
+  const {recordId, dataEngine} = props;
+  // Fetch form data
+  const {
+    data: formData,
+    isError,
+    isPending,
+    isRefetching,
+    error,
+  } = useQuery({
+    queryKey: ['formData', recordId],
+    queryFn: async () =>
+      dataEngine.form.getExistingFormData({
+        recordId,
+      }),
+    networkMode: 'always',
+    refetchOnMount: 'always',
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  if (isPending || isRefetching) {
+    return (
+      <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{p: 2}}>
+        <Typography color="error">
+          An error occurred while fetching record history. Error:{' '}
+          {error?.message ?? 'unknown'}.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!formData) {
+    return (
+      <Box sx={{p: 2}}>
+        <Typography color="error">Record data not found.</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      <Typography variant="h5">Revision History</Typography>
+      {JSON.stringify(formData.context, null, 2)}
+      {/*{formData.context.revisions.map(rev => (*/}
+      {/*  <Box key={rev._id} sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2}}>*/}
+      {/*    <Typography variant="subtitle1">Revision ID: {rev._id}</Typography>*/}
+      {/*    <Typography variant="body2">Modified by: {rev.modifiedBy}</Typography>*/}
+      {/*    <Typography variant="body2">Modified at: {new Date(rev.modifiedAt).toLocaleString()}</Typography>*/}
+      {/*    {rev.deleted && (*/}
+      {/*      <Alert severity="warning" sx={{mt: 1}}>*/}
+      {/*        This revision represents a deleted record.*/}
+      {/*      </Alert>*/}
+      {/*    )}*/}
+      {/*  </Box>*/}
+      {/*))}*/}
+    </Stack>
+  );
+}
+
+/**
  * Main ViewRecordPage component with tab navigation
  */
 export const ViewRecordPage: React.FC = () => {
@@ -531,6 +611,7 @@ export const ViewRecordPage: React.FC = () => {
           <TabList onChange={handleTabChange} aria-label="Record view tabs">
             <Tab label="Record" value={RECORD_TABS.VIEW} />
             <Tab label="Info" value={RECORD_TABS.INFO} />
+            <Tab label="History" value={RECORD_TABS.HISTORY} />
           </TabList>
         </Box>
 
@@ -572,6 +653,13 @@ export const ViewRecordPage: React.FC = () => {
           ) : (
             <CircularProgress />
           )}
+        </TabPanel>
+
+        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 2}}>
+          <HistoryTabContent
+            recordId={recordId}
+            dataEngine={getDataEngine()}
+          />
         </TabPanel>
       </TabContext>
     </Stack>
