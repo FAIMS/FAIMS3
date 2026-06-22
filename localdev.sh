@@ -212,16 +212,24 @@ echo "Turbo build"
 echo "> npx turbo build"
 npx turbo build
 
-# create .env files
-echo "Creating .env files from .env.dist templates"
-echo "> cp ./.env.dist ./.env"
-cp ./.env.dist ./.env
-echo "> cp ./api/.env.dist ./api/.env"
-cp ./api/.env.dist ./api/.env
-echo "> cp ./web/.env.dist ./web/.env"
-cp ./web/.env.dist ./web/.env
-echo "> cp ./app/.env.dist ./app/.env"
-cp ./app/.env.dist ./app/.env
+# create .env files if they don't already exist, using the .env.dist templates
+echo "Creating .env files from .env.dist templates (if they don't already exist)"
+if [ ! -f ./.env ]; then
+  echo "> cp ./.env.dist ./.env"
+  cp ./.env.dist ./.env
+fi
+if [ ! -f ./api/.env ]; then
+  echo "> cp ./api/.env.dist ./api/.env"
+  cp ./api/.env.dist ./api/.env
+fi
+if [ ! -f ./web/.env ]; then
+  echo "> cp ./web/.env.dist ./web/.env"
+  cp ./web/.env.dist ./web/.env
+fi
+if [ ! -f ./app/.env ]; then
+  echo "> cp ./app/.env.dist ./app/.env"
+  cp ./app/.env.dist ./app/.env
+fi
 
 # Override API configuration for Docker environment (only when running all services)
 # We need this since docker needs 8000 internal + couchdb dns (rather than localhost)
