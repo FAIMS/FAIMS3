@@ -66,3 +66,9 @@ jobs:
           cp .env.dist .env
           cd ../
           npx turbo run test --filter=@faims3/api --filter=@faims3/data-model --filter=@faims3/app --filter=@faims3/forms --filter=@faims3/infra-aws-cdk
+
+      - name: Go export service
+        run: |
+          cd export-service
+          go test ./...
+          go build -o /dev/null ./cmd/export-service

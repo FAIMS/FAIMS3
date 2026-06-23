@@ -6,6 +6,7 @@ option go_package = "github.com/faims/faims3/export-service/internal/pb;pb";
 
 service ExportService {
   rpc Export(ExportRequest) returns (stream FileChunk) {}
+  rpc Health(HealthRequest) returns (HealthResponse) {}
 }
 
 enum ExportFormat {
@@ -15,6 +16,7 @@ enum ExportFormat {
   EXPORT_FORMAT_GEOJSON = 3;
   EXPORT_FORMAT_KML = 4;
   EXPORT_FORMAT_FULL = 5;
+  EXPORT_FORMAT_JSON_RECORDS = 6;
 }
 
 message FullExportConfig {
@@ -39,4 +41,10 @@ message FileChunk {
   string content_type = 3;
   uint64 total_size = 4;
   uint32 sequence = 5;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
 }

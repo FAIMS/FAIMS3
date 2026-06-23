@@ -7,7 +7,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -47,6 +46,7 @@ type Config struct {
 	CouchDBURL      string
 	CouchDBUsername string
 	CouchDBPassword string
+	SharedSecret    string
 }
 
 type Exporter struct {
@@ -100,6 +100,8 @@ func ResponseMetadata(req *pb.ExportRequest) Metadata {
 			Filename:    fmt.Sprintf("%s-export-%s.zip", slugifyLabel(req.GetProjectId(), 50), time.Now().UTC().Format("2006-01-02")),
 			ContentType: "application/zip",
 		}
+	case pb.ExportFormat_EXPORT_FORMAT_JSON_RECORDS:
+		return Metadata{Filename: "records.json", ContentType: "application/json"}
 	default:
 		return Metadata{Filename: "export.bin", ContentType: defaultContentType}
 	}
@@ -107,7 +109,7 @@ func ResponseMetadata(req *pb.ExportRequest) Metadata {
 
 func (e *Exporter) Export(ctx context.Context, req *pb.ExportRequest, out io.Writer) error {
 	if req.GetProjectId() == "" {
-		return errors.New("project_id is required")
+		return invalidArgumentf("project_id is required")
 	}
 
 	ec, err := e.loadContext(ctx, req.GetProjectId())
@@ -118,7 +120,7 @@ func (e *Exporter) Export(ctx context.Context, req *pb.ExportRequest, out io.Wri
 	switch req.GetFormat() {
 	case pb.ExportFormat_EXPORT_FORMAT_CSV:
 		if req.GetViewId() == "" {
-			return errors.New("view_id is required for CSV export")
+			return invalidArgumentf("view_id is required for CSV export")
 		}
 		return e.writeCSV(ctx, ec, req.GetViewId(), out)
 	case pb.ExportFormat_EXPORT_FORMAT_ZIP:
@@ -129,8 +131,10 @@ func (e *Exporter) Export(ctx context.Context, req *pb.ExportRequest, out io.Wri
 		return e.writeKML(ctx, ec, out)
 	case pb.ExportFormat_EXPORT_FORMAT_FULL:
 		return e.writeFullZip(ctx, ec, req.GetUserId(), normalizeFullConfig(req.GetFullConfig()), out)
+	case pb.ExportFormat_EXPORT_FORMAT_JSON_RECORDS:
+		return e.writeJSONRecords(ctx, ec, out)
 	default:
-		return fmt.Errorf("unsupported export format: %s", req.GetFormat().String())
+		return invalidArgumentf("unsupported export format: %s", req.GetFormat().String())
 	}
 }
 
@@ -174,11 +178,11 @@ func (e *Exporter) loadContext(ctx context.Context, projectID string) (*exportCo
 	}
 	dataDB := project.dataDBName()
 	if dataDB == "" {
-		return nil, fmt.Errorf("project %s does not contain dataDb.db_name", projectID)
+		return nil, notFoundf("project %s does not contain dataDb.db_name", projectID)
 	}
 	ui := project.uiSpec()
 	if len(ui.Viewsets) == 0 {
-		return nil, fmt.Errorf("project %s does not contain a usable uiSpecification.uiSpec", projectID)
+		return nil, notFoundf("project %s does not contain a usable uiSpecification.uiSpec", projectID)
 	}
 	return &exportContext{ProjectID: projectID, DataDB: dataDB, UISpec: ui}, nil
 }
@@ -198,6 +202,9 @@ func (e *Exporter) writeCSV(ctx context.Context, ec *exportContext, viewID strin
 
 	filenames := map[string]struct{}{}
 	err = e.iterateRecords(ctx, ec, viewID, func(record *hydratedRecord) error {
+		if err := e.stripDeletedRelatedRefs(ctx, ec, record.Type, record.Data); err != nil {
+			return err
+		}
 		row, rowErr := csvRow(record, fields, headers[len(csvPrefixHeaders):], filenames)
 		if rowErr != nil {
 			return rowErr
@@ -219,6 +226,102 @@ func (e *Exporter) writeAttachmentZip(ctx context.Context, ec *exportContext, vi
 		return err
 	}
 	return closeErr
+}
+
+type jsonExportRecord struct {
+	ProjectID    string                 `json:"project_id"`
+	RecordID     string                 `json:"record_id"`
+	RevisionID   string                 `json:"revision_id"`
+	CreatedBy    string                 `json:"created_by"`
+	Updated      time.Time              `json:"updated"`
+	UpdatedBy    string                 `json:"updated_by"`
+	Deleted      bool                   `json:"deleted"`
+	HRID         string                 `json:"hrid,omitempty"`
+	Relationship any                    `json:"relationship,omitempty"`
+	Data         map[string]any         `json:"data"`
+	Annotations  map[string]annotations `json:"annotations"`
+	Types        map[string]string      `json:"types"`
+	Created      time.Time              `json:"created"`
+	Conflicts    bool                   `json:"conflicts"`
+	Type         string                 `json:"type"`
+}
+
+func (e *Exporter) writeJSONRecords(ctx context.Context, ec *exportContext, out io.Writer) error {
+	records := []jsonExportRecord{}
+	filenames := map[string]struct{}{}
+
+	err := e.iterateRecords(ctx, ec, "", func(record *hydratedRecord) error {
+		if err := e.stripDeletedRelatedRefs(ctx, ec, record.Type, record.Data); err != nil {
+			return err
+		}
+		rewriteAttachmentFieldsForJSON(ec.UISpec, record, filenames)
+		records = append(records, jsonExportRecord{
+			ProjectID:    record.ProjectID,
+			RecordID:     record.RecordID,
+			RevisionID:   record.RevisionID,
+			CreatedBy:    record.CreatedBy,
+			Updated:      record.Updated,
+			UpdatedBy:    record.UpdatedBy,
+			Deleted:      record.Deleted,
+			HRID:         record.HRID,
+			Relationship: record.Relationship,
+			Data:         record.Data,
+			Annotations:  record.Annotations,
+			Types:        record.Types,
+			Created:      record.Created,
+			Conflicts:    record.Conflicts,
+			Type:         record.Type,
+		})
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	payload, err := json.Marshal(map[string]any{"records": records})
+	if err != nil {
+		return err
+	}
+	_, err = out.Write(payload)
+	return err
+}
+
+func rewriteAttachmentFieldsForJSON(spec uiSpec, record *hydratedRecord, filenames map[string]struct{}) {
+	for fieldID, value := range record.Data {
+		if !isAttachmentField(spec, fieldID, record.Types[fieldID]) {
+			continue
+		}
+		attachments := parseAttachmentRefs(value)
+		if len(attachments) == 0 {
+			continue
+		}
+		viewsetID := record.Type
+		if ids := fieldViewsetID(spec, fieldID); ids != "" {
+			viewsetID = ids
+		}
+		names := make([]string, 0, len(attachments))
+		for _, attachment := range attachments {
+			names = append(names, attachmentFilename(viewsetID, fieldID, record.hridOrID(), attachment.FileType, filenames))
+		}
+		record.Data[fieldID] = names
+	}
+}
+
+func fieldViewsetID(spec uiSpec, fieldName string) string {
+	for viewsetID, viewset := range spec.Viewsets {
+		for _, viewID := range viewset.Views {
+			view, ok := spec.Views[viewID]
+			if !ok {
+				continue
+			}
+			for _, name := range view.Fields {
+				if name == fieldName {
+					return viewsetID
+				}
+			}
+		}
+	}
+	return ""
 }
 
 type fullMetadata struct {
@@ -367,6 +470,9 @@ func (e *Exporter) writeCSVEntry(ctx context.Context, ec *exportContext, viewID 
 	filenames := map[string]struct{}{}
 	count := 0
 	err = e.iterateRecords(ctx, ec, viewID, func(record *hydratedRecord) error {
+		if err := e.stripDeletedRelatedRefs(ctx, ec, record.Type, record.Data); err != nil {
+			return err
+		}
 		row, rowErr := csvRow(record, fields, headers[len(csvPrefixHeaders):], filenames)
 		if rowErr != nil {
 			return rowErr
@@ -395,7 +501,7 @@ func (e *Exporter) appendAttachmentsToZip(ctx context.Context, ec *exportContext
 
 	err := e.iterateRecords(ctx, ec, viewID, func(record *hydratedRecord) error {
 		for fieldID, value := range record.Data {
-			if record.Types[fieldID] != "faims-attachment::Files" {
+			if !isAttachmentField(ec.UISpec, fieldID, record.Types[fieldID]) {
 				continue
 			}
 			attachments := parseAttachmentRefs(value)
@@ -460,6 +566,9 @@ func (e *Exporter) writeSpatial(ctx context.Context, ec *exportContext, out io.W
 		fields := spatialFields[record.Type]
 		if len(fields) == 0 {
 			return nil
+		}
+		if err := e.stripDeletedRelatedRefs(ctx, ec, record.Type, record.Data); err != nil {
+			return err
 		}
 		properties := record.baseProperties()
 		ObjectAssign(properties, convertedData(fieldsForProperties(ec.UISpec, record.Type), record.Data, record.Annotations, record.hridOrID(), filenames, record.Type))
@@ -1025,10 +1134,11 @@ type uiSpec struct {
 }
 
 type fieldDef struct {
-	ComponentNamespace string    `json:"component-namespace"`
-	ComponentName      string    `json:"component-name"`
-	TypeReturned       string    `json:"type-returned"`
-	Meta               fieldMeta `json:"meta"`
+	ComponentNamespace  string          `json:"component-namespace"`
+	ComponentName       string          `json:"component-name"`
+	TypeReturned        string          `json:"type-returned"`
+	Meta                fieldMeta       `json:"meta"`
+	ComponentParameters json.RawMessage `json:"component-parameters"`
 }
 
 type fieldMeta struct {
@@ -1067,7 +1177,7 @@ type fieldSummary struct {
 func fieldsForViewset(spec uiSpec, viewsetID string) ([]fieldSummary, error) {
 	viewset, ok := spec.Viewsets[viewsetID]
 	if !ok {
-		return nil, fmt.Errorf("invalid form %s not found in notebook", viewsetID)
+		return nil, invalidArgumentf("invalid form %s not found in notebook", viewsetID)
 	}
 	fields := []fieldSummary{}
 	for _, viewID := range viewset.Views {
@@ -1134,6 +1244,23 @@ func componentKey(namespace, name string) string {
 	return namespace + "::" + name
 }
 
+var attachmentComponents = map[string]struct{}{
+	"faims-custom::TakePhoto":    {},
+	"faims-custom::FileUploader": {},
+}
+
+func isAttachmentField(spec uiSpec, fieldID, avpType string) bool {
+	if avpType == "faims-attachment::Files" {
+		return true
+	}
+	field, ok := spec.Fields[fieldID]
+	if !ok {
+		return false
+	}
+	_, ok = attachmentComponents[componentKey(field.ComponentNamespace, field.ComponentName)]
+	return ok
+}
+
 func hridForRecord(spec uiSpec, revision revisionDoc, data map[string]any) string {
 	if viewset, ok := spec.Viewsets[revision.Type]; ok {
 		if field := hridFieldName(spec, revision.Type, viewset); field != "" {
@@ -1179,8 +1306,49 @@ func newCouchClient(config Config) (*couchClient, error) {
 		baseURL:  base,
 		username: config.CouchDBUsername,
 		password: config.CouchDBPassword,
-		client:   &http.Client{},
+		client: &http.Client{
+			Transport: &http.Transport{
+				ResponseHeaderTimeout: 30 * time.Second,
+				IdleConnTimeout:       90 * time.Second,
+			},
+		},
 	}, nil
+}
+
+func (c *couchClient) getRecord(ctx context.Context, dbName, recordID string) (recordStub, error) {
+	var stub recordStub
+	err := c.doJSON(ctx, http.MethodGet, couchPath(dbName, recordID), nil, &stub)
+	return stub, err
+}
+
+func (c *couchClient) revisionMetadata(ctx context.Context, dbName string, revisionIDs []string) ([]revisionMetadata, error) {
+	if len(revisionIDs) == 0 {
+		return nil, nil
+	}
+	body := map[string]any{"keys": revisionIDs, "include_docs": false}
+	var response struct {
+		Rows []struct {
+			ID    string             `json:"id"`
+			Value revisionMetadata   `json:"value"`
+			Error string             `json:"error"`
+		} `json:"rows"`
+	}
+	err := c.doJSON(ctx, http.MethodPost, couchPath(dbName, "_design", "index", "_view", "revisionMetadata"), body, &response)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]revisionMetadata, 0, len(response.Rows))
+	for _, row := range response.Rows {
+		if row.Error != "" {
+			continue
+		}
+		meta := row.Value
+		if meta.ID == "" {
+			meta.ID = row.ID
+		}
+		result = append(result, meta)
+	}
+	return result, nil
 }
 
 func (c *couchClient) getProject(ctx context.Context, projectID string) (projectDoc, error) {
@@ -1288,7 +1456,12 @@ func (c *couchClient) doJSON(ctx context.Context, method string, requestPath str
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		payload, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
-		return fmt.Errorf("couchdb %s %s failed: %s %s", method, requestPath, res.Status, strings.TrimSpace(string(payload)))
+		return &CouchDBError{
+			StatusCode: res.StatusCode,
+			Method:     method,
+			Path:       requestPath,
+			Body:       string(payload),
+		}
 	}
 	if dest == nil {
 		return nil
