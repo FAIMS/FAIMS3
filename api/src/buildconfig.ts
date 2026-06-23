@@ -442,6 +442,14 @@ function migrateNotebooks(): boolean {
   }
 }
 
+function exportServiceGrpcAddress(): string | undefined {
+  const address = process.env.EXPORT_SERVICE_GRPC_ADDRESS;
+  if (address === '' || address === undefined) {
+    return undefined;
+  }
+  return address;
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -468,6 +476,7 @@ export const NEW_CONDUCTOR_URL = newConductorUrl();
 export const LOCAL_LOGIN_ENABLED = enable_local_login();
 export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
 export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
+export const EXPORT_SERVICE_GRPC_ADDRESS = exportServiceGrpcAddress();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package faims.export.v1;
+
+option go_package = "github.com/faims/faims3/export-service/internal/pb;pb";
+
+service ExportService {
+  rpc Export(ExportRequest) returns (stream FileChunk) {}
+}
+
+enum ExportFormat {
+  EXPORT_FORMAT_UNSPECIFIED = 0;
+  EXPORT_FORMAT_CSV = 1;
+  EXPORT_FORMAT_ZIP = 2;
+  EXPORT_FORMAT_GEOJSON = 3;
+  EXPORT_FORMAT_KML = 4;
+  EXPORT_FORMAT_FULL = 5;
+}
+
+message FullExportConfig {
+  bool include_tabular = 1;
+  bool include_attachments = 2;
+  bool include_geojson = 3;
+  bool include_kml = 4;
+  bool include_metadata = 5;
+}
+
+message ExportRequest {
+  string project_id = 1;
+  ExportFormat format = 2;
+  string view_id = 3;
+  string user_id = 4;
+  FullExportConfig full_config = 5;
+}
+
+message FileChunk {
+  bytes data = 1;
+  string filename = 2;
+  string content_type = 3;
+  uint64 total_size = 4;
+  uint32 sequence = 5;
+}

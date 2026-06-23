@@ -112,6 +112,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {streamNotebookExportViaGrpc} from '../services/exportGrpcClient';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 import {recordsRouter} from './records';
@@ -873,6 +874,7 @@ api.get(
         'Content-Disposition',
         `attachment; filename="${exportLabel}-export.csv"`
       );
+      if (await streamNotebookExportViaGrpc({payload, res})) return;
       streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
     } else if (payload.format === 'zip') {
       res.setHeader(
@@ -880,6 +882,7 @@ api.get(
         `attachment; filename="${exportLabel}-photos.zip"`
       );
       res.setHeader('Content-Type', 'application/zip');
+      if (await streamNotebookExportViaGrpc({payload, res})) return;
       streamNotebookFilesAsZip({
         projectId: payload.projectID,
         targetViewID: payload.viewID,
@@ -891,6 +894,7 @@ api.get(
         'Content-Disposition',
         `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
       );
+      if (await streamNotebookExportViaGrpc({payload, res})) return;
       streamNotebookRecordsAsGeoJSON(payload.projectID, res);
     } else if (payload.format === 'kml') {
       res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
@@ -898,6 +902,7 @@ api.get(
         'Content-Disposition',
         `attachment; filename="${slugify(payload.projectID)}-export.kml"`
       );
+      if (await streamNotebookExportViaGrpc({payload, res})) return;
       streamNotebookRecordsAsKML(payload.projectID, res);
     } else if (payload.format === 'full') {
       const fullFilename = generateFullExportFilename(payload.projectID);
@@ -906,6 +911,7 @@ api.get(
         'Content-Disposition',
         `attachment; filename="${fullFilename}"`
       );
+      if (await streamNotebookExportViaGrpc({payload, res})) return;
       await streamFullExport({
         projectId: payload.projectID,
         userId: payload.userID,
