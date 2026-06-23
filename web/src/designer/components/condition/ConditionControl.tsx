@@ -274,7 +274,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
       : [];
 
     // Exclude the current field, or the current section's own fields.
-    const ownSectionFields = props.view ? (views[props.view]?.fields ?? []) : [];
+    const ownSectionFields = props.view
+      ? (views[props.view]?.fields ?? [])
+      : [];
     return props.field
       ? formFields.filter(f => f !== props.field)
       : formFields.filter(f => !ownSectionFields.includes(f));
@@ -612,6 +614,26 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const valueMismatch = !isValueValidForField();
   const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
 
+  // If there are no fields to select, show a message instead of the editor.
+  if (selectFields.length === 0) {
+    return (
+      <div style={{color: 'red'}}>
+        {props.view ? (
+          <>
+            This form has only one section. Adding conditions for a section
+            requires more than one section so that fields from other sections
+            can be referenced.
+          </>
+        ) : (
+          <>
+            This form only has one field. Please add fields to this form to
+            enable adding conditions.
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <Grid container>
       <Stack
@@ -634,7 +656,6 @@ export const FieldConditionControl = (props: ConditionProps) => {
           )}
           style={{minWidth: 200}}
           clearOnEscape
-          noOptionsText={props.view ? 'No fields in this form outside this section' : props.field ? 'No other fields in this form' : 'No fields available'}
         />
 
         <FormControl
