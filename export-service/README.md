@@ -15,6 +15,7 @@ file chunks directly to the browser response.
 | `COUCHDB_INTERNAL_URL` | `http://localhost:5984` | Internal CouchDB base URL. |
 | `COUCHDB_USER` | `admin` | CouchDB username. |
 | `COUCHDB_PASSWORD` | `password` | CouchDB password. |
+| `EXPORT_PROFILE` | `false` | When `true`, print runtime stats every second (memory, goroutines, active exports). |
 
 ## Development
 
@@ -22,6 +23,9 @@ file chunks directly to the browser response.
 cd export-service
 go test ./...
 go run ./cmd/export-service
+
+# With live memory / export stats printed every second:
+EXPORT_PROFILE=true go run ./cmd/export-service
 ```
 
 The protobuf contract is shared at `../proto/export.proto`; generated Go

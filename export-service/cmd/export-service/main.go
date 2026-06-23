@@ -8,14 +8,16 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/faims/faims3/export-service/internal/auth"
 	"github.com/faims/faims3/export-service/internal/exporter"
 	"github.com/faims/faims3/export-service/internal/pb"
+	"github.com/faims/faims3/export-service/internal/profile"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type exportServer struct {
@@ -41,6 +43,9 @@ func (s *exportServer) Export(req *pb.ExportRequest, stream pb.ExportService_Exp
 	if err := s.checkAuth(stream.Context()); err != nil {
 		return err
 	}
+
+	finishProfile, recordChunk := profile.BeginExport(req.GetProjectId(), req.GetFormat().String())
+	defer finishProfile()
 
 	metadata := exporter.ResponseMetadata(req)
 	log.Printf(
@@ -73,6 +78,7 @@ func (s *exportServer) Export(req *pb.ExportRequest, stream pb.ExportService_Exp
 		n, err := pr.Read(buffer)
 		if n > 0 {
 			totalBytes += int64(n)
+			recordChunk(int64(n))
 			chunk := &pb.FileChunk{
 				Data:        append([]byte(nil), buffer[:n]...),
 				Sequence:    sequence,
@@ -151,6 +157,13 @@ func main() {
 
 	addr := getenv("EXPORT_GRPC_ADDR", ":9090")
 	chunkBytes := intFromEnv("EXPORT_CHUNK_BYTES", 64*1024)
+	profileEnabled := getenvBool("EXPORT_PROFILE", false)
+	profile.SetEnabled(profileEnabled)
+
+	stopProfile := make(chan struct{})
+	defer close(stopProfile)
+	profile.Start(stopProfile)
+
 	service, err := exporter.New(exporter.Config{
 		CouchDBURL:      getenv("COUCHDB_INTERNAL_URL", "http://localhost:5984"),
 		CouchDBUsername: getenv("COUCHDB_USER", "admin"),
@@ -172,7 +185,11 @@ func main() {
 		secret:     os.Getenv("EXPORT_SERVICE_SHARED_SECRET"),
 		chunkBytes: chunkBytes,
 	})
-	log.Printf("FAIMS export service listening on %s", addr)
+	if profileEnabled {
+		log.Printf("FAIMS export service listening on %s (profiling enabled)", addr)
+	} else {
+		log.Printf("FAIMS export service listening on %s", addr)
+	}
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("export service stopped: %v", err)
 	}
@@ -196,4 +213,16 @@ func intFromEnv(name string, fallback int) int {
 		return fallback
 	}
 	return parsed
+}
+
+func getenvBool(name string, fallback bool) bool {
+	value := strings.TrimSpace(strings.ToLower(os.Getenv(name)))
+	switch value {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
 }
