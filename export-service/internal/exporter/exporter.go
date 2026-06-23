@@ -1367,10 +1367,11 @@ type revisionDoc struct {
 }
 
 type rawAVPDoc struct {
-	ID          string                 `json:"_id"`
-	Type        string                 `json:"type"`
-	Data        json.RawMessage        `json:"data"`
-	Annotations map[string]annotations `json:"annotations"`
+	ID               string          `json:"_id"`
+	Type             string          `json:"type"`
+	Data             json.RawMessage `json:"data"`
+	FaimsAttachments json.RawMessage `json:"faims_attachments"`
+	Annotations      annotations     `json:"annotations"`
 }
 
 type annotations struct {
@@ -1388,12 +1389,12 @@ type avpDoc struct {
 func (d rawAVPDoc) toAVP() avpDoc {
 	var data any
 	_ = decodeJSON(d.Data, &data)
-	var annotation annotations
-	for _, value := range d.Annotations {
-		annotation = value
-		break
+	// Attachment AVPs store file references in faims_attachments with data: null.
+	// Mirror the Node exporter's includeAttachments:false hydration path.
+	if d.Type == "faims-attachment::Files" && data == nil && len(d.FaimsAttachments) > 0 && string(d.FaimsAttachments) != "null" {
+		_ = decodeJSON(d.FaimsAttachments, &data)
 	}
-	return avpDoc{ID: d.ID, Type: d.Type, Data: data, Annotations: annotation}
+	return avpDoc{ID: d.ID, Type: d.Type, Data: data, Annotations: d.Annotations}
 }
 
 func parseCouchTime(raw json.RawMessage) time.Time {

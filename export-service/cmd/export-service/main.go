@@ -22,6 +22,16 @@ type exportServer struct {
 
 func (s *exportServer) Export(req *pb.ExportRequest, stream pb.ExportService_ExportServer) error {
 	metadata := exporter.ResponseMetadata(req)
+	log.Printf(
+		"export started project_id=%q format=%s view_id=%q user_id=%q filename=%q content_type=%q",
+		req.GetProjectId(),
+		req.GetFormat().String(),
+		req.GetViewId(),
+		req.GetUserId(),
+		metadata.Filename,
+		metadata.ContentType,
+	)
+
 	pr, pw := io.Pipe()
 	errCh := make(chan error, 1)
 
@@ -37,9 +47,11 @@ func (s *exportServer) Export(req *pb.ExportRequest, stream pb.ExportService_Exp
 
 	buffer := make([]byte, 32*1024)
 	var sequence uint32
+	var totalBytes int64
 	for {
 		n, err := pr.Read(buffer)
 		if n > 0 {
+			totalBytes += int64(n)
 			chunk := &pb.FileChunk{
 				Data:        append([]byte(nil), buffer[:n]...),
 				Sequence:    sequence,
@@ -47,6 +59,15 @@ func (s *exportServer) Export(req *pb.ExportRequest, stream pb.ExportService_Exp
 				ContentType: metadata.ContentType,
 			}
 			if err := stream.Send(chunk); err != nil {
+				log.Printf(
+					"export failed project_id=%q format=%s filename=%q chunks_sent=%d bytes_sent=%d err=%v",
+					req.GetProjectId(),
+					req.GetFormat().String(),
+					metadata.Filename,
+					sequence,
+					totalBytes,
+					err,
+				)
 				return status.Errorf(codes.Canceled, "failed to send export chunk: %v", err)
 			}
 			sequence++
@@ -55,20 +76,58 @@ func (s *exportServer) Export(req *pb.ExportRequest, stream pb.ExportService_Exp
 			break
 		}
 		if err != nil {
+			log.Printf(
+				"export failed project_id=%q format=%s filename=%q chunks_sent=%d bytes_sent=%d err=%v",
+				req.GetProjectId(),
+				req.GetFormat().String(),
+				metadata.Filename,
+				sequence,
+				totalBytes,
+				err,
+			)
 			return status.Errorf(codes.Internal, "export stream failed: %v", err)
 		}
 	}
 
 	if err := <-errCh; err != nil {
 		if errors.Is(err, context.Canceled) {
+			log.Printf(
+				"export canceled project_id=%q format=%s filename=%q chunks_sent=%d bytes_sent=%d",
+				req.GetProjectId(),
+				req.GetFormat().String(),
+				metadata.Filename,
+				sequence,
+				totalBytes,
+			)
 			return status.Error(codes.Canceled, "export canceled")
 		}
+		log.Printf(
+			"export failed project_id=%q format=%s filename=%q chunks_sent=%d bytes_sent=%d err=%v",
+			req.GetProjectId(),
+			req.GetFormat().String(),
+			metadata.Filename,
+			sequence,
+			totalBytes,
+			err,
+		)
 		return status.Errorf(codes.Internal, "export failed: %v", err)
 	}
+
+	log.Printf(
+		"export completed project_id=%q format=%s filename=%q chunks=%d bytes=%d",
+		req.GetProjectId(),
+		req.GetFormat().String(),
+		metadata.Filename,
+		sequence,
+		totalBytes,
+	)
 	return nil
 }
 
 func main() {
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.LstdFlags)
+
 	addr := getenv("EXPORT_GRPC_ADDR", ":9090")
 	service, err := exporter.New(exporter.Config{
 		CouchDBURL:      getenv("COUCHDB_INTERNAL_URL", "http://localhost:5984"),
