@@ -44,7 +44,9 @@
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "dependencies": {
+    "@jsep-plugin/ternary": "^1.1.4",
     "@types/pouchdb": "^6.4.2",
+    "jsep": "^1.4.0",
     "lodash": "^4.18.1",
     "pouchdb-security-helper": "^2.1.2",
     "zod": "^3.24.1"
