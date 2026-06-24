@@ -48,6 +48,7 @@ import {
   recordDocumentSchema,
   RecordQueryResult,
   RecordSearchResult,
+  revisionHistoryEntry,
   RevisionHistoryEntry,
   RevisionMetadataQueryResult,
   toMinimalRevisionMetadata,
@@ -1434,7 +1435,7 @@ class FormOperations {
     // Index by revision ID so each revision can look up its parent's AVPs.
     const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
 
-    return revisions.map((revision): RevisionHistoryEntry => {
+    const history = revisions.map((revision): RevisionHistoryEntry => {
       return {
         revisionId: revision._id,
         created: revision.created,
@@ -1463,6 +1464,8 @@ class FormOperations {
               ),
       };
     });
+
+    return revisionHistoryEntry.array().parse(history);
   }
 
   /**

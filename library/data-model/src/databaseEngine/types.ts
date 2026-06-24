@@ -750,7 +750,7 @@ export type InitialFormData = z.infer<typeof initialFormData>;
  * authorship, and the IDs of the fields that changed relative to the
  * revision's parent (added, value-changed, or removed fields).
  */
-const revisionHistoryEntry = z.object({
+export const revisionHistoryEntry = z.object({
   revisionId: z.string(),
   created: z.string().datetime(),
   createdBy: z.string(),
