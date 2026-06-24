@@ -22,6 +22,7 @@ import {
   DataEngine,
   ProjectID,
   RecordID,
+  RevisionHistoryEntry,
 } from '@faims3/data-model';
 import {
   DataView,
@@ -414,6 +415,22 @@ const HistoryTabContent: React.FC<{
     );
   }
 
+  const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(historyData.map(entry => [
+    entry.revisionId,
+    entry,
+  ]));
+
+  const formatRevisionMetadata = (entry?: RevisionHistoryEntry, isLink: boolean = false) => {
+    const Tag = isLink ? 'a' : 'span';
+
+    return (
+      // MUI way to underline
+      <Tag style={!isLink ? {textDecoration: 'underline'} : undefined} href={isLink ? `#${entry?.revisionId}` : undefined}>
+        {entry ? `${entry.createdBy} at ${formatTimestamp(new Date(entry.created).getTime())}` : 'unknown'}
+      </Tag>
+    );
+   }
+
   return (
     <Stack spacing={4}>
       <Typography variant="h5">Revision History</Typography>
@@ -421,13 +438,13 @@ const HistoryTabContent: React.FC<{
         const parentFields = Object.entries(entry.changedFields);
         return (
           <Stack key={entry.revisionId} spacing={2}>
-            <Typography variant="body1">
-              Revision created by {entry.createdBy} {formatTimestamp(new Date(entry.created).getTime())}
+            <Typography variant="body1" id={entry.revisionId}>
+              Revision created by {formatRevisionMetadata(entry)}
             </Typography>
             <Stack sx={{pl: 2}}>
-              {parentFields.map(([parentId, fields], pf) => 
+              {parentFields.map(([parentId, fields]) => 
                 <Typography variant="body1" key={parentId}>
-                  Fields changed{parentFields.length > 1 ? ` in parent ${pf + 1}` : ''}: {fields.map(
+                  Fields changed{parentFields.length > 1 ? <> compared to {formatRevisionMetadata(revisionIdsRevision.get(parentId), true)}</> : ''}: {fields.map(
                     fieldId =>
                       uiSpec.fields[fieldId]?.['component-parameters']?.label ??
                       fieldId
