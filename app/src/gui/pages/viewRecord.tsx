@@ -375,7 +375,6 @@ const HistoryTabContent: React.FC<{
     data: historyData,
     isError,
     isPending,
-    isRefetching,
     error,
   } = useQuery({
     queryKey: ['historyData', recordId],
@@ -384,12 +383,13 @@ const HistoryTabContent: React.FC<{
         recordId,
       }),
     networkMode: 'always',
+    // Refetch on every mount so the trail is fresh, but keep the cached data
+    // available during the background refetch so revisiting the tab does not
+    // blank the list behind a spinner.
     refetchOnMount: 'always',
-    staleTime: 0,
-    gcTime: 0,
   });
 
-  if (isPending || isRefetching) {
+  if (isPending) {
     return (
       <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
         <CircularProgress />
