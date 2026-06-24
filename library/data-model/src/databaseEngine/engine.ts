@@ -1445,32 +1445,32 @@ class FormOperations {
     const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
 
     return revisions.map((revision): RevisionHistoryEntry => {
-      const parent = revision.parents[0]
-        ? revisionsById.get(revision.parents[0])
-        : undefined;
-      const parentAvps = parent?.avps ?? {};
-
-      // A field changed when its AVP ID differs from the parent's (unchanged
-      // fields reuse the parent's AVP ID), when it was added (absent from the
-      // parent), or when it was removed (absent from this revision). For the
-      // first revision there is no parent, so every field it set is reported.
-      const changed = new Set<string>();
-      for (const [field, avpId] of Object.entries(revision.avps)) {
-        if (parentAvps[field] !== avpId) {
-          changed.add(field);
-        }
-      }
-      for (const field of Object.keys(parentAvps)) {
-        if (!(field in revision.avps)) {
-          changed.add(field);
-        }
-      }
-
+      const parentsIds = revision.parents.length
+        ? revision.parents
+        : [undefined]; // Treat no parents as a single parent so all fields are considered new from 1 parent
       return {
         revisionId: revision._id,
         created: revision.created,
         createdBy: revision.createdBy,
-        changedFields: [...changed].sort(),
+        changedFields: Object.fromEntries(
+          parentsIds.map((parentId) => {
+            const parent = parentId ? revisionsById.get(parentId) : undefined;
+            const parentAvps = parent?.avps ?? {};
+
+            const changed = new Set<string>();
+            for (const [field, avpId] of Object.entries(revision.avps)) {
+              if (parentAvps[field] !== avpId) {
+                changed.add(field);
+              }
+            }
+            for (const field of Object.keys(parentAvps)) {
+              if (!(field in revision.avps)) {
+                changed.add(field);
+              }
+            }
+            return [parentId, Array.from(changed).sort()];
+          }),
+        ),
       };
     });
   }

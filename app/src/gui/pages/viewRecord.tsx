@@ -64,6 +64,7 @@ import RecordMeta from '../components/record/meta';
 import UGCReport from '../components/record/UGCReport';
 import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
+import { formatTimestamp } from '../../utils/formUtilities';
 
 /**
  * Available tabs for the record view page
@@ -414,30 +415,30 @@ const HistoryTabContent: React.FC<{
   }
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={4}>
       <Typography variant="h5">Revision History</Typography>
-      {historyData.map(entry => (
-        <Stack key={entry.revisionId}>
-          <Typography variant="body1">
-            Created by: {entry.createdBy}
-          </Typography>
-          <Typography variant="body1">
-            Created at: {new Date(entry.created).toLocaleString()}
-          </Typography>
-          <Typography variant="body1">
-            Fields changed:{' '}
-            {entry.changedFields.length > 0
-              ? entry.changedFields
-                  .map(
+      {historyData.map(entry => {
+        const parentFields = Object.entries(entry.changedFields);
+        return (
+          <Stack key={entry.revisionId} spacing={2}>
+            <Typography variant="body1">
+              Revision created by {entry.createdBy} {formatTimestamp(new Date(entry.created).getTime())}
+            </Typography>
+            <Stack sx={{pl: 2}}>
+              {parentFields.map(([parentId, fields], pf) => 
+                <Typography variant="body1" key={parentId}>
+                  Fields changed{parentFields.length > 1 ? ` in parent ${pf + 1}` : ''}: {fields.map(
                     fieldId =>
                       uiSpec.fields[fieldId]?.['component-parameters']?.label ??
                       fieldId
                   )
-                  .join(', ')
-              : 'none'}
-          </Typography>
-        </Stack>
-      ))}
+                  .join(', ')}
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
+        );
+      })}
     </Stack>
   );
 };
