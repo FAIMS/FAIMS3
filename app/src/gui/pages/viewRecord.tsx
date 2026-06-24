@@ -366,8 +366,7 @@ const HistoryTabContent: React.FC<{
   recordId: RecordID;
   dataEngine: DataEngine;
   uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-}> = props => {
-  const {recordId, dataEngine, uiSpec} = props;
+}> = ({recordId, dataEngine, uiSpec}) => {
   // Fetch the revision history (createdBy / created per revision)
   const {
     data: historyData,
