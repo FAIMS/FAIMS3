@@ -365,8 +365,9 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 const HistoryTabContent: React.FC<{
   recordId: RecordID;
   dataEngine: DataEngine;
+  uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
 }> = props => {
-  const {recordId, dataEngine} = props;
+  const {recordId, dataEngine, uiSpec} = props;
   // Fetch the revision history (createdBy / created per revision)
   const {
     data: historyData,
@@ -427,7 +428,13 @@ const HistoryTabContent: React.FC<{
           <Typography variant="body1">
             Fields changed:{' '}
             {entry.changedFields.length > 0
-              ? entry.changedFields.join(', ')
+              ? entry.changedFields
+                  .map(
+                    fieldId =>
+                      uiSpec.fields[fieldId]?.['component-parameters']?.label ??
+                      fieldId
+                  )
+                  .join(', ')
               : 'none'}
           </Typography>
         </Stack>
@@ -659,6 +666,7 @@ export const ViewRecordPage: React.FC = () => {
           <HistoryTabContent
             recordId={recordId}
             dataEngine={getDataEngine()}
+            uiSpec={uiSpec}
           />
         </TabPanel>
       </TabContext>
