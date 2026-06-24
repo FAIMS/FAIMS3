@@ -428,7 +428,7 @@ const HistoryTabContent: React.FC<{
   return (
     <Stack spacing={4}>
       <Typography variant="h5">Revision History</Typography>
-      {historyData.slice().sort((a, b) => b.created.localeCompare(a.created)).map(entry => {
+      {historyData.slice().sort((a, b) => b.created.localeCompare(a.created)).map((entry, e, historyData) => {
         const parentFields = Object.entries(entry.changedFields);
         return (
           <Stack key={entry.revisionId} spacing={2}>
@@ -438,7 +438,7 @@ const HistoryTabContent: React.FC<{
             <Stack sx={{pl: 2}}>
               {parentFields.map(([parentId, fields]) => 
                 <Typography variant="body1" key={parentId}>
-                  Fields changed{parentFields.length > 1 ? <> compared to <Link href={`#${parentId}`}>{formatRevisionMetadata(revisionIdsRevision.get(parentId))}</Link></> : ''}: {fields.map(
+                  Fields changed{revisionIdsRevision.has(parentId) && (parentFields.length > 1 || parentId !== historyData[e + 1]?.revisionId) ? <> compared to <Link href={`#${parentId}`}>{formatRevisionMetadata(revisionIdsRevision.get(parentId))}</Link></> : ''}: {fields.map(
                     fieldId =>
                       uiSpec.fields[fieldId]?.['component-parameters']?.label ??
                       fieldId
