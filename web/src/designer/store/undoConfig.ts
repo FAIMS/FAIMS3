@@ -51,6 +51,7 @@ export const UNDOABLE_UI_SPEC_ACTIONS = [
   'uiSpec/viewSetLayoutUpdated',
   'uiSpec/viewSetSummaryFieldsUpdated',
   'uiSpec/viewSetHridUpdated',
+  'uiSpec/viewSetDisplayInOverviewMapUpdated',
 ] as const;
 
 /** Passed to `undoable(uiSpecificationReducer.reducer, uiSpecUndoConfig)`. */

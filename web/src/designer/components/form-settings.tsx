@@ -16,7 +16,9 @@ import {
   Box,
   Card,
   CardContent,
+  Checkbox,
   Collapse,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Select,
@@ -28,6 +30,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import {designerInfoIconSx} from './designer-style';
 import {
+  viewSetDisplayInOverviewMapUpdated,
   viewSetHridUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
@@ -40,6 +43,7 @@ type ViewSetType = {
   summary_fields?: string[];
   layout?: 'inline' | 'tabs';
   hridField?: string;
+  displayInOverviewMap?: boolean;
   publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 };
 
@@ -241,6 +245,30 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
           renderInput={params => (
             <DebouncedTextField {...params} onChange={() => {}} />
           )}
+        />
+      </SettingSection>
+
+      {/* Overview map visibility */}
+      <SettingSection
+        title="Overview Map"
+        description="Choose whether records of this form type appear as points on the notebook overview map."
+        tooltipText="When enabled, GIS data from records of this form type is shown on the overview map tab. Disable to hide this form type from the map while keeping its records in the record list."
+      >
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={viewSet.displayInOverviewMap !== false}
+              onChange={e =>
+                dispatch(
+                  viewSetDisplayInOverviewMapUpdated({
+                    viewSetId,
+                    displayInOverviewMap: e.target.checked,
+                  })
+                )
+              }
+            />
+          }
+          label="Show this form type on the overview map"
         />
       </SettingSection>
     </>
