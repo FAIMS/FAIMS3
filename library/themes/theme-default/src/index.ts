@@ -1,27 +1,85 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: index.tsx
- * Description:
- *   Default FAIMS open-source theme. Primary colour derived from the FAIMS
- *   logo blue (#223883).
- */
 import {colors, createTheme} from '@mui/material';
-import {defaultBrand} from '@faims3/data-model';
-import typography from './typography';
-import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
+import {defaultBrand} from './brand-colours';
+import {
+  DesignerThemeTokens,
+  ThemeDefinition,
+  buildSharedComponentOverrides,
+  createAppBarStyling,
+} from '@faims3/theme-base';
+
+export {defaultBrand} from './brand-colours';
+
+const designerTokens: DesignerThemeTokens = {
+  backgroundDefault: '#FAFAFB',
+  primaryMain: defaultBrand.primaryMain,
+  primaryLight: defaultBrand.primaryLight,
+  primaryDark: defaultBrand.primaryDark,
+  primaryContrastText: defaultBrand.primaryContrastText,
+  secondaryMain: defaultBrand.secondaryMain,
+  helperTextColor: colors.blueGrey[500],
+  appBarBackground: defaultBrand.appBarBackground,
+  appBarColor: defaultBrand.appBarForeground,
+  formTabBorderColor: defaultBrand.primaryMain,
+  formTabSelectedBg: defaultBrand.primaryMain,
+  formTabSelectedText: '#FFFFFF',
+  formTabIndicatorVisible: true,
+  formTabIndicatorColor: defaultBrand.secondaryMain,
+  errorMain: defaultBrand.errorMain,
+  deleteButtonColor: defaultBrand.errorMain,
+  successMain: defaultBrand.successMain,
+  infoMain: defaultBrand.infoMain,
+  darkGrey: colors.blueGrey[800],
+  midGrey: colors.blueGrey[500],
+  lightGrey: colors.blueGrey[100],
+};
+
+const typography = {
+  fontFamily: "'Open Sans', sans-serif",
+  h1: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 35,
+    letterSpacing: '-0.24px',
+  },
+  h2: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 29,
+    letterSpacing: '-0.24px',
+  },
+  h3: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 24,
+    letterSpacing: '-0.06px',
+  },
+  h4: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 20,
+    letterSpacing: '-0.06px',
+  },
+  h5: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 16,
+    letterSpacing: '-0.05px',
+  },
+  h6: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 14,
+    letterSpacing: '-0.05px',
+  },
+  overline: {
+    fontWeight: 500,
+  },
+  subtitle2: {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    lineHeight: 1.66,
+  },
+};
 
 const baseTheme = createTheme({
   stepperColors: {
@@ -94,7 +152,7 @@ const baseTheme = createTheme({
   typography,
 });
 
-const theme = createTheme(baseTheme, {
+const muiTheme = createTheme(baseTheme, {
   components: {
     ...buildSharedComponentOverrides(baseTheme),
     MuiAppBar: {
@@ -145,4 +203,18 @@ const theme = createTheme(baseTheme, {
     },
   },
 });
-export default theme;
+
+export const themeDefaultDefinition: ThemeDefinition = {
+  id: 'default',
+  app: {
+    muiTheme,
+    appBarStyling: createAppBarStyling(),
+    appBarHeading: 'default',
+    projectListLayout: 'table',
+    projectListVerbose: true,
+  },
+  web: {
+    className: 'theme-default',
+    designerTokens,
+  },
+};

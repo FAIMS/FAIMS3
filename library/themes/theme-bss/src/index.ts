@@ -1,7 +1,85 @@
 import {colors, createTheme} from '@mui/material';
-import {bssBrand} from '@faims3/data-model';
-import typography from '../fieldmark/typography';
-import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
+import {bssBrand} from './brand-colours';
+import {
+  DesignerThemeTokens,
+  ThemeDefinition,
+  buildSharedComponentOverrides,
+  createAppBarStyling,
+} from '@faims3/theme-base';
+
+export {bssBrand} from './brand-colours';
+
+const designerTokens: DesignerThemeTokens = {
+  backgroundDefault: '#F7F7F8',
+  primaryMain: bssBrand.primaryMain,
+  primaryLight: '#424242',
+  primaryDark: bssBrand.primaryDark,
+  primaryContrastText: bssBrand.primaryContrastText,
+  secondaryMain: '#B71C1C',
+  helperTextColor: colors.blueGrey[500],
+  appBarBackground: '#111111',
+  appBarColor: '#FFFFFF',
+  formTabBorderColor: '#B71C1C',
+  formTabSelectedBg: '#B71C1C',
+  formTabSelectedText: '#FFFFFF',
+  formTabIndicatorVisible: true,
+  formTabIndicatorColor: '#B71C1C',
+  errorMain: bssBrand.errorMain,
+  deleteButtonColor: bssBrand.errorMain,
+  successMain: bssBrand.successMain,
+  infoMain: bssBrand.infoMain,
+  darkGrey: colors.blueGrey[800],
+  midGrey: colors.blueGrey[500],
+  lightGrey: colors.blueGrey[100],
+};
+
+const typography = {
+  fontFamily: "'Inter', sans-serif",
+  h1: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 35,
+    letterSpacing: '-0.24px',
+  },
+  h2: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 29,
+    letterSpacing: '-0.24px',
+  },
+  h3: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 24,
+    letterSpacing: '-0.06px',
+  },
+  h4: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 20,
+    letterSpacing: '-0.06px',
+  },
+  h5: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 16,
+    letterSpacing: '-0.05px',
+  },
+  h6: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 14,
+    letterSpacing: '-0.05px',
+  },
+  overline: {
+    fontWeight: 500,
+  },
+  subtitle2: {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    lineHeight: 1.66,
+  },
+};
 
 const baseTheme = createTheme({
   stepperColors: {
@@ -78,7 +156,7 @@ const baseTheme = createTheme({
   typography,
 });
 
-const theme = createTheme(baseTheme, {
+const muiTheme = createTheme(baseTheme, {
   components: {
     ...buildSharedComponentOverrides(baseTheme),
     MuiAppBar: {
@@ -137,4 +215,17 @@ const theme = createTheme(baseTheme, {
   },
 });
 
-export default theme;
+export const themeBssDefinition: ThemeDefinition = {
+  id: 'bssTheme',
+  app: {
+    muiTheme,
+    appBarStyling: createAppBarStyling(),
+    appBarHeading: 'bssTheme',
+    projectListLayout: 'card-list',
+    projectListVerbose: true,
+  },
+  web: {
+    className: 'theme-bss',
+    designerTokens,
+  },
+};

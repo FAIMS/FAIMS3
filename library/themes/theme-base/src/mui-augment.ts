@@ -1,17 +1,28 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import {PaletteOptions, TypeBackground} from '@mui/material/styles';
-import {StepperColors} from '@faims3/theme-base';
+import '@mui/material/styles';
 
 declare module '@mui/material/styles' {
   interface Theme {
-    stepperColors: StepperColors;
+    stepperColors: {
+      current: string;
+      visited: string;
+      error: string;
+      notVisited: string;
+    };
   }
+
   interface ThemeOptions {
-    stepperColors?: StepperColors;
+    stepperColors?: {
+      current: string;
+      visited: string;
+      error: string;
+      notVisited: string;
+    };
   }
+
   interface TypeText {
     helpText: string;
   }
+
   interface TypeBackground {
     draftBackground: string;
     lightBackground: string;
@@ -71,19 +82,16 @@ declare module '@mui/material/styles' {
       main: string;
       contrastText: string;
     };
-
     icon?: {
       main: string;
       light: string;
       required: string;
       highlight: string;
     };
-
     progressBar?: {
       background: string;
       complete: string;
     };
-
     alert?: {
       warningBackground: string;
       warningText: string;
@@ -91,14 +99,12 @@ declare module '@mui/material/styles' {
       infoText: string;
       successBackground: string;
     };
-
     dialogButton?: {
       cancel: string;
       confirm: string;
       dialogText: string;
       hoverBackground: string;
     };
-
     table?: {
       divider: string;
       rowBorder: string;

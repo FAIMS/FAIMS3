@@ -17,9 +17,7 @@
  * Description:
  *   Designer MUI theme factory.
  *   Themes are selected via VITE_THEME (same env var as the main app).
- *   - default   → blue palette matching the default app theme (default-tokens.ts)
- *   - fieldmark → green/orange FAIMS palette (faims-tokens.ts)
- *   - bssTheme  → BSS black/maroon palette (bss-tokens.ts)
+ *   All theme-specific tokens are supplied by @faims3/theme-registry.
  */
 
 // Per origin/main 5dc2d5d42: avoid mixing barrel and deep imports from
@@ -27,31 +25,25 @@
 // keep `colors` on the barrel import.
 import {createTheme, alpha} from '@mui/material/styles';
 import {colors} from '@mui/material';
-import type {DesignerThemeTokens} from './tokens';
-import {faimsTokens} from './faims-tokens';
-import {bssTokens} from './bss-tokens';
-import {defaultTokens} from './default-tokens';
+import {
+  resolveWebThemeConfig,
+  type DesignerThemeTokens,
+} from '@faims3/theme-registry';
 
 // ── Re-export token types so consumers don't need a deep import ────────────
-export type {DesignerThemeTokens} from './tokens';
-export {faimsTokens} from './faims-tokens';
-export {bssTokens} from './bss-tokens';
-export {defaultTokens} from './default-tokens';
+export type {DesignerThemeTokens} from '@faims3/theme-registry';
 
 // ── MUI theme augmentation ────────────────────────────────────────────────
 declare module '@mui/material/styles' {
   interface Theme {
     /** Designer-specific metadata injected alongside the MUI palette. */
     designerMeta: {
-      /** True when the active theme is DASS / BSS. */
-      isDass: boolean;
       /** Full resolved token set for the active theme. */
       tokens: DesignerThemeTokens;
     };
   }
   interface ThemeOptions {
     designerMeta?: {
-      isDass?: boolean;
       tokens?: DesignerThemeTokens;
     };
   }
@@ -62,20 +54,19 @@ export type DesignerThemeName = 'default' | 'bssTheme' | 'fieldmark' | string;
 
 const resolveTokens = (
   themeName: DesignerThemeName
-): {tokens: DesignerThemeTokens; isDass: boolean} => {
-  if (themeName === 'bssTheme') return {tokens: bssTokens, isDass: true};
-  if (themeName === 'fieldmark') return {tokens: faimsTokens, isDass: false};
-  return {tokens: defaultTokens, isDass: false};
+): {tokens: DesignerThemeTokens} => {
+  const webTheme = resolveWebThemeConfig(themeName);
+  return {tokens: webTheme.designerTokens};
 };
 
 export const createDesignerTheme = (
   themeName: DesignerThemeName = 'default'
 ) => {
-  const {tokens, isDass} = resolveTokens(themeName);
+  const {tokens} = resolveTokens(themeName);
 
   return createTheme({
     // Custom metadata readable via `useTheme().designerMeta`
-    designerMeta: {isDass, tokens},
+    designerMeta: {tokens},
 
     palette: {
       background: {

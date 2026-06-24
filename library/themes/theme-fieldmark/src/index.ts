@@ -1,27 +1,85 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: index.tsx
- * Description:
- *   TODO
- */
-
 import {colors, createTheme} from '@mui/material';
-import {fieldmarkBrand} from '@faims3/data-model';
-import typography from './typography';
-import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
+import {fieldmarkBrand} from './brand-colours';
+import {
+  DesignerThemeTokens,
+  ThemeDefinition,
+  buildSharedComponentOverrides,
+  createAppBarStyling,
+} from '@faims3/theme-base';
+
+export {fieldmarkBrand} from './brand-colours';
+
+const designerTokens: DesignerThemeTokens = {
+  backgroundDefault: '#FAFAFB',
+  primaryMain: fieldmarkBrand.primaryMain,
+  primaryLight: fieldmarkBrand.primaryLight,
+  primaryDark: fieldmarkBrand.primaryDark,
+  primaryContrastText: fieldmarkBrand.primaryContrastText,
+  secondaryMain: fieldmarkBrand.secondaryMain,
+  helperTextColor: colors.blueGrey[500],
+  appBarBackground: fieldmarkBrand.appBarBackground,
+  appBarColor: fieldmarkBrand.appBarForeground,
+  formTabBorderColor: fieldmarkBrand.secondaryMain,
+  formTabSelectedBg: fieldmarkBrand.primaryMain,
+  formTabSelectedText: '#FFFFFF',
+  formTabIndicatorVisible: true,
+  formTabIndicatorColor: fieldmarkBrand.secondaryMain,
+  errorMain: fieldmarkBrand.errorMain,
+  deleteButtonColor: fieldmarkBrand.errorMain,
+  successMain: fieldmarkBrand.successMain,
+  infoMain: fieldmarkBrand.infoMain,
+  darkGrey: colors.blueGrey[700],
+  midGrey: colors.blueGrey[500],
+  lightGrey: colors.blueGrey[100],
+};
+
+const typography = {
+  fontFamily: "'Open Sans', sans-serif",
+  h1: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 35,
+    letterSpacing: '-0.24px',
+  },
+  h2: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 29,
+    letterSpacing: '-0.24px',
+  },
+  h3: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 24,
+    letterSpacing: '-0.06px',
+  },
+  h4: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 20,
+    letterSpacing: '-0.06px',
+  },
+  h5: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 16,
+    letterSpacing: '-0.05px',
+  },
+  h6: {
+    fontFamily: "'Lato', sans-serif",
+    fontWeight: 900,
+    fontSize: 14,
+    letterSpacing: '-0.05px',
+  },
+  overline: {
+    fontWeight: 500,
+  },
+  subtitle2: {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    lineHeight: 1.66,
+  },
+};
 
 const baseTheme = createTheme({
   stepperColors: {
@@ -43,7 +101,6 @@ const baseTheme = createTheme({
       light: fieldmarkBrand.primaryLight,
       dark: fieldmarkBrand.primaryDark,
     },
-
     stepper: {
       current: fieldmarkBrand.secondaryMain,
       visited: fieldmarkBrand.primaryMain,
@@ -91,12 +148,11 @@ const baseTheme = createTheme({
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
-    // stepperGradient: generateStepperColors(10, 'default'),
   },
   typography,
 });
 
-const theme = createTheme(baseTheme, {
+const muiTheme = createTheme(baseTheme, {
   components: {
     ...buildSharedComponentOverrides(baseTheme),
     MuiAppBar: {
@@ -148,4 +204,17 @@ const theme = createTheme(baseTheme, {
   },
 });
 
-export default theme;
+export const themeFieldmarkDefinition: ThemeDefinition = {
+  id: 'fieldmark',
+  app: {
+    muiTheme,
+    appBarStyling: createAppBarStyling(),
+    appBarHeading: 'fieldmark',
+    projectListLayout: 'table',
+    projectListVerbose: true,
+  },
+  web: {
+    className: 'theme-default',
+    designerTokens,
+  },
+};

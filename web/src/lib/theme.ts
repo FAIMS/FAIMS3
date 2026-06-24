@@ -1,3 +1,5 @@
+import {resolveThemeId, resolveWebThemeClass} from '@faims3/theme-registry';
+
 /**
  * Web theme selector aligned with app theme names.
  *
@@ -6,18 +8,8 @@
  * 2. `VITE_APP_THEME` (legacy web naming)
  * 3. `default`
  */
-export const THEME: string =
-  import.meta.env.VITE_THEME || import.meta.env.VITE_APP_THEME || 'default';
+const rawTheme = import.meta.env.VITE_THEME || import.meta.env.VITE_APP_THEME;
 
-export const getThemeClass = () => {
-  switch (THEME) {
-    case 'bssTheme':
-      return 'theme-bss';
-    case 'fieldmark':
-      // Web's default CSS token set is the Fieldmark-style green palette.
-      return 'theme-default';
-    case 'default':
-    default:
-      return 'theme-default';
-  }
-};
+export const THEME = resolveThemeId(rawTheme);
+
+export const getThemeClass = () => resolveWebThemeClass(rawTheme);

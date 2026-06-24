@@ -379,6 +379,21 @@ importers:
       '@faims3/forms':
         specifier: workspace:*
         version: link:../library/forms
+      '@faims3/theme-base':
+        specifier: workspace:*
+        version: link:../library/themes/theme-base
+      '@faims3/theme-bss':
+        specifier: workspace:*
+        version: link:../library/themes/theme-bss
+      '@faims3/theme-default':
+        specifier: workspace:*
+        version: link:../library/themes/theme-default
+      '@faims3/theme-fieldmark':
+        specifier: workspace:*
+        version: link:../library/themes/theme-fieldmark
+      '@faims3/theme-registry':
+        specifier: workspace:*
+        version: link:../library/themes/theme-registry
       '@fast-check/vitest':
         specifier: ^0.0.7
         version: 0.0.7(vitest@2.1.9(@types/node@22.18.8)(happy-dom@15.11.7)(jsdom@22.1.0)(msw@2.11.3(@types/node@22.18.8)(typescript@5.9.3)))
@@ -448,6 +463,9 @@ importers:
       clsx:
         specifier: 1.2.1
         version: 1.2.1
+      env-cmd:
+        specifier: ^10.1.0
+        version: 10.1.0
       jose:
         specifier: 5.2.3
         version: 5.2.3
@@ -876,6 +894,57 @@ importers:
         specifier: ^4.0.6
         version: 4.0.6(@types/debug@4.1.12)(@types/node@22.18.8)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@22.1.0)(msw@2.11.3(@types/node@22.18.8)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
 
+  library/themes/theme-base:
+    dependencies:
+      '@mui/material':
+        specifier: 9.0.1
+        version: 9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@mui/material-pigment-css@9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@pigment-css/react@0.0.30(@types/react@18.3.12)(react@18.3.1)(typescript@5.9.3))(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-jss:
+        specifier: ^10.10.0
+        version: 10.10.0(react@18.3.1)
+
+  library/themes/theme-bss:
+    dependencies:
+      '@faims3/theme-base':
+        specifier: workspace:*
+        version: link:../theme-base
+      '@mui/material':
+        specifier: 9.0.1
+        version: 9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@mui/material-pigment-css@9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@pigment-css/react@0.0.30(@types/react@18.3.12)(react@18.3.1)(typescript@5.9.3))(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
+  library/themes/theme-default:
+    dependencies:
+      '@faims3/theme-base':
+        specifier: workspace:*
+        version: link:../theme-base
+      '@mui/material':
+        specifier: 9.0.1
+        version: 9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@mui/material-pigment-css@9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@pigment-css/react@0.0.30(@types/react@18.3.12)(react@18.3.1)(typescript@5.9.3))(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
+  library/themes/theme-fieldmark:
+    dependencies:
+      '@faims3/theme-base':
+        specifier: workspace:*
+        version: link:../theme-base
+      '@mui/material':
+        specifier: 9.0.1
+        version: 9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@mui/material-pigment-css@9.0.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@pigment-css/react@0.0.30(@types/react@18.3.12)(react@18.3.1)(typescript@5.9.3))(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
+  library/themes/theme-registry:
+    dependencies:
+      '@faims3/theme-base':
+        specifier: workspace:*
+        version: link:../theme-base
+      '@faims3/theme-bss':
+        specifier: workspace:*
+        version: link:../theme-bss
+      '@faims3/theme-default':
+        specifier: workspace:*
+        version: link:../theme-default
+      '@faims3/theme-fieldmark':
+        specifier: workspace:*
+        version: link:../theme-fieldmark
+
   web:
     dependencies:
       '@bugsnag/js':
@@ -905,6 +974,9 @@ importers:
       '@faims3/forms':
         specifier: workspace:*
         version: link:../library/forms
+      '@faims3/theme-registry':
+        specifier: workspace:*
+        version: link:../library/themes/theme-registry
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.63.0(react@18.3.1))
@@ -5941,7 +6013,7 @@ packages:
   '@xmldom/xmldom@0.7.13':
     resolution: {integrity: sha512-lm2GW5PkosIzccsaZIz7tp8cPADSIlIHWDFTR1N0SzfinhhYgeIQjFMz4rYzanCScr3DqQLeomUDArp6MWKm+g==}
     engines: {node: '>=10.0.0'}
-    deprecated: this version is no longer supported, please update to at least 0.8.*
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
@@ -11017,6 +11089,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode@1.5.4:
@@ -25878,7 +25951,7 @@ snapshots:
 
   react-jss@10.10.0(react@18.3.1):
     dependencies:
-      '@babel/runtime': 7.28.4
+      '@babel/runtime': 7.29.2
       '@emotion/is-prop-valid': 0.7.3
       css-jss: 10.10.0
       hoist-non-react-statics: 3.3.2
