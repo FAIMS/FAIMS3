@@ -633,13 +633,13 @@ export function getVisibleTypes(ui_specification: UiSpecModel) {
 
 /** Whether a form type's records should appear on the notebook overview map. */
 export function isFormDisplayedInOverviewMap(
-  ui_specification: UiSpecModel,
+  uiSpec: UiSpecModel,
   formId: string
 ): boolean {
-  if (!ui_specification || !(formId in ui_specification.viewsets)) {
+  if (!uiSpec || !(formId in uiSpec.viewsets)) {
     return false;
   }
-  return ui_specification.viewsets[formId].displayInOverviewMap !== false;
+  return uiSpec.viewsets[formId].displayInOverviewMap !== false;
 }
 
 /** Form type ids whose records should appear on the notebook overview map. */
