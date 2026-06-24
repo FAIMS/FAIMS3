@@ -745,6 +745,19 @@ const initialFormData = z.object({
 export type InitialFormData = z.infer<typeof initialFormData>;
 
 /**
+ * A single entry in a record's revision history, for displaying an audit
+ * trail of who changed a record and when. Deliberately minimal for now: it
+ * carries only the revision identity and authorship, not the fields changed.
+ */
+const revisionHistoryEntry = z.object({
+  revisionId: z.string(),
+  created: z.string().datetime(),
+  createdBy: z.string(),
+});
+
+export type RevisionHistoryEntry = z.infer<typeof revisionHistoryEntry>;
+
+/**
  * Query result for paginated record listing
  */
 export interface RecordQueryResult {

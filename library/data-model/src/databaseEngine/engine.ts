@@ -48,6 +48,7 @@ import {
   recordDocumentSchema,
   RecordQueryResult,
   RecordSearchResult,
+  RevisionHistoryEntry,
   RevisionMetadataQueryResult,
   toMinimalRevisionMetadata,
 } from './types';
@@ -1405,6 +1406,37 @@ class FormOperations {
         hrid: hydrated.hrid,
       },
     };
+  }
+
+  /**
+   * Given a record ID, return its revision history: who created each revision
+   * and when. Useful for showing an audit trail of changes to a record.
+   *
+   * @param recordId The record ID to query
+   * @returns Array of revision history entries (revisionId, created, createdBy)
+   */
+  async getHistoryData({
+    recordId,
+  }: {
+    recordId: string;
+  }): Promise<RevisionHistoryEntry[]> {
+    const {
+      context: {record},
+    } = await this.getExistingFormData({recordId});
+    return Promise.all(
+      record.revisions.map(
+        async (revisionId): Promise<RevisionHistoryEntry> => {
+          const {
+            context: {revision},
+          } = await this.getExistingFormData({recordId, revisionId});
+          return {
+            revisionId,
+            created: revision.created,
+            createdBy: revision.createdBy,
+          };
+        }
+      )
+    );
   }
 
   /**
