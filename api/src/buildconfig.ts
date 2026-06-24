@@ -442,6 +442,49 @@ function migrateNotebooks(): boolean {
   }
 }
 
+function exportServiceGrpcAddress(): string | undefined {
+  const url = process.env.EXPORT_SERVICE_GRPC_URL;
+  if (url !== undefined && url !== '') {
+    return url;
+  }
+  const address = process.env.EXPORT_SERVICE_GRPC_ADDRESS;
+  if (address === '' || address === undefined) {
+    return undefined;
+  }
+  return address;
+}
+
+function exportServiceMode(): 'auto' | 'grpc' | 'legacy' {
+  const raw = process.env.EXPORT_SERVICE_MODE;
+  if (raw === 'grpc' || raw === 'legacy') {
+    return raw;
+  }
+  if (is_testing() && raw === undefined) {
+    return 'legacy';
+  }
+  return 'auto';
+}
+
+function exportServiceSharedSecret(): string | undefined {
+  const secret = process.env.EXPORT_SERVICE_SHARED_SECRET;
+  if (secret === '' || secret === undefined) {
+    return undefined;
+  }
+  return secret;
+}
+
+function exportServiceGrpcDeadlineMs(): number | undefined {
+  const raw = process.env.EXPORT_SERVICE_GRPC_DEADLINE_MS;
+  if (raw === undefined || raw === '') {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed;
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -468,6 +511,11 @@ export const NEW_CONDUCTOR_URL = newConductorUrl();
 export const LOCAL_LOGIN_ENABLED = enable_local_login();
 export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
 export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
+export const EXPORT_SERVICE_GRPC_ADDRESS = exportServiceGrpcAddress();
+export const EXPORT_SERVICE_GRPC_URL = exportServiceGrpcAddress();
+export const EXPORT_SERVICE_MODE = exportServiceMode();
+export const EXPORT_SERVICE_SHARED_SECRET = exportServiceSharedSecret();
+export const EXPORT_SERVICE_GRPC_DEADLINE_MS = exportServiceGrpcDeadlineMs();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
