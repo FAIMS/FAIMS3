@@ -417,12 +417,18 @@ const HistoryTabContent: React.FC<{
     <Stack spacing={2}>
       <Typography variant="h5">Revision History</Typography>
       {historyData.map(entry => (
-        <Stack key={entry.revisionId} spacing={2}>
+        <Stack key={entry.revisionId}>
           <Typography variant="body1">
             Created by: {entry.createdBy}
           </Typography>
           <Typography variant="body1">
             Created at: {new Date(entry.created).toLocaleString()}
+          </Typography>
+          <Typography variant="body1">
+            Fields changed:{' '}
+            {entry.changedFields.length > 0
+              ? entry.changedFields.join(', ')
+              : 'none'}
           </Typography>
         </Stack>
       ))}

@@ -1409,11 +1409,17 @@ class FormOperations {
   }
 
   /**
-   * Given a record ID, return its revision history: who created each revision
-   * and when. Useful for showing an audit trail of changes to a record.
+   * Given a record ID, return its revision history: who created each revision,
+   * when, and which fields changed in each revision. Useful for showing an
+   * audit trail of changes to a record.
+   *
+   * The changed fields are computed by diffing each revision's AVP map against
+   * its parent's: unchanged fields reuse the parent's AVP ID, so any field
+   * whose AVP ID differs (or which was added or removed) is a changed field.
    *
    * @param recordId The record ID to query
-   * @returns Array of revision history entries (revisionId, created, createdBy)
+   * @returns Array of revision history entries (revisionId, created,
+   * createdBy, changedFields)
    */
   async getHistoryData({
     recordId,
@@ -1423,20 +1429,50 @@ class FormOperations {
     const {
       context: {record},
     } = await this.getExistingFormData({recordId});
-    return Promise.all(
-      record.revisions.map(
-        async (revisionId): Promise<RevisionHistoryEntry> => {
-          const {
-            context: {revision},
-          } = await this.getExistingFormData({recordId, revisionId});
-          return {
-            revisionId,
-            created: revision.created,
-            createdBy: revision.createdBy,
-          };
-        }
-      )
+
+    // Hydrate every revision once so we can report authorship and diff each
+    // revision's AVP map against its parent to find the fields that changed.
+    const revisions = await Promise.all(
+      record.revisions.map(async revisionId => {
+        const {
+          context: {revision},
+        } = await this.getExistingFormData({recordId, revisionId});
+        return revision;
+      })
     );
+
+    // Index by revision ID so each revision can look up its parent's AVPs.
+    const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
+
+    return revisions.map((revision): RevisionHistoryEntry => {
+      const parent = revision.parents[0]
+        ? revisionsById.get(revision.parents[0])
+        : undefined;
+      const parentAvps = parent?.avps ?? {};
+
+      // A field changed when its AVP ID differs from the parent's (unchanged
+      // fields reuse the parent's AVP ID), when it was added (absent from the
+      // parent), or when it was removed (absent from this revision). For the
+      // first revision there is no parent, so every field it set is reported.
+      const changed = new Set<string>();
+      for (const [field, avpId] of Object.entries(revision.avps)) {
+        if (parentAvps[field] !== avpId) {
+          changed.add(field);
+        }
+      }
+      for (const field of Object.keys(parentAvps)) {
+        if (!(field in revision.avps)) {
+          changed.add(field);
+        }
+      }
+
+      return {
+        revisionId: revision._id,
+        created: revision.created,
+        createdBy: revision.createdBy,
+        changedFields: [...changed].sort(),
+      };
+    });
   }
 
   /**
