@@ -1444,9 +1444,7 @@ class FormOperations {
             ? { root: Object.keys(revision.avps).sort() }
             : Object.fromEntries(
                 revision.parents.map((parentId) => {
-                  const parent = parentId
-                    ? revisionsById.get(parentId)
-                    : undefined;
+                  const parent = revisionsById.get(parentId);
                   const parentAvps = parent?.avps ?? {};
 
                   const changed = new Set<string>();
