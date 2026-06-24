@@ -67,7 +67,6 @@ import UGCReport from '../components/record/UGCReport';
 import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
 import { formatTimestamp } from '../../utils/formUtilities';
-import { Tag } from '@mui/icons-material';
 
 /**
  * Available tabs for the record view page
