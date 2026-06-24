@@ -754,10 +754,6 @@ const revisionHistoryEntry = z.object({
   revisionId: z.string(),
   created: z.string().datetime(),
   createdBy: z.string(),
-  /**
-   * Field IDs whose value changed in this revision compared to its parent.
-   * For the first revision (no parent), this is every field it set.
-   */
   changedFields: z.array(z.string()),
 });
 
