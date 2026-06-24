@@ -1440,6 +1440,7 @@ class FormOperations {
         revisionId: revision._id,
         created: revision.created,
         createdBy: revision.created_by,
+        deleted: revision.deleted,
         changedFields:
           revision.parents.length === 0
             ? { root: Object.keys(revision.avps).sort() }

@@ -756,6 +756,7 @@ export const revisionHistoryEntry = z.object({
   createdBy: z.string(),
   // {parentId: [fieldIds]}
   changedFields: z.record(z.string(), z.array(z.string())),
+  deleted: z.boolean().optional(),
 });
 
 export type RevisionHistoryEntry = z.infer<typeof revisionHistoryEntry>;

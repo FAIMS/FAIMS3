@@ -433,7 +433,7 @@ const HistoryTabContent: React.FC<{
         return (
           <Stack key={entry.revisionId} spacing={2}>
             <Typography variant="body1" id={entry.revisionId}>
-              Revision created by <span style={{textDecoration: 'underline'}}>{formatRevisionMetadata(entry)}</span>
+              {entry.deleted ? 'Record deleted by ' : 'Revision created by '}<span style={{textDecoration: 'underline'}}>{formatRevisionMetadata(entry)}</span>
             </Typography>
             <Stack sx={{pl: 2}}>
               {parentFields.map(([parentId, fields]) => 
