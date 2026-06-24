@@ -444,7 +444,7 @@ const HistoryTabContent: React.FC<{
                       uiSpec.fields[fieldId]?.['component-parameters']?.label ??
                       fieldId
                   )
-                  .join(', ')}
+                  .join(', ') || 'None'}
                 </Typography>
               )}
             </Stack>
