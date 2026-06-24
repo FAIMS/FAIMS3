@@ -1445,32 +1445,34 @@ class FormOperations {
     const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
 
     return revisions.map((revision): RevisionHistoryEntry => {
-      const parentsIds = revision.parents.length
-        ? revision.parents
-        : [undefined]; // Treat no parents as a single parent so all fields are considered new from 1 parent
       return {
         revisionId: revision._id,
         created: revision.created,
         createdBy: revision.createdBy,
-        changedFields: Object.fromEntries(
-          parentsIds.map((parentId) => {
-            const parent = parentId ? revisionsById.get(parentId) : undefined;
-            const parentAvps = parent?.avps ?? {};
+        changedFields:
+          revision.parents.length === 0
+            ? { root: Object.keys(revision.avps).sort() }
+            : Object.fromEntries(
+                revision.parents.map((parentId) => {
+                  const parent = parentId
+                    ? revisionsById.get(parentId)
+                    : undefined;
+                  const parentAvps = parent?.avps ?? {};
 
-            const changed = new Set<string>();
-            for (const [field, avpId] of Object.entries(revision.avps)) {
-              if (parentAvps[field] !== avpId) {
-                changed.add(field);
-              }
-            }
-            for (const field of Object.keys(parentAvps)) {
-              if (!(field in revision.avps)) {
-                changed.add(field);
-              }
-            }
-            return [parentId, Array.from(changed).sort()];
-          }),
-        ),
+                  const changed = new Set<string>();
+                  for (const [field, avpId] of Object.entries(revision.avps)) {
+                    if (parentAvps[field] !== avpId) {
+                      changed.add(field);
+                    }
+                  }
+                  for (const field of Object.keys(parentAvps)) {
+                    if (!(field in revision.avps)) {
+                      changed.add(field);
+                    }
+                  }
+                  return [parentId, Array.from(changed).sort()];
+                }),
+              ),
       };
     });
   }
