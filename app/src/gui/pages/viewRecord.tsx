@@ -429,7 +429,7 @@ const HistoryTabContent: React.FC<{
   return (
     <Stack spacing={4}>
       <Typography variant="h5">Revision History</Typography>
-      {historyData.map(entry => {
+      {historyData.sort((a, b) => b.created.localeCompare(a.created)).map(entry => {
         const parentFields = Object.entries(entry.changedFields);
         return (
           <Stack key={entry.revisionId} spacing={2}>
