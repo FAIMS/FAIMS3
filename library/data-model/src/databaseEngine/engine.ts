@@ -1426,19 +1426,9 @@ class FormOperations {
   }: {
     recordId: string;
   }): Promise<RevisionHistoryEntry[]> {
-    const {
-      context: {record},
-    } = await this.getExistingFormData({recordId});
-
-    // Hydrate every revision once so we can report authorship and diff each
-    // revision's AVP map against its parent to find the fields that changed.
+    const record = await this.core.getRecord(recordId);
     const revisions = await Promise.all(
-      record.revisions.map(async revisionId => {
-        const {
-          context: {revision},
-        } = await this.getExistingFormData({recordId, revisionId});
-        return revision;
-      })
+      record.revisions.map((revisionId) => this.core.getRevision(revisionId)),
     );
 
     // Index by revision ID so each revision can look up its parent's AVPs.
@@ -1448,7 +1438,7 @@ class FormOperations {
       return {
         revisionId: revision._id,
         created: revision.created,
-        createdBy: revision.createdBy,
+        createdBy: revision.created_by,
         changedFields:
           revision.parents.length === 0
             ? { root: Object.keys(revision.avps).sort() }
