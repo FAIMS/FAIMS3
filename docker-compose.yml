@@ -12,6 +12,7 @@ services:
     ports:
       - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
+      - ./library/data-model:/usr/src/library/data-model
       - ./api/src:/usr/src/api/src
       - ./api/views:/usr/src/api/views
       - ./api/keys:/usr/src/api/keys
@@ -40,6 +41,8 @@ services:
     ports:
       - '0.0.0.0:3001:3001'
     volumes:
+      - ./library/data-model:/usr/src/library/data-model
+      - ./library/forms:/usr/src/library/forms
       - ./web/src:/usr/src/web/src
       - ./web/.env:/usr/src/web/.env
     command: pnpm run web-dev
@@ -54,6 +57,8 @@ services:
     ports:
       - '3000:3000'
     volumes:
+      - ./library/data-model:/usr/src/library/data-model
+      - ./library/forms:/usr/src/library/forms
       - ./app/assets:/usr/src/app/assets
       - ./app/public:/usr/src/app/public
       - ./app/.env:/usr/src/app/.env
