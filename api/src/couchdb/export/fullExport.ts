@@ -10,7 +10,8 @@
  * - Metadata JSON with export statistics
  *
  * All streaming is memory-efficient, using bounded concurrency for attachments
- * and PassThrough streams for other content types.
+ * and PassThrough streams for other content types. Spatial formats (GeoJSON,
+ * KML, GeoPackage) share a single record iteration when exported together.
  */
 
 import {ProjectID} from '@faims3/data-model';
@@ -22,11 +23,8 @@ import {
 } from './attachmentExport';
 import {appendAllCSVsToArchive} from './csvExport';
 import {
-  appendBothSpatialFormatsToArchive,
-  appendGeoJSONToArchive,
-  appendGeoPackageToArchive,
-  appendKMLToArchive,
-  projectHasSpatialFields,
+  appendSpatialFormatsToArchive,
+  SpatialArchiveFormatConfig,
 } from './geospatialExport';
 import {
   DEFAULT_FULL_EXPORT_CONFIG,
@@ -196,7 +194,7 @@ export const streamFullExport = async ({
     }
 
     // =========================================================================
-    // 3. Spatial Export (GeoJSON and/or KML) - Single DB pass if both requested
+    // 3. Spatial Export — single DB pass for all requested formats
     // =========================================================================
     const wantsGeoJSON = config.includeGeoJSON;
     const wantsKML = config.includeKML;
@@ -206,9 +204,24 @@ export const streamFullExport = async ({
       console.log('[FULL] Exporting spatial data...');
 
       try {
-        const hasSpatial = await projectHasSpatialFields(projectId);
+        const formats: SpatialArchiveFormatConfig = {};
+        if (wantsGeoJSON) {
+          formats.geojson = {filename: 'spatial/export.geojson'};
+        }
+        if (wantsKML) {
+          formats.kml = {filename: 'spatial/export.kml'};
+        }
+        if (wantsGeoPackage) {
+          formats.geopackage = {filename: 'spatial/export.gpkg'};
+        }
 
-        if (!hasSpatial) {
+        const spatialResult = await appendSpatialFormatsToArchive({
+          projectId,
+          archive,
+          formats,
+        });
+
+        if (!spatialResult.hasSpatialFields) {
           if (wantsGeoJSON) {
             metadata.warnings.push(
               'No spatial fields found in project - GeoJSON export skipped'
@@ -225,75 +238,38 @@ export const streamFullExport = async ({
             );
           }
           console.log('[FULL] No spatial fields, skipping spatial exports');
-        } else if (wantsGeoJSON && wantsKML) {
-          // Both formats requested - use single-pass combined export
-          console.log('[FULL] Exporting both GeoJSON and KML (single pass)...');
-
-          const spatialStats = await appendBothSpatialFormatsToArchive({
-            projectId,
-            archive,
-            geojsonFilename: 'spatial/export.geojson',
-            kmlFilename: 'spatial/export.kml',
-          });
-
-          if (spatialStats.geojson.featureCount > 0) {
-            metadata.includedFiles.push(spatialStats.geojson.filename);
-            metadata.totals.spatialFeatures = spatialStats.geojson.featureCount;
+        } else {
+          if (spatialResult.geojson && spatialResult.geojson.featureCount > 0) {
+            metadata.includedFiles.push(spatialResult.geojson.filename);
+            metadata.totals.spatialFeatures =
+              spatialResult.geojson.featureCount;
           }
 
-          if (spatialStats.kml.featureCount > 0) {
-            metadata.includedFiles.push(spatialStats.kml.filename);
-          }
-
-          console.log(
-            `[FULL] Spatial export complete: ${spatialStats.geojson.featureCount} features`
-          );
-        } else if (wantsGeoJSON) {
-          // Only GeoJSON requested
-          const geojsonStats = await appendGeoJSONToArchive({
-            projectId,
-            archive,
-            filename: 'spatial/export.geojson',
-          });
-
-          if (geojsonStats.featureCount > 0) {
-            metadata.includedFiles.push(geojsonStats.filename);
-            metadata.totals.spatialFeatures = geojsonStats.featureCount;
-          }
-
-          console.log(`[FULL] GeoJSON: ${geojsonStats.featureCount} features`);
-        } else if (wantsKML) {
-          // Only KML requested
-          const kmlStats = await appendKMLToArchive({
-            projectId,
-            archive,
-            filename: 'spatial/export.kml',
-          });
-
-          if (kmlStats.featureCount > 0) {
-            metadata.includedFiles.push(kmlStats.filename);
-            metadata.totals.spatialFeatures = kmlStats.featureCount;
-          }
-
-          console.log(`[FULL] KML: ${kmlStats.featureCount} features`);
-        }
-
-        if (wantsGeoPackage) {
-          const geopackageStats = await appendGeoPackageToArchive({
-            projectId,
-            archive,
-            filename: 'spatial/export.gpkg',
-          });
-
-          if (geopackageStats.featureCount > 0) {
-            metadata.includedFiles.push(geopackageStats.filename);
+          if (spatialResult.kml && spatialResult.kml.featureCount > 0) {
+            metadata.includedFiles.push(spatialResult.kml.filename);
             if (metadata.totals.spatialFeatures === 0) {
-              metadata.totals.spatialFeatures = geopackageStats.featureCount;
+              metadata.totals.spatialFeatures = spatialResult.kml.featureCount;
             }
           }
 
+          if (
+            spatialResult.geopackage &&
+            spatialResult.geopackage.featureCount > 0
+          ) {
+            metadata.includedFiles.push(spatialResult.geopackage.filename);
+            if (metadata.totals.spatialFeatures === 0) {
+              metadata.totals.spatialFeatures =
+                spatialResult.geopackage.featureCount;
+            }
+          }
+
+          const featureCount =
+            spatialResult.geojson?.featureCount ??
+            spatialResult.kml?.featureCount ??
+            spatialResult.geopackage?.featureCount ??
+            0;
           console.log(
-            `[FULL] GeoPackage: ${geopackageStats.featureCount} features`
+            `[FULL] Spatial export complete (single pass): ${featureCount} features`
           );
         }
       } catch (err) {

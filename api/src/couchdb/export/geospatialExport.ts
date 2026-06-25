@@ -3,6 +3,7 @@
  *
  * All export functions use a single database pass for efficiency,
  * routing records to the appropriate output based on their type.
+ * Archive exports fan out each feature to every requested format in one iteration.
  */
 
 import {
@@ -415,6 +416,129 @@ interface LayeredGeoJsonExportResult {
   layers: Array<{layerName: string; geojsonPath: string}>;
 }
 
+/**
+ * Collects spatial features into one GeoJSON file per (form, geometry type) layer.
+ * Used during GeoPackage export (standalone or as part of a multi-format archive pass).
+ */
+class GeoPackageLayerCollector {
+  private readonly buckets = new Map<string, LayerGeoJsonBucket>();
+  private readonly usedLayerNames = new Set<string>();
+  featureCount = 0;
+
+  constructor(private readonly outputDir: string) {}
+
+  /**
+   * Routes a feature into the appropriate layer bucket, creating the bucket on first use.
+   * Unsupported geometry types are skipped with a warning.
+   */
+  writeFeature(
+    formId: string,
+    geom: ExtractedGeometry,
+    properties: Record<string, any>
+  ): void {
+    const geometryType = geom.geometry?.type;
+    if (typeof geometryType !== 'string') {
+      return;
+    }
+
+    const bucket = this.getOrCreateBucket(formId, geometryType);
+    if (!bucket) {
+      return;
+    }
+
+    writeGeoJSONFeature(
+      bucket.stream,
+      geom,
+      properties,
+      bucket.isFirstFeature
+    );
+    bucket.isFirstFeature = false;
+    bucket.featureCount++;
+    this.featureCount++;
+  }
+
+  /**
+   * Closes all layer GeoJSON files and returns paths ready for ogr2ogr conversion.
+   */
+  async finalize(): Promise<Array<{layerName: string; geojsonPath: string}>> {
+    const layers: Array<{layerName: string; geojsonPath: string}> = [];
+
+    for (const bucket of this.buckets.values()) {
+      if (bucket.featureCount === 0) {
+        continue;
+      }
+
+      writeGeoJSONFooter(bucket.stream);
+      bucket.stream.end();
+      await waitForWriteStream(bucket.stream);
+      layers.push({
+        layerName: bucket.layerName,
+        geojsonPath: bucket.filePath,
+      });
+    }
+
+    layers.sort((a, b) => a.layerName.localeCompare(b.layerName));
+    return layers;
+  }
+
+  private getOrCreateBucket(
+    formId: string,
+    geometryType: string
+  ): LayerGeoJsonBucket | null {
+    const geometrySuffix = geoJsonGeometryTypeToLayerSuffix(geometryType);
+    if (!geometrySuffix) {
+      console.warn(
+        `Unsupported geometry type for GeoPackage export: ${geometryType}`
+      );
+      return null;
+    }
+
+    const bucketKey = `${formId}\0${geometrySuffix}`;
+    const existing = this.buckets.get(bucketKey);
+    if (existing) {
+      return existing;
+    }
+
+    const layerName = buildGeoPackageLayerName(
+      formId,
+      geometryType,
+      this.usedLayerNames
+    );
+    if (!layerName) {
+      return null;
+    }
+
+    const filePath = join(this.outputDir, `${layerName}.geojson`);
+    const stream = createWriteStream(filePath, {encoding: 'utf8'});
+    writeGeoJSONHeader(stream);
+
+    const bucket: LayerGeoJsonBucket = {
+      layerName,
+      filePath,
+      stream,
+      featureCount: 0,
+      isFirstFeature: true,
+    };
+    this.buckets.set(bucketKey, bucket);
+    return bucket;
+  }
+}
+
+/** Selects which spatial formats to include in an archive export. */
+export interface SpatialArchiveFormatConfig {
+  geojson?: {filename: string};
+  kml?: {filename: string};
+  geopackage?: {filename: string};
+}
+
+/** Per-format statistics from {@link appendSpatialFormatsToArchive}. */
+export interface SpatialArchiveExportResult {
+  hasSpatialFields: boolean;
+  geojson?: SpatialAppendStats;
+  kml?: SpatialAppendStats;
+  geopackage?: SpatialAppendStats;
+}
+
 // ============================================================================
 // GeoJSON Functions
 // ============================================================================
@@ -641,6 +765,18 @@ function waitForStream(stream: PassThrough): Promise<void> {
 }
 
 /**
+ * Waits for a file write stream to finish flushing to disk.
+ */
+function waitForWriteStream(
+  stream: ReturnType<typeof createWriteStream>
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
+}
+
+/**
  * Creates initial stats object for spatial export.
  *
  * @param filename - Output filename
@@ -663,12 +799,162 @@ function createInitialStats(
 // ============================================================================
 
 /**
- * Appends a GeoJSON file to an existing archive using a single database pass.
+ * Exports spatial data to one or more archive entries in a single database pass.
+ *
+ * Each enabled format in `formats` receives every spatial feature from the iteration.
+ * GeoJSON and KML are streamed directly into the archive; GeoPackage is built via
+ * layered temp GeoJSON files and ogr2ogr after the pass completes.
  *
  * @param projectId - Project identifier
  * @param archive - Archiver instance to append to
- * @param filename - Filename in the archive
- * @returns Statistics about the exported GeoJSON
+ * @param formats - Which output formats to produce (at least one required)
+ * @returns Statistics per requested format and whether the project has spatial fields
+ */
+export const appendSpatialFormatsToArchive = async ({
+  projectId,
+  archive,
+  formats,
+}: {
+  projectId: ProjectID;
+  archive: archiver.Archiver;
+  formats: SpatialArchiveFormatConfig;
+}): Promise<SpatialArchiveExportResult> => {
+  const context = await initSpatialExportContext(projectId);
+  const result: SpatialArchiveExportResult = {
+    hasSpatialFields: context.hasSpatialFields,
+  };
+
+  if (formats.geojson) {
+    result.geojson = createInitialStats(
+      formats.geojson.filename,
+      context.hasSpatialFields
+    );
+  }
+  if (formats.kml) {
+    result.kml = createInitialStats(
+      formats.kml.filename,
+      context.hasSpatialFields
+    );
+  }
+  if (formats.geopackage) {
+    result.geopackage = createInitialStats(
+      formats.geopackage.filename,
+      context.hasSpatialFields
+    );
+  }
+
+  if (!context.hasSpatialFields) {
+    return result;
+  }
+
+  const wantsGeoJSON = !!formats.geojson;
+  const wantsKML = !!formats.kml;
+  const wantsGeoPackage = !!formats.geopackage;
+
+  let geojsonStream: PassThrough | undefined;
+  let kmlStream: PassThrough | undefined;
+  let isFirstGeoJSONFeature = true;
+  let gpkgCollector: GeoPackageLayerCollector | undefined;
+  let tempDir: string | undefined;
+  let geopackagePath: string | undefined;
+
+  if (wantsGeoJSON) {
+    geojsonStream = new PassThrough();
+    archive.append(geojsonStream, {name: formats.geojson!.filename});
+    writeGeoJSONHeader(geojsonStream);
+  }
+
+  if (wantsKML) {
+    kmlStream = new PassThrough();
+    archive.append(kmlStream, {name: formats.kml!.filename});
+    writeKMLHeader(kmlStream);
+  }
+
+  if (wantsGeoPackage) {
+    tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-archive-'));
+    geopackagePath = join(tempDir, 'export.gpkg');
+    gpkgCollector = new GeoPackageLayerCollector(tempDir);
+  }
+
+  await iterateSpatialFeatures(
+    projectId,
+    context,
+    ({record, hrid, geom, properties}) => {
+      if (geojsonStream) {
+        writeGeoJSONFeature(
+          geojsonStream,
+          geom,
+          properties,
+          isFirstGeoJSONFeature
+        );
+        isFirstGeoJSONFeature = false;
+        result.geojson!.featureCount++;
+      }
+
+      if (kmlStream) {
+        if (
+          writeKMLPlacemark(
+            kmlStream,
+            hrid,
+            geom.geometry,
+            properties,
+            record.record_id
+          )
+        ) {
+          result.kml!.featureCount++;
+        }
+      }
+
+      if (gpkgCollector) {
+        gpkgCollector.writeFeature(record.type, geom, properties);
+      }
+    }
+  );
+
+  const streamFinalizeTasks: Promise<void>[] = [];
+
+  if (geojsonStream) {
+    writeGeoJSONFooter(geojsonStream);
+    geojsonStream.end();
+    streamFinalizeTasks.push(waitForStream(geojsonStream));
+  }
+
+  if (kmlStream) {
+    writeKMLFooter(kmlStream);
+    kmlStream.end();
+    streamFinalizeTasks.push(waitForStream(kmlStream));
+  }
+
+  if (gpkgCollector && geopackagePath && tempDir) {
+    try {
+      const layers = await gpkgCollector.finalize();
+      result.geopackage!.featureCount = gpkgCollector.featureCount;
+
+      if (gpkgCollector.featureCount > 0) {
+        await convertLayeredGeoJsonToGeoPackage({
+          layers,
+          geopackagePath,
+        });
+
+        await new Promise<void>((resolve, reject) => {
+          const gpkgStream = createReadStream(geopackagePath!);
+          gpkgStream.on('error', reject);
+          gpkgStream.on('close', resolve);
+          archive.append(gpkgStream, {name: formats.geopackage!.filename});
+        });
+      }
+    } finally {
+      await rm(tempDir, {recursive: true, force: true});
+    }
+  }
+
+  await Promise.all(streamFinalizeTasks);
+
+  return result;
+};
+
+/**
+ * Appends a GeoJSON file to an existing archive using a single database pass.
  */
 export const appendGeoJSONToArchive = async ({
   projectId,
@@ -679,39 +965,16 @@ export const appendGeoJSONToArchive = async ({
   archive: archiver.Archiver;
   filename: string;
 }): Promise<SpatialAppendStats> => {
-  const context = await initSpatialExportContext(projectId);
-  const stats = createInitialStats(filename, context.hasSpatialFields);
-
-  if (!context.hasSpatialFields) {
-    return stats;
-  }
-
-  const geojsonStream = new PassThrough();
-  archive.append(geojsonStream, {name: filename});
-
-  writeGeoJSONHeader(geojsonStream);
-
-  let isFirstFeature = true;
-  await iterateSpatialFeatures(projectId, context, ({geom, properties}) => {
-    writeGeoJSONFeature(geojsonStream, geom, properties, isFirstFeature);
-    isFirstFeature = false;
-    stats.featureCount++;
+  const {geojson} = await appendSpatialFormatsToArchive({
+    projectId,
+    archive,
+    formats: {geojson: {filename}},
   });
-
-  writeGeoJSONFooter(geojsonStream);
-  geojsonStream.end();
-  await waitForStream(geojsonStream);
-
-  return stats;
+  return geojson!;
 };
 
 /**
  * Appends a KML file to an existing archive using a single database pass.
- *
- * @param projectId - Project identifier
- * @param archive - Archiver instance to append to
- * @param filename - Filename in the archive
- * @returns Statistics about the exported KML
  */
 export const appendKMLToArchive = async ({
   projectId,
@@ -722,52 +985,16 @@ export const appendKMLToArchive = async ({
   archive: archiver.Archiver;
   filename: string;
 }): Promise<SpatialAppendStats> => {
-  const context = await initSpatialExportContext(projectId);
-  const stats = createInitialStats(filename, context.hasSpatialFields);
-
-  if (!context.hasSpatialFields) {
-    return stats;
-  }
-
-  const kmlStream = new PassThrough();
-  archive.append(kmlStream, {name: filename});
-
-  writeKMLHeader(kmlStream);
-
-  await iterateSpatialFeatures(
+  const {kml} = await appendSpatialFormatsToArchive({
     projectId,
-    context,
-    ({record, hrid, geom, properties}) => {
-      if (
-        writeKMLPlacemark(
-          kmlStream,
-          hrid,
-          geom.geometry,
-          properties,
-          record.record_id
-        )
-      ) {
-        stats.featureCount++;
-      }
-    }
-  );
-
-  writeKMLFooter(kmlStream);
-  kmlStream.end();
-  await waitForStream(kmlStream);
-
-  return stats;
+    archive,
+    formats: {kml: {filename}},
+  });
+  return kml!;
 };
 
 /**
  * Appends both GeoJSON and KML files to an archive in a single database pass.
- * Most efficient approach when both formats are needed.
- *
- * @param projectId - Project identifier
- * @param archive - Archiver instance to append to
- * @param geojsonFilename - Filename for GeoJSON output
- * @param kmlFilename - Filename for KML output
- * @returns Statistics about both exports
  */
 export const appendBothSpatialFormatsToArchive = async ({
   projectId,
@@ -780,68 +1007,19 @@ export const appendBothSpatialFormatsToArchive = async ({
   geojsonFilename: string;
   kmlFilename: string;
 }): Promise<{geojson: SpatialAppendStats; kml: SpatialAppendStats}> => {
-  const context = await initSpatialExportContext(projectId);
-  const geojsonStats = createInitialStats(
-    geojsonFilename,
-    context.hasSpatialFields
-  );
-  const kmlStats = createInitialStats(kmlFilename, context.hasSpatialFields);
-
-  if (!context.hasSpatialFields) {
-    return {geojson: geojsonStats, kml: kmlStats};
-  }
-
-  const geojsonStream = new PassThrough();
-  const kmlStream = new PassThrough();
-
-  archive.append(geojsonStream, {name: geojsonFilename});
-  archive.append(kmlStream, {name: kmlFilename});
-
-  writeGeoJSONHeader(geojsonStream);
-  writeKMLHeader(kmlStream);
-
-  let isFirstGeoJSONFeature = true;
-  await iterateSpatialFeatures(
+  const {geojson, kml} = await appendSpatialFormatsToArchive({
     projectId,
-    context,
-    ({record, hrid, geom, properties}) => {
-      writeGeoJSONFeature(
-        geojsonStream,
-        geom,
-        properties,
-        isFirstGeoJSONFeature
-      );
-      isFirstGeoJSONFeature = false;
-      geojsonStats.featureCount++;
-
-      if (
-        writeKMLPlacemark(
-          kmlStream,
-          hrid,
-          geom.geometry,
-          properties,
-          record.record_id
-        )
-      ) {
-        kmlStats.featureCount++;
-      }
-    }
-  );
-
-  writeGeoJSONFooter(geojsonStream);
-  geojsonStream.end();
-
-  writeKMLFooter(kmlStream);
-  kmlStream.end();
-
-  await Promise.all([waitForStream(geojsonStream), waitForStream(kmlStream)]);
-
-  return {geojson: geojsonStats, kml: kmlStats};
+    archive,
+    formats: {
+      geojson: {filename: geojsonFilename},
+      kml: {filename: kmlFilename},
+    },
+  });
+  return {geojson: geojson!, kml: kml!};
 };
 
 /**
- * Appends a GeoPackage file to an archive by exporting GeoJSON to a temp file
- * and converting with ogr2ogr.
+ * Appends a GeoPackage file to an archive using a single database pass.
  */
 export const appendGeoPackageToArchive = async ({
   projectId,
@@ -852,39 +1030,12 @@ export const appendGeoPackageToArchive = async ({
   archive: archiver.Archiver;
   filename: string;
 }): Promise<SpatialAppendStats> => {
-  const context = await initSpatialExportContext(projectId);
-  const stats = createInitialStats(filename, context.hasSpatialFields);
-
-  if (!context.hasSpatialFields) {
-    return stats;
-  }
-
-  const tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-archive-'));
-  const geopackagePath = join(tempDir, 'export.gpkg');
-
-  try {
-    stats.featureCount = await buildGeoPackageFromProject(
-      projectId,
-      tempDir,
-      geopackagePath,
-      context
-    );
-
-    if (stats.featureCount === 0) {
-      return stats;
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      const gpkgStream = createReadStream(geopackagePath);
-      gpkgStream.on('error', reject);
-      gpkgStream.on('close', resolve);
-      archive.append(gpkgStream, {name: filename});
-    });
-  } finally {
-    await rm(tempDir, {recursive: true, force: true});
-  }
-
-  return stats;
+  const {geopackage} = await appendSpatialFormatsToArchive({
+    projectId,
+    archive,
+    formats: {geopackage: {filename}},
+  });
+  return geopackage!;
 };
 
 // ============================================================================
@@ -910,100 +1061,19 @@ async function writeNotebookRecordsAsLayeredGeoJSONToDir(
     );
   }
 
-  const buckets = new Map<string, LayerGeoJsonBucket>();
-  const usedLayerNames = new Set<string>();
-  let featureCount = 0;
-
-  const getOrCreateBucket = (
-    formId: string,
-    geometryType: string
-  ): LayerGeoJsonBucket | null => {
-    const geometrySuffix = geoJsonGeometryTypeToLayerSuffix(geometryType);
-    if (!geometrySuffix) {
-      console.warn(
-        `Unsupported geometry type for GeoPackage export: ${geometryType}`
-      );
-      return null;
-    }
-
-    const bucketKey = `${formId}\0${geometrySuffix}`;
-    const existing = buckets.get(bucketKey);
-    if (existing) {
-      return existing;
-    }
-
-    const layerName = buildGeoPackageLayerName(
-      formId,
-      geometryType,
-      usedLayerNames
-    );
-    if (!layerName) {
-      return null;
-    }
-
-    const filePath = join(outputDir, `${layerName}.geojson`);
-    const stream = createWriteStream(filePath, {encoding: 'utf8'});
-    writeGeoJSONHeader(stream);
-
-    const bucket: LayerGeoJsonBucket = {
-      layerName,
-      filePath,
-      stream,
-      featureCount: 0,
-      isFirstFeature: true,
-    };
-    buckets.set(bucketKey, bucket);
-    return bucket;
-  };
+  const collector = new GeoPackageLayerCollector(outputDir);
 
   await iterateSpatialFeatures(
     projectId,
     exportContext,
     ({record, geom, properties}) => {
-      const geometryType = geom.geometry?.type;
-      if (typeof geometryType !== 'string') {
-        return;
-      }
-
-      const bucket = getOrCreateBucket(record.type, geometryType);
-      if (!bucket) {
-        return;
-      }
-
-      writeGeoJSONFeature(
-        bucket.stream,
-        geom,
-        properties,
-        bucket.isFirstFeature
-      );
-      bucket.isFirstFeature = false;
-      bucket.featureCount++;
-      featureCount++;
+      collector.writeFeature(record.type, geom, properties);
     }
   );
 
-  const layers: Array<{layerName: string; geojsonPath: string}> = [];
+  const layers = await collector.finalize();
 
-  for (const bucket of buckets.values()) {
-    if (bucket.featureCount === 0) {
-      continue;
-    }
-
-    writeGeoJSONFooter(bucket.stream);
-    bucket.stream.end();
-    await new Promise<void>((resolve, reject) => {
-      bucket.stream.on('finish', resolve);
-      bucket.stream.on('error', reject);
-    });
-    layers.push({
-      layerName: bucket.layerName,
-      geojsonPath: bucket.filePath,
-    });
-  }
-
-  layers.sort((a, b) => a.layerName.localeCompare(b.layerName));
-
-  return {featureCount, layers};
+  return {featureCount: collector.featureCount, layers};
 }
 
 async function buildGeoPackageFromProject(
