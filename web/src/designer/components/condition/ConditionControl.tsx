@@ -48,6 +48,7 @@ import {
 } from '../../types/condition';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {getFieldLabel} from './utils';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */
@@ -81,6 +82,7 @@ export const ConditionControl = (props: ConditionProps) => {
         {isBoolean ? (
           <BooleanConditionControl
             onChange={conditionChanged}
+            onDuplicate={props.onDuplicate}
             initial={condition}
             field={props.field}
             view={props.view}
@@ -88,6 +90,7 @@ export const ConditionControl = (props: ConditionProps) => {
         ) : (
           <FieldConditionControl
             onChange={conditionChanged}
+            onDuplicate={props.onDuplicate}
             initial={condition}
             field={props.field}
             view={props.view}
@@ -169,6 +172,19 @@ const BooleanConditionControl = (props: ConditionProps) => {
     updateCondition(EMPTY_FIELD_CONDITION);
   };
 
+  
+  const duplicateCondition = (index: number) => {
+    if (condition && condition.conditions) {
+      const copy = JSON.parse(
+        JSON.stringify(condition.conditions[index])
+      ) as ConditionType;
+      updateCondition({
+        ...condition,
+        conditions: [...condition.conditions, copy],
+      });
+    }
+  };
+
   if (condition)
     return (
       <Stack direction="row" spacing={2}>
@@ -178,6 +194,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
               <ConditionControl
                 key={index}
                 onChange={conditionCallback(index)}
+                onDuplicate={() => duplicateCondition(index)}
                 initial={cond}
                 field={props.field}
                 view={props.view}
@@ -688,6 +705,17 @@ export const FieldConditionControl = (props: ConditionProps) => {
           <TextField label="Value" sx={{minWidth: 200}} onChange={() => {}} />
         )}
 
+        {props.onDuplicate && (
+          <Tooltip describeChild title="Copy this condition">
+            <IconButton
+              color="primary"
+              onClick={props.onDuplicate}
+              data-testid="duplicate-button"
+            >
+              <ContentCopyIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">
           <IconButton
             color="primary"
