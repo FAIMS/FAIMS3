@@ -1,6 +1,6 @@
 # Take Photo
 
-_How to add and configure a Take Photo field in the Notebook Editor._
+_How to add and configure a Take Photo field in the {{Notebook}} Editor._
 
 ---
 

@@ -13,6 +13,11 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
+import {useTextFieldLengthLimit} from '@/hooks/use-input-char-limit';
+import {TakePointFieldProps} from '@faims3/forms';
+
+// Max allowable num of characters for the map action button
+const MAX_NUM_CHARACTERS_BUTTON_LENGTH = 40;
 
 /**
  * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
@@ -23,7 +28,9 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const buttonLabelText = field['component-parameters'].buttonLabelText ?? '';
+  const buttonLabelText =
+    (field['component-parameters'] as unknown as TakePointFieldProps)
+      .buttonLabelText ?? '';
 
   const updateButtonLabel = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -36,6 +43,15 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
+  const {
+    errorText: buttonLabelErrorTxt,
+    inputValue: buttonLabelValue,
+    validateAndUpdate: validateAndUpdateButtonLabelText,
+  } = useTextFieldLengthLimit({
+    maxLength: MAX_NUM_CHARACTERS_BUTTON_LENGTH,
+    initialValue: buttonLabelText,
+  });
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
       <Grid container>
@@ -47,9 +63,16 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
             <DebouncedTextField
               variant="outlined"
               label=""
-              value={buttonLabelText}
+              value={buttonLabelValue}
+              error={!!buttonLabelErrorTxt}
+              helperText={buttonLabelErrorTxt}
               placeholder="Leave empty to use the field label"
-              onChange={e => updateButtonLabel(e.target.value)}
+              onChange={e =>
+                validateAndUpdateButtonLabelText(
+                  e.target.value,
+                  updateButtonLabel
+                )
+              }
             />
           </SimpleFieldWrapper>
         </Grid>
