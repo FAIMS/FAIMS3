@@ -37,10 +37,12 @@ export const convertGeoJsonFileToGeoPackage = async ({
   geojsonPath,
   geopackagePath,
   layerName = DEFAULT_LAYER_NAME,
+  append = false,
 }: {
   geojsonPath: string;
   geopackagePath: string;
   layerName?: string;
+  append?: boolean;
 }): Promise<void> => {
   await assertGdalAvailable();
 
@@ -48,6 +50,7 @@ export const convertGeoJsonFileToGeoPackage = async ({
     const args = [
       '-f',
       'GPKG',
+      ...(append ? ['-update', '-append'] : []),
       geopackagePath,
       geojsonPath,
       '-nln',
@@ -74,4 +77,34 @@ export const convertGeoJsonFileToGeoPackage = async ({
       reject(new Error(`ogr2ogr failed (exit ${code}): ${stderr.trim()}`));
     });
   });
+};
+
+export interface GeoPackageLayerInput {
+  layerName: string;
+  geojsonPath: string;
+}
+
+/**
+ * Converts one GeoJSON file per layer into a multi-layer GeoPackage.
+ */
+export const convertLayeredGeoJsonToGeoPackage = async ({
+  layers,
+  geopackagePath,
+}: {
+  layers: GeoPackageLayerInput[];
+  geopackagePath: string;
+}): Promise<void> => {
+  if (layers.length === 0) {
+    return;
+  }
+
+  for (let i = 0; i < layers.length; i++) {
+    const {layerName, geojsonPath} = layers[i];
+    await convertGeoJsonFileToGeoPackage({
+      geojsonPath,
+      geopackagePath,
+      layerName,
+      append: i > 0,
+    });
+  }
 };

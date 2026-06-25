@@ -23,10 +23,10 @@ import {join} from 'path';
 import {PassThrough, pipeline} from 'stream';
 import {promisify} from 'util';
 import {getDataDb} from '..';
-import {convertGeoJsonFileToGeoPackage} from './gdal';
+import {convertLayeredGeoJsonToGeoPackage} from './gdal';
 import {getCompiledUiSpecModel} from '../notebooks';
 import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
-import {convertDataForOutput} from './utils';
+import {convertDataForOutput, truncateWithHash} from './utils';
 
 /**
  * Statistics returned from spatial export operations.
@@ -288,6 +288,86 @@ function buildFeatureProperties(
     geometry_source_field_id: geometrySource.fieldId,
     geometry_source_type: geometrySource.type,
   };
+}
+
+const MAX_GPKG_LAYER_NAME_LENGTH = 63;
+
+const GEOJSON_GEOMETRY_TYPE_SUFFIX: Record<string, string> = {
+  Point: 'point',
+  MultiPoint: 'point',
+  LineString: 'linestring',
+  MultiLineString: 'linestring',
+  Polygon: 'polygon',
+  MultiPolygon: 'polygon',
+};
+
+/**
+ * Maps a GeoJSON geometry type to the GeoPackage layer suffix.
+ * Multi* types share a layer with their simple counterpart.
+ */
+export function geoJsonGeometryTypeToLayerSuffix(
+  geometryType: string
+): string | null {
+  return GEOJSON_GEOMETRY_TYPE_SUFFIX[geometryType] ?? null;
+}
+
+function sanitizeGeoPackageLayerNamePart(part: string): string {
+  const sanitized = part.replace(/[^a-zA-Z0-9_]/g, '_');
+  if (sanitized.length === 0) {
+    return '_';
+  }
+  if (/^[0-9]/.test(sanitized)) {
+    return `_${sanitized}`;
+  }
+  return sanitized;
+}
+
+/**
+ * Builds a unique GeoPackage layer name: `{form_id}_{geometry_type}`.
+ */
+export function buildGeoPackageLayerName(
+  formId: string,
+  geometryType: string,
+  usedNames: Set<string> = new Set()
+): string | null {
+  const geometrySuffix = geoJsonGeometryTypeToLayerSuffix(geometryType);
+  if (!geometrySuffix) {
+    return null;
+  }
+
+  const sanitizedFormId = sanitizeGeoPackageLayerNamePart(formId);
+  let baseName = `${sanitizedFormId}_${geometrySuffix}`;
+  if (baseName.length > MAX_GPKG_LAYER_NAME_LENGTH) {
+    baseName = truncateWithHash(baseName, MAX_GPKG_LAYER_NAME_LENGTH);
+  }
+
+  let layerName = baseName;
+  let counter = 1;
+  while (usedNames.has(layerName)) {
+    const suffix = `_${counter}`;
+    const truncatedBase = truncateWithHash(
+      baseName,
+      MAX_GPKG_LAYER_NAME_LENGTH - suffix.length
+    );
+    layerName = `${truncatedBase}${suffix}`;
+    counter++;
+  }
+
+  usedNames.add(layerName);
+  return layerName;
+}
+
+interface LayerGeoJsonBucket {
+  layerName: string;
+  filePath: string;
+  stream: ReturnType<typeof createWriteStream>;
+  featureCount: number;
+  isFirstFeature: boolean;
+}
+
+interface LayeredGeoJsonExportResult {
+  featureCount: number;
+  layers: Array<{layerName: string; geojsonPath: string}>;
 }
 
 // ============================================================================
@@ -803,24 +883,19 @@ export const appendGeoPackageToArchive = async ({
   }
 
   const tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-archive-'));
-  const geojsonPath = join(tempDir, 'export.geojson');
   const geopackagePath = join(tempDir, 'export.gpkg');
 
   try {
-    stats.featureCount = await writeNotebookRecordsAsGeoJSONToFile(
+    stats.featureCount = await buildGeoPackageFromProject(
       projectId,
-      geojsonPath,
+      tempDir,
+      geopackagePath,
       context
     );
 
     if (stats.featureCount === 0) {
       return stats;
     }
-
-    await convertGeoJsonFileToGeoPackage({
-      geojsonPath,
-      geopackagePath,
-    });
 
     await new Promise<void>((resolve, reject) => {
       const gpkgStream = createReadStream(geopackagePath);
@@ -842,30 +917,69 @@ export const appendGeoPackageToArchive = async ({
 const pipelineAsync = promisify(pipeline);
 
 /**
- * Writes notebook spatial records as GeoJSON to a file path.
- *
- * @returns Number of features written
+ * Writes notebook spatial records as one GeoJSON file per (form, geometry type)
+ * layer under the given directory.
  */
-async function writeNotebookRecordsAsGeoJSONToFile(
+async function writeNotebookRecordsAsLayeredGeoJSONToDir(
   projectId: ProjectID,
-  filePath: string,
+  outputDir: string,
   context?: SpatialExportContext
-): Promise<number> {
+): Promise<LayeredGeoJsonExportResult> {
   const exportContext = context ?? (await initSpatialExportContext(projectId));
 
   if (!exportContext.hasSpatialFields) {
     throw new Error(
-      'No spatial fields in any view, cannot produce a GeoJSON export!'
+      'No spatial fields in any view, cannot produce a GeoPackage export!'
     );
   }
 
-  const stream = createWriteStream(filePath, {encoding: 'utf8'});
   const filenames: string[] = [];
+  const buckets = new Map<string, LayerGeoJsonBucket>();
+  const usedLayerNames = new Set<string>();
   let featureCount = 0;
 
-  writeGeoJSONHeader(stream);
+  const getOrCreateBucket = (
+    formId: string,
+    geometryType: string
+  ): LayerGeoJsonBucket | null => {
+    const geometrySuffix = geoJsonGeometryTypeToLayerSuffix(geometryType);
+    if (!geometrySuffix) {
+      console.warn(
+        `Unsupported geometry type for GeoPackage export: ${geometryType}`
+      );
+      return null;
+    }
 
-  let isFirstFeature = true;
+    const bucketKey = `${formId}\0${geometrySuffix}`;
+    const existing = buckets.get(bucketKey);
+    if (existing) {
+      return existing;
+    }
+
+    const layerName = buildGeoPackageLayerName(
+      formId,
+      geometryType,
+      usedLayerNames
+    );
+    if (!layerName) {
+      return null;
+    }
+
+    const filePath = join(outputDir, `${layerName}.geojson`);
+    const stream = createWriteStream(filePath, {encoding: 'utf8'});
+    writeGeoJSONHeader(stream);
+
+    const bucket: LayerGeoJsonBucket = {
+      layerName,
+      filePath,
+      stream,
+      featureCount: 0,
+      isFirstFeature: true,
+    };
+    buckets.set(bucketKey, bucket);
+    return bucket;
+  };
+
   const iterator = await createRecordIterator(projectId, exportContext);
   let {record, done} = await iterator.next();
 
@@ -880,12 +994,28 @@ async function writeNotebookRecordsAsGeoJSONToFile(
       );
 
       for (const geom of geometries) {
+        const geometryType = geom.geometry?.type;
+        if (typeof geometryType !== 'string') {
+          continue;
+        }
+
+        const bucket = getOrCreateBucket(record.type, geometryType);
+        if (!bucket) {
+          continue;
+        }
+
         const properties = buildFeatureProperties(
           baseProperties,
           geom.geometrySource
         );
-        writeGeoJSONFeature(stream, geom, properties, isFirstFeature);
-        isFirstFeature = false;
+        writeGeoJSONFeature(
+          bucket.stream,
+          geom,
+          properties,
+          bucket.isFirstFeature
+        );
+        bucket.isFirstFeature = false;
+        bucket.featureCount++;
         featureCount++;
       }
     }
@@ -895,12 +1025,49 @@ async function writeNotebookRecordsAsGeoJSONToFile(
     done = next.done;
   }
 
-  writeGeoJSONFooter(stream);
-  stream.end();
+  const layers: Array<{layerName: string; geojsonPath: string}> = [];
 
-  await new Promise<void>((resolve, reject) => {
-    stream.on('finish', resolve);
-    stream.on('error', reject);
+  for (const bucket of buckets.values()) {
+    if (bucket.featureCount === 0) {
+      continue;
+    }
+
+    writeGeoJSONFooter(bucket.stream);
+    bucket.stream.end();
+    await new Promise<void>((resolve, reject) => {
+      bucket.stream.on('finish', resolve);
+      bucket.stream.on('error', reject);
+    });
+    layers.push({
+      layerName: bucket.layerName,
+      geojsonPath: bucket.filePath,
+    });
+  }
+
+  layers.sort((a, b) => a.layerName.localeCompare(b.layerName));
+
+  return {featureCount, layers};
+}
+
+async function buildGeoPackageFromProject(
+  projectId: ProjectID,
+  tempDir: string,
+  geopackagePath: string,
+  context: SpatialExportContext
+): Promise<number> {
+  const {featureCount, layers} = await writeNotebookRecordsAsLayeredGeoJSONToDir(
+    projectId,
+    tempDir,
+    context
+  );
+
+  if (featureCount === 0) {
+    return 0;
+  }
+
+  await convertLayeredGeoJsonToGeoPackage({
+    layers,
+    geopackagePath,
   });
 
   return featureCount;
@@ -983,19 +1150,21 @@ export const streamNotebookRecordsAsGeoPackage = async (
   }
 
   const tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-export-'));
-  const geojsonPath = join(tempDir, 'export.geojson');
   const geopackagePath = join(tempDir, 'export.gpkg');
 
   try {
-    await writeNotebookRecordsAsGeoJSONToFile(
+    const featureCount = await buildGeoPackageFromProject(
       projectId,
-      geojsonPath,
+      tempDir,
+      geopackagePath,
       context
     );
-    await convertGeoJsonFileToGeoPackage({
-      geojsonPath,
-      geopackagePath,
-    });
+
+    if (featureCount === 0) {
+      res.end();
+      return;
+    }
+
     await pipelineAsync(createReadStream(geopackagePath), res);
   } finally {
     await rm(tempDir, {recursive: true, force: true});
