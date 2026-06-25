@@ -335,7 +335,7 @@ function MapWrapper(props: MapProps) {
             {props.label}
           </Button>
         ) : (
-          <Box>
+          <Box sx={{flexShrink: 0}}>
             {!props.disabled && (
               <Tooltip title="Edit location">
                 <Box
@@ -344,15 +344,16 @@ function MapWrapper(props: MapProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 80,
-                    height: 80,
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
                     backgroundColor: '#dfdfdf',
                     borderRadius: '6px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease-in-out',
                     '&:hover': {
                       backgroundColor: '#e0e0e0',
-                      transform: 'scale(1.1)',
+                      transform: 'scale(1.05)',
                       boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
                     },
                   }}
@@ -360,7 +361,7 @@ function MapWrapper(props: MapProps) {
                 >
                   <EditIcon
                     sx={{
-                      fontSize: 26,
+                      fontSize: 22,
                       color: theme.palette.primary.main,
                     }}
                   />
