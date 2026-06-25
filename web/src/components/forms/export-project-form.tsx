@@ -10,7 +10,7 @@ import {z} from 'zod';
 import {Field, Form} from '../form';
 import {ChevronRight} from 'lucide-react';
 
-export type ExportType = 'csv' | 'geojson' | 'kml';
+export type ExportType = 'csv' | 'geojson' | 'kml' | 'geopackage';
 type ExportCategory = 'tabular' | 'geospatial';
 
 /**
@@ -62,15 +62,16 @@ const ExportProjectForm = () => {
     },
   ];
 
-  // Geospatial export form (GeoJSON and KML)
+  // Geospatial export form (GeoJSON, KML, and GeoPackage)
   const geospatialFields: Field[] = [
     {
       name: 'format',
       label: 'Format',
-      schema: z.enum(['geojson', 'kml']),
+      schema: z.enum(['geojson', 'kml', 'geopackage']),
       options: [
         {label: 'GeoJSON', value: 'geojson'},
         {label: 'KML (Google Earth)', value: 'kml'},
+        {label: 'GeoPackage (.gpkg)', value: 'geopackage'},
       ],
     },
   ];
@@ -158,7 +159,7 @@ const ExportProjectForm = () => {
           >
             <div className="flex-1">
               <p className="font-medium text-sm mb-1">
-                Geospatial (GeoJSON / KML)
+                Geospatial (GeoJSON / KML / GeoPackage)
               </p>
               <p className="text-sm text-muted-foreground">
                 {isValidForSpatial
@@ -213,8 +214,8 @@ const ExportProjectForm = () => {
         <p className="font-medium text-foreground mb-1">Spatial Export</p>
         <p>
           Export all spatial data from your project in a GIS-compatible format.
-          Choose GeoJSON for modern web mapping or KML for Google Earth and
-          other applications.
+          Choose GeoJSON for modern web mapping, KML for Google Earth, or
+          GeoPackage for desktop GIS tools like QGIS and ArcGIS.
         </p>
       </div>
       <Form

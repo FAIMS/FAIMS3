@@ -77,6 +77,7 @@ import {
 } from '../couchdb/export/fullExport';
 import {
   streamNotebookRecordsAsGeoJSON,
+  streamNotebookRecordsAsGeoPackage,
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
@@ -152,7 +153,14 @@ function permissionRequiredForNotebookStatusChange(
 // Types for download format and token payloads (must be before records router)
 // =============================================================================
 
-const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
+const DownloadFormatSchema = z.enum([
+  'csv',
+  'zip',
+  'geojson',
+  'kml',
+  'geopackage',
+  'full',
+]);
 type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 
 const DownloadTokenPayloadSchema = z.object({
@@ -225,6 +233,7 @@ const validateDownloadToken = async ({
  * - zip: Optional viewID, exports attachments (all views if no viewID)
  * - geojson: Exports all spatial data as GeoJSON
  * - kml: Exports all spatial data as KML
+ * - geopackage: Exports all spatial data as GeoPackage (.gpkg)
  * - full: Exports everything into a single ZIP archive
  *
  * For full exports, additional query parameters control what's included:
@@ -232,6 +241,7 @@ const validateDownloadToken = async ({
  * - includeAttachments (default: true)
  * - includeGeoJSON (default: true)
  * - includeKML (default: true)
+ * - includeGeoPackage (default: true)
  * - includeMetadata (default: true)
  */
 api.get(
@@ -252,6 +262,7 @@ api.get(
       includeAttachments: z.string().optional().default('true'),
       includeGeoJSON: z.string().optional().default('true'),
       includeKML: z.string().optional().default('true'),
+      includeGeoPackage: z.string().optional().default('true'),
       includeMetadata: z.string().optional().default('true'),
     }),
     params: z.object({
@@ -277,6 +288,7 @@ api.get(
         includeAttachments: req.query.includeAttachments === 'true',
         includeGeoJSON: req.query.includeGeoJSON === 'true',
         includeKML: req.query.includeKML === 'true',
+        includeGeoPackage: req.query.includeGeoPackage === 'true',
         includeMetadata: req.query.includeMetadata === 'true',
       };
     } else if (
@@ -899,6 +911,13 @@ api.get(
         `attachment; filename="${slugify(payload.projectID)}-export.kml"`
       );
       streamNotebookRecordsAsKML(payload.projectID, res);
+    } else if (payload.format === 'geopackage') {
+      res.setHeader('Content-Type', 'application/geopackage+sqlite3');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.gpkg"`
+      );
+      streamNotebookRecordsAsGeoPackage(payload.projectID, res);
     } else if (payload.format === 'full') {
       const fullFilename = generateFullExportFilename(payload.projectID);
       res.setHeader('Content-Type', 'application/zip');
@@ -1073,7 +1092,11 @@ if (DEVELOPER_MODE) {
     async (req, res: Response<PostRandomRecordsResponse>) => {
       const record_ids = await createManyRandomRecords(
         req.params.notebookId,
-        req.body.count
+        req.body.count,
+        {
+          includeAttachments: req.body.includeAttachments,
+          parallelism: req.body.parallelism,
+        }
       );
       res.json({record_ids});
     }

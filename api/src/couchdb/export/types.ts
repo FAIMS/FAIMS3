@@ -6,6 +6,7 @@
  * - Attachment files organized by view/field
  * - GeoJSON spatial export
  * - KML spatial export
+ * - GeoPackage spatial export
  * - Metadata JSON with export statistics
  */
 
@@ -20,6 +21,7 @@ export const FullExportConfigSchema = z.object({
   includeAttachments: z.boolean().default(true),
   includeGeoJSON: z.boolean().default(true),
   includeKML: z.boolean().default(true),
+  includeGeoPackage: z.boolean().default(true),
   includeMetadata: z.boolean().default(true),
 });
 
@@ -33,6 +35,7 @@ export const DEFAULT_FULL_EXPORT_CONFIG: FullExportConfig = {
   includeAttachments: true,
   includeGeoJSON: true,
   includeKML: true,
+  includeGeoPackage: true,
   includeMetadata: true,
 };
 

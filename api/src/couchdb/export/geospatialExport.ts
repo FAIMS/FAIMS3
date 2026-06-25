@@ -16,8 +16,14 @@ import {
   notebookRecordIterator,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import {PassThrough} from 'stream';
+import {createReadStream, createWriteStream} from 'fs';
+import {mkdtemp, rm} from 'fs/promises';
+import {tmpdir} from 'os';
+import {join} from 'path';
+import {PassThrough, pipeline} from 'stream';
+import {promisify} from 'util';
 import {getDataDb} from '..';
+import {convertGeoJsonFileToGeoPackage} from './gdal';
 import {getCompiledUiSpecModel} from '../notebooks';
 import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
 import {convertDataForOutput} from './utils';
@@ -776,9 +782,129 @@ export const appendBothSpatialFormatsToArchive = async ({
   return {geojson: geojsonStats, kml: kmlStats};
 };
 
+/**
+ * Appends a GeoPackage file to an archive by exporting GeoJSON to a temp file
+ * and converting with ogr2ogr.
+ */
+export const appendGeoPackageToArchive = async ({
+  projectId,
+  archive,
+  filename,
+}: {
+  projectId: ProjectID;
+  archive: archiver.Archiver;
+  filename: string;
+}): Promise<SpatialAppendStats> => {
+  const context = await initSpatialExportContext(projectId);
+  const stats = createInitialStats(filename, context.hasSpatialFields);
+
+  if (!context.hasSpatialFields) {
+    return stats;
+  }
+
+  const tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-archive-'));
+  const geojsonPath = join(tempDir, 'export.geojson');
+  const geopackagePath = join(tempDir, 'export.gpkg');
+
+  try {
+    stats.featureCount = await writeNotebookRecordsAsGeoJSONToFile(
+      projectId,
+      geojsonPath,
+      context
+    );
+
+    if (stats.featureCount === 0) {
+      return stats;
+    }
+
+    await convertGeoJsonFileToGeoPackage({
+      geojsonPath,
+      geopackagePath,
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const gpkgStream = createReadStream(geopackagePath);
+      gpkgStream.on('error', reject);
+      gpkgStream.on('close', resolve);
+      archive.append(gpkgStream, {name: filename});
+    });
+  } finally {
+    await rm(tempDir, {recursive: true, force: true});
+  }
+
+  return stats;
+};
+
 // ============================================================================
 // Direct Stream Export Functions
 // ============================================================================
+
+const pipelineAsync = promisify(pipeline);
+
+/**
+ * Writes notebook spatial records as GeoJSON to a file path.
+ *
+ * @returns Number of features written
+ */
+async function writeNotebookRecordsAsGeoJSONToFile(
+  projectId: ProjectID,
+  filePath: string,
+  context?: SpatialExportContext
+): Promise<number> {
+  const exportContext = context ?? (await initSpatialExportContext(projectId));
+
+  if (!exportContext.hasSpatialFields) {
+    throw new Error(
+      'No spatial fields in any view, cannot produce a GeoJSON export!'
+    );
+  }
+
+  const stream = createWriteStream(filePath, {encoding: 'utf8'});
+  const filenames: string[] = [];
+  let featureCount = 0;
+
+  writeGeoJSONHeader(stream);
+
+  let isFirstFeature = true;
+  const iterator = await createRecordIterator(projectId, exportContext);
+  let {record, done} = await iterator.next();
+
+  while (!done) {
+    if (record) {
+      const {baseProperties, geometries} = await processRecordForSpatial(
+        record,
+        exportContext.viewFieldsMap,
+        filenames,
+        exportContext.dataDb,
+        exportContext.uiSpecification
+      );
+
+      for (const geom of geometries) {
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
+        writeGeoJSONFeature(stream, geom, properties, isFirstFeature);
+        isFirstFeature = false;
+        featureCount++;
+      }
+    }
+
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+
+  writeGeoJSONFooter(stream);
+  stream.end();
+
+  await new Promise<void>((resolve, reject) => {
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
+
+  return featureCount;
+}
 
 /**
  * Streams notebook records as GeoJSON directly to a writable stream.
@@ -834,6 +960,46 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
   writeGeoJSONFooter(res);
   res.end();
+};
+
+/**
+ * Streams notebook records as GeoPackage via a temp GeoJSON file and ogr2ogr.
+ *
+ * @param projectId - Project identifier
+ * @param res - Writable stream for output
+ * @throws Error if no spatial fields exist or GDAL is unavailable
+ */
+export const streamNotebookRecordsAsGeoPackage = async (
+  projectId: ProjectID,
+  res: NodeJS.WritableStream
+): Promise<void> => {
+  const context = await initSpatialExportContext(projectId);
+
+  if (!context.hasSpatialFields) {
+    res.end();
+    throw new Error(
+      'No spatial fields in any view, cannot produce a GeoPackage export!'
+    );
+  }
+
+  const tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-export-'));
+  const geojsonPath = join(tempDir, 'export.geojson');
+  const geopackagePath = join(tempDir, 'export.gpkg');
+
+  try {
+    await writeNotebookRecordsAsGeoJSONToFile(
+      projectId,
+      geojsonPath,
+      context
+    );
+    await convertGeoJsonFileToGeoPackage({
+      geojsonPath,
+      geopackagePath,
+    });
+    await pipelineAsync(createReadStream(geopackagePath), res);
+  } finally {
+    await rm(tempDir, {recursive: true, force: true});
+  }
 };
 
 /**

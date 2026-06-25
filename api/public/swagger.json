@@ -695,7 +695,7 @@
     "/notebooks/{id}/records/export": {
       "get": {
         "summary": "Request signed URL for notebook records export",
-        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeMetadata.",
+        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeGeoPackage, includeMetadata.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -722,7 +722,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["csv", "zip", "geojson", "kml", "full"]
+              "enum": ["csv", "zip", "geojson", "kml", "geopackage", "full"]
             },
             "description": "Export format. CSV requires viewID."
           },
@@ -765,6 +765,16 @@
               "enum": ["true", "false"]
             },
             "description": "When format is full: include KML (default true)"
+          },
+          {
+            "name": "includeGeoPackage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include GeoPackage (.gpkg) (default true)"
           },
           {
             "name": "includeMetadata",

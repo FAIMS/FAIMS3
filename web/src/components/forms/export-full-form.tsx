@@ -14,6 +14,7 @@ interface ExportOptions {
   includeAttachments: boolean;
   includeGeoJSON: boolean;
   includeKML: boolean;
+  includeGeoPackage: boolean;
   includeMetadata: boolean;
 }
 
@@ -22,6 +23,7 @@ const DEFAULT_OPTIONS: ExportOptions = {
   includeAttachments: true,
   includeGeoJSON: true,
   includeKML: true,
+  includeGeoPackage: true,
   includeMetadata: true,
 };
 
@@ -64,6 +66,7 @@ const ExportFullForm = () => {
         includeAttachments: options.includeAttachments.toString(),
         includeGeoJSON: options.includeGeoJSON.toString(),
         includeKML: options.includeKML.toString(),
+        includeGeoPackage: options.includeGeoPackage.toString(),
         includeMetadata: options.includeMetadata.toString(),
       });
 
@@ -89,6 +92,7 @@ const ExportFullForm = () => {
     options.includeAttachments ||
     options.includeGeoJSON ||
     options.includeKML ||
+    options.includeGeoPackage ||
     options.includeMetadata;
 
   return (
@@ -191,6 +195,31 @@ const ExportFullForm = () => {
             </div>
           </div>
 
+          {/* GeoPackage */}
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="includeGeoPackage"
+              checked={options.includeGeoPackage}
+              disabled={!isValidForSpatial}
+              onCheckedChange={checked =>
+                handleOptionChange('includeGeoPackage', checked === true)
+              }
+            />
+            <div className="flex flex-col gap-0.5">
+              <Label
+                htmlFor="includeGeoPackage"
+                className={`text-sm font-medium cursor-pointer ${!isValidForSpatial ? 'text-muted-foreground' : ''}`}
+              >
+                GeoPackage (.gpkg)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {isValidForSpatial
+                  ? 'Spatial data for QGIS, ArcGIS, and other desktop GIS tools'
+                  : 'Not available — no spatial fields in this project'}
+              </p>
+            </div>
+          </div>
+
           {/* Metadata */}
           <div className="flex items-start gap-3">
             <Checkbox
@@ -233,6 +262,7 @@ const ExportFullForm = () => {
               includeAttachments: true,
               includeGeoJSON: isValidForSpatial,
               includeKML: isValidForSpatial,
+              includeGeoPackage: isValidForSpatial,
               includeMetadata: true,
             })
           }
@@ -249,6 +279,7 @@ const ExportFullForm = () => {
               includeAttachments: false,
               includeGeoJSON: false,
               includeKML: false,
+              includeGeoPackage: false,
               includeMetadata: false,
             })
           }

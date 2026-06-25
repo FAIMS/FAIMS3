@@ -6,6 +6,7 @@
  * - Attachment files organized by view/field
  * - GeoJSON spatial export
  * - KML spatial export
+ * - GeoPackage spatial export
  * - Metadata JSON with export statistics
  *
  * All streaming is memory-efficient, using bounded concurrency for attachments
@@ -23,6 +24,7 @@ import {appendAllCSVsToArchive} from './csvExport';
 import {
   appendBothSpatialFormatsToArchive,
   appendGeoJSONToArchive,
+  appendGeoPackageToArchive,
   appendKMLToArchive,
   projectHasSpatialFields,
 } from './geospatialExport';
@@ -42,7 +44,8 @@ import {slugifyLabel} from './utils';
  * 2. Attachment files (if includeAttachments)
  * 3. GeoJSON spatial data (if includeGeoJSON)
  * 4. KML spatial data (if includeKML)
- * 5. Metadata JSON (if includeMetadata)
+ * 5. GeoPackage spatial data (if includeGeoPackage)
+ * 6. Metadata JSON (if includeMetadata)
  *
  * Architecture:
  * - Creates a single archiver instance
@@ -197,8 +200,9 @@ export const streamFullExport = async ({
     // =========================================================================
     const wantsGeoJSON = config.includeGeoJSON;
     const wantsKML = config.includeKML;
+    const wantsGeoPackage = config.includeGeoPackage;
 
-    if (wantsGeoJSON || wantsKML) {
+    if (wantsGeoJSON || wantsKML || wantsGeoPackage) {
       console.log('[FULL] Exporting spatial data...');
 
       try {
@@ -213,6 +217,11 @@ export const streamFullExport = async ({
           if (wantsKML) {
             metadata.warnings.push(
               'No spatial fields found in project - KML export skipped'
+            );
+          }
+          if (wantsGeoPackage) {
+            metadata.warnings.push(
+              'No spatial fields found in project - GeoPackage export skipped'
             );
           }
           console.log('[FULL] No spatial fields, skipping spatial exports');
@@ -267,6 +276,25 @@ export const streamFullExport = async ({
           }
 
           console.log(`[FULL] KML: ${kmlStats.featureCount} features`);
+        }
+
+        if (wantsGeoPackage) {
+          const geopackageStats = await appendGeoPackageToArchive({
+            projectId,
+            archive,
+            filename: 'spatial/export.gpkg',
+          });
+
+          if (geopackageStats.featureCount > 0) {
+            metadata.includedFiles.push(geopackageStats.filename);
+            if (metadata.totals.spatialFeatures === 0) {
+              metadata.totals.spatialFeatures = geopackageStats.featureCount;
+            }
+          }
+
+          console.log(
+            `[FULL] GeoPackage: ${geopackageStats.featureCount} features`
+          );
         }
       } catch (err) {
         const message = `Failed to export spatial data: ${err instanceof Error ? err.message : 'Unknown error'}`;

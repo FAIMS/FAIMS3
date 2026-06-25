@@ -395,7 +395,12 @@ export type PostRecordStatusResponse = z.infer<
 >;
 
 // Post generate random records RandomRecords input
-export const PostRandomRecordsInputSchema = z.object({count: z.number()});
+export const PostRandomRecordsInputSchema = z.object({
+  count: z.number().int().min(1),
+  includeAttachments: z.boolean().optional().default(true),
+  /** Concurrent record upserts (dev tooling: higher = faster, more DB load). */
+  parallelism: z.number().int().min(1).max(50).optional().default(10),
+});
 export type PostRandomRecordsInput = z.infer<
   typeof PostRandomRecordsInputSchema
 >;
