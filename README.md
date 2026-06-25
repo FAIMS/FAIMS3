@@ -31,8 +31,8 @@ nvm use 22
 You will also need Docker and Docker Compose installed.
 
 GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
-included in the API Docker image; for native development (e.g. `./dev.sh`) install it
-locally:
+included in the API Docker image and devcontainer. For native development, `./dev.sh`
+warns if GDAL is missing; install locally when you need `.gpkg` export:
 
 ```bash
 # Ubuntu / Debian

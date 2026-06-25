@@ -201,6 +201,10 @@ export const removeInviteForProject = async ({
     }
   );
 
+/**
+ * Developer-mode API: bulk-create random test records for a notebook.
+ * Requires server `DEVELOPER_MODE` and appropriate notebook permission.
+ */
 export const generateTestRecordsForProject = async ({
   projectId,
   count,

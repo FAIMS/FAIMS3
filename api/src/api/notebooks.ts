@@ -912,6 +912,7 @@ api.get(
       );
       streamNotebookRecordsAsKML(payload.projectID, res);
     } else if (payload.format === 'geopackage') {
+      // Layers grouped by form + geometry type; built via temp GeoJSON + ogr2ogr.
       res.setHeader('Content-Type', 'application/geopackage+sqlite3');
       res.setHeader(
         'Content-Disposition',

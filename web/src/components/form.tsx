@@ -60,6 +60,7 @@ interface Divider {
   component: React.ReactNode;
 }
 
+/** Checkbox row wired to react-hook-form field id for accessible labelling. */
 function CheckboxControlRow({
   checked,
   onCheckedChange,
@@ -136,6 +137,7 @@ export function Form<
     resolver: zodResolver(
       z.object(
         fields.reduce((acc, field) => {
+          // HTML number inputs emit strings; coerce before Zod validation.
           acc[field.name] =
             field.type === 'number'
               ? z.preprocess(value => {

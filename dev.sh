@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+# Local development entrypoint. Warns if GDAL is missing (needed for GeoPackage export only).
+
 check_gdal() {
   echo "=========================================="
   echo "Checking GDAL (ogr2ogr)..."

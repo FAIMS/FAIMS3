@@ -49,6 +49,8 @@ import {slugifyLabel} from './utils';
  * - Creates a single archiver instance
  * - Sequentially processes each export type to maintain predictable memory usage
  * - Uses PassThrough streams for CSV/GeoJSON/KML to avoid buffering
+ * - Uses a single spatial record iteration when multiple of GeoJSON/KML/GeoPackage
+ *   are requested (via {@link appendSpatialFormatsToArchive})
  * - Uses bounded concurrency for attachment streaming
  * - Collects statistics throughout for the metadata file
  *
@@ -194,7 +196,8 @@ export const streamFullExport = async ({
     }
 
     // =========================================================================
-    // 3. Spatial Export — single DB pass for all requested formats
+    // 3. Spatial export — one record iteration fans out to all requested formats
+    //    (GeoJSON stream, KML stream, and/or GeoPackage via temp files + ogr2ogr)
     // =========================================================================
     const wantsGeoJSON = config.includeGeoJSON;
     const wantsKML = config.includeKML;
@@ -268,6 +271,8 @@ export const streamFullExport = async ({
             spatialResult.kml?.featureCount ??
             spatialResult.geopackage?.featureCount ??
             0;
+          // GeoJSON/KML counts include all geometries; GPKG may be lower when
+          // geometry types are unsupported for layer export.
           console.log(
             `[FULL] Spatial export complete (single pass): ${featureCount} features`
           );

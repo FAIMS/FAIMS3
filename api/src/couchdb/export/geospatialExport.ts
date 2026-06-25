@@ -1,9 +1,16 @@
 /**
- * Export geospatial data from FAIMS in various formats.
+ * Export geospatial data from FAIMS notebooks in GeoJSON, KML, and GeoPackage.
  *
- * All export functions use a single database pass for efficiency,
- * routing records to the appropriate output based on their type.
- * Archive exports fan out each feature to every requested format in one iteration.
+ * Supported output paths:
+ * - **Direct stream** — single format written to an HTTP response (`streamNotebookRecordsAs*`)
+ * - **Archive append** — one or more formats appended to a ZIP (`appendSpatialFormatsToArchive`)
+ *
+ * All paths share {@link iterateSpatialFeatures}, which walks notebook records once and
+ * emits each spatial feature to every enabled sink. GeoJSON/KML stream inline; GeoPackage
+ * collects features into per-layer temp GeoJSON files and converts with ogr2ogr after the pass.
+ *
+ * GeoPackage layers are named `{form_id}_{geometry_type}` (e.g. `survey_point`), with one
+ * layer per form and geometry suffix (Point/MultiPoint share `point`, etc.).
  */
 
 import {
@@ -33,6 +40,7 @@ import {convertDataForOutput, truncateWithHash} from './utils';
  * Statistics returned from spatial export operations.
  */
 export interface SpatialAppendStats {
+  /** Geometries written (may differ from record count when records have multiple map fields). */
   featureCount: number;
   filename: string;
   hasSpatialFields: boolean;
@@ -292,15 +300,25 @@ function buildFeatureProperties(
 }
 
 interface SpatialFeatureEmitContext {
+  /** Hydrated source record (includes form/viewset id as `type`). */
   record: HydratedDataRecord;
   hrid: string;
+  /** Record-level properties shared by all geometries from this record. */
   baseProperties: Record<string, any>;
   geom: ExtractedGeometry;
+  /** Full feature properties including geometry-source metadata. */
   properties: Record<string, any>;
 }
 
 /**
- * Iterates all notebook records once, invoking `onFeature` for each spatial feature.
+ * Walks all notebook records once and invokes `onFeature` for each spatial feature.
+ *
+ * Handles record processing, attachment filename tracking, and property assembly so
+ * callers only need to write output in their chosen format(s).
+ *
+ * @param projectId - Notebook to export
+ * @param context - Pre-initialised export context (from {@link initSpatialExportContext})
+ * @param onFeature - Called once per geometry; may be async
  */
 async function iterateSpatialFeatures(
   projectId: ProjectID,
@@ -336,7 +354,7 @@ async function iterateSpatialFeatures(
   }
 }
 
-const MAX_GPKG_LAYER_NAME_LENGTH = 63;
+const MAX_GPKG_LAYER_NAME_LENGTH = 63; // GeoPackage table-name limit
 
 const GEOJSON_GEOMETRY_TYPE_SUFFIX: Record<string, string> = {
   Point: 'point',
@@ -358,6 +376,7 @@ export function geoJsonGeometryTypeToLayerSuffix(
 }
 
 function sanitizeGeoPackageLayerNamePart(part: string): string {
+  // GeoPackage/SQLite identifiers: alphanumeric and underscore; must not start with a digit.
   const sanitized = part.replace(/[^a-zA-Z0-9_]/g, '_');
   if (sanitized.length === 0) {
     return '_';
@@ -370,6 +389,9 @@ function sanitizeGeoPackageLayerNamePart(part: string): string {
 
 /**
  * Builds a unique GeoPackage layer name: `{form_id}_{geometry_type}`.
+ *
+ * Collisions after sanitisation are resolved with a numeric suffix. Names longer than
+ * {@link MAX_GPKG_LAYER_NAME_LENGTH} characters are truncated with a hash.
  */
 export function buildGeoPackageLayerName(
   formId: string,
@@ -493,7 +515,7 @@ class GeoPackageLayerCollector {
       return null;
     }
 
-    const bucketKey = `${formId}\0${geometrySuffix}`;
+    const bucketKey = `${formId}\0${geometrySuffix}`; // one bucket per form + geometry suffix
     const existing = this.buckets.get(bucketKey);
     if (existing) {
       return existing;
@@ -526,13 +548,20 @@ class GeoPackageLayerCollector {
 
 /** Selects which spatial formats to include in an archive export. */
 export interface SpatialArchiveFormatConfig {
+  /** Single FeatureCollection GeoJSON file in the archive. */
   geojson?: {filename: string};
+  /** Single KML Document in the archive. */
   kml?: {filename: string};
+  /**
+   * GeoPackage (.gpkg) built via layered temp GeoJSON and ogr2ogr.
+   * Requires GDAL on the server.
+   */
   geopackage?: {filename: string};
 }
 
 /** Per-format statistics from {@link appendSpatialFormatsToArchive}. */
 export interface SpatialArchiveExportResult {
+  /** False when the notebook has no map/spatial fields at all. */
   hasSpatialFields: boolean;
   geojson?: SpatialAppendStats;
   kml?: SpatialAppendStats;
@@ -851,6 +880,7 @@ export const appendSpatialFormatsToArchive = async ({
   const wantsKML = !!formats.kml;
   const wantsGeoPackage = !!formats.geopackage;
 
+  // --- Setup output sinks (streams and/or temp files) ---
   let geojsonStream: PassThrough | undefined;
   let kmlStream: PassThrough | undefined;
   let isFirstGeoJSONFeature = true;
@@ -876,6 +906,7 @@ export const appendSpatialFormatsToArchive = async ({
     gpkgCollector = new GeoPackageLayerCollector(tempDir);
   }
 
+  // --- Single DB pass: fan each feature out to every enabled format ---
   await iterateSpatialFeatures(
     projectId,
     context,
@@ -911,6 +942,7 @@ export const appendSpatialFormatsToArchive = async ({
     }
   );
 
+  // --- Finalize: close streams, convert GeoPackage layers, append to archive ---
   const streamFinalizeTasks: Promise<void>[] = [];
 
   if (geojsonStream) {
@@ -955,6 +987,8 @@ export const appendSpatialFormatsToArchive = async ({
 
 /**
  * Appends a GeoJSON file to an existing archive using a single database pass.
+ *
+ * @see appendSpatialFormatsToArchive
  */
 export const appendGeoJSONToArchive = async ({
   projectId,
@@ -975,6 +1009,8 @@ export const appendGeoJSONToArchive = async ({
 
 /**
  * Appends a KML file to an existing archive using a single database pass.
+ *
+ * @see appendSpatialFormatsToArchive
  */
 export const appendKMLToArchive = async ({
   projectId,
@@ -995,6 +1031,8 @@ export const appendKMLToArchive = async ({
 
 /**
  * Appends both GeoJSON and KML files to an archive in a single database pass.
+ *
+ * @see appendSpatialFormatsToArchive
  */
 export const appendBothSpatialFormatsToArchive = async ({
   projectId,
@@ -1020,6 +1058,10 @@ export const appendBothSpatialFormatsToArchive = async ({
 
 /**
  * Appends a GeoPackage file to an archive using a single database pass.
+ *
+ * Layers are grouped by form and geometry type. Requires GDAL (`ogr2ogr`).
+ *
+ * @see appendSpatialFormatsToArchive
  */
 export const appendGeoPackageToArchive = async ({
   projectId,
@@ -1045,8 +1087,9 @@ export const appendGeoPackageToArchive = async ({
 const pipelineAsync = promisify(pipeline);
 
 /**
- * Writes notebook spatial records as one GeoJSON file per (form, geometry type)
- * layer under the given directory.
+ * Writes one GeoJSON FeatureCollection per (form, geometry type) layer to `outputDir`.
+ *
+ * Intermediate step for GeoPackage export; output files are consumed by ogr2ogr.
  */
 async function writeNotebookRecordsAsLayeredGeoJSONToDir(
   projectId: ProjectID,
@@ -1076,6 +1119,11 @@ async function writeNotebookRecordsAsLayeredGeoJSONToDir(
   return {featureCount: collector.featureCount, layers};
 }
 
+/**
+ * Builds a `.gpkg` file from notebook spatial data via layered GeoJSON and ogr2ogr.
+ *
+ * @returns Total feature count written (0 when no spatial features exist)
+ */
 async function buildGeoPackageFromProject(
   projectId: ProjectID,
   tempDir: string,
@@ -1134,6 +1182,10 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
 /**
  * Streams notebook records as GeoPackage via a temp GeoJSON file and ogr2ogr.
+ *
+ * Not a true end-to-end stream: the full `.gpkg` is materialised in a temp directory
+ * before being piped to `res`. Suitable for typical notebook sizes; large projects may
+ * incur noticeable disk use and latency.
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output

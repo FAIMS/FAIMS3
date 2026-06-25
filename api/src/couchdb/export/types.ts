@@ -15,12 +15,16 @@ import {z} from 'zod';
 /**
  * Configuration schema for full export options.
  * All options default to true if not specified.
+ *
+ * Spatial formats (GeoJSON, KML, GeoPackage) are produced in one record iteration
+ * when more than one is enabled.
  */
 export const FullExportConfigSchema = z.object({
   includeTabular: z.boolean().default(true),
   includeAttachments: z.boolean().default(true),
   includeGeoJSON: z.boolean().default(true),
   includeKML: z.boolean().default(true),
+  /** OGC GeoPackage (.gpkg) for desktop GIS; requires GDAL on the API server. */
   includeGeoPackage: z.boolean().default(true),
   includeMetadata: z.boolean().default(true),
 });
@@ -60,7 +64,7 @@ export interface AttachmentExportStats {
 }
 
 /**
- * Statistics for spatial exports (GeoJSON/KML)
+ * Statistics for spatial exports (GeoJSON, KML, or GeoPackage).
  */
 export interface SpatialExportStats {
   featureCount: number;

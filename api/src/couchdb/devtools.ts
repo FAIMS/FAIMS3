@@ -15,7 +15,8 @@
  *
  * Filename: devtools.ts
  * Description:
- *    Tools used in development and testing of FAIMS
+ *    Tools used in development and testing of FAIMS, including bulk generation
+ *    of random records with optional map geometries and attachment population.
  */
 
 import {nowIso, nowMs} from '../time';
@@ -33,6 +34,7 @@ import * as Exceptions from '../exceptions';
 import {getDataDb} from '.';
 
 export type RandomRecordOptions = {
+  /** When false, file/photo fields are left empty (much faster for large batches). */
   includeAttachments?: boolean;
   /** Max records created concurrently (dev tooling only). */
   parallelism?: number;
@@ -41,6 +43,10 @@ export type RandomRecordOptions = {
 /** Default concurrent upserts when bulk-generating test records. */
 const DEFAULT_RECORD_GENERATION_PARALLELISM = 10;
 
+/**
+ * Runs `count` invocations of `task` with at most `concurrency` in flight.
+ * Preserves result order by index.
+ */
 const runWithConcurrency = async <T>(
   count: number,
   concurrency: number,
@@ -66,6 +72,17 @@ const runWithConcurrency = async <T>(
   return results;
 };
 
+/**
+ * Bulk-create random records for developer-mode testing.
+ *
+ * Loads the notebook UI spec once and reuses the DB connection across workers.
+ * Map fields receive random geometries within mainland Australia when present.
+ *
+ * @param project_id - Target notebook
+ * @param count - Number of records to create (1–1000)
+ * @param options - Attachment population and concurrency
+ * @returns IDs of created records, in generation order
+ */
 export const createManyRandomRecords = async (
   project_id: ProjectID,
   count: number,
@@ -96,8 +113,10 @@ export const createManyRandomRecords = async (
 };
 
 /**
- * Create a new record for this notebook with random data values for all fields
- * @param projectId Project id
+ * Create a new record for this notebook with random data values for all fields.
+ *
+ * @param projectId - Target notebook
+ * @param options - Attachment population (defaults to including sample image data)
  */
 export const createRandomRecord = async (
   projectId: ProjectID,
@@ -121,6 +140,7 @@ export const createRandomRecord = async (
   return createRandomRecordWithContext({dataDb, uiSpec, options});
 };
 
+/** Shared DB + UI spec context for bulk record generation (avoids repeated lookups). */
 type RandomRecordContext = {
   dataDb: Awaited<ReturnType<typeof getDataDb>>;
   uiSpec: Awaited<ReturnType<typeof getUiSpecModel>>;
@@ -250,6 +270,7 @@ const generateRandomPolygonGeometry = (): GeoJSONGeometry => {
 };
 
 const generateMapFormFieldValue = (field: any) => {
+  // Match MapFormField featureType (Point, LineString, Polygon) for realistic exports.
   const featureType = field['component-parameters']?.featureType ?? 'Point';
   switch (featureType) {
     case 'Polygon':

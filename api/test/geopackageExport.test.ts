@@ -4,6 +4,7 @@ import {
   geoJsonGeometryTypeToLayerSuffix,
 } from '../src/couchdb/export/geospatialExport';
 
+/** Unit tests for GeoPackage layer naming (ogr2ogr table names). */
 describe('GeoPackage layer naming', () => {
   it('maps simple and multi geometry types to the same suffix', () => {
     expect(geoJsonGeometryTypeToLayerSuffix('Point')).to.equal('point');

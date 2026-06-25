@@ -46,12 +46,21 @@ will start the couchdb and conductor servers to listen on the configured port.
 
 If you don't plan to use Docker to run or deploy Conductor, you need to get CouchDB
 running on your host and enter the appropriate addresses in the `.env` file.
-To run the Conductor server you first need to install dependencies.
-
-GeoPackage export requires GDAL (`ogr2ogr` on PATH). On Ubuntu/Debian: `sudo apt-get install gdal-bin`. The Docker images include this automatically.
+To run the Conductor server you first need to install dependencies:
 
 ```bash
 pnpm install
+```
+
+### GeoPackage export (optional)
+
+GeoPackage (`.gpkg`) export uses GDAL's `ogr2ogr` at runtime. It is included in the
+API Docker image and devcontainer. For native Node development, install GDAL on your
+host:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install gdal-bin
 ```
 
 You should then be able to run the server with:
