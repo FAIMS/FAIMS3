@@ -95,11 +95,11 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       sx={{
         marginBottom: 3,
         position: 'relative',
-        padding: hasErrors ? 0.9 : 0,
+        padding: 0.8,
         borderRadius: 2,
-        borderWidth: hasErrors ? 1 : 0,
+        borderWidth: 1,
         borderStyle: 'solid',
-        borderColor: 'error.main',
+        borderColor: hasErrors ? 'error.main' : 'transparent',
         background: 'transparent',
         transition: 'all 0.3s ease-in-out',
       }}
