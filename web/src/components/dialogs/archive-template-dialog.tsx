@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {useNavigate} from '@tanstack/react-router';
+import {useCanGoBack, useNavigate, useRouter} from '@tanstack/react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
 import {toast} from 'sonner';
@@ -26,6 +26,8 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const [open, setOpen] = useState(false);
 
   const onClick = async () => {
@@ -66,7 +68,12 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
 
       if (willArchive) {
         toast.success('Successfully archived');
-        await navigate({to: '/templates'});
+       
+        if (canGoBack) {
+          router.history.back();
+        } else {
+          await navigate({to: '/templates'});
+        }
       }
     } catch (e) {
       toast.error('Something went wrong. Please try again.');
