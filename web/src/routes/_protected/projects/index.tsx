@@ -52,6 +52,7 @@ function ProjectsRouteComponent() {
         columns={columns}
         data={data || []}
         loading={isLoading}
+        initialSorting={[{id: 'createdAt', desc: true}]}
         onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
         button={<CreateProjectDialog />}
       />
