@@ -244,7 +244,10 @@ const generateRandomPointGeometry = (): GeoJSONGeometry => ({
 
 const generateRandomLineStringGeometry = (): GeoJSONGeometry => {
   const pointCount = 2 + randomInt(4);
-  const coordinates = Array.from({length: pointCount}, randomAustraliaCoordinate);
+  const coordinates = Array.from(
+    {length: pointCount},
+    randomAustraliaCoordinate
+  );
   return {type: 'LineString', coordinates};
 };
 
@@ -283,10 +286,7 @@ const generateMapFormFieldValue = (field: any) => {
   }
 };
 
-const generateValue = (
-  field: any,
-  options: {includeAttachments: boolean}
-) => {
+const generateValue = (field: any, options: {includeAttachments: boolean}) => {
   //console.log('generateValue', field);
   const fieldType = field['type-returned'];
   if (field['component-parameters'].hrid) {

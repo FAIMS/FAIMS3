@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - enhancements for location map buttons ([#2095](https://github.com/FAIMS/FAIMS3/pull/2095))
 - Feat/add warning dialog on finish record ([#2094](https://github.com/FAIMS/FAIMS3/pull/2094))
 - feat(forms): zoom images in advanced helper popup ([#2093](https://github.com/FAIMS/FAIMS3/pull/2093))
-- fix overlay issue in android side nav  ([#2091](https://github.com/FAIMS/FAIMS3/pull/2091))
+- fix overlay issue in android side nav ([#2091](https://github.com/FAIMS/FAIMS3/pull/2091))
 - feat: make record list search case insensitive (#2011) ([#2090](https://github.com/FAIMS/FAIMS3/pull/2090))
 - chore(deps): bump uuid from 9.0.0 to 14.0.0 in /app ([#2088](https://github.com/FAIMS/FAIMS3/pull/2088))
 - feat: remove metadataDB and significant refinement to notebook shape, typing and migrations ([#2086](https://github.com/FAIMS/FAIMS3/pull/2086))

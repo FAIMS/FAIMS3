@@ -63,6 +63,8 @@ host:
 sudo apt-get install gdal-bin
 ```
 
+Pipeline and module layout: [Geospatial export pipeline](../docs/developer/docs/source/markdown/GeospatialExport.md).
+
 You should then be able to run the server with:
 
 ```bash

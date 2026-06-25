@@ -468,12 +468,7 @@ class GeoPackageLayerCollector {
       return;
     }
 
-    writeGeoJSONFeature(
-      bucket.stream,
-      geom,
-      properties,
-      bucket.isFirstFeature
-    );
+    writeGeoJSONFeature(bucket.stream, geom, properties, bucket.isFirstFeature);
     bucket.isFirstFeature = false;
     bucket.featureCount++;
     this.featureCount++;
@@ -1130,11 +1125,12 @@ async function buildGeoPackageFromProject(
   geopackagePath: string,
   context: SpatialExportContext
 ): Promise<number> {
-  const {featureCount, layers} = await writeNotebookRecordsAsLayeredGeoJSONToDir(
-    projectId,
-    tempDir,
-    context
-  );
+  const {featureCount, layers} =
+    await writeNotebookRecordsAsLayeredGeoJSONToDir(
+      projectId,
+      tempDir,
+      context
+    );
 
   if (featureCount === 0) {
     return 0;
@@ -1252,13 +1248,7 @@ export const streamNotebookRecordsAsKML = async (
     projectId,
     context,
     ({record, hrid, geom, properties}) => {
-      writeKMLPlacemark(
-        res,
-        hrid,
-        geom.geometry,
-        properties,
-        record.record_id
-      );
+      writeKMLPlacemark(res, hrid, geom.geometry, properties, record.record_id);
     }
   );
 

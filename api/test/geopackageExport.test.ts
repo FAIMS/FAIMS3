@@ -29,9 +29,9 @@ describe('GeoPackage layer naming', () => {
     expect(buildGeoPackageLayerName('damage_assessment', 'Point')).to.equal(
       'damage_assessment_point'
     );
-    expect(
-      buildGeoPackageLayerName('access_route', 'LineString')
-    ).to.equal('access_route_linestring');
+    expect(buildGeoPackageLayerName('access_route', 'LineString')).to.equal(
+      'access_route_linestring'
+    );
     expect(
       buildGeoPackageLayerName('evacuation_zone', 'MultiPolygon')
     ).to.equal('evacuation_zone_polygon');

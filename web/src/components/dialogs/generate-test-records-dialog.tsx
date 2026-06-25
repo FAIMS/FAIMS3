@@ -34,8 +34,8 @@ export function GenerateTestRecordsDialog({
           <DialogTitle>Generate test records</DialogTitle>
           <DialogDescription>
             Developer-mode tool that creates random records in this{' '}
-            {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}. Each record picks a random
-            form and fills every field with sample values, including map
+            {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}. Each record picks a
+            random form and fills every field with sample values, including map
             geometries placed within Australia when map fields are present.
           </DialogDescription>
         </DialogHeader>
