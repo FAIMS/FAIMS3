@@ -6,10 +6,12 @@
  * - Attachment files organized by view/field
  * - GeoJSON spatial export
  * - KML spatial export
+ * - GeoPackage spatial export
  * - Metadata JSON with export statistics
  *
  * All streaming is memory-efficient, using bounded concurrency for attachments
- * and PassThrough streams for other content types.
+ * and PassThrough streams for other content types. Spatial formats (GeoJSON,
+ * KML, GeoPackage) share a single record iteration when exported together.
  */
 
 import {ProjectID} from '@faims3/data-model';
@@ -21,11 +23,10 @@ import {
 } from './attachmentExport';
 import {appendAllCSVsToArchive} from './csvExport';
 import {
-  appendBothSpatialFormatsToArchive,
-  appendGeoJSONToArchive,
-  appendKMLToArchive,
-  projectHasSpatialFields,
+  appendSpatialFormatsToArchive,
+  SpatialArchiveFormatConfig,
 } from './geospatialExport';
+import {GdalUnavailableError} from './gdal';
 import {
   DEFAULT_FULL_EXPORT_CONFIG,
   FullExportConfig,
@@ -42,12 +43,15 @@ import {slugifyLabel} from './utils';
  * 2. Attachment files (if includeAttachments)
  * 3. GeoJSON spatial data (if includeGeoJSON)
  * 4. KML spatial data (if includeKML)
- * 5. Metadata JSON (if includeMetadata)
+ * 5. GeoPackage spatial data (if includeGeoPackage)
+ * 6. Metadata JSON (if includeMetadata)
  *
  * Architecture:
  * - Creates a single archiver instance
  * - Sequentially processes each export type to maintain predictable memory usage
  * - Uses PassThrough streams for CSV/GeoJSON/KML to avoid buffering
+ * - Uses a single spatial record iteration when multiple of GeoJSON/KML/GeoPackage
+ *   are requested (via {@link appendSpatialFormatsToArchive})
  * - Uses bounded concurrency for attachment streaming
  * - Collects statistics throughout for the metadata file
  *
@@ -193,18 +197,35 @@ export const streamFullExport = async ({
     }
 
     // =========================================================================
-    // 3. Spatial Export (GeoJSON and/or KML) - Single DB pass if both requested
+    // 3. Spatial export — one record iteration fans out to all requested formats
+    //    (GeoJSON stream, KML stream, and/or GeoPackage via temp files + ogr2ogr)
     // =========================================================================
     const wantsGeoJSON = config.includeGeoJSON;
     const wantsKML = config.includeKML;
+    const wantsGeoPackage = config.includeGeoPackage;
 
-    if (wantsGeoJSON || wantsKML) {
+    if (wantsGeoJSON || wantsKML || wantsGeoPackage) {
       console.log('[FULL] Exporting spatial data...');
 
       try {
-        const hasSpatial = await projectHasSpatialFields(projectId);
+        const formats: SpatialArchiveFormatConfig = {};
+        if (wantsGeoJSON) {
+          formats.geojson = {filename: 'spatial/export.geojson'};
+        }
+        if (wantsKML) {
+          formats.kml = {filename: 'spatial/export.kml'};
+        }
+        if (wantsGeoPackage) {
+          formats.geopackage = {filename: 'spatial/export.gpkg'};
+        }
 
-        if (!hasSpatial) {
+        const spatialResult = await appendSpatialFormatsToArchive({
+          projectId,
+          archive,
+          formats,
+        });
+
+        if (!spatialResult.hasSpatialFields) {
           if (wantsGeoJSON) {
             metadata.warnings.push(
               'No spatial fields found in project - GeoJSON export skipped'
@@ -215,60 +236,52 @@ export const streamFullExport = async ({
               'No spatial fields found in project - KML export skipped'
             );
           }
+          if (wantsGeoPackage) {
+            metadata.warnings.push(
+              'No spatial fields found in project - GeoPackage export skipped'
+            );
+          }
           console.log('[FULL] No spatial fields, skipping spatial exports');
-        } else if (wantsGeoJSON && wantsKML) {
-          // Both formats requested - use single-pass combined export
-          console.log('[FULL] Exporting both GeoJSON and KML (single pass)...');
-
-          const spatialStats = await appendBothSpatialFormatsToArchive({
-            projectId,
-            archive,
-            geojsonFilename: 'spatial/export.geojson',
-            kmlFilename: 'spatial/export.kml',
-          });
-
-          if (spatialStats.geojson.featureCount > 0) {
-            metadata.includedFiles.push(spatialStats.geojson.filename);
-            metadata.totals.spatialFeatures = spatialStats.geojson.featureCount;
+        } else {
+          if (spatialResult.geojson && spatialResult.geojson.featureCount > 0) {
+            metadata.includedFiles.push(spatialResult.geojson.filename);
+            metadata.totals.spatialFeatures =
+              spatialResult.geojson.featureCount;
           }
 
-          if (spatialStats.kml.featureCount > 0) {
-            metadata.includedFiles.push(spatialStats.kml.filename);
+          if (spatialResult.kml && spatialResult.kml.featureCount > 0) {
+            metadata.includedFiles.push(spatialResult.kml.filename);
+            if (metadata.totals.spatialFeatures === 0) {
+              metadata.totals.spatialFeatures = spatialResult.kml.featureCount;
+            }
           }
 
+          if (
+            spatialResult.geopackage &&
+            spatialResult.geopackage.featureCount > 0
+          ) {
+            metadata.includedFiles.push(spatialResult.geopackage.filename);
+            if (metadata.totals.spatialFeatures === 0) {
+              metadata.totals.spatialFeatures =
+                spatialResult.geopackage.featureCount;
+            }
+          }
+
+          const featureCount =
+            spatialResult.geojson?.featureCount ??
+            spatialResult.kml?.featureCount ??
+            spatialResult.geopackage?.featureCount ??
+            0;
+          // GeoJSON/KML counts include all geometries; GPKG may be lower when
+          // geometry types are unsupported for layer export.
           console.log(
-            `[FULL] Spatial export complete: ${spatialStats.geojson.featureCount} features`
+            `[FULL] Spatial export complete (single pass): ${featureCount} features`
           );
-        } else if (wantsGeoJSON) {
-          // Only GeoJSON requested
-          const geojsonStats = await appendGeoJSONToArchive({
-            projectId,
-            archive,
-            filename: 'spatial/export.geojson',
-          });
-
-          if (geojsonStats.featureCount > 0) {
-            metadata.includedFiles.push(geojsonStats.filename);
-            metadata.totals.spatialFeatures = geojsonStats.featureCount;
-          }
-
-          console.log(`[FULL] GeoJSON: ${geojsonStats.featureCount} features`);
-        } else if (wantsKML) {
-          // Only KML requested
-          const kmlStats = await appendKMLToArchive({
-            projectId,
-            archive,
-            filename: 'spatial/export.kml',
-          });
-
-          if (kmlStats.featureCount > 0) {
-            metadata.includedFiles.push(kmlStats.filename);
-            metadata.totals.spatialFeatures = kmlStats.featureCount;
-          }
-
-          console.log(`[FULL] KML: ${kmlStats.featureCount} features`);
         }
       } catch (err) {
+        if (err instanceof GdalUnavailableError) {
+          throw err;
+        }
         const message = `Failed to export spatial data: ${err instanceof Error ? err.message : 'Unknown error'}`;
         console.error(`[FULL] ${message}`);
         metadata.warnings.push(message);

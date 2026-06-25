@@ -631,6 +631,27 @@ export function getVisibleTypes(ui_specification: UiSpecModel) {
   else return [];
 }
 
+/** Whether a form type's records should appear on the notebook overview map. */
+export function isFormDisplayedInOverviewMap(
+  uiSpec: UiSpecModel,
+  formId: string
+): boolean {
+  if (!uiSpec || !(formId in uiSpec.viewsets)) {
+    return false;
+  }
+  return uiSpec.viewsets[formId].displayInOverviewMap !== false;
+}
+
+/** Form type ids whose records should appear on the notebook overview map. */
+export function getOverviewMapTypes(ui_specification: UiSpecModel): string[] {
+  if (!ui_specification) {
+    return [];
+  }
+  return Object.getOwnPropertyNames(ui_specification.viewsets).filter(formId =>
+    isFormDisplayedInOverviewMap(ui_specification, formId)
+  );
+}
+
 /**
  * Retrieves and processes summary field information for a specific viewset
  *

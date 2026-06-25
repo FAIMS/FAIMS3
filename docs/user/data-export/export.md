@@ -16,7 +16,9 @@ Each _Form_ or entity will have its own .csv file.
 
 ## Spatial data
 
-Additional export formats, eg .kml will be available in future updates.
+Spatial fields (map input, GPS, etc.) can be exported as **GeoJSON**, **KML**, or **GeoPackage** (`.gpkg` for QGIS and similar tools). Choose a format from the project export screen, or include one or more spatial files in a **full export** ZIP.
+
+For implementation details (pipeline, GDAL, single-pass archive export), see the developer doc [Geospatial export pipeline](../../developer/docs/source/markdown/GeospatialExport.md).
 
 ## Attachments
 

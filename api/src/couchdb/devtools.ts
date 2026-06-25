@@ -15,7 +15,8 @@
  *
  * Filename: devtools.ts
  * Description:
- *    Tools used in development and testing of FAIMS
+ *    Tools used in development and testing of FAIMS, including bulk generation
+ *    of random records with optional map geometries and attachment population.
  */
 
 import {nowIso, nowMs} from '../time';
@@ -32,32 +33,95 @@ import {readFileSync} from 'node:fs';
 import * as Exceptions from '../exceptions';
 import {getDataDb} from '.';
 
-export const createManyRandomRecords = async (
-  project_id: ProjectID,
-  count: number
-): Promise<string[]> => {
-  const record_ids = [];
+export type RandomRecordOptions = {
+  /** When false, file/photo fields are left empty (much faster for large batches). */
+  includeAttachments?: boolean;
+  /** Max records created concurrently (dev tooling only). */
+  parallelism?: number;
+};
 
-  for (let i = 0; i < count; i++) {
-    const r_id = await createRandomRecord(project_id);
-    record_ids.push(r_id);
+/** Default concurrent upserts when bulk-generating test records. */
+const DEFAULT_RECORD_GENERATION_PARALLELISM = 10;
+
+/**
+ * Runs `count` invocations of `task` with at most `concurrency` in flight.
+ * Preserves result order by index.
+ */
+const runWithConcurrency = async <T>(
+  count: number,
+  concurrency: number,
+  task: () => Promise<T>
+): Promise<T[]> => {
+  if (count === 0) {
+    return [];
   }
-  return record_ids;
+
+  const results: T[] = new Array(count);
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, count);
+
+  const worker = async () => {
+    while (nextIndex < count) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await task();
+    }
+  };
+
+  await Promise.all(Array.from({length: workerCount}, worker));
+  return results;
 };
 
 /**
- * Create a new record for this notebook with random data values for all fields
- * @param projectId Project id
+ * Bulk-create random records for developer-mode testing.
+ *
+ * Loads the notebook UI spec once and reuses the DB connection across workers.
+ * Map fields receive random geometries within mainland Australia when present.
+ *
+ * @param project_id - Target notebook
+ * @param count - Number of records to create (1–1000)
+ * @param options - Attachment population and concurrency
+ * @returns IDs of created records, in generation order
+ */
+export const createManyRandomRecords = async (
+  project_id: ProjectID,
+  count: number,
+  options: RandomRecordOptions = {}
+): Promise<string[]> => {
+  const dataDb = await getDataDb(project_id);
+  const uiSpec = await getUiSpecModel(project_id);
+  if (!uiSpec) {
+    throw new Exceptions.ItemNotFoundException(
+      `Notebook not found with id ${project_id}`
+    );
+  }
+
+  const forms = Object.keys(uiSpec.viewsets);
+  if (forms.length === 0) {
+    throw new Exceptions.InvalidRequestException(
+      `The ui spec for project with id ${project_id} has no forms in the viewsets.`
+    );
+  }
+
+  const parallelism =
+    options.parallelism ?? DEFAULT_RECORD_GENERATION_PARALLELISM;
+  const context = {dataDb, uiSpec, options};
+
+  return runWithConcurrency(count, parallelism, () =>
+    createRandomRecordWithContext(context)
+  );
+};
+
+/**
+ * Create a new record for this notebook with random data values for all fields.
+ *
+ * @param projectId - Target notebook
+ * @param options - Attachment population (defaults to including sample image data)
  */
 export const createRandomRecord = async (
-  projectId: ProjectID
+  projectId: ProjectID,
+  options: RandomRecordOptions = {}
 ): Promise<string> => {
-  // get the project uiSpec
-  // select one form from the notebook
-  // get a list of fields and their types
-  // generate data for each field
-  // create the record object and call upsertFAIMSData
-
   const dataDb = await getDataDb(projectId);
   const uiSpec = await getUiSpecModel(projectId);
   if (!uiSpec) {
@@ -73,6 +137,23 @@ export const createRandomRecord = async (
     );
   }
 
+  return createRandomRecordWithContext({dataDb, uiSpec, options});
+};
+
+/** Shared DB + UI spec context for bulk record generation (avoids repeated lookups). */
+type RandomRecordContext = {
+  dataDb: Awaited<ReturnType<typeof getDataDb>>;
+  uiSpec: Awaited<ReturnType<typeof getUiSpecModel>>;
+  options: RandomRecordOptions;
+};
+
+const createRandomRecordWithContext = async ({
+  dataDb,
+  uiSpec,
+  options,
+}: RandomRecordContext): Promise<string> => {
+  const includeAttachments = options.includeAttachments ?? true;
+  const forms = Object.keys(uiSpec.viewsets);
   const formName = forms[randomInt(forms.length)];
   const form = uiSpec.viewsets[formName];
   const views = form.views;
@@ -88,7 +169,7 @@ export const createRandomRecord = async (
   });
   const values: {[key: string]: any} = {};
   fields.map((field: string) => {
-    values[field] = generateValue(uiSpec.fields[field]);
+    values[field] = generateValue(uiSpec.fields[field], {includeAttachments});
   });
 
   const annotations: {[key: string]: any} = {};
@@ -115,7 +196,110 @@ export const createRandomRecord = async (
 
 const SAMPLE_IMAGE_FILE = 'test/test-attachment-image.jpg';
 
-const generateValue = (field: any) => {
+let cachedSampleAttachmentBuffer: Buffer | null = null;
+
+const getSampleAttachmentFieldValue = () => {
+  if (cachedSampleAttachmentBuffer === null) {
+    cachedSampleAttachmentBuffer = readFileSync(SAMPLE_IMAGE_FILE);
+  }
+  return [{type: 'image/jpeg', data: cachedSampleAttachmentBuffer}];
+};
+
+/** Approximate mainland Australia bounding box (WGS84). */
+const AUSTRALIA_BBOX = {
+  minLon: 112.911,
+  maxLon: 153.639,
+  minLat: -43.643,
+  maxLat: -10.668,
+} as const;
+
+type GeoJSONGeometry =
+  | {type: 'Point'; coordinates: [number, number]}
+  | {type: 'LineString'; coordinates: [number, number][]}
+  | {type: 'Polygon'; coordinates: [number, number][][]};
+
+const randomInRange = (min: number, max: number): number =>
+  min + randomInt(Math.floor((max - min) * 10000)) / 10000;
+
+const randomAustraliaCoordinate = (): [number, number] => [
+  randomInRange(AUSTRALIA_BBOX.minLon, AUSTRALIA_BBOX.maxLon),
+  randomInRange(AUSTRALIA_BBOX.minLat, AUSTRALIA_BBOX.maxLat),
+];
+
+const createFeatureCollection = (geometry: GeoJSONGeometry) => ({
+  type: 'FeatureCollection' as const,
+  features: [
+    {
+      type: 'Feature' as const,
+      geometry,
+      properties: null,
+    },
+  ],
+});
+
+const generateRandomPointGeometry = (): GeoJSONGeometry => ({
+  type: 'Point',
+  coordinates: randomAustraliaCoordinate(),
+});
+
+const generateRandomLineStringGeometry = (): GeoJSONGeometry => {
+  const pointCount = 2 + randomInt(4);
+  const coordinates = Array.from(
+    {length: pointCount},
+    randomAustraliaCoordinate
+  );
+  return {type: 'LineString', coordinates};
+};
+
+const generateRandomPolygonGeometry = (): GeoJSONGeometry => {
+  const margin = 0.15;
+  const centerLon = randomInRange(
+    AUSTRALIA_BBOX.minLon + margin,
+    AUSTRALIA_BBOX.maxLon - margin
+  );
+  const centerLat = randomInRange(
+    AUSTRALIA_BBOX.minLat + margin,
+    AUSTRALIA_BBOX.maxLat - margin
+  );
+  const halfSize = 0.005 + randomInt(50) / 1000;
+  const ring: [number, number][] = [
+    [centerLon - halfSize, centerLat - halfSize],
+    [centerLon + halfSize, centerLat - halfSize],
+    [centerLon + halfSize, centerLat + halfSize],
+    [centerLon - halfSize, centerLat + halfSize],
+    [centerLon - halfSize, centerLat - halfSize],
+  ];
+  return {type: 'Polygon', coordinates: [ring]};
+};
+
+const generateMapFormFieldValue = (field: any) => {
+  // Match MapFormField featureType (Point, LineString, Polygon) for realistic exports.
+  const featureType = field['component-parameters']?.featureType ?? 'Point';
+  switch (featureType) {
+    case 'Polygon':
+      return createFeatureCollection(generateRandomPolygonGeometry());
+    case 'LineString':
+      return createFeatureCollection(generateRandomLineStringGeometry());
+    case 'Point':
+    default:
+      return createFeatureCollection(generateRandomPointGeometry());
+  }
+};
+
+const generateTakePointFieldValue = () => ({
+  type: 'Feature' as const,
+  properties: {
+    timestamp: nowMs(),
+    altitude: null,
+    speed: null,
+    heading: null,
+    accuracy: 20,
+    altitude_accuracy: null,
+  },
+  geometry: generateRandomPointGeometry(),
+});
+
+const generateValue = (field: any, options: {includeAttachments: boolean}) => {
   //console.log('generateValue', field);
   const fieldType = field['type-returned'];
   if (field['component-parameters'].hrid) {
@@ -138,14 +322,23 @@ const generateValue = (field: any) => {
     return [options[randomInt(options.length)]];
   }
 
+  if (field['component-name'] === 'MapFormField') {
+    return generateMapFormFieldValue(field);
+  }
+
+  if (field['component-name'] === 'TakePoint') {
+    return generateTakePointFieldValue();
+  }
+
   // TODO: use 'faker' to generate more realistic data
   switch (fieldType) {
     case 'faims-core::String':
       return 'Bobalooba';
     case 'faims-attachment::Files': {
-      const buffer = readFileSync(SAMPLE_IMAGE_FILE);
-      //const buffer = Buffer.from(image);
-      return [{type: 'image/jpeg', data: buffer}];
+      if (!options.includeAttachments) {
+        return null;
+      }
+      return getSampleAttachmentFieldValue();
     }
     case 'faims-core::Integer':
       return randomInt(100);
@@ -154,24 +347,7 @@ const generateValue = (field: any) => {
     case 'faims-core::Date':
       return nowIso();
     case 'faims-pos::Location':
-      return {
-        type: 'Feature',
-        properties: {
-          timestamp: nowMs(),
-          altitude: null,
-          speed: null,
-          heading: null,
-          accuracy: 20,
-          altitude_accuracy: null,
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: [
-            randomInt(180) + randomInt(10000) / 10000,
-            randomInt(180) - 90 + randomInt(10000) / 10000,
-          ],
-        },
-      };
+      return generateTakePointFieldValue();
     default:
       return '';
   }

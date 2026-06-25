@@ -23,6 +23,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
+  getOverviewMapTypes,
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
@@ -397,6 +398,16 @@ export const OverviewMap = (props: OverviewMapProps) => {
   // Memoize GIS fields
   const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);
 
+  const overviewMapTypes = useMemo(() => getOverviewMapTypes(uiSpec), [uiSpec]);
+
+  const mapRecords = useMemo(
+    () =>
+      records.allRecords?.filter(record =>
+        overviewMapTypes.includes(record.type)
+      ) ?? [],
+    [records.allRecords, overviewMapTypes]
+  );
+
   /**
    * Extract features from a single record for the given GIS fields
    */
@@ -471,7 +482,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Query function to fetch all features from all records
    */
   const fetchAllFeatures = useCallback(async (): Promise<FeatureCollection> => {
-    if (gisFields.length === 0 || !records.allRecords?.length) {
+    if (gisFields.length === 0 || mapRecords.length === 0) {
       return {type: 'FeatureCollection', features: []};
     }
 
@@ -479,8 +490,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const BATCH_SIZE = 10;
     const allFeatures: GeoJSONFeature[] = [];
 
-    for (let i = 0; i < records.allRecords.length; i += BATCH_SIZE) {
-      const batch = records.allRecords.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < mapRecords.length; i += BATCH_SIZE) {
+      const batch = mapRecords.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(
         batch.map(record => extractFeaturesFromRecord(record, gisFields))
       );
@@ -491,7 +502,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       type: 'FeatureCollection',
       features: allFeatures,
     };
-  }, [gisFields, records.allRecords, extractFeaturesFromRecord]);
+  }, [gisFields, mapRecords, extractFeaturesFromRecord]);
 
   // Use React Query to manage the async feature fetching
   const {
@@ -503,11 +514,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
     queryKey: [
       'overview-map-features',
       project_id,
-      records.allRecords?.map(r => `${r.recordId}:${r.revisionId}`).join(','),
+      mapRecords.map(r => `${r.recordId}:${r.revisionId}`).join(','),
       gisFields.join(','),
+      overviewMapTypes.join(','),
     ],
     queryFn: fetchAllFeatures,
-    enabled: gisFields.length > 0 && records.allRecords?.length > 0,
+    enabled: gisFields.length > 0 && mapRecords.length > 0,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     retry: 2,

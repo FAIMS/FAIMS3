@@ -3,7 +3,7 @@
  *
  * Use {@link nowIso} / {@link dateToIso} for ISO-8601 strings (e.g. expiry selector state).
  * Use {@link nowMs} and {@link expiryMsFromNow} for Unix epoch milliseconds (tokens, invites).
- * Use {@link displayIsoTimestamp} / {@link displayUnixTimestampMs} for UI formatting.
+ * Use {@link displayIsoTimestamp} / {@link displayDateTime} for UI formatting.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -39,14 +39,10 @@ export function displayIsoTimestamp(timestamp: string): string {
   if (Number.isNaN(ms)) {
     return timestamp;
   }
-  return displayUnixTimestampMs({timestamp: ms});
+  return displayDateTime({timestamp: ms});
 }
 
-export function displayUnixTimestampMs({
-  timestamp,
-}: {
-  timestamp: number;
-}): string {
+export function displayDateTime({timestamp}: {timestamp: number}): string {
   const date = new Date(timestamp);
   // Format: Apr 2, 2025, 3:30 PM
   return (
