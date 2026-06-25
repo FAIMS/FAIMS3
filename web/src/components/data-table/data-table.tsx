@@ -33,6 +33,7 @@ interface DataTableProps<TData, TValue> {
   /** Merged into each body row; use for conditional row styling. */
   getRowClassName?: (row: TData) => string | undefined;
   defaultRowsPerPage?: number;
+  initialSorting?: SortingState;
 }
 
 /**
@@ -50,8 +51,9 @@ export function DataTable<TData, TValue>({
   onRowClick,
   getRowClassName,
   defaultRowsPerPage = 10,
+  initialSorting = [],
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({
     pageIndex: 0,

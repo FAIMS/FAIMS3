@@ -1,8 +1,11 @@
 # feat/fix/chore: pr title
 
-## JIRA Ticket
+## Ticket
 
 [<JIRA_TICKET>](https://jira.csiro.com/browse/<JIRA_TICKET>)
+
+or
+#NNNN
 
 ## Description
 
@@ -24,4 +27,5 @@ Add any additional information or context about the pull request here.
 
 - [ ] I have confirmed all commits have been signed.
 - [ ] I have added JSDoc style comments to any new functions or classes.
+- [ ] I have added tests for new code if appropriate
 - [ ] Relevant documentation such as READMEs, guides, and class comments are updated.
