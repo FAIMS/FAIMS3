@@ -290,6 +290,51 @@ function buildFeatureProperties(
   };
 }
 
+interface SpatialFeatureEmitContext {
+  record: HydratedDataRecord;
+  hrid: string;
+  baseProperties: Record<string, any>;
+  geom: ExtractedGeometry;
+  properties: Record<string, any>;
+}
+
+/**
+ * Iterates all notebook records once, invoking `onFeature` for each spatial feature.
+ */
+async function iterateSpatialFeatures(
+  projectId: ProjectID,
+  context: SpatialExportContext,
+  onFeature: (feature: SpatialFeatureEmitContext) => void | Promise<void>
+): Promise<void> {
+  const filenames: string[] = [];
+  const iterator = await createRecordIterator(projectId, context);
+  let {record, done} = await iterator.next();
+
+  while (!done) {
+    if (record) {
+      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
+        record,
+        context.viewFieldsMap,
+        filenames,
+        context.dataDb,
+        context.uiSpecification
+      );
+
+      for (const geom of geometries) {
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
+        await onFeature({record, hrid, baseProperties, geom, properties});
+      }
+    }
+
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+}
+
 const MAX_GPKG_LAYER_NAME_LENGTH = 63;
 
 const GEOJSON_GEOMETRY_TYPE_SUFFIX: Record<string, string> = {
@@ -644,38 +689,14 @@ export const appendGeoJSONToArchive = async ({
   const geojsonStream = new PassThrough();
   archive.append(geojsonStream, {name: filename});
 
-  const filenames: string[] = [];
   writeGeoJSONHeader(geojsonStream);
 
   let isFirstFeature = true;
-  const iterator = await createRecordIterator(projectId, context);
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    if (record) {
-      const {baseProperties, geometries} = await processRecordForSpatial(
-        record,
-        context.viewFieldsMap,
-        filenames,
-        context.dataDb,
-        context.uiSpecification
-      );
-
-      for (const geom of geometries) {
-        const properties = buildFeatureProperties(
-          baseProperties,
-          geom.geometrySource
-        );
-        writeGeoJSONFeature(geojsonStream, geom, properties, isFirstFeature);
-        isFirstFeature = false;
-        stats.featureCount++;
-      }
-    }
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
+  await iterateSpatialFeatures(projectId, context, ({geom, properties}) => {
+    writeGeoJSONFeature(geojsonStream, geom, properties, isFirstFeature);
+    isFirstFeature = false;
+    stats.featureCount++;
+  });
 
   writeGeoJSONFooter(geojsonStream);
   geojsonStream.end();
@@ -711,45 +732,25 @@ export const appendKMLToArchive = async ({
   const kmlStream = new PassThrough();
   archive.append(kmlStream, {name: filename});
 
-  const filenames: string[] = [];
   writeKMLHeader(kmlStream);
 
-  const iterator = await createRecordIterator(projectId, context);
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    if (record) {
-      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
-        record,
-        context.viewFieldsMap,
-        filenames,
-        context.dataDb,
-        context.uiSpecification
-      );
-
-      for (const geom of geometries) {
-        const properties = buildFeatureProperties(
-          baseProperties,
-          geom.geometrySource
-        );
-        if (
-          writeKMLPlacemark(
-            kmlStream,
-            hrid,
-            geom.geometry,
-            properties,
-            record.record_id
-          )
-        ) {
-          stats.featureCount++;
-        }
+  await iterateSpatialFeatures(
+    projectId,
+    context,
+    ({record, hrid, geom, properties}) => {
+      if (
+        writeKMLPlacemark(
+          kmlStream,
+          hrid,
+          geom.geometry,
+          properties,
+          record.record_id
+        )
+      ) {
+        stats.featureCount++;
       }
     }
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
+  );
 
   writeKMLFooter(kmlStream);
   kmlStream.end();
@@ -796,60 +797,36 @@ export const appendBothSpatialFormatsToArchive = async ({
   archive.append(geojsonStream, {name: geojsonFilename});
   archive.append(kmlStream, {name: kmlFilename});
 
-  const filenames: string[] = [];
-
   writeGeoJSONHeader(geojsonStream);
   writeKMLHeader(kmlStream);
 
   let isFirstGeoJSONFeature = true;
-  const iterator = await createRecordIterator(projectId, context);
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    if (record) {
-      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
-        record,
-        context.viewFieldsMap,
-        filenames,
-        context.dataDb,
-        context.uiSpecification
+  await iterateSpatialFeatures(
+    projectId,
+    context,
+    ({record, hrid, geom, properties}) => {
+      writeGeoJSONFeature(
+        geojsonStream,
+        geom,
+        properties,
+        isFirstGeoJSONFeature
       );
+      isFirstGeoJSONFeature = false;
+      geojsonStats.featureCount++;
 
-      for (const geom of geometries) {
-        const properties = buildFeatureProperties(
-          baseProperties,
-          geom.geometrySource
-        );
-
-        // Write GeoJSON feature
-        writeGeoJSONFeature(
-          geojsonStream,
-          geom,
+      if (
+        writeKMLPlacemark(
+          kmlStream,
+          hrid,
+          geom.geometry,
           properties,
-          isFirstGeoJSONFeature
-        );
-        isFirstGeoJSONFeature = false;
-        geojsonStats.featureCount++;
-
-        // Write KML placemark
-        if (
-          writeKMLPlacemark(
-            kmlStream,
-            hrid,
-            geom.geometry,
-            properties,
-            record.record_id
-          )
-        ) {
-          kmlStats.featureCount++;
-        }
+          record.record_id
+        )
+      ) {
+        kmlStats.featureCount++;
       }
     }
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
+  );
 
   writeGeoJSONFooter(geojsonStream);
   geojsonStream.end();
@@ -933,7 +910,6 @@ async function writeNotebookRecordsAsLayeredGeoJSONToDir(
     );
   }
 
-  const filenames: string[] = [];
   const buckets = new Map<string, LayerGeoJsonBucket>();
   const usedLayerNames = new Set<string>();
   let featureCount = 0;
@@ -980,50 +956,31 @@ async function writeNotebookRecordsAsLayeredGeoJSONToDir(
     return bucket;
   };
 
-  const iterator = await createRecordIterator(projectId, exportContext);
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    if (record) {
-      const {baseProperties, geometries} = await processRecordForSpatial(
-        record,
-        exportContext.viewFieldsMap,
-        filenames,
-        exportContext.dataDb,
-        exportContext.uiSpecification
-      );
-
-      for (const geom of geometries) {
-        const geometryType = geom.geometry?.type;
-        if (typeof geometryType !== 'string') {
-          continue;
-        }
-
-        const bucket = getOrCreateBucket(record.type, geometryType);
-        if (!bucket) {
-          continue;
-        }
-
-        const properties = buildFeatureProperties(
-          baseProperties,
-          geom.geometrySource
-        );
-        writeGeoJSONFeature(
-          bucket.stream,
-          geom,
-          properties,
-          bucket.isFirstFeature
-        );
-        bucket.isFirstFeature = false;
-        bucket.featureCount++;
-        featureCount++;
+  await iterateSpatialFeatures(
+    projectId,
+    exportContext,
+    ({record, geom, properties}) => {
+      const geometryType = geom.geometry?.type;
+      if (typeof geometryType !== 'string') {
+        return;
       }
-    }
 
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
+      const bucket = getOrCreateBucket(record.type, geometryType);
+      if (!bucket) {
+        return;
+      }
+
+      writeGeoJSONFeature(
+        bucket.stream,
+        geom,
+        properties,
+        bucket.isFirstFeature
+      );
+      bucket.isFirstFeature = false;
+      bucket.featureCount++;
+      featureCount++;
+    }
+  );
 
   const layers: Array<{layerName: string; geojsonPath: string}> = [];
 
@@ -1093,37 +1050,13 @@ export const streamNotebookRecordsAsGeoJSON = async (
     );
   }
 
-  const filenames: string[] = [];
   writeGeoJSONHeader(res);
 
   let isFirstFeature = true;
-  const iterator = await createRecordIterator(projectId, context);
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    if (record) {
-      const {baseProperties, geometries} = await processRecordForSpatial(
-        record,
-        context.viewFieldsMap,
-        filenames,
-        context.dataDb,
-        context.uiSpecification
-      );
-
-      for (const geom of geometries) {
-        const properties = buildFeatureProperties(
-          baseProperties,
-          geom.geometrySource
-        );
-        writeGeoJSONFeature(res, geom, properties, isFirstFeature);
-        isFirstFeature = false;
-      }
-    }
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
+  await iterateSpatialFeatures(projectId, context, ({geom, properties}) => {
+    writeGeoJSONFeature(res, geom, properties, isFirstFeature);
+    isFirstFeature = false;
+  });
 
   writeGeoJSONFooter(res);
   res.end();
@@ -1191,41 +1124,21 @@ export const streamNotebookRecordsAsKML = async (
     );
   }
 
-  const filenames: string[] = [];
   writeKMLHeader(res);
 
-  const iterator = await createRecordIterator(projectId, context);
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    if (record) {
-      const {hrid, baseProperties, geometries} = await processRecordForSpatial(
-        record,
-        context.viewFieldsMap,
-        filenames,
-        context.dataDb,
-        context.uiSpecification
+  await iterateSpatialFeatures(
+    projectId,
+    context,
+    ({record, hrid, geom, properties}) => {
+      writeKMLPlacemark(
+        res,
+        hrid,
+        geom.geometry,
+        properties,
+        record.record_id
       );
-
-      for (const geom of geometries) {
-        const properties = buildFeatureProperties(
-          baseProperties,
-          geom.geometrySource
-        );
-        writeKMLPlacemark(
-          res,
-          hrid,
-          geom.geometry,
-          properties,
-          record.record_id
-        );
-      }
     }
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
+  );
 
   writeKMLFooter(res);
   res.end();
