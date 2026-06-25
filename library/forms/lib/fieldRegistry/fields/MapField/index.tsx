@@ -210,14 +210,28 @@ export function MapFormField(props: FieldProps): JSX.Element {
         display: 'flex',
         alignItems: 'center',
         gap: 1,
+        flex: {xs: 1, md: '0 1 auto'},
+        minWidth: {xs: 0, md: 'auto'},
         backgroundColor: theme.palette.success.light + '20',
         borderColor: theme.palette.success.main,
       }}
     >
-      <CheckCircleOutlined color="success" fontSize="small" />
-      <Typography variant="body2" color="text.secondary">
+      <CheckCircleOutlined
+        color="success"
+        fontSize="small"
+        sx={{flexShrink: 0}}
+      />
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{
+          minWidth: {xs: 0, md: 'auto'},
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {featureType === 'Point' && drawnFeatures?.features?.[0]?.geometry
-          ? `Location selected: ${(
+          ? `Location: ${(
               drawnFeatures.features[0].geometry as {
                 coordinates: number[];
               }
@@ -285,10 +299,11 @@ export function MapFormField(props: FieldProps): JSX.Element {
           <Box
             sx={{
               display: 'flex',
-              flexDirection: {xs: 'column', md: 'row'},
-              alignItems: {xs: 'flex-start', md: 'center'},
+              flexDirection: 'row',
+              alignItems: 'center',
               gap: theme.spacing(1.5),
-              width: '100%',
+              width: {xs: '100%', md: 'fit-content'},
+              maxWidth: '100%',
             }}
           >
             {locationChip}

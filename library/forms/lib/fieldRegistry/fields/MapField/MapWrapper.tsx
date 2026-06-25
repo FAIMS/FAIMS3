@@ -335,7 +335,7 @@ function MapWrapper(props: MapProps) {
             {props.label}
           </Button>
         ) : (
-          <Box>
+          <Box sx={{flexShrink: 0}}>
             {!props.disabled && (
               <Tooltip title="Edit location">
                 <Box
