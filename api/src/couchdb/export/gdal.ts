@@ -43,10 +43,8 @@ export const convertGeoJsonFileToGeoPackage = async ({
   geopackagePath: string;
   layerName?: string;
   append?: boolean;
-}): Promise<void> => {
-  await assertGdalAvailable();
-
-  return new Promise((resolve, reject) => {
+}): Promise<void> =>
+  new Promise((resolve, reject) => {
     const args = [
       '-f',
       'GPKG',
@@ -77,7 +75,6 @@ export const convertGeoJsonFileToGeoPackage = async ({
       reject(new Error(`ogr2ogr failed (exit ${code}): ${stderr.trim()}`));
     });
   });
-};
 
 export interface GeoPackageLayerInput {
   layerName: string;
@@ -97,6 +94,8 @@ export const convertLayeredGeoJsonToGeoPackage = async ({
   if (layers.length === 0) {
     return;
   }
+
+  await assertGdalAvailable();
 
   for (let i = 0; i < layers.length; i++) {
     const {layerName, geojsonPath} = layers[i];
