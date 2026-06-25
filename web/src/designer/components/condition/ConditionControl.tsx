@@ -238,16 +238,49 @@ export const FieldConditionControl = (props: ConditionProps) => {
     state => state.notebook.uiSpec.present.fields
   );
   const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const viewsets = useAppSelector(
+    state => state.notebook.uiSpec.present.viewsets
+  );
 
-  // work out which fields to show in the select/combobox, remove either
-  // the current field or the fields in the current view
-  let selectFields = Object.keys(allFields);
-  if (props.field) {
-    selectFields = selectFields.filter(f => f !== props.field);
-  } else if (props.view) {
-    const view = views[props.view];
-    selectFields = selectFields.filter(f => view.fields.indexOf(f) < 0);
-  }
+  // Work out which fields to show in the select/combobox. Conditions can only
+  // reference fields within the same form, so scope the list to the current
+  // form (viewset): resolve the entry context (props.field or props.view) to
+  // its containing form, then gather every field across that form's sections
+  // (mirrors TemplatedStringFieldEditor's viewSetFields). Then remove either
+  // the current field or the fields in the current view.
+  const selectFields = useMemo(() => {
+    // Which section's condition are we editing?
+    let sectionId: string | undefined;
+    if (props.view) {
+      sectionId = props.view;
+    } else if (props.field) {
+      const field = props.field;
+      sectionId = Object.keys(views).find(id =>
+        views[id].fields.includes(field)
+      );
+    } else {
+      // Standalone use, no context: nothing to scope to, show all fields.
+      return Object.keys(allFields);
+    }
+
+    // The form (viewset) that owns the section. Conditions can only reference
+    // fields in the same form, so if it can't be resolved, show nothing rather
+    // than leaking other forms' fields.
+    const viewset = Object.values(viewsets).find(
+      vs => sectionId !== undefined && vs.views.includes(sectionId)
+    );
+    const formFields = viewset
+      ? viewset.views.flatMap(id => views[id]?.fields ?? [])
+      : [];
+
+    // Exclude the current field, or the current section's own fields.
+    const ownSectionFields = props.view
+      ? (views[props.view]?.fields ?? [])
+      : [];
+    return props.field
+      ? formFields.filter(f => f !== props.field)
+      : formFields.filter(f => !ownSectionFields.includes(f));
+  }, [allFields, views, viewsets, props.field, props.view]);
 
   const targetFieldDef = condition.field ? allFields[condition.field] : null;
 
@@ -580,6 +613,26 @@ export const FieldConditionControl = (props: ConditionProps) => {
 
   const valueMismatch = !isValueValidForField();
   const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
+
+  // If there are no fields to select, show a message instead of the editor.
+  if (selectFields.length === 0) {
+    return (
+      <div style={{color: 'red'}}>
+        {props.view ? (
+          <>
+            This form has only one section. Adding conditions for a section
+            requires more than one section so that fields from other sections
+            can be referenced.
+          </>
+        ) : (
+          <>
+            This form only has one field. Please add fields to this form to
+            enable adding conditions.
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <Grid container>
