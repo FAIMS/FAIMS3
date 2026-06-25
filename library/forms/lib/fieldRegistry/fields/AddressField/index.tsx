@@ -140,6 +140,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
     return manualOnly && allowStructured;
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AutosuggestSuggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const sessionTokenRef = useRef<string | null>(null);
@@ -304,13 +305,13 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
         {/* Free-text-only: single text box (no pencil/summary when value is non-structured) */}
         {showFreeTextOnly && (
           <TextField
-            label={label}
             value={String(manualText ?? displayName ?? '')}
             placeholder="Enter address"
             fullWidth
             variant="outlined"
             disabled={disabled}
             onBlur={handleBlur}
+            slotProps={{htmlInput: {'aria-label': label ?? 'Address'}}}
             onChange={e => {
               const v = e.target.value;
               setFieldData({
@@ -327,6 +328,10 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
           <Stack spacing={1}>
             <Autocomplete<AutosuggestSuggestion | UseAsEnteredOption>
               value={null}
+              open={searchOpen && searchQuery.trim().length > 0}
+              popupIcon={searchQuery.trim() ? undefined : null}
+              onOpen={() => setSearchOpen(true)}
+              onClose={() => setSearchOpen(false)}
               inputValue={searchQuery}
               onInputChange={(_, value) => setSearchQuery(value)}
               onChange={(_, option) => {
@@ -399,11 +404,14 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
               renderInput={params => (
                 <TextField
                   {...params}
-                  label="Search for an address"
                   placeholder="Start typing an address..."
                   onBlur={handleBlur}
                   slotProps={{
                     ...params.slotProps,
+                    htmlInput: {
+                      ...(params.slotProps?.htmlInput ?? {}),
+                      'aria-label': 'Search for an address',
+                    },
                     input: {
                       ...(params.slotProps?.input ?? {}),
                       endAdornment: (

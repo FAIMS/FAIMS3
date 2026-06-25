@@ -16,6 +16,7 @@ COPY api/package.json ./api/
 COPY app/package.json ./app/
 COPY web/package.json ./web/
 COPY library/data-model/package.json ./library/data-model/
+COPY library/forms/package.json ./library/forms/
 
 # Turbo config
 COPY turbo.json ./
