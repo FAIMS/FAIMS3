@@ -42,11 +42,7 @@ export function displayIsoTimestamp(timestamp: string): string {
   return displayDateTime({timestamp: ms});
 }
 
-export function displayDateTime({
-  timestamp,
-}: {
-  timestamp: number;
-}): string {
+export function displayDateTime({timestamp}: {timestamp: number}): string {
   const date = new Date(timestamp);
   // Format: Apr 2, 2025, 3:30 PM
   return (

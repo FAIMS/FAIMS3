@@ -131,10 +131,7 @@ export const useGetLongLivedTokensColumns = ({
           row: {
             original: {lastUsedAt},
           },
-        }) =>
-          lastUsedAt
-            ? displayDateTime({timestamp: lastUsedAt})
-            : 'Never',
+        }) => (lastUsedAt ? displayDateTime({timestamp: lastUsedAt}) : 'Never'),
       },
       {
         accessorKey: 'expiresAt',

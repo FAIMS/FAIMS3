@@ -38,6 +38,11 @@ RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/
 # API service
 FROM node:22-slim AS api
 
+# ogr2ogr for GeoPackage export (see api/src/couchdb/export/gdal.ts)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends gdal-bin curl \
+  && rm -rf /var/lib/apt/lists/*
+
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"

@@ -30,6 +30,18 @@ nvm use 22
 
 You will also need Docker and Docker Compose installed.
 
+GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
+included in the API Docker image and devcontainer. For native development, `./dev.sh`
+warns if GDAL is missing; install locally when you need `.gpkg` export:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install gdal-bin
+
+# macOS (Homebrew)
+brew install gdal
+```
+
 ### Starting all services
 
 Run the script to get all services running locally:
