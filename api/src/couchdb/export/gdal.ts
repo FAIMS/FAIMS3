@@ -1,18 +1,31 @@
 /**
  * GDAL / ogr2ogr helpers for GeoPackage export.
  *
- * FAIMS does not embed a GeoPackage writer; conversion is delegated to the system
- * `ogr2ogr` binary. Callers produce layered GeoJSON FeatureCollections on disk,
- * then this module assembles them into a single multi-layer `.gpkg` file.
+ * FAIMS does not embed a GeoPackage writer; conversion is delegated to the
+ * system `ogr2ogr` binary. Callers produce layered GeoJSON FeatureCollections
+ * on disk, then this module assembles them into a single multi-layer `.gpkg`
+ * file.
  *
- * GDAL must be on PATH (`gdal-bin` on Debian/Ubuntu, `gdal-tools` on Alpine).
- * Docker images and the devcontainer install it automatically.
+ * GDAL must be on PATH (`gdal-bin` on Debian/Ubuntu, `gdal-tools` on Alpine,
+ * `brew install gdal` on macOS). Docker images and the devcontainer install it
+ * automatically.
  */
 
 import {spawn} from 'child_process';
+import {logError} from '../../logging';
 
 /** Fallback layer name when converting a single undifferentiated GeoJSON file. */
 const DEFAULT_LAYER_NAME = 'faims_export';
+
+/** Thrown when GeoPackage export is requested but `ogr2ogr` is unavailable. */
+export class GdalUnavailableError extends Error {
+  constructor(
+    message = 'GDAL ogr2ogr is not installed or not on PATH. GeoPackage export requires GDAL.'
+  ) {
+    super(message);
+    this.name = 'GdalUnavailableError';
+  }
+}
 
 /**
  * Returns true when `ogr2ogr` is available on PATH.
@@ -31,9 +44,9 @@ export const isGdalAvailable = (): Promise<boolean> =>
  */
 export const assertGdalAvailable = async (): Promise<void> => {
   if (!(await isGdalAvailable())) {
-    throw new Error(
-      'GDAL ogr2ogr is not installed or not on PATH. GeoPackage export requires GDAL.'
-    );
+    const error = new GdalUnavailableError();
+    logError(error);
+    throw error;
   }
 };
 

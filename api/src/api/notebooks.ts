@@ -75,7 +75,9 @@ import {
   generateFullExportFilename,
   streamFullExport,
 } from '../couchdb/export/fullExport';
+import {assertGdalAvailable} from '../couchdb/export/gdal';
 import {
+  projectHasSpatialFields,
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsGeoPackage,
   streamNotebookRecordsAsKML,
@@ -312,6 +314,16 @@ api.get(
       }
 
       payload.viewID = req.query.viewID;
+    }
+
+    if (req.query.format === 'geopackage') {
+      await assertGdalAvailable();
+    } else if (
+      req.query.format === 'full' &&
+      req.query.includeGeoPackage === 'true' &&
+      (await projectHasSpatialFields(req.params.id))
+    ) {
+      await assertGdalAvailable();
     }
 
     // Build the download token
@@ -913,12 +925,13 @@ api.get(
       streamNotebookRecordsAsKML(payload.projectID, res);
     } else if (payload.format === 'geopackage') {
       // Layers grouped by form + geometry type; built via temp GeoJSON + ogr2ogr.
+      await assertGdalAvailable();
       res.setHeader('Content-Type', 'application/geopackage+sqlite3');
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="${slugify(payload.projectID)}-export.gpkg"`
       );
-      streamNotebookRecordsAsGeoPackage(payload.projectID, res);
+      await streamNotebookRecordsAsGeoPackage(payload.projectID, res);
     } else if (payload.format === 'full') {
       const fullFilename = generateFullExportFilename(payload.projectID);
       res.setHeader('Content-Type', 'application/zip');

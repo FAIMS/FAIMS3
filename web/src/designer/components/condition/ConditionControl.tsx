@@ -172,7 +172,6 @@ const BooleanConditionControl = (props: ConditionProps) => {
     updateCondition(EMPTY_FIELD_CONDITION);
   };
 
-  
   const duplicateCondition = (index: number) => {
     if (condition && condition.conditions) {
       const copy = JSON.parse(

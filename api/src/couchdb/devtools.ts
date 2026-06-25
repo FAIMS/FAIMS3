@@ -286,6 +286,19 @@ const generateMapFormFieldValue = (field: any) => {
   }
 };
 
+const generateTakePointFieldValue = () => ({
+  type: 'Feature' as const,
+  properties: {
+    timestamp: nowMs(),
+    altitude: null,
+    speed: null,
+    heading: null,
+    accuracy: 20,
+    altitude_accuracy: null,
+  },
+  geometry: generateRandomPointGeometry(),
+});
+
 const generateValue = (field: any, options: {includeAttachments: boolean}) => {
   //console.log('generateValue', field);
   const fieldType = field['type-returned'];
@@ -313,6 +326,10 @@ const generateValue = (field: any, options: {includeAttachments: boolean}) => {
     return generateMapFormFieldValue(field);
   }
 
+  if (field['component-name'] === 'TakePoint') {
+    return generateTakePointFieldValue();
+  }
+
   // TODO: use 'faker' to generate more realistic data
   switch (fieldType) {
     case 'faims-core::String':
@@ -330,24 +347,7 @@ const generateValue = (field: any, options: {includeAttachments: boolean}) => {
     case 'faims-core::Date':
       return nowIso();
     case 'faims-pos::Location':
-      return {
-        type: 'Feature',
-        properties: {
-          timestamp: nowMs(),
-          altitude: null,
-          speed: null,
-          heading: null,
-          accuracy: 20,
-          altitude_accuracy: null,
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: [
-            randomInt(180) + randomInt(10000) / 10000,
-            randomInt(180) - 90 + randomInt(10000) / 10000,
-          ],
-        },
-      };
+      return generateTakePointFieldValue();
     default:
       return '';
   }

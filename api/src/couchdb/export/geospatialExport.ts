@@ -31,7 +31,7 @@ import {join} from 'path';
 import {PassThrough, pipeline} from 'stream';
 import {promisify} from 'util';
 import {getDataDb} from '..';
-import {convertLayeredGeoJsonToGeoPackage} from './gdal';
+import {assertGdalAvailable, convertLayeredGeoJsonToGeoPackage} from './gdal';
 import {getCompiledUiSpecModel} from '../notebooks';
 import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
 import {convertDataForOutput, truncateWithHash} from './utils';
@@ -875,6 +875,10 @@ export const appendSpatialFormatsToArchive = async ({
   const wantsKML = !!formats.kml;
   const wantsGeoPackage = !!formats.geopackage;
 
+  if (wantsGeoPackage) {
+    await assertGdalAvailable();
+  }
+
   // --- Setup output sinks (streams and/or temp files) ---
   let geojsonStream: PassThrough | undefined;
   let kmlStream: PassThrough | undefined;
@@ -1199,6 +1203,8 @@ export const streamNotebookRecordsAsGeoPackage = async (
       'No spatial fields in any view, cannot produce a GeoPackage export!'
     );
   }
+
+  await assertGdalAvailable();
 
   const tempDir = await mkdtemp(join(tmpdir(), 'faims-gpkg-export-'));
   const geopackagePath = join(tempDir, 'export.gpkg');

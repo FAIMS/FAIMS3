@@ -37,6 +37,7 @@ const ExportFullForm = () => {
   const {data} = useGetProject({user, projectId});
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isValidForSpatial = useMemo(() => {
     if (!data) return false;
@@ -57,6 +58,7 @@ const ExportFullForm = () => {
     if (!user) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       // Build query params from options
@@ -77,6 +79,18 @@ const ExportFullForm = () => {
           Authorization: `Bearer ${user.token}`,
         },
       });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: {message?: string};
+        } | null;
+        setSubmitError(
+          body?.error?.message ??
+            'Export failed. Please try again or contact support.'
+        );
+        return;
+      }
+
       const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
         .url;
 
@@ -303,6 +317,8 @@ const ExportFullForm = () => {
           Please select at least one component to include in the export.
         </p>
       )}
+
+      {submitError && <p className="text-sm text-destructive">{submitError}</p>}
     </div>
   );
 };

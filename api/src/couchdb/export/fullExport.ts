@@ -26,6 +26,7 @@ import {
   appendSpatialFormatsToArchive,
   SpatialArchiveFormatConfig,
 } from './geospatialExport';
+import {GdalUnavailableError} from './gdal';
 import {
   DEFAULT_FULL_EXPORT_CONFIG,
   FullExportConfig,
@@ -278,6 +279,9 @@ export const streamFullExport = async ({
           );
         }
       } catch (err) {
+        if (err instanceof GdalUnavailableError) {
+          throw err;
+        }
         const message = `Failed to export spatial data: ${err instanceof Error ? err.message : 'Unknown error'}`;
         console.error(`[FULL] ${message}`);
         metadata.warnings.push(message);

@@ -119,6 +119,17 @@ const ExportProjectForm = () => {
         },
       });
 
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: {message?: string};
+        } | null;
+        return {
+          message:
+            body?.error?.message ??
+            'Export failed. Please try again or contact support.',
+        };
+      }
+
       const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
         .url;
 

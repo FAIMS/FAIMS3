@@ -87,9 +87,7 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
     ),
     cell: ({getValue}) => {
       const v = getValue<string | undefined>();
-      return v
-        ? displayDateTime({timestamp: new Date(v).getTime()})
-        : null;
+      return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
     },
   },
   {
