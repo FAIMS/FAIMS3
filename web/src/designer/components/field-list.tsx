@@ -16,6 +16,7 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
+import {NOTEBOOK_NAME} from '@/constants';
 import {Alert, Box, Button, Stack, Tooltip, Typography} from '@mui/material';
 import {
   DndContext,
@@ -217,7 +218,17 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         <Typography variant="h2" sx={designerHeadingTextSx}>
           Fields
         </Typography>
-        <Tooltip title="Fields are the individual inputs that collect data in this section.">
+        <Tooltip
+          title={
+            <span>
+              For each section you can add one or more{' '}
+              <strong>‘fields’</strong> - these are the{' '}
+              <strong>questions or prompts</strong> that users respond to
+              when collecting data (e.g. a text input, single select, multi
+              select)
+            </span>
+          }
+        >
           <InfoIcon sx={designerInfoIconSx} />
         </Tooltip>
         <Button
@@ -269,7 +280,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           <HeadingWithInfo
             title="Visible fields"
             variant="subtitle1"
-            tooltip="Visible fields are shown to users in this section. They will appear in the survey."
+            tooltip="Visible fields will be shown to users when they are collecting data via the app."
             titleSx={{
               ...(designerFieldSubHeadingSx as Record<string, unknown>),
               fontSize: '1.1rem',
@@ -371,7 +382,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           <HeadingWithInfo
             title="Hidden fields"
             variant="subtitle1"
-            tooltip="Hidden fields stay in the schema but are not shown to users. They are available but do not appear in the survey."
+            tooltip={`Hidden fields are not shown to users when collecting data via the app - but they stay in the ${NOTEBOOK_NAME} design. Fields you've hidden can be unhidden at any time.`}
             titleSx={{
               ...(designerFieldSubHeadingSx as Record<string, unknown>),
               fontSize: '1.1rem',

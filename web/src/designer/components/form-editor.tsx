@@ -16,7 +16,7 @@
  * @file One notebook form: sections, live preview, delete guards, visibility in tab bar.
  */
 
-import {getMapConfig} from '@/constants';
+import {getMapConfig, NOTEBOOK_NAME} from '@/constants';
 import {UiSpecModel} from '@faims3/data-model';
 import {PreviewFormManager} from '@faims3/forms';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -635,7 +635,17 @@ export const FormEditor = ({
                       <Typography variant="body2" sx={{fontWeight: 700}}>
                         Include "Add New Record" button
                       </Typography>
-                      <Tooltip title='Controls whether users can create records from this form via "Add New Record".'>
+                      <Tooltip
+                        title={
+                          <span>
+                            If checked, users will be shown a button on the{' '}
+                            {NOTEBOOK_NAME} screen that allows them to respond
+                            to this form e.g. if your form is named “
+                            <em>site</em>” users will see a “add new{' '}
+                            <em>site</em>” button.
+                          </span>
+                        }
+                      >
                         <InfoIcon sx={designerInfoIconSx} />
                       </Tooltip>
                     </Stack>
@@ -888,7 +898,13 @@ export const FormEditor = ({
             >
               <HeadingWithInfo
                 title="Sections"
-                tooltip="Sections break a form into logical groups of fields."
+                tooltip={
+                  <span>
+                    For each form you can add one or more{' '}
+                    <strong>‘sections’</strong> to help organise your
+                    questions into bite sized pages or segments
+                  </span>
+                }
               />
               <Button
                 variant="contained"
