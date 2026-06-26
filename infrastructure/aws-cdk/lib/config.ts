@@ -516,6 +516,20 @@ export const UiConfiguration = z
      * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
      */
     deleteOnDeactivation: z.boolean().optional(),
+    /**
+     * Team roles to hide from Control Centre team-role dropdowns.
+     * Passed to the web build as VITE_EXCLUDED_TEAM_ROLES (comma-separated).
+     */
+    excludedTeamRoles: z
+      .array(
+        z.enum([
+          'TEAM_MEMBER',
+          'TEAM_MEMBER_CREATOR',
+          'TEAM_MANAGER',
+          'TEAM_ADMIN',
+        ])
+      )
+      .optional(),
   })
   .refine(
     data => {

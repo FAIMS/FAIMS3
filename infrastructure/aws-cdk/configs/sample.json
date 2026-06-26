@@ -33,7 +33,8 @@
       "source": "NONE"
     },
     "forceRemoteDeletion": "never",
-    "deleteOnDeactivation": false
+    "deleteOnDeactivation": false,
+    "excludedTeamRoles": ["TEAM_MEMBER_CREATOR"]
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
