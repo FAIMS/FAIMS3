@@ -260,10 +260,10 @@ export function Form<
                                 value={field.value ?? ''}
                                 disabled={isDisabled}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full">
                                   <SelectValue placeholder={`Select ${name}`} />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="max-w-md">
                                   {options.map(
                                     ({label, value, description}) => (
                                       <SelectItem
@@ -291,42 +291,40 @@ export function Form<
                                   field.onChange(event.target.files[0])
                                 }
                               />
-                            ) : type === 'number' ? (
-                              <Input
-                                name={field.name}
-                                ref={field.ref}
-                                onBlur={field.onBlur}
-                                type="number"
-                                min={min}
-                                max={max}
-                                step={step}
-                                disabled={isDisabled}
-                                value={field.value ?? ''}
-                                placeholder={placeholder}
-                                onChange={event =>
-                                  field.onChange(event.target.value)
-                                }
-                              />
                             ) : (
                               <Input
                                 {...field}
                                 type={type || 'text'}
                                 min={
-                                  type === 'datetime-local' ? min : undefined
+                                  type === 'number' || type === 'datetime-local'
+                                    ? min
+                                    : undefined
                                 }
                                 max={
-                                  type === 'datetime-local' ? max : undefined
+                                  type === 'number' || type === 'datetime-local'
+                                    ? max
+                                    : undefined
                                 }
                                 maxLength={
+                                  type !== 'number' &&
                                   type !== 'datetime-local' &&
                                   maxLength !== undefined
                                     ? maxLength
                                     : undefined
                                 }
+                                step={type === 'number' ? step : undefined}
                                 disabled={isDisabled}
                                 value={field.value ?? ''}
                                 placeholder={placeholder}
-                                onChange={event => field.onChange(event)}
+                                onChange={event =>
+                                  type === 'number'
+                                    ? field.onChange(
+                                        event.target.value === ''
+                                          ? undefined
+                                          : Number(event.target.value)
+                                      )
+                                    : field.onChange(event)
+                                }
                               />
                             )}
                           </FormControl>
