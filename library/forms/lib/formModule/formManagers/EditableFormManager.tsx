@@ -37,6 +37,7 @@ import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
+import {onChangeComputedFields} from './computedFields';
 import {
   FieldVisibilityMap,
   FormNavigationContext,
@@ -233,6 +234,12 @@ export const EditableFormManager: React.FC<
     try {
       const revisionToUpdate = await ensureWorkingRevision();
 
+      onChangeComputedFields({
+        form: form as FaimsForm,
+        formId: props.formId,
+        uiSpec: dataEngine.uiSpec,
+        runListeners: false,
+      });
       onChangeTemplatedFields({
         form: form as FaimsForm,
         formId: props.formId,

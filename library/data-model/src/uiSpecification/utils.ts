@@ -2,6 +2,7 @@ import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
 import {compileExpression, getDependantFields} from './conditionals';
+import {compileComputedExpression} from './expressions';
 import {
   CompiledUiSpecModel,
   CompiledUiSpecSections,
@@ -570,6 +571,22 @@ export function compileUiSpecConditionals(
     const fieldDef = uiSpecification.fields[field];
     fieldDef.conditionFn = compileExpression(fieldDef.condition);
     depFields.push(...getDependantFields(fieldDef.condition));
+
+    // Compile ComputedField expressions at notebook load, attaching the
+    // evaluator and its references in place (mirrors conditionFn above).
+    if (fieldDef['component-name'] === 'ComputedField') {
+      const expr = fieldDef['component-parameters']?.expression;
+      if (typeof expr === 'string' && expr.trim() !== '') {
+        try {
+          const compiled = compileComputedExpression(expr);
+          fieldDef.expressionFn = compiled.evaluate;
+          fieldDef.expressionRefs = compiled.references;
+        } catch (e) {
+          // Invalid expression: leave unset so recompute yields a blank value.
+          console.warn(`ComputedField "${field}" has an invalid expression`, e);
+        }
+      }
+    }
   }
 
   const views: CompiledUiSpecSections = {};
