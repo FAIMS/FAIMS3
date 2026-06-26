@@ -1,6 +1,7 @@
 import {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
+import {displayDateTime} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import {TemplateCellComponent} from './cells/template-cell';
 import {
@@ -78,6 +79,16 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Created by" />
     ),
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Created" />
+    ),
+    cell: ({getValue}) => {
+      const v = getValue<string | undefined>();
+      return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
+    },
   },
   {
     accessorKey: 'description',

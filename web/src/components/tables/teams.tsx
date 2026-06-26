@@ -1,7 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {GetListTeamsResponse} from '@faims3/data-model';
-import {displayUnixTimestampMs} from '@/lib/time';
+import {displayDateTime} from '@/lib/time';
 
 export const columns: ColumnDef<GetListTeamsResponse['teams'][number]>[] = [
   {
@@ -33,7 +33,7 @@ export const columns: ColumnDef<GetListTeamsResponse['teams'][number]>[] = [
 
       // Convert timestamp to a readable date format
       if (timestamp) {
-        return displayUnixTimestampMs({timestamp});
+        return displayDateTime({timestamp});
       }
       return '';
     },

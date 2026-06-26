@@ -385,7 +385,7 @@ export const SectionEditor = ({
             <Typography sx={designerPipeSx}> | </Typography>
 
             <ConditionModal
-              label="Add conditions to section"
+              label="Add condition to section"
               initial={fView.condition}
               onChange={conditionChanged}
               view={viewId}

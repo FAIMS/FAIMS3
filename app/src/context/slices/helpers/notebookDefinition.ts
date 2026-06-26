@@ -45,5 +45,6 @@ export function projectInformationFromGetNotebook(
     status: notebook.status,
     updatedAt: notebook.updatedAt,
     uiDefinition,
+    recordCount: notebook.recordCount,
   };
 }

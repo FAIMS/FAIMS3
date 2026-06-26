@@ -394,15 +394,21 @@ export type PostRecordStatusResponse = z.infer<
   typeof PostRecordStatusResponseSchema
 >;
 
-// Post generate random records RandomRecords input
-export const PostRandomRecordsInputSchema = z.object({count: z.number()});
+// Developer-mode bulk record generation (requires DEVELOPER_MODE on the API)
+export const PostRandomRecordsInputSchema = z.object({
+  /** Number of random records to create (1–1000 per request). */
+  count: z.number().int().min(1).max(1000),
+  /** When false, skip populating file/photo fields (faster). Defaults to true. */
+  includeAttachments: z.boolean().optional().default(true),
+  /** Concurrent record upserts (1–50). Higher = faster but more CouchDB load. */
+  parallelism: z.number().int().min(1).max(50).optional().default(10),
+});
 export type PostRandomRecordsInput = z.infer<
   typeof PostRandomRecordsInputSchema
 >;
 
-// Post generate random records RandomRecords response
+// Response: IDs of records created by bulk generation
 export const PostRandomRecordsResponseSchema = z.object({
-  // Ids of new records
   record_ids: z.array(z.string()),
 });
 export type PostRandomRecordsResponse = z.infer<

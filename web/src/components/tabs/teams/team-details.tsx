@@ -5,7 +5,7 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetTeam} from '@/hooks/queries';
 import {useMemo} from 'react';
-import {displayUnixTimestampMs} from '@/lib/time';
+import {displayDateTime} from '@/lib/time';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -31,10 +31,10 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
     return rawData
       ? {
           ...rawData,
-          createdAtDisplay: displayUnixTimestampMs({
+          createdAtDisplay: displayDateTime({
             timestamp: rawData.createdAt,
           }),
-          updatedAtDisplay: displayUnixTimestampMs({
+          updatedAtDisplay: displayDateTime({
             timestamp: rawData.updatedAt,
           }),
         }

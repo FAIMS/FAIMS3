@@ -1,5 +1,5 @@
 import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
-import {Alert, AlertTitle, AppBar, Box, Paper, Tab, Tabs} from '@mui/material';
+import {Alert, AlertTitle, Box, Paper, Tab, Tabs} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
+import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
@@ -41,9 +42,9 @@ type TabIndex = 0 | 1 | 2 | 3 | 4;
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
   ['other_records', 1],
-  ['details', 2],
-  ['settings', 3],
-  ['map', 4],
+  ['map', 2],
+  ['details', 3],
+  ['settings', 4],
 ]);
 const INDEX_TO_TAB = new Map<TabIndex, TabIndexLabel>(
   Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
@@ -196,6 +197,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setTabValue(newValue);
   };
 
+  const goToSyncSettings = () => {
+    setTabIndex(4);
+    setTabValue(4);
+  };
+
   // recordLabel based on viewsets
   const recordLabel =
     uiSpecification.visible_types?.length === 1
@@ -221,6 +227,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           tab. No additional data can be collected for this {NOTEBOOK_NAME}.
         </Alert>
       )}
+      <PushOnlySyncBanner
+        project={project}
+        onGoToSyncSettings={goToSyncSettings}
+      />
       <Box>
         {isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>

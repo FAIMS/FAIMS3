@@ -55,9 +55,11 @@ the active list but does not delete any databases.
 Note that when a local PouchDB instance is created, it will connect to an existing
 database if present or create a new one if not.
 
-The sync status of a project can be updated with the `stopSyncingProject` and
-`resumeSyncingProject` actions. These actions leave the database connections
-alone but operate on the sync object (created with `createPouchDBSync`).
+Record replication for an activated project is controlled with the
+`setSyncMode` async thunk (sync off, upload only, or upload and download).
+It tears down and recreates the live PouchDB replication handle via
+`replaceProjectReplication` while leaving local and remote database connections
+registered in {@link databaseService}.
 
 Lower level database connection management happens in [databaseService.ts](../../../../../app/src/context/slices/databaseService.ts)
 via the singleton `DatabaseService` class. This class maintains a register of

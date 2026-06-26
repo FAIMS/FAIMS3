@@ -94,6 +94,7 @@ function RouteComponent() {
         columns={columns as ColumnDef<TemplateListRow, unknown>[]}
         data={filteredTemplates}
         loading={isPending}
+        initialSorting={[{id: 'createdAt', desc: true}]}
         toolbarExtra={
           <TemplateVisibilityFilterSelect
             value={visibilityFilter}

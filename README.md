@@ -30,6 +30,18 @@ nvm use 22
 
 You will also need Docker and Docker Compose installed.
 
+GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
+included in the API Docker image and devcontainer. For native development, `./dev.sh`
+warns if GDAL is missing; install locally when you need `.gpkg` export:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install gdal-bin
+
+# macOS (Homebrew)
+brew install gdal
+```
+
 ### Starting all services
 
 Run the script to get all services running locally:
@@ -45,6 +57,12 @@ This spins up four services:
 - Web app (`/web`) live reloading on http://localhost:3001
 - CouchDB on http://localhost:5984/\_utils
 
+On the **first run** this also installs all monorepo dependencies
+(`pnpm install`) and builds the shared libraries (`turbo build`) before the
+Docker images are built, so expect it to take several minutes. The `.env` files
+for `api`, `app` and `web` are created automatically from the `.env.dist`
+templates, and local signing keys are generated for you.
+
 ### Additional options
 
 - **Rebuild containers**: Use `--build` flag to rebuild Docker images
@@ -59,6 +77,22 @@ This spins up four services:
   ```bash
   ./localdev.sh --all --clear-db
   ```
+
+### Loading sample notebooks and templates
+
+The services start with an empty database. To populate it with the sample
+notebooks and templates:
+
+1. Open the Conductor at http://localhost:8080/ and log in as the local `admin`
+   user (the password is `COUCHDB_PASSWORD` in `api/.env`).
+2. On the Conductor home page, scroll to **"Copy Bearer Token to Clipboard"** and
+   paste the value into the root `.env` file as `USER_TOKEN`.
+3. Load the samples:
+
+   ```bash
+   pnpm run load-notebooks
+   pnpm run load-templates
+   ```
 
 ## CouchDB-only local development (recommended for live-reloading)
 
