@@ -172,7 +172,6 @@ const RelatedRecordListItem = ({
             primary: {
               variant: 'body2',
               sx: {
-                fontFamily: 'monospace',
                 fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
                 // Monospace only as a fallback when no real HRID was configured
                 // (i.e. we're showing the opaque record id). Real HRIDs use the

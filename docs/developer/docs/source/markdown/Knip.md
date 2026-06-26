@@ -77,15 +77,15 @@ mode and declares **every** pnpm workspace explicitly. Each entry under
 
 The workspaces and their entry points:
 
-| Workspace                | Entry                                                | Notes                                             |
-| ------------------------ | ---------------------------------------------------- | ------------------------------------------------- |
-| `api`                    | `src/index.ts`, `src/scripts/*.ts`                   | Express server + ts-node CLIs; Mocha tests via plugin |
-| `app`                    | `src/index.tsx`                                       | Vite/Vitest + Capacitor                           |
-| `web`                    | `src/main.tsx`                                        | Vite/Vitest + TanStack Router (`routeTree.gen.ts`)|
-| `library/forms`          | `lib/index.ts`, `src/main.tsx`                        | Published lib (`lib/`) + dev harness (`src/`)     |
-| `library/data-model`     | `src/index.ts`                                        | Jest tests via plugin                             |
-| `infrastructure/aws-cdk` | `bin/aws-cdk-faims-infra.ts`, `validateConfig.ts`    | Code lives in `lib/`/`bin/`, not `src/`           |
-| `e2e`                    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium      |
+| Workspace                | Entry                                                                        | Notes                                                 |
+| ------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `api`                    | `src/index.ts`, `src/scripts/*.ts`                                           | Express server + ts-node CLIs; Mocha tests via plugin |
+| `app`                    | `src/index.tsx`                                                              | Vite/Vitest + Capacitor                               |
+| `web`                    | `src/main.tsx`                                                               | Vite/Vitest + TanStack Router (`routeTree.gen.ts`)    |
+| `library/forms`          | `lib/index.ts`, `src/main.tsx`                                               | Published lib (`lib/`) + dev harness (`src/`)         |
+| `library/data-model`     | `src/index.ts`                                                               | Jest tests via plugin                                 |
+| `infrastructure/aws-cdk` | `bin/aws-cdk-faims-infra.ts`, `validateConfig.ts`                            | Code lives in `lib/`/`bin/`, not `src/`               |
+| `e2e`                    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium                                  |
 
 Knip auto-detects and runs **tool plugins** based on each workspace's
 dependencies and config files (Vite, Vitest, Jest, Mocha, WebdriverIO,
@@ -107,7 +107,7 @@ The config also sets:
   ```
 
 - `ignoreBinaries: ["run-script"]` — suppresses a false positive: `pnpm
-  run-script ...` is a built-in pnpm subcommand, not an external binary.
+run-script ...` is a built-in pnpm subcommand, not an external binary.
 - Per-workspace `ignoreDependencies` for packages that are **resolved at
   runtime by a toolchain** and can never be seen by static analysis:
   - `app`: `@capacitor/android`, `@capacitor/ios` — native platform packages,
@@ -121,7 +121,7 @@ The config also sets:
 Knip honours `.gitignore` files when building its `project` file list. A
 malformed pattern in `api/.gitignore` (`*data_dummy_listing||*`) was previously
 parsed by Knip's glob engine as an empty alternation (`||`) that matched
-**everything**, so the entire `api/src` tree was excluded and *every* api
+**everything**, so the entire `api/src` tree was excluded and _every_ api
 dependency was falsely reported as unused. Git itself treats the `|` characters
 literally, so the bug was invisible outside of Knip. The pattern has been
 corrected to `*data_dummy_listing*` (its evident intent), which both fixes Knip
@@ -134,18 +134,18 @@ With the corrected configuration, the remaining findings are **genuine** and
 worth reviewing — they are no longer configuration artefacts. As of writing, a
 `pnpm knip` run reports roughly:
 
-| Category                     | Count | What to do                                                  |
-| ---------------------------- | ----- | ---------------------------------------------------------- |
-| Unused files                 | ~18   | Verify, then delete (e.g. orphaned themes, `._test` files) |
-| Unused dependencies          | ~51   | Verify each, then remove from the relevant `package.json`  |
-| Unused devDependencies       | ~28   | As above                                                   |
-| Unlisted dependencies        | ~10   | Add the package to the correct `package.json`              |
-| Unlisted binaries            | ~3    | Declare the providing package, or ignore if external (CI)  |
-| Unresolved imports           | ~2    | Fix the import / install or remove the referenced types    |
-| Unused exports               | ~236  | Verify, then remove the `export` keyword or the symbol     |
-| Unused exported types/enums  | ~11   | As above                                                   |
-| Duplicate exports            | ~42   | Mostly intentional back-compat aliases — see below         |
-| Configuration hints          | ~1    | Root `package.json` `main: index.js` points at a missing file |
+| Category                    | Count | What to do                                                    |
+| --------------------------- | ----- | ------------------------------------------------------------- |
+| Unused files                | ~18   | Verify, then delete (e.g. orphaned themes, `._test` files)    |
+| Unused dependencies         | ~51   | Verify each, then remove from the relevant `package.json`     |
+| Unused devDependencies      | ~28   | As above                                                      |
+| Unlisted dependencies       | ~10   | Add the package to the correct `package.json`                 |
+| Unlisted binaries           | ~3    | Declare the providing package, or ignore if external (CI)     |
+| Unresolved imports          | ~2    | Fix the import / install or remove the referenced types       |
+| Unused exports              | ~236  | Verify, then remove the `export` keyword or the symbol        |
+| Unused exported types/enums | ~11   | As above                                                      |
+| Duplicate exports           | ~42   | Mostly intentional back-compat aliases — see below            |
+| Configuration hints         | ~1    | Root `package.json` `main: index.js` points at a missing file |
 
 Counts will drift as the codebase changes.
 
@@ -162,7 +162,7 @@ Counts will drift as the codebase changes.
   by Vitest and therefore show up as unused files. They are orphaned test files,
   not dead production code — decide whether to re-enable or delete them.
 
-### Common reasons for a finding that is *not* dead code
+### Common reasons for a finding that is _not_ dead code
 
 Before deleting anything, check for these (they are the usual false-positive
 sources, and the ones that remain are why every finding needs a quick manual

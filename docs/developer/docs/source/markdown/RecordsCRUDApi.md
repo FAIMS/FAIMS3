@@ -49,7 +49,7 @@ Authorization is enforced in two layers:
 - **PUT** accepts the same metadata shape on fields you update. The server writes **references** (`faims_attachments`) on AVPs; it does **not** create new attachment documents or accept raw file data (no multipart, base64 payload, or equivalent in this API). Pointing at attachment IDs that already exist in the project data store may be possible, but **uploading new files through this REST surface is not supported** at present.
 - The FAIMS app stores binaries via the data model’s attachment services and sync; that path is separate from these routes.
 
-To obtain attachment **files** in bulk, use the notebook **export** API (for example ZIP or full export) under `/api/notebooks/...`, not the per-record CRUD paths documented here.
+To obtain attachment **files** in bulk, use the notebook **export** API (for example ZIP or full export) under `/api/notebooks/...`, not the per-record CRUD paths documented here. Spatial formats (GeoJSON, KML, GeoPackage) are described in [GeospatialExport](GeospatialExport.md).
 
 ## Endpoints
 

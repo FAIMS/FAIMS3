@@ -13,31 +13,37 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: sync.tsx
+ * Filename: sync_switch.tsx
  * Description:
- * This provides a react component to manage the syncing state of a specific
- * project via a toggle.
+ * Sync mode selector for an activated notebook.
  */
 
 import {
-  Alert,
-  AlertTitle,
   Box,
   Button,
   Dialog,
   DialogActions,
-  FormControlLabel,
+  DialogContent,
+  DialogTitle,
+  FormControl,
   FormHelperText,
-  Switch,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
   Typography,
 } from '@mui/material';
 import {useState} from 'react';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {
   Project,
-  resumeSyncingProject,
-  stopSyncingProject,
+  setSyncMode,
+  SyncMode,
 } from '../../../../context/slices/projectSlice';
+import {
+  SYNC_MODE_LABELS,
+  syncModeIncludesPull,
+} from '../../../../sync/syncMode';
+import {SyncModeHelpContent} from '../../../../sync/syncModeHelpContent';
 import {theme} from '../../../themes';
 import NotebookActivationSwitch from './activation-switch';
 import {useAppDispatch} from '../../../../context/store';
@@ -48,16 +54,55 @@ type NotebookSyncSwitchProps = {
   setTabID?: Function;
 };
 
+const SYNC_MODE_OPTIONS: SyncMode[] = ['none', 'push', 'both'];
+
 export default function NotebookSyncSwitch({
   project,
   showHelperText,
   setTabID = () => {},
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
+  const [pendingMode, setPendingMode] = useState<SyncMode | null>(null);
   const dispatch = useAppDispatch();
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  const isSyncing = project.database?.isSyncing ?? false;
+
+  const currentMode = project.database?.syncMode ?? 'none';
+
+  const handleModeSelect = (event: SelectChangeEvent<SyncMode>) => {
+    const next = event.target.value as SyncMode;
+    if (next === currentMode) {
+      return;
+    }
+    setPendingMode(next);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setPendingMode(null);
+  };
+
+  const handleConfirm = () => {
+    if (!pendingMode) {
+      handleClose();
+      return;
+    }
+    dispatch(
+      setSyncMode({
+        projectId: project.projectId,
+        serverId: project.serverId,
+        syncMode: pendingMode,
+      })
+    );
+    handleClose();
+  };
+
+  const warning =
+    pendingMode !== null ? (
+      <SyncModeHelpContent
+        mode={pendingMode}
+        recordCount={project.recordCount}
+      />
+    ) : null;
 
   return (
     <Box sx={{display: 'flex', alignItems: 'center', height: '100%'}}>
@@ -69,57 +114,65 @@ export default function NotebookSyncSwitch({
         />
       ) : (
         <Box>
-          <FormControlLabel
-            sx={{mr: 0, md: 2}}
-            control={
-              <Switch
-                checked={isSyncing ?? false}
-                disabled={false}
-                onClick={handleOpen}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: theme.palette.icon.main,
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: theme.palette.icon.main,
-                  },
-                }}
-              />
-            }
-            label={
-              <Typography variant={'button'}>
-                {isSyncing ? 'On' : 'Off'}
-              </Typography>
-            }
-          />
+          <FormControl fullWidth size="small" sx={{minWidth: 220}}>
+            <Select
+              value={currentMode}
+              onChange={handleModeSelect}
+              renderValue={value => SYNC_MODE_LABELS[value as SyncMode]}
+              aria-label="Sync mode"
+            >
+              {SYNC_MODE_OPTIONS.map(mode => (
+                <MenuItem key={mode} value={mode}>
+                  {SYNC_MODE_LABELS[mode]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           {showHelperText ? (
             <FormHelperText>
-              Toggle syncing this {NOTEBOOK_NAME} to the server.
+              Choose how this {NOTEBOOK_NAME} syncs record data with the server.
+              {!syncModeIncludesPull(currentMode)
+                ? ' Attachment download requires two-way sync.'
+                : ''}
             </FormHelperText>
-          ) : (
-            ''
-          )}
+          ) : null}
           <Dialog
             open={open}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
+            onClose={handleClose}
+            aria-labelledby="sync-mode-dialog-title"
+            maxWidth="sm"
+            fullWidth
             slotProps={{
               paper: {
-                sx: {padding: 2},
+                sx: {p: 1},
               },
             }}
           >
-            <Alert severity={isSyncing ? 'warning' : 'info'}>
-              <AlertTitle>Are you sure?</AlertTitle>
-              Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
-              {project.name} {NOTEBOOK_NAME} to your device?
-            </Alert>
+            <DialogTitle id="sync-mode-dialog-title">
+              Change sync mode?
+            </DialogTitle>
+            <DialogContent>
+              {pendingMode !== null ? (
+                <Typography variant="body2" sx={{mb: 1}}>
+                  Switch to &ldquo;{SYNC_MODE_LABELS[pendingMode]}&rdquo;?
+                </Typography>
+              ) : null}
+              {warning ? (
+                <Typography variant="body2" component="div">
+                  {warning}
+                </Typography>
+              ) : null}
+            </DialogContent>
             <DialogActions className="dialog-actions-spread">
               <Button
                 variant="contained"
+                disableElevation
                 sx={{
                   backgroundColor: theme.palette.dialogButton.cancel,
                   color: theme.palette.dialogButton.dialogText,
+                  '&:hover': {
+                    backgroundColor: theme.palette.text.primary,
+                  },
                 }}
                 onClick={handleClose}
                 autoFocus
@@ -127,35 +180,18 @@ export default function NotebookSyncSwitch({
                 Cancel
               </Button>
               <Button
-                size={'small'}
                 variant="contained"
-                sx={{
-                  backgroundColor: theme.palette.dialogButton?.confirm,
-                  color: theme.palette.dialogButton.dialogText,
-                }}
                 disableElevation
-                onClick={async () => {
-                  if (isSyncing) {
-                    // stop syncing
-                    dispatch(
-                      stopSyncingProject({
-                        projectId: project.projectId,
-                        serverId: project.serverId,
-                      })
-                    );
-                  } else {
-                    // start syncing
-                    dispatch(
-                      resumeSyncingProject({
-                        projectId: project.projectId,
-                        serverId: project.serverId,
-                      })
-                    );
-                  }
-                  handleClose();
+                sx={{
+                  backgroundColor: theme.palette.dialogButton.confirm,
+                  color: theme.palette.dialogButton.dialogText,
+                  '&:hover': {
+                    backgroundColor: theme.palette.dialogButton.hoverBackground,
+                  },
                 }}
+                onClick={handleConfirm}
               >
-                {isSyncing ? 'Stop ' : 'Start'} sync
+                Confirm
               </Button>
             </DialogActions>
           </Dialog>

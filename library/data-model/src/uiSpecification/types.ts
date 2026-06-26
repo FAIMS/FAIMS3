@@ -173,6 +173,8 @@ export const UiSpecFormSchema = z
     hridField: z.string().optional(),
     /** How the form's sections are laid out. */
     layout: z.enum(['inline', 'tabs']).optional(),
+    /** Whether records of this form type appear on the notebook overview map. */
+    displayInOverviewMap: z.boolean().optional(),
   })
   .passthrough();
 export type UiSpecForm = z.infer<typeof UiSpecFormSchema>;

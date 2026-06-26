@@ -1,6 +1,6 @@
 {
   "name": "@faims3/data-model",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Database access layer for FAIMS3",
   "license": "Apache",
   "author": "",
@@ -34,7 +34,9 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "clean": "gts clean && rm -rf build",
     "dev": "pnpm run watch",
-    "watch": "tsc -p tsconfig.json --watch",
+    "watch": "pnpm run watch:cjs & pnpm run watch:esm",
+    "watch:cjs": "tsc -p tsconfig.json --watch",
+    "watch:esm": "tsc -p tsconfig.esm.json --watch",
     "test": "NODE_ENV=test jest",
     "test-debug": "NODE_ENV=test jest --testTimeout=100000000",
     "test:watch": "NODE_ENV=test jest --watchAll=true",
