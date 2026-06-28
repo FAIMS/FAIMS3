@@ -2090,7 +2090,7 @@
             "byteCount": {
               "type": "integer",
               "minimum": 0,
-              "description": "Optional size of the notebook’s data in bytes (projects DB v4+)"
+              "description": "Size of the notebook’s data in bytes (projects DB v4+)"
             }
           },
           "required": ["is_admin"]
