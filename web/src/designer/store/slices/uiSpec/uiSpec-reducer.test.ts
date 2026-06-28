@@ -20,6 +20,7 @@ import {
   viewSetDeleted,
   viewSetHridUpdated,
   viewSetLayoutUpdated,
+  viewSetDisplayInOverviewMapUpdated,
   viewSetSummaryFieldsUpdated,
 } from '.';
 
@@ -226,6 +227,15 @@ describe('uiSpecificationReducer', () => {
       viewSetLayoutUpdated({viewSetId: 'formA', layout: 'tabs'})
     );
     expect(layoutUpdated.viewsets.formA.layout).toBe('tabs');
+
+    const mapHidden = uiSpecificationReducer.reducer(
+      layoutUpdated,
+      viewSetDisplayInOverviewMapUpdated({
+        viewSetId: 'formA',
+        displayInOverviewMap: false,
+      })
+    );
+    expect(mapHidden.viewsets.formA.displayInOverviewMap).toBe(false);
 
     expect(layoutUpdated.visible_types).toEqual(['formA', 'formB']);
 

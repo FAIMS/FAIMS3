@@ -17,6 +17,11 @@ export type ConditionProps = {
   /** When set, restricts which fields can be chosen (e.g. same-section rules). */
   field?: string;
   view?: string;
+  /**
+   * When set, this condition sits inside a boolean group and can be copied:
+   * the parent appends a duplicate (field + operator + value) to the group.
+   */
+  onDuplicate?: () => void;
 };
 
 /** Select / radio option shape used when building conditions against choice fields. */

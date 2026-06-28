@@ -132,6 +132,16 @@ export const viewSetReducers = {
       state.viewsets[viewSetId].hridField = hridField;
     }
   },
+  /** Whether records of this form type appear on the notebook overview map. */
+  viewSetDisplayInOverviewMapUpdated: (
+    state: NotebookUISpec,
+    action: PayloadAction<{viewSetId: string; displayInOverviewMap: boolean}>
+  ) => {
+    const {viewSetId, displayInOverviewMap} = action.payload;
+    if (viewSetId in state.viewsets) {
+      state.viewsets[viewSetId].displayInOverviewMap = displayInOverviewMap;
+    }
+  },
   /** Add/remove form id from `visible_types` when user toggles form in notebook chrome. */
   formVisibilityUpdated: (
     state: NotebookUISpec,

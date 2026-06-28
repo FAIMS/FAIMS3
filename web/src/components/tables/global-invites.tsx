@@ -8,7 +8,7 @@ import {
   GetGlobalInvitesResponse,
   roleDetails,
 } from '@faims3/data-model';
-import {displayUnixTimestampMs} from '@/lib/time';
+import {displayDateTime} from '@/lib/time';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
@@ -68,7 +68,7 @@ export const useGetGlobalInviteColumns = ({
         row: {
           original: {expiry},
         },
-      }) => displayUnixTimestampMs({timestamp: expiry}),
+      }) => displayDateTime({timestamp: expiry}),
     },
     {
       accessorKey: 'uses',

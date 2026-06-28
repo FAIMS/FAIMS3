@@ -16,8 +16,11 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
+  useFormField,
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {Checkbox} from '@/components/ui/checkbox';
+import {Label} from '@/components/ui/label';
 import React, {useState} from 'react';
 import {Alert, AlertTitle, AlertDescription} from './ui/alert';
 import {
@@ -48,11 +51,43 @@ export interface Field {
   placeholder?: string;
   /** HTML `maxLength` for text inputs */
   maxLength?: number;
+  /** Inline label beside the control when `type` is `checkbox` (defaults to `label`) */
+  checkboxLabel?: string;
 }
 
 interface Divider {
   index: number;
   component: React.ReactNode;
+}
+
+/** Checkbox row wired to react-hook-form field id for accessible labelling. */
+function CheckboxControlRow({
+  checked,
+  onCheckedChange,
+  disabled,
+  controlLabel,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled: boolean;
+  controlLabel: string;
+}) {
+  const {formItemId} = useFormField();
+
+  return (
+    <div className="flex items-center gap-2 pt-1.5">
+      <FormControl>
+        <Checkbox
+          checked={checked}
+          onCheckedChange={value => onCheckedChange(value === true)}
+          disabled={disabled}
+        />
+      </FormControl>
+      <Label htmlFor={formItemId} className="font-normal cursor-pointer">
+        {controlLabel}
+      </Label>
+    </div>
+  );
 }
 
 /**
@@ -101,8 +136,21 @@ export function Form<
   const form = useForm<TSchema>({
     resolver: zodResolver(
       z.object(
-        fields.reduce((acc, {name, schema}) => {
-          acc[name] = schema;
+        fields.reduce((acc, field) => {
+          // HTML number inputs emit strings; coerce before Zod validation.
+          acc[field.name] =
+            field.type === 'number'
+              ? z.preprocess(value => {
+                  if (value === '' || value === undefined || value === null) {
+                    return undefined;
+                  }
+                  if (typeof value === 'number') {
+                    return value;
+                  }
+                  const parsed = Number(value);
+                  return Number.isNaN(parsed) ? value : parsed;
+                }, field.schema)
+              : field.schema;
           return acc;
         }, {} as z.ZodRawShape)
       )
@@ -138,7 +186,7 @@ export function Form<
         })}
         className="flex flex-col gap-6"
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           {fields.map(
             (
               {
@@ -154,6 +202,7 @@ export function Form<
                 step,
                 placeholder,
                 maxLength,
+                checkboxLabel,
               },
               index
             ) => {
@@ -178,93 +227,116 @@ export function Form<
                   <FormField
                     control={form.control}
                     name={fieldName}
-                    render={({field}) => (
-                      <FormItem>
-                        {label && <FormLabel>{label}</FormLabel>}
-                        {description && (
-                          <FormDescription>{description}</FormDescription>
-                        )}
-                        <FormControl>
-                          {options ? (
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value ?? ''}
-                              disabled={isDisabled}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder={`Select ${name}`} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {options.map(({label, value, description}) => (
-                                  <SelectItem
-                                    key={value}
-                                    value={value}
-                                    description={description}
-                                  >
-                                    {label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : type === 'file' ? (
-                            <Input
-                              type="file"
-                              min={min}
-                              max={max}
-                              step={step}
-                              disabled={isDisabled}
-                              className="cursor-pointer"
-                              placeholder={placeholder}
-                              onChange={event =>
-                                event.target.files &&
-                                field.onChange(event.target.files[0])
-                              }
-                            />
-                          ) : (
-                            <Input
-                              {...field}
-                              type={type || 'text'}
-                              min={
-                                type === 'number' || type === 'datetime-local'
-                                  ? min
-                                  : undefined
-                              }
-                              max={
-                                type === 'number' || type === 'datetime-local'
-                                  ? max
-                                  : undefined
-                              }
-                              maxLength={
-                                type !== 'number' &&
-                                type !== 'datetime-local' &&
-                                maxLength !== undefined
-                                  ? maxLength
-                                  : undefined
-                              }
-                              step={type === 'number' ? step : undefined}
-                              disabled={isDisabled}
-                              value={field.value ?? ''}
-                              placeholder={placeholder}
-                              onChange={event =>
-                                type === 'number'
-                                  ? field.onChange(
-                                      event.target.value === ''
-                                        ? undefined
-                                        : Number(event.target.value)
-                                    )
-                                  : field.onChange(event)
-                              }
-                            />
+                    render={({field}) =>
+                      type === 'checkbox' ? (
+                        <FormItem>
+                          {label && <FormLabel>{label}</FormLabel>}
+                          {description && (
+                            <FormDescription>{description}</FormDescription>
                           )}
-                        </FormControl>
-                        {showExclusionWarning && (
-                          <p className="text-sm text-amber-600 dark:text-amber-500 mt-1.5">
-                            {excludedByFunction.explanation}
-                          </p>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                          <CheckboxControlRow
+                            checked={field.value === true}
+                            onCheckedChange={field.onChange}
+                            disabled={isDisabled}
+                            controlLabel={checkboxLabel ?? label ?? 'Enabled'}
+                          />
+                          {showExclusionWarning && (
+                            <p className="text-sm text-amber-600 dark:text-amber-500 mt-1.5">
+                              {excludedByFunction.explanation}
+                            </p>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      ) : (
+                        <FormItem>
+                          {label && <FormLabel>{label}</FormLabel>}
+                          {description && (
+                            <FormDescription>{description}</FormDescription>
+                          )}
+                          <FormControl>
+                            {options ? (
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value ?? ''}
+                                disabled={isDisabled}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder={`Select ${name}`} />
+                                </SelectTrigger>
+                                <SelectContent className="max-w-md">
+                                  {options.map(
+                                    ({label, value, description}) => (
+                                      <SelectItem
+                                        key={value}
+                                        value={value}
+                                        description={description}
+                                      >
+                                        {label}
+                                      </SelectItem>
+                                    )
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            ) : type === 'file' ? (
+                              <Input
+                                type="file"
+                                min={min}
+                                max={max}
+                                step={step}
+                                disabled={isDisabled}
+                                className="cursor-pointer"
+                                placeholder={placeholder}
+                                onChange={event =>
+                                  event.target.files &&
+                                  field.onChange(event.target.files[0])
+                                }
+                              />
+                            ) : (
+                              <Input
+                                {...field}
+                                type={type || 'text'}
+                                min={
+                                  type === 'number' || type === 'datetime-local'
+                                    ? min
+                                    : undefined
+                                }
+                                max={
+                                  type === 'number' || type === 'datetime-local'
+                                    ? max
+                                    : undefined
+                                }
+                                maxLength={
+                                  type !== 'number' &&
+                                  type !== 'datetime-local' &&
+                                  maxLength !== undefined
+                                    ? maxLength
+                                    : undefined
+                                }
+                                step={type === 'number' ? step : undefined}
+                                disabled={isDisabled}
+                                value={field.value ?? ''}
+                                placeholder={placeholder}
+                                onChange={event =>
+                                  type === 'number'
+                                    ? field.onChange(
+                                        event.target.value === ''
+                                          ? undefined
+                                          : Number(event.target.value)
+                                      )
+                                    : field.onChange(event)
+                                }
+                              />
+                            )}
+                          </FormControl>
+                          {showExclusionWarning && (
+                            <p className="text-sm text-amber-600 dark:text-amber-500 mt-1.5">
+                              {excludedByFunction.explanation}
+                            </p>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )
+                    }
                   />
                 </div>
               );

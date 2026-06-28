@@ -52,6 +52,19 @@ To run the Conductor server you first need to install dependencies:
 pnpm install
 ```
 
+### GeoPackage export (optional)
+
+GeoPackage (`.gpkg`) export uses GDAL's `ogr2ogr` at runtime. It is included in the
+API Docker image and devcontainer. For native Node development, install GDAL on your
+host:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install gdal-bin
+```
+
+Pipeline and module layout: [Geospatial export pipeline](../docs/developer/docs/source/markdown/GeospatialExport.md).
+
 You should then be able to run the server with:
 
 ```bash

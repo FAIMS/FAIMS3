@@ -1,4 +1,5 @@
 import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
+import {Resource, resourceRoles} from '@faims3/data-model';
 import pluralize from 'pluralize';
 import {capitalize} from './lib/utils';
 
@@ -32,7 +33,38 @@ export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
 export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
   capitalize(NOTEBOOK_NAME_PLURAL);
 
+/** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
+export const brandNotebook = (text: string): string =>
+  text
+    .replaceAll('{notebooks}', NOTEBOOK_NAME_PLURAL)
+    .replaceAll('{notebook}', NOTEBOOK_NAME);
+
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
+
+const VALID_TEAM_ROLES = new Set(
+  resourceRoles[Resource.TEAM].map(r => r.role as string)
+);
+
+const requestedExcludedTeamRoles = (
+  import.meta.env.VITE_EXCLUDED_TEAM_ROLES as string | undefined
+)
+  ?.split(',')
+  .map(s => s.trim())
+  .filter(Boolean) ?? [];
+
+const invalidExcludedTeamRoles = requestedExcludedTeamRoles.filter(
+  r => !VALID_TEAM_ROLES.has(r)
+);
+if (invalidExcludedTeamRoles.length > 0) {
+  console.warn(
+    `VITE_EXCLUDED_TEAM_ROLES contains values that are not team roles and will be ignored: ${invalidExcludedTeamRoles.join(', ')}`
+  );
+}
+
+/** Team roles to hide from team-role dropdowns (`VITE_EXCLUDED_TEAM_ROLES`). */
+export const EXCLUDED_TEAM_ROLES = new Set(
+  requestedExcludedTeamRoles.filter(r => VALID_TEAM_ROLES.has(r))
+);
 
 /**
  * When the directory lists a notebook as archived (or id absent), the mobile app

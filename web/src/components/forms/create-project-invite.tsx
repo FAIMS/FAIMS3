@@ -15,7 +15,7 @@ import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
-import {INVITE_TOKEN_HINTS} from '@/constants';
+import {INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -56,7 +56,16 @@ export function CreateProjectInviteForm({
             }),
           })
       )
-      .map(([value, {name: label}]) => ({label, value}));
+      .sort(
+        ([a], [b]) =>
+          (roleDetails[a as Role].order ?? 0) -
+          (roleDetails[b as Role].order ?? 0)
+      )
+      .map(([value, {name: label, description}]) => ({
+        label,
+        value,
+        description: brandNotebook(description),
+      }));
   }, [user, projectId]);
 
   const fields: Field[] = [

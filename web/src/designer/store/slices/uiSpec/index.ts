@@ -76,5 +76,6 @@ export const {
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
   viewSetHridUpdated,
+  viewSetDisplayInOverviewMapUpdated,
   settingsUpdated,
 } = uiSpecificationReducer.actions;

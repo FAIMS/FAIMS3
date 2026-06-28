@@ -5,7 +5,7 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetProjectsForTeam, useGetTeam} from '@/hooks/queries';
 import {useMemo} from 'react';
-import {displayUnixTimestampMs} from '@/lib/time';
+import {displayDateTime} from '@/lib/time';
 import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from "@/constants";
 import {formatFileSize, ProjectStatus} from "@faims3/data-model";
 import {statusDisplay} from "@/lib/status-display";
@@ -34,10 +34,10 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
     return rawData
       ? {
           ...rawData,
-          createdAtDisplay: displayUnixTimestampMs({
+          createdAtDisplay: displayDateTime({
             timestamp: rawData.createdAt,
           }),
-          updatedAtDisplay: displayUnixTimestampMs({
+          updatedAtDisplay: displayDateTime({
             timestamp: rawData.updatedAt,
           }),
         }

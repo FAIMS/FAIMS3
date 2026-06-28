@@ -45,7 +45,8 @@
 
     "TEST_EMAIL_ADDRESS": "test@example.com"
   },
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // GDAL (ogr2ogr) for GeoPackage export during API development
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y --no-install-recommends gdal-bin",
   "forwardPorts": [3000, 3001, 5010, 8080],
   "portsAttributes": {
     "3000": {

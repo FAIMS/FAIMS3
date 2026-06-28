@@ -33,6 +33,7 @@ import {TakePhotoFieldEditor} from '../../components/Fields/TakePhotoField';
 import {TakePointFieldEditor} from '../../components/Fields/TakePointFieldEditor';
 import {TemplatedStringFieldEditor} from '../../components/Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from '../../components/Fields/TextFieldEditor';
+import {ComputedFieldEditor} from '@/designer/components/Fields/ComputedFieldEditor';
 
 /** Identifiers passed into type-specific editors (e.g. HRID / related record context). */
 export type FieldEditorRenderContext = {
@@ -76,6 +77,13 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   NumberField: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
   PercentageSlider: ({fieldName}) => (
     <PercentageSliderFieldEditor fieldName={fieldName} />
+  ),
+  ComputedField: ({fieldName, viewId, viewSetId}) => (
+    <ComputedFieldEditor
+      fieldName={fieldName}
+      viewId={viewId}
+      viewsetId={viewSetId}
+    />
   ),
   RichText: ({fieldName}) => <RichTextEditor fieldName={fieldName} />,
   RelatedRecordSelector: ({fieldName}) => (
