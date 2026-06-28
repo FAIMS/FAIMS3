@@ -67,12 +67,12 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
             <ListDescription>
               <details>
                 <summary>
-              {projects ? `${projects.length} - ${formatFileSize(projects.reduce((acc, p) => acc + (p.byteCount ?? 0), 0))}` : 'Unknown...'}
+              {projects ? `${projects.length} - ${formatFileSize(projects.reduce((acc, p) => acc + (p.byteCount), 0))}` : 'Unknown...'}
                 </summary>
               <List className="pt-2 pl-4">
                 {[ProjectStatus.OPEN, ProjectStatus.ARCHIVED, ProjectStatus.CLOSED].map(status => {
                   const projectsWithStatus = projects ? projects.filter(p => p.status === status) : [];
-                  const byteCount = projectsWithStatus.reduce((acc, p) => acc + (p.byteCount ?? 0), 0);
+                  const byteCount = projectsWithStatus.reduce((acc, p) => acc + (p.byteCount), 0);
                   return (
                     <ListItem key={status}>
                       <ListLabel>{statusDisplay(status)}</ListLabel>
