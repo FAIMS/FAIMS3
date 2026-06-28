@@ -71,6 +71,7 @@ import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
 import {nowIso} from '../time';
+import { use } from "chai";
 
 /**
  * Migrate legacy notebook JSON when needed, validate as {@link NotebookDefinition},
@@ -240,6 +241,15 @@ export const getUserProjectsDirectory = async (
 };
 
 /**
+ * How many projects {@link getUserProjectsDetailed} resolves per batch when
+ * computing each project's `byteCount`. Each `byteCount` costs one CouchDB
+ * `info()` call, so this caps the concurrent `info()` round-trips and stops a
+ * user/team with many notebooks from opening one connection per project at once
+ * and exhausting CouchDB's connection limits.
+ */
+const BYTE_COUNT_BATCH_SIZE = 10;
+
+/**
  * Lists notebooks using CouchDB views whose map `value` is the project doc
  * without `uiSpecification`. Uses `include_docs: false` on purpose: with
  * `include_docs: true`, CouchDB would also attach the full stored document for
@@ -251,7 +261,7 @@ export const getUserProjectsDirectory = async (
 export const getUserProjectsDetailed = async (
   user: Express.User,
   teamId: string | undefined = undefined,
-  includeArchived = false
+  includeArchived = false,
 ): Promise<APINotebookList[]> => {
   const projectsDb = localGetProjectsDb();
 
@@ -266,18 +276,18 @@ export const getUserProjectsDetailed = async (
           PROJECTS_LISTING_BY_PROJECT_ID,
           {
             include_docs: false,
-          }
+          },
         );
   } catch (error) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while reading projects from the Project DB.'
+      "An error occurred while reading projects from the Project DB.",
     );
   }
 
   const userProjects = resultList.rows
-    .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
-    .map(row => row.value!)
-    .filter(project => {
+    .filter((row) => row.value != null && row.id && !row.id.startsWith("_"))
+    .map((row) => row.value!)
+    .filter((project) => {
       if (!includeArchived && project.status === ProjectStatus.ARCHIVED) {
         return false;
       }
@@ -288,18 +298,27 @@ export const getUserProjectsDetailed = async (
       });
     });
 
-  return await Promise.all(userProjects.map(async project => {
-    const projectId = project._id;
-    return {
-      ...project,
-      is_admin: userHasProjectRole({
-        user,
-        projectId,
-        role: Role.PROJECT_ADMIN,
-      }),
-      byteCount: await getByteCount(projectId),
-    } satisfies GetNotebookListResponse[number];
-  }));
+  const detailed: APINotebookList[] = [];
+  for (let p = 0; p < userProjects.length; p += BYTE_COUNT_BATCH_SIZE) {
+    const batch = userProjects.slice(p, p + BYTE_COUNT_BATCH_SIZE);
+    detailed.push(
+      ...(await Promise.all(
+        batch.map(async (project) => {
+          const projectId = project._id;
+          return {
+            ...project,
+            is_admin: userHasProjectRole({
+              user,
+              projectId,
+              role: Role.PROJECT_ADMIN,
+            }),
+            byteCount: await getByteCount(projectId),
+          };
+        }),
+      )),
+    );
+  }
+  return detailed;
 };
 
 /**
