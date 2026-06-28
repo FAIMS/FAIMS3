@@ -709,8 +709,8 @@ export async function getByteCount(
     const info = await dataDb.info();
     return info.sizes.active;
   } catch (error) {
-    console.log(error);
-    return 0;
+    console.error(error);
+    return -1;
   }
 }
 

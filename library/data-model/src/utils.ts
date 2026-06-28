@@ -32,7 +32,8 @@ export const slugify = (str: string) => {
  * Formats file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes <= 0) return "0 Bytes";
+  if (bytes === 0) return "0 Bytes";
+  if (bytes < 0) return "Invalid size";
   if (isNaN(bytes)) return "Invalid size";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
