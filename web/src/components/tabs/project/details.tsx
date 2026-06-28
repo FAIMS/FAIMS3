@@ -88,7 +88,7 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
       {
           key: 'byteCount',
           label: 'Current byte count',
-          getValue: p => (`${p.byteCount} bytes (${formatFileSize(p.byteCount)})`),
+          getValue: p => formatFileSize(p.byteCount),
       },
 
     ],
