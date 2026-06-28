@@ -76,13 +76,9 @@ const TeamDetails = ({teamId}: {teamId: string}) => {
                   return (
                     <ListItem key={status}>
                       <ListLabel>{statusDisplay(status)}</ListLabel>
-                      {isProjectsPending ? (
-                        <Skeleton/>
-                      ) : (
-                        <ListDescription>
-                          {projects ? projects.filter(p => p.status === status).length : 'Unknown...'} - {formatFileSize(byteCount)}
-                        </ListDescription>
-                      )}
+                      <ListDescription>
+                        {projects ? projects.filter(p => p.status === status).length : 'Unknown...'} - {formatFileSize(byteCount)}
+                      </ListDescription>
                     </ListItem>
                   );
                 })}
