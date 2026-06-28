@@ -3,7 +3,7 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetProjects, useGetProjectsForTeam, useGetTeam} from '@/hooks/queries';
+import {useGetProjectsForTeam, useGetTeam} from '@/hooks/queries';
 import {useMemo} from 'react';
 import {displayUnixTimestampMs} from '@/lib/time';
 import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from "@/constants";
