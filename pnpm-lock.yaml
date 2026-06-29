@@ -65,8 +65,8 @@ importers:
         specifier: ^2.1664.0
         version: 2.1693.0
       axios:
-        specifier: ^1.15.2
-        version: 1.17.0
+        specifier: ^1.18.0
+        version: 1.18.1
       body-parser:
         specifier: 1.20.3
         version: 1.20.3
@@ -5912,8 +5912,8 @@ packages:
     engines: {node: '>= 10.0.0'}
     deprecated: The AWS SDK for JavaScript (v2) has reached end-of-support, and no longer receives updates. Please migrate your code to use AWS SDK for JavaScript (v3). More info https://a.co/cUPnyil
 
-  axios@1.17.0:
-    resolution: {integrity: sha512-J8SwNxprqqpbfenehxWYXE7CW+wM1BB4w3+N+g+/Wx40xM4rsLrfPmHHxSWIxJLYDgSY/HqlFPIYb2/S3rxafw==}
+  axios@1.18.1:
+    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
 
   axios@1.9.0:
     resolution: {integrity: sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==}
@@ -7694,6 +7694,10 @@ packages:
     resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
     engines: {node: '>= 6'}
 
+  form-data@4.0.6:
+    resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
+    engines: {node: '>= 6'}
+
   format@0.2.2:
     resolution: {integrity: sha512-wzsgA6WOq+09wrU1tsJ09udeR/YZRaeArL9e1wPbFg3GG2yDnC2ldKpxs4xunpFF9DgqCqOIra3bc1HWrJ37Ww==}
     engines: {node: '>=0.4.x'}
@@ -7842,7 +7846,7 @@ packages:
   git-raw-commits@2.0.11:
     resolution: {integrity: sha512-VnctFhw+xfj8Va1xtfEqCUD2XDrbAPSJx+hSrE5K7fGdjZruW7XV+QOrN7LF/RJyvspRiD2I0asWsxFp0ya26A==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   git-remote-origin-url@2.0.0:
@@ -7852,7 +7856,7 @@ packages:
   git-semver-tags@4.1.1:
     resolution: {integrity: sha512-OWyMt5zBe7xFs8vglMmhM9lRQzCWL3WjHtxNNfJTMngGym7pC1kh8sP6jevfydJ6LP3ZvGxfb6ABYgPUM0mtsA==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   gitconfiglocal@1.0.0:
@@ -14103,7 +14107,7 @@ snapshots:
     dependencies:
       '@ionic/utils-object': 2.1.6
       '@ionic/utils-terminal': 2.3.4
-      debug: 4.3.4
+      debug: 4.4.3
       signal-exit: 3.0.7
       tree-kill: 1.2.2
       tslib: 2.6.2
@@ -14123,7 +14127,7 @@ snapshots:
 
   '@ionic/utils-stream@3.1.6':
     dependencies:
-      debug: 4.3.4
+      debug: 4.4.3
       tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
@@ -14164,7 +14168,7 @@ snapshots:
   '@ionic/utils-terminal@2.3.4':
     dependencies:
       '@types/slice-ansi': 4.0.0
-      debug: 4.3.4
+      debug: 4.4.3
       signal-exit: 3.0.7
       slice-ansi: 4.0.0
       string-width: 4.2.3
@@ -17822,7 +17826,7 @@ snapshots:
       appium-adb: 12.13.1
       appium-chromedriver: 7.0.35
       asyncbox: 3.0.0
-      axios: 1.17.0
+      axios: 1.18.1
       bluebird: 3.7.2
       io.appium.settings: 5.14.15
       lodash: 4.18.1
@@ -17851,7 +17855,7 @@ snapshots:
       '@xmldom/xmldom': 0.9.10
       appium-adb: 12.13.1
       asyncbox: 3.0.0
-      axios: 1.17.0
+      axios: 1.18.1
       bluebird: 3.7.2
       compare-versions: 6.1.1
       lodash: 4.18.1
@@ -17873,7 +17877,7 @@ snapshots:
       appium-android-driver: 9.15.1(appium@2.19.0(supports-color@8.1.1))
       appium-uiautomator2-server: 7.7.1
       asyncbox: 3.0.0
-      axios: 1.17.0
+      axios: 1.18.1
       bluebird: 3.7.2
       css-selector-parser: 3.3.0
       io.appium.settings: 5.14.15
@@ -18111,10 +18115,10 @@ snapshots:
       uuid: 8.0.0
       xml2js: 0.6.2
 
-  axios@1.17.0:
+  axios@1.18.1:
     dependencies:
       follow-redirects: 1.16.0
-      form-data: 4.0.5
+      form-data: 4.0.6
       https-proxy-agent: 5.0.1
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
@@ -18124,7 +18128,7 @@ snapshots:
   axios@1.9.0:
     dependencies:
       follow-redirects: 1.16.0
-      form-data: 4.0.5
+      form-data: 4.0.6
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -18549,7 +18553,7 @@ snapshots:
   chromedriver@138.0.5:
     dependencies:
       '@testim/chrome-version': 1.1.4
-      axios: 1.17.0
+      axios: 1.18.1
       compare-versions: 6.1.1
       extract-zip: 2.0.1
       proxy-agent: 6.5.0
@@ -20253,6 +20257,14 @@ snapshots:
       mime-types: 2.1.35
 
   form-data@4.0.5:
+    dependencies:
+      asynckit: 0.4.0
+      combined-stream: 1.0.8
+      es-set-tostringtag: 2.1.0
+      hasown: 2.0.4
+      mime-types: 2.1.35
+
+  form-data@4.0.6:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
@@ -23021,7 +23033,7 @@ snapshots:
 
   nano@10.1.4:
     dependencies:
-      axios: 1.17.0
+      axios: 1.18.1
       node-abort-controller: 3.1.1
       qs: 6.15.2
     transitivePeerDependencies:
@@ -25201,7 +25213,7 @@ snapshots:
       cookiejar: 2.1.4
       debug: 4.4.3(supports-color@8.1.1)
       fast-safe-stringify: 2.1.1
-      form-data: 4.0.5
+      form-data: 4.0.6
       formidable: 3.5.4
       methods: 1.1.2
       mime: 2.6.0
