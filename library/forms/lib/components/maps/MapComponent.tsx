@@ -24,7 +24,7 @@
  */
 
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {Box, Grid} from '@mui/material';
+import {Box} from '@mui/material';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
@@ -496,33 +496,39 @@ export const MapComponent = (props: MapComponentProps) => {
   );
 
   return (
-    <>
-      <Box sx={{height: '100%', width: '100%'}}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minHeight: 0,
+        minWidth: 0,
+      }}
+    >
+      <Box
+        ref={refCallback} // will create the map
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+        }}
+      />
+      {attribution && (
         <Box
-          ref={refCallback} // will create the map
+          component="div"
+          dangerouslySetInnerHTML={{__html: attribution}}
           sx={{
-            height: '97%',
-            width: '100%',
+            flexShrink: 0,
+            fontSize: '10px',
+            lineHeight: 1.3,
+            color: '#666',
+            py: 0.25,
+            px: {xs: 0.5, sm: 1},
+            wordBreak: 'break-word',
           }}
         />
-        <Box
-          sx={{
-            height: '3%',
-            paddingLeft: '50px',
-          }}
-        >
-          {attribution && (
-            <div
-              dangerouslySetInnerHTML={{__html: attribution}}
-              style={{
-                fontSize: '10px',
-                lineHeight: 1.1,
-                color: '#666',
-              }}
-            />
-          )}
-        </Box>
-      </Box>
-    </>
+      )}
+    </Box>
   );
 };
