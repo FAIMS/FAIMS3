@@ -1,7 +1,7 @@
 import {
   AvpUpdateMode,
+  attachmentSaveTrace,
   currentlyVisibleMap,
-  FaimsAttachments,
   FormDataEntry,
   getFormLabel,
   HydratedRecordDocument,
@@ -162,15 +162,27 @@ export const EditableFormManager: React.FC<
   const pendingValuesRef = useRef(false);
   const isSavingRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
+  /** Drives save-status UI; refs alone do not trigger re-renders. */
+  const [hasPendingSave, setHasPendingSave] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Revision Management
   // ---------------------------------------------------------------------------
   const ensureWorkingRevision = useCallback(async (): Promise<string> => {
+    attachmentSaveTrace('ensureWorkingRevision:start', {
+      edited,
+      workingRevisionId,
+      mode: props.mode,
+      recordId: props.recordId,
+    });
     let relevantRevisionId = workingRevisionId;
 
     if (!edited && props.mode === 'parent') {
       try {
+        attachmentSaveTrace('ensureWorkingRevision:before-createRevision', {
+          recordId: props.recordId,
+          revisionId: workingRevisionId,
+        });
         const newRevision = await dataEngine.form.createRevision({
           recordId: props.recordId,
           revisionId: workingRevisionId,
@@ -178,7 +190,13 @@ export const EditableFormManager: React.FC<
         });
         setWorkingRevisionId(newRevision._id);
         relevantRevisionId = newRevision._id;
+        attachmentSaveTrace('ensureWorkingRevision:after-createRevision', {
+          newRevisionId: newRevision._id,
+        });
       } catch (error) {
+        attachmentSaveTrace('ensureWorkingRevision:createRevision-error', {
+          error: String(error),
+        });
         logError(new Error('Failed to create revision:'), {error});
         throw error;
       }
@@ -188,6 +206,9 @@ export const EditableFormManager: React.FC<
       setEdited(true);
     }
 
+    attachmentSaveTrace('ensureWorkingRevision:complete', {
+      revisionId: relevantRevisionId,
+    });
     return relevantRevisionId;
   }, [
     edited,
@@ -224,6 +245,10 @@ export const EditableFormManager: React.FC<
   // Save Implementation
   // ---------------------------------------------------------------------------
   const performSave = useCallback(async () => {
+    attachmentSaveTrace('performSave:start', {
+      pendingValues: pendingValuesRef.current,
+      isSaving: isSavingRef.current,
+    });
     if (debugMode) {
       logInfo('[EditableFormManager] performSave called');
     }
@@ -248,6 +273,10 @@ export const EditableFormManager: React.FC<
         context: getRecordContextFromRecord({record: props.existingRecord}),
       });
 
+      attachmentSaveTrace('performSave:before-updateRevision', {
+        revisionId: revisionToUpdate,
+        recordId: props.recordId,
+      });
       await dataEngine.form.updateRevision({
         revisionId: revisionToUpdate,
         recordId: props.recordId,
@@ -257,11 +286,19 @@ export const EditableFormManager: React.FC<
       });
 
       pendingValuesRef.current = false;
+      setHasPendingSave(false);
+      attachmentSaveTrace('performSave:complete', {
+        revisionId: revisionToUpdate,
+      });
     } catch (error) {
+      attachmentSaveTrace('performSave:error', {error: String(error)});
       logError(new Error('Failed to update revision:'), {error});
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
+      attachmentSaveTrace('performSave:finally', {
+        pendingValues: pendingValuesRef.current,
+      });
     }
   }, [
     debugMode,
@@ -308,6 +345,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const onChange = useCallback(() => {
     pendingValuesRef.current = true;
+    setHasPendingSave(true);
     debouncedUpdateVisibility();
     debouncedSave();
   }, [debouncedSave, debouncedUpdateVisibility]);
@@ -316,6 +354,10 @@ export const EditableFormManager: React.FC<
   // Flush Save
   // ---------------------------------------------------------------------------
   const flushSave = useCallback(async (): Promise<void> => {
+    attachmentSaveTrace('flushSave:start', {
+      pendingValues: pendingValuesRef.current,
+      isSaving: isSavingRef.current,
+    });
     if (debugMode) {
       logInfo('[EditableFormManager] flushSave called');
     }
@@ -323,13 +365,22 @@ export const EditableFormManager: React.FC<
     debouncedSave.cancel();
 
     if (pendingValuesRef.current) {
+      attachmentSaveTrace('flushSave:awaiting-performSave');
       await performSaveRef.current();
     }
 
     // Poll the saving ref
+    let waitIterations = 0;
     while (isSavingRef.current) {
+      waitIterations += 1;
+      if (waitIterations === 1 || waitIterations % 20 === 0) {
+        attachmentSaveTrace('flushSave:waiting-for-isSavingRef', {
+          waitIterations,
+        });
+      }
       await new Promise(resolve => setTimeout(resolve, 50));
     }
+    attachmentSaveTrace('flushSave:complete', {waitIterations});
   }, [debouncedSave, debugMode]);
 
   const hasPendingChanges = useCallback((): boolean => {
@@ -403,6 +454,14 @@ export const EditableFormManager: React.FC<
           next.delete(fieldId);
         }
 
+        attachmentSaveTrace('setAttachmentSaving', {
+          fieldId,
+          saving,
+          previousCount: current,
+          updatedCount: updated,
+          activeFields: [...next.keys()],
+        });
+
         return next;
       });
     },
@@ -455,10 +514,26 @@ export const EditableFormManager: React.FC<
         throw new Error('Either blob or base64 data must be provided');
       }
 
+      attachmentSaveTrace('handleAddAttachment:start', {
+        fieldId,
+        type,
+        fileFormat,
+        contentType,
+        hasBlob: Boolean(blob),
+        blobSize: blob?.size,
+        hasBase64: Boolean(base64),
+        base64Length: base64?.length,
+      });
+
       const revisionToUse = await ensureWorkingRevision();
       if (!revisionToUse) {
         throw new Error('No working revision available for attachment');
       }
+
+      attachmentSaveTrace('handleAddAttachment:revision-ready', {
+        fieldId,
+        revisionId: revisionToUse,
+      });
 
       const timestamp = new Date().toISOString();
       const filename = `${type === 'photo' ? 'photo' : 'file'}_${timestamp}.${fileFormat}`;
@@ -475,34 +550,57 @@ export const EditableFormManager: React.FC<
       };
 
       if (base64) {
+        attachmentSaveTrace('handleAddAttachment:before-storeBase64', {
+          fieldId,
+        });
         attachmentResult = await props.config
           .attachmentEngine()
           .storeAttachmentFromBase64({base64, metadata});
+        attachmentSaveTrace('handleAddAttachment:after-storeBase64', {
+          fieldId,
+          attachmentId: attachmentResult.identifier.id,
+        });
       } else if (blob) {
+        attachmentSaveTrace('handleAddAttachment:before-storeBlob', {
+          fieldId,
+        });
         attachmentResult = await props.config
           .attachmentEngine()
           .storeAttachmentFromBlob({blob, metadata});
+        attachmentSaveTrace('handleAddAttachment:after-storeBlob', {
+          fieldId,
+          attachmentId: attachmentResult.identifier.id,
+        });
       } else {
         throw new Error('Either blob or base64 data must be provided');
       }
 
-      const state = form.state.values[fieldId];
-      const newAttachments: FaimsAttachments = [
-        {
-          attachmentId: attachmentResult.identifier.id,
-          filename: attachmentResult.metadata.filename,
-          fileType: attachmentResult.metadata.contentType,
-        },
-        ...(state?.attachments ?? []),
-      ];
+      const attachmentId = attachmentResult.identifier.id;
 
-      const newValue: FormDataEntry = {
-        ...(state || {}),
-        attachments: newAttachments,
-      };
-
-      form.setFieldValue(fieldId, newValue);
-      return attachmentResult.identifier.id;
+      attachmentSaveTrace('handleAddAttachment:before-setFieldValue', {
+        fieldId,
+        attachmentId,
+      });
+      // Attachments metadata only — fields own how the id is written into `data`.
+      form.setFieldValue(fieldId, (prev: FormDataEntry | undefined) => {
+        const state = prev || {};
+        return {
+          ...state,
+          attachments: [
+            {
+              attachmentId,
+              filename: attachmentResult.metadata.filename,
+              fileType: attachmentResult.metadata.contentType,
+            },
+            ...(state.attachments ?? []),
+          ],
+        };
+      });
+      attachmentSaveTrace('handleAddAttachment:complete', {
+        fieldId,
+        attachmentId,
+      });
+      return attachmentId;
     },
     [
       ensureWorkingRevision,
@@ -526,22 +624,18 @@ export const EditableFormManager: React.FC<
         throw new Error('No working revision available for attachment removal');
       }
 
-      const state = form.state.values[fieldId];
-      if (!state?.attachments) {
-        logWarn('No attachments found in field');
-        return;
-      }
-
-      const newAttachments: FaimsAttachments = state.attachments.filter(
-        attachment => attachment.attachmentId !== attachmentId
-      );
-
-      const newValue: FormDataEntry = {
-        ...(state || {}),
-        attachments: newAttachments,
-      };
-
-      form.setFieldValue(fieldId, newValue);
+      form.setFieldValue(fieldId, (prev: FormDataEntry | undefined) => {
+        const state = prev || {};
+        if (!state.attachments) {
+          return state;
+        }
+        return {
+          ...state,
+          attachments: state.attachments.filter(
+            attachment => attachment.attachmentId !== attachmentId
+          ),
+        };
+      });
     },
     [ensureWorkingRevision, form]
   );
@@ -578,7 +672,8 @@ export const EditableFormManager: React.FC<
       navigateToViewRecord: props.config.navigation.navigateToViewRecord,
     },
     flushSave,
-    hasPendingChanges,
+    hasPendingSave,
+    isFormSaving: isSaving,
     impliedParents: navigationData.impliedParents,
     createAnotherChild: navigationData.createAnotherChild,
   });
@@ -801,7 +896,7 @@ export const EditableFormManager: React.FC<
               gap: 0.5,
             }}
           >
-            {isSaving || pendingValuesRef.current ? (
+            {isSaving || hasPendingSave ? (
               <>
                 <CircularProgress size={14} color="inherit" />
                 <Typography variant="body2" color="text.secondary">

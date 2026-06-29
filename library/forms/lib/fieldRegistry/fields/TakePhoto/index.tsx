@@ -23,7 +23,7 @@ import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {attachmentSaveTrace, BaseFieldParametersSchema} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
@@ -310,12 +310,14 @@ const PhotoItem: React.FC<{
 
 /**
  * Pending photo item - shows optimistic preview while saving to database.
- * Displays a sync indicator overlay to show the photo is being processed.
+ * Displays a sync indicator overlay only while storage is still in progress.
  */
 const PendingPhotoItem: React.FC<{
   url: string;
   onClick: () => void;
-}> = ({url, onClick}) => {
+  /** False once the attachment is stored in PouchDB (load may still be in progress). */
+  isSaving?: boolean;
+}> = ({url, onClick, isSaving = true}) => {
   const theme = useTheme();
 
   return (
@@ -343,7 +345,8 @@ const PendingPhotoItem: React.FC<{
             cursor: 'pointer',
           }}
         />
-        {/* Saving indicator overlay */}
+        {/* Saving indicator overlay — only while blob is being written to PouchDB */}
+        {isSaving && (
         <ImageListItemBar
           sx={{background: 'rgba(0, 0, 0, 0.7)'}}
           position="top"
@@ -367,6 +370,7 @@ const PendingPhotoItem: React.FC<{
           }
           actionPosition="right"
         />
+        )}
       </Box>
     </ImageItemContainer>
   );
@@ -504,6 +508,7 @@ const PhotoGallery: React.FC<{
                   key={`pending-${entry.tempId}`}
                   url={entry.pending.url}
                   onClick={() => setLightboxUrl(entry.pending.url)}
+                  isSaving={entry.pending.attachmentId === null}
                 />
               );
             }
@@ -591,6 +596,7 @@ const PhotoGallery: React.FC<{
  */
 const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const {
+    fieldId,
     label,
     helperText,
     required,
@@ -673,6 +679,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    * the database write happens in the background.
    */
   const takePhoto = useCallback(async () => {
+    let attachmentLockHeld = false;
     try {
       const isWeb = Capacitor.getPlatform() === 'web';
 
@@ -694,6 +701,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           return;
         }
       }
+
+      // Block section navigation for the entire capture flow. Must be set
+      // before getPhoto so the lock is already active when the native camera
+      // closes (blob fetch, EXIF, and PouchDB write all run under this lock).
+      setAttachmentSaving?.(true);
+      attachmentLockHeld = true;
 
       // Capture photo
       const photoResult = await Camera.getPhoto({
@@ -758,21 +771,22 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         }
       }
 
-      // Block section navigation until photo is stored in PouchDB (prevents data loss)
-      setAttachmentSaving?.(true);
+      attachmentSaveTrace('TakePhoto:save-start', {
+        fieldId,
+        blobSize: photoBlob.size,
+        format: photoResult.format,
+      });
 
-      try {
-        // Now do the async storage
-        const newId = await addAttachment({
-          // Blob attachments are faster - especially on native
-          blob: photoBlob,
-          contentType: `image/${photoResult.format}`,
-          type: 'photo',
-          fileFormat: photoResult.format,
-        });
+      const newId = await addAttachment({
+        // Blob attachments are faster - especially on native
+        blob: photoBlob,
+        contentType: `image/${photoResult.format}`,
+        type: 'photo',
+        fileFormat: photoResult.format,
+      });
 
-        // Update pending photo with the real attachment ID
-        // This allows the cleanup effect to know when to remove it
+      // Mark storage complete; keep optimistic preview until useAttachments loads.
+      // The Saving overlay hides once attachmentId is set (see PendingPhotoItem).
         setPendingPhotos(current => {
           const updated = new Map(current);
           const pending = updated.get(tempId);
@@ -782,18 +796,20 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           return updated;
         });
 
-        // Update field value using a functional updater to avoid races
         props.setFieldData((prev: string[] | undefined) => [
           ...(prev ?? []),
           newId,
         ]);
-      } finally {
-        setAttachmentSaving?.(false);
-      }
+
+        attachmentSaveTrace('TakePhoto:save-complete', {fieldId, attachmentId: newId});
     } catch (err: any) {
       logError(new Error('Failed to capture photo:'), {error: err});
+    } finally {
+      if (attachmentLockHeld) {
+        setAttachmentSaving?.(false);
+      }
     }
-  }, [state.value, addAttachment, setAttachmentSaving, context]);
+  }, [fieldId, addAttachment, setAttachmentSaving]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
@@ -810,7 +826,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   );
 
   // Determine if we have any photos to show (either pending or loaded)
-  const hasAnyPhotos = loadedPhotos.length > 0 || pendingPhotos.size > 0;
+  const hasAnyPhotos =
+    (state.value?.attachments?.length ?? 0) > 0 || pendingPhotos.size > 0;
 
   return (
     <FieldWrapper

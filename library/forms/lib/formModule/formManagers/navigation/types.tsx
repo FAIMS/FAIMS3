@@ -186,8 +186,10 @@ export interface UseNavigationLogicParams {
   navigationService: NavigationService;
   /** Function to flush pending form saves before navigation */
   flushSave: () => Promise<void>;
-  /** Function to check for pending unsaved changes */
-  hasPendingChanges: () => boolean;
+  /** Reactive pending-save flag for status text (refs alone do not re-render). */
+  hasPendingSave: boolean;
+  /** Whether the form manager is actively persisting changes. */
+  isFormSaving: boolean;
   /** Inferred parent records when no explicit navigation history exists */
   impliedParents?: ImpliedParentNavInfo[];
   /** Configuration for creating another sibling record */
