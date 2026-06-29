@@ -24,10 +24,12 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
+import {NOTEBOOK_NAME} from '@/constants';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import {designerInfoIconSx} from './designer-style';
 import {
+  viewSetDisplayInOverviewMapUpdated,
   viewSetHridUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
@@ -40,6 +42,7 @@ type ViewSetType = {
   summary_fields?: string[];
   layout?: 'inline' | 'tabs';
   hridField?: string;
+  displayInOverviewMap?: boolean;
   publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 };
 
@@ -61,7 +64,7 @@ const isValidHridField = (field: FieldType): boolean => {
 const SettingSection = ({
   title,
   description,
-  tooltipText = 'Configure how this form behaves and appears to data collectors.',
+  tooltipText,
   children,
 }: {
   title: string;
@@ -74,13 +77,15 @@ const SettingSection = ({
       <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
         {title}
       </Typography>
-      <Tooltip title={tooltipText}>
-        <InfoIcon
-          sx={{
-            ...(designerInfoIconSx as Record<string, unknown>),
-          }}
-        />
-      </Tooltip>
+      {tooltipText ? (
+        <Tooltip title={tooltipText}>
+          <InfoIcon
+            sx={{
+              ...(designerInfoIconSx as Record<string, unknown>),
+            }}
+          />
+        </Tooltip>
+      ) : null}
     </Box>
     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
       {description}
@@ -242,6 +247,28 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
             <DebouncedTextField {...params} onChange={() => {}} />
           )}
         />
+      </SettingSection>
+
+      {/* Overview map visibility */}
+      <SettingSection
+        title="Overview Map"
+        description={`Choose whether to show spatial features from this form in the ${NOTEBOOK_NAME} overview map e.g. points, lines, polygons.`}
+      >
+        <Select
+          fullWidth
+          value={viewSet.displayInOverviewMap !== false ? 'show' : 'hide'}
+          onChange={event =>
+            dispatch(
+              viewSetDisplayInOverviewMapUpdated({
+                viewSetId,
+                displayInOverviewMap: event.target.value === 'show',
+              })
+            )
+          }
+        >
+          <MenuItem value="show">Show spatial features</MenuItem>
+          <MenuItem value="hide">Don&apos;t show spatial features</MenuItem>
+        </Select>
       </SettingSection>
     </>
   );

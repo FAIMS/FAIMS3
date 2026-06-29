@@ -1,6 +1,6 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
-import {INVITE_TOKEN_HINTS} from '@/constants';
+import {EXCLUDED_TEAM_ROLES, INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {
@@ -41,7 +41,9 @@ export function CreateTeamInviteForm({
     return <ErrorComponent error="Not authenticated" />;
   }
 
-  // Memoize the role options to prevent re-computation on each render
+  // Memoize the role options to prevent re-computation on each render.
+  // Hides brand-excluded roles (e.g. DASS hides TEAM_MEMBER_CREATOR) and
+  // passes the description so the dropdown shows the new role copy.
   const roleOptions = useMemo(() => {
     if (!user) return [];
     return Object.entries(roleDetails)
@@ -49,6 +51,7 @@ export function CreateTeamInviteForm({
         ([role, {scope, resource}]) =>
           scope === RoleScope.RESOURCE_SPECIFIC &&
           resource === Resource.TEAM &&
+          !EXCLUDED_TEAM_ROLES.has(role) &&
           userCanDo({
             user,
             resourceId: teamId,
@@ -58,7 +61,11 @@ export function CreateTeamInviteForm({
             }),
           })
       )
-      .map(([value, {name: label}]) => ({label, value}));
+      .map(([value, {name: label, description}]) => ({
+        label,
+        value,
+        description: brandNotebook(description),
+      }));
   }, [user, teamId]);
 
   const fields: Field[] = [

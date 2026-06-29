@@ -17,7 +17,7 @@
  */
 
 import {vi, describe, expect, test} from 'vitest';
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import {ConditionControl} from './condition/ConditionControl';
 import {ConditionType} from '../types/condition';
 import {sampleNotebook} from '../test-notebook';
@@ -152,6 +152,92 @@ describe('ConditionControl', () => {
     // });
     // // but another field is there
     // expect(document.querySelector(`[data-value="Field ID"]`)).not.toBeNull();
+  });
+
+  /**
+   * Builds a store from the sample notebook plus a second form ("Secondary")
+   * containing a single field, so cross-form scoping of the field picker can be
+   * exercised. Returns the hydrated store.
+   */
+  const storeWithSecondForm = () => {
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(
+      JSON.parse(JSON.stringify(sampleNotebook))
+    );
+    const uiSpec = notebook.uiSpec as NotebookUISpec;
+
+    // A field that lives only in the second form.
+    uiSpec.fields['Cross-Form-Field'] = {
+      ...uiSpec.fields['New-Text-Field'],
+      'component-parameters': {
+        ...uiSpec.fields['New-Text-Field']['component-parameters'],
+        label: 'Cross Form Widget',
+        name: 'Cross-Form-Field',
+      },
+    };
+    uiSpec.views['Secondary-Section'] = {
+      label: 'Secondary Detail',
+      fields: ['Cross-Form-Field'],
+    };
+    uiSpec.viewsets['Secondary'] = {
+      label: 'Secondary Form',
+      views: ['Secondary-Section'],
+    };
+    uiSpec.visible_types.push('Secondary');
+
+    store.dispatch(loaded(uiSpec));
+    return store;
+  };
+
+  /** Opens the field-picker Autocomplete and returns the rendered option labels. */
+  const openFieldOptions = (): string[] => {
+    const input = within(screen.getByTestId('field-input')).getByRole(
+      'combobox'
+    ) as HTMLInputElement;
+    act(() => {
+      input.focus();
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+    return screen
+      .getAllByRole('option')
+      .map(o => o.textContent ?? '')
+      .filter(Boolean);
+  };
+
+  test('field condition picker excludes fields from other forms', () => {
+    const store = storeWithSecondForm();
+    const onChangeFn = vi.fn();
+    render(
+      <WithProviders store={store}>
+        {/* New-Text-Field belongs to the "Primary" form */}
+        <ConditionControl onChange={onChangeFn} field={'New-Text-Field'} />
+      </WithProviders>
+    );
+
+    const optionLabels = openFieldOptions();
+
+    // A same-form field (different section) is still offered.
+    expect(optionLabels).toContain('ID');
+    // The field that lives in another form must NOT be offered.
+    expect(optionLabels).not.toContain('Cross Form Widget');
+  });
+
+  test('section condition picker excludes fields from other forms', () => {
+    const store = storeWithSecondForm();
+    const onChangeFn = vi.fn();
+    render(
+      <WithProviders store={store}>
+        {/* Primary-New-Section belongs to the "Primary" form */}
+        <ConditionControl onChange={onChangeFn} view={'Primary-New-Section'} />
+      </WithProviders>
+    );
+
+    const optionLabels = openFieldOptions();
+
+    // A field from another section of the same form is still offered.
+    expect(optionLabels).toContain('ID');
+    // The field that lives in another form must NOT be offered.
+    expect(optionLabels).not.toContain('Cross Form Widget');
   });
 
   test('make a boolean condition from a field', () => {

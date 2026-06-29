@@ -12,4 +12,6 @@ interface ImportMetaEnv {
   readonly VITE_FORCE_REMOTE_DELETION?: string;
   /** When true, app wipes local Pouch on manual deactivate; optional, defaults to false */
   readonly VITE_DELETE_ON_DEACTIVATION?: string;
+  /** Comma-separated team Role enum values to hide from team-role dropdowns */
+  readonly VITE_EXCLUDED_TEAM_ROLES?: string;
 }

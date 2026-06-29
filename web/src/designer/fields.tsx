@@ -553,6 +553,27 @@ const fields: {[key: string]: FieldType} = {
     showInChooser: true,
     order: 27,
   },
+
+  ComputedField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'ComputedField',
+    'type-returned': 'faims-core::Number',
+    'component-parameters': {
+      label: 'Computed Value',
+      fullWidth: true,
+      name: 'computed-field',
+      helperText: '',
+      required: false,
+      expression: '',
+    },
+    initialValue: null,
+    humanReadableName: 'Computed Value',
+    humanReadableDescription:
+      'Calculates a number from an expression over other fields',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 28,
+  },
 };
 
 /** All registered field type keys (chooser + factory). */

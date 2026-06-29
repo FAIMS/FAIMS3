@@ -97,6 +97,11 @@ export interface FaimsFrontEndProps {
    * Default false when omitted.
    */
   deleteOnDeactivation?: boolean;
+
+  /**
+   * Team roles hidden from Control Centre team-role dropdowns (VITE_EXCLUDED_TEAM_ROLES).
+   */
+  excludedTeamRoles?: string[];
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -449,6 +454,9 @@ export class FaimsFrontEnd extends Construct {
       VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
       VITE_DELETE_ON_DEACTIVATION:
         props.deleteOnDeactivation === true ? 'true' : 'false',
+      ...(props.excludedTeamRoles?.length
+        ? {VITE_EXCLUDED_TEAM_ROLES: props.excludedTeamRoles.join(',')}
+        : {}),
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
     };

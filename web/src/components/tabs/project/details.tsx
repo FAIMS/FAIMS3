@@ -7,47 +7,14 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetProject} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
-import type {GetNotebookResponse} from '@faims3/data-model';
-import {ProjectStatus} from '@faims3/data-model';
+import {formatFileSize, GetNotebookResponse} from '@faims3/data-model';
 import {displayIsoTimestamp} from '@/lib/time';
+import {statusDisplay} from '@/lib/status-display';
 
 type DetailRow = {
   key: string;
   label: string;
   getValue: (project: GetNotebookResponse) => ReactNode;
-};
-
-const statusDisplay = (status: ProjectStatus | undefined): ReactNode => {
-  if (status === ProjectStatus.OPEN) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="h-2 w-2 rounded-full bg-emerald-500" />
-        <span className="text-sm text-card-foreground">Open</span>
-      </div>
-    );
-  }
-  if (status === ProjectStatus.CLOSED) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="h-2 w-2 rounded-full bg-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Closed</span>
-      </div>
-    );
-  }
-  if (status === ProjectStatus.ARCHIVED) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="h-2 w-2 rounded-full bg-amber-600/80" />
-        <span className="text-sm text-muted-foreground">Archived</span>
-      </div>
-    );
-  }
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="h-2 w-2 rounded-full bg-gray-300" />
-      <span className="text-sm text-muted-foreground">Unknown</span>
-    </div>
-  );
 };
 
 /**
@@ -118,6 +85,12 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
         label: 'Current record count',
         getValue: p => (p.recordCount != null ? String(p.recordCount) : '—'),
       },
+      {
+        key: 'byteCount',
+        label: 'Current byte count',
+        getValue: p => formatFileSize(p.byteCount),
+      },
+
     ],
     []
   );

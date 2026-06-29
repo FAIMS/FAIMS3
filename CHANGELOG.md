@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-06-26
+
+### Changes
+
+- feat: geopackage export and improved random record generation pipeline ([#2156](https://github.com/FAIMS/FAIMS3/pull/2156))
+- feat: filter forms which are visible in the overview map ([#2154](https://github.com/FAIMS/FAIMS3/pull/2154))
+- Chore: update PR template - add testing checklist item ([#2152](https://github.com/FAIMS/FAIMS3/pull/2152))
+- chore: add watch option for libs and use it in localdev.sh ([#2147](https://github.com/FAIMS/FAIMS3/pull/2147))
+- fix(designer): scope condition field picker to current form ([#2140](https://github.com/FAIMS/FAIMS3/pull/2140))
+- fix(forms): make location edit icon smaller ([#2139](https://github.com/FAIMS/FAIMS3/pull/2139))
+- fix: install @faims3/forms deps in Docker build so localdev.sh --all works ([#2138](https://github.com/FAIMS/FAIMS3/pull/2138))
+- feat(web): sort surveys & templates lists by created date ([#2137](https://github.com/FAIMS/FAIMS3/pull/2137))
+- feat: add duplicate condition option in conditional editor ([#2128](https://github.com/FAIMS/FAIMS3/pull/2128))
+- feat(designer): allow collapse fields to be duplicated too ([#2127](https://github.com/FAIMS/FAIMS3/pull/2127))
+- fix: placement of info tooltip icon in app next to heading ([#2126](https://github.com/FAIMS/FAIMS3/pull/2126))
+- fix: improve field error styling and remove redundant boxes ([#2125](https://github.com/FAIMS/FAIMS3/pull/2125))
+- fix: make advanced-helper popup responsive and fix close icon placement ([#2124](https://github.com/FAIMS/FAIMS3/pull/2124))
+- fix: use normal font for child-record HRIDs instead of monospace ([#2123](https://github.com/FAIMS/FAIMS3/pull/2123))
+- fix(forms): improve address autosuggest dropdown rendering and label ([#2122](https://github.com/FAIMS/FAIMS3/pull/2122))
+- fixes clear selection and related updates in same space ([#2121](https://github.com/FAIMS/FAIMS3/pull/2121))
+- fix: undo functionality in helper and advancedhelper text fields ([#2119](https://github.com/FAIMS/FAIMS3/pull/2119))
+- feat: update teams user roles and survey roles information ([#2115](https://github.com/FAIMS/FAIMS3/pull/2115))
+- Fix/add user docs for audio recording ([#2105](https://github.com/FAIMS/FAIMS3/pull/2105))
+- improvements in sign up and registration screens ([#2103](https://github.com/FAIMS/FAIMS3/pull/2103))
+
 ## [1.6.0] - 2026-06-10
 
 ### Changes
@@ -22,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - enhancements for location map buttons ([#2095](https://github.com/FAIMS/FAIMS3/pull/2095))
 - Feat/add warning dialog on finish record ([#2094](https://github.com/FAIMS/FAIMS3/pull/2094))
 - feat(forms): zoom images in advanced helper popup ([#2093](https://github.com/FAIMS/FAIMS3/pull/2093))
-- fix overlay issue in android side nav  ([#2091](https://github.com/FAIMS/FAIMS3/pull/2091))
+- fix overlay issue in android side nav ([#2091](https://github.com/FAIMS/FAIMS3/pull/2091))
 - feat: make record list search case insensitive (#2011) ([#2090](https://github.com/FAIMS/FAIMS3/pull/2090))
 - chore(deps): bump uuid from 9.0.0 to 14.0.0 in /app ([#2088](https://github.com/FAIMS/FAIMS3/pull/2088))
 - feat: remove metadataDB and significant refinement to notebook shape, typing and migrations ([#2086](https://github.com/FAIMS/FAIMS3/pull/2086))

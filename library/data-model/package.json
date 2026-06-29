@@ -1,6 +1,6 @@
 {
   "name": "@faims3/data-model",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Database access layer for FAIMS3",
   "license": "Apache",
   "author": "",
@@ -34,7 +34,9 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "clean": "gts clean && rm -rf build",
     "dev": "pnpm run watch",
-    "watch": "tsc -p tsconfig.json --watch",
+    "watch": "pnpm run watch:cjs & pnpm run watch:esm",
+    "watch:cjs": "tsc -p tsconfig.json --watch",
+    "watch:esm": "tsc -p tsconfig.esm.json --watch",
     "test": "NODE_ENV=test jest",
     "test-debug": "NODE_ENV=test jest --testTimeout=100000000",
     "test:watch": "NODE_ENV=test jest --watchAll=true",
@@ -44,7 +46,9 @@
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "dependencies": {
+    "@jsep-plugin/ternary": "^1.1.4",
     "@types/pouchdb": "^6.4.2",
+    "jsep": "^1.4.0",
     "lodash": "^4.18.1",
     "pouchdb-security-helper": "^2.1.2",
     "zod": "^3.24.1"

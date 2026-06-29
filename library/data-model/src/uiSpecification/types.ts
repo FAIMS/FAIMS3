@@ -142,6 +142,15 @@ const compiledFieldDefinitionShape = {
    * being a function (when present) rather than by structure.
    */
   conditionFn: z.custom<(v: RecordValues) => boolean>().optional(),
+  /**
+   * Compiled form of a ComputedField's expression; attached at runtime by
+   * `compileUiSpecConditionals`. Non-serializable, validated only as a function.
+   */
+  expressionFn: z
+    .custom<(scope: Map<string, number>) => number | null>()
+    .optional(),
+  /** Field IDs referenced by the expression; used to build the eval scope. */
+  expressionRefs: z.custom<string[]>().optional(),
 };
 export const CompiledFieldDefinitionSchema = z
   .object(compiledFieldDefinitionShape)
@@ -173,6 +182,8 @@ export const UiSpecFormSchema = z
     hridField: z.string().optional(),
     /** How the form's sections are laid out. */
     layout: z.enum(['inline', 'tabs']).optional(),
+    /** Whether records of this form type appear on the notebook overview map. */
+    displayInOverviewMap: z.boolean().optional(),
   })
   .passthrough();
 export type UiSpecForm = z.infer<typeof UiSpecFormSchema>;

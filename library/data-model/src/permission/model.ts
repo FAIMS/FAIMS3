@@ -977,6 +977,11 @@ export interface RoleDetails {
   scope: RoleScope;
   // If resource scoped - can specify this here
   resource?: Resource;
+  /**
+   * Sort order within a resource's role picker (lower = less access, shown
+   * first). Set this when adding a role that appears in an invite/role dropdown.
+   */
+  order?: number;
 }
 
 // Map each role to its details
@@ -1011,28 +1016,34 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.PROJECT_ADMIN]: {
     name: 'Administrator',
     description:
-      'Full control over a specific project, including deletion and admin user management',
+      'Full control over the {notebook}, including managing users and roles, editing settings, opening or closing it, and deleting it.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 3,
   },
   [Role.PROJECT_MANAGER]: {
     name: 'Manager',
     description:
-      'Can manage project settings, invitations and all data within a project',
+      'Can create {notebook} invites, edit {notebook} roles, manage {notebook} settings, and open or close the {notebook}.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 2,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
     name: 'Contributor',
-    description: 'Can view all data within a project and contribute their own',
+    description:
+      'Can view and edit any {notebook} responses created by any user, including their own.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 1,
   },
   [Role.PROJECT_GUEST]: {
     name: 'Guest',
-    description: 'Can view only their own contributions to a project',
+    description:
+      "Can create and edit their own {notebook} response, but cannot view or edit anyone else's responses.",
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+    order: 0,
   },
 
   // Template roles
@@ -1053,26 +1064,27 @@ export const roleDetails: Record<Role, RoleDetails> = {
   [Role.TEAM_ADMIN]: {
     name: 'Team Administrator',
     description:
-      'Full control over a specific team, including deletion and admin user management',
+      'Can remove users from teams and {notebooks}, create invites, edit user roles, and archive or delete {notebooks} and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MANAGER]: {
     name: 'Team Manager',
     description:
-      'Can manage team settings and member permissions within a team',
+      'Can create templates, {notebooks}, and invites, open and close {notebooks}, and edit user roles. Cannot remove users.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
     name: 'Team Member (Contributor)',
-    description: 'Can contribute data to all projects within a team',
+    description:
+      'Can contribute to all {notebooks} in the team and view team details, users, {notebooks} and templates.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER_CREATOR]: {
     name: 'Team Member (Creator)',
-    description: 'Can create new projects within a team',
+    description: 'Can create new {notebooks} within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },

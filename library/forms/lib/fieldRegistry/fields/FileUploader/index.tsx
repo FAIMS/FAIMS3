@@ -1,4 +1,4 @@
-import {logError} from '@faims3/data-model';
+import {formatFileSize, logError} from '@faims3/data-model';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -65,17 +65,6 @@ interface FullFileUploaderFieldProps extends FileUploaderFieldProps {
  */
 function isImageFile(contentType: string): boolean {
   return contentType.startsWith('image/');
-}
-
-/**
- * Formats file size in human-readable format
- */
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
 /**

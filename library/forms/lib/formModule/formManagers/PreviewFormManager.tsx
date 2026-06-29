@@ -11,6 +11,7 @@ import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
 import {FieldVisibilityMap} from './types';
 import {onChangeTemplatedFields} from './templatedFields';
+import {onChangeComputedFields} from './computedFields';
 import {PreviewFormConfig} from './types';
 import {MapConfig} from '../../components/maps/types';
 import {FormManager} from './FormManager';
@@ -68,7 +69,14 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     listeners: {
       onChange: () => {
         logInfo('Form values changed:', form.state.values);
-        // First, lets fire any updates to the templated fields
+        // Recompute computed fields first so templated strings read fresh values
+        onChangeComputedFields({
+          form,
+          uiSpec: props.uiSpec,
+          formId: props.formName,
+          runListeners: false,
+        });
+        // Then fire any updates to the templated fields
         onChangeTemplatedFields({
           form,
           uiSpec: props.uiSpec,

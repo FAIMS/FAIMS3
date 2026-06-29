@@ -73,6 +73,9 @@ RUN sh bundle.sh json . out && cp -R json/* /app/out/
 # ==========================
 FROM alpine AS runner
 
+# GeoPackage export uses ogr2ogr at runtime (see api/src/couchdb/export/gdal.ts)
+RUN apk add --no-cache gdal-tools
+
 WORKDIR /app
 
 # Don't run production as root

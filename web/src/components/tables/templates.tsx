@@ -2,6 +2,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {cn} from '@/lib/utils';
+import {displayDateTime} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import type {TemplateApiListItem} from '@faims3/data-model';
 import {
@@ -79,6 +80,17 @@ const createdByColumn: ColumnDef<Column> = {
   ),
 };
 
+const createdAtColumn: ColumnDef<Column> = {
+  accessorKey: 'createdAt',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Created" />
+  ),
+  cell: ({getValue}) => {
+    const v = getValue<string | undefined>();
+    return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
+  },
+};
+
 const descriptionColumn: ColumnDef<Column> = {
   accessorKey: 'description',
   header: ({column}) => (
@@ -128,6 +140,7 @@ export function getTemplatesTableColumns(options: {
     statusColumn,
     ...visibility,
     createdByColumn,
+    createdAtColumn,
     descriptionColumn,
   ];
 }

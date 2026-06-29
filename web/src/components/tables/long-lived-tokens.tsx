@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {displayUnixTimestampMs, nowMs} from '@/lib/time';
+import {displayDateTime, nowMs} from '@/lib/time';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {Edit, Trash} from 'lucide-react';
@@ -120,7 +120,7 @@ export const useGetLongLivedTokensColumns = ({
           row: {
             original: {createdAt},
           },
-        }) => displayUnixTimestampMs({timestamp: createdAt}),
+        }) => displayDateTime({timestamp: createdAt}),
       },
       {
         accessorKey: 'lastUsedAt',
@@ -131,10 +131,7 @@ export const useGetLongLivedTokensColumns = ({
           row: {
             original: {lastUsedAt},
           },
-        }) =>
-          lastUsedAt
-            ? displayUnixTimestampMs({timestamp: lastUsedAt})
-            : 'Never',
+        }) => (lastUsedAt ? displayDateTime({timestamp: lastUsedAt}) : 'Never'),
       },
       {
         accessorKey: 'expiresAt',
@@ -149,7 +146,7 @@ export const useGetLongLivedTokensColumns = ({
           if (!expiresAt) return '∞';
 
           const isExpired = expiresAt < nowMs();
-          const display = displayUnixTimestampMs({timestamp: expiresAt});
+          const display = displayDateTime({timestamp: expiresAt});
 
           return (
             <span className={isExpired ? 'text-destructive' : ''}>
