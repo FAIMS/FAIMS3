@@ -31,11 +31,11 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import Autocomplete from '@mui/material/Autocomplete';
 import {ChoiceElementProps} from '@faims3/forms';
 import {useMemo, useState} from 'react';
 import {useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import {FieldSearchAutocomplete} from '../field-selector';
 import {
   allOperators,
   EMPTY_BOOLEAN_CONDITION,
@@ -49,7 +49,12 @@ import {
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import {getFieldLabel} from './utils';
+import type {FieldSearchScope} from '../../features/field-search';
+import {resolveFieldIdsInScope} from '../../features/field-search';
+import {
+  selectUiViews,
+  selectUiViewSets,
+} from '../../store/selectors';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */
 const getSelectableOptions = (
@@ -253,50 +258,26 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const allFields = useAppSelector(
     state => state.notebook.uiSpec.present.fields
   );
-  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
-  const viewsets = useAppSelector(
-    state => state.notebook.uiSpec.present.viewsets
-  );
 
-  // Work out which fields to show in the select/combobox. Conditions can only
-  // reference fields within the same form, so scope the list to the current
-  // form (viewset): resolve the entry context (props.field or props.view) to
-  // its containing form, then gather every field across that form's sections
-  // (mirrors TemplatedStringFieldEditor's viewSetFields). Then remove either
-  // the current field or the fields in the current view.
-  const selectFields = useMemo(() => {
-    // Which section's condition are we editing?
-    let sectionId: string | undefined;
+  const views = useAppSelector(selectUiViews);
+  const viewsets = useAppSelector(selectUiViewSets);
+
+  const fieldSearchScope = useMemo((): FieldSearchScope => {
     if (props.view) {
-      sectionId = props.view;
-    } else if (props.field) {
-      const field = props.field;
-      sectionId = Object.keys(views).find(id =>
-        views[id].fields.includes(field)
-      );
-    } else {
-      // Standalone use, no context: nothing to scope to, show all fields.
-      return Object.keys(allFields);
+      return {kind: 'context', sectionId: props.view};
     }
+    if (props.field) {
+      return {kind: 'context', fieldId: props.field};
+    }
+    return {kind: 'all'};
+  }, [props.view, props.field]);
 
-    // The form (viewset) that owns the section. Conditions can only reference
-    // fields in the same form, so if it can't be resolved, show nothing rather
-    // than leaking other forms' fields.
-    const viewset = Object.values(viewsets).find(
-      vs => sectionId !== undefined && vs.views.includes(sectionId)
-    );
-    const formFields = viewset
-      ? viewset.views.flatMap(id => views[id]?.fields ?? [])
-      : [];
-
-    // Exclude the current field, or the current section's own fields.
-    const ownSectionFields = props.view
-      ? (views[props.view]?.fields ?? [])
-      : [];
-    return props.field
-      ? formFields.filter(f => f !== props.field)
-      : formFields.filter(f => !ownSectionFields.includes(f));
-  }, [allFields, views, viewsets, props.field, props.view]);
+  const selectableFieldCount = useMemo(
+    () =>
+      resolveFieldIdsInScope(allFields, views, viewsets, fieldSearchScope)
+        .length,
+    [allFields, views, viewsets, fieldSearchScope]
+  );
 
   const targetFieldDef = condition.field ? allFields[condition.field] : null;
 
@@ -631,7 +612,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
 
   // If there are no fields to select, show a message instead of the editor.
-  if (selectFields.length === 0) {
+  if (selectableFieldCount === 0) {
     return (
       <div style={{color: 'red'}}>
         {props.view ? (
@@ -657,21 +638,12 @@ export const FieldConditionControl = (props: ConditionProps) => {
         spacing={2}
         divider={<Divider orientation="vertical" flexItem />}
       >
-        <Autocomplete
-          options={selectFields}
-          getOptionLabel={(fieldId: string) =>
-            getFieldLabel(allFields[fieldId]) ?? ''
-          }
+        <FieldSearchAutocomplete
           value={condition.field || null}
-          onChange={(_, newValue) => {
-            updateField(newValue || '');
-          }}
+          onChange={fieldId => updateField(fieldId || '')}
+          scope={fieldSearchScope}
           data-testid="field-input"
-          renderInput={params => (
-            <TextField {...params} label="Field" variant="outlined" />
-          )}
-          style={{minWidth: 200}}
-          clearOnEscape
+          label="Field"
         />
 
         <FormControl

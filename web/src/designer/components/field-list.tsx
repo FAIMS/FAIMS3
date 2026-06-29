@@ -31,6 +31,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
 import InfoIcon from '@mui/icons-material/Info';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
@@ -44,7 +45,7 @@ import {
   designerPrimaryActionButtonSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
-import {slugify} from '../domain/notebook/ids';
+import {resolveAddedFieldKey} from '../domain/notebook/ids';
 
 type Props = {
   viewSetId: string;
@@ -64,6 +65,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
 
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const fieldParam = new URLSearchParams(location.search).get('field');
 
   const hiddenFields = useMemo(
     () =>
@@ -103,12 +106,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const handleDialogConfirm = useCallback(
     (fieldType: string) => {
       const defaultFieldName = 'New Field';
-      let newFieldKey = slugify(defaultFieldName);
-      let suffix = 1;
-      while (fields[newFieldKey]) {
-        newFieldKey = slugify(`${defaultFieldName} ${suffix}`);
-        suffix += 1;
-      }
+      const newFieldKey = resolveAddedFieldKey(
+        defaultFieldName,
+        fieldType,
+        viewId,
+        fView.fields,
+        Object.keys(fields)
+      );
 
       dispatch(
         fieldAdded({
@@ -122,7 +126,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       setAutoFocusFieldKey(newFieldKey);
       setDialogOpen(false);
     },
-    [addAfterField, dispatch, fields, viewId, viewSetId]
+    [addAfterField, dispatch, fields, fView.fields, viewId, viewSetId]
   );
 
   const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
@@ -167,7 +171,17 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     // Do not depend on `allClosed` / field data: that object is recreated on every field
     // edit and would collapse open accordions whenever the spec updates.
     setIsExpanded({});
+    setAutoFocusFieldKey(null);
   }, [viewId]);
+
+  useEffect(() => {
+    if (!fieldParam || !fView.fields.includes(fieldParam)) return;
+
+    const designerIdentifier = fields[fieldParam]?.designerIdentifier;
+    if (!designerIdentifier) return;
+
+    setIsExpanded(prev => ({...prev, [designerIdentifier]: true}));
+  }, [viewId, fieldParam, fView.fields, fields]);
 
   const handleExpandedChange = useCallback(
     (designerIdentifier: string, expanded: boolean) => {
