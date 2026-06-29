@@ -91,6 +91,7 @@ import {
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
+  getByteCount,
   getCompiledUiSpecModel,
   getProjectById,
   getRolesForNotebook,
@@ -575,6 +576,7 @@ api.get(
     res.json({
       ...project,
       recordCount: await countRecordsInNotebook(projectId),
+      byteCount: await getByteCount(projectId),
     } satisfies GetNotebookResponse);
   }
 );

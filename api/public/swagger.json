@@ -2096,6 +2096,11 @@
             "is_admin": {
               "type": "boolean",
               "description": "True when the caller has project admin on this notebook"
+            },
+            "byteCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Size of the notebook’s data in bytes (projects DB v4+)"
             }
           },
           "required": ["is_admin"]
@@ -2146,13 +2151,17 @@
       ]
     },
     "GetNotebookResponse": {
-      "description": "GET /notebooks/{id} — project document plus optional record count.",
+      "description": "GET /notebooks/{id} — project document plus optional record count and byte count.",
       "allOf": [
         {"$ref": "#/definitions/ProjectDocument"},
         {
           "type": "object",
           "properties": {
             "recordCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byteCount": {
               "type": "integer",
               "minimum": 0
             }
