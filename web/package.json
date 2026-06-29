@@ -69,13 +69,13 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.0",
     "react-json-view-lite": "^1.1.0",
-    "react-redux": "^8.1.2",
+    "react-redux": "^9.2.0",
     "react-router": "^6.26.0",
     "react-router-dom": "^6.26.0",
     "react-router-hash-link": "^2.4.3",
     "redux-undo": "^1.1.0",
     "sonner": "^2.0.1",
-    "tailwind-merge": "^2.5.5",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.1"
   },
@@ -86,26 +86,27 @@
     "@testing-library/user-event": "^14.4.3",
     "@types/lodash": "^4.14.202",
     "@types/mustache": "^4.2.5",
-    "@types/node": "^22.13.14",
+    "@types/node": "^24",
     "@types/pluralize": "^0.0.33",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react-swc": "^4.0.1",
-    "@vitest/browser": "^3.2.4",
+    "@vitest/browser": "^4.1.8",
+    "@vitest/browser-webdriverio": "^4.1.8",
     "autoprefixer": "^10.4.20",
     "jsdom": "^22.1.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.9.2",
     "vite": "^7.3.2",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.8",
     "webdriverio": "^9.12.2"
   },
   "overrides": {
     "@radix-ui/react-focus-scope": "1.1.7"
   },
   "engines": {
-    "node": "22"
+    "node": "24"
   }
 }

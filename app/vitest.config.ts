@@ -39,6 +39,7 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
     css: true,
     reporters: ['verbose'],
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*'],

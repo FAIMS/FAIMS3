@@ -892,7 +892,6 @@ describe('Registration', () => {
       action: 'register',
     };
 
-    const {EMPTY_UI_SPECIFICATION} = await import('./sampleNotebook');
     const project_id = await createNotebook({
       projectName: 'Test Notebook',
       uiSpecification: EMPTY_UI_SPECIFICATION,

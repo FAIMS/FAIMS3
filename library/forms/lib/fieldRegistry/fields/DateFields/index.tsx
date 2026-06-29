@@ -85,8 +85,6 @@ interface DateTimeBaseProps extends DateTimeFieldFullProps {
   inputType: HTMLInputTypeAttribute;
   /** Label for the optional "Now" button (shown when show_now_button is true). */
   nowButtonLabel: string;
-  /** Allow seconds input for datetime-local type */
-  step?: number;
 }
 
 const DateTimeBase: React.FC<DateTimeBaseProps> = ({
@@ -104,7 +102,6 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = ({
   show_now_button,
   inputType,
   nowButtonLabel,
-  step,
 }) => {
   const value = (state.value?.data as string) ?? '';
   const errors = state.meta.errors as unknown as string[] | undefined;

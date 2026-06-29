@@ -226,7 +226,10 @@ const checkHasErrors = (
  */
 const checkSectionVisited = (
   sectionId: string,
-  fieldMeta: Record<string, {isTouched: boolean; errors: unknown[]}>,
+  fieldMeta: Record<
+    string,
+    {isTouched: boolean; errors: unknown[]} | undefined
+  >,
   uiSpec: UiSpecModel
 ): boolean => {
   const fields = getFieldsForView(uiSpec, sectionId);
@@ -698,7 +701,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
     const errorMap: Record<string, string[]> = {};
 
     for (const [fieldName, meta] of Object.entries(fieldMeta)) {
-      if (meta.errors.length > 0) {
+      if (meta && meta.errors.length > 0) {
         errorMap[fieldName] = meta.errors as string[];
       }
     }

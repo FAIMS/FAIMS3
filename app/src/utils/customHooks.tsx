@@ -707,7 +707,7 @@ export function useLoadingDebounce(
 ): boolean {
   const [stabilizedLoading, setStabilizedLoading] = useState(isLoading);
   const loadingStartTime = useRef<number | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     // Clear any existing timeout

@@ -200,13 +200,15 @@ function MapWrapper(props: MapProps) {
         source.addFeatures(parsedFeatures);
 
         // pass the extent in the EPSG:4326 projection
-        const extent = transformExtent(
-          source.getExtent(),
-          theMap.getView().getProjection(),
-          'EPSG:4326'
-        );
-
-        if (!extent.includes(Infinity)) setFeaturesExtent(extent);
+        const sourceExtent = source.getExtent();
+        if (sourceExtent) {
+          const extent = transformExtent(
+            sourceExtent,
+            theMap.getView().getProjection(),
+            'EPSG:4326'
+          );
+          if (!extent.includes(Infinity)) setFeaturesExtent(extent);
+        }
       }
 
       // Add layer to the map

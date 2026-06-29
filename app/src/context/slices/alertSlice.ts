@@ -2,7 +2,7 @@
  * A redux store for managing alerts
  */
 
-import {AlertColor} from '@mui/material/Alert/Alert';
+import {AlertColor} from '@mui/material/Alert';
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
 // Types
