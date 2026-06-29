@@ -140,7 +140,7 @@ import {configureStore} from '@reduxjs/toolkit';
 import {Provider} from 'react-redux';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider} from '@mui/material/styles';
-import testTheme from './themes/fieldmark';
+import {themeFieldmarkDefinition} from '@faims3/theme-fieldmark';
 import {ActiveUser} from '../context/slices/authSlice';
 import {Router} from 'react-router-dom';
 import {FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER} from 'redux-persist';
@@ -190,7 +190,9 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
       <NotificationContext.Provider value={mockNotificationContext}>
         <QueryClientProvider client={queryClient}>
           <Provider store={testStore}>
-            <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
+            <ThemeProvider theme={themeFieldmarkDefinition.app.muiTheme}>
+              {children}
+            </ThemeProvider>
           </Provider>
         </QueryClientProvider>
       </NotificationContext.Provider>

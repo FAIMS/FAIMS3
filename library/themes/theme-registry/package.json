@@ -1,0 +1,20 @@
+{
+  "name": "@faims3/theme-registry",
+  "version": "1.6.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@faims3/theme-base": "workspace:*",
+    "@faims3/theme-bss": "workspace:*",
+    "@faims3/theme-default": "workspace:*",
+    "@faims3/theme-fieldmark": "workspace:*"
+  },
+  "engines": {
+    "node": "22"
+  }
+}

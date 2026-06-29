@@ -13,6 +13,11 @@
     "api/test/**/*.ts",
     "designer/src/**/*.ts",
     "library/data-model/src/**/*.ts",
-    "library/data-model/tests/**/*.ts"
+    "library/data-model/tests/**/*.ts",
+    "library/themes/theme-base/src/**/*.ts",
+    "library/themes/theme-default/src/**/*.ts",
+    "library/themes/theme-fieldmark/src/**/*.ts",
+    "library/themes/theme-bss/src/**/*.ts",
+    "library/themes/theme-registry/src/**/*.ts"
   ]
 }

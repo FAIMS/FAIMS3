@@ -4,6 +4,11 @@ packages:
   - web
   - library/data-model
   - library/forms
+  - library/themes/theme-base
+  - library/themes/theme-default
+  - library/themes/theme-fieldmark
+  - library/themes/theme-bss
+  - library/themes/theme-registry
   - infrastructure/aws-cdk
   - e2e
 onlyBuiltDependencies:

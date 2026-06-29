@@ -46,7 +46,41 @@ EOT
 
 echo "Generating assets for ${VITE_THEME} theme"
 
-npx capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
+if [ "${VITE_THEME}" = "bubble" ]; then
+  echo "Error: VITE_THEME=bubble is no longer supported. Use default, fieldmark, or bssTheme."
+  exit 1
+fi
+
+case "${VITE_THEME}" in
+  "" | "default")
+    THEME_PACKAGE="@faims3/theme-default"
+    ;;
+  "fieldmark")
+    THEME_PACKAGE="@faims3/theme-fieldmark"
+    ;;
+  "bssTheme")
+    THEME_PACKAGE="@faims3/theme-bss"
+    ;;
+  *)
+    echo "Error: Unsupported VITE_THEME=${VITE_THEME}. Use default, fieldmark, or bssTheme."
+    exit 1
+    ;;
+esac
+
+THEME_ASSET_PATH=$(node -e "const path=require('node:path'); const pkg=process.argv[1]; const entry=require.resolve(pkg); const packageRoot=path.resolve(path.dirname(entry), '..'); process.stdout.write(path.join(packageRoot, 'assets'));" "${THEME_PACKAGE}")
+THEME_ASSET_PATH_REL=$(node -e "const path=require('node:path'); const abs=process.argv[1]; const rel=path.relative(process.cwd(), abs); process.stdout.write(rel || '.');" "${THEME_ASSET_PATH}")
+
+if [ ! -f "${THEME_ASSET_PATH}/logo.png" ]; then
+  echo "Error: Theme assets not found at ${THEME_ASSET_PATH}"
+  exit 1
+fi
+
+echo npx capacitor-assets generate --assetPath "${THEME_ASSET_PATH_REL}" \
+  --pwaManifestPath ./public/manifest.json \
+  --iconBackgroundColorDark '#001d34' \
+  --splashBackgroundColorDark '#001d34'
+
+npx capacitor-assets generate --assetPath "${THEME_ASSET_PATH_REL}" \
   --pwaManifestPath ./public/manifest.json \
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'
