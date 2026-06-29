@@ -722,7 +722,6 @@ export class VectorTileStore extends TileStoreBase {
 
   async transformRequest(url: string) {
     const fullURL = url.replace('{key}', this.config.mapSourceKey);
-    console.log('Requesting tile URL:', fullURL);
     const blob = await this.getTileBlob(fullURL);
     if (blob) {
       this.storeTileRecord(fullURL, blob, '_cache');
