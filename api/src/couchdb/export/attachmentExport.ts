@@ -83,6 +83,26 @@ export const appendAttachmentsToArchive = async ({
   // Pool of active file streaming promises for concurrency management
   const activeStreams = new Set<Promise<void>>();
 
+  // Registry of source streams appended to the archive but not yet fully
+  // consumed.  Destroyed on archive error so their 'close' events fire and
+  // their promises settle instead of hanging forever.
+  const activeSourceStreams = new Set<NodeJS.ReadableStream>();
+
+  // Rejects if the archive itself fails (e.g. client disconnects mid-download).
+  // Racing this alongside stream promises lets the concurrency loop exit
+  // immediately on archive failure rather than waiting for streams that
+  // archiver will never consume (which would spin indefinitely otherwise).
+  const archiveErrorSignal = new Promise<void>((_, reject) => {
+    archive.once('error', (err: Error) => {
+      // Destroy every registered source stream so their 'close' events fire,
+      // which causes their promises to settle and frees CouchDB HTTP connections.
+      for (const stream of activeSourceStreams) {
+        (stream as any).destroy?.();
+      }
+      reject(err);
+    });
+  });
+
   // Single iteration through ALL records (or filtered by targetViewID if specified)
   const iterator = await notebookRecordIterator({
     projectId,
@@ -95,65 +115,81 @@ export const appendAttachmentsToArchive = async ({
 
   let {record, done} = await iterator.next();
 
-  /**
-   * Main processing loop with bounded concurrency.
-   *
-   * This loop continues until:
-   * 1. No more records to process (done === true), AND
-   * 2. All active streams have completed (activeStreams.size === 0)
-   */
-  while (!done || activeStreams.size > 0) {
-    // Fill the stream pool up to the concurrency limit
-    while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
-      if (record !== null) {
-        const viewID = record.type;
+  try {
+    /**
+     * Main processing loop with bounded concurrency.
+     *
+     * This loop continues until:
+     * 1. No more records to process (done === true), AND
+     * 2. All active streams have completed (activeStreams.size === 0)
+     *
+     * If the archive errors (e.g. client disconnect), archiveErrorSignal
+     * rejects and the loop exits immediately via the Promise.race below.
+     */
+    while (!done || activeStreams.size > 0) {
+      // Fill the stream pool up to the concurrency limit
+      while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
+        if (record !== null) {
+          const viewID = record.type;
 
-        // Start processing this record's attachments asynchronously
-        const streamPromises = processRecordAttachments({
-          viewID,
-          record,
-          nanoDb,
-          archive,
-          filenames,
-          pathPrefix,
-        });
+          // Start processing this record's attachments asynchronously
+          const streamPromises = processRecordAttachments({
+            viewID,
+            record,
+            nanoDb,
+            archive,
+            filenames,
+            pathPrefix,
+            activeSourceStreams,
+          });
 
-        // Add to active pool and set up cleanup handlers
-        for (const streamPromise of streamPromises) {
-          activeStreams.add(streamPromise);
-          streamPromise
-            .then(() => {
-              stats.fileCount++;
-              stats.perViewCounts.set(
-                viewID,
-                (stats.perViewCounts.get(viewID) || 0) + 1
-              );
-            })
-            .catch(err => {
-              console.error(
-                `[ZIP] Error processing record ${record?.record_id}:`,
-                err
-              );
-            })
-            .finally(() => {
-              activeStreams.delete(streamPromise);
-            });
+          // Each safePromise never rejects so that individual attachment
+          // errors are handled gracefully without aborting the whole export.
+          // Archive-level failures are signalled via archiveErrorSignal instead.
+          for (const streamPromise of streamPromises) {
+            const safePromise: Promise<void> = streamPromise
+              .then(() => {
+                stats.fileCount++;
+                stats.perViewCounts.set(
+                  viewID,
+                  (stats.perViewCounts.get(viewID) || 0) + 1
+                );
+              })
+              .catch(err => {
+                console.error(
+                  `[ZIP] Error processing attachment for record ${record?.record_id}:`,
+                  err
+                );
+              })
+              .finally(() => {
+                activeStreams.delete(safePromise);
+              });
+            activeStreams.add(safePromise);
+          }
         }
+
+        // Advance to next record
+        const next = await iterator.next();
+        record = next.record;
+        done = next.done;
       }
 
-      // Advance to next record
-      const next = await iterator.next();
-      record = next.record;
-      done = next.done;
+      /**
+       * Wait for at least one stream to complete before continuing.
+       * Also race archiveErrorSignal so the loop exits immediately on archive
+       * failure instead of hanging waiting for streams archiver won't consume.
+       */
+      if (activeStreams.size > 0) {
+        await Promise.race([...activeStreams, archiveErrorSignal]);
+      }
     }
-
-    /**
-     * Wait for at least one stream to complete before continuing.
-     * This prevents the loop from spinning when at max concurrency.
-     */
-    if (activeStreams.size > 0) {
-      await Promise.race(activeStreams);
+  } finally {
+    // Destroy any remaining open source streams to release CouchDB connections.
+    // This handles early exits caused by thrown errors (e.g. archive failure).
+    for (const stream of activeSourceStreams) {
+      (stream as any).destroy?.();
     }
+    activeSourceStreams.clear();
   }
 
   return stats;
@@ -251,15 +287,16 @@ export function createConfiguredArchive(
     if (err.code === 'ENOENT') {
       console.warn('[ZIP] File not found warning:', err.message);
     } else {
-      // Unknown warning types should be treated as errors
-      throw err;
+      console.error('[ZIP] Archive warning:', err.message);
     }
   });
 
-  // Handle fatal errors during archive creation
+  // Handle fatal errors during archive creation.
+  // Do NOT throw here — throwing inside an EventEmitter callback is never caught
+  // by any surrounding Promise chain.  It becomes an uncaught exception that
+  // leaves await archive.finalize() (and any Promise.race) permanently pending.
   archive.on('error', err => {
     console.error('[ZIP] Archive error:', err);
-    throw err;
   });
 
   // Connect archive output to the destination stream
@@ -293,6 +330,7 @@ function processRecordAttachments({
   filenames,
   viewID,
   pathPrefix,
+  activeSourceStreams,
 }: {
   record: HydratedDataRecord;
   nanoDb: any;
@@ -300,6 +338,7 @@ function processRecordAttachments({
   filenames: string[];
   viewID: string;
   pathPrefix: string;
+  activeSourceStreams: Set<NodeJS.ReadableStream>;
 }): Promise<void>[] {
   const promises: Promise<void>[] = [];
 
@@ -359,18 +398,38 @@ function processRecordAttachments({
         attachment_id
       );
 
+      // Register the source stream so it can be destroyed if the archive
+      // errors, preventing dangling CouchDB HTTP connections.
+      activeSourceStreams.add(fileReadStream);
+
       // Add the stream to the archive with the generated filename
       archive.append(fileReadStream, {name: fullFileName});
 
       /**
-       * Create a promise that resolves when the stream completes.
+       * Track completion via 'close', which fires whether the stream ends
+       * normally OR is destroyed.  Using 'end' alone hangs permanently if
+       * archiver stops consuming the stream (e.g. due to an error), because
+       * 'end' only fires after all data has been read by the consumer.
        */
       const streamPromise = new Promise<void>((resolve, reject) => {
-        fileReadStream.on('end', () => {
-          resolve();
+        let ended = false;
+        fileReadStream.once('end', () => {
+          ended = true;
         });
-        fileReadStream.on('error', (err: any) => {
-          console.error(`[ZIP] Stream error for ${fullFileName}:`, err);
+        fileReadStream.once('close', () => {
+          activeSourceStreams.delete(fileReadStream);
+          if (ended) {
+            resolve();
+          } else {
+            reject(
+              new Error(
+                `Attachment stream for ${fullFileName} closed before reading completed`
+              )
+            );
+          }
+        });
+        fileReadStream.once('error', (err: any) => {
+          activeSourceStreams.delete(fileReadStream);
           reject(err);
         });
       });
