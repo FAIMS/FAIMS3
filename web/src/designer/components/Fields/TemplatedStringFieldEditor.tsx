@@ -71,7 +71,7 @@ export const TemplatedStringFieldEditor = ({
 
   const getFieldLabel = (f: FieldType) => {
     const params = f['component-parameters'] as TemplatedStringProps;
-    return params.InputLabelProps?.label || params.name || '';
+    return params.label || params.InputLabelProps?.label || params.name || '';
   };
 
   const fieldVariables = viewSetFields.map(name => {
@@ -86,6 +86,9 @@ export const TemplatedStringFieldEditor = ({
   const updateFieldFromState = (newState: TemplatedStringProps) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     const newParams = newField['component-parameters'] as TemplatedStringProps;
+    // label is the canonical property the rest of the designer reads;
+    // mirror to InputLabelProps.label for older consumers.
+    newParams.label = newState.label || fieldName;
     newParams.InputLabelProps = {
       label: newState.label || fieldName,
     };
