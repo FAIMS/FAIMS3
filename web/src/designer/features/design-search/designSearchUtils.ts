@@ -1,8 +1,13 @@
+/**
+ * @file Flattens forms, sections, and fields into a single searchable index.
+ */
+
 import {buildFieldSearchEntry} from '../field-search/fieldSearchUtils';
 import type {FieldType} from '../../state/initial';
 
 export type DesignSearchResultType = 'form' | 'section' | 'field';
 
+/** One row in the global design search index (before ranking). */
 export type DesignSearchEntry = {
   /** Stable unique key for React lists and selection. */
   resultId: string;
@@ -34,6 +39,10 @@ type ViewMap = Record<
 >;
 type ViewSetMap = Record<string, {label: string; views: string[]}>;
 
+/**
+ * Walks viewsets → sections → fields and builds flat search entries.
+ * Section `helperText` stores the parent form label so form name matches rank highly.
+ */
 export const buildDesignSearchEntries = (
   viewsets: ViewSetMap,
   views: ViewMap,
@@ -97,6 +106,7 @@ export const buildDesignSearchEntries = (
   return entries;
 };
 
+/** Human-readable type badge labels for search result rows. */
 export const designSearchTypeLabel: Record<DesignSearchResultType, string> = {
   form: 'Form',
   section: 'Section',

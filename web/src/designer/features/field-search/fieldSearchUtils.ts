@@ -1,3 +1,7 @@
+/**
+ * @file Builds searchable field entries and resolves which fields are in scope for pickers.
+ */
+
 import {getFieldLabel} from '../../components/condition/utils';
 import type {FieldType} from '../../state/initial';
 import type {
@@ -42,7 +46,12 @@ export const getViewsetFieldIds = (
 
 /**
  * Resolves which field ids are in scope for selection.
- * `context` mirrors condition-editor rules: same form only, exclude self or section fields.
+ *
+ * - `all`: every field in the design.
+ * - `viewset`: fields belonging to one form.
+ * - `context`: same form as the editing target, excluding either the current field
+ *   (`fieldId`) or all fields in the current section (`sectionId`) — mirrors
+ *   condition-editor rules so a field cannot reference itself or its section peers.
  */
 export const resolveFieldIdsInScope = (
   allFields: Record<string, FieldType>,
@@ -58,6 +67,7 @@ export const resolveFieldIdsInScope = (
     return getViewsetFieldIds(scope.viewsetId, views, viewsets);
   }
 
+  // Resolve the anchor section from either explicit sectionId or the field's section.
   let sectionId: string | undefined;
   if (scope.sectionId) {
     sectionId = scope.sectionId;
@@ -72,6 +82,7 @@ export const resolveFieldIdsInScope = (
   const viewset = Object.values(viewsets).find(
     vs => sectionId !== undefined && vs.views.includes(sectionId)
   );
+  // Cannot locate the containing form — return empty rather than leak other forms.
   const formFields = viewset
     ? viewset.views.flatMap(id => views[id]?.fields ?? [])
     : [];
@@ -83,6 +94,7 @@ export const resolveFieldIdsInScope = (
   if (scope.fieldId) {
     return formFields.filter(id => id !== scope.fieldId);
   }
+  // Section condition: reference fields from other sections in the same form only.
   return formFields.filter(id => !ownSectionFields.includes(id));
 };
 
@@ -135,6 +147,7 @@ export const applyFieldFilters = (
   });
 };
 
+/** Maps scoped field ids to entries ready for {@link weightedFieldSearch}. */
 export const buildFieldSearchEntries = (
   fieldIds: string[],
   allFields: Record<string, FieldType>

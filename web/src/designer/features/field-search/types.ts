@@ -1,3 +1,7 @@
+/**
+ * @file Type definitions for scoped field search in pickers and condition editors.
+ */
+
 import type {FieldType} from '../../state/initial';
 
 /** Decreasing search priority: label → id → helper text → advanced helper text. */
@@ -31,6 +35,7 @@ export type FieldSearchFilters = {
   predicate?: (fieldId: string, field: FieldType) => boolean;
 };
 
+/** Searchable snapshot of one field, aligned with {@link LABEL_ID_HELPER_ADVANCED_WEIGHTS} keys. */
 export type FieldSearchEntry = {
   fieldId: string;
   field: FieldType;

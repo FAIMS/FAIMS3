@@ -1,3 +1,7 @@
+/**
+ * @file Field-specific wrapper around {@link weightedFuzzySearch}.
+ */
+
 import {
   LABEL_ID_HELPER_ADVANCED_WEIGHTS,
   weightedFuzzySearch as weightedFuzzySearchGeneric,

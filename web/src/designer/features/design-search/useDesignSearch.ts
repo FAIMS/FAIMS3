@@ -1,3 +1,7 @@
+/**
+ * @file React hook for debounced global design search (forms, sections, fields).
+ */
+
 import {useEffect, useMemo, useState} from 'react';
 import {
   LABEL_ID_HELPER_ADVANCED_WEIGHTS,
@@ -25,10 +29,13 @@ const SEARCH_KEYS = [
 ] as const satisfies ReadonlyArray<keyof DesignSearchEntry>;
 
 export type UseDesignSearchReturn = {
+  /** Current input text (updates immediately as the user types). */
   query: string;
   setQuery: (query: string) => void;
+  /** Debounced query used for fuzzy search and match highlighting. */
   searchQuery: string;
   results: DesignSearchResult[];
+  /** Total indexed entries (forms + sections + fields). */
   candidateCount: number;
 };
 
@@ -94,6 +101,7 @@ export const useDesignSearch = (
   };
 };
 
+/** Forms first, then sections, then fields — stable browse order when query is empty. */
 const designTypeSortRank = (type: DesignSearchEntry['type']): number => {
   switch (type) {
     case 'form':

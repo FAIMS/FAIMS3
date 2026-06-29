@@ -66,6 +66,12 @@ export const buildUniqueFieldName = (
 /**
  * Resolves the storage key for a field about to be added via `fieldAdded`.
  * Mirrors reducer logic so UI can expand/focus the new field after dispatch.
+ *
+ * @param fieldName - Default label passed to `fieldAdded` (e.g. "New Field").
+ * @param fieldType - Component type being inserted (affects HRID naming).
+ * @param viewId - Section id the field is added to.
+ * @param sectionFieldNames - Current field keys in that section.
+ * @param existingFieldNames - All field keys in the notebook spec.
  */
 export const resolveAddedFieldKey = (
   fieldName: string,
@@ -77,6 +83,7 @@ export const resolveAddedFieldKey = (
   let fieldLabel = slugify(fieldName);
 
   if (fieldType === 'TemplatedStringField') {
+    // First HRID in a section uses the canonical `hrid{viewId}` id.
     const hasHRID = sectionFieldNames.some(
       name => name.startsWith('hrid') && name.endsWith(viewId)
     );

@@ -86,6 +86,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addAfterField, setAddAfterField] = useState('');
+  /** Predicted storage key for the next fieldAdded dispatch — enables expand/focus before Redux updates. */
   const [autoFocusFieldKey, setAutoFocusFieldKey] = useState<string | null>(
     null
   );
@@ -106,6 +107,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const handleDialogConfirm = useCallback(
     (fieldType: string) => {
       const defaultFieldName = 'New Field';
+      // Pre-compute the slug fieldAdded will assign so we can expand the accordion immediately.
       const newFieldKey = resolveAddedFieldKey(
         defaultFieldName,
         fieldType,
@@ -163,6 +165,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     const designerIdentifier = fields[autoFocusFieldKey]?.designerIdentifier;
     if (!designerIdentifier) return;
 
+    // Expand the new field accordion once the reducer has written the field spec.
     setIsExpanded(prev => ({...prev, [designerIdentifier]: true}));
   }, [autoFocusFieldKey, fields]);
 

@@ -501,6 +501,7 @@ export const FormEditor = ({
     <Stack
       direction="row"
       spacing={2}
+      // Scroll target for global design search (see designerElementIds).
       data-designer-form={viewSetId}
       sx={[
         designerResponsiveSectionSx,

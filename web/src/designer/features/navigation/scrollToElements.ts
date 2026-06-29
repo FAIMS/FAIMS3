@@ -1,3 +1,10 @@
+/**
+ * @file Navigate to and scroll to forms, sections, and fields in the designer.
+ *
+ * Search results update the design tab URL (`/design/:tabIndex?section=&field=`)
+ * then poll the DOM until the target `data-designer-*` element mounts.
+ */
+
 import type {NavigateFunction} from 'react-router-dom';
 import {
   designerFieldSelector,
@@ -18,11 +25,13 @@ export type DesignerNavigationContext = {
   views: ViewMap;
 };
 
+/** Visible forms first, then forms hidden via the form checklist. */
 const combinedFormOrder = (
   visibleTypes: string[],
   untickedForms: string[]
 ): string[] => [...visibleTypes, ...untickedForms];
 
+/** Tab index for a viewset in the design route, or null if the form is absent. */
 export const getFormTabIndex = (
   viewSetId: string,
   visibleTypes: string[],
@@ -32,6 +41,7 @@ export const getFormTabIndex = (
   return index >= 0 ? index : null;
 };
 
+/** Viewset id that owns `sectionId`, or null. */
 export const findFormForSection = (
   sectionId: string,
   viewsets: ViewSetMap
@@ -42,6 +52,7 @@ export const findFormForSection = (
   return null;
 };
 
+/** Section id that lists `fieldId`, or null. */
 export const findSectionForField = (
   fieldId: string,
   views: ViewMap
@@ -52,6 +63,7 @@ export const findSectionForField = (
   return null;
 };
 
+/** Zero-based section index within a viewset's `views` array. */
 export const getSectionIndex = (
   sectionId: string,
   viewSetId: string,
@@ -61,6 +73,7 @@ export const getSectionIndex = (
   return sectionIndex >= 0 ? sectionIndex : null;
 };
 
+/** Builds `/design/:tabIndex?section=&field=` from navigation context. */
 const buildDesignSearch = (
   ctx: DesignerNavigationContext,
   tabIndex: number,
@@ -104,6 +117,7 @@ export const scrollToDesignerElement = (
         return;
       }
 
+      // Route change may mount the target asynchronously — retry briefly.
       attempts += 1;
       if (attempts >= maxAttempts) {
         resolve();

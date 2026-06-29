@@ -443,6 +443,7 @@ const FieldEditorComponent = ({
     <Accordion
       key={fieldName}
       ref={setNodeRef}
+      // Scroll target for global design search (see designerElementIds).
       data-designer-field={fieldName}
       expanded={expanded}
       onChange={handleAccordionChange}

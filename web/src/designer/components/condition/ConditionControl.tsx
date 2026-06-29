@@ -21,6 +21,7 @@ import {
   Checkbox,
   Divider,
   FormControl,
+  FormHelperText,
   Grid,
   IconButton,
   InputLabel,
@@ -30,6 +31,7 @@ import {
   Stack,
   TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import {ChoiceElementProps} from '@faims3/forms';
 import {useMemo, useState} from 'react';
@@ -55,6 +57,7 @@ import {
   selectUiViews,
   selectUiViewSets,
 } from '../../store/selectors';
+import {designerConditionFrameSx} from '../designer-style';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */
 const getSelectableOptions = (
@@ -79,11 +82,7 @@ export const ConditionControl = (props: ConditionProps) => {
     const isBoolean =
       condition.operator === 'and' || condition.operator === 'or';
     return (
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{border: '1px dashed grey', padding: '10px'}}
-      >
+      <Stack direction="row" spacing={2} sx={designerConditionFrameSx}>
         {isBoolean ? (
           <BooleanConditionControl
             onChange={conditionChanged}
@@ -262,13 +261,22 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const views = useAppSelector(selectUiViews);
   const viewsets = useAppSelector(selectUiViewSets);
 
+  // Work out which fields to show in the field selector. Conditions can only
+  // reference fields within the same form, so scope the list to the current
+  // form (viewset): resolve the entry context (props.field or props.view) to
+  // its containing form, then gather every field across that form's sections
+  // (mirrors TemplatedStringFieldEditor's viewSetFields). If the form can't be
+  // resolved, show nothing rather than leaking other forms' fields. Then remove
+  // either the current field or the fields in the current view.
   const fieldSearchScope = useMemo((): FieldSearchScope => {
+    // Which section's condition are we editing?
     if (props.view) {
       return {kind: 'context', sectionId: props.view};
     }
     if (props.field) {
       return {kind: 'context', fieldId: props.field};
     }
+    // Standalone use, no context: nothing to scope to, show all fields.
     return {kind: 'all'};
   }, [props.view, props.field]);
 
@@ -447,9 +455,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
               ))}
             </Select>
             {!isValidOption && condition.value !== '' && (
-              <div style={{color: 'red', fontSize: '12px'}}>
+              <FormHelperText error sx={{mx: 0}}>
                 Invalid value: "{String(condition.value)}"
-              </div>
+              </FormHelperText>
             )}
           </FormControl>
         );
@@ -491,13 +499,13 @@ export const FieldConditionControl = (props: ConditionProps) => {
             {selectedValues.some(
               v => !possibleOptions.some(opt => opt.value === v)
             ) && (
-              <div style={{color: 'red', fontSize: '12px'}}>
+              <FormHelperText error sx={{mx: 0}}>
                 Invalid values: "
                 {selectedValues
                   .filter(v => !possibleOptions.some(opt => opt.value === v))
                   .join(', ')}
                 "
-              </div>
+              </FormHelperText>
             )}
           </FormControl>
         );
@@ -614,7 +622,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   // If there are no fields to select, show a message instead of the editor.
   if (selectableFieldCount === 0) {
     return (
-      <div style={{color: 'red'}}>
+      <Typography variant="body2" color="error">
         {props.view ? (
           <>
             This form has only one section. Adding conditions for a section
@@ -627,7 +635,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             enable adding conditions.
           </>
         )}
-      </div>
+      </Typography>
     );
   }
 
@@ -706,7 +714,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
           </IconButton>
         </Tooltip>
       </Stack>
-      {valueMismatch && <div style={{color: 'red'}}>Invalid value!</div>}
+      {valueMismatch && (
+        <FormHelperText error sx={{mt: 0.5, mx: 0}}>
+          Invalid value!
+        </FormHelperText>
+      )}
     </Grid>
   );
 };

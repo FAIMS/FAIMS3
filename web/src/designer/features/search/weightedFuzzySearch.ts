@@ -1,11 +1,16 @@
+/**
+ * @file Shared weighted fuzzy search used by field picker and global design search.
+ */
+
 import fuzzysort from 'fuzzysort';
 
 /** Default decreasing priority: primary label → id → helper text → advanced helper text. */
 export const LABEL_ID_HELPER_ADVANCED_WEIGHTS = [4, 3, 2, 1] as const;
 
-const defaultMaxWeight = Math.max(...LABEL_ID_HELPER_ADVANCED_WEIGHTS);
-
-/** Weighted score from per-key fuzzysort results (highest-weight key match wins). */
+/**
+ * Combines per-key fuzzysort scores into one rank.
+ * Each key's score is scaled by its weight; the highest weighted contribution wins.
+ */
 export const computeWeightedScore = (
   keyResults: ReadonlyArray<{score: number} | null | undefined>,
   weights: readonly number[] = LABEL_ID_HELPER_ADVANCED_WEIGHTS
@@ -21,6 +26,7 @@ export const computeWeightedScore = (
   return best;
 };
 
+/** One ranked search hit with optional raw fuzzysort metadata for highlighting. */
 export type WeightedFuzzyMatch<T> = {
   obj: T;
   score: number;
@@ -29,16 +35,21 @@ export type WeightedFuzzyMatch<T> = {
 
 /**
  * Generic weighted fuzzy search over string properties of each entry.
- * Used by field search and global design search.
+ *
+ * When `query` is empty, returns entries in `sortEmptyQuery` order (or insertion
+ * order) with a neutral score of 1 — callers use this for browse mode.
  */
 export const weightedFuzzySearch = <T extends object>(
   entries: T[],
   query: string,
   keys: ReadonlyArray<keyof T & string>,
   options?: {
+    /** Parallel to `keys`; higher weight ranks matches on that property first. */
     weights?: readonly number[];
     limit?: number;
+    /** Minimum fuzzysort score (0–1) to include a match. */
     threshold?: number;
+    /** Sort applied when the query is empty (browse / no-filter mode). */
     sortEmptyQuery?: (a: T, b: T) => number;
   }
 ): WeightedFuzzyMatch<T>[] => {

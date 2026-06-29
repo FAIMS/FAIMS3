@@ -1,3 +1,7 @@
+/**
+ * @file Autocomplete field picker with scoped fuzzy search for condition editors and computed fields.
+ */
+
 import {Box, TextField, Typography} from '@mui/material';
 import Autocomplete, {AutocompleteProps} from '@mui/material/Autocomplete';
 import {useEffect, useMemo} from 'react';
@@ -11,6 +15,7 @@ import {
 import type {FieldType} from '../../state/initial';
 import {selectUiFields} from '../../store/selectors';
 import {useAppSelector} from '../../state/hooks';
+import {designerSearchMatchHighlightSx} from '../designer-style';
 
 type FieldSearchOptionProps = {
   result: FieldSearchResult;
@@ -21,6 +26,7 @@ const getHelperText = (result: FieldSearchResult): string =>
   result.fuzzysort?.obj.helperText ??
   String(result.field['component-parameters']?.helperText ?? '');
 
+/** Renders fuzzysort highlight markup; falls back to plain text when no match. */
 const renderHighlighted = (
   match: Fuzzysort.Result | null | undefined,
   fallback: string
@@ -42,6 +48,7 @@ export const FieldSearchOption = ({result, query}: FieldSearchOptionProps) => {
 
   const labelContent = useMemo(() => {
     if (!hasSearch) return result.label;
+    // fuzzysort key order: label (0), id (1), helperText (2), advancedHelperText (3)
     return renderHighlighted(result.fuzzysort?.[0], result.label);
   }, [hasSearch, result]);
 
@@ -53,11 +60,20 @@ export const FieldSearchOption = ({result, query}: FieldSearchOptionProps) => {
 
   return (
     <Box sx={{py: 0.25}}>
-      <Typography variant="body2" component="div">
+      <Typography
+        variant="body2"
+        component="div"
+        sx={designerSearchMatchHighlightSx}
+      >
         {labelContent}
       </Typography>
       {helperContent && (
-        <Typography variant="caption" color="text.secondary" component="div">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          component="div"
+          sx={designerSearchMatchHighlightSx}
+        >
           {helperContent}
         </Typography>
       )}
@@ -118,6 +134,7 @@ export const FieldSearchAutocomplete = ({
     if (!value) return null;
     const fromResults = results.find(r => r.fieldId === value);
     if (fromResults) return fromResults;
+    // Selected id may be outside current search results — synthesize a display row.
     const field = allFields[value];
     if (!field) {
       return {fieldId: value, field: textFieldFallback(), label: value, score: 0};
@@ -131,6 +148,7 @@ export const FieldSearchAutocomplete = ({
     };
   }, [value, results, allFields]);
 
+  // Seed the input with the selected field label when controlled value changes externally.
   useEffect(() => {
     if (value && selectedResult && !query) {
       setQuery(selectedResult.label);
@@ -160,6 +178,7 @@ export const FieldSearchAutocomplete = ({
       isOptionEqualToValue={(option, selected) =>
         option.fieldId === selected.fieldId
       }
+      // Ranking is handled by useFieldSearch — disable MUI's built-in string filter.
       filterOptions={options => options}
       disabled={disabled || candidateCount === 0}
       noOptionsText={noOptionsText}

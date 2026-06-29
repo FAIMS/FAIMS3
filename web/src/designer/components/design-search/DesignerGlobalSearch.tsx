@@ -1,3 +1,10 @@
+/**
+ * @file Global designer search bar — fuzzy search across forms, sections, and fields.
+ *
+ * Press `/` (when not typing in an input) to focus. Selecting a result navigates
+ * to the correct design tab and scrolls to the target element.
+ */
+
 import SearchIcon from '@mui/icons-material/Search';
 import {Box, Chip, TextField, Typography} from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -20,12 +27,17 @@ import {
   selectVisibleTypes,
 } from '../../store/selectors';
 import {useAppSelector} from '../../state/hooks';
+import {
+  designerSearchMatchHighlightSx,
+  designerSearchShortcutHintSx,
+} from '../designer-style';
 
 type DesignSearchOptionProps = {
   result: DesignSearchResult;
   searchQuery: string;
 };
 
+/** Returns true when `/` should not steal focus (user is already editing text). */
 const isEditableTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLElement)) return false;
   const tagName = target.tagName;
@@ -34,22 +46,6 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
   }
   return target.isContentEditable || !!target.closest('[contenteditable="true"]');
 };
-
-/** Shown in the search field when idle to hint at the global `/` shortcut. */
-const SEARCH_SHORTCUT_HINT_SX = {
-  fontSize: '0.72rem',
-  lineHeight: 1,
-  px: 0.75,
-  py: 0.375,
-  borderRadius: 0.75,
-  border: 1,
-  borderColor: 'divider',
-  bgcolor: 'action.hover',
-  color: 'text.secondary',
-  fontFamily: 'inherit',
-  pointerEvents: 'none',
-  userSelect: 'none',
-} as const;
 
 const SEARCH_WIDTH = {
   xs: '100%',
@@ -62,6 +58,7 @@ const SEARCH_WIDTH = {
 /** Fixed width for the type badge column — fits "Section" (longest label). */
 const TYPE_BADGE_COLUMN_WIDTH = 64;
 
+/** Renders fuzzysort highlight markup; falls back to plain text when no match. */
 const renderHighlighted = (
   match: Fuzzysort.Result | null | undefined,
   fallback: string
@@ -76,11 +73,13 @@ const renderHighlighted = (
   );
 };
 
+/** One row in the global search dropdown (type badge + title + context lines). */
 const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
   const hasSearch = searchQuery.trim().length > 0 && result.fuzzysort;
 
   const titleContent = useMemo(() => {
     if (!hasSearch) return result.label;
+    // fuzzysort key order: label (0), id (1), helperText (2), advancedHelperText (3)
     return renderHighlighted(result.fuzzysort?.[0], result.label);
   }, [hasSearch, result]);
 
@@ -152,7 +151,11 @@ const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
         }}
       />
       <Box sx={{minWidth: 0}}>
-        <Typography variant="body2" component="div" sx={{fontWeight: 600}}>
+        <Typography
+          variant="body2"
+          component="div"
+          sx={{fontWeight: 600, ...designerSearchMatchHighlightSx}}
+        >
           {titleContent}
         </Typography>
         {detailContent && (
@@ -160,7 +163,11 @@ const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
             variant="caption"
             color="text.secondary"
             component="div"
-            sx={{display: 'block', mt: 0.25}}
+            sx={{
+              display: 'block',
+              mt: 0.25,
+              ...designerSearchMatchHighlightSx,
+            }}
           >
             {detailContent}
           </Typography>
@@ -172,8 +179,9 @@ const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
             component="div"
             sx={{
               display: 'block',
-              mt: detailContent ? 0.25 : 0.25,
+              mt: 0.25,
               fontStyle: 'italic',
+              ...designerSearchMatchHighlightSx,
             }}
           >
             {locationContent}
@@ -191,11 +199,13 @@ export const DesignerGlobalSearch = () => {
   const [focused, setFocused] = useState(false);
   const navigate = useNavigate();
   const {pathname} = useLocation();
+  // Preserve notebook prefix, e.g. `/notebook/:id/design` → `/notebook/:id/design`.
   const designPath = pathname.split('/').slice(0, 2).join('/') || '/design';
 
   const visibleTypes = useAppSelector(selectVisibleTypes);
   const viewsets = useAppSelector(selectUiViewSets);
   const views = useAppSelector(selectUiViews);
+  // Hidden forms still have tab indices — they appear after visible ones in the tab bar.
   const untickedForms = useMemo(
     () =>
       Object.keys(viewsets).filter(formId => !visibleTypes.includes(formId)),
@@ -282,6 +292,7 @@ export const DesignerGlobalSearch = () => {
       isOptionEqualToValue={(option, selected) =>
         option.resultId === selected.resultId
       }
+      // Ranking is handled by useDesignSearch — disable MUI's built-in string filter.
       filterOptions={options => options}
       disabled={candidateCount === 0}
       noOptionsText={query.trim() ? 'No matching elements' : 'Search forms, sections, and fields'}
@@ -346,7 +357,11 @@ export const DesignerGlobalSearch = () => {
               endAdornment: (
                 <>
                   {!query && !focused && (
-                    <Box component="kbd" aria-hidden sx={SEARCH_SHORTCUT_HINT_SX}>
+                    <Box
+                      component="kbd"
+                      aria-hidden
+                      sx={designerSearchShortcutHintSx}
+                    >
                       /
                     </Box>
                   )}
