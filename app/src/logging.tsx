@@ -20,6 +20,7 @@
 
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginReact from '@bugsnag/plugin-react';
+import {setAttachmentSaveTraceEnabled} from '@faims3/data-model';
 import {FormLogger, LoggingService} from '@faims3/forms';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {Button, Grid, Typography} from '@mui/material';
@@ -262,9 +263,11 @@ const createBugsnagFormLogger = (
 const registerFormsLogger = (): void => {
   const formLogger = createBugsnagFormLogger(Bugsnag, BUGSNAG_KEY);
   LoggingService.register(formLogger);
+  setAttachmentSaveTraceEnabled(DEBUG_APP);
   console.debug('[FormLogger] Registered with LoggingService', {
     bugsnagEnabled: !!BUGSNAG_KEY,
     debugEnabled: DEBUG_APP,
+    attachmentSaveTraceEnabled: DEBUG_APP,
   });
 };
 

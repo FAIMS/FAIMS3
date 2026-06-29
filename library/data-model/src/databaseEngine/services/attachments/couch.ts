@@ -14,6 +14,7 @@ import {
   StorageMetadata,
   StoreAttachmentResult,
 } from './types';
+import {attachmentSaveTrace} from '../../../logging';
 import {base64ToBlob, fileToBase64} from './utils';
 
 // The default att- prefix
@@ -110,16 +111,28 @@ export class CouchAttachmentService extends BaseAttachmentService {
       attach_format_version: 1,
     };
 
+    attachmentSaveTrace('couch.storeAttachmentFromFile:before-createAttachment', {
+      id,
+      fileSize: file.size,
+      contentType: metadata.attachmentDetails.contentType,
+    });
+
     // Now write it using special core op
     try {
       await this.core.createAttachment(attachmentDocument);
     } catch (e) {
+      attachmentSaveTrace('couch.storeAttachmentFromFile:createAttachment-error', {
+        id,
+        error: String(e),
+      });
       console.error(
         'Failed to create attachment in couch DB attachment service. Error: ',
         e
       );
       throw e;
     }
+
+    attachmentSaveTrace('couch.storeAttachmentFromFile:complete', {id});
 
     // Return info about the new document
     return {
@@ -146,6 +159,14 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const {blob, metadata} = params;
     const id = generateAttID();
 
+    attachmentSaveTrace('couch.storeAttachmentFromBlob:start', {
+      id,
+      blobSize: blob.size,
+      contentType: metadata.attachmentDetails.contentType,
+      recordId: metadata.recordContext.recordId,
+      revisionId: metadata.recordContext.revisionId,
+    });
+
     // Create the document shell first (no attachment data)
     const attachmentDocument: Omit<AttachmentDBDocument, '_attachments'> = {
       _id: id,
@@ -158,10 +179,19 @@ export class CouchAttachmentService extends BaseAttachmentService {
     };
 
     // Create doc without attachment
+    attachmentSaveTrace('couch.storeAttachmentFromBlob:before-db.put', {id});
     const result = await this.core.db.put(attachmentDocument);
+    attachmentSaveTrace('couch.storeAttachmentFromBlob:after-db.put', {
+      id,
+      rev: result.rev,
+    });
 
     // This attaches the document directly using the blob interface - more
     // efficient
+    attachmentSaveTrace('couch.storeAttachmentFromBlob:before-putAttachment', {
+      id,
+      rev: result.rev,
+    });
     await this.core.db.putAttachment(
       id,
       id, // attachment name
@@ -169,6 +199,9 @@ export class CouchAttachmentService extends BaseAttachmentService {
       blob,
       metadata.attachmentDetails.contentType
     );
+    attachmentSaveTrace('couch.storeAttachmentFromBlob:after-putAttachment', {
+      id,
+    });
 
     return {
       identifier: {id, metadata: {}},
@@ -193,6 +226,10 @@ export class CouchAttachmentService extends BaseAttachmentService {
   }): Promise<LoadAttachmentResult> {
     const {identifier} = params;
 
+    attachmentSaveTrace('couch.loadAttachmentAsBlob:start', {
+      id: identifier.id,
+    });
+
     // Fetch the record, load attachments
     const attachment = await this.core.db.get<AttachmentDBDocument>(
       identifier.id,
@@ -204,6 +241,14 @@ export class CouchAttachmentService extends BaseAttachmentService {
       }
     );
 
+    attachmentSaveTrace('couch.loadAttachmentAsBlob:after-get', {
+      id: identifier.id,
+      hasAttachments: Boolean(attachment._attachments),
+      attachmentKeys: attachment._attachments
+        ? Object.keys(attachment._attachments)
+        : [],
+    });
+
     const attachmentDetails = attachment._attachments?.[identifier.id] as
       | (PouchDB.Core.Attachment & {
           // Base 64 encoded (include_attachments = true, binary = false)
@@ -213,6 +258,11 @@ export class CouchAttachmentService extends BaseAttachmentService {
 
     // Check if attachment exists
     if (!attachmentDetails || !attachmentDetails.data) {
+      attachmentSaveTrace('couch.loadAttachmentAsBlob:no-data', {
+        id: identifier.id,
+        hasDetails: Boolean(attachmentDetails),
+        hasData: Boolean(attachmentDetails?.data),
+      });
       throw new Error(
         `Attachment with ID "${identifier.id}" not found or has no data`
       );
@@ -226,6 +276,11 @@ export class CouchAttachmentService extends BaseAttachmentService {
 
     // Extract metadata from the attachment document
     const filename = attachment.filename || 'unknown';
+
+    attachmentSaveTrace('couch.loadAttachmentAsBlob:complete', {
+      id: identifier.id,
+      blobSize: blob.size,
+    });
 
     return {
       blob,
@@ -306,16 +361,31 @@ export class CouchAttachmentService extends BaseAttachmentService {
       attach_format_version: 1,
     };
 
+    attachmentSaveTrace(
+      'couch.storeAttachmentFromBase64:before-createAttachment',
+      {
+        id,
+        base64Length: base64.length,
+        contentType: metadata.attachmentDetails.contentType,
+      }
+    );
+
     // Now write it using special core op
     try {
       await this.core.createAttachment(attachmentDocument);
     } catch (e) {
+      attachmentSaveTrace(
+        'couch.storeAttachmentFromBase64:createAttachment-error',
+        {id, error: String(e)}
+      );
       console.error(
         'Failed to create attachment in couch DB attachment service. Error: ',
         e
       );
       throw e;
     }
+
+    attachmentSaveTrace('couch.storeAttachmentFromBase64:complete', {id});
 
     // Return info about the new document
     return {

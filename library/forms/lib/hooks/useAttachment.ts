@@ -1,4 +1,4 @@
-import {IAttachmentService, LoadAttachmentResult} from '@faims3/data-model';
+import {attachmentSaveTrace, IAttachmentService, LoadAttachmentResult} from '@faims3/data-model';
 import {useQueries, useQuery} from '@tanstack/react-query';
 
 /**
@@ -22,8 +22,13 @@ export const useAttachment = (
   return useQuery({
     queryKey: useAttachmentsQueryKey.attachment(attachmentId),
     queryFn: async () => {
+      attachmentSaveTrace('useAttachment:load-start', {attachmentId});
       const result = await attachmentService.loadAttachmentAsBlob({
         identifier: {id: attachmentId},
+      });
+      attachmentSaveTrace('useAttachment:load-complete', {
+        attachmentId,
+        blobSize: result.blob.size,
       });
       // Create object URL for display
       const url = URL.createObjectURL(result.blob);
@@ -49,8 +54,13 @@ export const useAttachments = (
     queries: attachmentIds.map(attachmentId => ({
       queryKey: useAttachmentsQueryKey.attachment(attachmentId),
       queryFn: async () => {
+        attachmentSaveTrace('useAttachment:load-start', {attachmentId});
         const result = await attachmentService.loadAttachmentAsBlob({
           identifier: {id: attachmentId},
+        });
+        attachmentSaveTrace('useAttachment:load-complete', {
+          attachmentId,
+          blobSize: result.blob.size,
         });
         // Create object URL for display
         const url = URL.createObjectURL(result.blob);

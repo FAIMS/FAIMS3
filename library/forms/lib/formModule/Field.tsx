@@ -40,34 +40,31 @@ export const Field = React.memo((props: FieldProps) => {
       name={props.fieldSpec['component-parameters'].name}
       children={field => {
         const setFieldData = (value: any) => {
-          // Allow functional updates for race-safe concurrent writes
-          const current = (field.state.value || {}) as
-            | FormDataEntry
-            | undefined;
-          const nextData =
-            typeof value === 'function'
-              ? value((current?.data ?? undefined) as any)
-              : value;
-
-          const newValue: FormDataEntry = {
-            ...(current || {}),
-            data: nextData,
-          };
-          field.handleChange(newValue as any);
+          // Functional updater merges against latest field value so a write
+          // here cannot clobber a concurrent attachments update (or vice versa).
+          field.handleChange((prev: FormDataEntry | undefined) => {
+            const current = prev || {};
+            const nextData =
+              typeof value === 'function'
+                ? value((current?.data ?? undefined) as any)
+                : value;
+            return {
+              ...current,
+              data: nextData,
+            };
+          });
         };
         const setFieldAnnotation = (value: FormAnnotation) => {
-          const newValue: FormDataEntry = {
-            ...(field.state.value || {}),
+          field.handleChange((prev: FormDataEntry | undefined) => ({
+            ...(prev || {}),
             annotation: value,
-          };
-          field.handleChange(newValue as any);
+          }));
         };
         const setFieldAttachment = (value: FaimsAttachments) => {
-          const newValue: FormDataEntry = {
-            ...(field.state.value || {}),
+          field.handleChange((prev: FormDataEntry | undefined) => ({
+            ...(prev || {}),
             attachments: value,
-          };
-          field.handleChange(newValue as any);
+          }));
         };
 
         // TODO clean this up - duplicating the mode check here is ugly
