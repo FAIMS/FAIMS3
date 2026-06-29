@@ -26,7 +26,11 @@ const viewsets = {
   primary: {label: 'Primary Form', views: ['section-a', 'section-b']},
 };
 const views = {
-  'section-a': {label: 'General', fields: ['field-a'], description: 'Main section'},
+  'section-a': {
+    label: 'General',
+    fields: ['field-a'],
+    description: 'Main section',
+  },
   'section-b': {label: 'Details', fields: ['field-b']},
 };
 const fields = {

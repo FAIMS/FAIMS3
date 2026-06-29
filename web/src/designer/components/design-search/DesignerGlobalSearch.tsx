@@ -8,7 +8,14 @@
 import SearchIcon from '@mui/icons-material/Search';
 import {Box, Chip, TextField, Typography} from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
-import {useCallback, useEffect, useMemo, useRef, useState, type FocusEvent} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {
   designSearchTypeLabel,
@@ -44,7 +51,9 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
   if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
     return true;
   }
-  return target.isContentEditable || !!target.closest('[contenteditable="true"]');
+  return (
+    target.isContentEditable || !!target.closest('[contenteditable="true"]')
+  );
 };
 
 const SEARCH_WIDTH = {
@@ -295,7 +304,11 @@ export const DesignerGlobalSearch = () => {
       // Ranking is handled by useDesignSearch — disable MUI's built-in string filter.
       filterOptions={options => options}
       disabled={candidateCount === 0}
-      noOptionsText={query.trim() ? 'No matching elements' : 'Search forms, sections, and fields'}
+      noOptionsText={
+        query.trim()
+          ? 'No matching elements'
+          : 'Search forms, sections, and fields'
+      }
       clearOnEscape
       size="small"
       sx={{width: SEARCH_WIDTH, maxWidth: '100%', flexShrink: 0}}

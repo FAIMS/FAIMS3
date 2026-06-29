@@ -57,8 +57,7 @@ export const buildDesignSearchEntries = (
       type: 'form',
       label: viewset.label,
       id: viewSetId,
-      helperText:
-        sectionCount === 1 ? '1 section' : `${sectionCount} sections`,
+      helperText: sectionCount === 1 ? '1 section' : `${sectionCount} sections`,
       advancedHelperText: '',
       viewSetId,
       viewSetLabel: viewset.label,

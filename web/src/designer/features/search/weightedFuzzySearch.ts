@@ -62,7 +62,9 @@ export const weightedFuzzySearch = <T extends object>(
 
   const trimmed = query.trim();
   if (!trimmed) {
-    const sorted = sortEmptyQuery ? [...entries].sort(sortEmptyQuery) : [...entries];
+    const sorted = sortEmptyQuery
+      ? [...entries].sort(sortEmptyQuery)
+      : [...entries];
     return sorted.slice(0, limit).map(obj => ({obj, score: 1}));
   }
 

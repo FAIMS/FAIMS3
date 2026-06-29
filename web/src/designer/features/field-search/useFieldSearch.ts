@@ -37,8 +37,12 @@ export type UseFieldSearchReturn = {
 export const useFieldSearch = (
   options: UseFieldSearchOptions
 ): UseFieldSearchReturn => {
-  const {scope, filters, limit = 50, debounceMs = DEFAULT_DEBOUNCE_MS} =
-    options;
+  const {
+    scope,
+    filters,
+    limit = 50,
+    debounceMs = DEFAULT_DEBOUNCE_MS,
+  } = options;
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 

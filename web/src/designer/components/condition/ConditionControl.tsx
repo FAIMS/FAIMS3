@@ -53,10 +53,7 @@ import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import type {FieldSearchScope} from '../../features/field-search';
 import {resolveFieldIdsInScope} from '../../features/field-search';
-import {
-  selectUiViews,
-  selectUiViewSets,
-} from '../../store/selectors';
+import {selectUiViews, selectUiViewSets} from '../../store/selectors';
 import {designerConditionFrameSx} from '../designer-style';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */

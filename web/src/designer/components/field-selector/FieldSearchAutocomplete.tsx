@@ -124,11 +124,12 @@ export const FieldSearchAutocomplete = ({
   clearOnSelect = false,
 }: FieldSearchAutocompleteProps) => {
   const allFields = useAppSelector(selectUiFields);
-  const {query, setQuery, searchQuery, results, candidateCount} = useFieldSearch({
-    scope,
-    filters,
-    limit,
-  });
+  const {query, setQuery, searchQuery, results, candidateCount} =
+    useFieldSearch({
+      scope,
+      filters,
+      limit,
+    });
 
   const selectedResult = useMemo((): FieldSearchResult | null => {
     if (!value) return null;
@@ -137,7 +138,12 @@ export const FieldSearchAutocomplete = ({
     // Selected id may be outside current search results — synthesize a display row.
     const field = allFields[value];
     if (!field) {
-      return {fieldId: value, field: textFieldFallback(), label: value, score: 0};
+      return {
+        fieldId: value,
+        field: textFieldFallback(),
+        label: value,
+        score: 0,
+      };
     }
     const entry = buildFieldSearchEntry(value, field);
     return {

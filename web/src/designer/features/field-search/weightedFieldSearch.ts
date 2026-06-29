@@ -27,17 +27,12 @@ export const weightedFieldSearch = (
   query: string,
   limit = 50
 ): FieldSearchResult[] => {
-  const matches = weightedFuzzySearchGeneric(
-    entries,
-    query,
-    SEARCH_KEYS,
-    {
-      weights: LABEL_ID_HELPER_ADVANCED_WEIGHTS,
-      limit,
-      sortEmptyQuery: (a, b) =>
-        a.label.localeCompare(b.label, undefined, {sensitivity: 'base'}),
-    }
-  );
+  const matches = weightedFuzzySearchGeneric(entries, query, SEARCH_KEYS, {
+    weights: LABEL_ID_HELPER_ADVANCED_WEIGHTS,
+    limit,
+    sortEmptyQuery: (a, b) =>
+      a.label.localeCompare(b.label, undefined, {sensitivity: 'base'}),
+  });
 
   return matches.map(({obj, score, fuzzysort}) => ({
     fieldId: obj.fieldId,

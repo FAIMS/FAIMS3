@@ -67,23 +67,18 @@ export const useDesignSearch = (
   );
 
   const results = useMemo((): DesignSearchResult[] => {
-    const matches = weightedFuzzySearch(
-      entries,
-      searchQuery,
-      SEARCH_KEYS,
-      {
-        weights: LABEL_ID_HELPER_ADVANCED_WEIGHTS,
-        limit,
-        sortEmptyQuery: (a, b) => {
-          const typeOrder =
-            designTypeSortRank(a.type) - designTypeSortRank(b.type);
-          if (typeOrder !== 0) return typeOrder;
-          return a.label.localeCompare(b.label, undefined, {
-            sensitivity: 'base',
-          });
-        },
-      }
-    );
+    const matches = weightedFuzzySearch(entries, searchQuery, SEARCH_KEYS, {
+      weights: LABEL_ID_HELPER_ADVANCED_WEIGHTS,
+      limit,
+      sortEmptyQuery: (a, b) => {
+        const typeOrder =
+          designTypeSortRank(a.type) - designTypeSortRank(b.type);
+        if (typeOrder !== 0) return typeOrder;
+        return a.label.localeCompare(b.label, undefined, {
+          sensitivity: 'base',
+        });
+      },
+    });
 
     return matches.map(({obj, score, fuzzysort}) => ({
       ...obj,

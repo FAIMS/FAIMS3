@@ -126,8 +126,8 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
         ) : (
           <Alert severity="info" sx={{mt: 2}}>
             No suitable numerical fields for computation in this form. Add
-            number, percentage, or other numeric fields to reference them in
-            the expression.
+            number, percentage, or other numeric fields to reference them in the
+            expression.
           </Alert>
         )}
         <FormHelperText>

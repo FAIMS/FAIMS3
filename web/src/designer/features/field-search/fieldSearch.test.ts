@@ -7,7 +7,11 @@ import {
   weightedFieldSearch,
 } from './index';
 
-const textField = (label: string, id: string, extra?: Partial<FieldType>): FieldType =>
+const textField = (
+  label: string,
+  id: string,
+  extra?: Partial<FieldType>
+): FieldType =>
   ({
     'component-namespace': 'faims-custom',
     'component-name': 'TextField',

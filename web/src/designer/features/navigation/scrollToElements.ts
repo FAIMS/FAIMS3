@@ -37,7 +37,9 @@ export const getFormTabIndex = (
   visibleTypes: string[],
   untickedForms: string[]
 ): number | null => {
-  const index = combinedFormOrder(visibleTypes, untickedForms).indexOf(viewSetId);
+  const index = combinedFormOrder(visibleTypes, untickedForms).indexOf(
+    viewSetId
+  );
   return index >= 0 ? index : null;
 };
 
@@ -100,11 +102,7 @@ export const scrollToDesignerElement = (
     block?: ScrollLogicalPosition;
   }
 ): Promise<void> => {
-  const {
-    maxAttempts = 40,
-    intervalMs = 50,
-    block = 'center',
-  } = options ?? {};
+  const {maxAttempts = 40, intervalMs = 50, block = 'center'} = options ?? {};
 
   return new Promise(resolve => {
     let attempts = 0;
