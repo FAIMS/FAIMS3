@@ -33,22 +33,16 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
-  compileUiSpecConditionals,
-  CompiledNotebookUiSpec,
-  DatabaseInterface,
-  DataDocument,
-  DataEngine,
-  mergeHeads,
   PeopleDBDocument,
-  ProjectID,
   Role,
   roleDetails,
   ROOT_DESCRIPTION_MAX_LENGTH,
 } from '@faims3/data-model';
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
-import {getDataDb, initialiseAndMigrateDBs} from '../couchdb';
-import {createNotebook, getUiSpecModel} from '../couchdb/notebooks';
+import {initialiseAndMigrateDBs} from '../couchdb';
+import {createRecordWithMergeRevision} from '../couchdb/devtools';
+import {createNotebook} from '../couchdb/notebooks';
 import {createTeamDocument} from '../couchdb/teams';
 import {createTemplate} from '../couchdb/templates';
 import {createUser, saveCouchUser} from '../couchdb/users';
@@ -247,138 +241,6 @@ function clampDescription(description?: string): string | undefined {
     : trimmed;
 }
 
-/**
- * Pick a form and two of its editable fields to mutate when seeding a merge
- * revision. Plain text fields are preferred so the seeded string values render
- * cleanly, falling back to any string field and then to any field at all.
- *
- * @param uiSpec The notebook UI specification to choose fields from
- * @returns The chosen form id and two distinct field ids
- */
-function pickTwoEditableFields(
-  uiSpec: Awaited<ReturnType<typeof getUiSpecModel>>
-): {
-  formId: string;
-  fieldA: string;
-  fieldB: string;
-} {
-  for (const [formId, viewset] of Object.entries(uiSpec.viewsets)) {
-    const fieldIds = viewset.views.flatMap(view => uiSpec.views[view].fields);
-    // Most-preferred first: plain text inputs, then any string-valued field,
-    // then anything. De-duplicate while preserving that preference order.
-    const ordered = Array.from(
-      new Set([
-        ...fieldIds.filter(
-          id => uiSpec.fields[id]['component-name'] === 'TextField'
-        ),
-        ...fieldIds.filter(
-          id => uiSpec.fields[id]['type-returned'] === 'faims-core::String'
-        ),
-        ...fieldIds,
-      ])
-    );
-    if (ordered.length >= 2) {
-      return {formId, fieldA: ordered[0], fieldB: ordered[1]};
-    }
-  }
-  throw new Error(
-    'No form with at least two fields was found; cannot seed a merge revision'
-  );
-}
-
-/**
- * Seed a single record whose latest revision is a merge (multi-parent)
- * revision, so the record-history audit trail can be exercised against a real
- * conflict rather than a linear edit chain.
- *
- * Builds a base revision, branches two heads that each edit a different field
- * (so the changes automerge cleanly), then automerges the heads into one
- * revision with two parents.
- *
- * @param projectId The notebook/project to seed the record into
- * @param createdBy User recorded as the author of the base revision
- * @returns The seeded record id
- */
-async function seedRecordWithMergeRevision({
-  projectId,
-  createdBy,
-}: {
-  projectId: ProjectID;
-  createdBy: string;
-}): Promise<string> {
-  const dataDb = await getDataDb(projectId);
-  const uiSpec = await getUiSpecModel(projectId);
-  // DataEngine needs the conditionals compiled onto the spec (done in place).
-  compileUiSpecConditionals(uiSpec);
-  const engine = new DataEngine({
-    dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
-    uiSpec: uiSpec as unknown as CompiledNotebookUiSpec,
-  });
-
-  const {formId, fieldA, fieldB} = pickTwoEditableFields(uiSpec);
-
-  // Base revision with both fields set.
-  const {record, revision} = await engine.form.createRecord({
-    formId,
-    createdBy,
-  });
-  await engine.form.updateRevision({
-    recordId: record._id,
-    revisionId: revision._id,
-    update: {
-      [fieldA]: {data: 'Base value A'},
-      [fieldB]: {data: 'Base value B'},
-    },
-    mode: 'new',
-    updatedBy: createdBy,
-  });
-
-  // Branch one: edit field A only.
-  const branchA = await engine.form.createRevision({
-    recordId: record._id,
-    revisionId: revision._id,
-    createdBy: 'seed-alice',
-  });
-  await engine.form.updateRevision({
-    recordId: record._id,
-    revisionId: branchA._id,
-    update: {
-      [fieldA]: {data: 'Edited by Alice'},
-      [fieldB]: {data: 'Base value B'},
-    },
-    mode: 'parent',
-    updatedBy: 'seed-alice',
-  });
-
-  // Branch two: edit field B only, diverging from the same base. The record
-  // now has two heads (a conflict).
-  const branchB = await engine.form.createRevision({
-    recordId: record._id,
-    revisionId: revision._id,
-    createdBy: 'seed-bob',
-  });
-  await engine.form.updateRevision({
-    recordId: record._id,
-    revisionId: branchB._id,
-    update: {
-      [fieldA]: {data: 'Base value A'},
-      [fieldB]: {data: 'Edited by Bob'},
-    },
-    mode: 'parent',
-    updatedBy: 'seed-bob',
-  });
-
-  // Automerge the two heads into a single revision with both as parents.
-  const fullyMerged = await mergeHeads({projectId, recordId: record._id, dataDb});
-  if (!fullyMerged) {
-    throw new Error(
-      `Automerge did not fully merge heads for seeded record ${record._id}`
-    );
-  }
-
-  return record._id;
-}
-
 function printSummary(
   ctx: SeedContext,
   users: Array<{user: PeopleDBDocument; spec: UserSpec}>
@@ -569,7 +431,7 @@ const main = async () => {
 
     // ── Phase 6: Records with merge history ─────────────────────────────────────
     console.log('\nPhase 6: Seeding a record with a merge revision...');
-    const mergeRecordId = await seedRecordWithMergeRevision({
+    const mergeRecordId = await createRecordWithMergeRevision({
       projectId: ctx.redNotebookId,
       createdBy: seedBot,
     });

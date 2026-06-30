@@ -4,11 +4,14 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import {
   CompiledNotebookUiSpec,
+  couchInitialiser,
   DatabaseInterface,
   DataDocument,
   DataEngine,
   generateAttID,
   generateAvpID,
+  initDataDB,
+  mergeHeads,
   NewFormRecord,
   NotebookDefinition,
 } from '../src';
@@ -1244,6 +1247,97 @@ describe('Form Operations', () => {
       expect(Object.values(history[0].changedFields).flat()).toContain(
         'First-1'
       );
+    });
+
+    test('reports per-parent changed fields for a multi-parent merge revision', async () => {
+      // mergeHeads queries the 'index/revision' view, so the data-db design
+      // documents have to be installed on the bare in-memory db first.
+      await couchInitialiser({
+        db,
+        content: initDataDB({projectId: 'test'}),
+        config: {forceWrite: true, applyPermissions: false},
+      });
+
+      // Base revision with two fields set.
+      const {record, revision} = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      await engine.form.updateRevision({
+        recordId: record._id,
+        revisionId: revision._id,
+        update: {
+          'First-1': {data: 'base A'},
+          'Second-1': {data: 'base B'},
+        },
+        mode: 'new',
+        updatedBy: 'user-1',
+      });
+
+      // Branch one changes First-1 only (Second-1 keeps the base value). Each
+      // revision carries the full field set, so both fields are always present.
+      const branchA = await engine.form.createRevision({
+        recordId: record._id,
+        revisionId: revision._id,
+        createdBy: 'alice',
+      });
+      await engine.form.updateRevision({
+        recordId: record._id,
+        revisionId: branchA._id,
+        update: {
+          'First-1': {data: 'edited by alice'},
+          'Second-1': {data: 'base B'},
+        },
+        mode: 'parent',
+        updatedBy: 'alice',
+      });
+
+      // Branch two changes Second-1 only, diverging from the same base, so the
+      // record now has two heads (a conflict).
+      const branchB = await engine.form.createRevision({
+        recordId: record._id,
+        revisionId: revision._id,
+        createdBy: 'bob',
+      });
+      await engine.form.updateRevision({
+        recordId: record._id,
+        revisionId: branchB._id,
+        update: {
+          'First-1': {data: 'base A'},
+          'Second-1': {data: 'edited by bob'},
+        },
+        mode: 'parent',
+        updatedBy: 'bob',
+      });
+
+      // Automerge the two heads into a single revision with both as parents.
+      const fullyMerged = await mergeHeads({
+        projectId: 'test',
+        recordId: record._id,
+        dataDb: db,
+      });
+      expect(fullyMerged).toBe(true);
+
+      const history = await engine.form.getHistoryData({
+        recordId: record._id,
+      });
+
+      // The merge revision is the only entry that diffs against two parents.
+      const mergeEntry = history.find(
+        entry => Object.keys(entry.changedFields).length === 2
+      );
+      expect(mergeEntry).toBeDefined();
+
+      // It is keyed by the two branch revisions, not a single parent or 'root'.
+      expect(new Set(Object.keys(mergeEntry!.changedFields))).toEqual(
+        new Set([branchA._id, branchB._id])
+      );
+
+      // Each parent only sees the field the *other* branch changed: relative to
+      // branch A (which changed First-1) the merge differs in Second-1, and vice
+      // versa.
+      expect(mergeEntry!.changedFields[branchA._id]).toEqual(['Second-1']);
+      expect(mergeEntry!.changedFields[branchB._id]).toEqual(['First-1']);
     });
   });
 });
