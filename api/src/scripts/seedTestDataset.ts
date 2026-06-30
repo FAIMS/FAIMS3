@@ -41,6 +41,7 @@ import {
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
 import {initialiseAndMigrateDBs} from '../couchdb';
+import {createRecordWithMergeRevision} from '../couchdb/devtools';
 import {createNotebook} from '../couchdb/notebooks';
 import {createTeamDocument} from '../couchdb/teams';
 import {createTemplate} from '../couchdb/templates';
@@ -427,6 +428,14 @@ const main = async () => {
       createdUsers.push({user, spec});
       console.log(`  ✓ ${spec.email} (${spec.name})`);
     }
+
+    // ── Phase 6: Records with merge history ─────────────────────────────────────
+    console.log('\nPhase 6: Seeding a record with a merge revision...');
+    const mergeRecordId = await createRecordWithMergeRevision({
+      projectId: ctx.redNotebookId,
+      createdBy: seedBot,
+    });
+    console.log(`✓ Seeded merge record in Red Notebook : ${mergeRecordId}`);
 
     // ── Summary ───────────────────────────────────────────────────────────────
     printSummary(ctx, createdUsers);
