@@ -4,9 +4,7 @@ import {
   isFormDisplayedInOverviewMap,
 } from '../src/uiSpecification/utils';
 
-const createUiSpec = (
-  viewsets: UiSpecModel['viewsets']
-): UiSpecModel => ({
+const createUiSpec = (viewsets: UiSpecModel['viewsets']): UiSpecModel => ({
   fields: {},
   views: {},
   viewsets,
