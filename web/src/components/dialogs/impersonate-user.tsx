@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {cn} from '@/lib/utils';
+import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
 import {VenetianMask} from 'lucide-react';
 import {useState} from 'react';
@@ -55,39 +55,35 @@ export function ImpersonateUserDialog({
           <VenetianMask className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="text-black">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-black">
-            Impersonate {displayName}
-          </DialogTitle>
-          <DialogDescription asChild className="text-black">
-            <div
-              className={cn(
-                'rounded-md border-2 border-amber-500 bg-amber-100 p-4 text-sm',
-                'text-black'
-              )}
-            >
-              <p className="font-medium text-black">Heads up:</p>
-              <ul className="mt-2 list-disc space-y-2 pl-5 text-black">
-                <li>
-                  You will be signed in as this user and see exactly what they
-                  see.
-                </li>
-                <li>
-                  Any actions you take will be performed and attributed as this
-                  user.
-                </li>
-                <li>
-                  Use &ldquo;Return to your account&rdquo; in the banner to end
-                  impersonation. The session also ends automatically after a
-                  short time.
-                </li>
-              </ul>
-            </div>
+          <DialogTitle>Impersonate {displayName}</DialogTitle>
+          <DialogDescription asChild className="text-inherit">
+            <Alert variant="warning" className="w-full border-2 border-warning">
+              <AlertTitle>Heads up:</AlertTitle>
+              <AlertDescription asChild>
+                <ul className="mt-2 list-disc space-y-2 pl-5">
+                  <li>
+                    You will be signed in as this user and see exactly what they
+                    see.
+                  </li>
+                  <li>
+                    Any actions you take will be performed and attributed as
+                    this user.
+                  </li>
+                  <li>
+                    Use &ldquo;Return to your account&rdquo; in the banner to
+                    end impersonation. The session also ends automatically after
+                    a short time.
+                  </li>
+                </ul>
+              </AlertDescription>
+            </Alert>
           </DialogDescription>
         </DialogHeader>
         <Button
-          className="w-full"
+          variant="outline"
+          className="w-full border-primary text-foreground hover:bg-accent"
           disabled={impersonate.isPending}
           onClick={() =>
             impersonate.mutate(

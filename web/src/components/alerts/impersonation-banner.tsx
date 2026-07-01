@@ -17,9 +17,9 @@ export function ImpersonationBanner() {
   const impersonatedName = user?.user.name ?? user?.user.email ?? 'this user';
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border-2 border-amber-500 bg-amber-100 px-4 py-2 text-sm text-black">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border-2 border-warning bg-warning-background px-4 py-2 text-sm text-foreground">
       <div className="flex items-center gap-2">
-        <VenetianMask className="h-4 w-4 shrink-0" />
+        <VenetianMask className="h-4 w-4 shrink-0 text-warning" />
         <span>
           You are impersonating <strong>{impersonatedName}</strong>
           {impersonatorName ? ` (as ${impersonatorName})` : ''}. Actions are
@@ -29,7 +29,7 @@ export function ImpersonationBanner() {
       <Button
         variant="outline"
         size="sm"
-        className="border-amber-600 bg-white text-black hover:bg-amber-50"
+        className="border-warning bg-background text-foreground hover:bg-warning-background"
         onClick={() => stopImpersonation()}
       >
         Return to your account
