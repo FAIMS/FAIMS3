@@ -205,6 +205,8 @@ export enum Action {
   DISABLE_USER_ACCOUNT = 'DISABLE_USER_ACCOUNT',
   // Re-enable a previously disabled user account
   ENABLE_USER_ACCOUNT = 'ENABLE_USER_ACCOUNT',
+  // Impersonate a user (obtain a session that authenticates as them)
+  IMPERSONATE_USER = 'IMPERSONATE_USER',
 
   // ============================================================
   // LONG LIVED TOKEN ACTIONS
@@ -798,6 +800,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.USER,
   },
+  [Action.IMPERSONATE_USER]: {
+    name: 'Impersonate User',
+    description:
+      'Start a session that authenticates as another user (for support/debugging). Restricted to system operations administrators.',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
 
   // ============================================================
   // GLOBAL ACTIONS
@@ -1227,6 +1236,7 @@ export const roleActions: Record<
       Action.DELETE_USER,
       Action.DISABLE_USER_ACCOUNT,
       Action.ENABLE_USER_ACCOUNT,
+      Action.IMPERSONATE_USER,
 
       // Irreversible survey destruction (also on PROJECT_ADMIN for owned surveys)
       Action.DELETE_PROJECT,

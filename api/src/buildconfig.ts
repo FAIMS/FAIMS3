@@ -325,6 +325,30 @@ function refreshTokenExpiryMinutes(): number {
   }
 }
 
+// 60 minute default expiry for impersonation sessions. Impersonation sessions
+// are kept short so that an admin's "log in as" session cannot linger.
+const DEFAULT_IMPERSONATION_SESSION_EXPIRY_MINUTES = 60;
+
+/**
+ * @returns The lifetime (in minutes) of the refresh token issued for an
+ * impersonation session.
+ */
+function impersonationSessionExpiryMinutes(): number {
+  const value = process.env.IMPERSONATION_SESSION_EXPIRY_MINUTES;
+  if (value === '' || value === undefined) {
+    return DEFAULT_IMPERSONATION_SESSION_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(value);
+  } catch (err) {
+    console.error(
+      'IMPERSONATION_SESSION_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_IMPERSONATION_SESSION_EXPIRY_MINUTES
+    );
+    return DEFAULT_IMPERSONATION_SESSION_EXPIRY_MINUTES;
+  }
+}
+
 // 30 minute default expiry for email verification codes
 const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
 
@@ -459,6 +483,8 @@ export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
 export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
 export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
+export const IMPERSONATION_SESSION_EXPIRY_MINUTES =
+  impersonationSessionExpiryMinutes();
 export const DESIGNER_URL = designer_url();
 export const RATE_LIMITER_WINDOW_MS = rateLimiterWindowMs();
 export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();

@@ -24,6 +24,7 @@ import {
   ExpandMore,
   Person,
   Settings,
+  SupervisorAccount,
 } from '@mui/icons-material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import {
@@ -46,6 +47,7 @@ import {
   removeServerConnection,
   selectActiveUser,
   selectIsAuthenticated,
+  selectIsImpersonating,
   setActiveUser,
   TokenInfo,
 } from '../../../context/slices/authSlice';
@@ -53,7 +55,12 @@ import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {theme} from '../../themes';
 import {Server} from '../../../context/slices/projectSlice';
-import {PutLogoutInput} from '@faims3/data-model';
+import {
+  Action,
+  globalRolesGrantAction,
+  PutLogoutInput,
+} from '@faims3/data-model';
+import ImpersonateDialog from './impersonate-dialog';
 
 const SignInButtonComponent = () => {
   return (
@@ -88,12 +95,21 @@ const SignInButtonComponent = () => {
 const AuthenticatedDisplayComponent = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
+  const [impersonateOpen, setImpersonateOpen] = React.useState(false);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
 
   const authState = useAppSelector(state => state.auth);
   const {activeUser, servers: authServers} = authState;
+  const isImpersonating = useAppSelector(selectIsImpersonating);
   const dispatch = useAppDispatch();
+
+  // Only users whose global roles grant IMPERSONATE_USER may see the option,
+  // and never while already impersonating.
+  const canImpersonate =
+    !!activeUser &&
+    !isImpersonating &&
+    globalRolesGrantAction(activeUser.parsedToken, Action.IMPERSONATE_USER);
 
   const userInitial =
     activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
@@ -368,6 +384,21 @@ const AuthenticatedDisplayComponent = () => {
           </div>
         )}
 
+        {/* Impersonate user (admins only) */}
+        {canImpersonate && (
+          <MenuItem
+            onClick={() => {
+              setImpersonateOpen(true);
+              handleClose();
+            }}
+          >
+            <ListItemIcon>
+              <SupervisorAccount fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Impersonate user" />
+          </MenuItem>
+        )}
+
         {/* Manage Button */}
         <MenuItem component={NavLink} to={ROUTES.SIGN_IN} onClick={handleClose}>
           <ListItemIcon>
@@ -394,6 +425,11 @@ const AuthenticatedDisplayComponent = () => {
           </MenuItem>
         )}
       </Menu>
+
+      <ImpersonateDialog
+        open={impersonateOpen}
+        onClose={() => setImpersonateOpen(false)}
+      />
     </>
   );
 };
