@@ -41,6 +41,9 @@ declare global {
     interface User extends PeopleDBDocument {
       // The drilled resource roles which pre-compute the teams membership etc
       resourceRoles: ResourceRole[];
+      // Set when this session was created via impersonation; holds the user id
+      // of the admin who initiated the impersonation (for auditing).
+      impersonatingUserId?: string;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-empty-interface
