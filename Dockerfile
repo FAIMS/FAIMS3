@@ -1,5 +1,5 @@
 # Base including pnpm setup
-FROM node:22 AS base
+FROM node:24 AS base
 
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
@@ -36,7 +36,7 @@ COPY . .
 RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
 
 # API service
-FROM node:22-slim AS api
+FROM node:24-slim AS api
 
 # ogr2ogr for GeoPackage export (see api/src/couchdb/export/gdal.ts)
 RUN apt-get update \
@@ -57,7 +57,7 @@ EXPOSE 8000
 CMD ["pnpm", "run", "watch-api"]
 
 # App service
-FROM node:22-slim AS app
+FROM node:24-slim AS app
 
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
@@ -73,7 +73,7 @@ EXPOSE 3000
 CMD ["pnpm", "run", "force-start-app"]
 
 # Web service
-FROM node:22-slim AS web
+FROM node:24-slim AS web
 
 # Install pnpm
 ENV PNPM_HOME="/pnpm"

@@ -47,6 +47,7 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
+import {createNotebookFromSampleFile} from './sampleNotebook';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
@@ -383,7 +384,6 @@ describe('user creation', () => {
     await initialiseDbAndKeys({force: false});
     await registerAdminUser();
 
-    const {createNotebookFromSampleFile} = await import('./sampleNotebook');
     const project_id = await createNotebookFromSampleFile('Test Notebook');
     const username = 'bobalooba';
 

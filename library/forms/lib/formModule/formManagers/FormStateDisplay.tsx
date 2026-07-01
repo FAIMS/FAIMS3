@@ -18,7 +18,7 @@ export const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const fieldMeta = useStore(form.store, state => state.fieldMeta);
   const errors: Record<string, string[]> = {};
   for (const [k, meta] of Object.entries(fieldMeta)) {
-    if (meta.errors.length > 0) {
+    if (meta && meta.errors.length > 0) {
       errors[k] = meta.errors as string[];
     }
   }

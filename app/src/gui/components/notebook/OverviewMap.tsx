@@ -36,7 +36,6 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Grid,
   Popover,
   Typography,
 } from '@mui/material';
@@ -786,14 +785,14 @@ export const OverviewMap = (props: OverviewMapProps) => {
   }
 
   return (
-    <Grid
-      container
-      spacing={2}
+    <Box
       sx={{
-        height: '600px',
-        width: '90vw',
-        marginTop: '20px',
-        marginLeft: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        minWidth: 0,
+        height: {xs: 'clamp(320px, 55vh, 600px)', sm: 'clamp(400px, 60vh, 600px)'},
+        mt: {xs: 1, sm: 2.5},
       }}
     >
       <MapComponent
@@ -832,6 +831,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
           </Box>
         )}
       </Popover>
-    </Grid>
+    </Box>
   );
 };

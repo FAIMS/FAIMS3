@@ -10,7 +10,7 @@ jobs:
     steps:
       # note not using Turbo build as it caused a problem with missing assets
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install jq
         run: |
           brew update
@@ -39,10 +39,10 @@ jobs:
         name: Install pnpm
         with:
           run_install: false
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4

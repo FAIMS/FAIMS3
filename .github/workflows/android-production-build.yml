@@ -9,7 +9,7 @@ jobs:
     continue-on-error: true
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Cache node modules
         uses: actions/cache@v4
         env:
@@ -43,10 +43,10 @@ jobs:
         name: Install pnpm
         with:
           run_install: false
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up adopt JDK 1.21

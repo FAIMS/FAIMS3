@@ -782,6 +782,10 @@ export class VectorTileStore extends TileStoreBase {
           });
         }
       });
+      // the function signature requires that we return
+      // an array of features although we are setting the features
+      // directly above, just return an empty array here to satisfy the signature
+      return [];
     });
   }
 }

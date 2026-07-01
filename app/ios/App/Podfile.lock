@@ -1,35 +1,35 @@
 PODS:
-  - Capacitor (7.4.3):
+  - Capacitor (7.6.6):
     - CapacitorCordova
-  - CapacitorApp (7.1.0):
+  - CapacitorApp (7.1.2):
     - Capacitor
-  - CapacitorAppLauncher (7.0.2):
+  - CapacitorAppLauncher (7.0.4):
     - Capacitor
-  - CapacitorBrowser (7.0.2):
+  - CapacitorBrowser (7.0.5):
     - Capacitor
-  - CapacitorCamera (7.0.2):
+  - CapacitorCamera (7.0.5):
     - Capacitor
   - CapacitorCommunityExif (7.0.0):
     - Capacitor
-  - CapacitorCordova (7.4.3)
-  - CapacitorDevice (7.0.2):
+  - CapacitorCordova (7.6.6)
+  - CapacitorDevice (7.0.5):
     - Capacitor
-  - CapacitorFilesystem (7.1.4):
+  - CapacitorFilesystem (7.1.8):
     - Capacitor
-    - IONFilesystemLib (~> 1.0.1)
-  - CapacitorGeolocation (7.1.5):
+    - IONFilesystemLib (~> 1.1.1)
+  - CapacitorGeolocation (7.1.8):
     - Capacitor
     - IONGeolocationLib (= 1.0.1)
-  - CapacitorMlkitBarcodeScanning (7.3.0):
+  - CapacitorMlkitBarcodeScanning (7.5.0):
     - Capacitor
     - GoogleMLKit/BarcodeScanning (= 7.0.0)
-  - CapacitorShare (7.0.2):
+  - CapacitorShare (7.0.4):
     - Capacitor
-  - CapacitorStatusBar (7.0.4):
+  - CapacitorStatusBar (7.0.6):
     - Capacitor
   - CapgoCapacitorAudioRecorder (7.1.10):
     - Capacitor
-  - CapgoCapacitorSpeechRecognition (8.0.4):
+  - CapgoCapacitorSpeechRecognition (8.1.3):
     - Capacitor
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
@@ -44,17 +44,17 @@ PODS:
     - GoogleToolboxForMac/Defines (= 4.2.1)
   - "GoogleToolboxForMac/NSData+zlib (4.2.1)":
     - GoogleToolboxForMac/Defines (= 4.2.1)
-  - GoogleUtilities/Environment (8.1.0):
+  - GoogleUtilities/Environment (8.1.1):
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Logger (8.1.0):
+  - GoogleUtilities/Logger (8.1.1):
     - GoogleUtilities/Environment
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Privacy (8.1.0)
-  - GoogleUtilities/UserDefaults (8.1.0):
+  - GoogleUtilities/Privacy (8.1.1)
+  - GoogleUtilities/UserDefaults (8.1.1):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
   - GTMSessionFetcher/Core (3.5.0)
-  - IONFilesystemLib (1.0.1)
+  - IONFilesystemLib (1.1.2)
   - IONGeolocationLib (1.0.1)
   - MLImage (1.0.0-beta6)
   - MLKitBarcodeScanning (6.0.0):
@@ -78,24 +78,24 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
-  - PromisesObjC (2.4.0)
+  - PromisesObjC (2.4.1)
 
 DEPENDENCIES:
-  - "Capacitor (from `../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios`)"
-  - "CapacitorApp (from `../../../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.4.3/node_modules/@capacitor/app`)"
-  - "CapacitorAppLauncher (from `../../../node_modules/.pnpm/@capacitor+app-launcher@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/app-launcher`)"
-  - "CapacitorBrowser (from `../../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/browser`)"
-  - "CapacitorCamera (from `../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/camera`)"
-  - "CapacitorCommunityExif (from `../../../node_modules/.pnpm/@capacitor-community+exif@7.0.0_@capacitor+core@7.4.3/node_modules/@capacitor-community/exif`)"
-  - "CapacitorCordova (from `../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios`)"
-  - "CapacitorDevice (from `../../../node_modules/.pnpm/@capacitor+device@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/device`)"
-  - "CapacitorFilesystem (from `../../../node_modules/.pnpm/@capacitor+filesystem@7.1.4_@capacitor+core@7.4.3/node_modules/@capacitor/filesystem`)"
-  - "CapacitorGeolocation (from `../../../node_modules/.pnpm/@capacitor+geolocation@7.1.5_@capacitor+core@7.4.3/node_modules/@capacitor/geolocation`)"
-  - "CapacitorMlkitBarcodeScanning (from `../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@7.4.3/node_modules/@capacitor-mlkit/barcode-scanning`)"
-  - "CapacitorShare (from `../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share`)"
-  - "CapacitorStatusBar (from `../../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar`)"
-  - "CapgoCapacitorAudioRecorder (from `../../../node_modules/.pnpm/@capgo+capacitor-audio-recorder@7.1.10_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-audio-recorder`)"
-  - "CapgoCapacitorSpeechRecognition (from `../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.0.4_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-speech-recognition`)"
+  - "Capacitor (from `../../../node_modules/.pnpm/@capacitor+ios@7.6.6_@capacitor+core@7.6.6/node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../../node_modules/.pnpm/@capacitor+app@7.1.2_@capacitor+core@7.6.6/node_modules/@capacitor/app`)"
+  - "CapacitorAppLauncher (from `../../../node_modules/.pnpm/@capacitor+app-launcher@7.0.4_@capacitor+core@7.6.6/node_modules/@capacitor/app-launcher`)"
+  - "CapacitorBrowser (from `../../../node_modules/.pnpm/@capacitor+browser@7.0.5_@capacitor+core@7.6.6/node_modules/@capacitor/browser`)"
+  - "CapacitorCamera (from `../../../node_modules/.pnpm/@capacitor+camera@7.0.5_@capacitor+core@7.6.6/node_modules/@capacitor/camera`)"
+  - "CapacitorCommunityExif (from `../../../node_modules/.pnpm/@capacitor-community+exif@7.0.0_@capacitor+core@7.6.6/node_modules/@capacitor-community/exif`)"
+  - "CapacitorCordova (from `../../../node_modules/.pnpm/@capacitor+ios@7.6.6_@capacitor+core@7.6.6/node_modules/@capacitor/ios`)"
+  - "CapacitorDevice (from `../../../node_modules/.pnpm/@capacitor+device@7.0.5_@capacitor+core@7.6.6/node_modules/@capacitor/device`)"
+  - "CapacitorFilesystem (from `../../../node_modules/.pnpm/@capacitor+filesystem@7.1.8_@capacitor+core@7.6.6/node_modules/@capacitor/filesystem`)"
+  - "CapacitorGeolocation (from `../../../node_modules/.pnpm/@capacitor+geolocation@7.1.8_@capacitor+core@7.6.6/node_modules/@capacitor/geolocation`)"
+  - "CapacitorMlkitBarcodeScanning (from `../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.5.0_@capacitor+core@7.6.6/node_modules/@capacitor-mlkit/barcode-scanning`)"
+  - "CapacitorShare (from `../../../node_modules/.pnpm/@capacitor+share@7.0.4_@capacitor+core@7.6.6/node_modules/@capacitor/share`)"
+  - "CapacitorStatusBar (from `../../../node_modules/.pnpm/@capacitor+status-bar@7.0.6_@capacitor+core@7.6.6/node_modules/@capacitor/status-bar`)"
+  - "CapgoCapacitorAudioRecorder (from `../../../node_modules/.pnpm/@capgo+capacitor-audio-recorder@7.1.10_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-audio-recorder`)"
+  - "CapgoCapacitorSpeechRecognition (from `../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.1.3_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-speech-recognition`)"
 
 SPEC REPOS:
   trunk:
@@ -115,66 +115,66 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   Capacitor:
-    :path: "../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios"
+    :path: "../../../node_modules/.pnpm/@capacitor+ios@7.6.6_@capacitor+core@7.6.6/node_modules/@capacitor/ios"
   CapacitorApp:
-    :path: "../../../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.4.3/node_modules/@capacitor/app"
+    :path: "../../../node_modules/.pnpm/@capacitor+app@7.1.2_@capacitor+core@7.6.6/node_modules/@capacitor/app"
   CapacitorAppLauncher:
-    :path: "../../../node_modules/.pnpm/@capacitor+app-launcher@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/app-launcher"
+    :path: "../../../node_modules/.pnpm/@capacitor+app-launcher@7.0.4_@capacitor+core@7.6.6/node_modules/@capacitor/app-launcher"
   CapacitorBrowser:
-    :path: "../../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/browser"
+    :path: "../../../node_modules/.pnpm/@capacitor+browser@7.0.5_@capacitor+core@7.6.6/node_modules/@capacitor/browser"
   CapacitorCamera:
-    :path: "../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/camera"
+    :path: "../../../node_modules/.pnpm/@capacitor+camera@7.0.5_@capacitor+core@7.6.6/node_modules/@capacitor/camera"
   CapacitorCommunityExif:
-    :path: "../../../node_modules/.pnpm/@capacitor-community+exif@7.0.0_@capacitor+core@7.4.3/node_modules/@capacitor-community/exif"
+    :path: "../../../node_modules/.pnpm/@capacitor-community+exif@7.0.0_@capacitor+core@7.6.6/node_modules/@capacitor-community/exif"
   CapacitorCordova:
-    :path: "../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios"
+    :path: "../../../node_modules/.pnpm/@capacitor+ios@7.6.6_@capacitor+core@7.6.6/node_modules/@capacitor/ios"
   CapacitorDevice:
-    :path: "../../../node_modules/.pnpm/@capacitor+device@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/device"
+    :path: "../../../node_modules/.pnpm/@capacitor+device@7.0.5_@capacitor+core@7.6.6/node_modules/@capacitor/device"
   CapacitorFilesystem:
-    :path: "../../../node_modules/.pnpm/@capacitor+filesystem@7.1.4_@capacitor+core@7.4.3/node_modules/@capacitor/filesystem"
+    :path: "../../../node_modules/.pnpm/@capacitor+filesystem@7.1.8_@capacitor+core@7.6.6/node_modules/@capacitor/filesystem"
   CapacitorGeolocation:
-    :path: "../../../node_modules/.pnpm/@capacitor+geolocation@7.1.5_@capacitor+core@7.4.3/node_modules/@capacitor/geolocation"
+    :path: "../../../node_modules/.pnpm/@capacitor+geolocation@7.1.8_@capacitor+core@7.6.6/node_modules/@capacitor/geolocation"
   CapacitorMlkitBarcodeScanning:
-    :path: "../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@7.4.3/node_modules/@capacitor-mlkit/barcode-scanning"
+    :path: "../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.5.0_@capacitor+core@7.6.6/node_modules/@capacitor-mlkit/barcode-scanning"
   CapacitorShare:
-    :path: "../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share"
+    :path: "../../../node_modules/.pnpm/@capacitor+share@7.0.4_@capacitor+core@7.6.6/node_modules/@capacitor/share"
   CapacitorStatusBar:
-    :path: "../../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar"
+    :path: "../../../node_modules/.pnpm/@capacitor+status-bar@7.0.6_@capacitor+core@7.6.6/node_modules/@capacitor/status-bar"
   CapgoCapacitorAudioRecorder:
-    :path: "../../../node_modules/.pnpm/@capgo+capacitor-audio-recorder@7.1.10_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-audio-recorder"
+    :path: "../../../node_modules/.pnpm/@capgo+capacitor-audio-recorder@7.1.10_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-audio-recorder"
   CapgoCapacitorSpeechRecognition:
-    :path: "../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.0.4_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-speech-recognition"
+    :path: "../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.1.3_@capacitor+core@7.6.6/node_modules/@capgo/capacitor-speech-recognition"
 
 SPEC CHECKSUMS:
-  Capacitor: 28d6c01026a9a3f7156529498ec1f389a2a28dbc
-  CapacitorApp: 26587c2ce485d88ddb39adb21cac64f8e481afe3
-  CapacitorAppLauncher: b70f649f609bab6412eccdd413bd7f0dd42df4a9
-  CapacitorBrowser: 22541e48442de44dc629c214388290d6eecc6ae9
-  CapacitorCamera: f9e54db0a18bb218a8dc360907d63aaefe9209ff
+  Capacitor: 961efd309ab0e390a8081b63c561186f61a6714d
+  CapacitorApp: f01a913211780e0718dae9750442c3e23f96e106
+  CapacitorAppLauncher: a4f8a38922f861e585d887185ef28432e17c3eca
+  CapacitorBrowser: 6d09f59655e89aede71654ef08b98de55cf032b6
+  CapacitorCamera: 9e952270be355797f769aa835bb7643a96c871fe
   CapacitorCommunityExif: de91ef8d7277b627af991117e06c9271fbfe59ac
-  CapacitorCordova: 435121e81a2df4d0034f0fb11fcefab5104cfdb5
-  CapacitorDevice: 81ae78d5d1942707caad79276badd458bf6ec603
-  CapacitorFilesystem: f9bd850c41e048180e5dc0cbb90f2033ede9d2cc
-  CapacitorGeolocation: 84f868bea4c2499aebc3bb3a88fd0a508f87ab87
-  CapacitorMlkitBarcodeScanning: 05b2dfc7a70099f6d4594365c521534d79a17b1d
-  CapacitorShare: be166411fa995ead2d39b104aa0aae56d8615c66
-  CapacitorStatusBar: d0e0151c89c001a9c7125bac59ddedf76b664768
+  CapacitorCordova: 3a4e0027a89a59421c918d19aee9d6ba1c7a3556
+  CapacitorDevice: ba96f933a2cb5dcdc68187503d48f7b5aa11ba9e
+  CapacitorFilesystem: c63fc54df41e5a6761785a7f3c49dc696c22e296
+  CapacitorGeolocation: ab54d708e2fcf99a7bafe0219eaa6f7a932f001a
+  CapacitorMlkitBarcodeScanning: afd6fc431b550026a2c052e11ab2b71c7ae30011
+  CapacitorShare: 25f7fc5dd0e4edbde5d6801c6de5d14a8b450a41
+  CapacitorStatusBar: 416e9e53fd6397e668d4a181cd2131617d949bd6
   CapgoCapacitorAudioRecorder: 8f8a9c0333f4b82104bfc6a680f01107538abbb8
-  CapgoCapacitorSpeechRecognition: 06b624a9f4c97f8e9770ccb6be63f2b50c15d032
+  CapgoCapacitorSpeechRecognition: 229f09c9e0ee1f05b25755f56b9ea05853153cad
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: eff9e23ec1d90ea4157a1ee2e32a4f610c5b3318
   GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
-  GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GoogleUtilities: 4f2618a4a1e762a1ee134a1e2323bba9843e06da
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  IONFilesystemLib: 89258b8e3e85465da93127d25d7ce37f977e8a6f
+  IONFilesystemLib: 21a63377696b2d8fab5632ecfb7d2ac67bddb68a
   IONGeolocationLib: 20f9d0248a0b5264511fb57a37e25dd2badf797a
   MLImage: 0ad1c5f50edd027672d8b26b0fee78a8b4a0fc56
   MLKitBarcodeScanning: 0a3064da0a7f49ac24ceb3cb46a5bc67496facd2
   MLKitCommon: 07c2c33ae5640e5380beaaa6e4b9c249a205542d
   MLKitVision: 45e79d68845a2de77e2dd4d7f07947f0ed157b0e
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
-  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
 
-PODFILE CHECKSUM: 0136aa1848b09e3a5bf2ab0b667bb7af2af7f80f
+PODFILE CHECKSUM: 06952f5ea0977c257a6b331c40c96dd45e6aa57c
 
 COCOAPODS: 1.15.2

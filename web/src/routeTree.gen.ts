@@ -97,11 +97,11 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
-  '/archive': typeof ProtectedArchiveIndexRoute
-  '/profile': typeof ProtectedProfileIndexRoute
-  '/projects': typeof ProtectedProjectsIndexRoute
-  '/teams': typeof ProtectedTeamsIndexRoute
-  '/templates': typeof ProtectedTemplatesIndexRoute
+  '/archive/': typeof ProtectedArchiveIndexRoute
+  '/profile/': typeof ProtectedProfileIndexRoute
+  '/projects/': typeof ProtectedProjectsIndexRoute
+  '/teams/': typeof ProtectedTeamsIndexRoute
+  '/templates/': typeof ProtectedTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof ProtectedIndexRoute
@@ -141,11 +141,11 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
-    | '/archive'
-    | '/profile'
-    | '/projects'
-    | '/teams'
-    | '/templates'
+    | '/archive/'
+    | '/profile/'
+    | '/projects/'
+    | '/teams/'
+    | '/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -185,7 +185,7 @@ declare module '@tanstack/react-router' {
     '/_protected': {
       id: '/_protected'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof ProtectedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -199,42 +199,42 @@ declare module '@tanstack/react-router' {
     '/_protected/_admin': {
       id: '/_protected/_admin'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof ProtectedAdminRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/templates/': {
       id: '/_protected/templates/'
       path: '/templates'
-      fullPath: '/templates'
+      fullPath: '/templates/'
       preLoaderRoute: typeof ProtectedTemplatesIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/teams/': {
       id: '/_protected/teams/'
       path: '/teams'
-      fullPath: '/teams'
+      fullPath: '/teams/'
       preLoaderRoute: typeof ProtectedTeamsIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/projects/': {
       id: '/_protected/projects/'
       path: '/projects'
-      fullPath: '/projects'
+      fullPath: '/projects/'
       preLoaderRoute: typeof ProtectedProjectsIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/profile/': {
       id: '/_protected/profile/'
       path: '/profile'
-      fullPath: '/profile'
+      fullPath: '/profile/'
       preLoaderRoute: typeof ProtectedProfileIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/archive/': {
       id: '/_protected/archive/'
       path: '/archive'
-      fullPath: '/archive'
+      fullPath: '/archive/'
       preLoaderRoute: typeof ProtectedArchiveIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
