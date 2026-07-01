@@ -67,7 +67,7 @@ const ProjectActions = (): JSX.Element => {
   };
 
   const handleEditorClose = (file?: File) => {
-    if (file) saveProjectNotebook.mutate(file);
+    if (file) saveProjectNotebook.mutateAsyncWithToast(file);
     setEditorOpen(false);
   };
 
