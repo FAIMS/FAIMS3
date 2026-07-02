@@ -12,6 +12,7 @@ number-input.md
 controlled-number.md
 percentage-slider.md
 auto-incrementing-field.md
+computed-value-field.md
 
 ```
 
@@ -25,3 +26,6 @@ auto-incrementing-field.md
   percentages (0–100 by default) with optional step size.
 - **[Auto Incrementing Field](auto-incrementing-field.md)** — Generates sequential string
   identifiers such as specimen numbers and catalogue IDs.
+- **[Computed Value](computed-value-field.md)** — Derives a number from an
+  arithmetic expression over other fields in the same form, updating
+  automatically and shown read-only to data collectors.
