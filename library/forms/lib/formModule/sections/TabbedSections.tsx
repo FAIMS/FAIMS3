@@ -1094,7 +1094,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
           <Box
             ref={mobileNavHeaderRef}
             sx={{
-              p: 0.5,
+              p: 0.75,
             }}
           >
             <MobileNavigationStepper
@@ -1126,7 +1126,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
       {/* Active section content */}
       <Box
         role="tabpanel"
-        sx={{mt: showMobileView ? 1 : ERROR_PANEL_VERTICAL_SPACING}}
+        sx={{mt: showMobileView ? 1.25 : ERROR_PANEL_VERTICAL_SPACING}}
       >
         {shouldShowActiveSection ? (
           <FormSection
@@ -1159,7 +1159,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         <Box
           sx={{
             mt: ERROR_PANEL_VERTICAL_SPACING,
-            p: 0.5,
+            p: 0.75,
           }}
         >
           <MobileNavigationStepper

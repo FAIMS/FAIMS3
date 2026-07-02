@@ -854,7 +854,7 @@ export const EditableFormManager: React.FC<
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <Stack sx={{gap: 1}}>
+    <Stack sx={{gap: 1.5}}>
       {/* Error Snackbar */}
       <Snackbar
         open={errorOpen}
@@ -921,7 +921,7 @@ export const EditableFormManager: React.FC<
       {/* Navigation Buttons (Top) */}
       <NavigationButtonsDisplay
         buttons={navigationButtonsWithAttachmentLock}
-        marginBottom={0}
+        marginBottom={0.5}
       />
 
       {/* Form Progress */}
@@ -947,7 +947,7 @@ export const EditableFormManager: React.FC<
       {/* Navigation Buttons (Bottom) */}
       <NavigationButtonsDisplay
         buttons={navigationButtonsWithAttachmentLock}
-        marginBottom={0}
+        marginBottom={0.5}
       />
 
       {/* Warning dialog when Finish is pressed with issues still open. */}
