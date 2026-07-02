@@ -6,7 +6,7 @@
  */
 
 import SearchIcon from '@mui/icons-material/Search';
-import {Box, Chip, TextField, Typography} from '@mui/material';
+import {Box, Chip, TextField} from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import {
   useCallback,
@@ -22,7 +22,7 @@ import {
   DesignSearchResult,
   useDesignSearch,
 } from '../../features/design-search';
-import {renderFuzzysortHighlight} from '../../features/search';
+import {renderFuzzysortHighlight, SearchResultContent} from '../../features/search';
 import {
   scrollToField,
   scrollToForm,
@@ -35,10 +35,7 @@ import {
   selectVisibleTypes,
 } from '../../store/selectors';
 import {useAppSelector} from '../../state/hooks';
-import {
-  designerSearchMatchHighlightSx,
-  designerSearchShortcutHintSx,
-} from '../designer-style';
+import {designerSearchShortcutHintSx} from '../designer-style';
 
 type DesignSearchOptionProps = {
   result: DesignSearchResult;
@@ -145,44 +142,11 @@ const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
           },
         }}
       />
-      <Box sx={{minWidth: 0}}>
-        <Typography
-          variant="body2"
-          component="div"
-          sx={{fontWeight: 600, ...designerSearchMatchHighlightSx}}
-        >
-          {titleContent}
-        </Typography>
-        {detailContent && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            component="div"
-            sx={{
-              display: 'block',
-              mt: 0.25,
-              ...designerSearchMatchHighlightSx,
-            }}
-          >
-            {detailContent}
-          </Typography>
-        )}
-        {locationContent && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            component="div"
-            sx={{
-              display: 'block',
-              mt: 0.25,
-              fontStyle: 'italic',
-              ...designerSearchMatchHighlightSx,
-            }}
-          >
-            {locationContent}
-          </Typography>
-        )}
-      </Box>
+      <SearchResultContent
+        title={titleContent}
+        detail={detailContent}
+        location={locationContent}
+      />
     </Box>
   );
 };

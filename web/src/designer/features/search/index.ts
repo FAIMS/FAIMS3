@@ -8,3 +8,5 @@ export {
   hasFuzzysortKeyMatch,
   renderFuzzysortHighlight,
 } from './renderFuzzysortHighlight';
+export {SearchResultContent} from './SearchResultContent';
+export type {SearchResultContentProps} from './SearchResultContent';

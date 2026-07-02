@@ -16,10 +16,31 @@ type ViewMap = Record<
 >;
 type ViewSetMap = Record<string, {label: string; views: string[]}>;
 
+/** Resolves the containing form and section labels for a field. */
+export const resolveFieldLocation = (
+  fieldId: string,
+  views: ViewMap,
+  viewsets: ViewSetMap
+): {viewSetLabel: string; sectionLabel: string} => {
+  for (const viewset of Object.values(viewsets)) {
+    for (const sectionId of viewset.views) {
+      const section = views[sectionId];
+      if (section?.fields.includes(fieldId)) {
+        return {
+          viewSetLabel: viewset.label,
+          sectionLabel: section.label,
+        };
+      }
+    }
+  }
+  return {viewSetLabel: '', sectionLabel: ''};
+};
+
 /** Builds searchable text properties for a field. */
 export const buildFieldSearchEntry = (
   fieldId: string,
-  field: FieldType
+  field: FieldType,
+  location?: {viewSetLabel: string; sectionLabel: string}
 ): FieldSearchEntry => {
   const params = field['component-parameters'];
   const label = getFieldLabel(field) || fieldId;
@@ -30,6 +51,8 @@ export const buildFieldSearchEntry = (
     id: fieldId,
     helperText: String(params.helperText ?? ''),
     advancedHelperText: String(params.advancedHelperText ?? ''),
+    viewSetLabel: location?.viewSetLabel ?? '',
+    sectionLabel: location?.sectionLabel ?? '',
   };
 };
 
@@ -150,8 +173,16 @@ export const applyFieldFilters = (
 /** Maps scoped field ids to entries ready for {@link weightedFieldSearch}. */
 export const buildFieldSearchEntries = (
   fieldIds: string[],
-  allFields: Record<string, FieldType>
+  allFields: Record<string, FieldType>,
+  views: ViewMap,
+  viewsets: ViewSetMap
 ): FieldSearchEntry[] =>
   fieldIds
     .filter(id => allFields[id] != null)
-    .map(id => buildFieldSearchEntry(id, allFields[id]));
+    .map(id =>
+      buildFieldSearchEntry(
+        id,
+        allFields[id],
+        resolveFieldLocation(id, views, viewsets)
+      )
+    );

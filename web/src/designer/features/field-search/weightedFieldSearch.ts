@@ -38,6 +38,9 @@ export const weightedFieldSearch = (
     fieldId: obj.fieldId,
     field: obj.field,
     label: obj.label,
+    helperText: obj.helperText,
+    viewSetLabel: obj.viewSetLabel,
+    sectionLabel: obj.sectionLabel,
     score,
     fuzzysort,
   }));

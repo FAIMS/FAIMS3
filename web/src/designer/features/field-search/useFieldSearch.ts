@@ -72,8 +72,8 @@ export const useFieldSearch = (
   );
 
   const entries = useMemo(
-    () => buildFieldSearchEntries(candidateIds, allFields),
-    [candidateIds, allFields]
+    () => buildFieldSearchEntries(candidateIds, allFields, views, viewsets),
+    [candidateIds, allFields, views, viewsets]
   );
 
   const results = useMemo(

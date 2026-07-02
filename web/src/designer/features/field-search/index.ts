@@ -4,6 +4,7 @@ export {
   buildFieldSearchEntry,
   getViewsetFieldIds,
   resolveFieldIdsInScope,
+  resolveFieldLocation,
 } from './fieldSearchUtils';
 export type {
   FieldSearchEntry,

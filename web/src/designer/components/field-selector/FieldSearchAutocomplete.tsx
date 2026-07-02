@@ -2,7 +2,7 @@
  * @file Autocomplete field picker with scoped fuzzy search for condition editors and computed fields.
  */
 
-import {Box, TextField, Typography} from '@mui/material';
+import {TextField} from '@mui/material';
 import Autocomplete, {AutocompleteProps} from '@mui/material/Autocomplete';
 import {useEffect, useMemo} from 'react';
 import {
@@ -10,60 +10,57 @@ import {
   FieldSearchFilters,
   FieldSearchResult,
   FieldSearchScope,
+  resolveFieldLocation,
   useFieldSearch,
 } from '../../features/field-search';
 import type {FieldType} from '../../state/initial';
-import {selectUiFields} from '../../store/selectors';
+import {
+  selectUiFields,
+  selectUiViews,
+  selectUiViewSets,
+} from '../../store/selectors';
 import {useAppSelector} from '../../state/hooks';
-import {renderFuzzysortHighlight} from '../../features/search';
-import {designerSearchMatchHighlightSx} from '../designer-style';
+import {renderFuzzysortHighlight, SearchResultContent} from '../../features/search';
 
 type FieldSearchOptionProps = {
   result: FieldSearchResult;
   query: string;
 };
 
-const getHelperText = (result: FieldSearchResult): string =>
-  result.fuzzysort?.obj.helperText ??
-  String(result.field['component-parameters']?.helperText ?? '');
+/** Form › section breadcrumb matching global design search field rows. */
+const formatFieldLocationLabel = (result: FieldSearchResult): string | null => {
+  if (!result.viewSetLabel) return null;
+  return result.sectionLabel
+    ? `${result.viewSetLabel} › ${result.sectionLabel}`
+    : result.viewSetLabel;
+};
 
 /** Renders a field option with optional fuzzy-match highlighting on the label. */
 export const FieldSearchOption = ({result, query}: FieldSearchOptionProps) => {
-  const helperText = getHelperText(result);
   const hasSearch = query.trim().length > 0 && result.fuzzysort;
+  const detailLabel = result.helperText || null;
+  const locationLabel = formatFieldLocationLabel(result);
 
-  const labelContent = useMemo(() => {
+  const titleContent = useMemo(() => {
     if (!hasSearch) return result.label;
     // fuzzysort key order: label (0), id (1), helperText (2), advancedHelperText (3)
     return renderFuzzysortHighlight(result.fuzzysort?.[0], result.label);
   }, [hasSearch, result]);
 
-  const helperContent = useMemo(() => {
-    if (!helperText) return null;
-    if (!hasSearch) return helperText;
-    return renderFuzzysortHighlight(result.fuzzysort?.[2], helperText);
-  }, [hasSearch, helperText, result]);
+  const detailContent = useMemo(() => {
+    if (!detailLabel) return null;
+    if (!hasSearch) return detailLabel;
+    return renderFuzzysortHighlight(result.fuzzysort?.[2], detailLabel);
+  }, [detailLabel, hasSearch, result]);
+
+  const locationContent = locationLabel;
 
   return (
-    <Box sx={{py: 0.25}}>
-      <Typography
-        variant="body2"
-        component="div"
-        sx={designerSearchMatchHighlightSx}
-      >
-        {labelContent}
-      </Typography>
-      {helperContent && (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          component="div"
-          sx={designerSearchMatchHighlightSx}
-        >
-          {helperContent}
-        </Typography>
-      )}
-    </Box>
+    <SearchResultContent
+      title={titleContent}
+      detail={detailContent}
+      location={locationContent}
+    />
   );
 };
 
@@ -110,6 +107,8 @@ export const FieldSearchAutocomplete = ({
   clearOnSelect = false,
 }: FieldSearchAutocompleteProps) => {
   const allFields = useAppSelector(selectUiFields);
+  const views = useAppSelector(selectUiViews);
+  const viewsets = useAppSelector(selectUiViewSets);
   const {query, setQuery, searchQuery, results, candidateCount} =
     useFieldSearch({
       scope,
@@ -128,17 +127,27 @@ export const FieldSearchAutocomplete = ({
         fieldId: value,
         field: textFieldFallback(),
         label: value,
+        helperText: '',
+        viewSetLabel: '',
+        sectionLabel: '',
         score: 0,
       };
     }
-    const entry = buildFieldSearchEntry(value, field);
+    const entry = buildFieldSearchEntry(
+      value,
+      field,
+      resolveFieldLocation(value, views, viewsets)
+    );
     return {
       fieldId: value,
       field,
       label: entry.label,
+      helperText: entry.helperText,
+      viewSetLabel: entry.viewSetLabel,
+      sectionLabel: entry.sectionLabel,
       score: 0,
     };
-  }, [value, results, allFields]);
+  }, [value, results, allFields, views, viewsets]);
 
   // Seed the input with the selected field label when controlled value changes externally.
   useEffect(() => {
@@ -179,7 +188,11 @@ export const FieldSearchAutocomplete = ({
       size={size}
       sx={{minWidth, ...sx}}
       renderOption={(props, option) => (
-        <li {...props} key={option.fieldId}>
+        <li
+          {...props}
+          key={option.fieldId}
+          style={{...props.style, display: 'flex', width: '100%'}}
+        >
           <FieldSearchOption result={option} query={searchQuery} />
         </li>
       )}

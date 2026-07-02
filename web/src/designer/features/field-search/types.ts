@@ -43,12 +43,17 @@ export type FieldSearchEntry = {
   id: string;
   helperText: string;
   advancedHelperText: string;
+  viewSetLabel: string;
+  sectionLabel: string;
 };
 
 export type FieldSearchResult = {
   fieldId: string;
   field: FieldType;
   label: string;
+  helperText: string;
+  viewSetLabel: string;
+  sectionLabel: string;
   score: number;
   /** Present when a non-empty query produced a fuzzysort match. */
   fuzzysort?: Fuzzysort.KeysResult<FieldSearchEntry>;
