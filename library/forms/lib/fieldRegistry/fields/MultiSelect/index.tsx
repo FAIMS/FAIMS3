@@ -549,7 +549,6 @@ export const MultiSelect = (props: FieldProps) => {
       required={required}
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
-      compactHelperSpacing
     >
       <Box sx={{mb: 1}}>
         {isExpandedChecklist ? (

@@ -168,7 +168,6 @@ export const Select = (props: FieldProps) => {
       required={props.required}
       advancedHelperText={props.advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
-      compactHelperSpacing
     >
       <FormControl
         sx={{
