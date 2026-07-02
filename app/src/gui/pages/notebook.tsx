@@ -49,7 +49,9 @@ function NotebookUnavailable() {
   return (
     <Stack spacing={2}>
       <BackButton link={ROUTES.NOTEBOOK_LIST_ROUTE} />
-      <Typography variant="h5">{removedNotebookUnavailableCopy.title}</Typography>
+      <Typography variant="h5">
+        {removedNotebookUnavailableCopy.title}
+      </Typography>
       <Typography color="text.secondary">
         {removedNotebookUnavailableCopy.message}
       </Typography>

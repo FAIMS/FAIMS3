@@ -483,7 +483,9 @@ export const useRecordList = ({
 
       if (!token || !dataDb) {
         // Trying to run without token or before notebook activation.
-        console.warn('Trying to fetch record list without user token or local DB.');
+        console.warn(
+          'Trying to fetch record list without user token or local DB.'
+        );
         return [];
       }
 
