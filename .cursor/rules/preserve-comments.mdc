@@ -1,0 +1,6 @@
+---
+description: preserve comments during code modifications
+alwaysApply: true
+---
+Always preserve all existing code comments during refactoring, cleanup, and optimization. Do not remove any inline or block comments, explanation notes, or TODO tags. If your changes result in the comments being incorrect, please update them to reflect the changes.
+
