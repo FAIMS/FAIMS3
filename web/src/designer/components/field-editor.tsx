@@ -70,6 +70,8 @@ import {
 import DebouncedTextField from './debounced-text-field';
 import {keyframes} from '@emotion/react';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
+import {designerFieldSelector} from '../features/navigation/designerElementIds';
+import {scrollToDesignerElement} from '../features/navigation/scrollToElements';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -405,23 +407,44 @@ const FieldEditorComponent = ({
   useEffect(() => {
     if (!expanded || !autoFocusLabel) return;
 
-    const focusId = window.requestAnimationFrame(() => {
-      const labelInput = editorRootRef.current?.querySelector<HTMLInputElement>(
-        'input[data-field-label-input="true"]'
-      );
-      if (!labelInput) return;
-      labelInput.focus();
-      labelInput.select();
-      onLabelFocused?.();
-    });
+    let cancelled = false;
 
-    return () => window.cancelAnimationFrame(focusId);
-  }, [expanded, autoFocusLabel, onLabelFocused]);
+    const focusLabel = () => {
+      if (cancelled) return;
+      window.requestAnimationFrame(() => {
+        if (cancelled) return;
+        const labelInput =
+          editorRootRef.current?.querySelector<HTMLInputElement>(
+            'input[data-field-label-input="true"]'
+          );
+        if (!labelInput) return;
+        labelInput.focus();
+        labelInput.select();
+        onLabelFocused?.();
+      });
+    };
+
+    if (isHidden) {
+      // Hidden fields (e.g. templated string) render below visible fields; focus
+      // alone does not scroll the designer panel to them.
+      void scrollToDesignerElement(designerFieldSelector(fieldName)).then(
+        focusLabel
+      );
+    } else {
+      focusLabel();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, autoFocusLabel, fieldName, isHidden, onLabelFocused]);
 
   return (
     <Accordion
       key={fieldName}
       ref={setNodeRef}
+      // Scroll target for global design search (see designerElementIds).
+      data-designer-field={fieldName}
       expanded={expanded}
       onChange={handleAccordionChange}
       slotProps={{

@@ -42,6 +42,9 @@ export type DesignerThemeTokens = {
   /** Info palette main colour */
   infoMain: string;
 
+  /** Fuzzy-search match emphasis in autocomplete option text */
+  searchMatchHighlight: string;
+
   // ── Neutral greyscale ───────────────────────────────────────────────────
   darkGrey: string;
   midGrey: string;

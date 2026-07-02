@@ -1,8 +1,18 @@
-import {Box, Chip, FormHelperText, Typography} from '@mui/material';
+import {Alert, Box, FormHelperText, Typography} from '@mui/material';
 import {useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {FieldSearchAutocomplete} from '../field-selector';
+import {
+  applyFieldFilters,
+  getViewsetFieldIds,
+} from '../../features/field-search';
+import {
+  selectUiFields,
+  selectUiViews,
+  selectUiViewSets,
+} from '../../store/selectors';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
@@ -34,41 +44,38 @@ const isNumericField = (field: {
 /**
  * Property editor for ComputedField. Uses BaseFieldEditor for the standard
  * field settings and adds the arithmetic expression below. Field references in
- * the expression are wrapped in braces, e.g. {Width} * {Height}; the chips
- * insert a reference for each numeric field in the form.
+ * the expression are wrapped in braces, e.g. {Width} * {Height}.
  */
 export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const field = useAppSelector(
     state => state.notebook.uiSpec.present.fields[fieldName]
   );
-  const allFields = useAppSelector(
-    state => state.notebook.uiSpec.present.fields
-  );
-  const viewSet = useAppSelector(
-    state => state.notebook.uiSpec.present.viewsets[viewsetId]
-  );
-  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const allFields = useAppSelector(selectUiFields);
+  const views = useAppSelector(selectUiViews);
+  const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
 
   const expression =
     (field['component-parameters'].expression as string | undefined) || '';
 
-  // Numeric field ids in this form, excluding the computed field itself (it
-  // can't reference its own value).
-  const numericFieldIds = useMemo(() => {
-    const ids: string[] = [];
-    const seen = new Set<string>();
-    viewSet?.views.forEach(viewId => {
-      views[viewId]?.fields.forEach(id => {
-        if (id === fieldName || seen.has(id)) return;
-        seen.add(id);
-        if (isNumericField(allFields[id] ?? {})) {
-          ids.push(id);
-        }
-      });
-    });
-    return ids;
-  }, [viewSet?.views, views, allFields, fieldName]);
+  const numericFieldFilters = useMemo(
+    () => ({
+      excludeFieldIds: [fieldName],
+      predicate: (_id: string, f: (typeof allFields)[string]) =>
+        isNumericField(f),
+    }),
+    [fieldName]
+  );
+
+  const numericFieldCount = useMemo(
+    () =>
+      applyFieldFilters(
+        getViewsetFieldIds(viewsetId, views, viewsets),
+        allFields,
+        numericFieldFilters
+      ).length,
+    [viewsetId, views, viewsets, allFields, numericFieldFilters]
+  );
 
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -99,39 +106,34 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
           onChange={e => updateExpression(e.target.value)}
           helperText="Arithmetic over other fields, e.g. {Width} * {Height}"
         />
-        {numericFieldIds.length > 0 && (
-          <Box sx={{mt: 2}}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{display: 'block', mb: 1}}
-            >
-              Insert a field:
-            </Typography>
-            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-              {numericFieldIds.map(id => {
-                const label =
-                  (
-                    allFields[id]?.['component-parameters'] as
-                      | {label?: string}
-                      | undefined
-                  )?.label || id;
-                return (
-                  <Chip
-                    key={id}
-                    label={label === id ? id : `${label} (${id})`}
-                    size="small"
-                    variant="outlined"
-                    onClick={() => insertFieldRef(id)}
-                  />
-                );
-              })}
-            </Box>
+        {numericFieldCount > 0 ? (
+          <Box sx={{mt: 2, maxWidth: 400}}>
+            <FieldSearchAutocomplete
+              value={null}
+              onChange={fieldId => {
+                if (fieldId) insertFieldRef(fieldId);
+              }}
+              scope={{kind: 'viewset', viewsetId}}
+              filters={numericFieldFilters}
+              label="Insert field"
+              placeholder="Search numeric fields…"
+              size="small"
+              clearOnSelect
+              noOptionsText="No numeric field search results"
+              data-testid="computed-field-insert"
+            />
           </Box>
+        ) : (
+          <Alert severity="info" sx={{mt: 2}}>
+            No suitable numerical fields for computation in this form. Add
+            number, percentage, or other numeric fields to reference them in the
+            expression.
+          </Alert>
         )}
         <FormHelperText>
-          Reference other numeric fields by wrapping their ID in braces. Click a
-          field above to insert it.
+          Reference other numeric fields by wrapping their ID in braces.
+          {numericFieldCount > 0 &&
+            ' Use the field picker above to insert a reference.'}
         </FormHelperText>
       </Box>
     </BaseFieldEditor>

@@ -217,7 +217,7 @@ describe('ConditionControl', () => {
     const optionLabels = openFieldOptions();
 
     // A same-form field (different section) is still offered.
-    expect(optionLabels).toContain('ID');
+    expect(optionLabels.some(label => label.includes('ID'))).toBe(true);
     // The field that lives in another form must NOT be offered.
     expect(optionLabels).not.toContain('Cross Form Widget');
   });
@@ -235,7 +235,7 @@ describe('ConditionControl', () => {
     const optionLabels = openFieldOptions();
 
     // A field from another section of the same form is still offered.
-    expect(optionLabels).toContain('ID');
+    expect(optionLabels.some(label => label.includes('ID'))).toBe(true);
     // The field that lives in another form must NOT be offered.
     expect(optionLabels).not.toContain('Cross Form Widget');
   });
