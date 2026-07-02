@@ -37,6 +37,7 @@ const teamColumn: ColumnDef<Column> = {
   },
 };
 
+/** Replaces the status column; archived templates are hidden from this list. */
 const lastUpdatedColumn: ColumnDef<Column> = {
   accessorKey: 'updatedAt',
   header: ({column}) => (

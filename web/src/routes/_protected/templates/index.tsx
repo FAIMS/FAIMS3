@@ -13,10 +13,8 @@ import {
   TemplateVisibilityFilterSelect,
   type TemplateVisibilityFilterValue,
 } from '@/components/tables/template-visibility-filter';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {
   Action,
-  getUserResourcesForAction,
   globalRolesGrantAction,
   type GetListTemplatesResponse,
 } from '@faims3/data-model';
@@ -39,17 +37,6 @@ function RouteComponent() {
   const navigate = useNavigate();
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
-
-  // can they create templates outside team?
-  const canCreateGlobally = useIsAuthorisedTo({
-    action: Action.CREATE_TEMPLATE,
-  });
-  // or in some team?
-  const canCreateInSomeTeam =
-    getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
-      action: Action.CREATE_TEMPLATE_IN_TEAM,
-    }).length > 0;
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -90,6 +77,7 @@ function RouteComponent() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
+      {/* CreateTemplateDialog returns null when the user lacks create permission */}
       <DataTable
         columns={columns as ColumnDef<TemplateListRow, unknown>[]}
         data={filteredTemplates}
@@ -105,9 +93,7 @@ function RouteComponent() {
           row.isPublic === true ? PUBLIC_TEMPLATE_ROW_CLASS : undefined
         }
         onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
-        button={
-          (canCreateGlobally || canCreateInSomeTeam) && <CreateTemplateDialog />
-        }
+        button={<CreateTemplateDialog />}
       />
     </div>
   );
