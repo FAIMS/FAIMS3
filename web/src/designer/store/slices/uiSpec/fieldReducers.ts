@@ -22,7 +22,11 @@ import {
   removeFieldFromSummaryForViewset,
   replaceFieldInCondition,
 } from '../../../state/helpers/uiSpec-helpers';
-import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
+import {
+  buildUniqueFieldName,
+  resolveAddedFieldKey,
+  slugify,
+} from '../../../domain/notebook/ids';
 import {cloneField} from '../../../domain/notebook/fieldFactory';
 
 /** Field-level RTK reducers merged into `uiSpecificationReducer`. */
@@ -235,7 +239,7 @@ export const fieldReducers = {
   },
   /**
    * Clones default spec from `getFieldSpec`, assigns unique slug, inserts after `addAfter` in section.
-   * Applies type-specific defaults (related record, autoincrement `form_id`, templated HRID id).
+   * Applies type-specific defaults (related record, autoincrement `form_id`).
    */
   fieldAdded: (
     state: NotebookUISpec,
@@ -252,8 +256,6 @@ export const fieldReducers = {
     const newField: FieldType = getFieldSpec(fieldType);
     newField.designerIdentifier = crypto.randomUUID();
 
-    let fieldLabel = slugify(fieldName);
-
     if (fieldType === 'RelatedRecordSelector') {
       newField['component-parameters'].related_type = viewSetId;
       newField['component-parameters'].related_type_label =
@@ -263,22 +265,6 @@ export const fieldReducers = {
     if (fieldType === 'BasicAutoIncrementer') {
       // Scope auto-increment to this section (form_id must match the view id).
       newField['component-parameters'].form_id = viewId;
-    }
-
-    if (fieldType === 'TemplatedStringField') {
-      let hasHRID = false;
-      for (const sectionFieldName of state.views[viewId].fields) {
-        if (
-          sectionFieldName.startsWith('hrid') &&
-          sectionFieldName.endsWith(viewId)
-        ) {
-          hasHRID = true;
-          break;
-        }
-      }
-      if (!hasHRID) {
-        fieldLabel = 'hrid' + viewId;
-      }
     }
 
     newField.meta = {
@@ -293,11 +279,10 @@ export const fieldReducers = {
     };
     newField['component-parameters'].label = fieldName;
 
-    let N = 1;
-    while (fieldLabel in state.fields) {
-      fieldLabel = slugify(fieldName + ' ' + N);
-      N += 1;
-    }
+    const fieldLabel = resolveAddedFieldKey(
+      fieldName,
+      Object.keys(state.fields)
+    );
     newField['component-parameters'].name = fieldLabel;
     state.fields[fieldLabel] = newField;
 

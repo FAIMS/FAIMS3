@@ -432,18 +432,22 @@ export const FormEditor = ({
   };
 
   useEffect(() => {
-    // Set active step from URL parameter if available
-    if (sectionParam !== null) {
-      const sectionIndex = parseInt(sectionParam);
-      if (
-        !isNaN(sectionIndex) &&
-        sectionIndex >= 0 &&
-        sectionIndex < sections.length
-      ) {
-        setActiveStep(sectionIndex);
-      }
+    setActiveStep(0);
+  }, [viewSetId]);
+
+  useEffect(() => {
+    // Set active step from URL parameter when navigating via search or deep links.
+    if (sectionParam === null) return;
+
+    const sectionIndex = parseInt(sectionParam, 10);
+    if (
+      !isNaN(sectionIndex) &&
+      sectionIndex >= 0 &&
+      sectionIndex < sections.length
+    ) {
+      setActiveStep(sectionIndex);
     }
-  }, [sectionParam, sections.length]);
+  }, [sectionParam, sections.length, viewSetId]);
 
   useEffect(() => {
     if (sections.length === 0 && createSectionParam === '1') {
@@ -497,6 +501,8 @@ export const FormEditor = ({
     <Stack
       direction="row"
       spacing={2}
+      // Scroll target for global design search (see designerElementIds).
+      data-designer-form={viewSetId}
       sx={[
         designerResponsiveSectionSx,
         {width: '100%', minWidth: 0, flexWrap: 'nowrap', alignItems: 'stretch'},

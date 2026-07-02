@@ -72,6 +72,25 @@ describe('uiSpecificationReducer', () => {
     expect(next.views.sectionA.fields).toEqual(['Text-Field']);
   });
 
+  it('adds templated string fields with a slugged key', () => {
+    const initial = createBaseUiSpec();
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'New Field',
+        fieldType: 'TemplatedStringField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+
+    expect(Object.keys(next.fields)).toEqual(['New-Field']);
+    expect(next.views.sectionA.fields).toEqual(['New-Field']);
+    expect(next.fields['New-Field']['component-parameters'].hidden).toBe(true);
+  });
+
   it('renames field and updates summary/hrid references', () => {
     const initial = createBaseUiSpec();
     const existingField = getFieldSpec('TextField');

@@ -31,6 +31,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
 import InfoIcon from '@mui/icons-material/Info';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
@@ -44,7 +45,7 @@ import {
   designerPrimaryActionButtonSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
-import {slugify} from '../domain/notebook/ids';
+import {resolveAddedFieldKey} from '../domain/notebook/ids';
 
 type Props = {
   viewSetId: string;
@@ -64,6 +65,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const fields = useAppSelector(state => state.notebook.uiSpec.present.fields);
 
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const fieldParam = new URLSearchParams(location.search).get('field');
 
   const hiddenFields = useMemo(
     () =>
@@ -83,6 +86,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addAfterField, setAddAfterField] = useState('');
+  /** Predicted storage key for the next fieldAdded dispatch — enables expand/focus before Redux updates. */
   const [autoFocusFieldKey, setAutoFocusFieldKey] = useState<string | null>(
     null
   );
@@ -103,12 +107,11 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const handleDialogConfirm = useCallback(
     (fieldType: string) => {
       const defaultFieldName = 'New Field';
-      let newFieldKey = slugify(defaultFieldName);
-      let suffix = 1;
-      while (fields[newFieldKey]) {
-        newFieldKey = slugify(`${defaultFieldName} ${suffix}`);
-        suffix += 1;
-      }
+      // Pre-compute the slug fieldAdded will assign so we can expand the accordion immediately.
+      const newFieldKey = resolveAddedFieldKey(
+        defaultFieldName,
+        Object.keys(fields)
+      );
 
       dispatch(
         fieldAdded({
@@ -159,6 +162,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     const designerIdentifier = fields[autoFocusFieldKey]?.designerIdentifier;
     if (!designerIdentifier) return;
 
+    // Expand the new field accordion once the reducer has written the field spec.
     setIsExpanded(prev => ({...prev, [designerIdentifier]: true}));
   }, [autoFocusFieldKey, fields]);
 
@@ -167,7 +171,17 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     // Do not depend on `allClosed` / field data: that object is recreated on every field
     // edit and would collapse open accordions whenever the spec updates.
     setIsExpanded({});
+    setAutoFocusFieldKey(null);
   }, [viewId]);
+
+  useEffect(() => {
+    if (!fieldParam || !fView.fields.includes(fieldParam)) return;
+
+    const designerIdentifier = fields[fieldParam]?.designerIdentifier;
+    if (!designerIdentifier) return;
+
+    setIsExpanded(prev => ({...prev, [designerIdentifier]: true}));
+  }, [viewId, fieldParam, fView.fields, fields]);
 
   const handleExpandedChange = useCallback(
     (designerIdentifier: string, expanded: boolean) => {

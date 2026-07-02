@@ -71,7 +71,6 @@ import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
 import {nowIso} from '../time';
-import { use } from "chai";
 
 /**
  * Migrate legacy notebook JSON when needed, validate as {@link NotebookDefinition},
@@ -261,7 +260,7 @@ const BYTE_COUNT_BATCH_SIZE = 10;
 export const getUserProjectsDetailed = async (
   user: Express.User,
   teamId: string | undefined = undefined,
-  includeArchived = false,
+  includeArchived = false
 ): Promise<APINotebookList[]> => {
   const projectsDb = localGetProjectsDb();
 
@@ -276,18 +275,18 @@ export const getUserProjectsDetailed = async (
           PROJECTS_LISTING_BY_PROJECT_ID,
           {
             include_docs: false,
-          },
+          }
         );
   } catch (error) {
     throw new Exceptions.InternalSystemError(
-      "An error occurred while reading projects from the Project DB.",
+      'An error occurred while reading projects from the Project DB.'
     );
   }
 
   const userProjects = resultList.rows
-    .filter((row) => row.value != null && row.id && !row.id.startsWith("_"))
-    .map((row) => row.value!)
-    .filter((project) => {
+    .filter(row => row.value != null && row.id && !row.id.startsWith('_'))
+    .map(row => row.value!)
+    .filter(project => {
       if (!includeArchived && project.status === ProjectStatus.ARCHIVED) {
         return false;
       }
@@ -303,7 +302,7 @@ export const getUserProjectsDetailed = async (
     const batch = userProjects.slice(p, p + BYTE_COUNT_BATCH_SIZE);
     detailed.push(
       ...(await Promise.all(
-        batch.map(async (project) => {
+        batch.map(async project => {
           const projectId = project._id;
           return {
             ...project,
@@ -314,8 +313,8 @@ export const getUserProjectsDetailed = async (
             }),
             byteCount: await getByteCount(projectId),
           };
-        }),
-      )),
+        })
+      ))
     );
   }
   return detailed;
@@ -720,9 +719,7 @@ export async function countRecordsInNotebook(
  * the value shown in CouchDB Fauxton. (Use `sizes.file` instead if you want the
  * on-disk size including view indexes and not-yet-compacted revisions.)
  */
-export async function getByteCount(
-  project_id: ProjectID
-): Promise<number> {
+export async function getByteCount(project_id: ProjectID): Promise<number> {
   try {
     const dataDb = await getNanoDataDb(project_id);
     const info = await dataDb.info();
