@@ -57,7 +57,7 @@ export const UNDOABLE_UI_SPEC_ACTIONS = [
 /** Passed to `undoable(uiSpecificationReducer.reducer, uiSpecUndoConfig)`. */
 export const uiSpecUndoConfig = {
   limit: 10,
-  filter: includeAction(UNDOABLE_UI_SPEC_ACTIONS),
+  filter: includeAction([...UNDOABLE_UI_SPEC_ACTIONS]),
   clearHistoryType: 'CLEAR_HISTORY',
   initTypes: [],
 };

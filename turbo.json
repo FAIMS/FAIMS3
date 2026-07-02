@@ -2,6 +2,10 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "lint": {},
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
     "fix": {},
     "clean": {
       "cache": false

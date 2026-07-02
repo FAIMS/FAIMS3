@@ -98,6 +98,7 @@ export type NotebookUISpec = {
       summary_fields?: string[];
       layout?: 'inline' | 'tabs';
       hridField?: string;
+      displayInOverviewMap?: boolean;
     };
   };
   visible_types: string[];
