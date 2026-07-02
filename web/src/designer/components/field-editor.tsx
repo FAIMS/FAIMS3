@@ -267,8 +267,7 @@ const FieldEditorComponent = ({
   };
 
   const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
-    // if the field is collapsed, we need to open it up so that the
-    // dialog will show. If it is open already, we don't want to do anything
+    // stop propagation if the field is already expanded as that would collapse it again
     if (expanded) {
       event.stopPropagation();
     }
