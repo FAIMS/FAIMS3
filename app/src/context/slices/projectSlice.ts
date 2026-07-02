@@ -42,6 +42,7 @@ import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
+import {handleRemoteProjectRemoved} from '../../utils/remoteProjectRemoval';
 
 export type {SyncMode};
 
@@ -1706,7 +1707,10 @@ export const initialiseServers = createAsyncThunk<void>(
  * Also updates the couchDBUrl - warning if there is a difference between
  * discovered project couchDB urls.
  *
- * TODO consider deletion - i.e. what happens if the server removes a project?
+ * When the directory shows a notebook as archived or absent (after streak
+ * confirmation), local projects are removed via {@link removeProject} or
+ * {@link detachProjectRetainLocalData}, then {@link handleRemoteProjectRemoved}
+ * coordinates alerts, query cleanup, and navigation.
  */
 export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
   'projects/initialiseProjects',
@@ -1965,6 +1969,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         } else {
           appDispatch(detachProjectRetainLocalData({serverId, projectId}));
         }
+        // Notify, drop React Query caches, and navigate off stale routes.
+        handleRemoteProjectRemoved(appDispatch, projectId);
       }
 
       // Fire at most one delayed `initialiseProjects` to bump absent streaks, or

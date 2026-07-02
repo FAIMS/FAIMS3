@@ -778,19 +778,25 @@ export const useIsAuthorisedTo = ({
 };
 
 /** For a given record, determines the form type, then fetches the layout from
- * the uiSpec */
+ * the uiSpec.
+ *
+ * @param enabled When false, skips the query (used on record pages while the
+ *   notebook is being torn down so hooks can stay unconditional). */
 export const useUiSpecLayout = ({
   recordId,
   uiSpec,
   dataDb,
+  enabled = true,
 }: {
   recordId: string;
   uiSpec: CompiledNotebookUiSpec;
   dataDb: DataDbType;
+  enabled?: boolean;
 }) => {
   // Query to fetch the relevant viewset
   return useQuery({
     queryKey: ['record-ui-spec', recordId, uiSpec],
+    enabled: enabled && !!recordId && !!uiSpec && !!dataDb,
     queryFn: async () => {
       const engine = new DataEngine({
         dataDb: dataDb as DatabaseInterface<DataDocument>,
