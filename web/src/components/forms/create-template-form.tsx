@@ -17,6 +17,7 @@ import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
 } from '@/lib/rootDescriptionField';
+import {TemplateOwnerCallout} from './template-owner-callout';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -209,11 +210,9 @@ export function CreateTemplateForm({
     return <p>You do not have permission to create templates.</p>;
   } else {
     return (
-      <>
+      <div className="flex flex-col gap-4">
         {possibleTeams.length === 1 && (
-          <span>
-            <strong>Template will be owned by:</strong> {possibleTeams[0].name}
-          </span>
+          <TemplateOwnerCallout teamName={possibleTeams[0].name} />
         )}
         <Form
           fields={fields}
@@ -226,7 +225,7 @@ export function CreateTemplateForm({
               : {}),
           }}
         />
-      </>
+      </div>
     );
   }
 }

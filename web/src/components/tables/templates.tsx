@@ -37,16 +37,14 @@ const teamColumn: ColumnDef<Column> = {
   },
 };
 
-const statusColumn: ColumnDef<Column> = {
-  id: 'status',
+const lastUpdatedColumn: ColumnDef<Column> = {
+  accessorKey: 'updatedAt',
   header: ({column}) => (
-    <DataTableColumnHeader column={column} title="Status" />
+    <DataTableColumnHeader column={column} title="Last updated" />
   ),
-  accessorFn: (row: Column & {archived?: boolean}) =>
-    row.archived === true ? 'Archived' : 'Active',
-  cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
-    const label = row.original.archived === true ? 'Archived' : 'Active';
-    return <RoleCard>{label}</RoleCard>;
+  cell: ({getValue}) => {
+    const v = getValue<string | undefined>();
+    return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
   },
 };
 
@@ -137,7 +135,7 @@ export function getTemplatesTableColumns(options: {
   return [
     nameColumn,
     ...team,
-    statusColumn,
+    lastUpdatedColumn,
     ...visibility,
     createdByColumn,
     createdAtColumn,

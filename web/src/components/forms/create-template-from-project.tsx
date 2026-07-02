@@ -10,6 +10,7 @@ import {
   rootDescriptionForApi,
 } from '@/lib/rootDescriptionField';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
+import {TemplateOwnerCallout} from './template-owner-callout';
 
 interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -137,11 +138,9 @@ export function CreateTemplateFromProjectForm({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       {possibleTeams?.length === 1 && (
-        <span>
-          <strong>Template will be owned by:</strong> {possibleTeams[0].name}
-        </span>
+        <TemplateOwnerCallout teamName={possibleTeams[0].name} />
       )}
       <Form
         fields={fields}
@@ -149,6 +148,6 @@ export function CreateTemplateFromProjectForm({
         submitButtonText="Create Template"
         defaultValues={{team: defaultValues?.teamId}}
       />
-    </>
+    </div>
   );
 }
