@@ -476,7 +476,7 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
     isRecordingRef.current = false;
     setIsPaused(false);
     releaseRecordingLock(fieldId);
-    setAttachmentSaving?.(false);
+    // Keep the attachment lock (set on handleStart) through blob conversion and save.
     try {
       const result = await CapacitorAudioRecorder.stopRecording();
       const blob = await blobFromResult(result);
@@ -497,21 +497,15 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
         fileFormat: extensionFromMime(mime),
       });
 
-      const currentData = state.value?.data as string[] | undefined;
-      setFieldData([...(currentData ?? []), newId]);
+      setFieldData((prev: string[] | undefined) => [...(prev ?? []), newId]);
       setElapsed(0);
     } catch (e) {
       logError(e);
       setError(e instanceof Error ? e.message : 'Failed to save recording.');
+    } finally {
+      setAttachmentSaving?.(false);
     }
-  }, [
-    stopTimer,
-    addAttachment,
-    setFieldData,
-    state.value?.data,
-    fieldId,
-    setAttachmentSaving,
-  ]);
+  }, [stopTimer, addAttachment, setFieldData, fieldId, setAttachmentSaving]);
 
   /** Removes a saved recording by attachment ID. */
   const handleRemove = useCallback(

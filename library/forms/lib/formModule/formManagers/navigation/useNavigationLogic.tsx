@@ -35,7 +35,8 @@ export function useNavigationLogic({
   explicitParentInfo,
   navigationService,
   flushSave,
-  hasPendingChanges,
+  hasPendingSave,
+  isFormSaving,
   impliedParents = [],
   createAnotherChild,
 }: UseNavigationLogicParams): UseNavigationLogicResult {
@@ -128,9 +129,9 @@ export function useNavigationLogic({
 
   const statusText = useMemo(() => {
     if (isSaving) return undefined; // Loading spinner handles this
-    if (hasPendingChanges()) return 'saving...';
+    if (hasPendingSave || isFormSaving) return 'saving...';
     return undefined;
-  }, [isSaving, hasPendingChanges]);
+  }, [isSaving, hasPendingSave, isFormSaving]);
 
   // ===========================================================================
   // Button Configuration Builder
