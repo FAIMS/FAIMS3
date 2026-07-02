@@ -47,7 +47,9 @@ function NotebookUnavailable() {
     <Stack spacing={2}>
       <BackButton link={ROUTES.NOTEBOOK_LIST_ROUTE} />
       <Typography variant="h5">{removedNotebookAlert.title}</Typography>
-      <Typography color="text.secondary">{removedNotebookAlert.message}</Typography>
+      <Typography color="text.secondary">
+        {removedNotebookAlert.message}
+      </Typography>
     </Stack>
   );
 }
@@ -58,11 +60,10 @@ export default function Notebook() {
     projectId: string;
     serverId: string;
   }>();
-  const project = useAppSelector(
-    state =>
-      serverId && projectId
-        ? state.projects.servers[serverId]?.projects[projectId]
-        : undefined
+  const project = useAppSelector(state =>
+    serverId && projectId
+      ? state.projects.servers[serverId]?.projects[projectId]
+      : undefined
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 

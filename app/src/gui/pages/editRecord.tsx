@@ -276,7 +276,9 @@ export const EditRecordPage = () => {
         navigateToRecordList: {
           label: 'Return to record list',
           navigate: () => {
-            navigate(getNotebookRoute({serverId: serverId!, projectId: projectId!}));
+            navigate(
+              getNotebookRoute({serverId: serverId!, projectId: projectId!})
+            );
           },
         },
         // Takes you back to view record (note this is only shown if there are no
@@ -448,9 +450,7 @@ export const EditRecordPage = () => {
             <Button
               variant="outlined"
               onClick={() =>
-                navigate(
-                  getViewRecordRoute({projectId, recordId, serverId})
-                )
+                navigate(getViewRecordRoute({projectId, recordId, serverId}))
               }
             >
               Open read-only view

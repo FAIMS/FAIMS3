@@ -1,9 +1,7 @@
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../context/store';
-import {
-  NOTEBOOK_LIST_ROUTE,
-} from './remoteProjectRemoval';
+import {NOTEBOOK_LIST_ROUTE} from './remoteProjectRemoval';
 import {parseNotebookRouteParams} from './notebookRouteParams';
 
 /**
