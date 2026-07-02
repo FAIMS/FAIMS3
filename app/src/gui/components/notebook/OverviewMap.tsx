@@ -791,7 +791,10 @@ export const OverviewMap = (props: OverviewMapProps) => {
         flexDirection: 'column',
         width: '100%',
         minWidth: 0,
-        height: {xs: 'clamp(320px, 55vh, 600px)', sm: 'clamp(400px, 60vh, 600px)'},
+        height: {
+          xs: 'clamp(320px, 55vh, 600px)',
+          sm: 'clamp(400px, 60vh, 600px)',
+        },
         mt: {xs: 1, sm: 2.5},
       }}
     >

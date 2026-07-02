@@ -1,5 +1,5 @@
 import {$, $$} from '@wdio/globals';
-import {Page} from './page';
+import {Page} from './page.ts';
 
 /**
  * Page object for the API register page (register.handlebars)

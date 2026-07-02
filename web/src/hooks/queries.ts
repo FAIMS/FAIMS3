@@ -206,11 +206,11 @@ export const useGetProjectsForTeam = ({
   includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ["projectsbyteam", user?.token, teamId, includeArchived],
+    queryKey: ['projectsbyteam', user?.token, teamId, includeArchived],
     queryFn: () =>
       get<GetNotebookListResponse>(
-        `/api/notebooks?teamId=${teamId}${includeArchived ? "&includeArchived=true" : ""}`,
-        user,
+        `/api/notebooks?teamId=${teamId}${includeArchived ? '&includeArchived=true' : ''}`,
+        user
       ),
     select: sortNotebookListNewestFirst,
   });

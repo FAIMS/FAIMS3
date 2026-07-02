@@ -31,6 +31,7 @@
     "build-web": "turbo build --filter @faims3/web",
     "dev": "turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model --parallel",
     "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "clean": "turbo clean",
