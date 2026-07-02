@@ -112,7 +112,7 @@ export const MapControlGroup = ({children}: {children: ReactNode}) => (
       backgroundColor: 'mapControl.groupBackground',
       borderRadius: '10px',
       p: 1,
-      boxShadow: 'mapControl.groupShadow',
+      boxShadow: theme => theme.palette.mapControl.groupShadow,
       pointerEvents: 'auto',
     }}
   >

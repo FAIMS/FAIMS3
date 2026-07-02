@@ -141,6 +141,24 @@ export const MapComponent = (props: MapComponentProps) => {
     () => (tileStore.hasSatellite() ? tileStore.getSatelliteLayer() : undefined),
     [tileStore]
   );
+  const vectorZoomRange = useMemo(
+    () => tileStore.getVectorZoomRange(),
+    [tileStore]
+  );
+  const satelliteZoomRange = useMemo(
+    () => tileStore.getSatelliteZoomRange(),
+    [tileStore]
+  );
+  const handleLayerChange = useCallback(
+    (isSatellite: boolean) => {
+      setAttribution(
+        isSatellite
+          ? tileStore.getSatelliteAttribution()
+          : (tileStore.getAttribution() as unknown as string)
+      );
+    },
+    [tileStore]
+  );
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {
@@ -517,16 +535,9 @@ export const MapComponent = (props: MapComponentProps) => {
                       vectorLayer={tileLayer}
                       satelliteLayer={satelliteLayer}
                       isOnline={isOnline}
-                      vectorZoomRange={tileStore.getVectorZoomRange()}
-                      satelliteZoomRange={tileStore.getSatelliteZoomRange()}
-                      onLayerChange={isSatellite => {
-                        // Update attribution when layer changes
-                        setAttribution(
-                          isSatellite
-                            ? tileStore.getSatelliteAttribution()
-                            : (tileStore.getAttribution() as unknown as string)
-                        );
-                      }}
+                      vectorZoomRange={vectorZoomRange}
+                      satelliteZoomRange={satelliteZoomRange}
+                      onLayerChange={handleLayerChange}
                     />
                   )}
                   <CenterOnLocationControl

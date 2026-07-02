@@ -210,7 +210,7 @@ export const LayerToggleControl = ({
   onLayerChange,
 }: LayerToggleControlProps) => {
   const [prefersSatellite, setPrefersSatellite] = useState(
-    getSavedLayerPreference
+    () => getSavedLayerPreference()
   );
   // Offline forces vector view regardless of preference
   const isSatellite = prefersSatellite && isOnline;
@@ -233,7 +233,17 @@ export const LayerToggleControl = ({
         view.animate({zoom: clampedZoom, duration: ANIMATION_DURATION});
       }
     }
-  }, [isSatellite]);
+  }, [
+    isSatellite,
+    map,
+    vectorLayer,
+    satelliteLayer,
+    onLayerChange,
+    vectorZoomRange.minZoom,
+    vectorZoomRange.maxZoom,
+    satelliteZoomRange.minZoom,
+    satelliteZoomRange.maxZoom,
+  ]);
 
   return (
     <MapControlGroup>
