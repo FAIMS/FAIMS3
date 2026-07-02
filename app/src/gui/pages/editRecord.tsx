@@ -353,7 +353,7 @@ export const EditRecordPage = () => {
 
   const headingSlot: React.ReactNode | undefined = useMemo(() => {
     return formData ? (
-      <Stack spacing={1}>
+      <Stack spacing={0.5}>
         <Typography variant="h3">
           {mode === 'new' ? 'Creating' : 'Editing'}
           {': '}

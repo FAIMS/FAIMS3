@@ -46,6 +46,8 @@ interface FieldWrapperProps {
   required?: boolean;
   advancedHelperText?: ReactNode;
   errors?: string[];
+  /** Tighter gap between helper text and the input (e.g. select fields). */
+  compactHelperSpacing?: boolean;
 }
 
 /**
@@ -67,6 +69,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   required,
   advancedHelperText,
   errors = [],
+  compactHelperSpacing = false,
 }) => {
   const [openDialog, setOpenDialog] = useState(false);
   const [anchorEl] = useState<null | HTMLElement>(null);
@@ -163,7 +166,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         <Typography
           variant="body2"
           sx={{
-            marginBottom: 1,
+            marginBottom: compactHelperSpacing ? 0.25 : 1,
             fontSize: {xs: '0.9rem', md: '1rem'},
             color: 'text.secondary',
           }}
@@ -173,7 +176,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       )}
 
       {/* Input Field */}
-      <Box sx={{p: 0.45}}>{children}</Box>
+      <Box sx={compactHelperSpacing ? {pt: 0, px: 0.45, pb: 0.45} : {p: 0.45}}>
+        {children}
+      </Box>
 
       {/* Error Messages */}
       {hasErrors && (

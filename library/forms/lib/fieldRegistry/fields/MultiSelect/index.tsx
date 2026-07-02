@@ -302,7 +302,6 @@ const MuiMultiSelect = ({
       <FormControl
         sx={{
           width: '100%',
-          mt: 2,
           '& .MuiSelect-select': {
             whiteSpace: 'normal',
             wordBreak: 'break-word',
@@ -550,8 +549,9 @@ export const MultiSelect = (props: FieldProps) => {
       required={required}
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
+      compactHelperSpacing
     >
-      <Box sx={{mt: 2, mb: 2}}>
+      <Box sx={{mb: 1}}>
         {isExpandedChecklist ? (
           <ExpandedChecklist
             options={ElementProps.options}
