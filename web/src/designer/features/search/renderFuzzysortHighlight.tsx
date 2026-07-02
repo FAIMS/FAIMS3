@@ -5,7 +5,7 @@
 /** True when fuzzysort matched this key (not its empty placeholder result). */
 export const hasFuzzysortKeyMatch = (
   match: Fuzzysort.Result | null | undefined
-): boolean => !!match && match.score > 0;
+): match is Fuzzysort.Result => !!match && match.score > 0;
 
 /**
  * Renders fuzzysort highlight markup for one search key.
