@@ -15,6 +15,7 @@ import {
 import type {FieldType} from '../../state/initial';
 import {selectUiFields} from '../../store/selectors';
 import {useAppSelector} from '../../state/hooks';
+import {renderFuzzysortHighlight} from '../../features/search';
 import {designerSearchMatchHighlightSx} from '../designer-style';
 
 type FieldSearchOptionProps = {
@@ -26,21 +27,6 @@ const getHelperText = (result: FieldSearchResult): string =>
   result.fuzzysort?.obj.helperText ??
   String(result.field['component-parameters']?.helperText ?? '');
 
-/** Renders fuzzysort highlight markup; falls back to plain text when no match. */
-const renderHighlighted = (
-  match: Fuzzysort.Result | null | undefined,
-  fallback: string
-) => {
-  if (!match) return fallback;
-  return (
-    <span
-      dangerouslySetInnerHTML={{
-        __html: match.highlight('<strong>', '</strong>'),
-      }}
-    />
-  );
-};
-
 /** Renders a field option with optional fuzzy-match highlighting on the label. */
 export const FieldSearchOption = ({result, query}: FieldSearchOptionProps) => {
   const helperText = getHelperText(result);
@@ -49,13 +35,13 @@ export const FieldSearchOption = ({result, query}: FieldSearchOptionProps) => {
   const labelContent = useMemo(() => {
     if (!hasSearch) return result.label;
     // fuzzysort key order: label (0), id (1), helperText (2), advancedHelperText (3)
-    return renderHighlighted(result.fuzzysort?.[0], result.label);
+    return renderFuzzysortHighlight(result.fuzzysort?.[0], result.label);
   }, [hasSearch, result]);
 
   const helperContent = useMemo(() => {
     if (!helperText) return null;
     if (!hasSearch) return helperText;
-    return renderHighlighted(result.fuzzysort?.[2], helperText);
+    return renderFuzzysortHighlight(result.fuzzysort?.[2], helperText);
   }, [hasSearch, helperText, result]);
 
   return (

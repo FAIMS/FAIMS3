@@ -6,39 +6,19 @@ import {describe, expect, it} from 'vitest';
 import {resolveAddedFieldKey} from './ids';
 
 describe('resolveAddedFieldKey', () => {
-  it('uses hrid prefix for the first templated string in a section', () => {
-    expect(
-      resolveAddedFieldKey(
-        'New Field',
-        'TemplatedStringField',
-        'sectionA',
-        [],
-        []
-      )
-    ).toBe('hridsectionA');
+  it('slugifies templated string fields like any other field', () => {
+    expect(resolveAddedFieldKey('New Field', [])).toBe('New-Field');
   });
 
-  it('slugifies templated string when section already has an hrid field', () => {
+  it('deduplicates when the slug is already taken', () => {
     expect(
-      resolveAddedFieldKey(
-        'New Field',
-        'TemplatedStringField',
-        'sectionA',
-        ['hridsectionA', 'Text-Field'],
-        ['hridsectionA', 'Text-Field']
-      )
-    ).toBe('New-Field');
+      resolveAddedFieldKey('New Field', ['New-Field', 'Text-Field'])
+    ).toBe('New-Field-1');
   });
 
   it('matches fieldAdded reducer key for standard fields', () => {
     expect(
-      resolveAddedFieldKey(
-        'New Field',
-        'TextField',
-        'sectionA',
-        ['Existing-Field'],
-        ['Existing-Field']
-      )
+      resolveAddedFieldKey('New Field', ['Existing-Field'])
     ).toBe('New-Field');
   });
 });

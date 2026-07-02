@@ -72,7 +72,7 @@ describe('uiSpecificationReducer', () => {
     expect(next.views.sectionA.fields).toEqual(['Text-Field']);
   });
 
-  it('names first templated string field as hrid scoped to section', () => {
+  it('adds templated string fields with a slugged key', () => {
     const initial = createBaseUiSpec();
 
     const next = uiSpecificationReducer.reducer(
@@ -86,11 +86,9 @@ describe('uiSpecificationReducer', () => {
       })
     );
 
-    expect(Object.keys(next.fields)).toEqual(['hridsectionA']);
-    expect(next.views.sectionA.fields).toEqual(['hridsectionA']);
-    expect(next.fields['hridsectionA']['component-parameters'].hidden).toBe(
-      true
-    );
+    expect(Object.keys(next.fields)).toEqual(['New-Field']);
+    expect(next.views.sectionA.fields).toEqual(['New-Field']);
+    expect(next.fields['New-Field']['component-parameters'].hidden).toBe(true);
   });
 
   it('renames field and updates summary/hrid references', () => {

@@ -22,6 +22,7 @@ import {
   DesignSearchResult,
   useDesignSearch,
 } from '../../features/design-search';
+import {renderFuzzysortHighlight} from '../../features/search';
 import {
   scrollToField,
   scrollToForm,
@@ -67,21 +68,6 @@ const SEARCH_WIDTH = {
 /** Fixed width for the type badge column — fits "Section" (longest label). */
 const TYPE_BADGE_COLUMN_WIDTH = 64;
 
-/** Renders fuzzysort highlight markup; falls back to plain text when no match. */
-const renderHighlighted = (
-  match: Fuzzysort.Result | null | undefined,
-  fallback: string
-) => {
-  if (!match) return fallback;
-  return (
-    <span
-      dangerouslySetInnerHTML={{
-        __html: match.highlight('<strong>', '</strong>'),
-      }}
-    />
-  );
-};
-
 /** One row in the global search dropdown (type badge + title + context lines). */
 const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
   const hasSearch = searchQuery.trim().length > 0 && result.fuzzysort;
@@ -89,7 +75,7 @@ const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
   const titleContent = useMemo(() => {
     if (!hasSearch) return result.label;
     // fuzzysort key order: label (0), id (1), helperText (2), advancedHelperText (3)
-    return renderHighlighted(result.fuzzysort?.[0], result.label);
+    return renderFuzzysortHighlight(result.fuzzysort?.[0], result.label);
   }, [hasSearch, result]);
 
   /** Form for sections; form › section for fields. */
@@ -120,14 +106,14 @@ const DesignSearchOption = ({result, searchQuery}: DesignSearchOptionProps) => {
   const detailContent = useMemo(() => {
     if (!detailLabel) return null;
     if (!hasSearch || result.type !== 'field') return detailLabel;
-    return renderHighlighted(result.fuzzysort?.[2], detailLabel);
+    return renderFuzzysortHighlight(result.fuzzysort?.[2], detailLabel);
   }, [detailLabel, hasSearch, result]);
 
   const locationContent = useMemo(() => {
     if (!locationLabel) return null;
     if (!hasSearch || result.type !== 'section') return locationLabel;
     // Section entries store the parent form label in helperText for search.
-    return renderHighlighted(result.fuzzysort?.[2], locationLabel);
+    return renderFuzzysortHighlight(result.fuzzysort?.[2], locationLabel);
   }, [hasSearch, locationLabel, result]);
 
   return (

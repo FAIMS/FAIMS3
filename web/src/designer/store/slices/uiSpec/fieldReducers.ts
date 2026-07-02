@@ -239,7 +239,7 @@ export const fieldReducers = {
   },
   /**
    * Clones default spec from `getFieldSpec`, assigns unique slug, inserts after `addAfter` in section.
-   * Applies type-specific defaults (related record, autoincrement `form_id`, templated HRID id).
+   * Applies type-specific defaults (related record, autoincrement `form_id`).
    */
   fieldAdded: (
     state: NotebookUISpec,
@@ -281,9 +281,6 @@ export const fieldReducers = {
 
     const fieldLabel = resolveAddedFieldKey(
       fieldName,
-      fieldType,
-      viewId,
-      state.views[viewId].fields,
       Object.keys(state.fields)
     );
     newField['component-parameters'].name = fieldLabel;

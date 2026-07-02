@@ -4,3 +4,7 @@ export {
   weightedFuzzySearch,
 } from './weightedFuzzySearch';
 export type {WeightedFuzzyMatch} from './weightedFuzzySearch';
+export {
+  hasFuzzysortKeyMatch,
+  renderFuzzysortHighlight,
+} from './renderFuzzysortHighlight';

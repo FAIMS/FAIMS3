@@ -110,9 +110,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       // Pre-compute the slug fieldAdded will assign so we can expand the accordion immediately.
       const newFieldKey = resolveAddedFieldKey(
         defaultFieldName,
-        fieldType,
-        viewId,
-        fView.fields,
         Object.keys(fields)
       );
 
@@ -128,7 +125,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       setAutoFocusFieldKey(newFieldKey);
       setDialogOpen(false);
     },
-    [addAfterField, dispatch, fields, fView.fields, viewId, viewSetId]
+    [addAfterField, dispatch, fields, viewId, viewSetId]
   );
 
   const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
