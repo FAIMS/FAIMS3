@@ -18,6 +18,9 @@ vi.mock('./projectSlice', () => ({
   updateDatabaseCredentials: () => ({
     type: 'projects/updateDatabaseCredentials/mock',
   }),
+  initialiseProjects: () => ({
+    type: 'projects/initialiseProjects/mock',
+  }),
 }));
 vi.mock('../../users', () => ({
   parseToken: vi.fn(),

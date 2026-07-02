@@ -10,7 +10,7 @@ import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {impersonateUser} from '../../utils/apiOperations/users';
 import {AppDispatch, RootState} from '../store';
-import {updateDatabaseCredentials} from './projectSlice';
+import {initialiseProjects, updateDatabaseCredentials} from './projectSlice';
 import {addAlert} from './alertSlice';
 
 // Types
@@ -398,6 +398,22 @@ export const setAndRefreshActiveConnection = createAsyncThunk<
 );
 
 /**
+ * Switches the active user and re-fetches the notebook directory for that
+ * server so the listing reflects the new user's access.
+ */
+export const setActiveUserAndRefreshProjects = createAsyncThunk<
+  void,
+  ServerUserIdentity
+>(
+  'auth/setActiveUserAndRefreshProjects',
+  async (args, {dispatch: rawDispatch}) => {
+    const dispatch = rawDispatch as AppDispatch;
+    dispatch(setActiveUser(args));
+    await dispatch(initialiseProjects({serverId: args.serverId}));
+  }
+);
+
+/**
  * Atomic async operation on store to refresh a specific connection
  */
 export const refreshToken = createAsyncThunk<
@@ -564,8 +580,13 @@ export const startImpersonation = createAsyncThunk<
         })
       );
 
-      // Make it the active user.
-      appDispatch(setActiveUser({serverId, username: parsedToken.username}));
+      // Make it the active user and refresh the notebook list for them.
+      await appDispatch(
+        setActiveUserAndRefreshProjects({
+          serverId,
+          username: parsedToken.username,
+        })
+      );
 
       return {status: 'success', message: ''};
     } catch (error) {
@@ -603,7 +624,9 @@ export const stopImpersonation = createAsyncThunk<void, void>(
     // Restore the admin as the active user if their connection still exists.
     const adminConnection = state.auth.servers[serverId]?.users[adminUsername];
     if (adminConnection) {
-      appDispatch(setActiveUser({serverId, username: adminUsername}));
+      await appDispatch(
+        setActiveUserAndRefreshProjects({serverId, username: adminUsername})
+      );
     } else {
       appDispatch(clearActiveConnection());
     }

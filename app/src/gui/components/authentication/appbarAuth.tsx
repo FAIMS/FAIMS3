@@ -48,7 +48,7 @@ import {
   selectActiveUser,
   selectIsAuthenticated,
   selectIsImpersonating,
-  setActiveUser,
+  setActiveUserAndRefreshProjects,
   TokenInfo,
 } from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/alertSlice';
@@ -145,8 +145,7 @@ const AuthenticatedDisplayComponent = () => {
     username: string,
     navigate: NavigateFunction
   ) => {
-    // Set the active user
-    dispatch(setActiveUser({serverId, username}));
+    dispatch(setActiveUserAndRefreshProjects({serverId, username}));
     setSwitchMenuOpen(false);
 
     // Always go to home page after changing active user (we might already be
