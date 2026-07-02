@@ -10,7 +10,7 @@
  * Unless required by applicable law or agreed to in writing software
  * distributed under the License is distributed on an "AS IS" BASIS
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
+ * See, the License for for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -25,6 +25,8 @@
  * When the project is absent from Redux (upstream archival/deletion), shows
  * {@link NotebookUnavailable} instead of an infinite loading spinner.
  *
+ * Unactivated notebooks cannot use the record UI — deep links redirect home.
+ *
  * Dependencies:
  * - React hooks: useState, useEffect
  * - React Router: useParams, useNavigate
@@ -33,10 +35,11 @@
 import {Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useParams} from 'react-router-dom';
+import {useEffect} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {useAppSelector} from '../../context/store';
-import {removedNotebookAlert} from '../../utils/remoteProjectRemoval';
+import {removedNotebookUnavailableCopy} from '../../utils/remoteProjectRemoval';
 import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
 import NotFound404 from './404';
@@ -46,9 +49,9 @@ function NotebookUnavailable() {
   return (
     <Stack spacing={2}>
       <BackButton link={ROUTES.NOTEBOOK_LIST_ROUTE} />
-      <Typography variant="h5">{removedNotebookAlert.title}</Typography>
+      <Typography variant="h5">{removedNotebookUnavailableCopy.title}</Typography>
       <Typography color="text.secondary">
-        {removedNotebookAlert.message}
+        {removedNotebookUnavailableCopy.message}
       </Typography>
     </Stack>
   );
@@ -56,6 +59,7 @@ function NotebookUnavailable() {
 
 export default function Notebook() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const {serverId, projectId} = useParams<{
     projectId: string;
     serverId: string;
@@ -67,11 +71,22 @@ export default function Notebook() {
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 
+  // Record views require an activated local database — send deep links back home.
+  useEffect(() => {
+    if (project && !project.isActivated) {
+      navigate(ROUTES.NOTEBOOK_LIST_ROUTE, {replace: true});
+    }
+  }, [project, navigate]);
+
   if (!projectId || !serverId) return <NotFound404 />;
 
   // Project dropped from store while this route was open (see remoteProjectRemoval).
   if (!project) {
     return <NotebookUnavailable />;
+  }
+
+  if (!project.isActivated) {
+    return null;
   }
 
   // back button goes to the notebook list page
