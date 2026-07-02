@@ -20,7 +20,10 @@ import {
   selectUiViewSets,
 } from '../../store/selectors';
 import {useAppSelector} from '../../state/hooks';
-import {renderFuzzysortHighlight, SearchResultContent} from '../../features/search';
+import {
+  renderFuzzysortHighlight,
+  SearchResultContent,
+} from '../../features/search';
 
 type FieldSearchOptionProps = {
   result: FieldSearchResult;

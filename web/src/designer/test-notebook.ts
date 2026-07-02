@@ -232,12 +232,7 @@ export const sampleNotebook: Notebook = {
       },
       'Primary-Next-Section': {
         label: 'Identify',
-        fields: [
-          'Field-ID',
-          'Identifier',
-          'IGSN-QR-Code',
-          'survey-note',
-        ],
+        fields: ['Field-ID', 'Identifier', 'IGSN-QR-Code', 'survey-note'],
         description: 'That description.',
       },
     },
