@@ -2,6 +2,7 @@ import {
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
+  OfflineMapRegion,
   ProjectDataObject,
   ProjectListItem,
   ProjectStatus,
@@ -18,6 +19,7 @@ import {
   DELETE_ON_DEACTIVATION,
   FORCE_REMOTE_DELETION,
   NOTEBOOK_NAME,
+  OFFLINE_MAPS,
 } from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
@@ -222,6 +224,8 @@ export interface ProjectInformation {
   updatedAt?: string;
   /** Server record count from GET /api/notebooks/:id when known. */
   recordCount?: number;
+  /** Recommended offline map download region (EPSG:4326 polygon). */
+  offlineMapRegion?: OfflineMapRegion;
 }
 
 // A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
@@ -289,6 +293,8 @@ export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
   selectedServerId?: string;
+  /** Shown once after activation when the activated project has an offline map region. */
+  pendingOfflineMapDownloadPrompt?: ProjectIdentity;
 }
 
 // UTILITY FUNCTIONS
@@ -312,6 +318,23 @@ function mergeRecordCount(
   existing: number | undefined
 ): number | undefined {
   return incoming !== undefined ? incoming : existing;
+}
+
+/** Superficial project fields that must survive database/sync-only updates. */
+function retainedProjectFields(project: Project) {
+  return {
+    projectId: project.projectId,
+    uiDefinition: project.uiDefinition,
+    uiSpecificationId: project.uiSpecificationId,
+    description: project.description,
+    templateId: project.templateId,
+    updatedAt: project.updatedAt,
+    serverId: project.serverId,
+    status: project.status,
+    name: project.name,
+    recordCount: project.recordCount,
+    offlineMapRegion: project.offlineMapRegion,
+  };
 }
 
 const projectsSlice = createSlice({
@@ -488,6 +511,7 @@ const projectsSlice = createSlice({
         database: undefined,
         status: payload.status,
         recordCount: payload.recordCount,
+        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
@@ -648,9 +672,11 @@ const projectsSlice = createSlice({
 
       server.couchDbUrl = payload.couchDbUrl;
 
+      const existingProject = server.projects[payload.projectId];
+
       // Now we can update it
       server.projects[payload.projectId] = {
-        ...server.projects[payload.projectId],
+        ...existingProject,
 
         // Superficial details updated only! You cannot change activated/sync
         // status here - these are controlled actions
@@ -663,8 +689,10 @@ const projectsSlice = createSlice({
         status: payload.status,
         recordCount: mergeRecordCount(
           payload.recordCount,
-          server.projects[payload.projectId].recordCount
+          existingProject.recordCount
         ),
+        offlineMapRegion:
+          payload.offlineMapRegion ?? existingProject.offlineMapRegion,
       };
     },
 
@@ -690,21 +718,13 @@ const projectsSlice = createSlice({
         syncMode,
         recordCount,
       } = action.payload;
+      const mergedOfflineMapRegion =
+        action.payload.offlineMapRegion ?? project.offlineMapRegion;
 
       // updates the state with all of this new information
       state.servers[serverId].projects[project.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-
-        // These are updated
+        ...retainedProjectFields(project),
+        offlineMapRegion: mergedOfflineMapRegion,
         isActivated: true,
         database: {
           syncMode,
@@ -796,22 +816,21 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated (to indicate de-activation)
+        ...retainedProjectFields(project),
         isActivated: false,
         database: undefined,
       };
+    },
+
+    setPendingOfflineMapDownloadPrompt: (
+      state,
+      action: PayloadAction<ProjectIdentity>
+    ) => {
+      state.pendingOfflineMapDownloadPrompt = action.payload;
+    },
+
+    clearPendingOfflineMapDownloadPrompt: state => {
+      state.pendingOfflineMapDownloadPrompt = undefined;
     },
 
     /**
@@ -851,19 +870,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[serverId].projects[projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode,
@@ -884,16 +891,7 @@ const projectsSlice = createSlice({
         throw new Error('Project database not properly initialised');
       }
       state.servers[project.serverId].projects[project.projectId] = {
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -999,19 +997,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1124,19 +1110,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1299,6 +1273,18 @@ export const selectProjectById = createSelector(
     // Project not found in any server
     return undefined;
   }
+);
+
+export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
+  state.projects.pendingOfflineMapDownloadPrompt;
+
+export const selectProjectByIdentity = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (_: RootState, identity: ProjectIdentity) => identity,
+  ],
+  (servers, identity): Project | undefined =>
+    servers[identity.serverId]?.projects[identity.projectId]
 );
 
 /**
@@ -1600,6 +1586,8 @@ export const activateProject = createAsyncThunk<
       syncId: syncId ?? undefined,
       syncMode: initialSyncMode,
       recordCount: activationSync.recordCount,
+      offlineMapRegion:
+        activationSync.offlineMapRegion ?? project.offlineMapRegion,
     })
   );
 
@@ -1620,6 +1608,17 @@ export const activateProject = createAsyncThunk<
     config: {forceWrite: true, applyPermissions: false},
     content: initDataDB({projectId: payload.projectId}),
   });
+
+  const offlineMapRegion =
+    activationSync.offlineMapRegion ?? project.offlineMapRegion;
+  if (OFFLINE_MAPS && offlineMapRegion) {
+    dispatch(
+      setPendingOfflineMapDownloadPrompt({
+        projectId: payload.projectId,
+        serverId: payload.serverId,
+      })
+    );
+  }
 });
 
 interface ActivateProjectSuccessPayload {
@@ -1631,6 +1630,7 @@ interface ActivateProjectSuccessPayload {
   syncId: string | undefined;
   syncMode: SyncMode;
   recordCount?: number;
+  offlineMapRegion?: OfflineMapRegion;
 }
 
 /**
@@ -1876,6 +1876,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               serverId,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status,
+              offlineMapRegion: meta.offlineMapRegion,
             })
           );
         } else {
@@ -1894,6 +1895,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                 meta.recordCount,
                 existingProject.recordCount
               ),
+              offlineMapRegion:
+                meta.offlineMapRegion ?? existingProject.offlineMapRegion,
             })
           );
         }
@@ -2318,6 +2321,8 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  setPendingOfflineMapDownloadPrompt,
+  clearPendingOfflineMapDownloadPrompt,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

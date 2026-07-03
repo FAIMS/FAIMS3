@@ -45,6 +45,7 @@ import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import {MapDownload} from './gui/components/maps/MapDownload';
+import {NotebookOfflineMapPrompt} from './gui/components/maps/OfflineMapPrompt';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
 import AboutBuild from './gui/pages/about-build';
@@ -126,6 +127,7 @@ const RootLayout = () => {
 
       {/* Main application chrome (header, sidebar, etc.) */}
       <MainLayout>
+        <NotebookOfflineMapPrompt />
         {/* Nested route content renders here */}
         <Outlet />
       </MainLayout>

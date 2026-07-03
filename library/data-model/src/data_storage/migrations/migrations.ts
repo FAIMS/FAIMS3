@@ -401,6 +401,21 @@ export const projectsV3toV4Migration: MigrationFunc = async (doc, context) => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Projects DB v5 — adds optional {@link ProjectV5Fields.offlineMapRegion}.
+ * Existing documents are unchanged (field absent until set via API).
+ */
+export const projectsV4toV5Migration: MigrationFunc = async doc => {
+  const input =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV4Fields>;
+
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV4Fields> = {
+    ...input,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
 export const invitesV2toV3Migration: MigrationFunc = doc => {
   // Cast input document to V2 type
   const inputDoc =
@@ -638,7 +653,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 4},
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
@@ -705,6 +720,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Inlines metadata DB + ui-specification into Project.uiSpecification; adds description and audit fields; removes metadataDb.',
     migrationFunction: projectsV3toV4Migration,
+  },
+  {
+    dbType: DatabaseType.PROJECTS,
+    from: 4,
+    to: 5,
+    description:
+      'Adds optional offlineMapRegion for recommended offline map download.',
+    migrationFunction: projectsV4toV5Migration,
   },
   {
     dbType: DatabaseType.INVITES,

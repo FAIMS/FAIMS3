@@ -46,5 +46,6 @@ export function projectInformationFromGetNotebook(
     updatedAt: notebook.updatedAt,
     uiDefinition,
     recordCount: notebook.recordCount,
+    offlineMapRegion: notebook.offlineMapRegion,
   };
 }

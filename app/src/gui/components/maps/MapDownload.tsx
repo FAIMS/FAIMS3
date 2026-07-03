@@ -36,7 +36,7 @@ import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
 import {ProgressBar} from '@faims3/forms';
 import {MapComponent} from '@faims3/forms';
-import {StoredTileSet, VectorTileStore} from '@faims3/forms';
+import {StoredTileSet, tileSetDisplayName, VectorTileStore} from '@faims3/forms';
 import {getMapConfig} from '../../../buildconfig';
 
 /**
@@ -200,7 +200,7 @@ export const MapDownload = () => {
               <Card variant="outlined" key={idx}>
                 <CardContent>
                   <Typography variant="h5" component="div">
-                    {mapSet.setName}
+                    {tileSetDisplayName(mapSet)}
                   </Typography>
 
                   <Typography variant="body2" color="text.secondary">

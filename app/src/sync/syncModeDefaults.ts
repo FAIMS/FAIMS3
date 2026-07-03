@@ -29,6 +29,7 @@
 
 import {SYNC_PUSH_ONLY_RECORD_THRESHOLD} from '../buildconfig';
 import {fetchNotebookDetails} from '../context/slices/helpers/databaseHelpers';
+import type {OfflineMapRegion} from '@faims3/data-model';
 import type {SyncMode} from './syncMode';
 
 /** Result of {@link resolveActivationSyncMode} for `activateProject`. */
@@ -37,6 +38,8 @@ export interface ActivationSyncModeResult {
   syncMode: SyncMode;
   /** Server record count when the activation API call succeeded. */
   recordCount?: number;
+  /** Recommended offline map region from the server when known. */
+  offlineMapRegion?: OfflineMapRegion;
   /**
    * True when sync was set to `push` because count exceeded the threshold.
    * Used to show the post-activation "Sync mode changed" snackbar.
@@ -82,10 +85,16 @@ export async function resolveActivationSyncMode({
       return {
         syncMode: 'push',
         recordCount,
+        offlineMapRegion: details.offlineMapRegion,
         usedPushOnlyDefault: true,
       };
     }
-    return {syncMode: 'both', recordCount, usedPushOnlyDefault: false};
+    return {
+      syncMode: 'both',
+      recordCount,
+      offlineMapRegion: details.offlineMapRegion,
+      usedPushOnlyDefault: false,
+    };
   } catch {
     return {syncMode: 'both', usedPushOnlyDefault: false};
   }

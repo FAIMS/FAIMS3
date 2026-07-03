@@ -47,6 +47,7 @@ import {
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookMetadataInputSchema,
+  PutUpdateNotebookOfflineMapRegionInputSchema,
   PutUpdateNotebookResponse,
   PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
@@ -98,6 +99,7 @@ import {
   getUiSpecModel,
   getUserProjectsDetailed,
   updateProjectMetadata,
+  updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
@@ -623,6 +625,32 @@ api.put(
       throw new Exceptions.UnauthorizedException();
     }
     const updated = await updateProjectUiSpecification(req.params.id, req.body);
+    return res.json(updated);
+  }
+);
+
+// PUT set or clear recommended offline map download region
+api.put(
+  '/:id/offlineMapRegion',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.SET_OFFLINE_MAP_REGION,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutUpdateNotebookOfflineMapRegionInputSchema,
+  }),
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const updated = await updateProjectOfflineMapRegion(
+      req.params.id,
+      req.body
+    );
     return res.json(updated);
   }
 );

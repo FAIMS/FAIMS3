@@ -109,6 +109,10 @@ export interface StoredTileSet {
   expectedTileCount: number;
   created: Date;
   tileKeys: IDBValidKey[];
+  /** When set, this tile set is removed when the project is deactivated. */
+  projectId?: string;
+  /** Optional display label (defaults to setName in UI). */
+  label?: string;
 }
 
 // MapTileDatabase - a singleton class holding the tile database references
@@ -424,13 +428,22 @@ abstract class TileStoreBase {
     extent: Extent,
     setName: string,
     minZoom = START_ZOOM,
-    maxZoom = MAX_ZOOM
+    maxZoom = MAX_ZOOM,
+    options?: {
+      projectId?: string;
+      label?: string;
+      replaceIfExists?: boolean;
+    }
   ) {
     const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
     if (existingTileSet) {
-      throw new Error(
-        `Offline map '${setName}' already exists, please choose a different name`
-      );
+      if (options?.replaceIfExists) {
+        await this.removeTileSet(setName);
+      } else {
+        throw new Error(
+          `Offline map '${setName}' already exists, please choose a different name`
+        );
+      }
     }
     // create a record for this region
     const tileSet: StoredTileSet = {
@@ -442,6 +455,8 @@ abstract class TileStoreBase {
       expectedTileCount: 0,
       created: new Date(),
       tileKeys: [],
+      ...(options?.projectId !== undefined ? {projectId: options.projectId} : {}),
+      ...(options?.label !== undefined ? {label: options.label} : {}),
     };
     this.tileStore.tileSetDB.put(tileSet);
 
@@ -547,6 +562,19 @@ abstract class TileStoreBase {
           tileSetNames.splice(tileSetNames.indexOf(setName), 1);
           await this.tileStore.tileDB.put(tileRecord);
         }
+      }
+    }
+  }
+
+  /** Remove all tile sets associated with a project. */
+  async removeTileSetsForProject(projectId: string) {
+    const tileSets = await this.tileStore.tileSetDB.getAll();
+    if (!tileSets) {
+      return;
+    }
+    for (const tileSet of tileSets) {
+      if (tileSet.projectId === projectId) {
+        await this.removeTileSet(tileSet.setName);
       }
     }
   }

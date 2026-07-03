@@ -46,6 +46,7 @@ import {
   ProjectListItem,
   ProjectStatus,
   PutUpdateNotebookMetadataInput,
+  PutUpdateNotebookOfflineMapRegionInput,
   PutUpdateNotebookUiSpecificationInput,
   Resource,
   resourceRoles,
@@ -560,6 +561,29 @@ export const updateProjectUiSpecification = async (
     uiSpecification: normalizedUiSpecification,
     updatedAt: nowIso(),
   };
+  await putProjectDoc(updated);
+  return getProjectById(projectId);
+};
+
+/**
+ * Sets or clears the recommended offline map region on a project.
+ */
+export const updateProjectOfflineMapRegion = async (
+  projectId: string,
+  input: PutUpdateNotebookOfflineMapRegionInput
+): Promise<ExistingProjectDocument> => {
+  const {offlineMapRegion} = input;
+  const project = await getProjectById(projectId);
+  const updated: ProjectDocument = {
+    ...project,
+    ...(offlineMapRegion == null
+      ? {offlineMapRegion: undefined}
+      : {offlineMapRegion}),
+    updatedAt: nowIso(),
+  };
+  if (offlineMapRegion == null) {
+    delete updated.offlineMapRegion;
+  }
   await putProjectDoc(updated);
   return getProjectById(projectId);
 };

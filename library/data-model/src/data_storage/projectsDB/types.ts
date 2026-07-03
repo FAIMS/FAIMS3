@@ -3,6 +3,7 @@ import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
 import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {NotebookDefinitionSchema} from '../../uiSpecification';
+import {OfflineMapRegionSchema} from './offlineMapRegion';
 
 /** Couch connection descriptor for per-project data/metadata databases. */
 export const PossibleConnectionInfoSchema: z.ZodType<PossibleConnectionInfo> =
@@ -136,13 +137,32 @@ export const ProjectV4DocumentSchema = CouchDocumentSchema.extend(
 export type ProjectV4Document = z.infer<typeof ProjectV4DocumentSchema>;
 
 // =============
+// V5 Definition
+// =============
+
+/**
+ * Projects DB v5 — extend this schema when adding new persisted project fields.
+ * Update alongside {@link projectsV4toV5Migration}.
+ */
+export const ProjectV5FieldsSchema = ProjectV4FieldsSchema.extend({
+  /** Optional bounding box for recommended offline map download on activation. */
+  offlineMapRegion: OfflineMapRegionSchema.optional(),
+});
+export type ProjectV5Fields = z.infer<typeof ProjectV5FieldsSchema>;
+
+export const ProjectV5DocumentSchema = CouchDocumentSchema.extend(
+  ProjectV5FieldsSchema.shape
+);
+export type ProjectV5Document = z.infer<typeof ProjectV5DocumentSchema>;
+
+// =============
 // Current exports
 // =============
 
-export const ProjectDBFieldsSchema = ProjectV4FieldsSchema;
+export const ProjectDBFieldsSchema = ProjectV5FieldsSchema;
 export type ProjectDBFields = z.infer<typeof ProjectDBFieldsSchema>;
 
-export const ProjectDocumentSchema = ProjectV4DocumentSchema;
+export const ProjectDocumentSchema = ProjectV5DocumentSchema;
 export type ProjectDocument = z.infer<typeof ProjectDocumentSchema>;
 
 export const ExistingProjectDocumentSchema = CouchExistingDocumentSchema.extend(
