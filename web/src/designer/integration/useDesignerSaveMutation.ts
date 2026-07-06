@@ -17,6 +17,7 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {toast} from 'sonner';
 
 /** React-query cache key prefix for the parent resource (e.g. `projects`). */
 type DesignerResourceType = 'projects' | 'templates';
@@ -31,6 +32,19 @@ type UseDesignerSaveMutationParams = {
   apiResourceType: DesignerApiResourceType;
   resourceId: string;
   token?: string;
+};
+
+const downloadJsonFile = (jsonText: string, filename: string) => {
+  const blob = new Blob([jsonText], {type: 'application/json'});
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -49,8 +63,8 @@ export const useDesignerSaveMutation = ({
   const queryClient = useQueryClient();
   const queryKey = [resourceType, resourceId] as const;
 
-  return useMutation<unknown, Error, File>({
-    mutationFn: async file => {
+  const mutation = useMutation({
+    mutationFn: async (file: File) => {
       const jsonText = await file.text();
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/${apiResourceType}/${resourceId}/uiSpecification`,
@@ -66,14 +80,57 @@ export const useDesignerSaveMutation = ({
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Save failed: ${response.status} ${errorText}`);
+
+        console.error(`Designer save failed: ${response.status} ${errorText}`);
+
+        throw new Error(
+          `Status code: ${response.status} (${response.statusText})`
+        );
       }
 
       return response.json();
     },
+
+    // Retry failed saves.
+    retry: 3,
+    retryDelay: 1000 * 2,
+
     onSuccess: updatedNotebook => {
       queryClient.setQueryData(queryKey, () => updatedNotebook);
       queryClient.invalidateQueries({queryKey});
     },
   });
+
+  // Wraps the designer save mutation with toast feedback
+  // and a JSON download fallback link if the save fails.
+  const mutateAsyncWithToast = async (file: File) => {
+    const jsonText = await file.text();
+
+    return toast.promise(mutation.mutateAsync(file), {
+      loading: 'Designer saving...',
+      success: 'Designer saved successfully.',
+      error: error => {
+        const errorMessage = error?.message || 'No error message provided';
+
+        return {
+          message: 'Designer save failed',
+          description: `${errorMessage}. Your changes were not saved. Download the updated JSON and upload it again later.`,
+          action: {
+            label: 'Download JSON',
+            onClick: () => {
+              downloadJsonFile(
+                jsonText,
+                `${resourceType}-${resourceId}-unsaved-designer.json`
+              );
+            },
+          },
+        };
+      },
+    });
+  };
+
+  return {
+    ...mutation,
+    mutateAsyncWithToast,
+  };
 };
