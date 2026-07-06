@@ -41,6 +41,11 @@ import {replaceProjectReplication} from './helpers/replicationLifecycle';
 import {syncStateService} from './helpers/syncStateService';
 import {addAlert} from './alertSlice';
 import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
+import {
+  reconcileOfflineMapRegionPlanChange,
+  shouldSkipOfflineMapActivationPrompt,
+} from '../../gui/components/maps/projectOfflineMap';
+import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
@@ -285,6 +290,11 @@ export interface ProjectIdentity {
   serverId: string;
 }
 
+export interface PendingOfflineMapDownloadPrompt extends ProjectIdentity {
+  /** True when an existing download was invalidated by a plan region change. */
+  isRegionUpdate?: boolean;
+}
+
 // Map from server ID to server details
 export type ServerIdToServerMap = {[serverId: string]: Server};
 
@@ -294,7 +304,7 @@ export interface ProjectsState {
   isInitialised: boolean;
   selectedServerId?: string;
   /** Shown once after activation when the activated project has an offline map region. */
-  pendingOfflineMapDownloadPrompt?: ProjectIdentity;
+  pendingOfflineMapDownloadPrompt?: PendingOfflineMapDownloadPrompt;
 }
 
 // UTILITY FUNCTIONS
@@ -824,7 +834,7 @@ const projectsSlice = createSlice({
 
     setPendingOfflineMapDownloadPrompt: (
       state,
-      action: PayloadAction<ProjectIdentity>
+      action: PayloadAction<PendingOfflineMapDownloadPrompt>
     ) => {
       state.pendingOfflineMapDownloadPrompt = action.payload;
     },
@@ -1612,12 +1622,18 @@ export const activateProject = createAsyncThunk<
   const offlineMapRegion =
     activationSync.offlineMapRegion ?? project.offlineMapRegion;
   if (OFFLINE_MAPS && offlineMapRegion) {
-    dispatch(
-      setPendingOfflineMapDownloadPrompt({
-        projectId: payload.projectId,
-        serverId: payload.serverId,
-      })
+    const skipPrompt = await shouldSkipOfflineMapActivationPrompt(
+      payload.projectId,
+      offlineMapRegion
     );
+    if (!skipPrompt) {
+      dispatch(
+        setPendingOfflineMapDownloadPrompt({
+          projectId: payload.projectId,
+          serverId: payload.serverId,
+        })
+      );
+    }
   }
 });
 
@@ -1806,6 +1822,11 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       const actions: Array<
         ReturnType<typeof addProject | typeof updateProjectDetails>
       > = [];
+      const offlineMapRegionUpdates: Array<{
+        projectId: string;
+        previousRegion: OfflineMapRegion | undefined;
+        nextRegion: OfflineMapRegion | undefined;
+      }> = [];
 
       for (const result of metadataResults) {
         if (result.status === 'rejected') {
@@ -1880,6 +1901,22 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             })
           );
         } else {
+          const nextOfflineMapRegion =
+            meta.offlineMapRegion ?? existingProject.offlineMapRegion;
+          if (
+            OFFLINE_MAPS &&
+            existingProject.isActivated &&
+            !offlineMapRegionsEqual(
+              existingProject.offlineMapRegion,
+              nextOfflineMapRegion
+            )
+          ) {
+            offlineMapRegionUpdates.push({
+              projectId,
+              previousRegion: existingProject.offlineMapRegion,
+              nextRegion: nextOfflineMapRegion,
+            });
+          }
           actions.push(
             updateProjectDetails({
               name: meta.name ?? existingProject.name,
@@ -1895,8 +1932,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                 meta.recordCount,
                 existingProject.recordCount
               ),
-              offlineMapRegion:
-                meta.offlineMapRegion ?? existingProject.offlineMapRegion,
+              offlineMapRegion: nextOfflineMapRegion,
             })
           );
         }
@@ -1908,6 +1944,25 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       // Otherwise, dispatch sequentially (React 18+ auto-batches in event handlers)
       for (const action of actions) {
         appDispatch(action);
+      }
+
+      if (OFFLINE_MAPS) {
+        for (const update of offlineMapRegionUpdates) {
+          const result = await reconcileOfflineMapRegionPlanChange({
+            projectId: update.projectId,
+            previousRegion: update.previousRegion,
+            nextRegion: update.nextRegion,
+          });
+          if (result.action === 'prompt') {
+            appDispatch(
+              setPendingOfflineMapDownloadPrompt({
+                projectId: update.projectId,
+                serverId,
+                isRegionUpdate: true,
+              })
+            );
+          }
+        }
       }
 
       // Streak / cleanup decisions must see the same project list the user would

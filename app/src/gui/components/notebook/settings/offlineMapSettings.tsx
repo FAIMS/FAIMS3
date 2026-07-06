@@ -15,8 +15,10 @@ import {
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch} from '../../../../context/store';
 import {
+  cancelProjectOfflineMapDownload,
   formatOfflineMapSizeBytes,
   getProjectOfflineMapStatus,
+  OFFLINE_MAP_DOWNLOAD_STATUS_CHANGED_EVENT,
   type ProjectOfflineMapStatus,
 } from '../../maps/projectOfflineMap';
 
@@ -30,6 +32,7 @@ export default function NotebookOfflineMapSettings({
   const dispatch = useAppDispatch();
   const region = project.offlineMapRegion as OfflineMapRegion | undefined;
   const [status, setStatus] = useState<ProjectOfflineMapStatus | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     const next = await getProjectOfflineMapStatus(project.projectId);
@@ -54,9 +57,23 @@ export default function NotebookOfflineMapSettings({
         void refreshStatus();
       }
     };
+    const handleStatusChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{projectId: string}>).detail;
+      if (detail?.projectId === project.projectId) {
+        void refreshStatus();
+      }
+    };
     addEventListener('offline-map-download', handleDownloadProgress);
+    addEventListener(
+      OFFLINE_MAP_DOWNLOAD_STATUS_CHANGED_EVENT,
+      handleStatusChanged
+    );
     return () => {
       removeEventListener('offline-map-download', handleDownloadProgress);
+      removeEventListener(
+        OFFLINE_MAP_DOWNLOAD_STATUS_CHANGED_EVENT,
+        handleStatusChanged
+      );
     };
   }, [region, project.projectId, refreshStatus]);
 
@@ -71,6 +88,16 @@ export default function NotebookOfflineMapSettings({
         serverId: project.serverId,
       })
     );
+  };
+
+  const handleCancelDownload = async () => {
+    setIsCancelling(true);
+    try {
+      await cancelProjectOfflineMapDownload(project.projectId);
+      await refreshStatus();
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   return (
@@ -102,6 +129,17 @@ export default function NotebookOfflineMapSettings({
             Download in progress…
           </Typography>
           <ProgressBar completion={status.progress} />
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => {
+              void handleCancelDownload();
+            }}
+            disabled={isCancelling}
+            sx={{mt: 2}}
+          >
+            {isCancelling ? 'Cancelling…' : 'Cancel download'}
+          </Button>
         </Box>
       )}
 

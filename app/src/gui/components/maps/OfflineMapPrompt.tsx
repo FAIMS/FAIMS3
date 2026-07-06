@@ -25,7 +25,9 @@ import {
   selectProjectByIdentity,
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {isOfflineMapDownloadCancelledError} from '@faims3/forms';
 import {
+  cancelProjectOfflineMapDownload,
   downloadProjectOfflineMap,
   estimateProjectOfflineMapSize,
   formatOfflineMapSizeMb,
@@ -49,9 +51,11 @@ export function NotebookOfflineMapPrompt() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string>('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const region = project?.offlineMapRegion as OfflineMapRegion | undefined;
   const open = Boolean(pending && project && region);
+  const isRegionUpdate = pending?.isRegionUpdate ?? false;
 
   useEffect(() => {
     if (!open || !region) {
@@ -98,7 +102,23 @@ export function NotebookOfflineMapPrompt() {
     }
     setError('');
     setIsDownloading(false);
+    setIsCancelling(false);
     setDownloadProgress(null);
+  };
+
+  const handleCancelDownload = async () => {
+    if (!pending) {
+      return;
+    }
+    setIsCancelling(true);
+    setError('');
+    try {
+      await cancelProjectOfflineMapDownload(pending.projectId);
+      handleClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not cancel download');
+      setIsCancelling(false);
+    }
   };
 
   const handleDownload = async () => {
@@ -116,6 +136,10 @@ export function NotebookOfflineMapPrompt() {
       });
       handleClose();
     } catch (e) {
+      if (isOfflineMapDownloadCancelledError(e)) {
+        handleClose();
+        return;
+      }
       setError(e instanceof Error ? e.message : 'Download failed');
       setIsDownloading(false);
     }
@@ -153,7 +177,27 @@ export function NotebookOfflineMapPrompt() {
           lineHeight: 1.3,
         }}
       >
-        Download recommended offline map?
+        <Stack spacing={0.25} sx={{minWidth: 0}}>
+          <span>
+            {isRegionUpdate
+              ? 'Download updated offline map region?'
+              : 'Download recommended offline map?'}
+          </span>
+          <Typography
+            variant="caption"
+            component="div"
+            color="text.secondary"
+            noWrap
+            title={project?.name ?? ''}
+            sx={{
+              fontSize: {xs: '0.8rem', sm: '1rem'},
+              lineHeight: 1.2,
+              fontWeight: 400,
+            }}
+          >
+            {project?.name ?? ''}
+          </Typography>
+        </Stack>
       </DialogTitle>
       <DialogContent
         sx={{
@@ -170,9 +214,9 @@ export function NotebookOfflineMapPrompt() {
               lineHeight: {xs: 1.45, sm: 1.5},
             }}
           >
-            This {NOTEBOOK_NAME} has a recommended offline map region
-            configured. You can download it now for use without a network
-            connection.
+            {isRegionUpdate
+              ? `The recommended offline map region for this ${NOTEBOOK_NAME} has changed. Download the updated region for use without a network connection.`
+              : `This ${NOTEBOOK_NAME} has a recommended offline map region configured. You can download it now for use without a network connection.`}
           </Typography>
           {sizeLabel && (
             <Alert
@@ -227,19 +271,32 @@ export function NotebookOfflineMapPrompt() {
           },
         }}
       >
-        <Button onClick={handleClose} disabled={isDownloading}>
-          Skip for now
+        <Button
+          onClick={() => {
+            if (isDownloading) {
+              void handleCancelDownload();
+              return;
+            }
+            handleClose();
+          }}
+          disabled={isCancelling}
+        >
+          {isDownloading ? 'Cancel download' : 'Skip for now'}
         </Button>
         <Button
           variant="contained"
           onClick={handleDownload}
-          disabled={isDownloading}
+          disabled={isDownloading || isCancelling}
         >
           {isDownloading
-            ? downloadProgress !== null && downloadProgress > 0
-              ? `Downloading… ${Math.round(downloadProgress * 100)}%`
-              : 'Preparing download…'
-            : 'Download region'}
+            ? isCancelling
+              ? 'Cancelling…'
+              : downloadProgress !== null && downloadProgress > 0
+                ? `Downloading… ${Math.round(downloadProgress * 100)}%`
+                : 'Preparing download…'
+            : isRegionUpdate
+              ? 'Download updated region'
+              : 'Download region'}
         </Button>
       </DialogActions>
     </Dialog>

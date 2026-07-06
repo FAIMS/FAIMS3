@@ -47,3 +47,34 @@ export function tileSetDisplayName(tileSet: {
 }): string {
   return tileSet.label ?? tileSet.setName;
 }
+
+function normalizeOfflineMapRegionCoordinates(
+  region: OfflineMapRegion
+): OfflineMapRegion {
+  return {
+    type: 'Polygon',
+    coordinates: region.coordinates.map(ring =>
+      ring.map(([lon, lat]) => [
+        Math.round(lon * 1e9) / 1e9,
+        Math.round(lat * 1e9) / 1e9,
+      ])
+    ),
+  };
+}
+
+/** Compare two offline map regions for equality (coordinate order sensitive). */
+export function offlineMapRegionsEqual(
+  a: OfflineMapRegion | undefined,
+  b: OfflineMapRegion | undefined
+): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return (
+    JSON.stringify(normalizeOfflineMapRegionCoordinates(a)) ===
+    JSON.stringify(normalizeOfflineMapRegionCoordinates(b))
+  );
+}
