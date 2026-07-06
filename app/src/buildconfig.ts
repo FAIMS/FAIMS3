@@ -528,15 +528,16 @@ function migrateOldDatabases(): boolean {
 }
 
 /**
- * When the directory lists a notebook as archived or the id is absent, the app
- * may drop that notebook from the device after successful directory responses.
+ * When a local notebook is archived or confirmed deleted upstream, the app may
+ * drop it from the device.
  * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
  *   (IndexedDB) so no local notebook data remains — security.
  * - `never` (default): same teardown as manual deactivate (sync off, remote and
  *   local Pouch **closed** but not destroyed), then remove from the app list so
  *   on-disk data can be recovered if needed.
- * Absent ids: the app confirms deletion with several consecutive successful
- * directory responses (automatic re-polls); archived rows need one response.
+ * Archived: detected via GET `/api/notebooks/:id` when absent from the active
+ * directory — removed on first successful probe. Deleted/missing ids: confirmed
+ * with several consecutive probes (automatic re-polls).
  * Set via VITE_FORCE_REMOTE_DELETION in .env / CDK; default is never.
  */
 export type ForceRemoteDeletionMode = 'allow' | 'never';
