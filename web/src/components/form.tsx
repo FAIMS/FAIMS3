@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from './ui/select';
 import {Divider} from './ui/word-divider';
+import {X} from 'lucide-react';
 
 export interface Field {
   name: string;
@@ -53,6 +54,8 @@ export interface Field {
   maxLength?: number;
   /** Inline label beside the control when `type` is `checkbox` (defaults to `label`) */
   checkboxLabel?: string;
+  /** When true, optional select fields show a clear button to reset the value. */
+  clearable?: boolean;
 }
 
 interface Divider {
@@ -203,6 +206,7 @@ export function Form<
                 placeholder,
                 maxLength,
                 checkboxLabel,
+                clearable,
               },
               index
             ) => {
@@ -255,28 +259,54 @@ export function Form<
                           )}
                           <FormControl>
                             {options ? (
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value ?? ''}
-                                disabled={isDisabled}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder={`Select ${name}`} />
-                                </SelectTrigger>
-                                <SelectContent className="max-w-md">
-                                  {options.map(
-                                    ({label, value, description}) => (
-                                      <SelectItem
-                                        key={value}
-                                        value={value}
-                                        description={description}
-                                      >
-                                        {label}
-                                      </SelectItem>
-                                    )
-                                  )}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex w-full items-center gap-2">
+                                <Select
+                                  // Radix Select does not reliably return to an
+                                  // empty state after clear; remount when cleared.
+                                  key={
+                                    clearable
+                                      ? `${name}-${field.value ?? 'empty'}`
+                                      : name
+                                  }
+                                  onValueChange={field.onChange}
+                                  value={field.value || undefined}
+                                  disabled={isDisabled}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue
+                                      placeholder={
+                                        placeholder ?? `Select ${label ?? name}`
+                                      }
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent className="max-w-md">
+                                    {options.map(
+                                      ({label, value, description}) => (
+                                        <SelectItem
+                                          key={value}
+                                          value={value}
+                                          description={description}
+                                        >
+                                          {label}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                {clearable && field.value ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="shrink-0"
+                                    aria-label={`Clear ${label ?? name}`}
+                                    disabled={isDisabled}
+                                    onClick={() => field.onChange(undefined)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                ) : null}
+                              </div>
                             ) : type === 'file' ? (
                               <Input
                                 type="file"
