@@ -55,7 +55,7 @@ const TemplateActions = () => {
   }, [data]);
 
   const handleEditorClose = (file?: File) => {
-    if (file) saveTemplateNotebook.mutate(file);
+    if (file) saveTemplateNotebook.mutateAsyncWithToast(file);
     setEditorOpen(false);
   };
 
