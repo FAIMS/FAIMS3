@@ -79,9 +79,7 @@ export function CreateTemplateFromProjectForm({
   ];
 
   if (showTeamDropdown) {
-    fields.push(
-      buildTemplateTeamField({canCreateGlobally, possibleTeams})
-    );
+    fields.push(buildTemplateTeamField({canCreateGlobally, possibleTeams}));
   }
 
   const onSubmit = async (values: {

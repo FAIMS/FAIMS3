@@ -122,9 +122,7 @@ export function CreateTemplateForm({
   }
 
   if (showTeamDropdown) {
-    fields.push(
-      buildTemplateTeamField({canCreateGlobally, possibleTeams})
-    );
+    fields.push(buildTemplateTeamField({canCreateGlobally, possibleTeams}));
   }
 
   const onSubmit = async (values: {
@@ -217,16 +215,14 @@ export function CreateTemplateForm({
         <TemplateOwnerCallout teamName={possibleTeams[0].name} />
       )}
       <Form
-          fields={fields}
-          onSubmit={onSubmit}
-          submitButtonText="Create Template"
-          defaultValues={{
-            team: defaultValues?.teamId,
-            ...(canCreatePublicTemplate
-              ? {visibility: 'private' as const}
-              : {}),
-          }}
-        />
-      </div>
-    );
+        fields={fields}
+        onSubmit={onSubmit}
+        submitButtonText="Create Template"
+        defaultValues={{
+          team: defaultValues?.teamId,
+          ...(canCreatePublicTemplate ? {visibility: 'private' as const} : {}),
+        }}
+      />
+    </div>
+  );
 }

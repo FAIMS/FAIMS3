@@ -23,10 +23,7 @@ import type {NotebookWithHistory} from '@/designer/state/initial';
 import {useCanCreateTemplate, useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {
-  Action,
-  ProjectStatus,
-} from '@faims3/data-model';
+import {Action, ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 

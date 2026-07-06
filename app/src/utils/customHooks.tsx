@@ -20,7 +20,7 @@ import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {shouldDisplayRecordMinimalMetadata} from '../users';
-import {localGetDataDb} from './database';
+import {localGetDataDb, tryLocalGetDataDb} from './database';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -424,6 +424,7 @@ export const useRecordList = ({
   metadataRefreshIntervalMs,
   uiSpecification: uiSpec,
   enableProfiling = false,
+  enabled = true,
 }: {
   query?: string;
   projectId: string;
@@ -431,6 +432,8 @@ export const useRecordList = ({
   metadataRefreshIntervalMs?: number | undefined | false;
   uiSpecification: CompiledNotebookUiSpec;
   enableProfiling?: boolean;
+  /** When false, or when the project has no local Pouch DB yet, skips the query. */
+  enabled?: boolean;
 }) => {
   // Profiling helper
   const profile = (label: string, startTime?: number) => {
@@ -448,7 +451,8 @@ export const useRecordList = ({
   // Work out our context e.g. active user, token, data db etc
   const activeUser = useAppSelector(selectActiveUser);
   const token = activeUser?.parsedToken;
-  const dataDb = localGetDataDb(projectId);
+  const dataDb = tryLocalGetDataDb(projectId);
+  const canQueryRecords = enabled && !!dataDb && !!token;
 
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
@@ -461,6 +465,7 @@ export const useRecordList = ({
       token?.globalRoles,
       token?.resourceRoles,
     ],
+    enabled: canQueryRecords,
     networkMode: 'always',
     gcTime: 0,
     refetchInterval: metadataRefreshIntervalMs,
@@ -476,9 +481,11 @@ export const useRecordList = ({
       const queryFnStart = performance.now();
       profile('queryFn started');
 
-      if (!token) {
-        // Trying to run without token!
-        console.warn('Trying to fetch record list without user token.');
+      if (!token || !dataDb) {
+        // Trying to run without token or before notebook activation.
+        console.warn(
+          'Trying to fetch record list without user token or local DB.'
+        );
         return [];
       }
 
@@ -778,19 +785,25 @@ export const useIsAuthorisedTo = ({
 };
 
 /** For a given record, determines the form type, then fetches the layout from
- * the uiSpec */
+ * the uiSpec.
+ *
+ * @param enabled When false, skips the query (used on record pages while the
+ *   notebook is being torn down so hooks can stay unconditional). */
 export const useUiSpecLayout = ({
   recordId,
   uiSpec,
   dataDb,
+  enabled = true,
 }: {
   recordId: string;
   uiSpec: CompiledNotebookUiSpec;
   dataDb: DataDbType;
+  enabled?: boolean;
 }) => {
   // Query to fetch the relevant viewset
   return useQuery({
     queryKey: ['record-ui-spec', recordId, uiSpec],
+    enabled: enabled && !!recordId && !!uiSpec && !!dataDb,
     queryFn: async () => {
       const engine = new DataEngine({
         dataDb: dataDb as DatabaseInterface<DataDocument>,
