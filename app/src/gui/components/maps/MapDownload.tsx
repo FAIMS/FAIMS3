@@ -36,7 +36,11 @@ import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
 import {ProgressBar} from '@faims3/forms';
 import {MapComponent} from '@faims3/forms';
-import {StoredTileSet, tileSetDisplayName, VectorTileStore} from '@faims3/forms';
+import {
+  StoredTileSet,
+  tileSetDisplayName,
+  VectorTileStore,
+} from '@faims3/forms';
 import {getMapConfig} from '../../../buildconfig';
 
 /**

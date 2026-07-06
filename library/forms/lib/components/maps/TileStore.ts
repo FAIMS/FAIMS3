@@ -489,7 +489,9 @@ abstract class TileStoreBase {
       expectedTileCount: 0,
       created: new Date(),
       tileKeys: [],
-      ...(options?.projectId !== undefined ? {projectId: options.projectId} : {}),
+      ...(options?.projectId !== undefined
+        ? {projectId: options.projectId}
+        : {}),
       ...(options?.label !== undefined ? {label: options.label} : {}),
       ...(options?.offlineMapRegion !== undefined
         ? {offlineMapRegion: options.offlineMapRegion}

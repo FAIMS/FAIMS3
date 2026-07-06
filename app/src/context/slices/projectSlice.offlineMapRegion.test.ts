@@ -58,9 +58,7 @@ const emptyUiDefinition = {
   },
 };
 
-function buildActivatedProject(
-  overrides: Partial<Project> = {}
-): Project {
+function buildActivatedProject(overrides: Partial<Project> = {}): Project {
   return {
     projectId,
     serverId,
@@ -129,9 +127,9 @@ describe('projectSlice offlineMapRegion retention', () => {
       })
     );
 
-    expect(after.servers[serverId]!.projects[projectId]!.offlineMapRegion).toEqual(
-      sampleRegion
-    );
+    expect(
+      after.servers[serverId]!.projects[projectId]!.offlineMapRegion
+    ).toEqual(sampleRegion);
   });
 
   it('updateProjectDetails retains offlineMapRegion when payload omits it', () => {
@@ -150,8 +148,8 @@ describe('projectSlice offlineMapRegion retention', () => {
       })
     );
 
-    expect(after.servers[serverId]!.projects[projectId]!.offlineMapRegion).toEqual(
-      sampleRegion
-    );
+    expect(
+      after.servers[serverId]!.projects[projectId]!.offlineMapRegion
+    ).toEqual(sampleRegion);
   });
 });

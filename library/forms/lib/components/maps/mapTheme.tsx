@@ -32,10 +32,7 @@ export function ensureMapControlTheme(theme: Theme): Theme {
 /** Supplies `palette.mapControl` when missing (e.g. web Control Centre without MUI theme). */
 export function MapControlThemeProvider({children}: {children: ReactNode}) {
   const outerTheme = useTheme();
-  const theme = useMemo(
-    () => ensureMapControlTheme(outerTheme),
-    [outerTheme]
-  );
+  const theme = useMemo(() => ensureMapControlTheme(outerTheme), [outerTheme]);
 
   if (theme === outerTheme) {
     return <>{children}</>;

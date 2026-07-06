@@ -4,7 +4,11 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {updateNotebookOfflineMapRegionRequest} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
-import {Action, type GetNotebookResponse, type OfflineMapRegion} from '@faims3/data-model';
+import {
+  Action,
+  type GetNotebookResponse,
+  type OfflineMapRegion,
+} from '@faims3/data-model';
 import {OfflineMapRegionEditor} from '@faims3/forms';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
@@ -100,8 +104,7 @@ export default function ProjectOfflineMap({
 
   const savedRegion = project?.offlineMapRegion ?? null;
   const hasUnsavedChanges =
-    project &&
-    JSON.stringify(draftRegion) !== JSON.stringify(savedRegion);
+    project && JSON.stringify(draftRegion) !== JSON.stringify(savedRegion);
 
   const persistenceAction =
     canSetOfflineMapRegion && hasUnsavedChanges

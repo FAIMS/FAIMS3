@@ -206,9 +206,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
             </Box>
           </Box>
 
-          {OFFLINE_MAPS && (
-            <NotebookOfflineMapSettings project={project} />
-          )}
+          {OFFLINE_MAPS && <NotebookOfflineMapSettings project={project} />}
 
           <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>

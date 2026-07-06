@@ -1,12 +1,10 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Paper,
-  Typography,
-} from '@mui/material';
+import {Alert, Box, Button, Paper, Typography} from '@mui/material';
 import type {OfflineMapRegion} from '@faims3/data-model';
-import {ProgressBar, projectOfflineMapSetName, type StoredTileSet} from '@faims3/forms';
+import {
+  ProgressBar,
+  projectOfflineMapSetName,
+  type StoredTileSet,
+} from '@faims3/forms';
 import {useCallback, useEffect, useState} from 'react';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {
@@ -119,7 +117,8 @@ export default function NotebookOfflineMapSettings({
 
       {status?.state === 'downloaded' && (
         <Alert severity="success" sx={{mb: 2}}>
-          Recommended offline map downloaded ({formatOfflineMapSizeBytes(status.sizeBytes)}).
+          Recommended offline map downloaded (
+          {formatOfflineMapSizeBytes(status.sizeBytes)}).
         </Alert>
       )}
 
@@ -146,8 +145,8 @@ export default function NotebookOfflineMapSettings({
       {status?.state === 'not_downloaded' && (
         <>
           <Typography variant={'body2'} sx={{mb: 2}}>
-            A recommended offline map region is configured for this {NOTEBOOK_NAME},
-            but it has not been downloaded to this device yet.
+            A recommended offline map region is configured for this{' '}
+            {NOTEBOOK_NAME}, but it has not been downloaded to this device yet.
           </Typography>
           <Button variant="contained" onClick={handleDownloadClick}>
             Download offline map

@@ -13,7 +13,9 @@ import {getMapConfig} from '../../../buildconfig';
 let sharedTileStore: VectorTileStore | undefined;
 const activeProjectDownloads = new Map<string, Promise<void>>();
 
-function getSharedTileStore(config: MapConfig = getMapConfig()): VectorTileStore {
+function getSharedTileStore(
+  config: MapConfig = getMapConfig()
+): VectorTileStore {
   if (!sharedTileStore) {
     sharedTileStore = new VectorTileStore(config);
     void sharedTileStore.createBaselineTileSet();
@@ -33,7 +35,9 @@ export function notifyOfflineMapDownloadStatusChanged(projectId: string): void {
   );
 }
 /** Remove project-associated offline map tile sets from device storage. */
-export async function removeProjectOfflineMaps(projectId: string): Promise<void> {
+export async function removeProjectOfflineMaps(
+  projectId: string
+): Promise<void> {
   const tileStore = getSharedTileStore();
   await tileStore.tileStore.initDB();
   await tileStore.removeTileSetsForProject(projectId);

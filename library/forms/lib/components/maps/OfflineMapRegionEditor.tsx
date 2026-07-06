@@ -99,7 +99,9 @@ export function OfflineMapRegionEditor({
         ],
       ]);
       source.addFeature(feature);
-      theMap.getView().fit(extent3857, {padding: [24, 24, 24, 24], maxZoom: 14});
+      theMap
+        .getView()
+        .fit(extent3857, {padding: [24, 24, 24, 24], maxZoom: 14});
     },
     []
   );
@@ -262,11 +264,7 @@ export function OfflineMapRegionEditor({
           parentSetMap={setMap}
           config={config}
           showControls={showMapControls}
-          extent={
-            region
-              ? offlineMapRegionToExtent4326(region)
-              : undefined
-          }
+          extent={region ? offlineMapRegionToExtent4326(region) : undefined}
         />
       </Box>
     </Stack>
