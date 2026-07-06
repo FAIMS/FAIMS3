@@ -21,7 +21,7 @@ const tabs = [
   {name: 'Invites', Component: ProjectInvites},
   {name: 'Users', Component: ProjectUsers},
   {name: 'Export', Component: ProjectExport},
-  {name: 'Offline map', Component: ProjectOfflineMap},
+  {name: 'Offline region', Component: ProjectOfflineMap},
   {name: 'Actions', Component: ProjectActions},
 ];
 

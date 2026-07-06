@@ -41,6 +41,10 @@ const regionStyle = new Style({
   stroke: new Stroke({color: '#2196f3', width: 2}),
 });
 
+export type OfflineMapPersistenceAction =
+  | {type: 'save'; onClick: () => void; pending?: boolean}
+  | {type: 'clear-saved'; onClick: () => void; pending?: boolean};
+
 export type OfflineMapRegionEditorProps = {
   config: MapConfig;
   region?: OfflineMapRegion;
@@ -49,6 +53,8 @@ export type OfflineMapRegionEditorProps = {
   mapHeight?: number | string;
   showRegionStatus?: boolean;
   showMapControls?: boolean;
+  /** Save or clear-saved action shown beside the draw/clear controls. */
+  persistenceAction?: OfflineMapPersistenceAction;
 };
 
 export function OfflineMapRegionEditor({
@@ -59,6 +65,7 @@ export function OfflineMapRegionEditor({
   mapHeight = 480,
   showRegionStatus = true,
   showMapControls = true,
+  persistenceAction,
 }: OfflineMapRegionEditorProps) {
   const [map, setMap] = useState<Map | undefined>();
   const [isDrawing, setIsDrawing] = useState(false);
@@ -177,7 +184,11 @@ export function OfflineMapRegionEditor({
   return (
     <Stack spacing={2}>
       {!readOnly && (
-        <Stack direction={{xs: 'column', sm: 'row'}} spacing={1}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{flexWrap: 'wrap', alignItems: 'center'}}
+        >
           <Button
             variant="contained"
             onClick={startDrawing}
@@ -196,6 +207,26 @@ export function OfflineMapRegionEditor({
           >
             Clear region
           </Button>
+          {persistenceAction?.type === 'save' && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={persistenceAction.onClick}
+              disabled={persistenceAction.pending}
+            >
+              {persistenceAction.pending ? 'Saving…' : 'Save region'}
+            </Button>
+          )}
+          {persistenceAction?.type === 'clear-saved' && (
+            <Button
+              variant="outlined"
+              color="warning"
+              onClick={persistenceAction.onClick}
+              disabled={persistenceAction.pending}
+            >
+              {persistenceAction.pending ? 'Clearing…' : 'Clear saved region'}
+            </Button>
+          )}
         </Stack>
       )}
 

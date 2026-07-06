@@ -1,11 +1,10 @@
-import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {getMapConfig, NOTEBOOK_NAME} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {updateNotebookOfflineMapRegionRequest} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
-import {Action, type OfflineMapRegion} from '@faims3/data-model';
+import {Action, type GetNotebookResponse, type OfflineMapRegion} from '@faims3/data-model';
 import {OfflineMapRegionEditor} from '@faims3/forms';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
@@ -13,6 +12,22 @@ import {useEffect, useState} from 'react';
 type ProjectOfflineMapProps = {
   projectId: string;
 };
+
+function updateProjectOfflineMapRegionCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  projectId: string,
+  offlineMapRegion: OfflineMapRegion | null
+) {
+  queryClient.setQueryData<GetNotebookResponse>(
+    ['projects', projectId],
+    old => {
+      if (!old) {
+        return old;
+      }
+      return {...old, offlineMapRegion: offlineMapRegion ?? undefined};
+    }
+  );
+}
 
 /**
  * Offline map region configuration tab.
@@ -53,8 +68,9 @@ export default function ProjectOfflineMap({
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ['projects', projectId]});
+    onSuccess: (_data, region) => {
+      updateProjectOfflineMapRegionCache(queryClient, projectId, region);
+      void queryClient.invalidateQueries({queryKey: ['projects', projectId]});
     },
   });
 
@@ -77,17 +93,34 @@ export default function ProjectOfflineMap({
     },
     onSuccess: () => {
       setDraftRegion(null);
-      queryClient.invalidateQueries({queryKey: ['projects', projectId]});
+      updateProjectOfflineMapRegionCache(queryClient, projectId, null);
+      void queryClient.invalidateQueries({queryKey: ['projects', projectId]});
     },
   });
+
+  const savedRegion = project?.offlineMapRegion ?? null;
+  const hasUnsavedChanges =
+    project &&
+    JSON.stringify(draftRegion) !== JSON.stringify(savedRegion);
+
+  const persistenceAction =
+    canSetOfflineMapRegion && hasUnsavedChanges
+      ? {
+          type: 'save' as const,
+          onClick: () => saveMutation.mutate(draftRegion),
+          pending: saveMutation.isPending,
+        }
+      : canSetOfflineMapRegion && savedRegion
+        ? {
+            type: 'clear-saved' as const,
+            onClick: () => clearMutation.mutate(),
+            pending: clearMutation.isPending,
+          }
+        : undefined;
 
   if (isLoading || !project) {
     return <p>Loading...</p>;
   }
-
-  const savedRegion = project.offlineMapRegion ?? null;
-  const hasUnsavedChanges =
-    JSON.stringify(draftRegion) !== JSON.stringify(savedRegion);
 
   return (
     <Card className="p-6 space-y-4">
@@ -111,27 +144,9 @@ export default function ProjectOfflineMap({
         region={draftRegion ?? undefined}
         onRegionChange={setDraftRegion}
         readOnly={!canSetOfflineMapRegion}
+        showRegionStatus={false}
+        persistenceAction={persistenceAction}
       />
-
-      {canSetOfflineMapRegion && (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={!hasUnsavedChanges || saveMutation.isPending}
-            onClick={() => saveMutation.mutate(draftRegion)}
-          >
-            {saveMutation.isPending ? 'Saving…' : 'Save region'}
-          </Button>
-          {savedRegion && (
-            <Button
-              variant="outline"
-              disabled={clearMutation.isPending}
-              onClick={() => clearMutation.mutate()}
-            >
-              {clearMutation.isPending ? 'Clearing…' : 'Clear region'}
-            </Button>
-          )}
-        </div>
-      )}
 
       {(saveMutation.isError || clearMutation.isError) && (
         <p className="text-sm text-destructive">
