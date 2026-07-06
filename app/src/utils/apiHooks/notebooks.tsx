@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import {createNotebookFromTemplate} from '../apiOperations/notebooks';
+import {tryLocalGetDataDb} from '../database';
 import {checkAllRequired} from '../helpers';
 import {RecordStatus, validateSyncStatus} from '../recordAudit';
 export interface UseCreateNotebookFromTemplateProps {
@@ -70,15 +71,19 @@ export const useRecordAudit = ({
   projectId,
   listingId,
   username,
+  enabled = true,
 }: {
   projectId: string;
   listingId: string;
   username: string | undefined;
+  enabled?: boolean;
 }) => {
   const N = 2; // refetch time in minutes - maybe configure in env?
   const queryKey = ['record-audit', projectId, listingId, username];
+  const hasLocalDb = !!tryLocalGetDataDb(projectId);
   return useQuery({
     queryKey,
+    enabled: enabled && hasLocalDb && !!username,
     queryFn: async (context: QueryFunctionContext) => {
       const currentStatus: RecordStatus | undefined =
         context.client.getQueryData(queryKey);

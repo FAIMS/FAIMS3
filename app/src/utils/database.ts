@@ -4,6 +4,12 @@ import {PouchDBWrapper} from '../context/slices/helpers/pouchDBWrapper';
 import {selectAllProjects} from '../context/slices/projectSlice';
 import {store} from '../context/store';
 
+/**
+ * Resolve the local Pouch data database for an activated project.
+ *
+ * @throws When the project is missing from Redux or the database handle was
+ *   already torn down (e.g. after upstream removal).
+ */
 export const localGetDataDb = (
   projectId: string
 ): PouchDBWrapper<ProjectDataObject> => {
@@ -23,4 +29,19 @@ export const localGetDataDb = (
     );
   }
   return db;
+};
+
+/**
+ * Non-throwing variant of {@link localGetDataDb} for render paths that may run
+ * briefly while a notebook is being removed (record pages keep hooks stable
+ * until redirect).
+ */
+export const tryLocalGetDataDb = (
+  projectId: string
+): PouchDBWrapper<ProjectDataObject> | undefined => {
+  try {
+    return localGetDataDb(projectId);
+  } catch {
+    return undefined;
+  }
 };
