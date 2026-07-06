@@ -22,7 +22,10 @@ import {
   DesignSearchResult,
   useDesignSearch,
 } from '../../features/design-search';
-import {renderFuzzysortHighlight, SearchResultContent} from '../../features/search';
+import {
+  renderFuzzysortHighlight,
+  SearchResultContent,
+} from '../../features/search';
 import {
   scrollToField,
   scrollToForm,

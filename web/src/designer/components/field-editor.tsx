@@ -269,7 +269,10 @@ const FieldEditorComponent = ({
   };
 
   const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
+    // stop propagation if the field is already expanded as that would collapse it again
+    if (expanded) {
+      event.stopPropagation();
+    }
     const currentLabel = getFieldLabel();
     setDuplicateTitle(currentLabel + ' Copy');
     setOpenDuplicateDialog(true);

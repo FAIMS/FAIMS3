@@ -11,14 +11,14 @@ describe('resolveAddedFieldKey', () => {
   });
 
   it('deduplicates when the slug is already taken', () => {
-    expect(
-      resolveAddedFieldKey('New Field', ['New-Field', 'Text-Field'])
-    ).toBe('New-Field-1');
+    expect(resolveAddedFieldKey('New Field', ['New-Field', 'Text-Field'])).toBe(
+      'New-Field-1'
+    );
   });
 
   it('matches fieldAdded reducer key for standard fields', () => {
-    expect(
-      resolveAddedFieldKey('New Field', ['Existing-Field'])
-    ).toBe('New-Field');
+    expect(resolveAddedFieldKey('New Field', ['Existing-Field'])).toBe(
+      'New-Field'
+    );
   });
 });
