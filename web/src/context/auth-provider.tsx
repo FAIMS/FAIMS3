@@ -1,4 +1,4 @@
-import {API_URL, REFRESH_INTERVAL, WEB_URL} from '@/constants';
+import {config, REFRESH_INTERVAL} from '@/constants';
 import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
@@ -147,7 +147,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       // Make a PUT to logout endpoint - we don't really care whether this
       // succeeds or fails - it's a client nicety to invalidate the refresh
       // token
-      await fetch(`${API_URL}/auth/logout`, {
+      await fetch(`${config.apiUrl}/auth/logout`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       setStoredUser(null);
       setUser(null);
     }
-    window.location.href = WEB_URL;
+    window.location.href = config.webUrl;
   };
 
   /**

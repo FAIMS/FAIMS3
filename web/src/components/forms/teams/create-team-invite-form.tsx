@@ -1,10 +1,6 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
-import {
-  EXCLUDED_TEAM_ROLES,
-  INVITE_TOKEN_HINTS,
-  brandNotebook,
-} from '@/constants';
+import {config, INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {
@@ -55,7 +51,7 @@ export function CreateTeamInviteForm({
         ([role, {scope, resource}]) =>
           scope === RoleScope.RESOURCE_SPECIFIC &&
           resource === Resource.TEAM &&
-          !EXCLUDED_TEAM_ROLES.has(role) &&
+          !config.excludedTeamRoles.has(role) &&
           userCanDo({
             user,
             resourceId: teamId,

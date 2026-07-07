@@ -14,7 +14,7 @@ import {useState} from 'react';
 import {UserX} from 'lucide-react';
 import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {cn} from '@/lib/utils';
 
 /**
@@ -61,7 +61,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
                   system.
                 </li>
                 <li>
-                  {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and records they
+                  {config.notebookNamePluralCapitalized} and records they
                   contributed will not be affected.
                 </li>
                 <li>The user will not be notified.</li>

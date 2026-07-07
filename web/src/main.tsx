@@ -7,7 +7,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RouterProvider, createRouter} from '@tanstack/react-router';
 import {StrictMode, useEffect} from 'react';
 import ReactDOM from 'react-dom/client';
-import {APP_VERSION, BUGSNAG_API_KEY, WEBSITE_TITLE} from './constants';
+import {config, APP_VERSION} from './constants';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {BreadcrumbProvider} from './context/breadcrumb-provider';
 import './index.css';
@@ -15,11 +15,11 @@ import {getThemeClass} from './lib/theme';
 import {routeTree} from './routeTree.gen';
 
 // Initialize Bugsnag if API key is configured
-const bugsnagEnabled = BUGSNAG_API_KEY !== undefined;
+const bugsnagEnabled = config.bugsnagApiKey !== undefined;
 
 if (bugsnagEnabled) {
   Bugsnag.start({
-    apiKey: BUGSNAG_API_KEY!,
+    apiKey: config.bugsnagApiKey!,
     plugins: [new BugsnagPluginReact()],
     appVersion: APP_VERSION,
   });
@@ -61,7 +61,7 @@ function App() {
 
   // Set the website title
   useEffect(() => {
-    document.title = WEBSITE_TITLE ?? 'Control Centre';
+    document.title = config.websiteTitle ?? 'Control Centre';
     document.documentElement.className = getThemeClass();
   }, []);
 

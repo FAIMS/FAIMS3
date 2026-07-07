@@ -13,7 +13,7 @@ import {useGetTeam} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';
 import {CreateTemplateFromProjectForm} from '../forms/create-template-from-project';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 
 export const CreateTemplateFromProjectDialog = ({
   defaultValues,
@@ -50,7 +50,8 @@ export const CreateTemplateFromProjectDialog = ({
             {specifiedTeam && <> in “{team?.name ?? 'Team'}”</>}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Create a template from this {NOTEBOOK_NAME}&apos;s form layout.
+            Create a template from this {config.notebookName}&apos;s form
+            layout.
           </DialogDescription>
         </DialogHeader>
 

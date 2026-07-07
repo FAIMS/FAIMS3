@@ -62,7 +62,7 @@ import {
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
 import {SimpleFieldWrapper} from './Fields/SimpleFieldWrapper';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 
 /** Main designer surface for form tabs and routed `FormEditor` instances. */
 export const DesignPanel = () => {
@@ -353,7 +353,8 @@ export const DesignPanel = () => {
                   variant="body2"
                   sx={{fontWeight: 700, mb: 0.5, lineHeight: 1.35}}
                 >
-                  Forms are top-level data entry pages in your {NOTEBOOK_NAME}.
+                  Forms are top-level data entry pages in your{' '}
+                  {config.notebookName}.
                 </Typography>
                 <Typography
                   variant="caption"

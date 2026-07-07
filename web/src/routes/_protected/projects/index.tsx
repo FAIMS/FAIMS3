@@ -1,7 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -30,7 +30,7 @@ function ProjectsRouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+        label: config.notebookNamePluralCapitalized,
       },
     ],
     [pathname, isLoading]
@@ -46,7 +46,7 @@ function ProjectsRouteComponent() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">
-        {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+        {config.notebookNamePluralCapitalized}
       </h1>
       <DataTable
         columns={columns}

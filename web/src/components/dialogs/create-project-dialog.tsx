@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {Plus} from 'lucide-react';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTeam} from '@/hooks/queries';
@@ -39,19 +39,19 @@ export const CreateProjectDialog = ({
           className="bg-primary text-primary-foreground"
         >
           <Plus />
-          Create {NOTEBOOK_NAME_CAPITALIZED}
+          Create {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Create {NOTEBOOK_NAME_CAPITALIZED}
+            Create {config.notebookNameCapitalized}
             {specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
           </DialogTitle>
           <DialogDescription>
-            Create a new {NOTEBOOK_NAME_CAPITALIZED} with a name. Start from an
-            existing template, upload a JSON {NOTEBOOK_NAME} design file, or
-            leave blank to start from scratch.
+            Create a new {config.notebookNameCapitalized} with a name. Start
+            from an existing template, upload a JSON {config.notebookName}{' '}
+            design file, or leave blank to start from scratch.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectForm

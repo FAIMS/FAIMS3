@@ -11,7 +11,7 @@ import {
 } from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
@@ -86,7 +86,7 @@ export function CreateTemplateForm({
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
-      description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
+      description: `Upload a .json ${config.notebookName} file to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
       schema: z
         .instanceof(File)

@@ -293,6 +293,8 @@ const appName = buildAppName();
  * The singleton Control Centre configuration object. Prefer reading values
  * from here; the named exports below derive from it.
  */
+const notebookNamePlural = pluralize(parsedConfig.notebookName);
+
 export const config = {
   ...parsedConfig,
   appName,
@@ -306,43 +308,21 @@ export const config = {
   longLivedTokenDurationHints: buildLongLivedTokenDurationHints(
     parsedConfig.maximumLongLivedDurationDays
   ),
+  /** Notebook label capitalised — use for headings and labels. */
+  notebookNameCapitalized: capitalize(parsedConfig.notebookName),
+  /** Lowercase plural, from `VITE_NOTEBOOK_NAME`. */
+  notebookNamePlural,
+  /** Plural with first letter capitalised. */
+  notebookNamePluralCapitalized: capitalize(notebookNamePlural),
 };
 
 export type Config = typeof config;
 
 // ---------------------------------------------------------------------------
-// Named exports (derived from `config`) — retained for call-site stability.
+// Derived helpers and non-env constants. Simple env values live on `config`
+// (import `{config}` and read `config.<field>`); the items below are genuine
+// helpers/derived values and remain dedicated exports.
 // ---------------------------------------------------------------------------
-
-export const NOTEBOOK_NAME = config.notebookName;
-export const WEBSITE_TITLE = config.websiteTitle;
-export const APP_NAME = config.appName;
-export const APP_SHORT_NAME = config.appShortName;
-export const WEB_URL = config.webUrl;
-export const API_URL = config.apiUrl;
-export const APP_URL = config.appUrl;
-export const DOCS_URL = config.docsUrl;
-export const APP_THEME = config.appTheme;
-
-export const NOTEBOOK_NAME_CAPITALIZED = capitalize(config.notebookName);
-
-/** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */
-export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
-
-/** Plural with first letter capitalised — use for headings and labels. */
-export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
-  capitalize(NOTEBOOK_NAME_PLURAL);
-
-/** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
-export const brandNotebook = (text: string): string =>
-  text
-    .replaceAll('{notebooks}', NOTEBOOK_NAME_PLURAL)
-    .replaceAll('{notebook}', NOTEBOOK_NAME);
-
-export const DEVELOPER_MODE = config.developerMode;
-
-/** Team roles to hide from team-role dropdowns (`VITE_EXCLUDED_TEAM_ROLES`). */
-export const EXCLUDED_TEAM_ROLES = config.excludedTeamRoles;
 
 /**
  * When the directory lists a notebook as archived (or id absent), the mobile app
@@ -351,14 +331,16 @@ export const EXCLUDED_TEAM_ROLES = config.excludedTeamRoles;
  */
 export type ForceRemoteDeletionMode = 'allow' | 'never';
 
-export const FORCE_REMOTE_DELETION = config.forceRemoteDeletion;
+/** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
+export const brandNotebook = (text: string): string =>
+  text
+    .replaceAll('{notebooks}', config.notebookNamePlural)
+    .replaceAll('{notebook}', config.notebookName);
 
-export const DELETE_ON_DEACTIVATION = config.deleteOnDeactivation;
-
-export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
+export const SIGNIN_PATH = `${config.apiUrl}/login?redirect=${config.webUrl}`;
 
 // this is where the /app will accept a ?token query string
-export const APP_TOKEN_RETURN_PATH = APP_URL + '/auth-return';
+export const APP_TOKEN_RETURN_PATH = config.appUrl + '/auth-return';
 
 /**
  * Builds a suitable register URL which will redirect back to the targeted
@@ -372,17 +354,12 @@ export function buildRegisterUrl({
   redirect: string;
   inviteId: string;
 }) {
-  return `${API_URL}/register?redirect=${redirect}&inviteId=${inviteId}`;
+  return `${config.apiUrl}/register?redirect=${redirect}&inviteId=${inviteId}`;
 }
 
 // Token refresh interval (every 3 minutes)
 export const REFRESH_INTERVAL = 3 * 60 * 1000;
 
-export const MAXIMUM_LONG_LIVED_DURATION_DAYS =
-  config.maximumLongLivedDurationDays;
-
-export const LONG_LIVED_TOKEN_DURATION_HINTS =
-  config.longLivedTokenDurationHints;
 export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 
 // Help link to use for the long lived token docs
@@ -398,8 +375,6 @@ export function getMapConfig(): MapConfig {
     satelliteSource: config.satelliteSource,
   };
 }
-
-export const BUGSNAG_API_KEY = config.bugsnagApiKey;
 
 /**
  * Gets the app version from Vite's __APP_VERSION__ replacement or environment variables.

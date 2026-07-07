@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {Trash} from 'lucide-react';
@@ -16,7 +16,7 @@ import {useQueryClient} from '@tanstack/react-query';
 
 /**
  * Removes a user from the current notebook/project (display name from
- * `VITE_NOTEBOOK_NAME` / NOTEBOOK_NAME).
+ * `VITE_NOTEBOOK_NAME` / config.notebookName).
  * @param userId - The ID of the user to remove.
  * @param admin - Whether the user is an admin.
  */
@@ -45,7 +45,7 @@ export const RemoveUserFromProjectDialog = ({
           <DialogTitle>Remove User</DialogTitle>
           <DialogDescription>
             Remove user: <span className="text-primary">{userId}</span> from
-            this {NOTEBOOK_NAME}.
+            this {config.notebookName}.
           </DialogDescription>
         </DialogHeader>
         <Button

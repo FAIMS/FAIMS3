@@ -7,11 +7,7 @@ import {useState, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Copy, CheckCircle, AlertTriangle} from 'lucide-react';
-import {
-  LONG_LIVED_TOKEN_HELP_LINK,
-  MAXIMUM_LONG_LIVED_DURATION_DAYS,
-  LONG_LIVED_TOKEN_DURATION_HINTS,
-} from '@/constants';
+import {config, LONG_LIVED_TOKEN_HELP_LINK} from '@/constants';
 import {ExpirySelector} from '@/components/expiry-selector';
 
 interface CreateLongLivedTokenFormProps {
@@ -115,14 +111,14 @@ export function CreateLongLivedTokenForm({
       }
 
       // Additional validation for maximum duration
-      if (MAXIMUM_LONG_LIVED_DURATION_DAYS) {
+      if (config.maximumLongLivedDurationDays) {
         const now = new Date();
         const daysDiff =
           (expiryTimestampMs - now.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysDiff > MAXIMUM_LONG_LIVED_DURATION_DAYS) {
+        if (daysDiff > config.maximumLongLivedDurationDays) {
           return {
             type: 'submit',
-            message: `Token expiry cannot be more than ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days from now`,
+            message: `Token expiry cannot be more than ${config.maximumLongLivedDurationDays} days from now`,
           };
         }
       }
@@ -243,8 +239,8 @@ export function CreateLongLivedTokenForm({
         submitButtonVariant="outline"
         footer={
           <ExpirySelector
-            hints={LONG_LIVED_TOKEN_DURATION_HINTS}
-            maxDurationDays={MAXIMUM_LONG_LIVED_DURATION_DAYS}
+            hints={config.longLivedTokenDurationHints}
+            maxDurationDays={config.maximumLongLivedDurationDays}
             selectedDateTime={selectedDateTime}
             setSelectedDateTime={setSelectedDateTime}
             title="Token Duration"

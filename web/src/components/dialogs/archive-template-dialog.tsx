@@ -13,7 +13,7 @@ import {useNavigate} from '@tanstack/react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 
 /**
  * ArchiveTemplateDialog component renders a dialog for archiving a template.
@@ -84,7 +84,7 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
           <DialogTitle>Un-archive Template</DialogTitle>
           <DialogDescription>
             Un-archive the current template. This will allow the template to be
-            edited and used to create {NOTEBOOK_NAME}s.
+            edited and used to create {config.notebookName}s.
           </DialogDescription>
         </DialogHeader>
         <Button variant="destructive" className="w-full" onClick={onClick}>
@@ -101,8 +101,8 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
         <DialogHeader>
           <DialogTitle>Archive Template</DialogTitle>
           <DialogDescription>
-            This makes the template read-only and prevents new {NOTEBOOK_NAME}s
-            from being created from it.
+            This makes the template read-only and prevents new{' '}
+            {config.notebookName}s from being created from it.
           </DialogDescription>
         </DialogHeader>
         <Button variant="destructive" className="w-full" onClick={onClick}>
