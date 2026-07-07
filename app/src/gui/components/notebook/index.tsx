@@ -4,11 +4,7 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {
-  DEBUG_APP,
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -165,7 +161,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const records = useRecordList({
     query: query,
     // Profiling enabled when debugging
-    enableProfiling: DEBUG_APP,
+    enableProfiling: config.debugApp,
     projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
@@ -221,10 +217,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     <Box>
       {project.status === ProjectStatus.CLOSED && (
         <Alert variant="standard" severity="warning" sx={{mb: 1}}>
-          <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
+          <AlertTitle>{config.notebookNameCapitalized} is closed</AlertTitle>
           Ensure your records have a green sync status and then{' '}
-          {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} via the settings
-          tab. No additional data can be collected for this {NOTEBOOK_NAME}.
+          {DE_ACTIVATE_VERB.toLowerCase()} this {config.notebookName} via the settings
+          tab. No additional data can be collected for this {config.notebookName}.
         </Alert>
       )}
       <PushOnlySyncBanner
@@ -274,7 +270,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             <Tabs
               value={tabIndex}
               onChange={handleTabChange}
-              aria-label={`${NOTEBOOK_NAME} tabs`}
+              aria-label={`${config.notebookName} tabs`}
               indicatorColor="secondary"
               sx={{
                 backgroundColor: theme.palette.background.tabsBackground,
@@ -304,22 +300,22 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               <Tab
                 label={`My ${recordLabel}s (${visibleMyRecords.length})`}
                 value={0}
-                {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
+                {...a11yProps(0, `${config.notebookName}-myrecords`)}
               />
               {(tabIndex === 1 || visibleOtherRecords.length > 0) && (
                 <Tab
                   value={1}
                   label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
-                  {...a11yProps(2, `${NOTEBOOK_NAME}-otherrecords`)}
+                  {...a11yProps(2, `${config.notebookName}-otherrecords`)}
                 />
               )}
 
-              <Tab value={2} label="Map" {...a11yProps(2, NOTEBOOK_NAME)} />
-              <Tab value={3} label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
+              <Tab value={2} label="Map" {...a11yProps(2, config.notebookName)} />
+              <Tab value={3} label="Details" {...a11yProps(3, config.notebookName)} />
               <Tab
                 value={4}
                 label="Settings"
-                {...a11yProps(4, NOTEBOOK_NAME)}
+                {...a11yProps(4, config.notebookName)}
               />
             </Tabs>
           </Paper>

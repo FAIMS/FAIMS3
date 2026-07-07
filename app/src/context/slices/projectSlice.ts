@@ -13,12 +13,7 @@ import {
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit';
-import {
-  CONDUCTOR_URLS,
-  DELETE_ON_DEACTIVATION,
-  FORCE_REMOTE_DELETION,
-  NOTEBOOK_NAME,
-} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
@@ -208,7 +203,7 @@ export interface ProjectInformation {
   recordCount?: number;
 }
 
-// A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
+// A project is a notebook (configurable label via config.notebookName) — it is relevant to a server, can be
 // inactive or active, and was activated by someone. This extends with
 // non-trivial or side-effecting elements like database connections and
 // activated status
@@ -477,7 +472,7 @@ const projectsSlice = createSlice({
 
     /**
      * Remove a project from the store after the server signals archived/deleted
-     * with {@link FORCE_REMOTE_DELETION} === `allow` only.
+     * with {@link config.forceRemoteDeletion} === `allow` only.
      *
      * Stops sync and remote Pouch handles, then **destroys** the local Pouch DB
      * (IndexedDB) so no local notebook data remains on device.
@@ -546,8 +541,8 @@ const projectsSlice = createSlice({
      * Same sync/remote teardown as manual deactivate; local Pouch is always
      * **closed** but not destroyed so IndexedDB stays recoverable. Then remove the
      * project from the store. Used when the server archived/deleted the notebook but
-     * {@link FORCE_REMOTE_DELETION} is not `allow` (independent of
-     * {@link DELETE_ON_DEACTIVATION}).
+     * {@link config.forceRemoteDeletion} is not `allow` (independent of
+     * {@link config.deleteOnDeactivation}).
      */
     detachProjectRetainLocalData: (
       state,
@@ -708,7 +703,7 @@ const projectsSlice = createSlice({
      * De-activates an existing (active) project.
      *
      * - Stops and removes sync, closes remote and local Pouch handles, clears sync state.
-     * - Local data: when {@link DELETE_ON_DEACTIVATION} is true, destroys the local
+     * - Local data: when {@link config.deleteOnDeactivation} is true, destroys the local
      *   Pouch DB (IndexedDB). When false (default), only closes the local DB so data
      *   may remain on disk for recovery.
      *
@@ -768,7 +763,7 @@ const projectsSlice = createSlice({
       // establish ID of local DB
       const localDatabaseId = project.database.localDbId;
       // NOTE destroy/close are async; completion may not be immediate
-      if (DELETE_ON_DEACTIVATION) {
+      if (config.deleteOnDeactivation) {
         void databaseService.destroyLocalDatabase(localDatabaseId);
       } else {
         void databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
@@ -1593,7 +1588,7 @@ export const activateProject = createAsyncThunk<
         severity: 'info',
         title: 'Sync mode changed',
         autoHideDuration: 12000,
-        message: `This ${NOTEBOOK_NAME} has a large number of records. Sync has been set to "upload only" to reduce device stress. Other users' records won't be available unless you change the sync mode in the ${NOTEBOOK_NAME}'s Settings.`,
+        message: `This ${config.notebookName} has a large number of records. Sync has been set to "upload only" to reduce device stress. Other users' records won't be available unless you change the sync mode in the ${config.notebookName}'s Settings.`,
       })
     );
   }
@@ -1632,7 +1627,7 @@ export const initialiseServers = createAsyncThunk<void>(
 
     // for each URL in the conductor URLs - fetch directory
     const discoveredServers: PublicServerInfo[] = [];
-    for (const conductorUrl of CONDUCTOR_URLS) {
+    for (const conductorUrl of config.conductorUrls) {
       // firstly - try and call the info endpoint
       await fetch(`${conductorUrl}/api/info`, {})
         .then(response => response.json())
@@ -1937,7 +1932,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           return;
         }
 
-        if (FORCE_REMOTE_DELETION === 'allow') {
+        if (config.forceRemoteDeletion === 'allow') {
           appDispatch(removeProject({serverId, projectId}));
         } else {
           appDispatch(detachProjectRetainLocalData({serverId, projectId}));

@@ -36,10 +36,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '../../../../buildconfig';
+import {config} from '../../../../buildconfig';
 import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {
@@ -195,11 +192,11 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
 
           <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>
-              {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+              {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
             </Typography>
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
-                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME} will remove it
+                {DE_ACTIVATE_ACTIVE_VERB} this {config.notebookName} will remove it
                 from your device and delete all records on your device.{' '}
                 {syncMode === 'none'
                   ? 'Ensure any records you need on the server have been synced before deactivating.'
@@ -210,7 +207,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
                 color={'error'}
                 onClick={handleDeactivateClick}
               >
-                {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
               </Button>
             </Box>
           </Box>
@@ -226,13 +223,13 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
       {/* Deactivation Confirmation Dialog */}
       <Dialog open={openDeactivateDialog} onClose={handleDeactivateCancel}>
         <DialogTitle>
-          {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+          {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
             <Typography variant="body1">
               Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} the{' '}
-              {NOTEBOOK_NAME} and remove it from your device?
+              {config.notebookName} and remove it from your device?
             </Typography>
             <FormControlLabel
               control={

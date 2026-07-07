@@ -16,7 +16,19 @@
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration of the build, including things like
- *   which server to use and whether to include test data
+ *   which server to use and whether to include test data.
+ *
+ *   Configuration is parsed from Vite's `import.meta.env` using a two-pass zod
+ *   pipeline:
+ *     - Pass one (EnvSchema) validates/narrows the raw environment into strings.
+ *       The raw object is assembled with explicit static `import.meta.env.VITE_*`
+ *       accesses so Vite performs its build-time replacement.
+ *     - Pass two (ConfigSchema + a small amount of custom logic for derived or
+ *       inter-dependent values) produces the typed `config` singleton.
+ *
+ *   Prefer importing `{config}` and reading `config.<field>`. Advanced surfaces
+ *   (map config, address autosuggest) keep their existing functional interfaces
+ *   (`getMapConfig()`, `getAddressAutosuggestService()`), sourced from `config`.
  */
 
 import {Capacitor} from '@capacitor/core';
@@ -28,6 +40,7 @@ import {
   MapConfig,
 } from '@faims3/forms';
 import pluralize from 'pluralize';
+import {z} from 'zod';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -40,180 +53,373 @@ export const DEFAULT_CONDUCTOR_URL = 'http://localhost:8154';
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
-function include_pouchdb_debugging(): boolean {
-  const debug_pouch = import.meta.env.VITE_DEBUG_POUCHDB;
-  if (debug_pouch === '' || debug_pouch === undefined) {
-    return false;
-  }
-  if (FALSEY_STRINGS.includes(debug_pouch.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(debug_pouch.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_DEBUG_POUCHDB badly defined, assuming false');
-    return false;
-  }
-}
+const DEFAULT_MAPBOX_ADDRESS_COUNTRY = ['AU'];
 
-function include_app_debugging(): boolean {
-  const debug_app = import.meta.env.VITE_DEBUG_APP;
-  if (debug_app === '' || debug_app === undefined) {
-    return false;
-  }
-  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_DEBUG_APP badly defined, assuming true');
-    return true;
-  }
-}
-
-function show_pouchdb_browser(): boolean {
-  const debug_app = import.meta.env.VITE_SHOW_POUCHDB_BROWSER;
-  if (debug_app === '' || debug_app === undefined) {
-    return true;
-  }
-  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_SHOW_POUCHDB_BROWSER badly defined, assuming true');
-    return true;
-  }
-}
-
-function show_wipe(): boolean {
-  const debug_app = import.meta.env.VITE_SHOW_WIPE;
-  if (debug_app === '' || debug_app === undefined) {
-    return true;
-  }
-  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_SHOW_WIPE badly defined, assuming true');
-    return true;
-  }
-}
-
-function show_new_notebook(): boolean {
-  const debug_app = import.meta.env.VITE_SHOW_NEW_NOTEBOOK;
-  if (debug_app === '' || debug_app === undefined) {
-    return true;
-  }
-  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_SHOW_NEW_NOTEBOOK badly defined, assuming true');
-    return true;
-  }
-}
-
-/*
- * See batch_size in https://pouchdb.com/api.html#replication
+/**
+ * Source for address autosuggest service. NONE disables autocomplete; MAPBOX
+ * uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY); MAPTILER
+ * uses MapTiler Search and Geocoding API (VITE_AUTOSUGGEST_MAPTILER_KEY, or
+ * VITE_MAP_SOURCE_KEY when map source is maptiler).
  */
-function pouch_batch_size(): number {
-  const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
-  if (pouch_batch_size === '' || pouch_batch_size === undefined) {
-    return 10;
-  }
-  try {
-    return parseInt(pouch_batch_size);
-  } catch (err) {
-    logError(err);
-    return 10;
-  }
+export enum AutosuggestSource {
+  /** No address autosuggest; AddressField uses manual entry only. */
+  NONE = 'NONE',
+  /** Mapbox Search Box API (suggest + retrieve). */
+  MAPBOX = 'MAPBOX',
+  /** MapTiler Search and Geocoding API (forward + by-id). */
+  MAPTILER = 'MAPTILER',
 }
 
-// This number requires more tuning based on upcoming load testing results. 500
-// is probably okay for most devices to two-way sync, but this is a more
-// conservative estimate.
-const DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD = 500;
+export type NavigationStyleOption = 'none' | 'breadcrumbs';
 
-/*
- * Record count above which activation defaults to push-only sync (when online).
- * See VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD.
+/**
+ * When a local notebook is archived or confirmed deleted upstream, the app may
+ * drop it from the device.
+ * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
+ *   (IndexedDB) so no local notebook data remains — security.
+ * - `never` (default): same teardown as manual deactivate (sync off, remote and
+ *   local Pouch **closed** but not destroyed), then remove from the app list so
+ *   on-disk data can be recovered if needed.
+ * Archived: detected via GET `/api/notebooks/:id` when absent from the active
+ * directory — removed on first successful probe. Deleted/missing ids: confirmed
+ * with several consecutive probes (automatic re-polls).
+ * Set via VITE_FORCE_REMOTE_DELETION in .env / CDK; default is never.
  */
-function sync_push_only_record_threshold(): number {
-  const raw = import.meta.env.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
-  if (raw === '' || raw === undefined) {
-    return DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
-  }
-  try {
-    const parsed = parseInt(raw, 10);
-    return Number.isNaN(parsed)
-      ? DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD
-      : parsed;
-  } catch (err) {
-    logError(err);
-    return DEFAULT_SYNC_PUSH_ONLY_RECORD_THRESHOLD;
-  }
-}
+export type ForceRemoteDeletionMode = 'allow' | 'never';
 
-/*
- * See batches_limit in https://pouchdb.com/api.html#replication
+// ---------------------------------------------------------------------------
+// Pass one: read and validate the raw environment into (optional) strings.
+//
+// The raw object uses explicit static `import.meta.env.VITE_*` accesses so that
+// Vite performs its build-time string replacement for each variable.
+// ---------------------------------------------------------------------------
+
+const EnvSchema = z.object({
+  VITE_DEBUG_POUCHDB: z.string().optional(),
+  VITE_DEBUG_APP: z.string().optional(),
+  VITE_SHOW_POUCHDB_BROWSER: z.string().optional(),
+  VITE_SHOW_WIPE: z.string().optional(),
+  VITE_SHOW_NEW_NOTEBOOK: z.string().optional(),
+  VITE_POUCH_BATCH_SIZE: z.string().optional(),
+  VITE_POUCH_BATCHES_LIMIT: z.string().optional(),
+  VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: z.string().optional(),
+  VITE_DIRECTORY_USERNAME: z.string().optional(),
+  VITE_DIRECTORY_PASSWORD: z.string().optional(),
+  VITE_CLUSTER_ADMIN_GROUP_NAME: z.string().optional(),
+  VITE_BUGSNAG_KEY: z.string().optional(),
+  VITE_CONDUCTOR_URL: z.string().optional(),
+  VITE_NOTEBOOK_LIST_TYPE: z.string().optional(),
+  VITE_NOTEBOOK_NAME: z.string().optional(),
+  VITE_APP_ID: z.string().optional(),
+  VITE_APP_NAME: z.string().optional(),
+  VITE_HEADING_APP_NAME: z.string().optional(),
+  VITE_APP_PRIVACY_POLICY_URL: z.string().optional(),
+  VITE_APP_CONTACT_URL: z.string().optional(),
+  VITE_SUPPORT_EMAIL: z.string().optional(),
+  VITE_TOKEN_REFRESH_INTERVAL_MS: z.string().optional(),
+  VITE_TOKEN_REFRESH_WINDOW_MS: z.string().optional(),
+  VITE_LOGIN_BANNER_GRACE_MS: z.string().optional(),
+  VITE_IGNORE_TOKEN_EXP: z.string().optional(),
+  VITE_MAP_SOURCE: z.string().optional(),
+  VITE_MAP_SOURCE_KEY: z.string().optional(),
+  VITE_MAP_STYLE: z.string().optional(),
+  VITE_SATELLITE_SOURCE: z.string().optional(),
+  VITE_OFFLINE_MAPS: z.string().optional(),
+  VITE_NAVIGATION: z.string().optional(),
+  VITE_SHOW_RECORD_LINKS: z.string().optional(),
+  VITE_MIGRATE_OLD_DATABASES: z.string().optional(),
+  VITE_FORCE_REMOTE_DELETION: z.string().optional(),
+  VITE_DELETE_ON_DEACTIVATION: z.string().optional(),
+  VITE_ATTACHMENT_SERVICE_TYPE: z.string().optional(),
+  VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: z.string().optional(),
+  VITE_AUTOSUGGEST_SOURCE: z.string().optional(),
+  VITE_AUTOSUGGEST_MAPBOX_KEY: z.string().optional(),
+  VITE_MAPBOX_ADDRESS_COUNTRY: z.string().optional(),
+  VITE_AUTOSUGGEST_MAPTILER_KEY: z.string().optional(),
+  VITE_MAPTILER_ADDRESS_COUNTRY: z.string().optional(),
+  NODE_ENV: z.string().optional(),
+});
+
+type RawEnv = z.infer<typeof EnvSchema>;
+
+const rawEnv: RawEnv = EnvSchema.parse({
+  VITE_DEBUG_POUCHDB: import.meta.env.VITE_DEBUG_POUCHDB,
+  VITE_DEBUG_APP: import.meta.env.VITE_DEBUG_APP,
+  VITE_SHOW_POUCHDB_BROWSER: import.meta.env.VITE_SHOW_POUCHDB_BROWSER,
+  VITE_SHOW_WIPE: import.meta.env.VITE_SHOW_WIPE,
+  VITE_SHOW_NEW_NOTEBOOK: import.meta.env.VITE_SHOW_NEW_NOTEBOOK,
+  VITE_POUCH_BATCH_SIZE: import.meta.env.VITE_POUCH_BATCH_SIZE,
+  VITE_POUCH_BATCHES_LIMIT: import.meta.env.VITE_POUCH_BATCHES_LIMIT,
+  VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: import.meta.env
+    .VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,
+  VITE_DIRECTORY_USERNAME: import.meta.env.VITE_DIRECTORY_USERNAME,
+  VITE_DIRECTORY_PASSWORD: import.meta.env.VITE_DIRECTORY_PASSWORD,
+  VITE_CLUSTER_ADMIN_GROUP_NAME: import.meta.env.VITE_CLUSTER_ADMIN_GROUP_NAME,
+  VITE_BUGSNAG_KEY: import.meta.env.VITE_BUGSNAG_KEY,
+  VITE_CONDUCTOR_URL: import.meta.env.VITE_CONDUCTOR_URL,
+  VITE_NOTEBOOK_LIST_TYPE: import.meta.env.VITE_NOTEBOOK_LIST_TYPE,
+  VITE_NOTEBOOK_NAME: import.meta.env.VITE_NOTEBOOK_NAME,
+  VITE_APP_ID: import.meta.env.VITE_APP_ID,
+  VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
+  VITE_HEADING_APP_NAME: import.meta.env.VITE_HEADING_APP_NAME,
+  VITE_APP_PRIVACY_POLICY_URL: import.meta.env.VITE_APP_PRIVACY_POLICY_URL,
+  VITE_APP_CONTACT_URL: import.meta.env.VITE_APP_CONTACT_URL,
+  VITE_SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL,
+  VITE_TOKEN_REFRESH_INTERVAL_MS: import.meta.env
+    .VITE_TOKEN_REFRESH_INTERVAL_MS,
+  VITE_TOKEN_REFRESH_WINDOW_MS: import.meta.env.VITE_TOKEN_REFRESH_WINDOW_MS,
+  VITE_LOGIN_BANNER_GRACE_MS: import.meta.env.VITE_LOGIN_BANNER_GRACE_MS,
+  VITE_IGNORE_TOKEN_EXP: import.meta.env.VITE_IGNORE_TOKEN_EXP,
+  VITE_MAP_SOURCE: import.meta.env.VITE_MAP_SOURCE,
+  VITE_MAP_SOURCE_KEY: import.meta.env.VITE_MAP_SOURCE_KEY,
+  VITE_MAP_STYLE: import.meta.env.VITE_MAP_STYLE,
+  VITE_SATELLITE_SOURCE: import.meta.env.VITE_SATELLITE_SOURCE,
+  VITE_OFFLINE_MAPS: import.meta.env.VITE_OFFLINE_MAPS,
+  VITE_NAVIGATION: import.meta.env.VITE_NAVIGATION,
+  VITE_SHOW_RECORD_LINKS: import.meta.env.VITE_SHOW_RECORD_LINKS,
+  VITE_MIGRATE_OLD_DATABASES: import.meta.env.VITE_MIGRATE_OLD_DATABASES,
+  VITE_FORCE_REMOTE_DELETION: import.meta.env.VITE_FORCE_REMOTE_DELETION,
+  VITE_DELETE_ON_DEACTIVATION: import.meta.env.VITE_DELETE_ON_DEACTIVATION,
+  VITE_ATTACHMENT_SERVICE_TYPE: import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE,
+  VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: import.meta.env
+    .VITE_ATTACHMENT_DOCUMENT_ID_PREFIX,
+  VITE_AUTOSUGGEST_SOURCE: import.meta.env.VITE_AUTOSUGGEST_SOURCE,
+  VITE_AUTOSUGGEST_MAPBOX_KEY: import.meta.env.VITE_AUTOSUGGEST_MAPBOX_KEY,
+  VITE_MAPBOX_ADDRESS_COUNTRY: import.meta.env.VITE_MAPBOX_ADDRESS_COUNTRY,
+  VITE_AUTOSUGGEST_MAPTILER_KEY: import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY,
+  VITE_MAPTILER_ADDRESS_COUNTRY: import.meta.env.VITE_MAPTILER_ADDRESS_COUNTRY,
+  NODE_ENV: import.meta.env.NODE_ENV,
+});
+
+// ---------------------------------------------------------------------------
+// Reusable pass-two field builders.
+// ---------------------------------------------------------------------------
+
+const isBlank = (v: string | undefined): v is undefined | '' =>
+  v === undefined || v === '';
+
+/** Non-empty string with a default. */
+const stringFromEnv = (def: string) =>
+  z
+    .string()
+    .optional()
+    .transform(v => (isBlank(v) ? def : v));
+
+/** Integer with default; blank or unparseable falls back to the default. */
+const intFromEnv = (def: number) =>
+  z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) return def;
+      const parsed = parseInt(v, 10);
+      return Number.isNaN(parsed) ? def : parsed;
+    });
+
+/**
+ * Boolean parsed from the truthy/falsey string sets. Blank falls back to
+ * `def`; an unrecognised value logs a warning and falls back to `badFallback`
+ * (defaults to `def`).
  */
-function pouch_batches_limit(): number {
-  const pouch_batches_limit = import.meta.env.VITE_POUCH_BATCHES_LIMIT;
-  if (pouch_batches_limit === '' || pouch_batches_limit === undefined) {
-    return 10;
-  }
-  try {
-    return parseInt(pouch_batches_limit);
-  } catch (err) {
-    logError(err);
-    return 10;
-  }
+const boolFromEnv = (
+  def: boolean,
+  opts: {label?: string; badFallback?: boolean} = {}
+) =>
+  z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) return def;
+      const lower = v.toLowerCase();
+      if (FALSEY_STRINGS.includes(lower)) return false;
+      if (TRUTHY_STRINGS.includes(lower)) return true;
+      const fallback = opts.badFallback ?? def;
+      if (opts.label) {
+        logError(`${opts.label} badly defined, assuming ${fallback}`);
+      }
+      return fallback;
+    });
+
+/** Boolean that is only true when the value strictly equals `match`. */
+const truthyOnlyBool = (def: boolean) =>
+  z
+    .string()
+    .optional()
+    .transform(v => (isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())));
+
+// ---------------------------------------------------------------------------
+// Pass two: build the typed configuration values.
+// ---------------------------------------------------------------------------
+
+const ConfigSchema = z.object({
+  debugPouchdb: boolFromEnv(false, {label: 'VITE_DEBUG_POUCHDB'}),
+  // Note: badly-defined VITE_DEBUG_APP historically defaults to true.
+  debugApp: boolFromEnv(false, {label: 'VITE_DEBUG_APP', badFallback: true}),
+  showPouchdbBrowser: boolFromEnv(true, {label: 'VITE_SHOW_POUCHDB_BROWSER'}),
+  showWipe: boolFromEnv(true, {label: 'VITE_SHOW_WIPE'}),
+  showNewNotebook: boolFromEnv(true, {label: 'VITE_SHOW_NEW_NOTEBOOK'}),
+  pouchBatchSize: intFromEnv(10),
+  pouchBatchesLimit: intFromEnv(10),
+  syncPushOnlyRecordThreshold: intFromEnv(500),
+  clusterAdminGroupName: stringFromEnv('cluster-admin'),
+  notebookListType: z
+    .string()
+    .optional()
+    .transform((v): 'tabs' | 'headings' =>
+      v === 'headings' ? 'headings' : 'tabs'
+    ),
+  notebookName: stringFromEnv('notebook'),
+  appId: stringFromEnv('org.fedarch.faims3'),
+  appName: stringFromEnv('Fieldmark'),
+  privacyPolicyUrl: stringFromEnv('https://fieldnote.au/privacy'),
+  contactUrl: stringFromEnv(''),
+  supportEmail: stringFromEnv('support@fieldmark.au'),
+  tokenRefreshIntervalMs: intFromEnv(15000),
+  tokenRefreshWindowMs: intFromEnv(60000),
+  loginBannerGraceMs: intFromEnv(10000),
+  ignoreTokenExp: z
+    .string()
+    .optional()
+    .transform(v => (isBlank(v) ? false : v.toUpperCase() === 'TRUE')),
+  mapSource: stringFromEnv('osm'),
+  mapSourceKey: stringFromEnv(''),
+  mapStyle: z
+    .string()
+    .optional()
+    .transform((v): MapStylesheetNameType =>
+      isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
+    ),
+  satelliteSource: z
+    .string()
+    .optional()
+    .transform((v): 'esri' | 'maptiler' | undefined =>
+      isBlank(v) ? undefined : (v as 'esri' | 'maptiler')
+    ),
+  navigationStyle: z
+    .string()
+    .optional()
+    .transform((v): NavigationStyleOption =>
+      isBlank(v) ? 'none' : (v as NavigationStyleOption)
+    ),
+  showRecordLinks: truthyOnlyEquals('true'),
+  migrateOldDatabases: truthyOnlyBool(false),
+  forceRemoteDeletion: z
+    .string()
+    .optional()
+    .transform((v): ForceRemoteDeletionMode => {
+      if (v === 'allow') return 'allow';
+      if (v !== undefined && v !== '' && v !== 'never') {
+        logError(
+          `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+        );
+      }
+      return 'never';
+    }),
+  deleteOnDeactivation: boolFromEnv(false, {
+    label: 'VITE_DELETE_ON_DEACTIVATION',
+  }),
+  attachmentServiceType: stringFromEnv('COUCH'),
+  attachmentDocumentIdPrefix: z
+    .string()
+    .optional()
+    .transform((v): string | undefined => (isBlank(v) ? undefined : v)),
+  bugsnagKey: z
+    .string()
+    .optional()
+    .transform((v): string | undefined =>
+      isBlank(v) || v === 'false' ? undefined : v
+    ),
+  mapboxAccessToken: z
+    .string()
+    .optional()
+    .transform((v): string | undefined =>
+      v === undefined || v.trim() === '' ? undefined : v.trim()
+    ),
+  mapboxAddressCountry: csvUpperFromEnv(DEFAULT_MAPBOX_ADDRESS_COUNTRY),
+  maptilerAddressCountry: csvUpperFromEnv(DEFAULT_MAPBOX_ADDRESS_COUNTRY),
+  autosuggestSource: z
+    .string()
+    .optional()
+    .transform((v): AutosuggestSource => {
+      if (v === undefined || v === '') {
+        return AutosuggestSource.NONE;
+      }
+      const upper = v.toUpperCase();
+      if (upper in AutosuggestSource) {
+        return AutosuggestSource[upper as keyof typeof AutosuggestSource];
+      }
+      logError(
+        `VITE_AUTOSUGGEST_SOURCE invalid (${v}), using NONE. Valid: NONE, MAPBOX, MAPTILER.`
+      );
+      return AutosuggestSource.NONE;
+    }),
+});
+
+/** Boolean that is only true when the (case-insensitive) value equals `match`. */
+function truthyOnlyEquals(match: string) {
+  return z
+    .string()
+    .optional()
+    .transform(v => v === match);
 }
 
-function directory_auth(): undefined | {username: string; password: string} {
-  // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
-  const username = import.meta.env.VITE_DIRECTORY_USERNAME;
-  const password = import.meta.env.VITE_DIRECTORY_PASSWORD;
-
-  if (
-    username === '' ||
-    username === undefined ||
-    password === '' ||
-    password === undefined
-  ) {
-    return undefined;
-  } else {
-    return {username: username, password: password};
-  }
+/** Comma-separated uppercase list with a default when blank. */
+function csvUpperFromEnv(def: string[]) {
+  return z
+    .string()
+    .optional()
+    .transform(v =>
+      v === undefined || v.trim() === ''
+        ? def
+        : v
+            .split(',')
+            .map(s => s.trim().toUpperCase())
+            .filter(Boolean)
+    );
 }
 
-function is_testing() {
-  const test_node_env = import.meta.env.NODE_ENV === 'test';
-  return test_node_env;
-}
+const parsedConfig = ConfigSchema.parse({
+  debugPouchdb: rawEnv.VITE_DEBUG_POUCHDB,
+  debugApp: rawEnv.VITE_DEBUG_APP,
+  showPouchdbBrowser: rawEnv.VITE_SHOW_POUCHDB_BROWSER,
+  showWipe: rawEnv.VITE_SHOW_WIPE,
+  showNewNotebook: rawEnv.VITE_SHOW_NEW_NOTEBOOK,
+  pouchBatchSize: rawEnv.VITE_POUCH_BATCH_SIZE,
+  pouchBatchesLimit: rawEnv.VITE_POUCH_BATCHES_LIMIT,
+  syncPushOnlyRecordThreshold: rawEnv.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,
+  clusterAdminGroupName: rawEnv.VITE_CLUSTER_ADMIN_GROUP_NAME,
+  notebookListType: rawEnv.VITE_NOTEBOOK_LIST_TYPE,
+  notebookName: rawEnv.VITE_NOTEBOOK_NAME,
+  appId: rawEnv.VITE_APP_ID,
+  appName: rawEnv.VITE_APP_NAME,
+  privacyPolicyUrl: rawEnv.VITE_APP_PRIVACY_POLICY_URL,
+  contactUrl: rawEnv.VITE_APP_CONTACT_URL,
+  supportEmail: rawEnv.VITE_SUPPORT_EMAIL,
+  tokenRefreshIntervalMs: rawEnv.VITE_TOKEN_REFRESH_INTERVAL_MS,
+  tokenRefreshWindowMs: rawEnv.VITE_TOKEN_REFRESH_WINDOW_MS,
+  loginBannerGraceMs: rawEnv.VITE_LOGIN_BANNER_GRACE_MS,
+  ignoreTokenExp: rawEnv.VITE_IGNORE_TOKEN_EXP,
+  mapSource: rawEnv.VITE_MAP_SOURCE,
+  mapSourceKey: rawEnv.VITE_MAP_SOURCE_KEY,
+  mapStyle: rawEnv.VITE_MAP_STYLE,
+  satelliteSource: rawEnv.VITE_SATELLITE_SOURCE,
+  navigationStyle: rawEnv.VITE_NAVIGATION,
+  showRecordLinks: rawEnv.VITE_SHOW_RECORD_LINKS,
+  migrateOldDatabases: rawEnv.VITE_MIGRATE_OLD_DATABASES,
+  forceRemoteDeletion: rawEnv.VITE_FORCE_REMOTE_DELETION,
+  deleteOnDeactivation: rawEnv.VITE_DELETE_ON_DEACTIVATION,
+  attachmentServiceType: rawEnv.VITE_ATTACHMENT_SERVICE_TYPE,
+  attachmentDocumentIdPrefix: rawEnv.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX,
+  bugsnagKey: rawEnv.VITE_BUGSNAG_KEY,
+  mapboxAccessToken: rawEnv.VITE_AUTOSUGGEST_MAPBOX_KEY,
+  mapboxAddressCountry: rawEnv.VITE_MAPBOX_ADDRESS_COUNTRY,
+  maptilerAddressCountry: rawEnv.VITE_MAPTILER_ADDRESS_COUNTRY,
+  autosuggestSource: rawEnv.VITE_AUTOSUGGEST_SOURCE,
+});
 
-function cluster_admin_group_name(): string {
-  const name = import.meta.env.VITE_CLUSTER_ADMIN_GROUP_NAME;
-  if (name === '' || name === undefined) {
-    return 'cluster-admin';
-  }
-  return name;
-}
-
-// If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
-function get_bugsnag_key(): string | undefined {
-  const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
-  if (
-    bugsnag_key === '' ||
-    bugsnag_key === undefined ||
-    bugsnag_key === 'false'
-  ) {
-    return undefined;
-  }
-  return bugsnag_key;
-}
+// ---------------------------------------------------------------------------
+// Derived / inter-dependent values.
+// ---------------------------------------------------------------------------
 
 /**
  * Splits the input, trimming for whitespace and filtering empty strings.
@@ -245,465 +451,93 @@ export function parseConductorUrls(conductorUrls: string): string[] {
 
   return filteredUrls;
 }
-/**
- * Hands the VITE_CONDUCTOR_URL input to the parse conductor urls method,
- * returning a safely handled list of conductor URLs.
- * @returns A list of conductor URLs which can act as servers.
- */
-function get_conductor_urls(): string[] {
-  const conductorUrls: string = import.meta.env.VITE_CONDUCTOR_URL;
+
+function buildConductorUrls(): string[] {
+  const conductorUrls = rawEnv.VITE_CONDUCTOR_URL;
   if (conductorUrls) {
     return parseConductorUrls(conductorUrls);
-  } else {
-    console.warn(
-      `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
-    );
-    return [DEFAULT_CONDUCTOR_URL];
   }
-}
-
-/**
- * Retrieves the notebook list type.
- * @returns The notebook list type, which can be either "tabs" or "headings".
- */
-function get_notebook_list_type(): 'tabs' | 'headings' {
-  const notebook_list_type = import.meta.env.VITE_NOTEBOOK_LIST_TYPE;
-  if (notebook_list_type === 'headings') {
-    return 'headings';
-  } else {
-    return 'tabs';
-  }
-}
-
-/**
- * Retrieves the name of notebooks from the environment variables.
- * If the environment variable is not set, it returns a default value 'notebook'.
- *
- * @returns {string} - The name of notebooks.
- */
-function get_notebook_name(): string {
-  const notebook_name = import.meta.env.VITE_NOTEBOOK_NAME;
-  if (notebook_name) {
-    return notebook_name;
-  } else {
-    return 'notebook';
-  }
-}
-
-/**
- * Retrieves the name of the notebooks and capitalizes the first letter.
- *
- * @returns {string} - The capitalized name of notebooks.
- */
-function get_notebook_name_capitalized(): string {
-  const notebook_name = get_notebook_name();
-
-  return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
-}
-
-/**
- * Retrieves the plural form of the notebook name.
- *
- * @returns {string} - The pluralised notebook name.
- */
-function get_notebook_name_plural(): string {
-  return pluralize(get_notebook_name());
-}
-
-/**
- * Retrieves the plural form of the notebook name with the first letter capitalised.
- *
- * @returns {string} - The capitalised pluralised notebook name.
- */
-function get_notebook_name_plural_capitalized(): string {
-  const plural = get_notebook_name_plural();
-  return plural.charAt(0).toUpperCase() + plural.slice(1);
-}
-
-/**
- * Retrieves the configured app identifier for Android/IOS
- * @returns {string} - the app id
- */
-function get_app_id(): string {
-  const appid = import.meta.env.VITE_APP_ID;
-  return appid || 'org.fedarch.faims3';
-}
-
-/**
- * Retrieves the configured app name
- * @returns {string} - the app name
- */
-function get_app_name(): string {
-  const appid = import.meta.env.VITE_APP_NAME;
-  return appid || 'Fieldmark';
-}
-
-/**
- * Retrieves the configured heading app name or falls back to APP_NAME
- * @returns {string} - the app name
- */
-function get_heading_app_name(): string {
-  const appid = import.meta.env.VITE_HEADING_APP_NAME;
-  return appid || get_app_name();
-}
-
-/**
- * Return the configured privacy policy URL link
- *  defaults to the EFN privacy policy url
- *
- * @returns {string} - the app privacy policy url link
- */
-function get_app_privacy_policy_url(): string {
-  const appid = import.meta.env.VITE_APP_PRIVACY_POLICY_URL;
-  return appid || 'https://fieldnote.au/privacy';
-}
-
-/**
- * Return the configured app contact url link
- *  if this is falsy, the contact link will not be shown
- *
- * @returns {string} - the app contact url link, defaults to empty string
- */
-function get_app_contact_url(): string {
-  const appid = import.meta.env.VITE_APP_CONTACT_URL;
-  return appid || '';
-}
-
-/**
- * Retrieves the configured support email address
- * @returns {string} - the support email address
- */
-function get_support_email(): string {
-  const support_email = import.meta.env.VITE_SUPPORT_EMAIL;
-  return support_email || 'support@fieldmark.au';
-}
-
-// Consider a refresh every 15 seconds
-const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
-
-/**
- * @returns The interval by which we attempt to refresh all tokens
- */
-function tokenRefreshIntervalMs(): number {
-  const tokenRefreshIntervalMs = import.meta.env.VITE_TOKEN_REFRESH_INTERVAL_MS;
-  if (tokenRefreshIntervalMs === '' || tokenRefreshIntervalMs === undefined) {
-    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
-  }
-  try {
-    return parseInt(tokenRefreshIntervalMs);
-  } catch (err) {
-    logError(err);
-    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
-  }
-}
-
-// Try and refresh before it hits 60 seconds till expiry
-const DEFAULT_TOKEN_REFRESH_WINDOW_MS = 60000;
-
-/**
- * @returns The minimum valid time for a token before attempting refreshes
- */
-function tokenRefreshWindowMs(): number {
-  const tokenRefreshWindowMs = import.meta.env.VITE_TOKEN_REFRESH_WINDOW_MS;
-  if (tokenRefreshWindowMs === '' || tokenRefreshWindowMs === undefined) {
-    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
-  }
-  try {
-    return parseInt(tokenRefreshWindowMs);
-  } catch (err) {
-    logError(err);
-    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
-  }
-}
-
-// Grace period before showing the logged-out banner after app initialisation
-const DEFAULT_LOGIN_BANNER_GRACE_MS = 10000;
-
-/**
- * @returns The grace period in milliseconds before showing the login banner
- * after the app has initialised.
- */
-function loginBannerGraceMs(): number {
-  const loginBannerGraceMs = import.meta.env.VITE_LOGIN_BANNER_GRACE_MS;
-  if (loginBannerGraceMs === '' || loginBannerGraceMs === undefined) {
-    return DEFAULT_LOGIN_BANNER_GRACE_MS;
-  }
-  try {
-    return parseInt(loginBannerGraceMs);
-  } catch (err) {
-    logError(err);
-    return DEFAULT_LOGIN_BANNER_GRACE_MS;
-  }
-}
-
-// Ignore the expiry from the JWT - use 1 year expiry instead - disables token
-// refreshing - debug/compat usage only!
-const DEFAULT_IGNORE_TOKEN_EXP = false;
-
-/**
- * @returns Flag indicating to spoof/ignore the token expiry if present - if
- * True then the expiry will be ignored from any JWT intercepted, and set for 1
- * year. Must === true (case insensitive).
- */
-function ignoreTokenExp(): boolean {
-  const ignoreTokenExp = import.meta.env.VITE_IGNORE_TOKEN_EXP;
-  if (ignoreTokenExp === '' || ignoreTokenExp === undefined) {
-    return DEFAULT_IGNORE_TOKEN_EXP;
-  }
-  return ignoreTokenExp.toUpperCase() === 'TRUE';
-}
-
-/**
- * Map source configuration.  Define the map source
- * (see src/gui/components/map/tile_source.ts for options)
- * and the map key if required.
- */
-
-function get_map_source(): string {
-  const map_source = import.meta.env.VITE_MAP_SOURCE;
-  return map_source || 'osm';
-}
-
-function get_map_key(): string {
-  const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
-  return map_key || '';
-}
-
-function get_map_style(): MapStylesheetNameType {
-  const map_style = import.meta.env.VITE_MAP_STYLE;
-  return map_style || 'basic';
-}
-
-function get_satellite_source(): 'esri' | 'maptiler' | undefined {
-  const satellite_source = import.meta.env.VITE_SATELLITE_SOURCE;
-  return satellite_source || undefined;
-}
-
-// get the map configuration
-export function getMapConfig(): MapConfig {
-  const config: MapConfig = {
-    mapSource: get_map_source(),
-    mapSourceKey: get_map_key(),
-    mapStyle: get_map_style(),
-  };
-
-  const satelliteSource = get_satellite_source();
-  if (satelliteSource) {
-    config.satelliteSource = satelliteSource;
-  }
-
-  return config;
-}
-
-function offline_maps(): boolean {
-  const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
-  const map_source = get_map_source();
-  // OSM does not allow bulk downloads so we can't enable offline maps
-  return (offline_maps && map_source !== 'osm') || false;
-}
-
-export type NavigationStyleOption = 'none' | 'breadcrumbs';
-function navigation_style(): NavigationStyleOption {
-  const nav_style = import.meta.env.VITE_NAVIGATION;
-  return nav_style || 'none';
-}
-
-/**
- * Should we show the record links feature?
- */
-function showRecordLinks(): boolean {
-  return import.meta.env.VITE_SHOW_RECORD_LINKS === 'true';
-}
-
-/**
- * Should we automatically migrate old v1.0 style databases on startup?
- */
-function migrateOldDatabases(): boolean {
-  const migrateOldDatabases: string | undefined = import.meta.env
-    .VITE_MIGRATE_OLD_DATABASES;
-  return (
-    !!migrateOldDatabases &&
-    TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase())
+  console.warn(
+    `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
   );
+  return [DEFAULT_CONDUCTOR_URL];
 }
 
-/**
- * When a local notebook is archived or confirmed deleted upstream, the app may
- * drop it from the device.
- * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
- *   (IndexedDB) so no local notebook data remains — security.
- * - `never` (default): same teardown as manual deactivate (sync off, remote and
- *   local Pouch **closed** but not destroyed), then remove from the app list so
- *   on-disk data can be recovered if needed.
- * Archived: detected via GET `/api/notebooks/:id` when absent from the active
- * directory — removed on first successful probe. Deleted/missing ids: confirmed
- * with several consecutive probes (automatic re-polls).
- * Set via VITE_FORCE_REMOTE_DELETION in .env / CDK; default is never.
- */
-export type ForceRemoteDeletionMode = 'allow' | 'never';
-
-function forceRemoteDeletion(): ForceRemoteDeletionMode {
-  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
-  if (v === 'allow') {
-    return 'allow';
-  }
-  if (v !== undefined && v !== '' && v !== 'never') {
-    logError(
-      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
-    );
-  }
-  return 'never';
-}
-
-/**
- * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
- * When false or unset, deactivation only closes sync and DB handles (IndexedDB may remain).
- * Set via VITE_DELETE_ON_DEACTIVATION; default is false.
- */
-function deleteOnDeactivation(): boolean {
-  const v = import.meta.env.VITE_DELETE_ON_DEACTIVATION;
-  if (v === '' || v === undefined) {
-    return false;
-  }
-  if (FALSEY_STRINGS.includes(v.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(v.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_DELETE_ON_DEACTIVATION badly defined, assuming false');
-    return false;
-  }
-}
-
-// Attachment service configuration
-
-/**
- * Retrieves the configured attachment service type from environment variables.
- * @returns {string} - The attachment service type (defaults to 'COUCH')
- */
-function getAttachmentServiceType(): string {
-  const serviceType = import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE;
-  return serviceType || 'COUCH';
-}
-
-/**
- * Retrieves the attachment document ID prefix from environment variables.
- * @returns {string | undefined} - Optional prefix for attachment document IDs
- */
-function getAttachmentDocumentIdPrefix(): string | undefined {
-  const prefix = import.meta.env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX;
-  return prefix || undefined;
-}
-
-// Address autosuggest configuration (KEY_SOURCE-style dispatch)
-
-/**
- * Source for address autosuggest service. NONE disables autocomplete; MAPBOX
- * uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY); MAPTILER
- * uses MapTiler Search and Geocoding API (VITE_AUTOSUGGEST_MAPTILER_KEY, or
- * VITE_MAP_SOURCE_KEY when map source is maptiler).
- */
-export enum AutosuggestSource {
-  /** No address autosuggest; AddressField uses manual entry only. */
-  NONE = 'NONE',
-  /** Mapbox Search Box API (suggest + retrieve). */
-  MAPBOX = 'MAPBOX',
-  /** MapTiler Search and Geocoding API (forward + by-id). */
-  MAPTILER = 'MAPTILER',
-}
-
-/**
- * Resolves VITE_AUTOSUGGEST_SOURCE to AutosuggestSource. Invalid or unset
- * defaults to NONE.
- */
-function getAutosuggestSourceConfig(): AutosuggestSource {
-  const raw = import.meta.env.VITE_AUTOSUGGEST_SOURCE as string | undefined;
-  if (raw === undefined || raw === '') {
-    return AutosuggestSource.NONE;
-  }
-  const upper = raw.toUpperCase();
-  if (upper in AutosuggestSource) {
-    return AutosuggestSource[upper as keyof typeof AutosuggestSource];
-  }
-  logError(
-    `VITE_AUTOSUGGEST_SOURCE invalid (${raw}), using NONE. Valid: NONE, MAPBOX, MAPTILER.`
-  );
-  return AutosuggestSource.NONE;
-}
-
-/**
- * Returns Mapbox access token when AUTOSUGGEST_SOURCE is MAPBOX.
- * Required for MAPBOX; if missing, address autosuggest is effectively disabled.
- */
-function getMapboxAccessToken(): string | undefined {
-  const token = import.meta.env.VITE_AUTOSUGGEST_MAPBOX_KEY as
-    | string
-    | undefined;
-  if (token === undefined || token.trim() === '') {
+function buildDirectoryAuth():
+  | undefined
+  | {username: string; password: string} {
+  const username = rawEnv.VITE_DIRECTORY_USERNAME;
+  const password = rawEnv.VITE_DIRECTORY_PASSWORD;
+  if (isBlank(username) || isBlank(password)) {
     return undefined;
   }
-  return token.trim();
-}
-
-const DEFAULT_MAPBOX_ADDRESS_COUNTRY = ['AU'];
-
-/**
- * Returns Mapbox address search country filter (ISO 3166-1 alpha-2).
- * Optional env VITE_MAPBOX_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
- * Defaults to Australia when unset.
- */
-function getMapboxAddressCountry(): string[] {
-  const raw = import.meta.env.VITE_MAPBOX_ADDRESS_COUNTRY as string | undefined;
-  if (raw === undefined || raw.trim() === '') {
-    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
-  }
-  return raw
-    .split(',')
-    .map(s => s.trim().toUpperCase())
-    .filter(Boolean);
+  return {username, password};
 }
 
 /**
- * Returns MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER. Uses
- * VITE_AUTOSUGGEST_MAPTILER_KEY if set; otherwise when map source is maptiler
- * uses VITE_MAP_SOURCE_KEY so a single key can serve both tiles and geocoding.
- * If neither is set, returns undefined and autosuggest is disabled.
+ * MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER. Uses the dedicated
+ * VITE_AUTOSUGGEST_MAPTILER_KEY if set; otherwise, when the map source is
+ * maptiler, reuses VITE_MAP_SOURCE_KEY so a single key can serve both tiles and
+ * geocoding. If neither is set, returns undefined and autosuggest is disabled.
  */
-function getMapTilerApiKey(): string | undefined {
-  const dedicated = import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY as
-    | string
-    | undefined;
+function buildMapTilerApiKey(): string | undefined {
+  const dedicated = rawEnv.VITE_AUTOSUGGEST_MAPTILER_KEY;
   if (dedicated !== undefined && dedicated.trim() !== '') {
     return dedicated.trim();
   }
-  const mapSource = import.meta.env.VITE_MAP_SOURCE as string | undefined;
-  const mapKey = import.meta.env.VITE_MAP_SOURCE_KEY as string | undefined;
-  if (
-    mapSource === 'maptiler' &&
-    mapKey !== undefined &&
-    mapKey.trim() !== ''
-  ) {
+  const mapSource = rawEnv.VITE_MAP_SOURCE;
+  const mapKey = rawEnv.VITE_MAP_SOURCE_KEY;
+  if (mapSource === 'maptiler' && mapKey !== undefined && mapKey.trim() !== '') {
     return mapKey.trim();
   }
   return undefined;
 }
 
+const notebookName = parsedConfig.notebookName;
+const notebookNamePlural = pluralize(notebookName);
+
 /**
- * Returns MapTiler address search country filter (ISO 3166-1 alpha-2).
- * Optional env VITE_MAPTILER_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
- * Defaults to Australia when unset.
+ * The singleton configuration object. Prefer reading values from here.
  */
-function getMapTilerAddressCountry(): string[] {
-  const raw = import.meta.env.VITE_MAPTILER_ADDRESS_COUNTRY as
-    | string
-    | undefined;
-  if (raw === undefined || raw.trim() === '') {
-    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+export const config = {
+  ...parsedConfig,
+  notebookNameCapitalized:
+    notebookName.charAt(0).toUpperCase() + notebookName.slice(1),
+  notebookNamePlural,
+  notebookNamePluralCapitalized:
+    notebookNamePlural.charAt(0).toUpperCase() + notebookNamePlural.slice(1),
+  headingAppName: isBlank(rawEnv.VITE_HEADING_APP_NAME)
+    ? parsedConfig.appName
+    : rawEnv.VITE_HEADING_APP_NAME,
+  conductorUrls: buildConductorUrls(),
+  directoryAuth: buildDirectoryAuth(),
+  runningUnderTest: rawEnv.NODE_ENV === 'test',
+  // OSM does not allow bulk downloads so we can't enable offline maps
+  offlineMaps:
+    (rawEnv.VITE_OFFLINE_MAPS === 'true' && parsedConfig.mapSource !== 'osm') ||
+    false,
+  maptilerApiKey: buildMapTilerApiKey(),
+};
+
+export type Config = typeof config;
+
+// ---------------------------------------------------------------------------
+// Advanced surfaces: keep the existing functional interfaces.
+// ---------------------------------------------------------------------------
+
+// get the map configuration
+export function getMapConfig(): MapConfig {
+  const mapConfig: MapConfig = {
+    mapSource: config.mapSource,
+    mapSourceKey: config.mapSourceKey,
+    mapStyle: config.mapStyle,
+  };
+
+  if (config.satelliteSource) {
+    mapConfig.satelliteSource = config.satelliteSource;
   }
-  return raw
-    .split(',')
-    .map(s => s.trim().toUpperCase())
-    .filter(Boolean);
+
+  return mapConfig;
 }
 
 let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
@@ -712,12 +546,12 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
   if (addressAutosuggestServiceInstance !== null) {
     return addressAutosuggestServiceInstance;
   }
-  const source = getAutosuggestSourceConfig();
+  const source = config.autosuggestSource;
   if (source === AutosuggestSource.NONE) {
     return null;
   }
   if (source === AutosuggestSource.MAPBOX) {
-    const apiKey = getMapboxAccessToken();
+    const apiKey = config.mapboxAccessToken;
     if (!apiKey) {
       logError(
         'VITE_AUTOSUGGEST_SOURCE is MAPBOX but VITE_AUTOSUGGEST_MAPBOX_KEY is not set; address autosuggest disabled.'
@@ -729,12 +563,12 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
       language: 'en',
       limit: 10,
       types: 'address',
-      country: getMapboxAddressCountry(),
+      country: config.mapboxAddressCountry,
     });
     return addressAutosuggestServiceInstance;
   }
   if (source === AutosuggestSource.MAPTILER) {
-    const apiKey = getMapTilerApiKey();
+    const apiKey = config.maptilerApiKey;
     if (!apiKey) {
       logError(
         'VITE_AUTOSUGGEST_SOURCE is MAPTILER but no MapTiler API key available (set VITE_AUTOSUGGEST_MAPTILER_KEY or, when using MapTiler for maps, VITE_MAP_SOURCE_KEY); address autosuggest disabled.'
@@ -746,7 +580,7 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
       language: 'en',
       limit: 10,
       types: ['address'],
-      country: getMapTilerAddressCountry(),
+      country: config.maptilerAddressCountry,
     });
     return addressAutosuggestServiceInstance;
   }
@@ -769,50 +603,15 @@ export function getAddressAutosuggestService():
   return () => instance;
 }
 
-export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
-export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
-export const AUTOSUGGEST_SOURCE = getAutosuggestSourceConfig();
+// ---------------------------------------------------------------------------
+// Non-env constants and runtime-derived values (kept as dedicated exports).
+// ---------------------------------------------------------------------------
+
 export const AUTOACTIVATE_LISTINGS = true;
-export const CONDUCTOR_URLS = get_conductor_urls();
-export const DEBUG_POUCHDB = include_pouchdb_debugging();
-export const DEBUG_APP = include_app_debugging();
-export const DIRECTORY_AUTH = directory_auth();
-export const RUNNING_UNDER_TEST = is_testing();
-export const POUCH_BATCH_SIZE = pouch_batch_size();
-export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
-export const SYNC_PUSH_ONLY_RECORD_THRESHOLD =
-  sync_push_only_record_threshold();
-export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
-export const SHOW_POUCHDB_BROWSER = show_pouchdb_browser();
-export const SHOW_WIPE = show_wipe();
-export const SHOW_NEW_NOTEBOOK = show_new_notebook();
-export const BUGSNAG_KEY = get_bugsnag_key();
-export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 
 /** Max characters shown for root description on the notebook listing page. */
 export const NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH = 50;
 
-export const NOTEBOOK_NAME = get_notebook_name();
-export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
-export const NOTEBOOK_NAME_PLURAL = get_notebook_name_plural();
-export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
-  get_notebook_name_plural_capitalized();
-export const APP_NAME = get_app_name();
-export const HEADING_APP_NAME = get_heading_app_name();
-export const APP_ID = get_app_id();
-export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
-export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
-export const LOGIN_BANNER_GRACE_MS = loginBannerGraceMs();
-export const IGNORE_TOKEN_EXP = ignoreTokenExp();
-export const OFFLINE_MAPS = offline_maps();
-export const NAVIGATION_STYLE = navigation_style();
-export const SHOW_RECORD_LINKS = showRecordLinks();
-export const SUPPORT_EMAIL = get_support_email();
-export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
-export const CONTACT_URL = get_app_contact_url();
-export const MIGRATE_OLD_DATABASES = migrateOldDatabases();
-export const FORCE_REMOTE_DELETION = forceRemoteDeletion();
-export const DELETE_ON_DEACTIVATION = deleteOnDeactivation();
 export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
   | 'ios'
   | 'android'
@@ -824,7 +623,6 @@ export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';
 // ==================
 // Version management
 // ==================
-/*
 
 /**
  * Gets the application version from Vite's __APP_VERSION__ replacement.
