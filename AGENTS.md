@@ -5,12 +5,12 @@
 FAIMS3 is an offline field data-collection platform. It is a pnpm + Turborepo
 monorepo (Node 22, `pnpm@10.7.0`). The relevant runnable services are:
 
-| Service | Package | Dev URL | Notes |
-| --- | --- | --- | --- |
-| Conductor API | `api` (`@faims3/api`) | http://localhost:8080 | Express server, talks to CouchDB |
-| Data-collection app | `app` (`@faims3/app`) | http://localhost:3000 | Vite PWA |
-| Control Centre / Designer | `web` (`@faims3/web`) | http://localhost:3001 | Vite web app (admin UI) |
-| CouchDB | docker | http://localhost:5984/_utils | Runs in Docker, not Node |
+| Service                   | Package               | Dev URL                       | Notes                            |
+| ------------------------- | --------------------- | ----------------------------- | -------------------------------- |
+| Conductor API             | `api` (`@faims3/api`) | http://localhost:8080         | Express server, talks to CouchDB |
+| Data-collection app       | `app` (`@faims3/app`) | http://localhost:3000         | Vite PWA                         |
+| Control Centre / Designer | `web` (`@faims3/web`) | http://localhost:3001         | Vite web app (admin UI)          |
+| CouchDB                   | docker                | http://localhost:5984/\_utils | Runs in Docker, not Node         |
 
 Shared libraries: `library/data-model` (`@faims3/data-model`) and
 `library/forms` (`@faims3/forms`).

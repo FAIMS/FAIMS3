@@ -138,7 +138,8 @@ export const MapComponent = (props: MapComponentProps) => {
   // instances that were added to the map
   const tileLayer = useMemo(() => tileStore.getTileLayer(), [tileStore]);
   const satelliteLayer = useMemo(
-    () => (tileStore.hasSatellite() ? tileStore.getSatelliteLayer() : undefined),
+    () =>
+      tileStore.hasSatellite() ? tileStore.getSatelliteLayer() : undefined,
     [tileStore]
   );
   const vectorZoomRange = useMemo(
