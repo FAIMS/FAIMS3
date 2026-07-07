@@ -28,7 +28,7 @@ export default function NotebookOfflineMapSettings({
   project,
 }: NotebookOfflineMapSettingsProps) {
   const dispatch = useAppDispatch();
-  const region = project.offlineMapRegion as OfflineMapRegion | undefined;
+  const mapArea = project.offlineMapRegion as OfflineMapRegion | undefined;
   const [status, setStatus] = useState<ProjectOfflineMapStatus | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -38,14 +38,14 @@ export default function NotebookOfflineMapSettings({
   }, [project.projectId]);
 
   useEffect(() => {
-    if (!region) {
+    if (!mapArea) {
       return;
     }
     void refreshStatus();
-  }, [region, refreshStatus]);
+  }, [mapArea, refreshStatus]);
 
   useEffect(() => {
-    if (!region) {
+    if (!mapArea) {
       return;
     }
     const setName = projectOfflineMapSetName(project.projectId);
@@ -73,9 +73,9 @@ export default function NotebookOfflineMapSettings({
         handleStatusChanged
       );
     };
-  }, [region, project.projectId, refreshStatus]);
+  }, [mapArea, project.projectId, refreshStatus]);
 
-  if (!region) {
+  if (!mapArea) {
     return null;
   }
 
@@ -117,7 +117,7 @@ export default function NotebookOfflineMapSettings({
 
       {status?.state === 'downloaded' && (
         <Alert severity="success" sx={{mb: 2}}>
-          Recommended offline map downloaded (
+          Recommended offline map area downloaded (
           {formatOfflineMapSizeBytes(status.sizeBytes)}).
         </Alert>
       )}
@@ -143,15 +143,15 @@ export default function NotebookOfflineMapSettings({
       )}
 
       {status?.state === 'not_downloaded' && (
-        <>
-          <Typography variant={'body2'} sx={{mb: 2}}>
-            A recommended offline map region is configured for this{' '}
+        <Box>
+          <Alert severity="warning" sx={{mb: 2}}>
+            A recommended offline map area is configured for this{' '}
             {NOTEBOOK_NAME}, but it has not been downloaded to this device yet.
-          </Typography>
+          </Alert>
           <Button variant="contained" onClick={handleDownloadClick}>
             Download offline map
           </Button>
-        </>
+        </Box>
       )}
     </Box>
   );

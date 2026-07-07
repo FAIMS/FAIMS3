@@ -1,5 +1,8 @@
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {boundingExtent} from 'ol/extent';
+import {transformExtent} from 'ol/proj';
+import type {MapConfig} from './types';
+import {VectorTileStore} from './TileStore';
 
 /** Convert a stored offline map region polygon to an EPSG:4326 extent. */
 export function offlineMapRegionToExtent4326(
@@ -77,4 +80,23 @@ export function offlineMapRegionsEqual(
     JSON.stringify(normalizeOfflineMapRegionCoordinates(a)) ===
     JSON.stringify(normalizeOfflineMapRegionCoordinates(b))
   );
+}
+
+/** Estimated download size for an offline map region, in megabytes. */
+export async function estimateOfflineMapRegionSizeMb(
+  region: OfflineMapRegion,
+  config: MapConfig
+): Promise<number> {
+  const tileStore = new VectorTileStore(config);
+  const extent4326 = offlineMapRegionToExtent4326(region);
+  const extent3857 = transformExtent(extent4326, 'EPSG:4326', 'EPSG:3857');
+  return tileStore.estimateSizeForRegion(extent3857);
+}
+
+/** Format a size in megabytes for display. */
+export function formatOfflineMapSizeMb(sizeMb: number): string {
+  if (sizeMb > 1024) {
+    return `${(sizeMb / 1024).toFixed(2)} GB`;
+  }
+  return `${sizeMb.toFixed(2)} MB`;
 }

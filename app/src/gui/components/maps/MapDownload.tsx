@@ -105,7 +105,7 @@ export const MapDownload = () => {
     if (sets) setTileSets(sets);
   };
 
-  // Estimate the size of the current region for display
+  // Estimate the size of the current area for display
   const handleCacheMapExtent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
@@ -158,7 +158,7 @@ export const MapDownload = () => {
         </Alert>
 
         <Typography variant="body1" sx={{marginBottom: 2}}>
-          Download the current region for offline use. Note that download size
+          Download the current area for offline use. Note that download size
           estimates are approximate for metro areas, rural areas may be much
           smaller.
         </Typography>

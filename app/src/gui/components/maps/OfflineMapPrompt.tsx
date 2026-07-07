@@ -25,6 +25,7 @@ import {
   selectProjectByIdentity,
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {useIsOnline} from '../../../utils/customHooks';
 import {isOfflineMapDownloadCancelledError} from '@faims3/forms';
 import {
   cancelProjectOfflineMapDownload,
@@ -34,11 +35,12 @@ import {
 } from './projectOfflineMap';
 
 /**
- * Post-activation prompt offering to preview and download the recommended offline map region.
+ * Post-activation prompt offering to preview and download the recommended offline map area.
  */
 export function NotebookOfflineMapPrompt() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const {isOnline} = useIsOnline();
   const mapHeight = isMobile
     ? 'clamp(260px, calc(100dvh - 300px), 420px)'
     : 360;
@@ -53,16 +55,16 @@ export function NotebookOfflineMapPrompt() {
   const [error, setError] = useState<string>('');
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const region = project?.offlineMapRegion as OfflineMapRegion | undefined;
-  const open = Boolean(pending && project && region);
-  const isRegionUpdate = pending?.isRegionUpdate ?? false;
+  const mapArea = project?.offlineMapRegion as OfflineMapRegion | undefined;
+  const open = Boolean(pending && project && mapArea && isOnline);
+  const isAreaUpdate = pending?.isRegionUpdate ?? false;
 
   useEffect(() => {
-    if (!open || !region) {
+    if (!open || !mapArea) {
       return;
     }
     let cancelled = false;
-    estimateProjectOfflineMapSize(region)
+    estimateProjectOfflineMapSize(mapArea)
       .then(sizeMb => {
         if (!cancelled) {
           setSizeLabel(formatOfflineMapSizeMb(sizeMb));
@@ -76,7 +78,7 @@ export function NotebookOfflineMapPrompt() {
     return () => {
       cancelled = true;
     };
-  }, [open, region]);
+  }, [open, mapArea]);
 
   useEffect(() => {
     if (!isDownloading || !pending) {
@@ -122,7 +124,7 @@ export function NotebookOfflineMapPrompt() {
   };
 
   const handleDownload = async () => {
-    if (!pending || !project || !region) {
+    if (!pending || !project || !mapArea) {
       return;
     }
     setIsDownloading(true);
@@ -132,7 +134,7 @@ export function NotebookOfflineMapPrompt() {
       await downloadProjectOfflineMap({
         projectId: pending.projectId,
         projectName: project.name,
-        region,
+        region: mapArea,
       });
       handleClose();
     } catch (e) {
@@ -179,8 +181,8 @@ export function NotebookOfflineMapPrompt() {
       >
         <Stack spacing={0.25} sx={{minWidth: 0}}>
           <span>
-            {isRegionUpdate
-              ? 'Download updated offline map region?'
+            {isAreaUpdate
+              ? 'Download updated offline map area?'
               : 'Download recommended offline map?'}
           </span>
           <Typography
@@ -214,9 +216,9 @@ export function NotebookOfflineMapPrompt() {
               lineHeight: {xs: 1.45, sm: 1.5},
             }}
           >
-            {isRegionUpdate
-              ? `The recommended offline map region for this ${NOTEBOOK_NAME} has changed. Download the updated region for use without a network connection.`
-              : `This ${NOTEBOOK_NAME} has a recommended offline map region configured. You can download it now for use without a network connection.`}
+            {isAreaUpdate
+              ? `The recommended offline map area for this ${NOTEBOOK_NAME} has changed. Please download it now to ensure that maps are available during offline data collection.`
+              : `This ${NOTEBOOK_NAME} has a recommended offline map area configured. Please download it now to ensure that maps are available during offline data collection.`}
           </Typography>
           {sizeLabel && (
             <Alert
@@ -247,7 +249,7 @@ export function NotebookOfflineMapPrompt() {
           {isDownloading && <ProgressBar completion={downloadProgress ?? 0} />}
           <OfflineMapRegionEditor
             config={getMapConfig()}
-            region={region}
+            region={mapArea}
             onRegionChange={() => {}}
             readOnly
             showRegionStatus={false}
@@ -294,9 +296,9 @@ export function NotebookOfflineMapPrompt() {
               : downloadProgress !== null && downloadProgress > 0
                 ? `Downloading… ${Math.round(downloadProgress * 100)}%`
                 : 'Preparing download…'
-            : isRegionUpdate
-              ? 'Download updated region'
-              : 'Download region'}
+            : isAreaUpdate
+              ? 'Download updated area'
+              : 'Download area'}
         </Button>
       </DialogActions>
     </Dialog>

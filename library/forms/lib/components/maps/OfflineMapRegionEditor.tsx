@@ -53,9 +53,19 @@ export type OfflineMapRegionEditorProps = {
   mapHeight?: number | string;
   showRegionStatus?: boolean;
   showMapControls?: boolean;
+  /** When false, hides the built-in draw/clear/save controls (e.g. Control Centre supplies its own). */
+  showControls?: boolean;
+  /** When true, immediately starts map drawing once the map is ready. */
+  drawingActive?: boolean;
+  onDrawingActiveChange?: (active: boolean) => void;
+  /** Overlay text shown while drawing; defaults to a click-drag instruction. */
+  drawingInstruction?: string;
   /** Save or clear-saved action shown beside the draw/clear controls. */
   persistenceAction?: OfflineMapPersistenceAction;
 };
+
+const DEFAULT_DRAWING_INSTRUCTION =
+  'Click on the map to start your selection, then click again to complete it.';
 
 export function OfflineMapRegionEditor({
   config,
@@ -65,6 +75,10 @@ export function OfflineMapRegionEditor({
   mapHeight = 480,
   showRegionStatus = true,
   showMapControls = true,
+  showControls = true,
+  drawingActive = false,
+  onDrawingActiveChange,
+  drawingInstruction = DEFAULT_DRAWING_INSTRUCTION,
   persistenceAction,
 }: OfflineMapRegionEditorProps) {
   const [map, setMap] = useState<Map | undefined>();
@@ -133,7 +147,16 @@ export function OfflineMapRegionEditor({
     };
   }, [map]);
 
-  const startDrawing = () => {
+  const stopDrawing = useCallback(() => {
+    if (map && drawRef.current) {
+      map.removeInteraction(drawRef.current);
+      drawRef.current = null;
+    }
+    setIsDrawing(false);
+    onDrawingActiveChange?.(false);
+  }, [map, onDrawingActiveChange]);
+
+  const startDrawing = useCallback(() => {
     if (!map || readOnly) {
       return;
     }
@@ -146,8 +169,9 @@ export function OfflineMapRegionEditor({
 
     const draw = new Draw({
       source: vectorSourceRef.current,
-      type: 'Circle',
+      type: 'LineString',
       geometryFunction: createBox(),
+      maxPoints: 2,
     });
 
     draw.on('drawstart', () => {
@@ -155,9 +179,7 @@ export function OfflineMapRegionEditor({
     });
 
     draw.on('drawend', event => {
-      setIsDrawing(false);
-      map.removeInteraction(draw);
-      drawRef.current = null;
+      stopDrawing();
 
       const geometry = event.feature.getGeometry();
       if (!geometry) {
@@ -176,7 +198,20 @@ export function OfflineMapRegionEditor({
     map.addInteraction(draw);
     drawRef.current = draw;
     setIsDrawing(true);
-  };
+    onDrawingActiveChange?.(true);
+  }, [map, onRegionChange, onDrawingActiveChange, readOnly, stopDrawing]);
+
+  useEffect(() => {
+    if (drawingActive && map && !readOnly && !isDrawing) {
+      startDrawing();
+    }
+  }, [drawingActive, isDrawing, map, readOnly, startDrawing]);
+
+  useEffect(() => {
+    if (!drawingActive && isDrawing) {
+      stopDrawing();
+    }
+  }, [drawingActive, isDrawing, stopDrawing]);
 
   const handleClear = () => {
     vectorSourceRef.current.clear();
@@ -185,7 +220,7 @@ export function OfflineMapRegionEditor({
 
   return (
     <Stack spacing={2}>
-      {!readOnly && (
+      {!readOnly && showControls && (
         <Stack
           direction="row"
           spacing={1}
@@ -196,7 +231,7 @@ export function OfflineMapRegionEditor({
             onClick={startDrawing}
             disabled={isDrawing}
           >
-            {region ? 'Redraw region' : 'Draw region'}
+            {region ? 'Redraw area' : 'Draw area'}
           </Button>
           <Button
             variant="outlined"
@@ -207,7 +242,7 @@ export function OfflineMapRegionEditor({
             aria-hidden={!region}
             sx={{visibility: region ? 'visible' : 'hidden'}}
           >
-            Clear region
+            Clear area
           </Button>
           {persistenceAction?.type === 'save' && (
             <Button
@@ -216,7 +251,7 @@ export function OfflineMapRegionEditor({
               onClick={persistenceAction.onClick}
               disabled={persistenceAction.pending}
             >
-              {persistenceAction.pending ? 'Saving…' : 'Save region'}
+              {persistenceAction.pending ? 'Saving…' : 'Save area'}
             </Button>
           )}
           {persistenceAction?.type === 'clear-saved' && (
@@ -226,7 +261,7 @@ export function OfflineMapRegionEditor({
               onClick={persistenceAction.onClick}
               disabled={persistenceAction.pending}
             >
-              {persistenceAction.pending ? 'Clearing…' : 'Clear saved region'}
+              {persistenceAction.pending ? 'Clearing…' : 'Clear saved area'}
             </Button>
           )}
         </Stack>
@@ -240,13 +275,13 @@ export function OfflineMapRegionEditor({
           sx={{minHeight: theme => theme.typography.body2.lineHeight}}
         >
           {region
-            ? `Region configured. ${readOnly ? 'Preview shown below.' : 'Save to apply changes.'}`
+            ? `Area configured. ${readOnly ? 'Preview shown below.' : 'Save to apply changes.'}`
             : '\u00A0'}
         </Typography>
       )}
 
       <Box sx={{height: mapHeight, width: '100%', position: 'relative'}}>
-        {isDrawing && (
+        {isDrawing && drawingInstruction && (
           <Alert
             severity="info"
             sx={{
@@ -257,7 +292,7 @@ export function OfflineMapRegionEditor({
               zIndex: 1000,
             }}
           >
-            Click and drag on the map to draw the offline map download region.
+            {drawingInstruction}
           </Alert>
         )}
         <MapComponent
