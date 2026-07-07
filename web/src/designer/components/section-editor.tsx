@@ -695,7 +695,8 @@ export const SectionEditor = ({
           </Button>
         </DialogActions>
       </Dialog>
-      <Grid>
+      {/* Scroll target for global design search (see designerElementIds). */}
+      <Grid data-designer-section={viewId}>
         {fView.condition ? (
           <Alert severity="info" sx={designerInfoCalloutSx}>
             <strong>Section Condition:</strong> Show this section if&nbsp;

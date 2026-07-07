@@ -1,0 +1,1 @@
+export {DesignerGlobalSearch} from './DesignerGlobalSearch';

@@ -1,6 +1,10 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
-import {EXCLUDED_TEAM_ROLES, INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
+import {
+  EXCLUDED_TEAM_ROLES,
+  INVITE_TOKEN_HINTS,
+  brandNotebook,
+} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {

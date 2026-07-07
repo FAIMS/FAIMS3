@@ -237,3 +237,34 @@ export const designerSoftPanelCardSx: SxProps<Theme> = {
       0.78
     )}`,
 };
+
+/** Fuzzy-search match emphasis inside autocomplete option labels. */
+export const designerSearchMatchHighlightSx: SxProps<Theme> = {
+  '& strong': {
+    color: theme => theme.designerMeta.tokens.searchMatchHighlight,
+    fontWeight: 700,
+  },
+};
+
+/** Keyboard shortcut hint badge shown in the global design search field. */
+export const designerSearchShortcutHintSx: SxProps<Theme> = {
+  fontSize: '0.72rem',
+  lineHeight: 1,
+  px: 0.75,
+  py: 0.375,
+  borderRadius: 0.75,
+  border: 1,
+  borderColor: 'divider',
+  bgcolor: 'action.hover',
+  color: 'text.secondary',
+  fontFamily: 'inherit',
+  pointerEvents: 'none',
+  userSelect: 'none',
+};
+
+/** Dashed frame around nested condition editors. */
+export const designerConditionFrameSx: SxProps<Theme> = {
+  border: '1px dashed',
+  borderColor: 'divider',
+  p: 1.25,
+};

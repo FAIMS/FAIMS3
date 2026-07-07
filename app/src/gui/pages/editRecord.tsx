@@ -52,7 +52,8 @@ import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
-import {localGetDataDb} from '../../utils/database';
+import {tryLocalGetDataDb} from '../../utils/database';
+import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
 import {theme} from '../themes';
@@ -82,6 +83,13 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
   return DEFAULT_NAVIGATION_STATE;
 }
 
+/**
+ * Edit an existing record (or create via `mode=new`).
+ *
+ * Hooks are declared unconditionally so upstream notebook removal does not
+ * violate the Rules of Hooks; see {@link tryLocalGetDataDb} and
+ * `canLoadRecord` gating on queries.
+ */
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
     serverId: string;
@@ -94,29 +102,44 @@ export const EditRecordPage = () => {
   const mode = searchParams.get('mode') as AvpUpdateMode;
 
   const navigate = useNavigate();
-
   const activeUser = useAppSelector(selectActiveUser);
   const navigationContext = useFormNavigationContext();
-
-  if (!activeUser) {
-    return <div>Please log in to edit records.</div>;
-  }
-  const userId = activeUser.username;
+  const project = useAppSelector(state =>
+    projectId ? selectProjectById(state, projectId) : undefined
+  );
 
   // Main page elements
   // - Header with 'back' button and record HRID
   // - breadcrumbs
   // - Tabbed view of the record (View, Edit, Info, Conflicts)
+  //
+  // Missing project/notebook redirects via useEffect below (upstream removal);
+  // other missing route params are handled after hooks in the render section.
 
-  // TODO: these missing info checks should probably just redirect back to the home page
-  //  maybe with a flash message.
-  if (!serverId || !projectId) return <></>;
-  const project = useAppSelector(state => selectProjectById(state, projectId));
-  if (!project) return <></>;
-  if (!recordId) return <div>Record ID not specified</div>;
+  const uiSpec = project?.uiSpecificationId
+    ? compiledSpecService.getSpec(project.uiSpecificationId)
+    : undefined;
+  const dataDb =
+    projectId && project ? tryLocalGetDataDb(projectId) : undefined;
 
-  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
-  if (!uiSpec) return <div>UI Specification not found</div>;
+  // Gate queries and form wiring so hooks stay unconditional while the project
+  // is torn down (upstream removal triggers redirect via useEffect below).
+  const canLoadRecord = !!(
+    serverId &&
+    projectId &&
+    recordId &&
+    project &&
+    uiSpec &&
+    dataDb &&
+    activeUser
+  );
+
+  // Backup redirect if the project vanishes while this page is mounted.
+  useEffect(() => {
+    if (serverId && projectId && !project) {
+      navigate(NOTEBOOK_LIST_ROUTE, {replace: true});
+    }
+  }, [serverId, projectId, project, navigate]);
 
   // These are handlers passed back from the editable form to assist with
   // navigation management
@@ -166,13 +189,12 @@ export const EditRecordPage = () => {
     };
   }, [formHandle]);
 
-  const dataDb = localGetDataDb(projectId);
-  const dataEngine = () => {
+  const dataEngine = useCallback(() => {
     return new DataEngine({
       dataDb: dataDb as DatabaseInterface<DataDocument>,
-      uiSpec,
+      uiSpec: uiSpec!,
     });
-  };
+  }, [dataDb, uiSpec]);
 
   // Fetch initial form data using TanStack Query for caching and loading states
   const {
@@ -186,9 +208,10 @@ export const EditRecordPage = () => {
     queryFn: async () => {
       // Get the hydrated record data in the form format
       return await dataEngine().form.getExistingFormData({
-        recordId: recordId,
+        recordId: recordId!,
       });
     },
+    enabled: canLoadRecord,
     // Try offline
     networkMode: 'always',
     // Always refetch on mount to get fresh data
@@ -200,15 +223,16 @@ export const EditRecordPage = () => {
 
   // Query to fetch the relevant viewset
   const relevantUiSpec = useUiSpecLayout({
-    dataDb,
-    recordId,
-    uiSpec,
+    recordId: recordId ?? '',
+    uiSpec: uiSpec!,
+    dataDb: dataDb!,
+    enabled: canLoadRecord,
   });
 
   // Generate attachment service for this project
-  const attachmentEngine = () => {
-    return createProjectAttachmentService(projectId);
-  };
+  const attachmentEngine = useCallback(() => {
+    return createProjectAttachmentService(projectId!);
+  }, [projectId]);
 
   // Build the auto incrementer service
   const handleAutoIncrementIssue = useCallback(
@@ -223,132 +247,141 @@ export const EditRecordPage = () => {
     []
   );
   const incrementerService = useAutoIncrementService({
-    projectId,
+    projectId: projectId ?? '',
     onIssue: handleAutoIncrementIssue,
   });
 
   const {isOnline} = useIsOnline();
 
-  const formConfig: FullFormConfig = useMemo(
-    () => {
-      const addressAutosuggestService = getAddressAutosuggestService();
-      return {
-        mode: 'full' as const,
-        platform: CAPACITOR_PLATFORM,
-        appName: APP_NAME,
-        recordId,
-        projectId,
-        decodedToken: activeUser.parsedToken,
-        recordMode: mode,
-        dataEngine,
-        attachmentEngine,
-        ...(addressAutosuggestService && {addressAutosuggestService}),
-        getIsOnline: () => isOnline,
-        mapConfig: getMapConfig,
-        navigation: {
-          navigateToRecordList: {
-            label: 'Return to record list',
-            navigate: () => {
-              navigate(getNotebookRoute({serverId, projectId}));
-            },
-          },
-          // Takes you back to view record (note this is only shown if there are no
-          // parent navigation history)
-          navigateToViewRecord: params => {
-            navigate(
-              getViewRecordRoute({
-                projectId,
-                recordId: params.recordId,
-                serverId,
-              })
-            );
-          },
-          toRecord: ({
-            recordId: targetRecordId,
-            mode,
-            stripNavigationEntry,
-            addNavigationEntry,
-            scrollTarget,
-          }: {
-            recordId: RecordID;
-            mode: AvpUpdateMode;
-            // If you want to push another navigation entry
-            addNavigationEntry?: FormNavigationChildEntry;
-            // If you want to strip the head nav entry (such as when returning to
-            // parent) - how many to take
-            stripNavigationEntry?: number;
-            scrollTarget?: RedirectInfo;
-          }) => {
-            let newNavState: FormNavigationContext = navigationContext;
-            if (newNavState.mode === 'root') {
-              // If in root mode, stripping has no effect, but we can add
-              if (addNavigationEntry !== undefined) {
-                newNavState = {mode: 'child', lineage: [addNavigationEntry]};
-              }
-            } else if (newNavState.mode === 'child') {
-              if (stripNavigationEntry !== undefined) {
-                // Strip off the latest entry
-                newNavState.lineage = newNavState.lineage.slice(
-                  0,
-                  -stripNavigationEntry
-                );
-              }
-              if (addNavigationEntry !== undefined) {
-                // Push new entry
-                newNavState.lineage.push(addNavigationEntry);
-              }
-            }
+  const formConfig: FullFormConfig | null = useMemo(() => {
+    if (!canLoadRecord || !uiSpec || !dataDb) {
+      return null;
+    }
 
-            // Update scroll target as requested
-            newNavState.scrollTarget = scrollTarget;
-
+    const addressAutosuggestService = getAddressAutosuggestService();
+    return {
+      mode: 'full' as const,
+      platform: CAPACITOR_PLATFORM,
+      appName: APP_NAME,
+      recordId: recordId!,
+      projectId: projectId!,
+      decodedToken: activeUser!.parsedToken,
+      recordMode: mode,
+      dataEngine,
+      attachmentEngine,
+      ...(addressAutosuggestService && {addressAutosuggestService}),
+      getIsOnline: () => isOnline,
+      mapConfig: getMapConfig,
+      navigation: {
+        navigateToRecordList: {
+          label: 'Return to record list',
+          navigate: () => {
             navigate(
-              getEditRecordRoute({
-                serverId,
-                projectId,
-                recordId: targetRecordId,
-                mode,
-              }),
-              // Include navigation state
-              {state: newNavState}
+              getNotebookRoute({serverId: serverId!, projectId: projectId!})
             );
-          },
-          getToRecordLink(params) {
-            return getEditRecordRoute({
-              serverId,
-              projectId,
-              recordId: params.recordId,
-              mode,
-            });
-          },
-          navigateToLink(to) {
-            navigate(to);
           },
         },
-        user: activeUser.username,
-        // Pass through the layout from the spec
-        layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
-        // Pass in the incrementer service
-        incrementerService,
-      };
-    },
+        // Takes you back to view record (note this is only shown if there are no
+        // parent navigation history)
+        navigateToViewRecord: params => {
+          navigate(
+            getViewRecordRoute({
+              projectId: projectId!,
+              recordId: params.recordId,
+              serverId: serverId!,
+            })
+          );
+        },
+        toRecord: ({
+          recordId: targetRecordId,
+          mode: targetMode,
+          stripNavigationEntry,
+          addNavigationEntry,
+          scrollTarget,
+        }: {
+          recordId: RecordID;
+          mode: AvpUpdateMode;
+          // If you want to push another navigation entry
+          addNavigationEntry?: FormNavigationChildEntry;
+          // If you want to strip the head nav entry (such as when returning to
+          // parent) - how many to take
+          stripNavigationEntry?: number;
+          scrollTarget?: RedirectInfo;
+        }) => {
+          let newNavState: FormNavigationContext = navigationContext;
+          if (newNavState.mode === 'root') {
+            // If in root mode, stripping has no effect, but we can add
+            if (addNavigationEntry !== undefined) {
+              newNavState = {mode: 'child', lineage: [addNavigationEntry]};
+            }
+          } else if (newNavState.mode === 'child') {
+            if (stripNavigationEntry !== undefined) {
+              // Strip off the latest entry
+              newNavState.lineage = newNavState.lineage.slice(
+                0,
+                -stripNavigationEntry
+              );
+            }
+            if (addNavigationEntry !== undefined) {
+              // Push new entry
+              newNavState.lineage.push(addNavigationEntry);
+            }
+          }
+
+          // Update scroll target as requested
+          newNavState.scrollTarget = scrollTarget;
+
+          navigate(
+            getEditRecordRoute({
+              serverId: serverId!,
+              projectId: projectId!,
+              recordId: targetRecordId,
+              mode: targetMode,
+            }),
+            // Include navigation state
+            {state: newNavState}
+          );
+        },
+        getToRecordLink(params) {
+          return getEditRecordRoute({
+            serverId: serverId!,
+            projectId: projectId!,
+            recordId: params.recordId,
+            mode,
+          });
+        },
+        navigateToLink(to) {
+          navigate(to);
+        },
+      },
+      user: activeUser!.username,
+      // Pass through the layout from the spec
+      layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
+      // Pass in the incrementer service
+      incrementerService,
+    };
+  }, [
     // Be more careful with dependencies here to avoid unnecessary re-renders of
     // the editable form
-    [
-      serverId,
-      navigationContext,
-      projectId,
-      recordId,
-      mode,
-      activeUser.username,
-      activeUser.parsedToken,
-      relevantUiSpec.data,
-      isOnline,
-    ]
-  );
+    canLoadRecord,
+    serverId,
+    navigationContext,
+    projectId,
+    recordId,
+    mode,
+    activeUser,
+    relevantUiSpec.data,
+    isOnline,
+    dataEngine,
+    attachmentEngine,
+    incrementerService,
+    navigate,
+    uiSpec,
+    dataDb,
+  ]);
 
   const formLabel = formData
-    ? uiSpec.viewsets[formData.formId]?.label
+    ? uiSpec?.viewsets[formData.formId]?.label
     : undefined;
 
   const headingSlot: React.ReactNode | undefined = useMemo(() => {
@@ -361,14 +394,39 @@ export const EditRecordPage = () => {
         </Typography>
         {mode === 'parent' && (
           <Typography variant="h4" color={theme.palette.text.secondary}>
-            {mode === 'parent'
-              ? formData.context.hrid
-              : formData.context.record._id}
+            {formData.context.hrid}
           </Typography>
         )}
       </Stack>
     ) : undefined;
-  }, [!!formData]);
+  }, [formData, formLabel, mode]);
+
+  // TODO: these missing info checks should probably just redirect back to the home page
+  //  maybe with a flash message. (Missing project redirects via useEffect above.)
+  if (!activeUser) {
+    return <div>Please log in to edit records.</div>;
+  }
+
+  if (!serverId || !projectId) {
+    return null;
+  }
+
+  // Redirect in flight or prerequisites missing — render nothing until settled.
+  if (!project || !dataDb) {
+    return null;
+  }
+
+  if (!uiSpec) {
+    return <div>UI Specification not found</div>;
+  }
+
+  if (!recordId) {
+    return <div>Record ID not specified</div>;
+  }
+
+  if (!formConfig) {
+    return null;
+  }
 
   return (
     <>
@@ -392,9 +450,7 @@ export const EditRecordPage = () => {
             <Button
               variant="outlined"
               onClick={() =>
-                navigate(
-                  getViewRecordRoute({projectId, recordId: recordId!, serverId})
-                )
+                navigate(getViewRecordRoute({projectId, recordId, serverId}))
               }
             >
               Open read-only view
@@ -425,14 +481,14 @@ export const EditRecordPage = () => {
             )}
             <EditableFormManager
               // Force remount if record ID or FormID changes
-              key={`${recordId}-${formData.formId}`}
+              key={`${recordId}-${formData!.formId}`}
               headingSlot={headingSlot}
               mode={mode}
-              initialData={formData.data}
-              revisionId={formData.revisionId}
-              existingRecord={formData.context.record}
-              formId={formData.formId}
-              activeUser={userId}
+              initialData={formData!.data}
+              revisionId={formData!.revisionId}
+              existingRecord={formData!.context.record}
+              formId={formData!.formId}
+              activeUser={activeUser.username}
               recordId={recordId}
               config={formConfig}
               navigationContext={navigationContext}

@@ -28,6 +28,7 @@
     "webapp-sync": "cap sync",
     "app-update": "cap update",
     "lint": "oxlint -c ../.oxlintrc.json .",
+    "typecheck": "tsc --noEmit",
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",

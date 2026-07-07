@@ -111,20 +111,26 @@ export class CouchAttachmentService extends BaseAttachmentService {
       attach_format_version: 1,
     };
 
-    attachmentSaveTrace('couch.storeAttachmentFromFile:before-createAttachment', {
-      id,
-      fileSize: file.size,
-      contentType: metadata.attachmentDetails.contentType,
-    });
+    attachmentSaveTrace(
+      'couch.storeAttachmentFromFile:before-createAttachment',
+      {
+        id,
+        fileSize: file.size,
+        contentType: metadata.attachmentDetails.contentType,
+      }
+    );
 
     // Now write it using special core op
     try {
       await this.core.createAttachment(attachmentDocument);
     } catch (e) {
-      attachmentSaveTrace('couch.storeAttachmentFromFile:createAttachment-error', {
-        id,
-        error: String(e),
-      });
+      attachmentSaveTrace(
+        'couch.storeAttachmentFromFile:createAttachment-error',
+        {
+          id,
+          error: String(e),
+        }
+      );
       console.error(
         'Failed to create attachment in couch DB attachment service. Error: ',
         e

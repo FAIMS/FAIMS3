@@ -37,6 +37,7 @@ export const faimsTokens: DesignerThemeTokens = {
   deleteButtonColor: fieldmarkBrand.errorMain,
   successMain: fieldmarkBrand.successMain,
   infoMain: fieldmarkBrand.infoMain,
+  searchMatchHighlight: fieldmarkBrand.primaryMain,
 
   // ── Neutral greyscale ───────────────────────────────────────────────────
   darkGrey: colors.blueGrey[700],

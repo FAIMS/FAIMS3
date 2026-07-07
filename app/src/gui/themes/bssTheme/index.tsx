@@ -1,5 +1,5 @@
 import {colors, createTheme} from '@mui/material';
-import {bssBrand} from '@faims3/data-model';
+import {bssBrand, mapControlBrand} from '@faims3/data-model';
 import typography from '../fieldmark/typography';
 import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
 
@@ -73,6 +73,15 @@ const baseTheme = createTheme({
       divider: '#828789FF',
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
+    },
+    mapControl: {
+      groupBackground: 'rgba(255, 255, 255, 0.95)',
+      groupShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+      buttonBackground: '#171717',
+      buttonBackgroundHover: '#323232',
+      buttonActiveBackground: mapControlBrand.activeMain,
+      buttonActiveBackgroundHover: mapControlBrand.activeHover,
+      buttonForeground: '#FFFFFF',
     },
   },
   typography,

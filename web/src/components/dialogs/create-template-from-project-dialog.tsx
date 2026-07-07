@@ -43,7 +43,7 @@ export const CreateTemplateFromProjectDialog = ({
           <span>Create Template</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg space-y-6">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-medium">
             Create Template

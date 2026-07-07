@@ -23,7 +23,10 @@ import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
-import {attachmentSaveTrace, BaseFieldParametersSchema} from '@faims3/data-model';
+import {
+  attachmentSaveTrace,
+  BaseFieldParametersSchema,
+} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {
   LoadedPhoto,
@@ -347,29 +350,29 @@ const PendingPhotoItem: React.FC<{
         />
         {/* Saving indicator overlay — only while blob is being written to PouchDB */}
         {isSaving && (
-        <ImageListItemBar
-          sx={{background: 'rgba(0, 0, 0, 0.7)'}}
-          position="top"
-          actionIcon={
-            <Box sx={{display: 'flex', alignItems: 'center', pr: 1}}>
-              <SyncIcon
-                sx={{
-                  color: 'white',
-                  fontSize: 20,
-                  animation: 'spin 1s linear infinite',
-                  '@keyframes spin': {
-                    '0%': {transform: 'rotate(0deg)'},
-                    '100%': {transform: 'rotate(360deg)'},
-                  },
-                }}
-              />
-              <Typography variant="caption" sx={{color: 'white', ml: 0.5}}>
-                Saving...
-              </Typography>
-            </Box>
-          }
-          actionPosition="right"
-        />
+          <ImageListItemBar
+            sx={{background: 'rgba(0, 0, 0, 0.7)'}}
+            position="top"
+            actionIcon={
+              <Box sx={{display: 'flex', alignItems: 'center', pr: 1}}>
+                <SyncIcon
+                  sx={{
+                    color: 'white',
+                    fontSize: 20,
+                    animation: 'spin 1s linear infinite',
+                    '@keyframes spin': {
+                      '0%': {transform: 'rotate(0deg)'},
+                      '100%': {transform: 'rotate(360deg)'},
+                    },
+                  }}
+                />
+                <Typography variant="caption" sx={{color: 'white', ml: 0.5}}>
+                  Saving...
+                </Typography>
+              </Box>
+            }
+            actionPosition="right"
+          />
         )}
       </Box>
     </ImageItemContainer>
@@ -787,21 +790,24 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
       // Mark storage complete; keep optimistic preview until useAttachments loads.
       // The Saving overlay hides once attachmentId is set (see PendingPhotoItem).
-        setPendingPhotos(current => {
-          const updated = new Map(current);
-          const pending = updated.get(tempId);
-          if (pending) {
-            updated.set(tempId, {...pending, attachmentId: newId});
-          }
-          return updated;
-        });
+      setPendingPhotos(current => {
+        const updated = new Map(current);
+        const pending = updated.get(tempId);
+        if (pending) {
+          updated.set(tempId, {...pending, attachmentId: newId});
+        }
+        return updated;
+      });
 
-        props.setFieldData((prev: string[] | undefined) => [
-          ...(prev ?? []),
-          newId,
-        ]);
+      props.setFieldData((prev: string[] | undefined) => [
+        ...(prev ?? []),
+        newId,
+      ]);
 
-        attachmentSaveTrace('TakePhoto:save-complete', {fieldId, attachmentId: newId});
+      attachmentSaveTrace('TakePhoto:save-complete', {
+        fieldId,
+        attachmentId: newId,
+      });
     } catch (err: any) {
       logError(new Error('Failed to capture photo:'), {error: err});
     } finally {

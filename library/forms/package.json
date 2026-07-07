@@ -17,6 +17,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --p ./tsconfig-build.json && vite build",
+    "typecheck": "tsc --noEmit",
     "watch": "pnpm run watch:types & pnpm run watch:build",
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",

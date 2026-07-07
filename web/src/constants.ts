@@ -45,12 +45,11 @@ const VALID_TEAM_ROLES = new Set(
   resourceRoles[Resource.TEAM].map(r => r.role as string)
 );
 
-const requestedExcludedTeamRoles = (
-  import.meta.env.VITE_EXCLUDED_TEAM_ROLES as string | undefined
-)
-  ?.split(',')
-  .map(s => s.trim())
-  .filter(Boolean) ?? [];
+const requestedExcludedTeamRoles =
+  (import.meta.env.VITE_EXCLUDED_TEAM_ROLES as string | undefined)
+    ?.split(',')
+    .map(s => s.trim())
+    .filter(Boolean) ?? [];
 
 const invalidExcludedTeamRoles = requestedExcludedTeamRoles.filter(
   r => !VALID_TEAM_ROLES.has(r)

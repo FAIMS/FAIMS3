@@ -5,6 +5,7 @@
   "main": "build/src/index.js",
   "scripts": {
     "lint": "oxlint -c ../.oxlintrc.json .",
+    "typecheck": "tsc --noEmit",
     "clean": "gts clean",
     "compile": "tsc",
     "build": "tsc && copyfiles views/* views/**/* public/* public/**/* build/src",

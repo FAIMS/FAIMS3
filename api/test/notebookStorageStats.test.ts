@@ -52,12 +52,16 @@ describe('notebook storage stats', () => {
 
     // Replace the real nano data DB (which would hit CouchDB) with a fake whose
     // info() returns the per-project size we seeded, so byteCount is deterministic.
-    sinon.stub(couchdb, 'getNanoDataDb').callsFake((async (projectId: string) => {
+    sinon.stub(couchdb, 'getNanoDataDb').callsFake((async (
+      projectId: string
+    ) => {
       return {
         info: async () => {
           infoCallCount++;
           if (erroringProjects.has(projectId)) {
-            throw new Error(`simulated CouchDB info() failure for ${projectId}`);
+            throw new Error(
+              `simulated CouchDB info() failure for ${projectId}`
+            );
           }
           return {sizes: {active: byteCountByProject.get(projectId) ?? 0}};
         },

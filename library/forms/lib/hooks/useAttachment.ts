@@ -1,4 +1,8 @@
-import {attachmentSaveTrace, IAttachmentService, LoadAttachmentResult} from '@faims3/data-model';
+import {
+  attachmentSaveTrace,
+  IAttachmentService,
+  LoadAttachmentResult,
+} from '@faims3/data-model';
 import {useQueries, useQuery} from '@tanstack/react-query';
 
 /**

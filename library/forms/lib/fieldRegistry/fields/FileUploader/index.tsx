@@ -1,4 +1,8 @@
-import {formatFileSize, attachmentSaveTrace, logError} from '@faims3/data-model';
+import {
+  formatFileSize,
+  attachmentSaveTrace,
+  logError,
+} from '@faims3/data-model';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -638,7 +642,13 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         setError('Failed to upload file(s). Please try again.');
       }
     },
-    [state.value, addAttachment, setAttachmentSaving, maximumNumberOfFiles, fieldId]
+    [
+      state.value,
+      addAttachment,
+      setAttachmentSaving,
+      maximumNumberOfFiles,
+      fieldId,
+    ]
   );
 
   /**

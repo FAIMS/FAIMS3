@@ -3,6 +3,7 @@ import {
   currentlyVisibleFields,
   getFieldNamesForViewset,
   normalizeNotebookUiSpecification,
+  type CompiledNotebookUiSpec,
 } from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {z} from 'zod';
@@ -15,8 +16,10 @@ import {
 
 // Sample fixture is a v4 {@link NotebookDefinition}; normalize is idempotent and
 // still accepts legacy uploads during the metadata migration window.
-const {uiSpec} = normalizeNotebookUiSpecification(sampleNotebook);
-compileUiSpecConditionals(uiSpec);
+const {uiSpec: rawUiSpec} = normalizeNotebookUiSpecification(sampleNotebook);
+compileUiSpecConditionals(rawUiSpec);
+// compileUiSpecConditionals attaches conditionFn/conditional_sources in place
+const uiSpec = rawUiSpec as CompiledNotebookUiSpec;
 
 const SAMPLE_VALID_DATA = {
   'First-name': 'John',

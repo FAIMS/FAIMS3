@@ -86,7 +86,7 @@ export function DesignerWidget({
   animationScale = 0.95,
 }: DesignerWidgetProps) {
   const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
-  const notebookIdentity = notebook?.metadata?.project_id ?? '__none__';
+  const notebookIdentity = notebook?.metadata?.custom?.project_id ?? '__none__';
 
   // 1. Hydrate + inject designerIdentifiers + reset undo history on each new notebook
   // (schema migration runs in notebookAdapters before the parent passes `notebook` here)

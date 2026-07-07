@@ -148,14 +148,18 @@ export class Page {
 
         // Try to find any elements with data-testid
         const testElements = await $$('[data-testid]');
-        console.log(`Found ${testElements.length} elements with data-testid`);
+        const testElementCount = await testElements.length;
+        console.log(`Found ${testElementCount} elements with data-testid`);
 
-        for (let i = 0; i < Math.min(testElements.length, 5); i++) {
+        for (let i = 0; i < Math.min(testElementCount, 5); i++) {
           const testId = await testElements[i].getAttribute('data-testid');
           console.log(`  - data-testid="${testId}"`);
         }
       } catch (error) {
-        console.log('Debug info failed:', error.message);
+        console.log(
+          'Debug info failed:',
+          error instanceof Error ? error.message : error
+        );
       }
     } else {
       await browser.waitUntil(

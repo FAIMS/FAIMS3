@@ -106,6 +106,15 @@ export const DesignPanel = () => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
   }, [viewSets]);
 
+  // Keep the tab highlight in sync when navigation happens outside the tab bar
+  // (e.g. global design search).
+  useEffect(() => {
+    const pathTabIndex = pathname.split('/')[2];
+    if (pathTabIndex) {
+      setTabIndex(pathTabIndex);
+    }
+  }, [pathname]);
+
   useEffect(() => {
     const el = formTabsRef.current;
     if (!el) return;

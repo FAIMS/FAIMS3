@@ -30,6 +30,7 @@
   },
   "scripts": {
     "build": "pnpm run build:cjs && pnpm run build:esm",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "clean": "gts clean && rm -rf build",

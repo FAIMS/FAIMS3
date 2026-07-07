@@ -38,6 +38,7 @@ import {
   designerCancelButtonSx,
   designerResponsiveFrameSx,
 } from './designer-style';
+import {DesignerGlobalSearch} from './design-search';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
 export type NotebookEditorProps = {
@@ -293,6 +294,7 @@ export const NotebookEditor = ({
                 </>
               )}
             </Stack>
+            {isDesignRoute && <DesignerGlobalSearch />}
           </Box>
         </Box>
         <Box sx={[contentSx, designerResponsiveFrameSx]}>

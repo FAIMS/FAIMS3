@@ -56,6 +56,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "esbuild": "^0.25.0",
+    "fuzzysort": "^3.1.0",
     "jwt-decode": "^4.0.0",
     "lexical": "^0.12.4",
     "lodash": "^4.18.1",

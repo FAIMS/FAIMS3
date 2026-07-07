@@ -45,7 +45,7 @@ import {
   Typography,
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import React, {useCallback} from 'react';
+import React, {useCallback, useEffect} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {getMapConfig} from '../../buildconfig';
 import {
@@ -58,7 +58,8 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {localGetDataDb} from '../../utils/database';
+import {tryLocalGetDataDb} from '../../utils/database';
+import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
 import RecordMeta from '../components/record/meta';
 import UGCReport from '../components/record/UGCReport';
@@ -357,7 +358,11 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
 };
 
 /**
- * Main ViewRecordPage component with tab navigation
+ * Main ViewRecordPage component with tab navigation.
+ *
+ * Hooks are declared unconditionally so upstream notebook removal (which drops
+ * the project from Redux) does not violate the Rules of Hooks. Queries use
+ * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -373,44 +378,47 @@ export const ViewRecordPage: React.FC = () => {
   const [activeTab, setActiveTab] = useTabState();
 
   const activeUser = useAppSelector(selectActiveUser);
+  const project = useAppSelector(state =>
+    projectId ? selectProjectById(state, projectId) : undefined
+  );
 
-  // Early returns for missing data
-  if (!activeUser) {
-    return <div>Please log in to view records.</div>;
-  }
+  const uiSpec = project?.uiSpecificationId
+    ? compiledSpecService.getSpec(project.uiSpecificationId)
+    : undefined;
+  const dataDb =
+    projectId && project ? tryLocalGetDataDb(projectId) : undefined;
 
-  if (!serverId || !projectId || !recordId) {
-    return null;
-  }
+  // Gate queries so hooks stay unconditional while the project is torn down.
+  const canLoadRecord = !!(
+    serverId &&
+    projectId &&
+    recordId &&
+    project &&
+    uiSpec &&
+    dataDb &&
+    activeUser
+  );
 
-  const project = useAppSelector(state => selectProjectById(state, projectId));
-  if (!project) {
-    return null;
-  }
-
-  const uiSpec = compiledSpecService.getSpec(project.uiSpecificationId);
-  if (!uiSpec) {
-    return <div>UI Specification not found</div>;
-  }
-
-  const dataDb = localGetDataDb(projectId);
+  // Backup redirect if the project vanishes while this page is mounted.
+  useEffect(() => {
+    if (serverId && projectId && !project) {
+      nav(NOTEBOOK_LIST_ROUTE, {replace: true});
+    }
+  }, [serverId, projectId, project, nav]);
 
   const getDataEngine = useCallback(
     () =>
       new DataEngine({
         dataDb: dataDb as DatabaseInterface<DataDocument>,
-        uiSpec,
+        uiSpec: uiSpec!,
       }),
     [dataDb, uiSpec]
   );
 
   const getAttachmentService = useCallback(
-    () => createProjectAttachmentService(projectId),
+    () => createProjectAttachmentService(projectId!),
     [projectId]
   );
-
-  // back button goes to the notebook list page
-  const backLink = getNotebookRoute({serverId, projectId});
 
   // Fetch form data
   const {
@@ -423,9 +431,10 @@ export const ViewRecordPage: React.FC = () => {
     queryKey: ['formData', recordId, specifiedRevisionId],
     queryFn: async () =>
       getDataEngine().form.getExistingFormData({
-        recordId,
+        recordId: recordId!,
         revisionId: specifiedRevisionId,
       }),
+    enabled: canLoadRecord,
     networkMode: 'always',
     refetchOnMount: 'always',
     staleTime: 0,
@@ -446,10 +455,10 @@ export const ViewRecordPage: React.FC = () => {
       return getImpliedNavigationRelationships(
         formData.context.revision,
         getDataEngine(),
-        uiSpec
+        uiSpec!
       );
     },
-    enabled: !!formData,
+    enabled: canLoadRecord && !!formData,
     networkMode: 'always',
     staleTime: 0,
     gcTime: 0,
@@ -464,6 +473,27 @@ export const ViewRecordPage: React.FC = () => {
     },
     [setActiveTab]
   );
+
+  // Early returns for missing data (after hooks — see component docstring).
+  if (!activeUser) {
+    return <div>Please log in to view records.</div>;
+  }
+
+  if (!serverId || !projectId || !recordId) {
+    return null;
+  }
+
+  // Redirect in flight or missing DB handle — render nothing until settled.
+  if (!project || !dataDb) {
+    return null;
+  }
+
+  if (!uiSpec) {
+    return <div>UI Specification not found</div>;
+  }
+
+  // back button goes to the notebook list page
+  const backLink = getNotebookRoute({serverId, projectId});
 
   // Loading state
   if (isPending || isRefetching) {

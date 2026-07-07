@@ -8,3 +8,4 @@ app/public/manifest.json
 .pnpm-store
 __pycache__/
 *.py[cod]
+.cursor

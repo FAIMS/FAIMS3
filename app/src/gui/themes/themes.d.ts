@@ -57,6 +57,15 @@ declare module '@mui/material/styles' {
       rowBorder: string;
       columnSeparator: string;
     };
+    mapControl: {
+      groupBackground: string;
+      groupShadow: string;
+      buttonBackground: string;
+      buttonBackgroundHover: string;
+      buttonActiveBackground: string;
+      buttonActiveBackgroundHover: string;
+      buttonForeground: string;
+    };
     stepperGradient: string[];
   }
 
@@ -110,6 +119,15 @@ declare module '@mui/material/styles' {
       divider: string;
       rowBorder: string;
       columnSeparator: string;
+    };
+    mapControl?: {
+      groupBackground: string;
+      groupShadow: string;
+      buttonBackground: string;
+      buttonBackgroundHover: string;
+      buttonActiveBackground: string;
+      buttonActiveBackgroundHover: string;
+      buttonForeground: string;
     };
     stepperGradient?: string[];
   }

@@ -90,7 +90,6 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
         label: 'Current byte count',
         getValue: p => formatFileSize(p.byteCount),
       },
-
     ],
     []
   );
