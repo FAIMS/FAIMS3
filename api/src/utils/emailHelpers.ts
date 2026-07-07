@@ -5,11 +5,7 @@
  * through the email service.
  */
 
-import {
-  CONDUCTOR_PUBLIC_URL,
-  EMAIL_SERVICE,
-  WEBAPP_PUBLIC_URL,
-} from '../buildconfig';
+import {config, EMAIL_SERVICE} from '../buildconfig';
 import {EmailOptions} from '../services/emailService';
 
 /**
@@ -19,9 +15,9 @@ import {EmailOptions} from '../services/emailService';
  * @returns The complete verification URL
  */
 export function buildVerificationUrl({code}: {code: string}): string {
-  return `${CONDUCTOR_PUBLIC_URL}/verify-email?code=${encodeURIComponent(
+  return `${config.conductorPublicUrl}/verify-email?code=${encodeURIComponent(
     code
-  )}&redirect=${encodeURIComponent(WEBAPP_PUBLIC_URL)}`;
+  )}&redirect=${encodeURIComponent(config.webAppPublicUrl)}`;
 }
 
 /**
@@ -176,7 +172,7 @@ export function buildPasswordResetUrl({
   code: string;
   redirect: string;
 }): string {
-  return `${CONDUCTOR_PUBLIC_URL}/auth/reset-password?code=${encodeURIComponent(code)}&redirect=${redirect}`;
+  return `${config.conductorPublicUrl}/auth/reset-password?code=${encodeURIComponent(code)}&redirect=${redirect}`;
 }
 
 /**

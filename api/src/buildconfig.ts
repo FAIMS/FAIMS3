@@ -16,11 +16,22 @@
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration of the build, including things like
- *   which server to use and whether to include test data
+ *   which server to use and whether to include test data.
+ *
+ *   Configuration is parsed from the environment using a two-pass zod pipeline:
+ *     - Pass one (EnvSchema) validates/narrows the raw environment into strings.
+ *     - Pass two (ConfigSchema + a small amount of custom logic for values that
+ *       depend on each other, are required, or construct service instances)
+ *       produces the typed, frozen `config` singleton exported below.
+ *
+ *   Prefer importing `{config}` and reading `config.<field>`. A handful of
+ *   values that are not simple env scalars (service singletons, key-file paths,
+ *   the package version and derived server id) remain as dedicated exports.
  */
 
 import {slugify} from '@faims3/data-model';
 import {existsSync} from 'fs';
+import {z} from 'zod';
 import {
   createEmailService,
   EmailConfig,
@@ -36,6 +47,7 @@ import {
   ProvisionSSOUsersPolicy,
   ProvisionSSOUsersPolicySchema,
 } from './auth/types';
+
 console.log(`Using API version from package.json: ${packageVersion}`);
 export const API_VERSION = packageVersion;
 
@@ -43,478 +55,507 @@ const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
 // If a URL for the conductor instance is not provided this will be used as a fall-through
 const DEFAULT_CONDUCTOR_URL = 'http://localhost:8080';
-
-/*
-  conductor_url - returns the base URL of this Conductor server
-*/
-function conductor_url(): string {
-  const url = process.env.CONDUCTOR_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    console.warn(
-      `No value for CONDUCTOR_PUBLIC_URL was provided in the environment. Defaulting to ${DEFAULT_CONDUCTOR_URL}.`
-    );
-    return DEFAULT_CONDUCTOR_URL;
-  } else {
-    return url;
-  }
-}
-
-function app_url(): string {
-  const url = process.env.WEB_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
-}
-
-function android_url(): string {
-  const url = process.env.ANDROID_APP_PUBLIC_URL;
-  return url || '';
-}
-
-function ios_url(): string {
-  const url = process.env.IOS_APP_PUBLIC_URL;
-  return url || '';
-}
-
-function designer_url(): string {
-  const url = process.env.DESIGNER_URL;
-  return url || '';
-}
-
-function is_testing() {
-  const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
-  const jest_imported = false; //typeof jest !== 'undefined';
-  const test_node_env = process.env.NODE_ENV === 'test';
-  return jest_worker_is_running || jest_imported || test_node_env;
-}
-
-function couchdb_internal_url(): string {
-  let couchdb = process.env.COUCHDB_INTERNAL_URL;
-  const couchdbDefault = 'http://localhost:5984';
-  if (couchdb === '' || couchdb === undefined) {
-    console.log('COUCHDB_INTERNAL_URL not set, using default');
-    return couchdbDefault;
-  } else {
-    if (couchdb.endsWith('/')) {
-      console.log('COUCHDB_URL should not end with / - removing it');
-      couchdb = couchdb.substring(0, couchdb.length - 1);
-    }
-    return couchdb;
-  }
-}
-
-function couchdb_public_url(): string {
-  let couchdb = process.env.COUCHDB_PUBLIC_URL;
-  const couchdbDefault = 'http://localhost:5984';
-  if (couchdb === '' || couchdb === undefined) {
-    console.log('COUCHDB_PUBLIC_URL not set, using default');
-    return couchdbDefault;
-  } else {
-    if (couchdb.endsWith('/')) {
-      console.log('COUCHDB_PUBLIC_URL should not end with / - removing it');
-      couchdb = couchdb.substring(0, couchdb.length - 1);
-    }
-    return couchdb;
-  }
-}
-
-function local_couchdb_auth():
-  | undefined
-  | {username: string; password: string} {
-  // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
-  const username = process.env.COUCHDB_USER;
-  const password = process.env.COUCHDB_PASSWORD;
-
-  if (
-    username === '' ||
-    username === undefined ||
-    password === '' ||
-    password === undefined
-  ) {
-    console.warn('Falling back to default local couchdb auth');
-    return {username: 'admin', password: 'password'};
-  } else {
-    return {username: username, password: password};
-  }
-}
-
-function signing_key_id(): string {
-  const key_id = process.env.PROFILE_NAME;
-  if (key_id === '' || key_id === undefined) {
-    console.log('PROFILE_NAME not set, using default for signing key');
-    return 'test';
-  } else {
-    return key_id;
-  }
-}
-
-// Generate public and private keys file names in the same way as makeInstanceKeys.sh
-
-function key_file_path(): string {
-  const path = process.env.KEY_FILE_PATH;
-  if (path === '' || path === undefined) {
-    console.log('KEY_FILE_PATH not set, using default');
-    return '.';
-  } else {
-    if (existsSync(path)) {
-      return path;
-    } else {
-      console.log('KEY_FILE_PATH does not exist, using default');
-      return '.';
-    }
-  }
-}
-
-export function private_key_path(): string {
-  let host = process.env.PROFILE_NAME;
-  if (host === '' || host === undefined) {
-    host = 'conductor';
-  }
-  const path = key_file_path();
-  const keyfile = `${path}/keys/${host}_private_key.pem`;
-  if (existsSync(keyfile)) {
-    console.log(`Private key file ${keyfile} exists.`);
-    return keyfile;
-  } else {
-    throw new Error(
-      `Private key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
-    );
-  }
-}
-
-export function public_key_path(): string {
-  let host = process.env.PROFILE_NAME;
-  if (host === '' || host === undefined) {
-    host = 'conductor';
-  }
-  const path = key_file_path();
-  const keyfile = `${path}/keys/${host}_public_key.pem`;
-  if (existsSync(keyfile)) {
-    console.log(`Public key file ${keyfile} exists.`);
-    return keyfile;
-  } else {
-    throw new Error(
-      `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
-    );
-  }
-}
-
-function instance_name(): string {
-  const name = process.env.CONDUCTOR_INSTANCE_NAME;
-  if (name === '' || name === undefined) {
-    console.log(
-      'CONDUCTOR_INSTANCE_NAME not set, using PROFILE_NAME for instance name'
-    );
-    return signing_key_id();
-  } else {
-    return name;
-  }
-}
-
-function short_code_prefix(): string {
-  const prefix = process.env.CONDUCTOR_SHORT_CODE_PREFIX;
-  if (prefix === '' || prefix === undefined) {
-    console.log(
-      'CONDUCTOR_SHORT_CODE_PREFIX not set, using "FAIMS" as default'
-    );
-    return 'FAIMS';
-  } else {
-    return prefix;
-  }
-}
-
-function instance_description(): string {
-  const name = process.env.CONDUCTOR_DESCRIPTION;
-  if (name === '' || name === undefined) {
-    return 'Fieldmark Conductor Server';
-  } else {
-    return name;
-  }
-}
-
-function cookie_secret(): string {
-  const cookie = process.env.FAIMS_COOKIE_SECRET;
-  if (cookie === '' || cookie === undefined) {
-    console.log('FAIMS_COOKIE_SECRET not set, using generated secret');
-    return crypto.randomUUID();
-  } else {
-    return cookie;
-  }
-}
-
-function conductor_internal_port(): number {
-  const port = process.env.CONDUCTOR_INTERNAL_PORT;
-  if (port === '' || port === undefined) {
-    return 8000;
-  }
-  return parseInt(port);
-}
-
-function developer_mode(): any {
-  const develop = process.env.DEVELOPER_MODE;
-  if (develop) {
-    return TRUTHY_STRINGS.includes(develop?.toLowerCase());
-  } else {
-    return false;
-  }
-}
-
-function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
-  const policy = process.env.PROVISION_SSO_USERS_POLICY;
-  if (policy) {
-    try {
-      return ProvisionSSOUsersPolicySchema.parse(policy); // validate the value and throw if it's invalid
-    } catch (err) {
-      console.error(
-        `Invalid PROVISION_SSO_USERS_POLICY value: ${policy}, defaulting to 'reject'`
-      );
-    }
-  }
-  // default policy is 'reject' which rejects unknown users via SSO
-  return 'reject';
-}
+const DEFAULT_COUCHDB_URL = 'http://localhost:5984';
+const DEFAULT_WEBAPP_URL = 'http://localhost:3000';
 
 // 5 minute access token expiry by default
 const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
-
-/**
- * @returns The minimum valid time for a token before attempting refreshes
- */
-function accessTokenExpiryMinutes(): number {
-  const accessTokenExpiryMinutes = process.env.ACCESS_TOKEN_EXPIRY_MINUTES;
-  if (
-    accessTokenExpiryMinutes === '' ||
-    accessTokenExpiryMinutes === undefined
-  ) {
-    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
-  }
-  try {
-    return parseInt(accessTokenExpiryMinutes);
-  } catch (err) {
-    console.error(
-      'ACCESS_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
-        DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES
-    );
-    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
-  }
-}
-
 // 2 days refresh token expiry by default
 const DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES = 60 * 24 * 2;
-
-/**
- * @returns The minimum valid time for a token before attempting refreshes
- */
-function refreshTokenExpiryMinutes(): number {
-  const refreshTokenExpiryMinutes = process.env.REFRESH_TOKEN_EXPIRY_MINUTES;
-  if (
-    refreshTokenExpiryMinutes === '' ||
-    refreshTokenExpiryMinutes === undefined
-  ) {
-    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
-  }
-  try {
-    return parseInt(refreshTokenExpiryMinutes);
-  } catch (err) {
-    console.error(
-      'REFRESH_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
-        DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES
-    );
-    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
-  }
-}
-
 // 30 minute default expiry for email verification codes
 const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
-
-/**
- * @returns The expiry time in minutes for email verification codes
- */
-function emailCodeExpiryMinutes(): number {
-  const emailCodeExpiryMinutes = process.env.EMAIL_CODE_EXPIRY_MINUTES;
-  if (emailCodeExpiryMinutes === '' || emailCodeExpiryMinutes === undefined) {
-    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
-  }
-  try {
-    return parseInt(emailCodeExpiryMinutes);
-  } catch (err) {
-    console.error(
-      'EMAIL_CODE_EXPIRY_MINUTES unparseable, defaulting to ' +
-        DEFAULT_EMAIL_CODE_EXPIRY_MINUTES
-    );
-    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
-  }
-}
-
 const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000; // 1000 requests per window
-const DEFAULT_RATE_LIMITER_ENABLED = true;
+const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
+
+const DEFAULT_FROM_EMAIL = 'noreply@example.com';
+const DEFAULT_FROM_NAME = 'FAIMS System Notification';
+
+// ---------------------------------------------------------------------------
+// Pass one: read and validate the raw environment into (optional) strings.
+// ---------------------------------------------------------------------------
+
+const EnvSchema = z.object({
+  CONDUCTOR_PUBLIC_URL: z.string().optional(),
+  WEB_APP_PUBLIC_URL: z.string().optional(),
+  ANDROID_APP_PUBLIC_URL: z.string().optional(),
+  IOS_APP_PUBLIC_URL: z.string().optional(),
+  DESIGNER_URL: z.string().optional(),
+  COUCHDB_INTERNAL_URL: z.string().optional(),
+  COUCHDB_PUBLIC_URL: z.string().optional(),
+  COUCHDB_USER: z.string().optional(),
+  COUCHDB_PASSWORD: z.string().optional(),
+  PROFILE_NAME: z.string().optional(),
+  KEY_FILE_PATH: z.string().optional(),
+  CONDUCTOR_INSTANCE_NAME: z.string().optional(),
+  CONDUCTOR_SHORT_CODE_PREFIX: z.string().optional(),
+  CONDUCTOR_DESCRIPTION: z.string().optional(),
+  FAIMS_COOKIE_SECRET: z.string().optional(),
+  CONDUCTOR_INTERNAL_PORT: z.string().optional(),
+  DEVELOPER_MODE: z.string().optional(),
+  PROVISION_SSO_USERS_POLICY: z.string().optional(),
+  ACCESS_TOKEN_EXPIRY_MINUTES: z.string().optional(),
+  REFRESH_TOKEN_EXPIRY_MINUTES: z.string().optional(),
+  EMAIL_CODE_EXPIRY_MINUTES: z.string().optional(),
+  RATE_LIMITER_WINDOW_MS: z.string().optional(),
+  RATE_LIMITER_PER_WINDOW: z.string().optional(),
+  RATE_LIMITER_ENABLED: z.string().optional(),
+  NEW_CONDUCTOR_URL: z.string().optional(),
+  DISABLE_LOCAL_LOGIN: z.string().optional(),
+  MIGRATE_NOTEBOOKS_ON_STARTUP: z.string().optional(),
+  KEY_SOURCE: z.string().optional(),
+  AWS_SECRET_KEY_ARN: z.string().optional(),
+  EMAIL_SERVICE_TYPE: z.string().optional(),
+  EMAIL_FROM_ADDRESS: z.string().optional(),
+  EMAIL_FROM_NAME: z.string().optional(),
+  EMAIL_REPLY_TO: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_CACHE_EXPIRY_SECONDS: z.string().optional(),
+  TEST_EMAIL_ADDRESS: z.string().optional(),
+  REDIRECT_WHITELIST: z.string().optional(),
+  MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().optional(),
+  BUGSNAG_API_KEY: z.string().optional(),
+  JEST_WORKER_ID: z.string().optional(),
+  NODE_ENV: z.string().optional(),
+});
+
+type RawEnv = z.infer<typeof EnvSchema>;
+
+const rawEnv: RawEnv = EnvSchema.parse(process.env);
+
+// ---------------------------------------------------------------------------
+// Reusable pass-two field builders.
+// ---------------------------------------------------------------------------
+
+const isBlank = (v: string | undefined): v is undefined | '' =>
+  v === undefined || v === '';
+
+/** A required non-empty string default, no logging. */
+const stringFromEnv = (def: string) =>
+  z.string().optional().transform(v => (isBlank(v) ? def : v));
+
+/** Integer with default; unparseable/blank falls back to the default. */
+const intFromEnv = (def: number, label?: string) =>
+  z.string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) return def;
+      const parsed = parseInt(v, 10);
+      if (Number.isNaN(parsed)) {
+        if (label) console.error(`${label} unparseable, defaulting to ${def}`);
+        return def;
+      }
+      return parsed;
+    });
+
+/** Boolean where any of the truthy strings (case-insensitive) means true. */
+const truthyBool = (def: boolean) =>
+  z.string()
+    .optional()
+    .transform(v => (isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())));
 
 /**
- * Gets the rate limiter window duration in milliseconds from environment variables
- * @returns The window duration in milliseconds
+ * Boolean where only the exact (case-insensitive) string 'true' means true.
+ * A blank/undefined value falls back to the provided default.
  */
-function rateLimiterWindowMs(): number {
-  const rateLimiterWindowMs = process.env.RATE_LIMITER_WINDOW_MS;
-  if (rateLimiterWindowMs === '' || rateLimiterWindowMs === undefined) {
-    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+const equalsTrueBool = (def: boolean) =>
+  z.string()
+    .optional()
+    .transform(v => (v === undefined ? def : v.toLowerCase() === 'true'));
+
+// ---------------------------------------------------------------------------
+// Pass two: build the typed configuration values.
+// ---------------------------------------------------------------------------
+
+const ConfigSchema = z.object({
+  conductorPublicUrl: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.warn(
+          `No value for CONDUCTOR_PUBLIC_URL was provided in the environment. Defaulting to ${DEFAULT_CONDUCTOR_URL}.`
+        );
+        return DEFAULT_CONDUCTOR_URL;
+      }
+      return v;
+    }),
+  webAppPublicUrl: stringFromEnv(DEFAULT_WEBAPP_URL),
+  androidAppUrl: stringFromEnv(''),
+  iosAppUrl: stringFromEnv(''),
+  designerUrl: stringFromEnv(''),
+  couchdbInternalUrl: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.log('COUCHDB_INTERNAL_URL not set, using default');
+        return DEFAULT_COUCHDB_URL;
+      }
+      if (v.endsWith('/')) {
+        console.log('COUCHDB_URL should not end with / - removing it');
+        return v.substring(0, v.length - 1);
+      }
+      return v;
+    }),
+  couchdbPublicUrl: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.log('COUCHDB_PUBLIC_URL not set, using default');
+        return DEFAULT_COUCHDB_URL;
+      }
+      if (v.endsWith('/')) {
+        console.log('COUCHDB_PUBLIC_URL should not end with / - removing it');
+        return v.substring(0, v.length - 1);
+      }
+      return v;
+    }),
+  conductorKeyId: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.log('PROFILE_NAME not set, using default for signing key');
+        return 'test';
+      }
+      return v;
+    }),
+  keyFilePath: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.log('KEY_FILE_PATH not set, using default');
+        return '.';
+      }
+      if (existsSync(v)) return v;
+      console.log('KEY_FILE_PATH does not exist, using default');
+      return '.';
+    }),
+  shortCodePrefix: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.log(
+          'CONDUCTOR_SHORT_CODE_PREFIX not set, using "FAIMS" as default'
+        );
+        return 'FAIMS';
+      }
+      return v;
+    }),
+  instanceDescription: stringFromEnv('Fieldmark Conductor Server'),
+  cookieSecret: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) {
+        console.log('FAIMS_COOKIE_SECRET not set, using generated secret');
+        return crypto.randomUUID();
+      }
+      return v;
+    }),
+  conductorInternalPort: intFromEnv(8000),
+  developerMode: truthyBool(false),
+  provisionSSOUsersPolicy: z
+    .string()
+    .optional()
+    .transform((v): ProvisionSSOUsersPolicy => {
+      if (v) {
+        const result = ProvisionSSOUsersPolicySchema.safeParse(v);
+        if (result.success) return result.data;
+        console.error(
+          `Invalid PROVISION_SSO_USERS_POLICY value: ${v}, defaulting to 'reject'`
+        );
+      }
+      // default policy is 'reject' which rejects unknown users via SSO
+      return 'reject';
+    }),
+  accessTokenExpiryMinutes: intFromEnv(
+    DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES,
+    'ACCESS_TOKEN_EXPIRY_MINUTES'
+  ),
+  refreshTokenExpiryMinutes: intFromEnv(
+    DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES,
+    'REFRESH_TOKEN_EXPIRY_MINUTES'
+  ),
+  emailCodeExpiryMinutes: intFromEnv(
+    DEFAULT_EMAIL_CODE_EXPIRY_MINUTES,
+    'EMAIL_CODE_EXPIRY_MINUTES'
+  ),
+  rateLimiterWindowMs: intFromEnv(
+    DEFAULT_RATE_LIMITER_WINDOW_MS,
+    'RATE_LIMITER_WINDOW_MS'
+  ),
+  rateLimiterPerWindow: intFromEnv(
+    DEFAULT_RATE_LIMITER_PER_WINDOW,
+    'RATE_LIMITER_PER_WINDOW'
+  ),
+  rateLimiterEnabled: equalsTrueBool(true),
+  migrateNotebooksOnStartup: equalsTrueBool(true),
+  keySource: z
+    .string()
+    .optional()
+    .transform((v): KeySource => {
+      if (v === undefined || !(v in KeySource)) {
+        console.log('KEY_SOURCE not set or invalid, using default FILE');
+        return KeySource.FILE;
+      }
+      return v as KeySource;
+    }),
+  maximumLongLivedDurationDays: z
+    .string()
+    .optional()
+    .transform((v): number | undefined => {
+      if (isBlank(v)) {
+        console.log(
+          'MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
+            DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS
+        );
+        return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+      }
+      if (['unlimited', 'infinite', 'none'].includes(v.toLowerCase())) {
+        console.log('Long-lived tokens configured for unlimited duration');
+        return undefined;
+      }
+      const parsedDays = parseInt(v, 10);
+      if (Number.isNaN(parsedDays) || parsedDays <= 0) {
+        console.warn(
+          `Invalid value "${v}" for MAXIMUM_LONG_LIVED_DURATION_DAYS. Must be a positive integer or "unlimited".`
+        );
+        console.log('Falling back to default configuration.');
+        return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+      }
+      return parsedDays;
+    }),
+  bugsnagApiKey: z
+    .string()
+    .optional()
+    .transform((v): string | undefined => {
+      if (isBlank(v)) {
+        console.log('BUGSNAG_API_KEY not set, error reporting disabled');
+        return undefined;
+      }
+      return v;
+    }),
+});
+
+const parsedConfig = ConfigSchema.parse({
+  conductorPublicUrl: rawEnv.CONDUCTOR_PUBLIC_URL,
+  webAppPublicUrl: rawEnv.WEB_APP_PUBLIC_URL,
+  androidAppUrl: rawEnv.ANDROID_APP_PUBLIC_URL,
+  iosAppUrl: rawEnv.IOS_APP_PUBLIC_URL,
+  designerUrl: rawEnv.DESIGNER_URL,
+  couchdbInternalUrl: rawEnv.COUCHDB_INTERNAL_URL,
+  couchdbPublicUrl: rawEnv.COUCHDB_PUBLIC_URL,
+  conductorKeyId: rawEnv.PROFILE_NAME,
+  keyFilePath: rawEnv.KEY_FILE_PATH,
+  shortCodePrefix: rawEnv.CONDUCTOR_SHORT_CODE_PREFIX,
+  instanceDescription: rawEnv.CONDUCTOR_DESCRIPTION,
+  cookieSecret: rawEnv.FAIMS_COOKIE_SECRET,
+  conductorInternalPort: rawEnv.CONDUCTOR_INTERNAL_PORT,
+  developerMode: rawEnv.DEVELOPER_MODE,
+  provisionSSOUsersPolicy: rawEnv.PROVISION_SSO_USERS_POLICY,
+  accessTokenExpiryMinutes: rawEnv.ACCESS_TOKEN_EXPIRY_MINUTES,
+  refreshTokenExpiryMinutes: rawEnv.REFRESH_TOKEN_EXPIRY_MINUTES,
+  emailCodeExpiryMinutes: rawEnv.EMAIL_CODE_EXPIRY_MINUTES,
+  rateLimiterWindowMs: rawEnv.RATE_LIMITER_WINDOW_MS,
+  rateLimiterPerWindow: rawEnv.RATE_LIMITER_PER_WINDOW,
+  rateLimiterEnabled: rawEnv.RATE_LIMITER_ENABLED,
+  migrateNotebooksOnStartup: rawEnv.MIGRATE_NOTEBOOKS_ON_STARTUP,
+  keySource: rawEnv.KEY_SOURCE,
+  maximumLongLivedDurationDays: rawEnv.MAXIMUM_LONG_LIVED_DURATION_DAYS,
+  bugsnagApiKey: rawEnv.BUGSNAG_API_KEY,
+});
+
+// ---------------------------------------------------------------------------
+// Values that depend on other config, are required, or need custom handling.
+// ---------------------------------------------------------------------------
+
+/** Local couchdb auth used by the server (as opposed to test COUCHDB_USER/PASSWORD). */
+function buildLocalCouchdbAuth(): {username: string; password: string} {
+  const username = rawEnv.COUCHDB_USER;
+  const password = rawEnv.COUCHDB_PASSWORD;
+  if (isBlank(username) || isBlank(password)) {
+    console.warn('Falling back to default local couchdb auth');
+    return {username: 'admin', password: 'password'};
   }
-  try {
-    return parseInt(rateLimiterWindowMs);
-  } catch (err) {
-    console.error(
-      'RATE_LIMITER_WINDOW_MS unparseable, defaulting to ' +
-        DEFAULT_RATE_LIMITER_WINDOW_MS
+  return {username, password};
+}
+
+function buildInstanceName(): string {
+  const name = rawEnv.CONDUCTOR_INSTANCE_NAME;
+  if (isBlank(name)) {
+    console.log(
+      'CONDUCTOR_INSTANCE_NAME not set, using PROFILE_NAME for instance name'
     );
-    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+    return parsedConfig.conductorKeyId;
   }
+  return name;
 }
 
-/**
- * Gets the number of requests allowed per window from environment variables
- * @returns The number of requests allowed per window
- */
-function rateLimiterPerWindow(): number {
-  const rateLimiterPerWindow = process.env.RATE_LIMITER_PER_WINDOW;
-  if (rateLimiterPerWindow === '' || rateLimiterPerWindow === undefined) {
-    return DEFAULT_RATE_LIMITER_PER_WINDOW;
-  }
-  try {
-    return parseInt(rateLimiterPerWindow);
-  } catch (err) {
-    console.error(
-      'RATE_LIMITER_PER_WINDOW unparseable, defaulting to ' +
-        DEFAULT_RATE_LIMITER_PER_WINDOW
-    );
-    return DEFAULT_RATE_LIMITER_PER_WINDOW;
-  }
-}
-
-/**
- * Checks if rate limiting is enabled from environment variables
- * @returns Boolean indicating if rate limiting is enabled
- */
-function rateLimiterEnabled(): boolean {
-  const rateLimiterEnabled = process.env.RATE_LIMITER_ENABLED;
-  if (rateLimiterEnabled === undefined) {
-    return DEFAULT_RATE_LIMITER_ENABLED;
-  }
-  return rateLimiterEnabled.toLowerCase() === 'true';
-}
-
-/**
- * What is the URL of the new conductor? Required.
- *
- * @returns The new conductor URL, no trailing /
- */
-function newConductorUrl(): string {
-  let conductorUrl = process.env.NEW_CONDUCTOR_URL;
-  if (conductorUrl === '' || conductorUrl === undefined) {
-    throw Error('You must provide a NEW_CONDUCTOR_URL in your environment.');
-  } else {
-    if (conductorUrl.endsWith('/')) {
-      console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
-      conductorUrl = conductorUrl.substring(0, conductorUrl.length - 1);
-    }
-    return conductorUrl;
-  }
-}
-
-// Config variable is DISABLE_LOCAL_LOGIN for ease of use,
-// but we will export LOCAL_LOGIN_ENABLED for clarity in the rest of the codebase
-function enable_local_login(): boolean {
-  const disableLocalLogin = process.env.DISABLE_LOCAL_LOGIN;
+// Config variable is DISABLE_LOCAL_LOGIN for ease of use, but we expose
+// LOCAL_LOGIN_ENABLED for clarity in the rest of the codebase.
+function buildLocalLoginEnabled(): boolean {
+  const disableLocalLogin = rawEnv.DISABLE_LOCAL_LOGIN;
   if (disableLocalLogin === undefined) {
     return true;
-  } else {
-    return disableLocalLogin.toLowerCase() !== 'true';
   }
+  return disableLocalLogin.toLowerCase() !== 'true';
 }
 
-// Configure migration of notebooks on startup
-function migrateNotebooks(): boolean {
-  const migrate = process.env.MIGRATE_NOTEBOOKS_ON_STARTUP;
-  if (migrate === undefined) {
-    return true;
-  } else {
-    return migrate.toLowerCase() === 'true';
-  }
+function buildRunningUnderTest(): boolean {
+  const jestWorkerIsRunning = rawEnv.JEST_WORKER_ID !== undefined;
+  const testNodeEnv = rawEnv.NODE_ENV === 'test';
+  return jestWorkerIsRunning || testNodeEnv;
 }
-
-export const DEVELOPER_MODE = developer_mode();
-export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
-export const COUCHDB_PUBLIC_URL = couchdb_public_url();
-export const LOCAL_COUCHDB_AUTH = local_couchdb_auth();
-export const RUNNING_UNDER_TEST = is_testing();
-export const CONDUCTOR_PUBLIC_URL = conductor_url();
-export const CONDUCTOR_INTERNAL_PORT = conductor_internal_port();
-export const CONDUCTOR_KEY_ID = signing_key_id();
-export const CONDUCTOR_INSTANCE_NAME = instance_name();
-export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
-export const CONDUCTOR_DESCRIPTION = instance_description();
-export const COOKIE_SECRET = cookie_secret();
-export const WEBAPP_PUBLIC_URL = app_url();
-export const ANDROID_APP_URL = android_url();
-export const IOS_APP_URL = ios_url();
-export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
-export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
-export const DESIGNER_URL = designer_url();
-export const RATE_LIMITER_WINDOW_MS = rateLimiterWindowMs();
-export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
-export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
-export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
-export const NEW_CONDUCTOR_URL = newConductorUrl();
-export const LOCAL_LOGIN_ENABLED = enable_local_login();
-export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
-export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
 
 /**
- * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
- * FILE.
- * @returns the KeySource enum to use
+ * What is the URL of the new conductor? Required. No trailing slash.
  */
-function getKeySourceConfig(): KeySource {
-  const keySource = process.env.KEY_SOURCE as KeySource;
-  if (keySource === undefined || !(keySource in KeySource)) {
-    console.log('KEY_SOURCE not set or invalid, using default FILE');
-    return KeySource.FILE;
+function buildNewConductorUrl(): string {
+  let conductorUrl = rawEnv.NEW_CONDUCTOR_URL;
+  if (isBlank(conductorUrl)) {
+    throw Error('You must provide a NEW_CONDUCTOR_URL in your environment.');
   }
-  return keySource;
+  if (conductorUrl.endsWith('/')) {
+    console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
+    conductorUrl = conductorUrl.substring(0, conductorUrl.length - 1);
+  }
+  return conductorUrl;
 }
 
-function getAwsSecretKeyArn(): string {
-  const arn = process.env.AWS_SECRET_KEY_ARN;
+/**
+ * Parses and validates the redirect whitelist. Comma-separated list of domains
+ * to which redirects are allowed for auth flows.
+ * @throws If the whitelist is not defined, contains invalid entries, or is empty.
+ */
+function buildRedirectWhitelist(): string[] {
+  const whitelist = rawEnv.REDIRECT_WHITELIST;
+  if (isBlank(whitelist)) {
+    throw new Error(
+      'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
+    );
+  }
+
+  const domains = whitelist
+    .split(',')
+    .map(domain => domain.trim())
+    .filter(domain => domain.length !== 0);
+
+  if (domains.length === 0) {
+    throw new Error(
+      'REDIRECT_WHITELIST must contain at least one valid domain.'
+    );
+  }
+
+  for (const domain of domains) {
+    try {
+      new URL(domain);
+    } catch (err) {
+      throw new Error(
+        `Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`
+      );
+    }
+  }
+
+  return domains;
+}
+
+function buildAwsSecretKeyArn(): string | undefined {
+  if (parsedConfig.keySource !== KeySource.AWS_SM) {
+    return undefined;
+  }
+  const arn = rawEnv.AWS_SECRET_KEY_ARN;
   if (!arn) {
     throw new Error('AWS_SECRET_KEY_ARN is not set but KEY_SOURCE is AWS_SM');
   }
   return arn;
 }
 
-// Dependency injection pattern for key service
-export const KEY_SOURCE: KeySource = getKeySourceConfig();
-export const AWS_SECRET_KEY_ARN: string | undefined =
-  KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
+/**
+ * The singleton configuration object. Prefer reading values from here.
+ *
+ * Note: intentionally not frozen so that tests can override individual values
+ * at runtime (e.g. provisioning policy) via `config.<field> = ...`.
+ */
+export const config = {
+  ...parsedConfig,
+  localCouchdbAuth: buildLocalCouchdbAuth(),
+  conductorInstanceName: buildInstanceName(),
+  localLoginEnabled: buildLocalLoginEnabled(),
+  runningUnderTest: buildRunningUnderTest(),
+  newConductorUrl: buildNewConductorUrl(),
+  redirectWhitelist: buildRedirectWhitelist(),
+  awsSecretKeyArn: buildAwsSecretKeyArn(),
+};
 
-export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
+export type Config = typeof config;
+
+// A slugified id derived from the instance name.
+export const CONDUCTOR_SERVER_ID = slugify(config.conductorInstanceName);
+
+// ---------------------------------------------------------------------------
+// Key file paths (kept as functions so callers resolve/validate them lazily).
+// ---------------------------------------------------------------------------
+
+// Generate public and private key file names in the same way as makeInstanceKeys.sh.
+function keyFileHost(): string {
+  const host = rawEnv.PROFILE_NAME;
+  return isBlank(host) ? 'conductor' : host;
+}
+
+export function private_key_path(): string {
+  const keyfile = `${config.keyFilePath}/keys/${keyFileHost()}_private_key.pem`;
+  if (existsSync(keyfile)) {
+    console.log(`Private key file ${keyfile} exists.`);
+    return keyfile;
+  }
+  throw new Error(
+    `Private key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
+  );
+}
+
+export function public_key_path(): string {
+  const keyfile = `${config.keyFilePath}/keys/${keyFileHost()}_public_key.pem`;
+  if (existsSync(keyfile)) {
+    console.log(`Public key file ${keyfile} exists.`);
+    return keyfile;
+  }
+  throw new Error(
+    `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
+  );
+}
+
+// Dependency injection pattern for key service.
+export const KEY_SERVICE: IKeyService = getKeyService(config.keySource);
+
+// ---------------------------------------------------------------------------
+// Email service configuration and singleton.
+// ---------------------------------------------------------------------------
 
 /**
  * Determines which email service type to use based on environment variables.
- * @returns The email service type.
  */
 function getEmailServiceType(): EmailServiceType {
-  const emailServiceType = process.env.EMAIL_SERVICE_TYPE as EmailServiceType;
-
-  if (is_testing()) {
+  if (config.runningUnderTest) {
     console.log('Since we are testing, using mock email service.');
     return EmailServiceType.MOCK;
   }
 
+  const emailServiceType = rawEnv.EMAIL_SERVICE_TYPE as
+    | EmailServiceType
+    | undefined;
   if (
     emailServiceType === undefined ||
     !(emailServiceType in EmailServiceType)
   ) {
-    // Otherwise default to SMTP
     console.log(
       'EMAIL_SERVICE_TYPE not set or invalid, using default SMTP - configuration may not be available depending on your environment. Please explicitly configure SMTP if this is the preferred behaviour.'
     );
@@ -524,17 +565,13 @@ function getEmailServiceType(): EmailServiceType {
   return emailServiceType;
 }
 
-const DEFAULT_FROM_EMAIL = 'noreply@example.com';
-const DEFAULT_FROM_NAME = 'FAIMS System Notification';
-
 /**
  * Gets the email configuration from environment variables.
- * @returns The email configuration.
  */
 function getEmailConfig(): EmailConfig {
-  const fromEmail = process.env.EMAIL_FROM_ADDRESS;
-  const fromName = process.env.EMAIL_FROM_NAME;
-  const replyTo = process.env.EMAIL_REPLY_TO;
+  const fromEmail = rawEnv.EMAIL_FROM_ADDRESS;
+  const fromName = rawEnv.EMAIL_FROM_NAME;
+  const replyTo = rawEnv.EMAIL_REPLY_TO;
 
   if (!fromEmail || !fromName) {
     console.warn('Email configuration is incomplete. Using default values.');
@@ -545,26 +582,20 @@ function getEmailConfig(): EmailConfig {
     };
   }
 
-  return {
-    fromEmail,
-    fromName,
-    replyTo,
-  };
+  return {fromEmail, fromName, replyTo};
 }
 
 /**
  * Gets the SMTP configuration from environment variables.
- * @returns The SMTP configuration.
  */
 function getSMTPConfig(): SMTPEmailServiceConfig {
-  const host = process.env.SMTP_HOST;
-  const portStr = process.env.SMTP_PORT;
-  const secure = process.env.SMTP_SECURE === 'true';
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASSWORD;
-  const cacheExpirySecondsStr = process.env.SMTP_CACHE_EXPIRY_SECONDS;
+  const host = rawEnv.SMTP_HOST;
+  const portStr = rawEnv.SMTP_PORT;
+  const secure = rawEnv.SMTP_SECURE === 'true';
+  const user = rawEnv.SMTP_USER;
+  const pass = rawEnv.SMTP_PASSWORD;
+  const cacheExpirySecondsStr = rawEnv.SMTP_CACHE_EXPIRY_SECONDS;
 
-  // Check for missing configuration and provide detailed error message
   const missingConfig = [];
   if (!host) missingConfig.push('SMTP_HOST');
   if (!portStr) missingConfig.push('SMTP_PORT');
@@ -596,10 +627,7 @@ function getSMTPConfig(): SMTPEmailServiceConfig {
     host: host!,
     port,
     secure,
-    auth: {
-      user: user!,
-      pass: pass!,
-    },
+    auth: {user: user!, pass: pass!},
     cacheExpirySeconds,
   };
 }
@@ -619,17 +647,15 @@ export const EMAIL_SERVICE: IEmailService = createEmailService({
 
 /**
  * Gets the test email address configuration from environment variables.
- * @returns The test email address.
- * @throws Error if test email address is not configured.
+ * @throws Error if the test email address is not configured (outside of tests).
  */
 function getTestEmailAddress(): string {
-  const testEmailAddress = process.env.TEST_EMAIL_ADDRESS;
-
-  // Uses fake address if we are unit testing
-  if (is_testing()) {
+  // Uses a fake address if we are unit testing.
+  if (config.runningUnderTest) {
     return 'fake@gmail.com';
   }
 
+  const testEmailAddress = rawEnv.TEST_EMAIL_ADDRESS;
   if (!testEmailAddress) {
     throw new Error(
       'TEST_EMAIL_ADDRESS environment variable is required for testing email functionality. ' +
@@ -640,105 +666,4 @@ function getTestEmailAddress(): string {
   return testEmailAddress;
 }
 
-// Export the test email address
 export const TEST_EMAIL_ADDRESS = getTestEmailAddress();
-
-/**
- * Parses and validates the redirect whitelist from environment variables.
- * The whitelist is a comma-separated list of domains to which redirects
- * are allowed for auth flows.
- *
- * @returns Array of whitelisted domains
- * @throws If the whitelist is not defined, contains invalid entries, or is empty
- */
-function getRedirectWhitelist(): string[] {
-  const whitelist = process.env.REDIRECT_WHITELIST;
-
-  if (whitelist === '' || whitelist === undefined) {
-    throw new Error(
-      'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
-    );
-  }
-
-  // Split, trim, and filter empty entries
-  const domains = whitelist
-    .split(',')
-    .map(domain => domain.trim())
-    .filter(domain => domain.length !== 0);
-
-  if (domains.length === 0) {
-    throw new Error(
-      'REDIRECT_WHITELIST must contain at least one valid domain.'
-    );
-  }
-
-  // Validate each domain (basic URL validation)
-  for (const domain of domains) {
-    try {
-      new URL(domain);
-    } catch (err) {
-      throw new Error(
-        `Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`
-      );
-    }
-  }
-
-  return domains;
-}
-
-// Export the redirect whitelist
-export const REDIRECT_WHITELIST = getRedirectWhitelist();
-export const CONDUCTOR_SERVER_ID = slugify(CONDUCTOR_INSTANCE_NAME);
-
-// Long Lived Token Configuration
-const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
-
-/**
- * Gets the maximum duration in days for long-lived tokens from environment variables.
- * @returns Maximum number of days, or undefined for unlimited duration
- */
-function maximumLongLivedDurationDays(): number | undefined {
-  const maxDays = process.env.MAXIMUM_LONG_LIVED_DURATION_DAYS;
-
-  if (maxDays === '' || maxDays === undefined) {
-    console.log(
-      'MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
-        DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS
-    );
-    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-  }
-
-  // Check for explicit "unlimited" or "infinite" values
-  if (['unlimited', 'infinite', 'none'].includes(maxDays.toLowerCase())) {
-    console.log('Long-lived tokens configured for unlimited duration');
-    return undefined;
-  }
-
-  const parsedDays = parseInt(maxDays, 10);
-  if (isNaN(parsedDays) || parsedDays <= 0) {
-    console.warn(
-      `Invalid value "${maxDays}" for MAXIMUM_LONG_LIVED_DURATION_DAYS. Must be a positive integer or "unlimited".`
-    );
-    console.log('Falling back to default configuration.');
-    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-  }
-
-  return parsedDays;
-}
-
-export const MAXIMUM_LONG_LIVED_DURATION_DAYS = maximumLongLivedDurationDays();
-
-/**
- * Gets the Bugsnag API key from environment variables.
- * @returns The Bugsnag API key, or undefined if not configured.
- */
-function bugsnagApiKey(): string | undefined {
-  const apiKey = process.env.BUGSNAG_API_KEY;
-  if (apiKey === '' || apiKey === undefined) {
-    console.log('BUGSNAG_API_KEY not set, error reporting disabled');
-    return undefined;
-  }
-  return apiKey;
-}
-
-export const BUGSNAG_API_KEY = bugsnagApiKey();

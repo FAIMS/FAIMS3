@@ -35,7 +35,7 @@ import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
-import {LOCAL_LOGIN_ENABLED} from '../buildconfig';
+import {config} from '../buildconfig';
 
 // This must occur before express app is used
 patch();
@@ -98,7 +98,7 @@ export function addAuthPages(
           inviteId: inviteId,
           redirect: redirect,
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: config.localLoginEnabled,
         redirect,
         messages: messages,
       });
@@ -171,7 +171,7 @@ export function addAuthPages(
           inviteId,
           action: 'register',
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: config.localLoginEnabled,
         messages: req.flash(),
       });
     }

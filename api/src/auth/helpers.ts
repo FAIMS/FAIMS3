@@ -13,11 +13,7 @@ import {
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
-import {
-  CONDUCTOR_SERVER_ID,
-  PROVISION_SSO_USERS_POLICY,
-  REDIRECT_WHITELIST,
-} from '../buildconfig';
+import {config, CONDUCTOR_SERVER_ID} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {
@@ -100,7 +96,7 @@ export const handleZodErrors = ({
  */
 export function validateRedirect(
   redirect: string,
-  whitelist: string[] = REDIRECT_WHITELIST
+  whitelist: string[] = config.redirectWhitelist
 ): {valid: boolean; redirect: string} {
   const fail = () => ({valid: false, redirect: '/'});
   try {
@@ -815,7 +811,7 @@ export async function applyProvisionPolicy({
   userDisplayName: (profile: any) => string;
 }) {
   // default option is to reject the login, throw an error to indicate this
-  if (PROVISION_SSO_USERS_POLICY === 'reject') {
+  if (config.provisionSSOUsersPolicy === 'reject') {
     throw new Error(
       'This account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.'
     );
@@ -828,7 +824,7 @@ export async function applyProvisionPolicy({
     userDisplayName,
   });
 
-  if (PROVISION_SSO_USERS_POLICY === 'own-team') {
+  if (config.provisionSSOUsersPolicy === 'own-team') {
     // Create a new team
     // Give the user the team manager role on the team
 
@@ -848,7 +844,7 @@ export async function applyProvisionPolicy({
       teamId: newTeam._id,
       role: Role.TEAM_MANAGER,
     });
-  } else if (PROVISION_SSO_USERS_POLICY === 'general-user') {
+  } else if (config.provisionSSOUsersPolicy === 'general-user') {
     // Give the user a general user role
     addGlobalRole({
       user: newDbUser,

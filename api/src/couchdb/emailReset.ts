@@ -16,7 +16,7 @@ import {
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
 import {buildQueryString} from '../auth/helpers';
-import {CONDUCTOR_PUBLIC_URL, EMAIL_CODE_EXPIRY_MINUTES} from '../buildconfig';
+import {config} from '../buildconfig';
 import {
   InternalSystemError,
   ItemNotFoundException,
@@ -27,7 +27,7 @@ import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds
-const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
+const CODE_EXPIRY_MS = config.emailCodeExpiryMinutes * 60 * 1000;
 
 /**
  * Configuration constants for email code rate limiting
@@ -52,7 +52,7 @@ export function buildCodeIntoUrl({
   code: string;
   redirect: string;
 }): string {
-  return `${CONDUCTOR_PUBLIC_URL}/reset-password${buildQueryString({values: {code, redirect}})}`;
+  return `${config.conductorPublicUrl}/reset-password${buildQueryString({values: {code, redirect}})}`;
 }
 
 /**

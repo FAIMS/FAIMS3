@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {validateRedirect} from '../src/auth/helpers';
-import {CONDUCTOR_PUBLIC_URL} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 
 // Define the expected failure response structure
 const expectedFailure = {valid: false, redirect: '/'};
@@ -12,7 +12,7 @@ describe('validateRedirect tests', () => {
     'http://example.com',
     'https://trusted.domain.org',
     'http://localhost:3000',
-    CONDUCTOR_PUBLIC_URL,
+    config.conductorPublicUrl,
   ];
 
   // Add a custom scheme whitelist entry for testing
@@ -192,7 +192,8 @@ describe('validateRedirect tests', () => {
 
   it('should correctly use CONDUCTOR_PUBLIC_URL from whitelist', () => {
     // Ensure CONDUCTOR_PUBLIC_URL is treated as a valid URL string
-    const conductorUrl = CONDUCTOR_PUBLIC_URL || 'http://conductor.test.local';
+    const conductorUrl =
+      config.conductorPublicUrl || 'http://conductor.test.local';
     // Construct a redirect URL based on the potential CONDUCTOR_PUBLIC_URL
     const redirectUrl = `${conductorUrl}/some/path?query=1`;
     const result = validateRedirect(redirectUrl, testWhitelist);

@@ -23,7 +23,7 @@ import {
   isPeopleUserAccountDisabled,
 } from '@faims3/data-model';
 import {jwtVerify, errors as joseErrors} from 'jose';
-import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../../buildconfig';
+import {config, KEY_SERVICE} from '../../buildconfig';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
 /**
@@ -42,7 +42,7 @@ export const validateToken = async (
       issuer: signingKey.instanceName,
     });
 
-    if (payload.server !== CONDUCTOR_PUBLIC_URL) {
+    if (payload.server !== config.conductorPublicUrl) {
       throw Error('Invalid server claim.');
     }
 

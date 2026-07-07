@@ -38,16 +38,11 @@ import {
 } from '../auth/keySigning/create';
 import {
   API_VERSION,
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
+  config,
   CONDUCTOR_SERVER_ID,
-  CONDUCTOR_SHORT_CODE_PREFIX,
-  DEVELOPER_MODE,
   EMAIL_CONFIG,
   EMAIL_SERVICE,
   EMAIL_SERVICE_TYPE,
-  RUNNING_UNDER_TEST,
   TEST_EMAIL_ADDRESS,
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
@@ -111,10 +106,10 @@ api.post(
 api.get('/info', async (req, res) => {
   const response: PublicServerInfo = {
     id: CONDUCTOR_SERVER_ID,
-    name: CONDUCTOR_INSTANCE_NAME,
-    conductor_url: CONDUCTOR_PUBLIC_URL,
-    description: CONDUCTOR_DESCRIPTION,
-    prefix: CONDUCTOR_SHORT_CODE_PREFIX,
+    name: config.conductorInstanceName,
+    conductor_url: config.conductorPublicUrl,
+    description: config.instanceDescription,
+    prefix: config.shortCodePrefix,
     // Report the server version e.g. 1.3.1
     serverVersion: API_VERSION,
   };
@@ -273,7 +268,7 @@ api.post(
     const {token: accessToken} = await generateUserToken(expressUser, false);
 
     // Log the token usage for security auditing
-    if (!RUNNING_UNDER_TEST) {
+    if (!config.runningUnderTest) {
       console.log(
         `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${nowIso()}`
       );
@@ -284,7 +279,7 @@ api.post(
   }
 );
 
-if (DEVELOPER_MODE) {
+if (config.developerMode) {
   api.post(
     '/restore',
     requireAuthenticationAPI,
@@ -312,7 +307,7 @@ api.post(
     const startTime = Date.now();
 
     // Log starting the test
-    if (!RUNNING_UNDER_TEST) {
+    if (!config.runningUnderTest) {
       console.log(
         `[Email Test] Starting email test requested by admin user ${req.user._id}`
       );
@@ -341,14 +336,14 @@ api.post(
       // Build the debug email content
       const emailOptions = {
         to: TEST_EMAIL_ADDRESS,
-        subject: `Email Service Test from ${CONDUCTOR_INSTANCE_NAME}`,
+        subject: `Email Service Test from ${config.conductorInstanceName}`,
         html: `
           <h1>Email Service Test</h1>
-          <p>This is a test email from the ${CONDUCTOR_INSTANCE_NAME} server.</p>
+          <p>This is a test email from the ${config.conductorInstanceName} server.</p>
           <h2>Service Information</h2>
           <ul>
-            <li><strong>Server:</strong> ${CONDUCTOR_INSTANCE_NAME}</li>
-            <li><strong>Conductor URL:</strong> ${CONDUCTOR_PUBLIC_URL}</li>
+            <li><strong>Server:</strong> ${config.conductorInstanceName}</li>
+            <li><strong>Conductor URL:</strong> ${config.conductorPublicUrl}</li>
             <li><strong>Email Service Type:</strong> ${EMAIL_SERVICE_TYPE}</li>
             <li><strong>From Address:</strong> ${EMAIL_CONFIG.fromEmail}</li>
             <li><strong>From Name:</strong> ${EMAIL_CONFIG.fromName}</li>
@@ -361,11 +356,11 @@ api.post(
         text: `
 Email Service Test
 
-This is a test email from the ${CONDUCTOR_INSTANCE_NAME} server.
+This is a test email from the ${config.conductorInstanceName} server.
 
 Service Information:
-- Server: ${CONDUCTOR_INSTANCE_NAME}
-- Conductor URL: ${CONDUCTOR_PUBLIC_URL}
+- Server: ${config.conductorInstanceName}
+- Conductor URL: ${config.conductorPublicUrl}
 - Email Service Type: ${EMAIL_SERVICE_TYPE}
 - From Address: ${EMAIL_CONFIG.fromEmail}
 - From Name: ${EMAIL_CONFIG.fromName}
@@ -378,9 +373,9 @@ If you received this email, the email service is configured correctly.
       };
 
       // Log sending attempt
-      if (!RUNNING_UNDER_TEST) {
-        console.log(
-          `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
+    if (!config.runningUnderTest) {
+      console.log(
+        `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
         );
       }
 
@@ -407,7 +402,7 @@ If you received this email, the email service is configured correctly.
         emailResponse: emailResult.response,
       };
 
-      if (!RUNNING_UNDER_TEST) {
+      if (!config.runningUnderTest) {
         console.log(
           `[Email Test] Test email sent successfully. Message ID: ${emailResult.messageId}`
         );
@@ -450,7 +445,7 @@ If you received this email, the email service is configured correctly.
       responseData.timings.total = endTime - startTime;
 
       // Log test completion
-      if (!RUNNING_UNDER_TEST) {
+      if (!config.runningUnderTest) {
         console.log(
           `[Email Test] Email test complete. Status: ${responseData.status}. Duration: ${responseData.timings.total}ms`
         );

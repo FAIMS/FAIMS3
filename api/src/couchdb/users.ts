@@ -32,7 +32,7 @@ import {
 } from '@faims3/data-model';
 import {getUsersDB} from '.';
 import {upgradeCouchUserToExpressUser} from '../auth/keySigning/create';
-import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
+import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
 import {registerLocalUser, addLocalPasswordForUser} from '../auth/helpers';
@@ -90,7 +90,7 @@ export function filterPeopleUsersForList(
 export const registerAdminUser = async () => {
   // register a local admin user with the same password as couchdb if there
   // isn't already one there
-  if (LOCAL_COUCHDB_AUTH) {
+  if (config.localCouchdbAuth) {
     const adminUser = await getCouchUserFromEmailOrUserId('admin');
     if (adminUser) {
       return;
@@ -100,7 +100,7 @@ export const registerAdminUser = async () => {
       // email is not specified - username is used
       email: '',
       name: 'Admin User',
-      password: LOCAL_COUCHDB_AUTH.password,
+      password: config.localCouchdbAuth.password,
     });
     if (user) {
       addGlobalRole({user, role: Role.GENERAL_ADMIN});

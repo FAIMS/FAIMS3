@@ -16,14 +16,14 @@ import {
   safeWriteDocument,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
-import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
+import {config} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {expiryMsFromNow} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in hours
-const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+const TOKEN_EXPIRY_MS = config.refreshTokenExpiryMinutes * 60 * 1000;
 // 5 minutes
 const EXCHANGE_EXPIRY_MS = 60 * 1000 * 5;
 

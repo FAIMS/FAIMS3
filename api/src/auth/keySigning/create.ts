@@ -28,11 +28,7 @@ import {
   TokenPayload,
 } from '@faims3/data-model';
 import {SignJWT} from 'jose';
-import {
-  ACCESS_TOKEN_EXPIRY_MINUTES,
-  CONDUCTOR_PUBLIC_URL,
-  KEY_SERVICE,
-} from '../../buildconfig';
+import {config, KEY_SERVICE} from '../../buildconfig';
 import {getProjectIdsByTeamId} from '../../couchdb/notebooks';
 import {createNewRefreshToken} from '../../couchdb/refreshTokens';
 import {getTemplateIdsByTeamId} from '../../couchdb/templates';
@@ -151,7 +147,7 @@ export async function generateJwtFromUser({
     const completePayload: TokenPayload = {
       ...permissionsComponent,
       name: user.name,
-      server: CONDUCTOR_PUBLIC_URL,
+      server: config.conductorPublicUrl,
       username: user.user_id,
     };
 
@@ -165,7 +161,7 @@ export async function generateJwtFromUser({
       .setIssuedAt()
       .setIssuer(signingKey.instanceName)
       // Expiry in minutes
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+      .setExpirationTime(config.accessTokenExpiryMinutes.toString() + 'm')
       .sign(signingKey.privateKey);
 
     return jwt;

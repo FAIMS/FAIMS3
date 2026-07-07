@@ -1,5 +1,5 @@
 import Bugsnag from '@bugsnag/js';
-import {BUGSNAG_API_KEY} from './buildconfig';
+import {config} from './buildconfig';
 
 /**
  * Logs an error to the console and reports it to Bugsnag when configured. TODO:
@@ -9,7 +9,7 @@ import {BUGSNAG_API_KEY} from './buildconfig';
  */
 export const logError = (error: unknown) => {
   console.error(error);
-  if (BUGSNAG_API_KEY) {
+  if (config.bugsnagApiKey) {
     const err = error instanceof Error ? error : new Error(String(error));
     Bugsnag.notify(err);
   }

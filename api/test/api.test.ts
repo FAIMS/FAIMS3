@@ -45,14 +45,7 @@ import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  CONDUCTOR_SHORT_CODE_PREFIX,
-  DEVELOPER_MODE,
-  KEY_SERVICE,
-} from '../src/buildconfig';
+import {config, KEY_SERVICE} from '../src/buildconfig';
 import {getDataDb} from '../src/couchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
@@ -92,10 +85,10 @@ describe('API tests', () => {
       .get('/api/info')
       .expect(200)
       .expect(response => {
-        expect(response.body.name).to.equal(CONDUCTOR_INSTANCE_NAME);
-        expect(response.body.description).to.equal(CONDUCTOR_DESCRIPTION);
-        expect(response.body.conductor_url).to.equal(CONDUCTOR_PUBLIC_URL);
-        expect(response.body.prefix).to.equal(CONDUCTOR_SHORT_CODE_PREFIX);
+        expect(response.body.name).to.equal(config.conductorInstanceName);
+        expect(response.body.description).to.equal(config.instanceDescription);
+        expect(response.body.conductor_url).to.equal(config.conductorPublicUrl);
+        expect(response.body.prefix).to.equal(config.shortCodePrefix);
       });
   });
 
@@ -998,7 +991,7 @@ describe('API tests', () => {
   //======= DEV ONLY ===========
   //============================
 
-  if (DEVELOPER_MODE) {
+  if (config.developerMode) {
     it('can create some random records', async () => {
       const projectID = await createNotebookFromSampleFile('Test Notebook');
 

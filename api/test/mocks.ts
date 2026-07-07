@@ -8,7 +8,7 @@ import {
   DBCallbackObject,
   ProjectID,
 } from '@faims3/data-model';
-import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 import {
   getAuthDB,
   localGetProjectsDb,
@@ -26,7 +26,7 @@ const getDatabase = async (databaseName: string) => {
   if (databaseList[databaseName] === undefined) {
     // still use the COUCHDB URL setting to be consistent with
     // other bits of the code, but this database will be in memory
-    const db = new PouchDB(COUCHDB_INTERNAL_URL + '/' + databaseName, {
+    const db = new PouchDB(config.couchdbInternalUrl + '/' + databaseName, {
       adapter: 'memory',
     });
     databaseList[databaseName] = db;

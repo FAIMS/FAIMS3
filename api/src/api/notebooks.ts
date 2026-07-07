@@ -59,11 +59,7 @@ import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {
-  CONDUCTOR_PUBLIC_URL,
-  DEVELOPER_MODE,
-  KEY_SERVICE,
-} from '../buildconfig';
+import {config, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -336,7 +332,7 @@ api.get(
     // Return the url explicitly - rather than a redirect. Hard to carefully
     // handle the auto redirect while triggering export only once
     return res.json({
-      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
+      url: config.conductorPublicUrl + `/api/notebooks/download/${jwt}`,
     });
   }
 );
@@ -1091,7 +1087,7 @@ api.post(
   }
 );
 
-if (DEVELOPER_MODE) {
+if (config.developerMode) {
   api.post(
     '/:notebookId/generate',
     requireAuthenticationAPI,

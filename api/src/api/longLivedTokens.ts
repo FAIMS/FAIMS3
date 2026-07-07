@@ -32,7 +32,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../buildconfig';
+import {config} from '../buildconfig';
 import {z} from 'zod';
 
 export const api: express.Router = express.Router();
@@ -161,7 +161,7 @@ api.get(
       res.json({
         tokens: tokenList,
         maxAllowedExpiryTimestamp: getMaxAllowedExpiryTimestamp(),
-        maxDurationDays: MAXIMUM_LONG_LIVED_DURATION_DAYS,
+        maxDurationDays: config.maximumLongLivedDurationDays,
       });
     } catch (error) {
       throw new Exceptions.InternalSystemError(
