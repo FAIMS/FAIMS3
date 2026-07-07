@@ -566,7 +566,10 @@ export const updateProjectUiSpecification = async (
 };
 
 /**
- * Sets or clears the recommended offline map region on a project.
+ * Sets or clears the recommended offline map region on a project document.
+ *
+ * Passing `offlineMapRegion: null` removes the field from CouchDB so GET
+ * responses omit it rather than returning an explicit null.
  */
 export const updateProjectOfflineMapRegion = async (
   projectId: string,
@@ -576,13 +579,12 @@ export const updateProjectOfflineMapRegion = async (
   const project = await getProjectById(projectId);
   const updated: ProjectDocument = {
     ...project,
-    ...(offlineMapRegion == null
-      ? {offlineMapRegion: undefined}
-      : {offlineMapRegion}),
     updatedAt: nowIso(),
   };
   if (offlineMapRegion == null) {
     delete updated.offlineMapRegion;
+  } else {
+    updated.offlineMapRegion = offlineMapRegion;
   }
   await putProjectDoc(updated);
   return getProjectById(projectId);

@@ -1,3 +1,9 @@
+/**
+ * MUI theme helpers for map control buttons.
+ *
+ * Mobile app themes define `palette.mapControl`; Control Centre and other hosts
+ * may not — {@link MapControlThemeProvider} fills in defaults.
+ */
 import {mapControlBrand} from '@faims3/data-model';
 import {
   createTheme,
@@ -18,6 +24,10 @@ export const defaultMapControlPalette = {
   buttonForeground: '#FFFFFF',
 } as const;
 
+/**
+ * Return `theme` unchanged when `palette.mapControl` is present; otherwise merge
+ * in {@link defaultMapControlPalette}.
+ */
 export function ensureMapControlTheme(theme: Theme): Theme {
   if (theme.palette.mapControl?.groupShadow) {
     return theme;

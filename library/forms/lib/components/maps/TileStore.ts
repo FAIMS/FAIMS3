@@ -199,6 +199,10 @@ export const initialiseMaps = () => {
  * Used by VectorTileStore and ImageTileStore to implement two kinds of map
  * tile sources.
  */
+/**
+ * Thrown when {@link TileStoreBase.downloadTileSet} is cancelled via
+ * {@link TileStoreBase.requestCancelDownloadTileSet}.
+ */
 export class OfflineMapDownloadCancelledError extends Error {
   readonly setName: string;
 
@@ -209,6 +213,7 @@ export class OfflineMapDownloadCancelledError extends Error {
   }
 }
 
+/** Type guard for cancellation errors raised during tile-set downloads. */
 export function isOfflineMapDownloadCancelledError(
   error: unknown
 ): error is OfflineMapDownloadCancelledError {
@@ -235,6 +240,7 @@ abstract class TileStoreBase {
     return true;
   }
 
+  /** Whether {@link downloadTileSet} is currently running for `setName`. */
   isDownloadTileSetActive(setName: string): boolean {
     return this.activeDownloads.has(setName);
   }
@@ -452,10 +458,11 @@ abstract class TileStoreBase {
   /**
    * createTileSet - create a tile set that will be used to cache tiles
    *
-   * @param extent The extent of the region to get tiles for
+   * @param extent The extent of the region to get tiles for (EPSG:3857)
    * @param setName The name of the set to store the tiles in
    * @param minZoom The minimum zoom level to get tiles for
    * @param maxZoom The maximum zoom level to get tiles for
+   * @param options Optional metadata for project downloads and replacement
    */
   async createTileSet(
     extent: Extent,
@@ -503,14 +510,13 @@ abstract class TileStoreBase {
   }
 
   /**
-   * downloadTileSet - download tiles for a tileSet if not already cached
-   *   this can take a long time so is separated from the creation of the
-   *   tileset above
+   * downloadTileSet - download tiles for a tileSet if not already cached.
    *
-   * @param extent The extent of the region to get tiles for
-   * @param minZoom Minimum zoom level to download
-   * @param maxZoom Maximum zoom level to download
-   * @param setName The name of the set to store the tiles in
+   * Runs in batches and dispatches `offline-map-download` events as tiles land.
+   * Call {@link requestCancelDownloadTileSet} to abort; cancellation removes the
+   * partial tile set and throws {@link OfflineMapDownloadCancelledError}.
+   *
+   * @param setName The name of the set to download tiles for
    */
   async downloadTileSet(setName: string) {
     const tileSet = await this.tileStore.tileSetDB.get([setName]);
@@ -639,7 +645,7 @@ abstract class TileStoreBase {
     }
   }
 
-  /** Remove all tile sets associated with a project. */
+  /** Remove all tile sets tagged with `projectId` (see {@link StoredTileSet.projectId}). */
   async removeTileSetsForProject(projectId: string) {
     const tileSets = await this.tileStore.tileSetDB.getAll();
     if (!tileSets) {

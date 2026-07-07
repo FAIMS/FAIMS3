@@ -37,8 +37,10 @@ import {useEffect, useMemo, useState} from 'react';
 import {ProgressBar} from '@faims3/forms';
 import {MapComponent} from '@faims3/forms';
 import {
+  formatOfflineMapSizeMb,
   StoredTileSet,
   tileSetDisplayName,
+  tileSetDownloadProgress,
   VectorTileStore,
 } from '@faims3/forms';
 import {getMapConfig} from '../../../buildconfig';
@@ -46,6 +48,8 @@ import {getMapConfig} from '../../../buildconfig';
 /**
  * Map download component presents the UI for downloading offline maps.
  *
+ * General-purpose tile cache manager (user-named sets). Project-specific
+ * downloads use {@link NotebookOfflineMapPrompt} and `@project/:id` tile sets.
  */
 export const MapDownload = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
@@ -109,16 +113,8 @@ export const MapDownload = () => {
   const handleCacheMapExtent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
-      let sizeStr = '';
-      tileStore.estimateSizeForRegion(extent).then(size => {
-        if (size > 1024 * 1024) {
-          sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
-        } else if (size > 1024) {
-          sizeStr = (size / 1024).toFixed(2) + ' GB';
-        } else {
-          sizeStr = size + ' MB';
-        }
-        setCacheSize(sizeStr);
+      tileStore.estimateSizeForRegion(extent).then(sizeMb => {
+        setCacheSize(formatOfflineMapSizeMb(sizeMb));
       });
     }
   };
@@ -212,13 +208,12 @@ export const MapDownload = () => {
                     MB
                   </Typography>
 
-                  {mapSet.tileKeys.length !== mapSet.expectedTileCount && (
-                    <ProgressBar
-                      completion={
-                        mapSet.tileKeys.length / mapSet.expectedTileCount
-                      }
-                    />
-                  )}
+                  {(() => {
+                    const progress = tileSetDownloadProgress(mapSet);
+                    return progress !== null && progress < 1 ? (
+                      <ProgressBar completion={progress} />
+                    ) : null;
+                  })()}
                   <Typography variant="body2" color="text.secondary">
                     Downloaded on: {mapSet.created.toLocaleDateString()}
                   </Typography>

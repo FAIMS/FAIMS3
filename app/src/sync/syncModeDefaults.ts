@@ -41,6 +41,11 @@ export interface ActivationSyncModeResult {
   /** Recommended offline map region from the server when known. */
   offlineMapRegion?: OfflineMapRegion;
   /**
+   * True when {@link offlineMapRegion} was read from the server during activation
+   * (including when the server has no region configured).
+   */
+  offlineMapRegionSynced?: boolean;
+  /**
    * True when sync was set to `push` because count exceeded the threshold.
    * Used to show the post-activation "Sync mode changed" snackbar.
    */
@@ -78,22 +83,30 @@ export async function resolveActivationSyncMode({
       token,
     });
     const recordCount = details.recordCount;
+    const offlineMapFromServer = {
+      offlineMapRegion: details.offlineMapRegion,
+      offlineMapRegionSynced: true as const,
+    };
     if (recordCount === undefined || Number.isNaN(recordCount)) {
-      return {syncMode: 'both', usedPushOnlyDefault: false};
+      return {
+        syncMode: 'both',
+        usedPushOnlyDefault: false,
+        ...offlineMapFromServer,
+      };
     }
     if (recordCount > SYNC_PUSH_ONLY_RECORD_THRESHOLD) {
       return {
         syncMode: 'push',
         recordCount,
-        offlineMapRegion: details.offlineMapRegion,
         usedPushOnlyDefault: true,
+        ...offlineMapFromServer,
       };
     }
     return {
       syncMode: 'both',
       recordCount,
-      offlineMapRegion: details.offlineMapRegion,
       usedPushOnlyDefault: false,
+      ...offlineMapFromServer,
     };
   } catch {
     return {syncMode: 'both', usedPushOnlyDefault: false};

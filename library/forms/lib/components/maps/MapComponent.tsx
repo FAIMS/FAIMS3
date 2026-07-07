@@ -130,12 +130,17 @@ export interface MapComponentProps {
  * - Renders live GPS location and directional cursor
  * - Accepts a parent callback to provide the map instance
  */
+/**
+ * Wraps {@link MapComponentImpl} with {@link MapControlThemeProvider} so map
+ * controls render correctly outside the mobile app's MUI theme.
+ */
 export const MapComponent = (props: MapComponentProps) => (
   <MapControlThemeProvider>
     <MapComponentImpl {...props} />
   </MapControlThemeProvider>
 );
 
+/** OpenLayers map with optional controls, GPS overlay, and layer toggle. */
 const MapComponentImpl = (props: MapComponentProps) => {
   const showControls = props.showControls ?? true;
   const [map, setMap] = useState<Map | undefined>(undefined);

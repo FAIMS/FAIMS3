@@ -1,18 +1,31 @@
+/**
+ * @file projectOfflineMap.ts
+ *
+ * App-level orchestration for project-associated offline map downloads.
+ *
+ * Wraps {@link VectorTileStore} with a shared instance, stable `@project/:id`
+ * tile-set names, download/cancel lifecycle, and plan-region reconciliation
+ * used during activation and server metadata refresh.
+ */
+
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {
+  deriveTileSetDownloadStatus,
   isOfflineMapDownloadCancelledError,
-  offlineMapRegionToExtent4326,
+  offlineMapRegionToExtent3857,
   offlineMapRegionsEqual,
   projectOfflineMapSetName,
+  type TileSetDownloadStatus,
   VectorTileStore,
 } from '@faims3/forms';
-import {transformExtent} from 'ol/proj';
 import type {MapConfig} from '@faims3/forms';
 import {getMapConfig} from '../../../buildconfig';
 
 let sharedTileStore: VectorTileStore | undefined;
+/** In-flight download promises keyed by project id (for cancel coordination). */
 const activeProjectDownloads = new Map<string, Promise<void>>();
 
+/** Lazily create the singleton tile store used for all project offline maps. */
 function getSharedTileStore(
   config: MapConfig = getMapConfig()
 ): VectorTileStore {
@@ -23,6 +36,7 @@ function getSharedTileStore(
   return sharedTileStore;
 }
 
+/** DOM event name fired when a project download completes, is removed, or is cancelled. */
 export const OFFLINE_MAP_DOWNLOAD_STATUS_CHANGED_EVENT =
   'offline-map-download-status-changed';
 
@@ -51,16 +65,18 @@ export async function downloadProjectOfflineMap({
   region,
   config = getMapConfig(),
 }: {
+  /** Notebook id — used for tile-set naming and deactivation cleanup. */
   projectId: string;
+  /** Stored as the tile set label in the download list UI. */
   projectName: string;
+  /** Plan region in EPSG:4326; also persisted on the tile set record. */
   region: OfflineMapRegion;
   config?: MapConfig;
 }): Promise<void> {
   const tileStore = getSharedTileStore(config);
   await tileStore.tileStore.initDB();
 
-  const extent4326 = offlineMapRegionToExtent4326(region);
-  const extent3857 = transformExtent(extent4326, 'EPSG:4326', 'EPSG:3857');
+  const extent3857 = offlineMapRegionToExtent3857(region);
   const setName = projectOfflineMapSetName(projectId);
 
   await tileStore.createTileSet(extent3857, setName, undefined, undefined, {
@@ -109,31 +125,18 @@ export async function cancelProjectOfflineMapDownload(
   }
 }
 
+/** Estimated download size for a region, in megabytes (same units as {@link VectorTileStore.estimateSizeForRegion}). */
 export async function estimateProjectOfflineMapSize(
   region: OfflineMapRegion,
   config: MapConfig = getMapConfig()
 ): Promise<number> {
   const tileStore = getSharedTileStore(config);
-  const extent4326 = offlineMapRegionToExtent4326(region);
-  const extent3857 = transformExtent(extent4326, 'EPSG:4326', 'EPSG:3857');
+  const extent3857 = offlineMapRegionToExtent3857(region);
   return tileStore.estimateSizeForRegion(extent3857);
 }
 
-export function formatOfflineMapSizeMb(sizeMb: number): string {
-  if (sizeMb > 1024) {
-    return `${(sizeMb / 1024).toFixed(2)} GB`;
-  }
-  return `${sizeMb.toFixed(2)} MB`;
-}
-
-export function formatOfflineMapSizeBytes(sizeBytes: number): string {
-  return formatOfflineMapSizeMb(sizeBytes / 1024 / 1024);
-}
-
-export type ProjectOfflineMapStatus =
-  | {state: 'not_downloaded'}
-  | {state: 'downloading'; progress: number}
-  | {state: 'downloaded'; sizeBytes: number};
+/** Download lifecycle for the `@project/:id` tile set on this device. */
+export type ProjectOfflineMapStatus = TileSetDownloadStatus;
 
 /** Read download status for a project-associated offline map tile set. */
 export async function getProjectOfflineMapStatus(
@@ -145,25 +148,7 @@ export async function getProjectOfflineMapStatus(
 
   const setName = projectOfflineMapSetName(projectId);
   const tileSet = await tileStore.tileStore.tileSetDB.get([setName]);
-  if (!tileSet) {
-    return {state: 'not_downloaded'};
-  }
-
-  if (
-    tileSet.expectedTileCount > 0 &&
-    tileSet.tileKeys.length >= tileSet.expectedTileCount
-  ) {
-    return {state: 'downloaded', sizeBytes: tileSet.size};
-  }
-
-  if (tileSet.expectedTileCount > 0) {
-    return {
-      state: 'downloading',
-      progress: tileSet.tileKeys.length / tileSet.expectedTileCount,
-    };
-  }
-
-  return {state: 'not_downloaded'};
+  return deriveTileSetDownloadStatus(tileSet);
 }
 
 /** Read the offline map region stored on a completed or in-progress project download. */
@@ -181,12 +166,18 @@ export async function getDownloadedOfflineMapRegion(
 
 export {offlineMapRegionsEqual};
 
+/** Outcome of comparing a server plan region with local download state. */
 export type OfflineMapRegionPlanChangeResult =
   | {action: 'none'}
   | {action: 'prompt'; isRegionUpdate: boolean}
   | {action: 'removed_stale_download'};
 
-/** Pure decision logic for reconciling a plan region change with local downloads. */
+/**
+ * Pure decision logic for reconciling a plan region change with local downloads.
+ *
+ * Does not touch storage — use {@link reconcileOfflineMapRegionPlanChange} to
+ * apply side effects (remove stale tile sets) before prompting the user.
+ */
 export function resolveOfflineMapRegionPlanChange({
   previousRegion,
   nextRegion,
@@ -202,14 +193,20 @@ export function resolveOfflineMapRegionPlanChange({
     return {action: 'none'};
   }
 
+  // Plan removed the region — drop any stale local download.
   if (!nextRegion) {
     return hadDownload ? {action: 'removed_stale_download'} : {action: 'none'};
   }
 
+  // First-time region on an activated project with no local download yet.
   if (!hadDownload) {
+    if (nextRegion && !previousRegion) {
+      return {action: 'prompt', isRegionUpdate: false};
+    }
     return {action: 'none'};
   }
 
+  // Local tiles already match the new plan — nothing to do.
   if (
     downloadedRegion &&
     offlineMapRegionsEqual(downloadedRegion, nextRegion)
@@ -217,6 +214,7 @@ export function resolveOfflineMapRegionPlanChange({
     return {action: 'none'};
   }
 
+  // Region changed while a download exists — prompt for re-download.
   return {action: 'prompt', isRegionUpdate: true};
 }
 
@@ -248,17 +246,21 @@ export async function reconcileOfflineMapRegionPlanChange({
     downloadedRegion,
   });
 
-  if (
-    decision.action === 'removed_stale_download' ||
-    decision.action === 'prompt'
-  ) {
+  if (decision.action === 'removed_stale_download') {
+    await removeProjectOfflineMaps(projectId);
+  } else if (decision.action === 'prompt' && hadDownload) {
     await removeProjectOfflineMaps(projectId);
   }
 
   return decision;
 }
 
-/** Whether an activation-time download prompt can be skipped. */
+/**
+ * Whether an activation-time download prompt can be skipped.
+ *
+ * Returns true when a completed download exists and its stored region matches
+ * the current plan region.
+ */
 export async function shouldSkipOfflineMapActivationPrompt(
   projectId: string,
   region: OfflineMapRegion

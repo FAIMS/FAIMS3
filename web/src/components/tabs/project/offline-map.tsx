@@ -49,11 +49,13 @@ type ProjectOfflineMapProps = {
 
 type StatusVariant = 'info' | 'warning' | 'success';
 
+/** Control Centre offline map tab UI state machine. */
 type WorkflowPhase = 'initial' | 'drawing' | 'pending' | 'saved';
 
 const OFFLINE_MAP_PERMISSION_TOOLTIP =
   'You do not have permission to configure this option';
 
+/** Wrap a button with a tooltip when the user lacks SET_OFFLINE_MAP_REGION. */
 function RestrictedOfflineMapButton({
   allowed,
   children,
@@ -77,6 +79,7 @@ function RestrictedOfflineMapButton({
   );
 }
 
+/** Optimistically patch the project query cache after a region save or clear. */
 function updateProjectOfflineMapRegionCache(
   queryClient: ReturnType<typeof useQueryClient>,
   projectId: string,
@@ -93,6 +96,7 @@ function updateProjectOfflineMapRegionCache(
   );
 }
 
+/** Coloured status banner for the offline map configuration workflow. */
 function OfflineMapStatusBox({
   variant,
   children,
@@ -134,7 +138,10 @@ function OfflineMapStatusBox({
 }
 
 /**
- * Offline map area configuration tab.
+ * Control Centre tab for configuring the recommended offline map download region.
+ *
+ * Workflow phases: initial → drawing → pending (unsaved selection) → saved.
+ * Collectors see a download prompt on activation when a region is configured.
  */
 export default function ProjectOfflineMap({
   projectId,
@@ -170,6 +177,7 @@ export default function ProjectOfflineMap({
   );
 
   const workflowPhase: WorkflowPhase = (() => {
+    // Derive UI phase from saved region, draft edits, and permission to edit.
     if (!canSetOfflineMapRegion) {
       return savedRegion ? 'saved' : 'initial';
     }

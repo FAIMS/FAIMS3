@@ -274,9 +274,28 @@ export interface ProjectIdentity {
   serverId: string;
 }
 
+/** One queued post-activation or plan-change offline map download dialog. */
 export interface PendingOfflineMapDownloadPrompt extends ProjectIdentity {
   /** True when an existing download was invalidated by a plan region change. */
   isRegionUpdate?: boolean;
+}
+
+/** Dedupe key for the offline map prompt FIFO queue. */
+function offlineMapDownloadPromptKey({
+  projectId,
+  serverId,
+}: ProjectIdentity): string {
+  return `${serverId}:${projectId}`;
+}
+
+/** Migrate legacy persisted state that predates the prompt queue field. */
+function ensureOfflineMapPromptQueue(
+  state: ProjectsState
+): PendingOfflineMapDownloadPrompt[] {
+  if (!state.pendingOfflineMapDownloadPrompts) {
+    state.pendingOfflineMapDownloadPrompts = [];
+  }
+  return state.pendingOfflineMapDownloadPrompts;
 }
 
 // Map from server ID to server details
@@ -287,8 +306,8 @@ export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
   selectedServerId?: string;
-  /** Shown once after activation when the activated project has an offline map region. */
-  pendingOfflineMapDownloadPrompt?: PendingOfflineMapDownloadPrompt;
+  /** FIFO queue of offline map download dialogs to show one at a time. */
+  pendingOfflineMapDownloadPrompts?: PendingOfflineMapDownloadPrompt[];
 }
 
 // UTILITY FUNCTIONS
@@ -302,6 +321,7 @@ export const initialProjectState: ProjectsState = {
   servers: {},
   // start out uninitialised
   isInitialised: false,
+  pendingOfflineMapDownloadPrompts: [],
 };
 
 /**
@@ -685,8 +705,9 @@ const projectsSlice = createSlice({
           payload.recordCount,
           existingProject.recordCount
         ),
-        offlineMapRegion:
-          payload.offlineMapRegion ?? existingProject.offlineMapRegion,
+        // Successful GET /api/notebooks/:id (200) may omit cleared regions entirely;
+        // treat a missing payload field the same as explicit undefined.
+        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
@@ -713,7 +734,9 @@ const projectsSlice = createSlice({
         recordCount,
       } = action.payload;
       const mergedOfflineMapRegion =
-        action.payload.offlineMapRegion ?? project.offlineMapRegion;
+        'offlineMapRegion' in action.payload
+          ? action.payload.offlineMapRegion
+          : project.offlineMapRegion;
 
       // updates the state with all of this new information
       state.servers[serverId].projects[project.projectId] = {
@@ -816,15 +839,31 @@ const projectsSlice = createSlice({
       };
     },
 
+    /**
+     * Enqueue the post-activation offline map download dialog for a project.
+     * Dispatched after activation, when a plan region change invalidates tiles,
+     * or from notebook offline map settings when the user starts a download.
+     */
     setPendingOfflineMapDownloadPrompt: (
       state,
       action: PayloadAction<PendingOfflineMapDownloadPrompt>
     ) => {
-      state.pendingOfflineMapDownloadPrompt = action.payload;
+      const queue = ensureOfflineMapPromptQueue(state);
+      const key = offlineMapDownloadPromptKey(action.payload);
+      const alreadyQueued = queue.some(
+        prompt => offlineMapDownloadPromptKey(prompt) === key
+      );
+      if (!alreadyQueued) {
+        queue.push(action.payload);
+      }
     },
 
+    /**
+     * Dismiss the current offline map download dialog and show the next queued
+     * prompt, if any.
+     */
     clearPendingOfflineMapDownloadPrompt: state => {
-      state.pendingOfflineMapDownloadPrompt = undefined;
+      ensureOfflineMapPromptQueue(state).shift();
     },
 
     /**
@@ -1269,9 +1308,25 @@ export const selectProjectById = createSelector(
   }
 );
 
+/**
+ * Returns the pending offline map download prompt, if any.
+ * Set after activation or when an activated project's plan region changes;
+ * cleared once the user dismisses or accepts the download offer.
+ *
+ * @param state Redux state
+ * @returns Project identity (and optional region-update flag) or undefined
+ */
 export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
-  state.projects.pendingOfflineMapDownloadPrompt;
+  state.projects.pendingOfflineMapDownloadPrompts?.[0];
 
+/**
+ * Finds a project by server and project ID.
+ * Memoized to prevent unnecessary re-renders.
+ *
+ * @param state Redux state
+ * @param identity Server and project IDs
+ * @returns The project on that server, or undefined
+ */
 export const selectProjectByIdentity = createSelector(
   [
     (state: RootState) => state.projects.servers,
@@ -1580,8 +1635,9 @@ export const activateProject = createAsyncThunk<
       syncId: syncId ?? undefined,
       syncMode: initialSyncMode,
       recordCount: activationSync.recordCount,
-      offlineMapRegion:
-        activationSync.offlineMapRegion ?? project.offlineMapRegion,
+      ...(activationSync.offlineMapRegionSynced
+        ? {offlineMapRegion: activationSync.offlineMapRegion}
+        : {}),
     })
   );
 
@@ -1603,8 +1659,10 @@ export const activateProject = createAsyncThunk<
     content: initDataDB({projectId: payload.projectId}),
   });
 
-  const offlineMapRegion =
-    activationSync.offlineMapRegion ?? project.offlineMapRegion;
+  const offlineMapRegion = activationSync.offlineMapRegionSynced
+    ? activationSync.offlineMapRegion
+    : project.offlineMapRegion;
+  // Offer to download the plan region unless tiles for it are already on device.
   if (OFFLINE_MAPS && offlineMapRegion) {
     const skipPrompt = await shouldSkipOfflineMapActivationPrompt(
       payload.projectId,
@@ -1890,8 +1948,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             })
           );
         } else {
-          const nextOfflineMapRegion =
-            meta.offlineMapRegion ?? existingProject.offlineMapRegion;
+          const nextOfflineMapRegion = meta.offlineMapRegion;
           if (
             OFFLINE_MAPS &&
             existingProject.isActivated &&
@@ -1900,6 +1957,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               nextOfflineMapRegion
             )
           ) {
+            // Defer side effects until after redux updates so reconciliation
+            // reads the new plan region from the store.
             offlineMapRegionUpdates.push({
               projectId,
               previousRegion: existingProject.offlineMapRegion,
@@ -1936,6 +1995,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       }
 
       if (OFFLINE_MAPS) {
+        // After store updates, reconcile local tile downloads with any plan
+        // region changes and enqueue re-download prompts when needed.
         for (const update of offlineMapRegionUpdates) {
           const result = await reconcileOfflineMapRegionPlanChange({
             projectId: update.projectId,
@@ -1943,11 +2004,20 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             nextRegion: update.nextRegion,
           });
           if (result.action === 'prompt') {
+            if (
+              update.nextRegion &&
+              (await shouldSkipOfflineMapActivationPrompt(
+                update.projectId,
+                update.nextRegion
+              ))
+            ) {
+              continue;
+            }
             appDispatch(
               setPendingOfflineMapDownloadPrompt({
                 projectId: update.projectId,
                 serverId,
-                isRegionUpdate: true,
+                isRegionUpdate: result.isRegionUpdate,
               })
             );
           }

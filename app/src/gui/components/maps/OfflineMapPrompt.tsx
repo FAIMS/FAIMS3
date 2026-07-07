@@ -14,7 +14,9 @@ import type {OfflineMapRegion} from '@faims3/data-model';
 import {
   OfflineMapRegionEditor,
   ProgressBar,
+  formatOfflineMapSizeMb,
   projectOfflineMapSetName,
+  tileSetDownloadProgress,
   type StoredTileSet,
 } from '@faims3/forms';
 import {useEffect, useState} from 'react';
@@ -31,11 +33,14 @@ import {
   cancelProjectOfflineMapDownload,
   downloadProjectOfflineMap,
   estimateProjectOfflineMapSize,
-  formatOfflineMapSizeMb,
 } from './projectOfflineMap';
 
 /**
- * Post-activation prompt offering to preview and download the recommended offline map area.
+ * Post-activation dialog for downloading the recommended offline map area.
+ *
+ * Driven by {@link selectPendingOfflineMapDownloadPrompt} — one prompt at a
+ * time from the FIFO queue. Hidden when offline; skipped automatically when the
+ * device already has tiles for the current plan region.
  */
 export function NotebookOfflineMapPrompt() {
   const theme = useTheme();
@@ -56,6 +61,7 @@ export function NotebookOfflineMapPrompt() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   const mapArea = project?.offlineMapRegion as OfflineMapRegion | undefined;
+  // Require online access — tile URLs and size estimation need the network.
   const open = Boolean(pending && project && mapArea && isOnline);
   const isAreaUpdate = pending?.isRegionUpdate ?? false;
 
@@ -87,10 +93,13 @@ export function NotebookOfflineMapPrompt() {
     const setName = projectOfflineMapSetName(pending.projectId);
     const handleDownloadProgress = (event: Event) => {
       const tileSet = (event as CustomEvent<StoredTileSet>).detail;
-      if (tileSet?.setName !== setName || tileSet.expectedTileCount <= 0) {
+      if (tileSet?.setName !== setName) {
         return;
       }
-      setDownloadProgress(tileSet.tileKeys.length / tileSet.expectedTileCount);
+      const progress = tileSetDownloadProgress(tileSet);
+      if (progress !== null) {
+        setDownloadProgress(progress);
+      }
     };
     addEventListener('offline-map-download', handleDownloadProgress);
     return () => {

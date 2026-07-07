@@ -73,7 +73,7 @@ describe('resolveOfflineMapRegionPlanChange', () => {
     ).toEqual({action: 'prompt', isRegionUpdate: true});
   });
 
-  it('does not prompt when there was no prior download', () => {
+  it('does not prompt when the plan region changes but nothing was downloaded', () => {
     expect(
       resolveOfflineMapRegionPlanChange({
         previousRegion: regionA,
@@ -82,6 +82,17 @@ describe('resolveOfflineMapRegionPlanChange', () => {
         downloadedRegion: undefined,
       })
     ).toEqual({action: 'none'});
+  });
+
+  it('prompts when a region is newly configured on an activated notebook', () => {
+    expect(
+      resolveOfflineMapRegionPlanChange({
+        previousRegion: undefined,
+        nextRegion: regionA,
+        hadDownload: false,
+        downloadedRegion: undefined,
+      })
+    ).toEqual({action: 'prompt', isRegionUpdate: false});
   });
 
   it('removes stale downloads when the plan region is cleared', () => {

@@ -45,6 +45,7 @@ export type OfflineMapPersistenceAction =
   | {type: 'save'; onClick: () => void; pending?: boolean}
   | {type: 'clear-saved'; onClick: () => void; pending?: boolean};
 
+/** Props for {@link OfflineMapRegionEditor}. */
 export type OfflineMapRegionEditorProps = {
   config: MapConfig;
   region?: OfflineMapRegion;
@@ -67,6 +68,12 @@ export type OfflineMapRegionEditorProps = {
 const DEFAULT_DRAWING_INSTRUCTION =
   'Click on the map to start your selection, then click again to complete it.';
 
+/**
+ * Interactive map editor for drawing a rectangular offline map download region.
+ *
+ * Converts between EPSG:4326 {@link OfflineMapRegion} polygons and the map's
+ * Web Mercator view. Supports read-only preview and optional external controls.
+ */
 export function OfflineMapRegionEditor({
   config,
   region,
@@ -89,6 +96,7 @@ export function OfflineMapRegionEditor({
 
   const showRegionOnMap = useCallback(
     (theMap: Map, nextRegion?: OfflineMapRegion) => {
+      // Render the saved/draft polygon and fit the view to it.
       const source = vectorSourceRef.current;
       source.clear();
 

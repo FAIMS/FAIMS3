@@ -50,6 +50,7 @@ import {
   stopSyncingAttachments,
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
+import {logError} from '../../../../logging';
 import {removeProjectOfflineMaps} from '../../maps/projectOfflineMap';
 import {theme} from '../../../themes';
 import {
@@ -91,9 +92,11 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
       try {
         await removeProjectOfflineMaps(projectId);
       } catch (e) {
-        console.warn(
-          `Failed to remove ${NOTEBOOK_NAME} offline maps on deactivation`,
-          e
+        logError(
+          new Error(
+            `Failed to remove ${NOTEBOOK_NAME} offline maps on deactivation`,
+            {cause: e}
+          )
         );
       }
     }

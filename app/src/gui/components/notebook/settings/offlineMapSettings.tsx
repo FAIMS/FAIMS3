@@ -2,6 +2,7 @@ import {Alert, Box, Button, Paper, Typography} from '@mui/material';
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {
   ProgressBar,
+  formatOfflineMapSizeBytes,
   projectOfflineMapSetName,
   type StoredTileSet,
 } from '@faims3/forms';
@@ -14,7 +15,6 @@ import {
 import {useAppDispatch} from '../../../../context/store';
 import {
   cancelProjectOfflineMapDownload,
-  formatOfflineMapSizeBytes,
   getProjectOfflineMapStatus,
   OFFLINE_MAP_DOWNLOAD_STATUS_CHANGED_EVENT,
   type ProjectOfflineMapStatus,
@@ -24,6 +24,11 @@ type NotebookOfflineMapSettingsProps = {
   project: Project;
 };
 
+/**
+ * Notebook settings panel showing offline map download status and actions.
+ *
+ * Renders nothing when the project has no recommended region configured.
+ */
 export default function NotebookOfflineMapSettings({
   project,
 }: NotebookOfflineMapSettingsProps) {
@@ -49,6 +54,7 @@ export default function NotebookOfflineMapSettings({
       return;
     }
     const setName = projectOfflineMapSetName(project.projectId);
+    // Refresh when tile batches land or when projectOfflineMap notifies completion.
     const handleDownloadProgress = (event: Event) => {
       const tileSet = (event as CustomEvent<StoredTileSet>).detail;
       if (tileSet?.setName === setName) {
