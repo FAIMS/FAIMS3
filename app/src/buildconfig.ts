@@ -240,13 +240,34 @@ const boolFromEnv = (
       return fallback;
     });
 
-/** Boolean that is only true when the value strictly equals `match`. */
+/** Truthy-string boolean with a default when blank. */
 const truthyOnlyBool = (def: boolean) =>
   z
     .string()
     .optional()
     .transform(v =>
       isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())
+    );
+
+/** Boolean that is only true when the (exact) value equals `match`. */
+const truthyOnlyEquals = (match: string) =>
+  z
+    .string()
+    .optional()
+    .transform(v => v === match);
+
+/** Comma-separated uppercase list with a default when blank. */
+const csvUpperFromEnv = (def: string[]) =>
+  z
+    .string()
+    .optional()
+    .transform(v =>
+      v === undefined || v.trim() === ''
+        ? def
+        : v
+            .split(',')
+            .map(s => s.trim().toUpperCase())
+            .filter(Boolean)
     );
 
 // ---------------------------------------------------------------------------
@@ -358,29 +379,6 @@ const ConfigSchema = z.object({
       return AutosuggestSource.NONE;
     }),
 });
-
-/** Boolean that is only true when the (case-insensitive) value equals `match`. */
-function truthyOnlyEquals(match: string) {
-  return z
-    .string()
-    .optional()
-    .transform(v => v === match);
-}
-
-/** Comma-separated uppercase list with a default when blank. */
-function csvUpperFromEnv(def: string[]) {
-  return z
-    .string()
-    .optional()
-    .transform(v =>
-      v === undefined || v.trim() === ''
-        ? def
-        : v
-            .split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(Boolean)
-    );
-}
 
 const parsedConfig = ConfigSchema.parse({
   debugPouchdb: rawEnv.VITE_DEBUG_POUCHDB,
