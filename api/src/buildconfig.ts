@@ -136,11 +136,15 @@ const isBlank = (v: string | undefined): v is undefined | '' =>
 
 /** A required non-empty string default, no logging. */
 const stringFromEnv = (def: string) =>
-  z.string().optional().transform(v => (isBlank(v) ? def : v));
+  z
+    .string()
+    .optional()
+    .transform(v => (isBlank(v) ? def : v));
 
 /** Integer with default; unparseable/blank falls back to the default. */
 const intFromEnv = (def: number, label?: string) =>
-  z.string()
+  z
+    .string()
     .optional()
     .transform(v => {
       if (isBlank(v)) return def;
@@ -154,16 +158,20 @@ const intFromEnv = (def: number, label?: string) =>
 
 /** Boolean where any of the truthy strings (case-insensitive) means true. */
 const truthyBool = (def: boolean) =>
-  z.string()
+  z
+    .string()
     .optional()
-    .transform(v => (isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())));
+    .transform(v =>
+      isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())
+    );
 
 /**
  * Boolean where only the exact (case-insensitive) string 'true' means true.
  * A blank/undefined value falls back to the provided default.
  */
 const equalsTrueBool = (def: boolean) =>
-  z.string()
+  z
+    .string()
     .optional()
     .transform(v => (v === undefined ? def : v.toLowerCase() === 'true'));
 

@@ -245,7 +245,9 @@ const truthyOnlyBool = (def: boolean) =>
   z
     .string()
     .optional()
-    .transform(v => (isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())));
+    .transform(v =>
+      isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())
+    );
 
 // ---------------------------------------------------------------------------
 // Pass two: build the typed configuration values.
@@ -286,8 +288,9 @@ const ConfigSchema = z.object({
   mapStyle: z
     .string()
     .optional()
-    .transform((v): MapStylesheetNameType =>
-      isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
+    .transform(
+      (v): MapStylesheetNameType =>
+        isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
     ),
   satelliteSource: z
     .string()
@@ -298,8 +301,9 @@ const ConfigSchema = z.object({
   navigationStyle: z
     .string()
     .optional()
-    .transform((v): NavigationStyleOption =>
-      isBlank(v) ? 'none' : (v as NavigationStyleOption)
+    .transform(
+      (v): NavigationStyleOption =>
+        isBlank(v) ? 'none' : (v as NavigationStyleOption)
     ),
   showRecordLinks: truthyOnlyEquals('true'),
   migrateOldDatabases: truthyOnlyBool(false),
@@ -487,7 +491,11 @@ function buildMapTilerApiKey(): string | undefined {
   }
   const mapSource = rawEnv.VITE_MAP_SOURCE;
   const mapKey = rawEnv.VITE_MAP_SOURCE_KEY;
-  if (mapSource === 'maptiler' && mapKey !== undefined && mapKey.trim() !== '') {
+  if (
+    mapSource === 'maptiler' &&
+    mapKey !== undefined &&
+    mapKey.trim() !== ''
+  ) {
     return mapKey.trim();
   }
   return undefined;

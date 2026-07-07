@@ -25,7 +25,10 @@ import {describe, it, expect} from 'vitest';
 import {config} from '../../../buildconfig';
 
 const testData1 = [{title: 'Workspace'}];
-const testData2 = [{title: 'Workspace'}, {title: config.notebookNameCapitalized}];
+const testData2 = [
+  {title: 'Workspace'},
+  {title: config.notebookNameCapitalized},
+];
 
 // Can only check this if breadcrumbs are enabled
 describe('Check breadcrumbs component', () => {

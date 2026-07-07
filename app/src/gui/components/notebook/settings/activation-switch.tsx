@@ -72,9 +72,9 @@ export default function NotebookActivationSwitch({
       >
         <Box sx={{mb: 2}}>
           <Typography variant="body2" sx={{mb: 2}}>
-            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {config.notebookName}{' '}
-            ensures that you are safe to work offline at any point by
-            downloading any existing records onto your device.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a{' '}
+            {config.notebookName} ensures that you are safe to work offline at
+            any point by downloading any existing records onto your device.
             <br />
             <strong>Please do this with a stable internet connection.</strong>
           </Typography>

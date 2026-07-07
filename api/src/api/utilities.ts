@@ -373,9 +373,9 @@ If you received this email, the email service is configured correctly.
       };
 
       // Log sending attempt
-    if (!config.runningUnderTest) {
-      console.log(
-        `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
+      if (!config.runningUnderTest) {
+        console.log(
+          `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
         );
       }
 

@@ -234,7 +234,9 @@ export default function NoteBooks() {
   const notActivatedAdvice = (
     <>
       You have {activatedProjects.length}{' '}
-      {activatedProjects.length !== 1 ? config.notebookNamePlural : config.notebookName}{' '}
+      {activatedProjects.length !== 1
+        ? config.notebookNamePlural
+        : config.notebookName}{' '}
       currently {ACTIVATED_LABEL} on this device.{' '}
       {config.notebookNamePluralCapitalized} in the{' '}
       {isTabs ? (
@@ -438,10 +440,10 @@ export default function NoteBooks() {
         </DialogTitle>
         <DialogContent>
           <Typography sx={{mb: 2}}>
-            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {config.notebookName}{' '}
-            ensures that you are safe to work offline at any point by
-            downloading any existing records onto your device. Please do this
-            with a stable internet connection.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a{' '}
+            {config.notebookName} ensures that you are safe to work offline at
+            any point by downloading any existing records onto your device.
+            Please do this with a stable internet connection.
           </Typography>
           <Typography sx={{mb: 2}}>
             <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {config.notebookName}{' '}
@@ -455,8 +457,8 @@ export default function NoteBooks() {
                 {DE_ACTIVATE_VERB.toLowerCase()}
               </li>
               <li>
-                Ensure you are online, and all data in the {config.notebookName} has
-                been synced to the cloud
+                Ensure you are online, and all data in the {config.notebookName}{' '}
+                has been synced to the cloud
               </li>
               <li>
                 Click <strong>"Settings"</strong> tab (next to Map and Details

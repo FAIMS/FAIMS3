@@ -89,7 +89,8 @@ export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
       userInfoURL: options.userInfoURL,
       clientID: options.clientID,
       clientSecret: options.clientSecret,
-      callbackURL: config.conductorPublicUrl + providerAuthReturnUrl(options.id),
+      callbackURL:
+        config.conductorPublicUrl + providerAuthReturnUrl(options.id),
       passReqToCallback: true,
       scope: options.scope,
     },

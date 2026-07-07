@@ -7,7 +7,8 @@ export const SYNC_MODE_HELP_MODES: SyncMode[] = ['none', 'push', 'both'];
 
 export function showsLargeRecordNote(recordCount?: number): boolean {
   return (
-    recordCount !== undefined && recordCount > config.syncPushOnlyRecordThreshold
+    recordCount !== undefined &&
+    recordCount > config.syncPushOnlyRecordThreshold
   );
 }
 

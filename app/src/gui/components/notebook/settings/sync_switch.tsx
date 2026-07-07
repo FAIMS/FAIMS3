@@ -130,7 +130,8 @@ export default function NotebookSyncSwitch({
           </FormControl>
           {showHelperText ? (
             <FormHelperText>
-              Choose how this {config.notebookName} syncs record data with the server.
+              Choose how this {config.notebookName} syncs record data with the
+              server.
               {!syncModeIncludesPull(currentMode)
                 ? ' Attachment download requires two-way sync.'
                 : ''}

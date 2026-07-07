@@ -159,8 +159,9 @@ const ConfigSchema = z.object({
   mapStyle: z
     .string()
     .optional()
-    .transform((v): MapStylesheetNameType =>
-      isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
+    .transform(
+      (v): MapStylesheetNameType =>
+        isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
     ),
   satelliteSource: z
     .string()
@@ -380,7 +381,8 @@ export const REFRESH_INTERVAL = 3 * 60 * 1000;
 export const MAXIMUM_LONG_LIVED_DURATION_DAYS =
   config.maximumLongLivedDurationDays;
 
-export const LONG_LIVED_TOKEN_DURATION_HINTS = config.longLivedTokenDurationHints;
+export const LONG_LIVED_TOKEN_DURATION_HINTS =
+  config.longLivedTokenDurationHints;
 export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 
 // Help link to use for the long lived token docs

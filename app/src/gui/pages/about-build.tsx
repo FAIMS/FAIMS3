@@ -137,7 +137,9 @@ export default function AboutBuild() {
           <table>
             <tbody>
               <tr>
-                <td>{config.conductorUrls.length > 1 ? 'Servers' : 'Server'}:</td>
+                <td>
+                  {config.conductorUrls.length > 1 ? 'Servers' : 'Server'}:
+                </td>
                 <td>{config.conductorUrls.join(', ')}</td>
               </tr>
               <tr>
@@ -225,9 +227,9 @@ export default function AboutBuild() {
             </Typography>
 
             <Typography variant={'body2'}>
-              Share or save a file containing all {config.notebookNamePlural} and
-              records stored on this device. Data download functionality is not
-              well-supported by all device+browser combinations.
+              Share or save a file containing all {config.notebookNamePlural}{' '}
+              and records stored on this device. Data download functionality is
+              not well-supported by all device+browser combinations.
             </Typography>
           </Grid>
           <Grid size={{md: 8, sm: 6, xs: 12}}>

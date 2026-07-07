@@ -47,9 +47,9 @@ export default function PushOnlySyncBanner({
     <Alert severity="warning" sx={{mb: 1}}>
       <AlertTitle>Large {config.notebookName}</AlertTitle>
       <Typography variant="body2">
-        This {config.notebookName} has a large number of records. Switch to "upload
-        only" to reduce device stress. Your records will be uploaded to the
-        server, but other users&apos; records will not be available on this
+        This {config.notebookName} has a large number of records. Switch to
+        "upload only" to reduce device stress. Your records will be uploaded to
+        the server, but other users&apos; records will not be available on this
         device.
       </Typography>
       <Box sx={{display: 'flex', gap: 1, mt: 1.5}}>

@@ -219,8 +219,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         <Alert variant="standard" severity="warning" sx={{mb: 1}}>
           <AlertTitle>{config.notebookNameCapitalized} is closed</AlertTitle>
           Ensure your records have a green sync status and then{' '}
-          {DE_ACTIVATE_VERB.toLowerCase()} this {config.notebookName} via the settings
-          tab. No additional data can be collected for this {config.notebookName}.
+          {DE_ACTIVATE_VERB.toLowerCase()} this {config.notebookName} via the
+          settings tab. No additional data can be collected for this{' '}
+          {config.notebookName}.
         </Alert>
       )}
       <PushOnlySyncBanner
@@ -310,8 +311,16 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 />
               )}
 
-              <Tab value={2} label="Map" {...a11yProps(2, config.notebookName)} />
-              <Tab value={3} label="Details" {...a11yProps(3, config.notebookName)} />
+              <Tab
+                value={2}
+                label="Map"
+                {...a11yProps(2, config.notebookName)}
+              />
+              <Tab
+                value={3}
+                label="Details"
+                {...a11yProps(3, config.notebookName)}
+              />
               <Tab
                 value={4}
                 label="Settings"

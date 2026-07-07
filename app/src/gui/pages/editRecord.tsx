@@ -33,7 +33,12 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import {config, CAPACITOR_PLATFORM, getAddressAutosuggestService, getMapConfig} from '../../buildconfig';
+import {
+  config,
+  CAPACITOR_PLATFORM,
+  getAddressAutosuggestService,
+  getMapConfig,
+} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getNotebookRoute,

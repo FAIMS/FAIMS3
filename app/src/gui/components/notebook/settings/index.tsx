@@ -196,8 +196,8 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
             </Typography>
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
-                {DE_ACTIVATE_ACTIVE_VERB} this {config.notebookName} will remove it
-                from your device and delete all records on your device.{' '}
+                {DE_ACTIVATE_ACTIVE_VERB} this {config.notebookName} will remove
+                it from your device and delete all records on your device.{' '}
                 {syncMode === 'none'
                   ? 'Ensure any records you need on the server have been synced before deactivating.'
                   : 'Ensure all your records have a green sync status (uploaded) before deactivating.'}
