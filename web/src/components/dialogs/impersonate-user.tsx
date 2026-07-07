@@ -61,7 +61,7 @@ export function ImpersonateUserDialog({
           <DialogDescription asChild className="text-inherit">
             <Alert variant="warning" className="w-full border-2 border-warning">
               <AlertTitle>Heads up:</AlertTitle>
-              <AlertDescription asChild>
+              <AlertDescription>
                 <ul className="mt-2 list-disc space-y-2 pl-5">
                   <li>
                     You will be signed in as this user and see exactly what they
