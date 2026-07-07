@@ -38,7 +38,7 @@ const testUser: ActiveUser = {
 const testProject = {
   created: 'Unknown',
   description: 'No description',
-  is_activated: true,
+  isActivated: true,
   last_updated: 'Unknown',
   listing_id: 'default',
   name: 'Test Name',

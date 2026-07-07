@@ -26,7 +26,6 @@
 import {Geolocation, Position} from '@capacitor/geolocation';
 import {Box} from '@mui/material';
 import {View} from 'ol';
-import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
@@ -36,12 +35,24 @@ import {transform, transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
-import {createCenterControl} from './controls/center-control';
-import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
-import {createLayerToggle} from './controls/layer-toggle';
+import {
+  CenterOnLocationControl,
+  CompassControl,
+  LayerToggleControl,
+  UseCurrentLocationControl,
+  ZoomControl,
+} from './controls/map-controls';
+import {MapControlsOverlay, MapControlStack} from './controls/primitives';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
 
@@ -100,6 +111,11 @@ export interface MapComponentProps {
     // location
     setSelectionAsCurrentLocation?: (point: Point) => void;
   };
+
+  // Optional content rendered over the top of the map (e.g. an instruction
+  // banner). Laid out by the controls overlay so it never collides with the
+  // control buttons.
+  topOverlay?: ReactNode;
 }
 
 /**
@@ -115,14 +131,35 @@ export const MapComponent = (props: MapComponentProps) => {
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  // Whether we have a live GPS fix (drives control button enablement)
+  const [locationAvailable, setLocationAvailable] = useState<boolean>(false);
   const tileStore = useMemo(() => createTileStore(props.config), []);
-
-  // Update layer toggle when online status changes
-  useEffect(() => {
-    window.dispatchEvent(
-      new CustomEvent('map-online-status-change', {detail: {isOnline}})
-    );
-  }, [isOnline]);
+  // Layers are memoised so the layer toggle control operates on the same
+  // instances that were added to the map
+  const tileLayer = useMemo(() => tileStore.getTileLayer(), [tileStore]);
+  const satelliteLayer = useMemo(
+    () =>
+      tileStore.hasSatellite() ? tileStore.getSatelliteLayer() : undefined,
+    [tileStore]
+  );
+  const vectorZoomRange = useMemo(
+    () => tileStore.getVectorZoomRange(),
+    [tileStore]
+  );
+  const satelliteZoomRange = useMemo(
+    () => tileStore.getSatelliteZoomRange(),
+    [tileStore]
+  );
+  const handleLayerChange = useCallback(
+    (isSatellite: boolean) => {
+      setAttribution(
+        isSatellite
+          ? tileStore.getSatelliteAttribution()
+          : (tileStore.getAttribution() as unknown as string)
+      );
+    },
+    [tileStore]
+  );
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {
@@ -147,7 +184,6 @@ export const MapComponent = (props: MapComponentProps) => {
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
-  const centerControlAddedRef = useRef(false);
 
   // Determine map center based on props or current location.
   // Priority: explicit center > extent > live GPS > cached position > last saved location > Sydney
@@ -184,7 +220,6 @@ export const MapComponent = (props: MapComponentProps) => {
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     setAttribution(tileStore.getAttribution() as unknown as string);
-    const tileLayer = tileStore.getTileLayer();
     const layers = [tileLayer];
 
     // if we're offline, limit the zoom level to 12 so that we don't go
@@ -193,7 +228,6 @@ export const MapComponent = (props: MapComponentProps) => {
     // map.
 
     // Add satellite layer if configured
-    const satelliteLayer = tileStore.getSatelliteLayer();
     if (satelliteLayer) {
       layers.push(satelliteLayer);
     }
@@ -209,53 +243,10 @@ export const MapComponent = (props: MapComponentProps) => {
       target: element,
       layers,
       view: view,
-      controls: [
-        new Zoom(),
-        // Only show this control if provided
-        ...(props.additionalControls?.setSelectionAsCurrentLocation
-          ? [
-              createSetPointToCurrentLocationControl({
-                setPoint: () => {
-                  if (liveLocationRef.current) {
-                    const coords = transform(
-                      [
-                        liveLocationRef.current.coords.longitude,
-                        liveLocationRef.current.coords.latitude,
-                      ],
-                      'EPSG:4326',
-                      defaultMapProjection
-                    );
-                    props.additionalControls!.setSelectionAsCurrentLocation!(
-                      new Point(coords)
-                    );
-                  }
-                },
-                isLocationAvailable: liveLocationRef.current !== null,
-              }),
-            ]
-          : []),
-      ],
+      // All map controls are React components rendered in the overlay -
+      // no OpenLayers controls
+      controls: [],
     });
-
-    // Add layer toggle if satellite is available
-    if (satelliteLayer && tileStore.hasSatellite()) {
-      const layerToggle = createLayerToggle({
-        vectorLayer: tileLayer,
-        satelliteLayer,
-        isOnline,
-        vectorZoomRange: tileStore.getVectorZoomRange(),
-        satelliteZoomRange: tileStore.getSatelliteZoomRange(),
-        onLayerChange: isSatellite => {
-          // Update attribution when layer changes
-          setAttribution(
-            isSatellite
-              ? tileStore.getSatelliteAttribution()
-              : (tileStore.getAttribution() as unknown as string)
-          );
-        },
-      });
-      theMap.addControl(layerToggle);
-    }
 
     // create the live cursor layer
     const liveCursor = createLiveCursorFeatures(theMap);
@@ -281,16 +272,10 @@ export const MapComponent = (props: MapComponentProps) => {
       (position, err) => {
         if (err) {
           logWarn('Geolocation error:', err.message || err);
-          // Emit location unavailable on error
-          window.dispatchEvent(
-            new CustomEvent('map-location-availability-change', {
-              detail: {isAvailable: false},
-            })
-          );
+          setLocationAvailable(false);
           return;
         }
         if (position) {
-          const wasUnavailable = liveLocationRef.current === null;
           liveLocationRef.current = position;
           liveCursor.updateCursorLocation(position);
           // Persist so the next map open uses this location instead of Sydney
@@ -298,15 +283,7 @@ export const MapComponent = (props: MapComponentProps) => {
             position.coords.longitude,
             position.coords.latitude,
           ]);
-
-          // Emit location available when we first get a position
-          if (wasUnavailable) {
-            window.dispatchEvent(
-              new CustomEvent('map-location-availability-change', {
-                detail: {isAvailable: true},
-              })
-            );
-          }
+          setLocationAvailable(true);
         }
       }
     ).then(id => {
@@ -445,10 +422,6 @@ export const MapComponent = (props: MapComponentProps) => {
       // move the map to the center and fit the extent
       if (mapCenter) {
         const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
-        if (!centerControlAddedRef.current) {
-          map.addControl(createCenterControl(map.getView(), centerMap));
-          centerControlAddedRef.current = true;
-        }
 
         // we set the map extent if we were given one or if not,
         // set the map center which will either have been passed
@@ -495,6 +468,34 @@ export const MapComponent = (props: MapComponentProps) => {
     [map, createMap]
   );
 
+  // Keep the OpenLayers canvas in sync with its container size (OL doesn't
+  // observe container resizes itself)
+  useEffect(() => {
+    if (!map) return;
+    const target = map.getTargetElement();
+    if (!target) return;
+    const observer = new ResizeObserver(() => map.updateSize());
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [map]);
+
+  // Handler for the "use current location" control (map picker only)
+  const setSelectionAsCurrentLocation =
+    props.additionalControls?.setSelectionAsCurrentLocation;
+  const handleUseCurrentLocation = () => {
+    if (liveLocationRef.current && setSelectionAsCurrentLocation) {
+      const coords = transform(
+        [
+          liveLocationRef.current.coords.longitude,
+          liveLocationRef.current.coords.latitude,
+        ],
+        'EPSG:4326',
+        defaultMapProjection
+      );
+      setSelectionAsCurrentLocation(new Point(coords));
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -506,14 +507,51 @@ export const MapComponent = (props: MapComponentProps) => {
         minWidth: 0,
       }}
     >
-      <Box
-        ref={refCallback} // will create the map
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          width: '100%',
-        }}
-      />
+      <Box sx={{position: 'relative', flex: 1, minHeight: 0, width: '100%'}}>
+        <Box
+          ref={refCallback} // will create the map
+          sx={{
+            height: '100%',
+            width: '100%',
+          }}
+        />
+        {map && (
+          <MapControlsOverlay
+            topContent={props.topOverlay}
+            topRight={
+              setSelectionAsCurrentLocation && (
+                <UseCurrentLocationControl
+                  onSetPoint={handleUseCurrentLocation}
+                  locationAvailable={locationAvailable}
+                />
+              )
+            }
+            bottomRight={
+              <>
+                <CompassControl map={map} />
+                <MapControlStack>
+                  {satelliteLayer && (
+                    <LayerToggleControl
+                      map={map}
+                      vectorLayer={tileLayer}
+                      satelliteLayer={satelliteLayer}
+                      isOnline={isOnline}
+                      vectorZoomRange={vectorZoomRange}
+                      satelliteZoomRange={satelliteZoomRange}
+                      onLayerChange={handleLayerChange}
+                    />
+                  )}
+                  <CenterOnLocationControl
+                    onCenter={centerMap}
+                    locationAvailable={locationAvailable}
+                  />
+                  <ZoomControl map={map} />
+                </MapControlStack>
+              </>
+            }
+          />
+        )}
+      </Box>
       {attribution && (
         <Box
           component="div"
@@ -522,7 +560,7 @@ export const MapComponent = (props: MapComponentProps) => {
             flexShrink: 0,
             fontSize: '10px',
             lineHeight: 1.3,
-            color: '#666',
+            color: 'text.secondary',
             py: 0.25,
             px: {xs: 0.5, sm: 1},
             wordBreak: 'break-word',

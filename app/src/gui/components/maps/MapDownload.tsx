@@ -51,9 +51,13 @@ export const MapDownload = () => {
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
   const [downloadListOpen, setDownloadListOpen] = useState(false);
 
-  const mapConfig = getMapConfig();
+  // Offline downloads are vector-only — omit satellite so the layer toggle is hidden
+  const mapConfig = useMemo(() => {
+    const {satelliteSource: _satellite, ...vectorOnly} = getMapConfig();
+    return vectorOnly;
+  }, []);
 
-  const tileStore = useMemo(() => new VectorTileStore(mapConfig), []);
+  const tileStore = useMemo(() => new VectorTileStore(mapConfig), [mapConfig]);
 
   // ensure we have a baseline tile set for this map
   tileStore.createBaselineTileSet();

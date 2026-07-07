@@ -48,3 +48,9 @@ export const defaultBrand = {
   successMain: '#388E3C',
   infoMain: '#1976D2',
 } as const;
+
+/** Active map control button (e.g. satellite toggle on) — shared across themes */
+export const mapControlBrand = {
+  activeMain: '#1a73e8',
+  activeHover: '#1666cc',
+} as const;

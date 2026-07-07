@@ -30,7 +30,7 @@ afterEach(() => {
 const testProjectInfo = {
   created: 'Unknown',
   description: 'No description',
-  is_activated: true,
+  isActivated: true,
   last_updated: 'Unknown',
   listing_id: 'default',
   name: 'Test Name',
@@ -47,7 +47,7 @@ vi.mock('react-router-dom', async () => {
       projectId: testProjectInfo.project_id,
       serverId: 'test-server',
     }),
-    useNavigate: vi.fn(() => {}),
+    useNavigate: vi.fn(() => vi.fn()),
     Link: vi.fn(() => {}),
     RouterLink: vi.fn(() => {}),
     NavLink: vi.fn(() => {}),

@@ -12,8 +12,16 @@ import {CreateTemplateForm} from '../forms/create-template-form';
 import {Plus} from 'lucide-react';
 import {useGetTeam} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
+import {useCanCreateTemplate} from '@/hooks/auth-hooks';
 import {ErrorComponent} from '@tanstack/react-router';
 
+/**
+ * Dialog entry point for creating a new template.
+ *
+ * Renders nothing when the user lacks create permission, except on team pages
+ * where `specifiedTeam` fixes the owning team and the parent already gates
+ * access via `CREATE_TEMPLATE_IN_TEAM`.
+ */
 export const CreateTemplateDialog = ({
   defaultValues,
   specifiedTeam = undefined,
@@ -23,11 +31,18 @@ export const CreateTemplateDialog = ({
 }) => {
   const [open, setOpen] = useState(false);
   const {user} = useAuth();
+  const canCreateTemplate = useCanCreateTemplate();
+  const {data: team} = useGetTeam({user, teamId: specifiedTeam});
+
   if (!user) {
     return <ErrorComponent error="Unauthenticated" />;
   }
 
-  const {data: team} = useGetTeam({user, teamId: specifiedTeam});
+  // Global list: hide trigger when user cannot create at all.
+  // Team tab passes specifiedTeam and relies on parent permission checks.
+  if (!canCreateTemplate && !specifiedTeam) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -40,7 +55,7 @@ export const CreateTemplateDialog = ({
           <span>Create Template</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg space-y-6">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-medium">
             Create Template

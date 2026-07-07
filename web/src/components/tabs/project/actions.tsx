@@ -20,14 +20,10 @@ import {
   useDesignerSaveMutation,
 } from '@/designer/integration';
 import type {NotebookWithHistory} from '@/designer/state/initial';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useCanCreateTemplate, useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {
-  Action,
-  getUserResourcesForAction,
-  ProjectStatus,
-} from '@faims3/data-model';
+import {Action, ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 
@@ -67,7 +63,7 @@ const ProjectActions = (): JSX.Element => {
   };
 
   const handleEditorClose = (file?: File) => {
-    if (file) saveProjectNotebook.mutate(file);
+    if (file) saveProjectNotebook.mutateAsyncWithToast(file);
     setEditorOpen(false);
   };
 
@@ -92,13 +88,8 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
-  /** Matches {@link CreateTemplateFromProjectForm}: global create or any permitted team. */
-  const canCreateTemplateFromProject =
-    useIsAuthorisedTo({action: Action.CREATE_TEMPLATE}) ||
-    getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
-      action: Action.CREATE_TEMPLATE_IN_TEAM,
-    }).length > 0;
+  /** Matches create-from-project form: global create or team-scoped create on any team. */
+  const canCreateTemplateFromProject = useCanCreateTemplate();
 
   const canReadProjectMetadata = useIsAuthorisedTo({
     action: Action.READ_PROJECT_METADATA,
