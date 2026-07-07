@@ -16,22 +16,37 @@
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration for the designer, specifically
- *   managing template protections.
+ *   managing template protections. Configuration is parsed from Vite's
+ *   `import.meta.env` using a two-pass zod pipeline (env -> strings, then
+ *   strings -> typed values) and exposed via the `config` singleton.
  */
+
+import {z} from 'zod';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
-/**
- * Checks if VITE_TEMPLATE_PROTECTIONS is enabled from environment variables.
- * Defaults to false if not set.
- *
- * @returns Boolean indicating if template protections are enabled
- */
-function templateProtectionsEnabled(): boolean {
-  const protectionEnabled = import.meta.env.VITE_TEMPLATE_PROTECTIONS;
-  return protectionEnabled
-    ? TRUTHY_STRINGS.includes(protectionEnabled.toLowerCase())
-    : false;
-}
+// Pass one: read and validate the raw environment into (optional) strings.
+const EnvSchema = z.object({
+  VITE_TEMPLATE_PROTECTIONS: z.string().optional(),
+});
 
-export const VITE_TEMPLATE_PROTECTIONS = templateProtectionsEnabled();
+const rawEnv = EnvSchema.parse({
+  VITE_TEMPLATE_PROTECTIONS: import.meta.env.VITE_TEMPLATE_PROTECTIONS,
+});
+
+// Pass two: build the typed configuration values. Defaults to false when unset.
+const ConfigSchema = z.object({
+  templateProtections: z
+    .string()
+    .optional()
+    .transform(v => (v ? TRUTHY_STRINGS.includes(v.toLowerCase()) : false)),
+});
+
+/**
+ * The singleton designer configuration object. Prefer reading values from here.
+ */
+export const config = ConfigSchema.parse({
+  templateProtections: rawEnv.VITE_TEMPLATE_PROTECTIONS,
+});
+
+export type DesignerConfig = typeof config;

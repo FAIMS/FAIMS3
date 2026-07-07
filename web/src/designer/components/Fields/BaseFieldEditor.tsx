@@ -37,7 +37,7 @@ import {
 import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -1025,7 +1025,7 @@ export const BaseFieldEditor = ({
             </Grid>
 
             {/* Template protection — bottom strip (only when VITE_TEMPLATE_PROTECTIONS is on) */}
-            {VITE_TEMPLATE_PROTECTIONS && (
+            {config.templateProtections && (
               <Box sx={{px: 2, pb: 2, pt: 0}}>
                 <Divider sx={{mb: 1.5}} />
                 <Grid container spacing={1}>

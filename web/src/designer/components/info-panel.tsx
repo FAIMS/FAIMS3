@@ -34,7 +34,7 @@ import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+import {config} from '../buildconfig';
 import {
   customFieldRemoved,
   customFieldUpdated,
@@ -60,7 +60,7 @@ export const InfoPanel = () => {
   const [alert, setAlert] = useState('');
 
   const derivedFrom =
-    VITE_TEMPLATE_PROTECTIONS && information.derivedFromTemplateId
+    config.templateProtections && information.derivedFromTemplateId
       ? information.derivedFromTemplateId
       : '';
 

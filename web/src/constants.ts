@@ -1,198 +1,253 @@
 import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
 import {Resource, resourceRoles} from '@faims3/data-model';
 import pluralize from 'pluralize';
+import {z} from 'zod';
 import {capitalize} from './lib/utils';
 
-const getConfigValue = (key: string) => {
-  const value = (import.meta.env[key] as string | undefined) ?? '';
-  if (value === '') {
-    throw new Error(`Missing required env variable ${key}`);
-  }
-  return value;
-};
-
-export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
-export const WEBSITE_TITLE =
-  import.meta.env.VITE_WEBSITE_TITLE || 'Control Centre';
-export const APP_NAME = getConfigValue('VITE_APP_NAME');
-export const APP_SHORT_NAME = import.meta.env.VITE_APP_SHORT_NAME || APP_NAME;
-export const WEB_URL = getConfigValue('VITE_WEB_URL');
-export const API_URL = getConfigValue('VITE_API_URL');
-export const APP_URL = getConfigValue('VITE_APP_URL');
-export const DOCS_URL = import.meta.env.VITE_DOCS_URL || '';
-export const APP_THEME = import.meta.env.VITE_APP_THEME || 'default';
-
-export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
-  ? capitalize(import.meta.env.VITE_NOTEBOOK_NAME)
-  : 'Project';
-
-/** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */
-export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
-
-/** Plural with first letter capitalised — use for headings and labels. */
-export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
-  capitalize(NOTEBOOK_NAME_PLURAL);
-
-/** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
-export const brandNotebook = (text: string): string =>
-  text
-    .replaceAll('{notebooks}', NOTEBOOK_NAME_PLURAL)
-    .replaceAll('{notebook}', NOTEBOOK_NAME);
-
-export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
-
-const VALID_TEAM_ROLES = new Set(
-  resourceRoles[Resource.TEAM].map(r => r.role as string)
-);
-
-const requestedExcludedTeamRoles =
-  (import.meta.env.VITE_EXCLUDED_TEAM_ROLES as string | undefined)
-    ?.split(',')
-    .map(s => s.trim())
-    .filter(Boolean) ?? [];
-
-const invalidExcludedTeamRoles = requestedExcludedTeamRoles.filter(
-  r => !VALID_TEAM_ROLES.has(r)
-);
-if (invalidExcludedTeamRoles.length > 0) {
-  console.warn(
-    `VITE_EXCLUDED_TEAM_ROLES contains values that are not team roles and will be ignored: ${invalidExcludedTeamRoles.join(', ')}`
-  );
-}
-
-/** Team roles to hide from team-role dropdowns (`VITE_EXCLUDED_TEAM_ROLES`). */
-export const EXCLUDED_TEAM_ROLES = new Set(
-  requestedExcludedTeamRoles.filter(r => VALID_TEAM_ROLES.has(r))
-);
-
-/**
- * When the directory lists a notebook as archived (or id absent), the mobile app
- * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
- * Set via VITE_FORCE_REMOTE_DELETION; must match the Field Mark app build for accurate web copy.
+/*
+ * Configuration is parsed from Vite's `import.meta.env` using a two-pass zod
+ * pipeline:
+ *   - Pass one (EnvSchema) validates/narrows the raw environment into strings
+ *     (assembled with explicit static `import.meta.env.VITE_*` accesses so Vite
+ *     performs its build-time replacement).
+ *   - Pass two (ConfigSchema + a little custom logic for required, derived or
+ *     inter-dependent values) produces the typed `config` singleton.
+ *
+ * The `config` singleton is the source of truth. The individual named exports
+ * below are retained (deriving from `config`) so existing call sites and the
+ * many derived helpers in this module remain stable.
  */
-export type ForceRemoteDeletionMode = 'allow' | 'never';
 
-function parseForceRemoteDeletion(): ForceRemoteDeletionMode {
-  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
-  if (v === 'allow') {
-    return 'allow';
-  }
-  if (v !== undefined && v !== '' && v !== 'never') {
-    console.warn(
-      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
-    );
-  }
-  return 'never';
-}
-
-export const FORCE_REMOTE_DELETION = parseForceRemoteDeletion();
-
-/**
- * When true, the mobile app destroys local Pouch data on manual notebook deactivation.
- * Baked at build time; must match the Field Mark app build for accurate copy.
- */
-function parseDeleteOnDeactivation(): boolean {
-  const v = import.meta.env.VITE_DELETE_ON_DEACTIVATION as string | undefined;
-  if (v === '' || v === undefined) {
-    return false;
-  }
-  if (['true', '1', 'on', 'yes'].includes(v.toLowerCase())) {
-    return true;
-  }
-  if (['false', '0', 'off', 'no'].includes(v.toLowerCase())) {
-    return false;
-  }
-  console.warn(
-    `VITE_DELETE_ON_DEACTIVATION invalid (${v}); assuming false. Use true or false.`
-  );
-  return false;
-}
-
-export const DELETE_ON_DEACTIVATION = parseDeleteOnDeactivation();
-
-export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
-
-// this is where the /app will accept a ?token query string
-export const APP_TOKEN_RETURN_PATH = APP_URL + '/auth-return';
-
-/**
- * Builds a suitable register URL which will redirect back to the targeted
- * location - requires an invite
- * @returns The full address to redirect the window to
- */
-export function buildRegisterUrl({
-  redirect,
-  inviteId,
-}: {
-  redirect: string;
-  inviteId: string;
-}) {
-  return `${API_URL}/register?redirect=${redirect}&inviteId=${inviteId}`;
-}
-
-// Token refresh interval (every 3 minutes)
-export const REFRESH_INTERVAL = 3 * 60 * 1000;
+const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
+const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 // Long Lived Token Configuration
 const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
-
-/**
- * Gets the maximum duration in days for long-lived tokens from environment variables.
- * @returns Maximum number of days, or undefined for unlimited duration
- */
-function getMaximumLongLivedDurationDays(): number | undefined {
-  const maxDays = import.meta.env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-
-  if (maxDays === '' || maxDays === undefined) {
-    console.log(
-      'VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
-        DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS
-    );
-    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-  }
-
-  // Check for explicit "unlimited" or "infinite" values
-  if (['unlimited', 'infinite', 'none'].includes(maxDays.toLowerCase())) {
-    console.log('Long-lived tokens configured for unlimited duration');
-    return undefined;
-  }
-
-  const parsedDays = parseInt(maxDays, 10);
-  if (isNaN(parsedDays) || parsedDays <= 0) {
-    console.warn(
-      `Invalid value "${maxDays}" for VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS. Must be a positive integer or "unlimited".`
-    );
-    console.log('Falling back to default configuration.');
-    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-  }
-
-  return parsedDays;
-}
-
-export const MAXIMUM_LONG_LIVED_DURATION_DAYS =
-  getMaximumLongLivedDurationDays();
-
 // This is the default set - clamped to max
 const DEFAULT_HINTS = [1, 5, 10, 30, 90, 365];
 
+// ---------------------------------------------------------------------------
+// Pass one: read and validate the raw environment into (optional) strings.
+// ---------------------------------------------------------------------------
+
+const EnvSchema = z.object({
+  VITE_NOTEBOOK_NAME: z.string().optional(),
+  VITE_WEBSITE_TITLE: z.string().optional(),
+  VITE_APP_NAME: z.string().optional(),
+  VITE_APP_SHORT_NAME: z.string().optional(),
+  VITE_WEB_URL: z.string().optional(),
+  VITE_API_URL: z.string().optional(),
+  VITE_APP_URL: z.string().optional(),
+  VITE_DOCS_URL: z.string().optional(),
+  VITE_APP_THEME: z.string().optional(),
+  VITE_DEVELOPER_MODE: z.string().optional(),
+  VITE_EXCLUDED_TEAM_ROLES: z.string().optional(),
+  VITE_FORCE_REMOTE_DELETION: z.string().optional(),
+  VITE_DELETE_ON_DEACTIVATION: z.string().optional(),
+  VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: z.string().optional(),
+  VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z.string().optional(),
+  VITE_MAP_SOURCE: z.string().optional(),
+  VITE_SATELLITE_SOURCE: z.string().optional(),
+  VITE_MAP_SOURCE_KEY: z.string().optional(),
+  VITE_MAP_STYLE: z.string().optional(),
+  VITE_BUGSNAG_API_KEY: z.string().optional(),
+});
+
+const rawEnv = EnvSchema.parse({
+  VITE_NOTEBOOK_NAME: import.meta.env.VITE_NOTEBOOK_NAME,
+  VITE_WEBSITE_TITLE: import.meta.env.VITE_WEBSITE_TITLE,
+  VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
+  VITE_APP_SHORT_NAME: import.meta.env.VITE_APP_SHORT_NAME,
+  VITE_WEB_URL: import.meta.env.VITE_WEB_URL,
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  VITE_APP_URL: import.meta.env.VITE_APP_URL,
+  VITE_DOCS_URL: import.meta.env.VITE_DOCS_URL,
+  VITE_APP_THEME: import.meta.env.VITE_APP_THEME,
+  VITE_DEVELOPER_MODE: import.meta.env.VITE_DEVELOPER_MODE,
+  VITE_EXCLUDED_TEAM_ROLES: import.meta.env.VITE_EXCLUDED_TEAM_ROLES,
+  VITE_FORCE_REMOTE_DELETION: import.meta.env.VITE_FORCE_REMOTE_DELETION,
+  VITE_DELETE_ON_DEACTIVATION: import.meta.env.VITE_DELETE_ON_DEACTIVATION,
+  VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: import.meta.env
+    .VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS,
+  VITE_LONG_LIVED_TOKEN_DURATION_HINTS: import.meta.env
+    .VITE_LONG_LIVED_TOKEN_DURATION_HINTS,
+  VITE_MAP_SOURCE: import.meta.env.VITE_MAP_SOURCE,
+  VITE_SATELLITE_SOURCE: import.meta.env.VITE_SATELLITE_SOURCE,
+  VITE_MAP_SOURCE_KEY: import.meta.env.VITE_MAP_SOURCE_KEY,
+  VITE_MAP_STYLE: import.meta.env.VITE_MAP_STYLE,
+  VITE_BUGSNAG_API_KEY: import.meta.env.VITE_BUGSNAG_API_KEY,
+});
+
+// ---------------------------------------------------------------------------
+// Reusable pass-two field builders.
+// ---------------------------------------------------------------------------
+
+const isBlank = (v: string | undefined): v is undefined | '' =>
+  v === undefined || v === '';
+
+const stringFromEnv = (def: string) =>
+  z
+    .string()
+    .optional()
+    .transform(v => (isBlank(v) ? def : v));
+
+// ---------------------------------------------------------------------------
+// Pass two: build the typed configuration values.
+// ---------------------------------------------------------------------------
+
+const ConfigSchema = z.object({
+  notebookName: stringFromEnv('project'),
+  websiteTitle: stringFromEnv('Control Centre'),
+  docsUrl: stringFromEnv(''),
+  appTheme: stringFromEnv('default'),
+  developerMode: z
+    .string()
+    .optional()
+    .transform(v => v === 'true'),
+  forceRemoteDeletion: z
+    .string()
+    .optional()
+    .transform((v): ForceRemoteDeletionMode => {
+      if (v === 'allow') return 'allow';
+      if (v !== undefined && v !== '' && v !== 'never') {
+        console.warn(
+          `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+        );
+      }
+      return 'never';
+    }),
+  deleteOnDeactivation: z
+    .string()
+    .optional()
+    .transform(v => {
+      if (isBlank(v)) return false;
+      const lower = v.toLowerCase();
+      if (TRUTHY_STRINGS.includes(lower)) return true;
+      if (FALSEY_STRINGS.includes(lower)) return false;
+      console.warn(
+        `VITE_DELETE_ON_DEACTIVATION invalid (${v}); assuming false. Use true or false.`
+      );
+      return false;
+    }),
+  maximumLongLivedDurationDays: z
+    .string()
+    .optional()
+    .transform((v): number | undefined => {
+      if (isBlank(v)) {
+        console.log(
+          'VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
+            DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS
+        );
+        return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+      }
+      if (['unlimited', 'infinite', 'none'].includes(v.toLowerCase())) {
+        console.log('Long-lived tokens configured for unlimited duration');
+        return undefined;
+      }
+      const parsedDays = parseInt(v, 10);
+      if (isNaN(parsedDays) || parsedDays <= 0) {
+        console.warn(
+          `Invalid value "${v}" for VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS. Must be a positive integer or "unlimited".`
+        );
+        console.log('Falling back to default configuration.');
+        return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+      }
+      return parsedDays;
+    }),
+  mapSource: stringFromEnv('osm'),
+  mapSourceKey: stringFromEnv(''),
+  mapStyle: z
+    .string()
+    .optional()
+    .transform((v): MapStylesheetNameType =>
+      isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
+    ),
+  satelliteSource: z
+    .string()
+    .optional()
+    .transform((v): 'esri' | 'maptiler' | undefined =>
+      v !== 'esri' && v !== 'maptiler' ? undefined : v
+    ),
+  bugsnagApiKey: z
+    .string()
+    .optional()
+    .transform((v): string | undefined => {
+      if (isBlank(v)) {
+        console.log('VITE_BUGSNAG_API_KEY not set, error reporting disabled');
+        return undefined;
+      }
+      return v;
+    }),
+});
+
+const parsedConfig = ConfigSchema.parse({
+  notebookName: rawEnv.VITE_NOTEBOOK_NAME,
+  websiteTitle: rawEnv.VITE_WEBSITE_TITLE,
+  docsUrl: rawEnv.VITE_DOCS_URL,
+  appTheme: rawEnv.VITE_APP_THEME,
+  developerMode: rawEnv.VITE_DEVELOPER_MODE,
+  forceRemoteDeletion: rawEnv.VITE_FORCE_REMOTE_DELETION,
+  deleteOnDeactivation: rawEnv.VITE_DELETE_ON_DEACTIVATION,
+  maximumLongLivedDurationDays: rawEnv.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS,
+  mapSource: rawEnv.VITE_MAP_SOURCE,
+  mapSourceKey: rawEnv.VITE_MAP_SOURCE_KEY,
+  mapStyle: rawEnv.VITE_MAP_STYLE,
+  satelliteSource: rawEnv.VITE_SATELLITE_SOURCE,
+  bugsnagApiKey: rawEnv.VITE_BUGSNAG_API_KEY,
+});
+
+// ---------------------------------------------------------------------------
+// Required and derived / inter-dependent values.
+// ---------------------------------------------------------------------------
+
+/** Returns a required env value, throwing if it is missing/empty. */
+function requiredEnv(value: string | undefined, key: string): string {
+  if (isBlank(value)) {
+    throw new Error(`Missing required env variable ${key}`);
+  }
+  return value;
+}
+
+function buildAppName(): string {
+  return requiredEnv(rawEnv.VITE_APP_NAME, 'VITE_APP_NAME');
+}
+
+function buildExcludedTeamRoles(): Set<string> {
+  const validTeamRoles = new Set(
+    resourceRoles[Resource.TEAM].map(r => r.role as string)
+  );
+
+  const requested =
+    rawEnv.VITE_EXCLUDED_TEAM_ROLES?.split(',')
+      .map(s => s.trim())
+      .filter(Boolean) ?? [];
+
+  const invalid = requested.filter(r => !validTeamRoles.has(r));
+  if (invalid.length > 0) {
+    console.warn(
+      `VITE_EXCLUDED_TEAM_ROLES contains values that are not team roles and will be ignored: ${invalid.join(', ')}`
+    );
+  }
+
+  return new Set(requested.filter(r => validTeamRoles.has(r)));
+}
+
 /**
- * Gets the duration hints for long-lived tokens from environment variables.
- * Parses a CSV of integers and clamps them to the maximum expiry window if set.
- * @returns Array of duration hints in days
+ * Duration hints for long-lived tokens. Parses a CSV of integers and clamps
+ * them to the maximum expiry window if set.
  */
-function getLongLivedTokenDurationHints(): number[] {
-  const hintsEnv = import.meta.env.VITE_LONG_LIVED_TOKEN_DURATION_HINTS as
-    | string
-    | undefined;
+function buildLongLivedTokenDurationHints(
+  maximumDays: number | undefined
+): number[] {
+  const hintsEnv = rawEnv.VITE_LONG_LIVED_TOKEN_DURATION_HINTS;
 
   let hints: number[];
 
-  if (hintsEnv === '' || hintsEnv === undefined) {
+  if (isBlank(hintsEnv)) {
     console.log('VITE_LONG_LIVED_TOKEN_DURATION_HINTS not set, using defaults');
     hints = DEFAULT_HINTS;
   } else {
     try {
-      // Parse CSV of integers
       const parsedHints = hintsEnv
         .split(',')
         .map(str => str.trim())
@@ -217,13 +272,13 @@ function getLongLivedTokenDurationHints(): number[] {
   }
 
   // Clamp hints to maximum duration if set
-  if (MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined) {
-    hints = hints.filter(hint => hint <= MAXIMUM_LONG_LIVED_DURATION_DAYS);
+  if (maximumDays !== undefined) {
+    hints = hints.filter(hint => hint <= maximumDays);
     if (hints.length === 0) {
       console.warn(
-        `All duration hints exceed maximum duration of ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days. Adding maximum as hint.`
+        `All duration hints exceed maximum duration of ${maximumDays} days. Adding maximum as hint.`
       );
-      hints = [MAXIMUM_LONG_LIVED_DURATION_DAYS];
+      hints = [maximumDays];
     }
   }
 
@@ -231,65 +286,118 @@ function getLongLivedTokenDurationHints(): number[] {
   return [...new Set(hints)].sort((a, b) => a - b);
 }
 
-export const LONG_LIVED_TOKEN_DURATION_HINTS = getLongLivedTokenDurationHints();
+const appName = buildAppName();
+
+/**
+ * The singleton Control Centre configuration object. Prefer reading values
+ * from here; the named exports below derive from it.
+ */
+export const config = {
+  ...parsedConfig,
+  appName,
+  appShortName: isBlank(rawEnv.VITE_APP_SHORT_NAME)
+    ? appName
+    : rawEnv.VITE_APP_SHORT_NAME,
+  webUrl: requiredEnv(rawEnv.VITE_WEB_URL, 'VITE_WEB_URL'),
+  apiUrl: requiredEnv(rawEnv.VITE_API_URL, 'VITE_API_URL'),
+  appUrl: requiredEnv(rawEnv.VITE_APP_URL, 'VITE_APP_URL'),
+  excludedTeamRoles: buildExcludedTeamRoles(),
+  longLivedTokenDurationHints: buildLongLivedTokenDurationHints(
+    parsedConfig.maximumLongLivedDurationDays
+  ),
+};
+
+export type Config = typeof config;
+
+// ---------------------------------------------------------------------------
+// Named exports (derived from `config`) — retained for call-site stability.
+// ---------------------------------------------------------------------------
+
+export const NOTEBOOK_NAME = config.notebookName;
+export const WEBSITE_TITLE = config.websiteTitle;
+export const APP_NAME = config.appName;
+export const APP_SHORT_NAME = config.appShortName;
+export const WEB_URL = config.webUrl;
+export const API_URL = config.apiUrl;
+export const APP_URL = config.appUrl;
+export const DOCS_URL = config.docsUrl;
+export const APP_THEME = config.appTheme;
+
+export const NOTEBOOK_NAME_CAPITALIZED = capitalize(config.notebookName);
+
+/** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */
+export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
+
+/** Plural with first letter capitalised — use for headings and labels. */
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
+  capitalize(NOTEBOOK_NAME_PLURAL);
+
+/** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
+export const brandNotebook = (text: string): string =>
+  text
+    .replaceAll('{notebooks}', NOTEBOOK_NAME_PLURAL)
+    .replaceAll('{notebook}', NOTEBOOK_NAME);
+
+export const DEVELOPER_MODE = config.developerMode;
+
+/** Team roles to hide from team-role dropdowns (`VITE_EXCLUDED_TEAM_ROLES`). */
+export const EXCLUDED_TEAM_ROLES = config.excludedTeamRoles;
+
+/**
+ * When the directory lists a notebook as archived (or id absent), the mobile app
+ * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
+ * Set via VITE_FORCE_REMOTE_DELETION; must match the Field Mark app build for accurate web copy.
+ */
+export type ForceRemoteDeletionMode = 'allow' | 'never';
+
+export const FORCE_REMOTE_DELETION = config.forceRemoteDeletion;
+
+export const DELETE_ON_DEACTIVATION = config.deleteOnDeactivation;
+
+export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
+
+// this is where the /app will accept a ?token query string
+export const APP_TOKEN_RETURN_PATH = APP_URL + '/auth-return';
+
+/**
+ * Builds a suitable register URL which will redirect back to the targeted
+ * location - requires an invite
+ * @returns The full address to redirect the window to
+ */
+export function buildRegisterUrl({
+  redirect,
+  inviteId,
+}: {
+  redirect: string;
+  inviteId: string;
+}) {
+  return `${API_URL}/register?redirect=${redirect}&inviteId=${inviteId}`;
+}
+
+// Token refresh interval (every 3 minutes)
+export const REFRESH_INTERVAL = 3 * 60 * 1000;
+
+export const MAXIMUM_LONG_LIVED_DURATION_DAYS =
+  config.maximumLongLivedDurationDays;
+
+export const LONG_LIVED_TOKEN_DURATION_HINTS = config.longLivedTokenDurationHints;
 export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 
 // Help link to use for the long lived token docs
 export const LONG_LIVED_TOKEN_HELP_LINK =
   'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
 
-/**
- * Map source configuration.  Define the map source
- * (see src/gui/components/map/tile_source.ts for options)
- * and the map key if required.
- */
-
-function get_map_source(): string {
-  const map_source = import.meta.env.VITE_MAP_SOURCE;
-  return map_source || 'osm';
-}
-
-function get_satellite_source(): 'esri' | 'maptiler' | undefined {
-  const map_source = import.meta.env.VITE_SATELLITE_SOURCE;
-  return map_source !== 'esri' && map_source !== 'maptiler'
-    ? undefined
-    : map_source;
-}
-
-function get_map_key(): string {
-  const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
-  return map_key || '';
-}
-
-function get_map_style(): MapStylesheetNameType {
-  const map_style = import.meta.env.VITE_MAP_STYLE;
-  return map_style || 'basic';
-}
-
 // get the map configuration
 export function getMapConfig(): MapConfig {
   return {
-    mapSource: get_map_source(),
-    mapSourceKey: get_map_key(),
-    mapStyle: get_map_style(),
-    satelliteSource: get_satellite_source(),
+    mapSource: config.mapSource,
+    mapSourceKey: config.mapSourceKey,
+    mapStyle: config.mapStyle,
+    satelliteSource: config.satelliteSource,
   };
 }
 
-/**
- * Gets the Bugsnag API key from environment variables.
- * @returns The Bugsnag API key, or undefined if not configured.
- */
-function getBugsnagApiKey(): string | undefined {
-  const apiKey = import.meta.env.VITE_BUGSNAG_API_KEY as string | undefined;
-  if (apiKey === '' || apiKey === undefined) {
-    console.log('VITE_BUGSNAG_API_KEY not set, error reporting disabled');
-    return undefined;
-  }
-  return apiKey;
-}
-
-export const BUGSNAG_API_KEY = getBugsnagApiKey();
+export const BUGSNAG_API_KEY = config.bugsnagApiKey;
 
 /**
  * Gets the app version from Vite's __APP_VERSION__ replacement or environment variables.
