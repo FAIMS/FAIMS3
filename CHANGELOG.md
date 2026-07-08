@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-07-08
+
+### Changes
+
+- chore: query invalidations in web ([#2176](https://github.com/FAIMS/FAIMS3/pull/2176))
+- feat: scroll new field name input into view on creation ([#2174](https://github.com/FAIMS/FAIMS3/pull/2174))
+- feat: select recommended offline map region for survey with app prompts to download during activation ([#2173](https://github.com/FAIMS/FAIMS3/pull/2173))
+- chore: map control refactor ([#2171](https://github.com/FAIMS/FAIMS3/pull/2171))
+- feat: removing redundant status display and improving team element of template form + permissions fix ([#2170](https://github.com/FAIMS/FAIMS3/pull/2170))
+- build: pre-commit hooks with Husky ([#2169](https://github.com/FAIMS/FAIMS3/pull/2169))
+- fix: notebook crashes if loading route when de-activated, or after removal ([#2168](https://github.com/FAIMS/FAIMS3/pull/2168))
+- chore: formatting, CI, linting, type checks ([#2167](https://github.com/FAIMS/FAIMS3/pull/2167))
+- feat: styling improvements ([#2166](https://github.com/FAIMS/FAIMS3/pull/2166))
+- feat: add admin user impersonation in API, web, and app ([#2165](https://github.com/FAIMS/FAIMS3/pull/2165))
+- docs: add Computed Value field user documentation ([#2163](https://github.com/FAIMS/FAIMS3/pull/2163))
+- fix: attachments stuck on saving... and navigation no longer locked ([#2162](https://github.com/FAIMS/FAIMS3/pull/2162))
+- feat: adds search to designer and improved field selection ([#2161](https://github.com/FAIMS/FAIMS3/pull/2161))
+- fix: persist and enable editing of field labels for templated string … ([#2160](https://github.com/FAIMS/FAIMS3/pull/2160))
+- fix: restoring map layout after MUI v9 ([#2159](https://github.com/FAIMS/FAIMS3/pull/2159))
+- chore: missing wiring for CDK for excluded team role ([#2158](https://github.com/FAIMS/FAIMS3/pull/2158))
+- Release v1.6.1 ([#2157](https://github.com/FAIMS/FAIMS3/pull/2157))
+- feat: geopackage export and improved random record generation pipeline ([#2156](https://github.com/FAIMS/FAIMS3/pull/2156))
+- feat: filter forms which are visible in the overview map ([#2154](https://github.com/FAIMS/FAIMS3/pull/2154))
+- Chore: update PR template - add testing checklist item ([#2152](https://github.com/FAIMS/FAIMS3/pull/2152))
+- Fix: duplicate dialog not showing when field is collapsed ([#2150](https://github.com/FAIMS/FAIMS3/pull/2150))
+- chore: add watch option for libs and use it in localdev.sh ([#2147](https://github.com/FAIMS/FAIMS3/pull/2147))
+- Feat: enable notebook and team storage stats ([#2146](https://github.com/FAIMS/FAIMS3/pull/2146))
+- feat: add ComputedField field type ([#2141](https://github.com/FAIMS/FAIMS3/pull/2141))
+- fix(designer): scope condition field picker to current form ([#2140](https://github.com/FAIMS/FAIMS3/pull/2140))
+- fix(forms): make location edit icon smaller ([#2139](https://github.com/FAIMS/FAIMS3/pull/2139))
+- fix: install @faims3/forms deps in Docker build so localdev.sh --all works ([#2138](https://github.com/FAIMS/FAIMS3/pull/2138))
+- feat(web): sort surveys & templates lists by created date ([#2137](https://github.com/FAIMS/FAIMS3/pull/2137))
+- Chore/update node and pnpm ([#2132](https://github.com/FAIMS/FAIMS3/pull/2132))
+- feat: add duplicate condition option in conditional editor ([#2128](https://github.com/FAIMS/FAIMS3/pull/2128))
+- feat(designer): allow collapse fields to be duplicated too ([#2127](https://github.com/FAIMS/FAIMS3/pull/2127))
+- fix: placement of info tooltip icon in app next to heading ([#2126](https://github.com/FAIMS/FAIMS3/pull/2126))
+- fix: improve field error styling and remove redundant boxes ([#2125](https://github.com/FAIMS/FAIMS3/pull/2125))
+- fix: make advanced-helper popup responsive and fix close icon placement ([#2124](https://github.com/FAIMS/FAIMS3/pull/2124))
+- fix: use normal font for child-record HRIDs instead of monospace ([#2123](https://github.com/FAIMS/FAIMS3/pull/2123))
+- fix(forms): improve address autosuggest dropdown rendering and label ([#2122](https://github.com/FAIMS/FAIMS3/pull/2122))
+- fixes clear seelction and related updates in same space ([#2121](https://github.com/FAIMS/FAIMS3/pull/2121))
+- fix: undo functionality in helper and advancedhelper text fields ([#2119](https://github.com/FAIMS/FAIMS3/pull/2119))
+- restore DASS logo to what it was before ([#2117](https://github.com/FAIMS/FAIMS3/pull/2117))
+- feat: update teams user roles and survey roles information ([#2115](https://github.com/FAIMS/FAIMS3/pull/2115))
+- Fix/add user docs for audio recording ([#2105](https://github.com/FAIMS/FAIMS3/pull/2105))
+- improvements in sign up and registration screens ([#2103](https://github.com/FAIMS/FAIMS3/pull/2103))
+
 ## [1.6.1] - 2026-06-26
 
 ### Changes
