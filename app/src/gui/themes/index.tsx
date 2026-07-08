@@ -10,6 +10,7 @@ export interface StepperColors {
   visited: string;
   error: string;
   notVisited: string;
+  mobileBackground: string;
 }
 
 const exportTheme = () => {

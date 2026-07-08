@@ -53,6 +53,7 @@ import {
   ZoomControl,
 } from './controls/map-controls';
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
+import {MapControlThemeProvider} from './mapTheme';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
 
@@ -116,6 +117,9 @@ export interface MapComponentProps {
   // banner). Laid out by the controls overlay so it never collides with the
   // control buttons.
   topOverlay?: ReactNode;
+
+  /** When false, hides zoom, compass, layer toggle, and location controls. */
+  showControls?: boolean;
 }
 
 /**
@@ -126,7 +130,19 @@ export interface MapComponentProps {
  * - Renders live GPS location and directional cursor
  * - Accepts a parent callback to provide the map instance
  */
-export const MapComponent = (props: MapComponentProps) => {
+/**
+ * Wraps {@link MapComponentImpl} with {@link MapControlThemeProvider} so map
+ * controls render correctly outside the mobile app's MUI theme.
+ */
+export const MapComponent = (props: MapComponentProps) => (
+  <MapControlThemeProvider>
+    <MapComponentImpl {...props} />
+  </MapControlThemeProvider>
+);
+
+/** OpenLayers map with optional controls, GPS overlay, and layer toggle. */
+const MapComponentImpl = (props: MapComponentProps) => {
+  const showControls = props.showControls ?? true;
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
@@ -515,10 +531,11 @@ export const MapComponent = (props: MapComponentProps) => {
             width: '100%',
           }}
         />
-        {map && (
+        {map && (showControls || props.topOverlay) && (
           <MapControlsOverlay
             topContent={props.topOverlay}
             topRight={
+              showControls &&
               setSelectionAsCurrentLocation && (
                 <UseCurrentLocationControl
                   onSetPoint={handleUseCurrentLocation}
@@ -527,27 +544,29 @@ export const MapComponent = (props: MapComponentProps) => {
               )
             }
             bottomRight={
-              <>
-                <CompassControl map={map} />
-                <MapControlStack>
-                  {satelliteLayer && (
-                    <LayerToggleControl
-                      map={map}
-                      vectorLayer={tileLayer}
-                      satelliteLayer={satelliteLayer}
-                      isOnline={isOnline}
-                      vectorZoomRange={vectorZoomRange}
-                      satelliteZoomRange={satelliteZoomRange}
-                      onLayerChange={handleLayerChange}
+              showControls && (
+                <>
+                  <CompassControl map={map} />
+                  <MapControlStack>
+                    {satelliteLayer && (
+                      <LayerToggleControl
+                        map={map}
+                        vectorLayer={tileLayer}
+                        satelliteLayer={satelliteLayer}
+                        isOnline={isOnline}
+                        vectorZoomRange={vectorZoomRange}
+                        satelliteZoomRange={satelliteZoomRange}
+                        onLayerChange={handleLayerChange}
+                      />
+                    )}
+                    <CenterOnLocationControl
+                      onCenter={centerMap}
+                      locationAvailable={locationAvailable}
                     />
-                  )}
-                  <CenterOnLocationControl
-                    onCenter={centerMap}
-                    locationAvailable={locationAvailable}
-                  />
-                  <ZoomControl map={map} />
-                </MapControlStack>
-              </>
+                    <ZoomControl map={map} />
+                  </MapControlStack>
+                </>
+              )
             }
           />
         )}

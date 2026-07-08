@@ -46,6 +46,7 @@ import {
   ProjectListItem,
   ProjectStatus,
   PutUpdateNotebookMetadataInput,
+  PutUpdateNotebookOfflineMapRegionInput,
   PutUpdateNotebookUiSpecificationInput,
   Resource,
   resourceRoles,
@@ -560,6 +561,31 @@ export const updateProjectUiSpecification = async (
     uiSpecification: normalizedUiSpecification,
     updatedAt: nowIso(),
   };
+  await putProjectDoc(updated);
+  return getProjectById(projectId);
+};
+
+/**
+ * Sets or clears the recommended offline map region on a project document.
+ *
+ * Passing `offlineMapRegion: null` removes the field from CouchDB so GET
+ * responses omit it rather than returning an explicit null.
+ */
+export const updateProjectOfflineMapRegion = async (
+  projectId: string,
+  input: PutUpdateNotebookOfflineMapRegionInput
+): Promise<ExistingProjectDocument> => {
+  const {offlineMapRegion} = input;
+  const project = await getProjectById(projectId);
+  const updated: ProjectDocument = {
+    ...project,
+    updatedAt: nowIso(),
+  };
+  if (offlineMapRegion == null) {
+    delete updated.offlineMapRegion;
+  } else {
+    updated.offlineMapRegion = offlineMapRegion;
+  }
   await putProjectDoc(updated);
   return getProjectById(projectId);
 };
