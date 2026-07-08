@@ -1,3 +1,4 @@
+import {INPUT_LIMITS} from '@faims3/data-model';
 import zxcvbn from 'zxcvbn';
 
 // Minimum required score (0-4)
@@ -8,6 +9,8 @@ import zxcvbn from 'zxcvbn';
 // 4: very unguessable
 const MINIMUM_PASSWORD_SCORE = 3;
 const MINIMUM_PASSWORD_LENGTH = 10;
+// Shared cap — stops megabyte passwords reaching hashing/zxcvbn
+const MAXIMUM_PASSWORD_LENGTH = INPUT_LIMITS.PASSWORD_MAX_LENGTH;
 
 export interface PasswordStrengthResult {
   isValid: boolean;
@@ -38,6 +41,20 @@ export function validatePasswordStrength(
       feedback: {
         warning: `Password must be at least ${MINIMUM_PASSWORD_LENGTH} characters long.`,
         suggestions: ['Use a longer password with at least 10 characters.'],
+      },
+    };
+  }
+
+  // Reject excessively long passwords before running expensive analysis
+  if (password.length > MAXIMUM_PASSWORD_LENGTH) {
+    return {
+      isValid: false,
+      score: 0,
+      feedback: {
+        warning: `Password must be at most ${MAXIMUM_PASSWORD_LENGTH} characters long.`,
+        suggestions: [
+          `Use a shorter password with at most ${MAXIMUM_PASSWORD_LENGTH} characters.`,
+        ],
       },
     };
   }

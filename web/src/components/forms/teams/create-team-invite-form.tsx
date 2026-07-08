@@ -8,6 +8,7 @@ import {
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {
+  INPUT_LIMITS,
   PostCreateInviteInput,
   Resource,
   Role,
@@ -76,7 +77,13 @@ export function CreateTeamInviteForm({
     {
       name: 'name',
       label: 'Invite title',
-      schema: z.string().min(4),
+      schema: z
+        .string()
+        .min(4)
+        .max(INPUT_LIMITS.INVITE_NAME_MAX_LENGTH, {
+          message: `Invite title must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`,
+        }),
+      maxLength: INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
     },
     {
       name: 'role',
@@ -87,9 +94,15 @@ export function CreateTeamInviteForm({
     {
       name: 'uses',
       label: 'Maximum uses (leave empty to set no limit)',
-      schema: z.number().min(1).optional(),
+      schema: z
+        .number()
+        .int()
+        .min(1)
+        .max(INPUT_LIMITS.INVITE_MAX_USES)
+        .optional(),
       type: 'number',
       min: 1,
+      max: INPUT_LIMITS.INVITE_MAX_USES,
     },
   ];
 

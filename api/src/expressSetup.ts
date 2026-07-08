@@ -76,9 +76,11 @@ import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
 import {
   COOKIE_SECRET,
+  JSON_BODY_LIMIT,
   RATE_LIMITER_ENABLED,
   RATE_LIMITER_PER_WINDOW,
   RATE_LIMITER_WINDOW_MS,
+  URLENCODED_BODY_LIMIT,
 } from './buildconfig';
 
 import patch from './utils/patchExpressAsync';
@@ -190,9 +192,10 @@ const handlebarsConfig = {
 
 const hbs = new ExpressHandlebars(handlebarsConfig);
 
-app.use(express.urlencoded({extended: true}));
-// allow large JSON objects to be posted
-app.use(express.json({limit: '200mb'}));
+// Bound request body sizes (configurable via URLENCODED_BODY_LIMIT /
+// JSON_BODY_LIMIT env vars) to protect against oversized malicious payloads
+app.use(express.urlencoded({extended: true, limit: URLENCODED_BODY_LIMIT}));
+app.use(express.json({limit: JSON_BODY_LIMIT}));
 app.use(cors());
 
 app.use(passport.initialize());

@@ -46,6 +46,14 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
+/**
+ * Default maximum file size (bytes) applied when the notebook design does not
+ * set `maximum_file_size`. Designers can still configure a per-field value
+ * (larger or smaller) via component parameters; this default just ensures an
+ * upper bound always exists.
+ */
+export const DEFAULT_MAXIMUM_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MiB
+
 const fileUploaderPropsSchema = BaseFieldParametersSchema.extend({
   multiple: z.boolean().optional().default(true),
   maximum_number_of_files: z.number().optional().default(0),
@@ -533,7 +541,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     disabled = false,
     multiple = true,
     maximum_number_of_files: maximumNumberOfFiles = 0,
-    maximum_file_size: maximumFileSize,
+    maximum_file_size: maximumFileSize = DEFAULT_MAXIMUM_FILE_SIZE_BYTES,
     minimum_file_size: minimumFileSize,
     state,
     addAttachment,

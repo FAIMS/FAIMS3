@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {INPUT_LIMITS} from '../inputLimits';
 
 // ============================================================================
 // Common Schemas
@@ -523,11 +524,11 @@ export function validateExistingDataDocument(
 export const faimsAttachmentSchema = z.object({
   /** Unique identifier for the attachment document - corresponds to
    * an att- prefixed attachment document */
-  attachmentId: z.string(),
+  attachmentId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** Original filename of the attachment */
-  filename: z.string(),
+  filename: z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
   /** MIME type of the file */
-  fileType: z.string(),
+  fileType: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
 });
 export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
 
@@ -541,7 +542,7 @@ export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
  */
 export const formAnnotationSchema = z.object({
   /** Human-readable annotation text describing the field value */
-  annotation: z.string(),
+  annotation: z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH),
   /** Flag indicating if there is uncertainty about this field's value */
   uncertainty: z.boolean(),
 });
@@ -592,13 +593,13 @@ export type FormRelationship = z.infer<typeof formRelationshipSchema>;
  */
 const baseFormRecordSchema = z.object({
   /** The ID of the form/viewset this record is an instance of */
-  formId: z.string(),
+  formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** The actual form data as a map of field IDs to their values */
   // data: z.record(z.string(), z.unknown()).optional(),
   /** Annotations for each field, mapped by field ID */
   // annotations: z.record(z.string(), formAnnotationSchema.optional()).optional(),
   /** Username of the user who created this record */
-  createdBy: z.string(),
+  createdBy: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** Optional relationship information if this is a related/child record */
   relationship: formRelationshipSchema.optional(),
 });

@@ -754,6 +754,65 @@ function maximumLongLivedDurationDays(): number | undefined {
 
 export const MAXIMUM_LONG_LIVED_DURATION_DAYS = maximumLongLivedDurationDays();
 
+// Request body / upload size limits
+// ----------------------------------
+// These bound how much data a client can push to the server in one request,
+// protecting against memory/CPU exhaustion from maliciously large payloads.
+
+/** Default cap for JSON bodies (covers notebook/template design uploads). */
+const DEFAULT_JSON_BODY_LIMIT = '25mb';
+/** Default cap for urlencoded (HTML form) bodies — auth forms are tiny. */
+const DEFAULT_URLENCODED_BODY_LIMIT = '1mb';
+/** Default cap for the developer-mode restore-from-backup upload (bytes). */
+const DEFAULT_RESTORE_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024; // 1 GiB
+
+/**
+ * Gets the JSON body size limit from environment variables.
+ * Accepts any body-parser compatible size string (e.g. '10mb', '500kb').
+ */
+function jsonBodyLimit(): string {
+  const limit = process.env.JSON_BODY_LIMIT;
+  if (limit === '' || limit === undefined) {
+    return DEFAULT_JSON_BODY_LIMIT;
+  }
+  return limit;
+}
+
+/**
+ * Gets the urlencoded (HTML form) body size limit from environment variables.
+ * Accepts any body-parser compatible size string (e.g. '1mb', '100kb').
+ */
+function urlencodedBodyLimit(): string {
+  const limit = process.env.URLENCODED_BODY_LIMIT;
+  if (limit === '' || limit === undefined) {
+    return DEFAULT_URLENCODED_BODY_LIMIT;
+  }
+  return limit;
+}
+
+/**
+ * Gets the maximum file size (bytes) accepted by the developer-mode
+ * POST /api/restore upload from environment variables.
+ */
+function restoreUploadMaxBytes(): number {
+  const maxBytes = process.env.RESTORE_UPLOAD_MAX_BYTES;
+  if (maxBytes === '' || maxBytes === undefined) {
+    return DEFAULT_RESTORE_UPLOAD_MAX_BYTES;
+  }
+  const parsed = parseInt(maxBytes, 10);
+  if (isNaN(parsed) || parsed <= 0) {
+    console.warn(
+      `Invalid value "${maxBytes}" for RESTORE_UPLOAD_MAX_BYTES. Must be a positive integer (bytes). Falling back to default.`
+    );
+    return DEFAULT_RESTORE_UPLOAD_MAX_BYTES;
+  }
+  return parsed;
+}
+
+export const JSON_BODY_LIMIT = jsonBodyLimit();
+export const URLENCODED_BODY_LIMIT = urlencodedBodyLimit();
+export const RESTORE_UPLOAD_MAX_BYTES = restoreUploadMaxBytes();
+
 /**
  * Gets the Bugsnag API key from environment variables.
  * @returns The Bugsnag API key, or undefined if not configured.

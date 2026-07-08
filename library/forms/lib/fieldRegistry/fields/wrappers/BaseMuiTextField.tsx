@@ -6,7 +6,7 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import {BaseFieldParameters} from '@faims3/data-model';
+import {BaseFieldParameters, INPUT_LIMITS} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import FieldWrapper from './FieldWrapper';
 import SpeechToTextButton from '../../../components/SpeechToTextButton';
@@ -31,6 +31,8 @@ export interface BaseMuiTextFieldConfig {
   speechLanguage?: string;
   /** Whether to append speech to existing text or replace (default: true for multiline, false for single-line) */
   speechAppendMode?: boolean;
+  /** HTML maxLength cap (defaults to the shared long-text limit) */
+  maxLength?: number;
 }
 
 export type BaseMuiTextFieldProps = BaseFieldParameters &
@@ -69,6 +71,8 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
     enableSpeech = false,
     speechLanguage = 'en-AU',
     speechAppendMode,
+    // Sensible default cap to prevent maliciously long inputs
+    maxLength = INPUT_LIMITS.LONG_TEXT_MAX_LENGTH,
   } = props;
 
   const value = (state.value?.data as string) || '';
@@ -182,6 +186,10 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
           slotProps={{
             ...muiProps.slotProps,
             input: inputProps,
+            htmlInput: {
+              maxLength,
+              ...(muiProps.slotProps?.htmlInput as object | undefined),
+            },
           }}
           sx={{
             // Highlight border when listening

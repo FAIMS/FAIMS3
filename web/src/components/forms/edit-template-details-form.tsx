@@ -5,7 +5,8 @@ import {
   updateTemplateRequest,
 } from '@/hooks/template-hooks';
 import {useQueryClient} from '@tanstack/react-query';
-import {z} from 'zod';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 
 interface EditTemplateDetailsFormProps {
@@ -31,7 +32,8 @@ export function EditTemplateDetailsForm({
     {
       name: 'name',
       label: 'Name',
-      schema: z.string().trim().min(1, {message: 'Name is required'}),
+      schema: resourceNameSchema(1, 'Name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField(),
   ];

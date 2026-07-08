@@ -236,6 +236,34 @@ function getLongLivedTokenDurationHints(): number[] {
 export const LONG_LIVED_TOKEN_DURATION_HINTS = getLongLivedTokenDurationHints();
 export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 
+// Design file (notebook/template JSON) upload size limit
+// Mirrors the server-side ui-specification cap (INPUT_LIMITS.UI_SPEC_MAX_BYTES).
+const DEFAULT_MAX_DESIGN_FILE_SIZE_MB = 10;
+
+/**
+ * Gets the maximum size (in bytes) allowed for uploaded notebook/template
+ * design JSON files, from the VITE_MAX_DESIGN_FILE_SIZE_MB env variable.
+ */
+function getMaxDesignFileSizeBytes(): number {
+  const maxMb = import.meta.env.VITE_MAX_DESIGN_FILE_SIZE_MB;
+  if (maxMb === '' || maxMb === undefined) {
+    return DEFAULT_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024;
+  }
+  const parsed = parseInt(maxMb, 10);
+  if (isNaN(parsed) || parsed <= 0) {
+    console.warn(
+      `Invalid value "${maxMb}" for VITE_MAX_DESIGN_FILE_SIZE_MB. Must be a positive integer (MB). Using default.`
+    );
+    return DEFAULT_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024;
+  }
+  return parsed * 1024 * 1024;
+}
+
+export const MAX_DESIGN_FILE_SIZE_BYTES = getMaxDesignFileSizeBytes();
+export const MAX_DESIGN_FILE_SIZE_MB = Math.floor(
+  MAX_DESIGN_FILE_SIZE_BYTES / (1024 * 1024)
+);
+
 // Help link to use for the long lived token docs
 export const LONG_LIVED_TOKEN_HELP_LINK =
   'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
