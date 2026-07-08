@@ -52,8 +52,8 @@ type StatusVariant = 'info' | 'warning' | 'success';
 /** Control Centre offline map tab UI state machine. */
 type WorkflowPhase = 'initial' | 'drawing' | 'pending' | 'saved';
 
-const OFFLINE_MAP_PERMISSION_TOOLTIP =
-  'You do not have permission to configure this option';
+const OFFLINE_MAP_PERMISSION_MESSAGE =
+  'You do not have permission to configure this option.';
 
 /** Wrap a button with a tooltip when the user lacks SET_OFFLINE_MAP_REGION. */
 function RestrictedOfflineMapButton({
@@ -68,14 +68,19 @@ function RestrictedOfflineMapButton({
   }
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex w-fit">{children}</span>
-        </TooltipTrigger>
-        <TooltipContent>{OFFLINE_MAP_PERMISSION_TOOLTIP}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div className="inline-flex flex-col gap-1">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex w-fit">{children}</span>
+          </TooltipTrigger>
+          <TooltipContent>{OFFLINE_MAP_PERMISSION_MESSAGE}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <p className="text-xs text-muted-foreground">
+        {OFFLINE_MAP_PERMISSION_MESSAGE}
+      </p>
+    </div>
   );
 }
 

@@ -67,7 +67,7 @@ export async function downloadProjectOfflineMap({
 }: {
   /** Notebook id — used for tile-set naming and deactivation cleanup. */
   projectId: string;
-  /** Stored as the tile set label in the download list UI. */
+  /** Notebook display name — used in the tile set label in the download list UI. */
   projectName: string;
   /** Plan region in EPSG:4326; also persisted on the tile set record. */
   region: OfflineMapRegion;
@@ -81,7 +81,7 @@ export async function downloadProjectOfflineMap({
 
   await tileStore.createTileSet(extent3857, setName, undefined, undefined, {
     projectId,
-    label: projectName,
+    label: `${projectName} default offline map`,
     replaceIfExists: true,
     offlineMapRegion: region,
   });
