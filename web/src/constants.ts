@@ -17,6 +17,8 @@ export const WEBSITE_TITLE =
 export const APP_NAME = getConfigValue('VITE_APP_NAME');
 export const APP_SHORT_NAME = import.meta.env.VITE_APP_SHORT_NAME || APP_NAME;
 export const WEB_URL = getConfigValue('VITE_WEB_URL');
+/** Control Centre home (`/` redirects to `/teams`). */
+export const WEB_HOME_URL = `${WEB_URL.replace(/\/$/, '')}/`;
 export const API_URL = getConfigValue('VITE_API_URL');
 export const APP_URL = getConfigValue('VITE_APP_URL');
 export const DOCS_URL = import.meta.env.VITE_DOCS_URL || '';

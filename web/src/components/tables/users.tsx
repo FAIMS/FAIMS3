@@ -11,6 +11,7 @@ import {KeyRound} from 'lucide-react';
 import {toast} from 'sonner';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {DisableUserDialog} from '../dialogs/disable-user';
+import {ImpersonateUserDialog} from '../dialogs/impersonate-user';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
@@ -154,6 +155,17 @@ export const useUsersColumns = ({
       },
       header: () => (
         <div className="flex justify-center items-center">Reset Password</div>
+      ),
+    },
+    {
+      id: 'impersonate',
+      cell: ({row: {original}}) => (
+        <div className="flex justify-center items-center -my-2">
+          <ImpersonateUserDialog rowUser={original} />
+        </div>
+      ),
+      header: () => (
+        <div className="flex justify-center items-center">Impersonate</div>
       ),
     },
     {

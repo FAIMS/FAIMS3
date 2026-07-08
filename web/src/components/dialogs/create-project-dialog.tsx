@@ -12,7 +12,9 @@ import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Plus} from 'lucide-react';
 import {useAuth} from '@/context/auth-provider';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
+import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {ErrorComponent} from '@tanstack/react-router';
 
 export const CreateProjectDialog = ({
@@ -26,9 +28,26 @@ export const CreateProjectDialog = ({
 
   const {user} = useAuth();
   const {data: team} = useGetTeam({user, teamId: specifiedTeam});
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
+  const canCreateInSpecifiedTeam = useIsAuthorisedTo({
+    action: Action.CREATE_PROJECT_IN_TEAM,
+    resourceId: specifiedTeam,
+  });
+  const canCreateInSomeTeam =
+    getUserResourcesForAction({
+      decodedToken: user?.decodedToken,
+      action: Action.CREATE_PROJECT_IN_TEAM,
+    }).length > 0;
+  const canCreate =
+    canCreateGlobally ||
+    (specifiedTeam ? canCreateInSpecifiedTeam : canCreateInSomeTeam);
 
   if (!user) {
     return <ErrorComponent error="Unauthenticated" />;
+  }
+
+  if (!canCreate) {
+    return null;
   }
 
   return (

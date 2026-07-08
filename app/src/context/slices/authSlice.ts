@@ -1,4 +1,4 @@
-import {TokenContents} from '@faims3/data-model';
+import {PutLogoutInput, TokenContents} from '@faims3/data-model';
 import {
   createAsyncThunk,
   createSelector,
@@ -8,8 +8,9 @@ import {
 import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
+import {impersonateUser} from '../../utils/apiOperations/users';
 import {AppDispatch, RootState} from '../store';
-import {updateDatabaseCredentials} from './projectSlice';
+import {initialiseProjects, updateDatabaseCredentials} from './projectSlice';
 import {addAlert} from './alertSlice';
 
 // Types
@@ -18,6 +19,11 @@ export interface TokenInfo {
   refreshToken?: string;
   parsedToken: TokenContents;
   expiresAt: number;
+  // Present only for impersonation sessions: the username of the admin who
+  // initiated the impersonation (i.e. the connection to return to). Stored in
+  // state so it survives token refreshes (the JWT audit claim is dropped on
+  // refresh).
+  impersonatingUser?: string;
 }
 
 export interface ServerUserMap {
@@ -36,6 +42,8 @@ export interface ActiveUser {
   token: string;
   parsedToken: TokenContents;
   expiresAt: number;
+  // Present only for impersonation sessions - the admin username to return to.
+  impersonatingUser?: string;
 }
 
 export interface AuthState {
@@ -52,6 +60,10 @@ export interface SetServerConnectionInput {
   refreshToken?: string;
   parsedToken: TokenContents;
   promptRefresh?: boolean; // default false
+  // When set, marks this connection as an impersonation session initiated by
+  // the given admin username. Omitted on refresh - the existing marker is
+  // preserved by the reducer.
+  impersonatingUser?: string;
 }
 
 export interface ServerUserIdentity {
@@ -136,11 +148,18 @@ const authSlice = createSlice({
         state.servers[serverId] = {users: {}};
       }
 
+      // Preserve any existing impersonation marker across refreshes (refresh
+      // does not pass impersonatingUser), or set it when explicitly provided.
+      const impersonatingUser =
+        action.payload.impersonatingUser ??
+        state.servers[serverId].users[username]?.impersonatingUser;
+
       state.servers[serverId].users[username] = {
         token,
         refreshToken,
         parsedToken,
         expiresAt,
+        impersonatingUser,
       };
 
       // Update active user if this is the active user
@@ -151,6 +170,7 @@ const authSlice = createSlice({
       ) {
         state.activeUser.token = token;
         state.activeUser.parsedToken = parsedToken;
+        state.activeUser.impersonatingUser = impersonatingUser;
       }
 
       state.isAuthenticated = checkAuthenticationStatus(state);
@@ -172,6 +192,7 @@ const authSlice = createSlice({
         token: connection.token,
         parsedToken: connection.parsedToken,
         expiresAt: connection.expiresAt,
+        impersonatingUser: connection.impersonatingUser,
       };
 
       state.isAuthenticated = checkAuthenticationStatus(state);
@@ -222,6 +243,7 @@ const authSlice = createSlice({
               token: details.token,
               parsedToken: details.parsedToken,
               expiresAt: details.expiresAt,
+              impersonatingUser: details.impersonatingUser,
             };
             state.isAuthenticated = checkAuthenticationStatus(state);
           } else {
@@ -248,6 +270,9 @@ const authSlice = createSlice({
 export const selectActiveUser = (state: AuthStore) => state.auth.activeUser;
 export const selectIsAuthenticated = (state: AuthStore) =>
   state.auth.isAuthenticated;
+/** True when the active connection is an impersonation session. */
+export const selectIsImpersonating = (state: AuthStore) =>
+  !!state.auth.activeUser?.impersonatingUser;
 export const selectActiveToken = (state: AuthStore) => {
   const activeUser = state.auth.activeUser;
   if (!activeUser) return undefined;
@@ -373,6 +398,35 @@ export const setAndRefreshActiveConnection = createAsyncThunk<
 );
 
 /**
+ * Switches the active user, refreshes activated database credentials when the
+ * token changes, and re-fetches the notebook directory for that server so the
+ * listing reflects the new user's access.
+ */
+export const setActiveUserAndRefreshProjects = createAsyncThunk<
+  void,
+  ServerUserIdentity
+>(
+  'auth/setActiveUserAndRefreshProjects',
+  async (args, {dispatch: rawDispatch, getState}) => {
+    const dispatch = rawDispatch as AppDispatch;
+    const stateBefore = (getState() as RootState).auth;
+    const previousToken = stateBefore.activeUser?.token;
+    const newToken =
+      stateBefore.servers[args.serverId]?.users[args.username]?.token;
+
+    dispatch(setActiveUser(args));
+
+    if (newToken && newToken !== previousToken) {
+      await dispatch(
+        updateDatabaseCredentials({serverId: args.serverId, token: newToken})
+      );
+    }
+
+    await dispatch(initialiseProjects({serverId: args.serverId}));
+  }
+);
+
+/**
  * Atomic async operation on store to refresh a specific connection
  */
 export const refreshToken = createAsyncThunk<
@@ -484,6 +538,138 @@ export const refreshAllUsers = createAsyncThunk<void, void>(
         );
       }
     }
+  }
+);
+
+/**
+ * Begins impersonating a user on the active server. Calls the impersonation
+ * endpoint as the current (admin) active user, stores the returned token pair
+ * as an additional connection tagged with the admin's username, and makes it
+ * the active user. The admin's own connection is retained so it can be restored
+ * via stopImpersonation.
+ */
+export const startImpersonation = createAsyncThunk<
+  {status: 'success' | 'error'; message: string},
+  {serverId: string; targetUserId: string}
+>(
+  'auth/startImpersonation',
+  async ({serverId, targetUserId}, {dispatch, getState}) => {
+    const state = getState() as RootState;
+    const appDispatch = dispatch as AppDispatch;
+
+    const activeUser = state.auth.activeUser;
+    if (!activeUser || activeUser.serverId !== serverId) {
+      const message = 'You must be signed in to this server to impersonate.';
+      appDispatch(addAlert({message, severity: 'warning'}));
+      return {status: 'error', message};
+    }
+
+    if (activeUser.impersonatingUser) {
+      const message =
+        'Already impersonating a user. Return to your account first.';
+      appDispatch(addAlert({message, severity: 'warning'}));
+      return {status: 'error', message};
+    }
+
+    const adminUsername = activeUser.username;
+
+    try {
+      const {accessToken, refreshToken} = await impersonateUser(
+        serverId,
+        adminUsername,
+        targetUserId
+      );
+      const parsedToken = parseToken(accessToken);
+
+      // Store the impersonated user as a new connection, tagged with the admin.
+      await appDispatch(
+        setServerConnection({
+          serverId,
+          username: parsedToken.username,
+          token: accessToken,
+          refreshToken,
+          parsedToken,
+          impersonatingUser: adminUsername,
+        })
+      );
+
+      // Make it the active user and refresh the notebook list for them.
+      await appDispatch(
+        setActiveUserAndRefreshProjects({
+          serverId,
+          username: parsedToken.username,
+        })
+      );
+
+      return {status: 'success', message: ''};
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to start impersonation.';
+      appDispatch(addAlert({message, severity: 'error'}));
+      return {status: 'error', message};
+    }
+  }
+);
+
+/**
+ * Ends the current impersonation session: restores the admin connection as the
+ * active user and removes the impersonated connection (best-effort invalidating
+ * its refresh token on the server).
+ */
+export const stopImpersonation = createAsyncThunk<void, void>(
+  'auth/stopImpersonation',
+  async (_, {dispatch, getState}) => {
+    const state = getState() as RootState;
+    const appDispatch = dispatch as AppDispatch;
+
+    const activeUser = state.auth.activeUser;
+    if (!activeUser?.impersonatingUser) {
+      // Not impersonating - nothing to do.
+      return;
+    }
+
+    const {serverId} = activeUser;
+    const impersonatedUsername = activeUser.username;
+    const adminUsername = activeUser.impersonatingUser;
+
+    // Restore the admin as the active user if their connection still exists.
+    const adminConnection = state.auth.servers[serverId]?.users[adminUsername];
+    if (adminConnection) {
+      await appDispatch(
+        setActiveUserAndRefreshProjects({serverId, username: adminUsername})
+      );
+    } else {
+      appDispatch(clearActiveConnection());
+    }
+
+    // Best-effort: invalidate the impersonated session's refresh token.
+    const impersonatedConnection =
+      state.auth.servers[serverId]?.users[impersonatedUsername];
+    const serverUrl = (getState() as RootState).projects.servers[serverId]
+      ?.serverUrl;
+    if (serverUrl && impersonatedConnection?.refreshToken) {
+      try {
+        await fetch(`${serverUrl}/auth/logout`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${impersonatedConnection.token}`,
+          },
+          body: JSON.stringify({
+            refreshToken: impersonatedConnection.refreshToken,
+          } satisfies PutLogoutInput),
+        });
+      } catch (error) {
+        console.warn('Failed to invalidate impersonation token:', error);
+      }
+    }
+
+    // Remove the impersonated connection.
+    appDispatch(
+      removeServerConnection({serverId, username: impersonatedUsername})
+    );
   }
 );
 

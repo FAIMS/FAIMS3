@@ -239,6 +239,17 @@ export type PostExchangeTokenResponse = z.infer<
   typeof PostExchangeTokenResponseSchema
 >;
 
+// Impersonation - an admin trades a target user id for a token pair that
+// authenticates as that user. No request body (target id is a path param).
+export const PostImpersonateUserResponseSchema = z.object({
+  // token pair for the impersonated user
+  refreshToken: z.string(),
+  accessToken: z.string(),
+});
+export type PostImpersonateUserResponse = z.infer<
+  typeof PostImpersonateUserResponseSchema
+>;
+
 // ==================
 // NOTEBOOKS CRUD
 // ==================

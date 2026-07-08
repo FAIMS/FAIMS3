@@ -1,4 +1,4 @@
-import {useAuth, User} from '@/context/auth-provider';
+import {isUserExpired, useAuth, User} from '@/context/auth-provider';
 import {
   Action,
   getUserResourcesForAction,
@@ -87,25 +87,16 @@ export const useIsAuthorisedTo = ({
   action: Action;
   resourceId?: string;
 }): boolean => {
-  const {user, isExpired} = useAuth();
+  const {user} = useAuth();
 
-  if (
-    // Checks for lack of authentication
-    !user ||
-    isExpired() ||
-    user.decodedToken === null ||
-    user.decodedToken === undefined
-  ) {
-    return false;
-  }
-
-  return useMemo(
-    () =>
-      userCanDo({
-        user,
-        action,
-        resourceId,
-      }),
-    [action, resourceId, user.token]
-  );
+  return useMemo(() => {
+    if (!user || isUserExpired(user) || user.decodedToken == null) {
+      return false;
+    }
+    return userCanDo({
+      user,
+      action,
+      resourceId,
+    });
+  }, [action, resourceId, user?.token, user?.decodedToken]);
 };

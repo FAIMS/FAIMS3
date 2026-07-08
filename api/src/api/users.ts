@@ -24,6 +24,7 @@ import {
   GetListAllUsersResponse,
   GetListAllUsersResponseSchema,
   isPeopleUserAccountDisabled,
+  PostImpersonateUserResponse,
   PostUpdateUserInputSchema,
   removeGlobalRole,
   Role,
@@ -35,6 +36,14 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from '../auth/keySigning/create';
+import {
+  IMPERSONATION_SESSION_EXPIRY_MINUTES,
+  RUNNING_UNDER_TEST,
+} from '../buildconfig';
+import {
   filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUsers,
@@ -43,6 +52,7 @@ import {
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {nowIso} from '../time';
 
 import patch from '../utils/patchExpressAsync';
 
@@ -233,6 +243,77 @@ api.post(
     target.disabled = false;
     await saveCouchUser(target);
     res.status(200).send();
+  }
+);
+
+/**
+ * Impersonate a user - trade a target user id for a token pair that
+ * authenticates as that user. Restricted to system operations administrators
+ * (Action.IMPERSONATE_USER).
+ *
+ * The returned tokens are a normal access + refresh token pair for the target
+ * user, so all downstream authorization treats the caller as the target. The
+ * access token is tagged with the acting admin's user id for auditing, and the
+ * refresh token is given a short lifetime so the impersonation session cannot
+ * linger.
+ */
+api.post(
+  '/:id/impersonate',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.IMPERSONATE_USER,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async ({params: {id}, user}, res: Response<PostImpersonateUserResponse>) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const target = await getCouchUserFromEmailOrUserId(id);
+    if (!target) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+
+    if (target.user_id === user.user_id) {
+      throw new Exceptions.ForbiddenException(
+        'You cannot impersonate yourself.'
+      );
+    }
+
+    if (isPeopleUserAccountDisabled(target)) {
+      throw new Exceptions.ForbiddenException(
+        'You cannot impersonate a disabled account.'
+      );
+    }
+
+    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: target})) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to impersonate cluster admins.'
+      );
+    }
+
+    // Build a token as the target user, tagged with the acting admin id and
+    // given a short-lived refresh token.
+    const expressTarget = await upgradeCouchUserToExpressUser({dbUser: target});
+    const {token, refreshToken} = await generateUserToken(expressTarget, true, {
+      impersonatingUserId: user.user_id,
+      refreshExpiryMs: IMPERSONATION_SESSION_EXPIRY_MINUTES * 60 * 1000,
+    });
+
+    if (!RUNNING_UNDER_TEST) {
+      console.log(
+        `[Impersonation] ${user.user_id} started impersonating ${target.user_id} at ${nowIso()}`
+      );
+    }
+
+    res.json({accessToken: token, refreshToken: refreshToken!});
   }
 );
 

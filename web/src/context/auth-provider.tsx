@@ -1,4 +1,4 @@
-import {API_URL, REFRESH_INTERVAL, WEB_URL} from '@/constants';
+import {API_URL, REFRESH_INTERVAL, WEB_HOME_URL, WEB_URL} from '@/constants';
 import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
@@ -35,11 +35,28 @@ export interface AuthContext {
   logout: () => void;
   user: User | null;
   refreshToken: () => Promise<{status: string; message: string}>;
+  /** True when the current session is an impersonation session. */
+  isImpersonating: boolean;
+  /** Display name (or email/id) of the admin who initiated impersonation. */
+  impersonatorName: string | null;
+  /**
+   * Begin impersonating a user given an impersonation token pair. Stashes the
+   * current (admin) session so it can be restored via {@link stopImpersonation}.
+   */
+  startImpersonation: (
+    token: string,
+    refreshToken: string
+  ) => Promise<{status: 'success' | 'error'; message: string}>;
+  /** End impersonation and restore the stashed admin session. */
+  stopImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContext | null>(null);
 
 const key = 'user';
+// Separate storage slot holding the admin session while impersonating, so it
+// can be restored when impersonation ends.
+const impersonatorKey = 'impersonator';
 
 /**
  * Decodes a JWT token string into TokenContents.
@@ -87,6 +104,24 @@ export function getStoredUser(): User | null {
 }
 
 /**
+ * Stores or removes the stashed impersonator (admin) session in localStorage.
+ */
+function setStoredImpersonator(user: User | null) {
+  if (user) {
+    localStorage.setItem(impersonatorKey, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(impersonatorKey);
+  }
+}
+
+/**
+ * Get the stashed impersonator (admin) session, if any.
+ */
+export function getStoredImpersonator(): User | null {
+  return parseUserJSON(localStorage.getItem(impersonatorKey));
+}
+
+/**
  * Parse the stored user from localStorage.
  *
  * @returns the User object if we have a valid user or null if not
@@ -124,11 +159,19 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     return getStoredUser();
   });
 
+  // The stashed admin session while impersonating (null when not impersonating).
+  const [impersonator, setImpersonatorState] = useState<User | null>(() => {
+    return getStoredImpersonator();
+  });
+
   const isExpired = () => {
     return isUserExpired(user);
   };
 
   const isAuthenticated = !!user && !isExpired();
+  const isImpersonating = !!impersonator;
+  const impersonatorName =
+    impersonator?.user.name ?? impersonator?.user.email ?? null;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -160,6 +203,74 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       setStoredUser(null);
       setUser(null);
     }
+    // Clear any impersonation stash on logout.
+    setStoredImpersonator(null);
+    setImpersonatorState(null);
+    window.location.href = WEB_URL;
+  };
+
+  /**
+   * Begin impersonating a user. Stashes the current (admin) session under a
+   * separate key, then swaps the active session to the impersonated user using
+   * the provided token pair. On failure, the stash is rolled back.
+   */
+  const startImpersonation = async (
+    token: string,
+    refresh: string
+  ): Promise<{status: 'success' | 'error'; message: string}> => {
+    // Do not allow nested impersonation - end the current one first.
+    if (impersonator) {
+      return {
+        status: 'error',
+        message:
+          'Already impersonating a user. Return to your account before impersonating another.',
+      };
+    }
+
+    const admin = user;
+    if (!admin) {
+      return {
+        status: 'error',
+        message: 'No active session to impersonate from',
+      };
+    }
+
+    // Stash the admin session first so it can be restored.
+    setStoredImpersonator(admin);
+    setImpersonatorState(admin);
+
+    // Swap the active session to the impersonated user.
+    const {status, message} = await getUserDetails(token, refresh);
+
+    if (status !== 'success') {
+      // Roll back the stash and restore the admin session.
+      setStoredImpersonator(null);
+      setImpersonatorState(null);
+      setStoredUser(admin);
+      setUser(admin);
+      return {status: 'error', message};
+    }
+
+    // Leave admin-only routes; home (`/`) redirects to `/teams`.
+    window.location.href = WEB_HOME_URL;
+    return {status: 'success', message: ''};
+  };
+
+  /**
+   * End impersonation and restore the stashed admin session. Reloads the app so
+   * that all queries refetch under the restored session.
+   */
+  const stopImpersonation = () => {
+    const admin = impersonator ?? getStoredImpersonator();
+    setStoredImpersonator(null);
+    setImpersonatorState(null);
+
+    if (admin) {
+      setStoredUser(admin);
+      setUser(admin);
+    }
+
+    // Fresh reload so all cached queries refetch under the restored session.
     window.location.href = WEB_URL;
   };
 
@@ -215,6 +326,16 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     );
 
     if (!response.ok) {
+      // If we were impersonating, an expired/failed impersonation session
+      // should return the admin to their own account rather than logging out.
+      if (getStoredImpersonator()) {
+        stopImpersonation();
+        return {
+          status: 'error',
+          message: 'Impersonation session ended; returned to your account.',
+        };
+      }
+
       setStoredUser(null);
       setUser(null);
 
@@ -253,6 +374,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         logout,
         refreshToken,
         isExpired,
+        isImpersonating,
+        impersonatorName,
+        startImpersonation,
+        stopImpersonation,
       }}
     >
       {children}

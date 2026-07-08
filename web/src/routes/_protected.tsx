@@ -1,3 +1,4 @@
+import {ImpersonationBanner} from '@/components/alerts/impersonation-banner';
 import {VerificationAlertComponent} from '@/components/alerts/verification-alert';
 import Breadcrumbs from '@/components/breadcrumbs';
 import {LogoIcon} from '@/components/logo';
@@ -209,6 +210,7 @@ function RouteComponent() {
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            <ImpersonationBanner />
             {verification.showNeedsVerification && (
               <VerificationAlertComponent
                 email={verification.email ?? 'Unknown'}
