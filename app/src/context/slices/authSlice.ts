@@ -398,17 +398,30 @@ export const setAndRefreshActiveConnection = createAsyncThunk<
 );
 
 /**
- * Switches the active user and re-fetches the notebook directory for that
- * server so the listing reflects the new user's access.
+ * Switches the active user, refreshes activated database credentials when the
+ * token changes, and re-fetches the notebook directory for that server so the
+ * listing reflects the new user's access.
  */
 export const setActiveUserAndRefreshProjects = createAsyncThunk<
   void,
   ServerUserIdentity
 >(
   'auth/setActiveUserAndRefreshProjects',
-  async (args, {dispatch: rawDispatch}) => {
+  async (args, {dispatch: rawDispatch, getState}) => {
     const dispatch = rawDispatch as AppDispatch;
+    const stateBefore = (getState() as RootState).auth;
+    const previousToken = stateBefore.activeUser?.token;
+    const newToken =
+      stateBefore.servers[args.serverId]?.users[args.username]?.token;
+
     dispatch(setActiveUser(args));
+
+    if (newToken && newToken !== previousToken) {
+      await dispatch(
+        updateDatabaseCredentials({serverId: args.serverId, token: newToken})
+      );
+    }
+
     await dispatch(initialiseProjects({serverId: args.serverId}));
   }
 );

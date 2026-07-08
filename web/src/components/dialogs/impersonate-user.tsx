@@ -82,8 +82,7 @@ export function ImpersonateUserDialog({
           </DialogDescription>
         </DialogHeader>
         <Button
-          variant="outline"
-          className="w-full border-primary text-foreground hover:bg-accent"
+          className="w-full"
           disabled={impersonate.isPending}
           onClick={() =>
             impersonate.mutate(

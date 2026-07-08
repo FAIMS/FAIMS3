@@ -188,5 +188,6 @@ describe('user impersonation', () => {
 
     const decoded = await validateToken(refreshed.token);
     expect(decoded!.user_id).to.equal(targetUsername);
+    expect(decoded!.impersonatingUserId).to.equal(opsAdminUsername);
   });
 });

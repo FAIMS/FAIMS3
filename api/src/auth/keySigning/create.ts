@@ -219,6 +219,7 @@ export async function generateUserToken(
             await createNewRefreshToken({
               userId: user._id!,
               ...(refreshExpiryMs !== undefined ? {refreshExpiryMs} : {}),
+              ...(impersonatingUserId ? {impersonatingUserId} : {}),
             })
           ).refresh.token
         : undefined,
