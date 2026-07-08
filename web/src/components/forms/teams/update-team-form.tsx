@@ -59,6 +59,7 @@ export function UpdateTeamForm({
 
     if (!response.ok) return {type: 'submit', message: 'Error updating team'};
 
+    QueryClient.invalidateQueries({queryKey: ['teams']});
     QueryClient.invalidateQueries({queryKey: ['teams', teamId]});
 
     setDialogOpen(false);

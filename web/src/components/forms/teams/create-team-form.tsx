@@ -51,7 +51,7 @@ export function CreateTeamForm({setDialogOpen}: CreateTeamFormProps) {
 
     if (!response.ok) return {type: 'submit', message: 'Error creating team'};
 
-    QueryClient.invalidateQueries({queryKey: ['teams', undefined]});
+    QueryClient.invalidateQueries({queryKey: ['teams']});
 
     setDialogOpen(false);
   };

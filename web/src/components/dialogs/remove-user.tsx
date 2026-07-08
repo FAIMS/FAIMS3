@@ -68,7 +68,8 @@ export const RemoveUserDialog = ({
               );
 
               QueryClient.invalidateQueries({queryKey: ['users']});
-              QueryClient.invalidateQueries({queryKey: ['project-users']});
+              QueryClient.invalidateQueries({queryKey: ['projectusers']});
+              QueryClient.invalidateQueries({queryKey: ['teamusers']});
 
               setOpen(false);
             } catch (e) {
