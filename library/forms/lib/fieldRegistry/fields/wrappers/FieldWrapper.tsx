@@ -163,7 +163,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         <Typography
           variant="body2"
           sx={{
-            marginBottom: 1,
+            marginBottom: 0.25,
             fontSize: {xs: '0.9rem', md: '1rem'},
             color: 'text.secondary',
           }}
@@ -173,7 +173,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       )}
 
       {/* Input Field */}
-      <Box sx={{p: 0.45}}>{children}</Box>
+      <Box sx={{pt: 0, px: 0.45, pb: 0.45}}>{children}</Box>
 
       {/* Error Messages */}
       {hasErrors && (
