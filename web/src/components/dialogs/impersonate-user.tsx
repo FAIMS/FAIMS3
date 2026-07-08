@@ -57,7 +57,9 @@ export function ImpersonateUserDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Impersonate {displayName}</DialogTitle>
+          <DialogTitle className="break-words [overflow-wrap:anywhere]">
+            Impersonate {displayName}
+          </DialogTitle>
           <DialogDescription asChild className="text-inherit">
             <Alert variant="warning" className="w-full border-2 border-warning">
               <AlertTitle>Heads up:</AlertTitle>
@@ -82,7 +84,7 @@ export function ImpersonateUserDialog({
           </DialogDescription>
         </DialogHeader>
         <Button
-          className="w-full"
+          className="h-auto w-full whitespace-normal break-words py-2 [overflow-wrap:anywhere]"
           disabled={impersonate.isPending}
           onClick={() =>
             impersonate.mutate(
