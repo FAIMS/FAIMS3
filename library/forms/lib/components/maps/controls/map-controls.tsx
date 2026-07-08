@@ -104,7 +104,11 @@ export const CompassControl = ({map}: {map: Map}) => {
           }}
         >
           <path fill="currentColor" d="M12 4 L8 14 L16 14 Z" />
-          <path fill="currentColor" fillOpacity={0.4} d="M12 20 L10 16 L14 16 Z" />
+          <path
+            fill="currentColor"
+            fillOpacity={0.4}
+            d="M12 20 L10 16 L14 16 Z"
+          />
         </Box>
       </MapControlButton>
     </MapControlGroup>
@@ -209,8 +213,8 @@ export const LayerToggleControl = ({
   satelliteZoomRange,
   onLayerChange,
 }: LayerToggleControlProps) => {
-  const [prefersSatellite, setPrefersSatellite] = useState(
-    () => getSavedLayerPreference()
+  const [prefersSatellite, setPrefersSatellite] = useState(() =>
+    getSavedLayerPreference()
   );
   // Offline forces vector view regardless of preference
   const isSatellite = prefersSatellite && isOnline;
