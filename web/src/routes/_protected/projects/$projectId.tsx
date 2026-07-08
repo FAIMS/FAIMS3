@@ -5,6 +5,7 @@ import ProjectInvites from '@/components/tabs/project/invites';
 import ProjectUsers from '@/components/tabs/project/users';
 import ProjectExport from '@/components/tabs/project/export';
 import ProjectActions from '@/components/tabs/project/actions';
+import ProjectOfflineMap from '@/components/tabs/project/offline-map';
 import {useGetProject} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -20,6 +21,7 @@ const tabs = [
   {name: 'Invites', Component: ProjectInvites},
   {name: 'Users', Component: ProjectUsers},
   {name: 'Export', Component: ProjectExport},
+  {name: 'Offline Map', Component: ProjectOfflineMap},
   {name: 'Actions', Component: ProjectActions},
 ];
 

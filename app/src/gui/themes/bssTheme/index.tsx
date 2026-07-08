@@ -9,10 +9,11 @@ const baseTheme = createTheme({
     visited: '#07a907',
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
+    mobileBackground: '#F4F4F4',
   },
   palette: {
     background: {
-      default: '#FAFAFB',
+      default: '#FFFFFF',
       paper: '#FFFFFF',
       draftBackground: '#F4F4F4',
       lightBackground: '#f3f3f3',

@@ -2,6 +2,7 @@ import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
 import {
   prepareNotebookUiSpecificationInputForApi,
+  type OfflineMapRegion,
   type ProjectStatus,
   type PutUpdateNotebookMetadataInput,
 } from '@faims3/data-model';
@@ -157,6 +158,28 @@ export const updateNotebookUiSpecificationRequest = async ({
         Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify(uiSpecification),
+    }
+  );
+
+/** PUT /api/notebooks/:projectId/offlineMapRegion — set or clear recommended region. */
+export const updateNotebookOfflineMapRegionRequest = async ({
+  user,
+  projectId,
+  offlineMapRegion,
+}: {
+  user: User;
+  projectId: string;
+  offlineMapRegion: OfflineMapRegion | null;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/offlineMapRegion`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({offlineMapRegion}),
     }
   );
 

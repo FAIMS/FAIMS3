@@ -3,6 +3,7 @@ import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
 import {PersistedRootDescriptionSchema} from '../rootMetadata';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 import {NotebookDefinitionSchema} from '../../uiSpecification';
+import {OfflineMapRegionSchema} from './offlineMapRegion';
 
 /** Couch connection descriptor for per-project data/metadata databases. */
 export const PossibleConnectionInfoSchema: z.ZodType<PossibleConnectionInfo> =
@@ -127,6 +128,9 @@ export const ProjectV4FieldsSchema = z.object({
   // UI Specification (now stored in the project)
   // NOTE: This is never 'encoded' anymore - no more fviews etc.
   uiSpecification: NotebookDefinitionSchema,
+
+  /** Optional bounding box for recommended offline map download on activation. */
+  offlineMapRegion: OfflineMapRegionSchema.optional(),
 });
 export type ProjectV4Fields = z.infer<typeof ProjectV4FieldsSchema>;
 

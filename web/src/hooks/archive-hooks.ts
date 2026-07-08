@@ -68,6 +68,7 @@ export function useDeleteArchivedProject() {
     },
     onSuccess: (_data, {projectId}) => {
       queryClient.invalidateQueries({queryKey: ['projects']});
+      queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
       queryClient.removeQueries({queryKey: ['projects', projectId]});
     },
   });
@@ -93,6 +94,7 @@ export function useRestoreArchivedProject() {
     },
     onSuccess: (_data, {projectId}) => {
       queryClient.invalidateQueries({queryKey: ['projects']});
+      queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
       queryClient.invalidateQueries({queryKey: ['projects', projectId]});
     },
   });
@@ -118,6 +120,7 @@ export function useArchiveProject() {
     },
     onSuccess: (_data, {projectId}) => {
       queryClient.invalidateQueries({queryKey: ['projects']});
+      queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
       queryClient.invalidateQueries({queryKey: ['projects', projectId]});
     },
   });

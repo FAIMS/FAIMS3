@@ -82,6 +82,7 @@ export function useDisableUserAccount() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['users']});
+      queryClient.invalidateQueries({queryKey: ['teamusers']});
     },
   });
 }
@@ -99,6 +100,7 @@ export function useEnableUserAccount() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['users']});
+      queryClient.invalidateQueries({queryKey: ['teamusers']});
     },
   });
 }

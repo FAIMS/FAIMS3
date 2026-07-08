@@ -36,6 +36,9 @@ export enum Action {
   // records exist which are invalid/have extra/are missing data)
   UPDATE_PROJECT_UISPEC = 'UPDATE_PROJECT_UISPEC',
 
+  /** Set or clear the recommended offline map download region for a project. */
+  SET_OFFLINE_MAP_REGION = 'SET_OFFLINE_MAP_REGION',
+
   // Read records hor the project which are mine
   READ_MY_PROJECT_RECORDS = 'READ_MY_PROJECT_RECORDS',
   // Read records for the project which are not mine
@@ -305,6 +308,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     name: 'Update Project UI Specification',
     description:
       'Modify the UI specification of a project (potential consistency risk)',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.SET_OFFLINE_MAP_REGION]: {
+    name: 'Set Offline Map Region',
+    description:
+      'Configure the recommended offline map download region for a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -1145,6 +1155,7 @@ export const roleActions: Record<
     actions: [
       Action.UPDATE_PROJECT_DETAILS,
       Action.UPDATE_PROJECT_UISPEC,
+      Action.SET_OFFLINE_MAP_REGION,
       Action.CHANGE_PROJECT_STATUS,
       Action.CHANGE_PROJECT_TEAM,
       Action.EXPORT_PROJECT_DATA,

@@ -3,7 +3,7 @@ import {NOTEBOOK_NAME} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
-import {useGetTeams} from '@/hooks/queries';
+import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -26,6 +26,7 @@ export function AddProjectToTeamForm({
   const {user} = useAuth();
   const QueryClient = useQueryClient();
   const teams = useGetTeams({user});
+  const {data: project} = useGetProject({user, projectId});
 
   // can we add a user to the team?
   const canAddProjectToTeam = useIsAuthorisedTo({
@@ -86,9 +87,18 @@ export function AddProjectToTeamForm({
         message: 'Error adding project to team: ' + response.statusText,
       };
 
+    const previousTeamId = project?.ownedByTeamId;
+
+    QueryClient.invalidateQueries({queryKey: ['projects', projectId]});
+    QueryClient.invalidateQueries({queryKey: ['projects']});
     QueryClient.invalidateQueries({
       queryKey: ['projectsbyteam', user.token, teamId],
     });
+    if (previousTeamId && previousTeamId !== teamId) {
+      QueryClient.invalidateQueries({
+        queryKey: ['projectsbyteam', user.token, previousTeamId],
+      });
+    }
 
     setDialogOpen(false);
   };

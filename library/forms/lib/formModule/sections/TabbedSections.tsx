@@ -44,7 +44,7 @@ const MAX_VISIBLE_FIELD_ERRORS = 2;
 const MIN_STEP_WIDTH_PX = 120;
 
 /** Vertical spacing (in theme spacing units) around the error summary panel */
-const ERROR_PANEL_VERTICAL_SPACING = 3;
+const ERROR_PANEL_VERTICAL_SPACING = 2;
 
 // ============================================================================
 // Utility Functions
@@ -190,6 +190,17 @@ const getStepColor = (
   if (isCompleted)
     return themeAny.stepperColors?.visited ?? theme.palette.success.main;
   return themeAny.stepperColors?.notVisited ?? theme.palette.grey[400];
+};
+
+const getMobileStepperBackground = (theme: Theme): string => {
+  const themeAny = theme as {
+    stepperColors?: {
+      mobileBackground?: string;
+    };
+  };
+  return (
+    themeAny.stepperColors?.mobileBackground ?? theme.palette.background.paper
+  );
 };
 
 /**
@@ -562,6 +573,7 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
   onCompleteHandler,
   navigationBlocked = false,
 }) => {
+  const theme = useTheme();
   const isLastStep = activeStep === totalSteps - 1;
   const blockedSx = navigationBlocked
     ? {
@@ -580,6 +592,18 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
       steps={totalSteps}
       position="static"
       activeStep={activeStep}
+      slotProps={{
+        root: {
+          square: false,
+          sx: {
+            backgroundColor: getMobileStepperBackground(theme),
+            borderRadius: 1,
+            border: `1px solid ${theme.palette.divider}`,
+            py: 0.75,
+            px: 1,
+          },
+        },
+      }}
       nextButton={
         isLastStep && onCompleteHandler ? (
           <Button
@@ -796,7 +820,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
     }
   }, [visibleSections, activeSection]);
 
-  // kkeep section in sync with an externally selected section id
+  // keep section in sync with an externally selected section id
   // from Designer (when provided).
   const previewSectionId =
     config.mode === 'preview' ? config.previewSectionId : undefined;
@@ -1070,9 +1094,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
           <Box
             ref={mobileNavHeaderRef}
             sx={{
-              background: theme.palette.background.paper,
-              p: 1,
-              borderBottom: `1px solid ${theme.palette.divider}`,
+              p: 0.75,
             }}
           >
             <MobileNavigationStepper
@@ -1085,7 +1107,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
           </Box>
 
           {/* Section title for mobile view */}
-          <Typography variant="h4" align="center" sx={{mt: 2, mb: 1}}>
+          <Typography variant="h4" align="center" sx={{mt: 1, mb: 0}}>
             {spec.views[activeSection]?.label}
           </Typography>
         </Box>
@@ -1102,7 +1124,10 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
       />
 
       {/* Active section content */}
-      <Box role="tabpanel" sx={{mt: ERROR_PANEL_VERTICAL_SPACING}}>
+      <Box
+        role="tabpanel"
+        sx={{mt: showMobileView ? 1.25 : ERROR_PANEL_VERTICAL_SPACING}}
+      >
         {shouldShowActiveSection ? (
           <FormSection
             key={activeSection}
@@ -1134,9 +1159,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         <Box
           sx={{
             mt: ERROR_PANEL_VERTICAL_SPACING,
-            p: 1,
-            background: theme.palette.background.paper,
-            borderTop: `1px solid ${theme.palette.divider}`,
+            p: 0.75,
           }}
         >
           <MobileNavigationStepper

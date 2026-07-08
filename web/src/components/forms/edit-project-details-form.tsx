@@ -62,6 +62,7 @@ export function EditProjectDetailsForm({
 
     await queryClient.invalidateQueries({queryKey: ['projects', projectId]});
     await queryClient.invalidateQueries({queryKey: ['projects']});
+    await queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
 
     setDialogOpen(false);
   };

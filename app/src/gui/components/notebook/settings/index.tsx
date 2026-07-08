@@ -39,6 +39,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  OFFLINE_MAPS,
 } from '../../../../buildconfig';
 import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
@@ -49,6 +50,8 @@ import {
   stopSyncingAttachments,
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
+import {logError} from '../../../../logging';
+import {removeProjectOfflineMaps} from '../../maps/projectOfflineMap';
 import {theme} from '../../../themes';
 import {
   DE_ACTIVATE_ACTIVE_VERB,
@@ -59,6 +62,7 @@ import {
   syncModeIncludesPush,
 } from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
+import NotebookOfflineMapSettings from './offlineMapSettings';
 import NotebookSyncSwitch from './sync_switch';
 import SyncModeHelpDialog from './syncModeHelpDialog';
 
@@ -83,7 +87,19 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
     setOpenDeactivateDialog(true);
   };
 
-  const handleDeactivateConfirm = () => {
+  const handleDeactivateConfirm = async () => {
+    if (OFFLINE_MAPS) {
+      try {
+        await removeProjectOfflineMaps(projectId);
+      } catch (e) {
+        logError(
+          new Error(
+            `Failed to remove ${NOTEBOOK_NAME} offline maps on deactivation`,
+            {cause: e}
+          )
+        );
+      }
+    }
     dispatch(
       deactivateProject({
         projectId: projectId,
@@ -192,6 +208,8 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
               </Typography>
             </Box>
           </Box>
+
+          {OFFLINE_MAPS && <NotebookOfflineMapSettings project={project} />}
 
           <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>

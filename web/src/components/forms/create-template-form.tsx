@@ -195,12 +195,8 @@ export function CreateTemplateForm({
     }
 
     // query invalidations
-    if (specifiedTeam || team) {
-      await queryClient.invalidateQueries({
-        queryKey: ['templatesbyteam', specifiedTeam || team],
-      });
-    }
-    await queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+    await queryClient.invalidateQueries({queryKey: ['templates']});
+    await queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
     setDialogOpen(false);
   };
 

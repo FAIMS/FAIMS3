@@ -29,6 +29,7 @@ const baseTheme = createTheme({
     visited: defaultBrand.primaryMain,
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
+    mobileBackground: '#FFFFFF',
   },
   palette: {
     background: {

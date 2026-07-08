@@ -166,12 +166,8 @@ export function CreateProjectForm({
       };
     }
 
-    if (specifiedTeam || team) {
-      await queryClient.invalidateQueries({
-        queryKey: ['projectsbyteam', specifiedTeam || team],
-      });
-    }
     await queryClient.invalidateQueries({queryKey: ['projects']});
+    await queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
 
     setDialogOpen(false);
   };
