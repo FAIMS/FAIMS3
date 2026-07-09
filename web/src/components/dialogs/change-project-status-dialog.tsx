@@ -39,8 +39,9 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
           }),
         }
       );
-      queryClient.invalidateQueries({queryKey: ['projects', undefined]});
+      queryClient.invalidateQueries({queryKey: ['projects']});
       queryClient.invalidateQueries({queryKey: ['projects', projectId]});
+      queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
       setOpen(false);
     } catch (e) {
       console.log(e);

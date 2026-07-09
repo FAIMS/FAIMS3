@@ -2,6 +2,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {cn} from '@/lib/utils';
+import {displayDateTime} from '@/lib/time';
 import {TeamCellComponent} from './cells/team-cell';
 import type {TemplateApiListItem} from '@faims3/data-model';
 import {
@@ -36,16 +37,15 @@ const teamColumn: ColumnDef<Column> = {
   },
 };
 
-const statusColumn: ColumnDef<Column> = {
-  id: 'status',
+/** Replaces the status column; archived templates are hidden from this list. */
+const lastUpdatedColumn: ColumnDef<Column> = {
+  accessorKey: 'updatedAt',
   header: ({column}) => (
-    <DataTableColumnHeader column={column} title="Status" />
+    <DataTableColumnHeader column={column} title="Last updated" />
   ),
-  accessorFn: (row: Column & {archived?: boolean}) =>
-    row.archived === true ? 'Archived' : 'Active',
-  cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
-    const label = row.original.archived === true ? 'Archived' : 'Active';
-    return <RoleCard>{label}</RoleCard>;
+  cell: ({getValue}) => {
+    const v = getValue<string | undefined>();
+    return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
   },
 };
 
@@ -77,6 +77,17 @@ const createdByColumn: ColumnDef<Column> = {
   header: ({column}) => (
     <DataTableColumnHeader column={column} title="Created by" />
   ),
+};
+
+const createdAtColumn: ColumnDef<Column> = {
+  accessorKey: 'createdAt',
+  header: ({column}) => (
+    <DataTableColumnHeader column={column} title="Created" />
+  ),
+  cell: ({getValue}) => {
+    const v = getValue<string | undefined>();
+    return v ? displayDateTime({timestamp: new Date(v).getTime()}) : null;
+  },
 };
 
 const descriptionColumn: ColumnDef<Column> = {
@@ -125,9 +136,10 @@ export function getTemplatesTableColumns(options: {
   return [
     nameColumn,
     ...team,
-    statusColumn,
+    lastUpdatedColumn,
     ...visibility,
     createdByColumn,
+    createdAtColumn,
     descriptionColumn,
   ];
 }

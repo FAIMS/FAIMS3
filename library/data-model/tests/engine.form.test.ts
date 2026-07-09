@@ -163,6 +163,93 @@ describe('Form Operations', () => {
         afterCreate.getTime()
       );
     });
+
+    test('should create record with initial data', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        initial: {
+          'First-1': {data: 'Initial value'},
+          'Second-1': {data: 'Another value'},
+        },
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+
+      // Check revision has some AVPs
+      expect(Object.keys(result.revision.avps)).toEqual([
+        'First-1',
+        'Second-1',
+      ]);
+      expect(Object.keys(result.revision.avps).length).toBe(2);
+
+      const firstAvp = await engine.core.getAvp(
+        result.revision.avps['First-1']
+      );
+      const secondAvp = await engine.core.getAvp(
+        result.revision.avps['Second-1']
+      );
+
+      expect(firstAvp.data).toBe('Initial value');
+      expect(secondAvp.data).toBe('Another value');
+    });
+
+    test('should create record with initial annotations', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        initial: {
+          'First-1': {
+            data: 'Value with annotation',
+            annotation: {
+              annotation: 'Initial note',
+              uncertainty: true,
+            },
+          },
+        },
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+      const firstAvp = await engine.core.getAvp(
+        result.revision.avps['First-1']
+      );
+
+      expect(firstAvp.data).toBe('Value with annotation');
+      expect(firstAvp.annotations?.annotation).toBe('Initial note');
+      expect(firstAvp.annotations?.uncertainty).toBe(true);
+    });
+
+    test('should create record with initial attachments', async () => {
+      const attachmentId = generateAttID();
+
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        initial: {
+          'First-1': {
+            data: 'Value with attachment',
+            attachments: [
+              {
+                attachmentId,
+                filename: 'initial.txt',
+                fileType: 'text/plain',
+              },
+            ],
+          },
+        },
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+      const firstAvp = await engine.core.getAvp(
+        result.revision.avps['First-1']
+      );
+
+      expect(firstAvp.data).toBe('Value with attachment');
+      expect(firstAvp.faims_attachments).toHaveLength(1);
+      expect(firstAvp.faims_attachments?.[0].attachment_id).toBe(attachmentId);
+      expect(firstAvp.faims_attachments?.[0].filename).toBe('initial.txt');
+      expect(firstAvp.faims_attachments?.[0].file_type).toBe('text/plain');
+    });
   });
 
   describe('createRevision', () => {
@@ -194,40 +281,9 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Add some AVPs to the revision
-      const avpId1 = generateAvpID();
-      const avpId2 = generateAvpID();
-
-      await engine.core.createAvp({
-        _id: avpId1,
-        avp_format_version: 1,
-        type: 'faims-core::String',
-        data: 'test value 1',
-        revision_id: initialResult.revision._id,
-        record_id: initialResult.record._id,
-        created: new Date().toISOString(),
-        created_by: 'user-1',
-      });
-
-      await engine.core.createAvp({
-        _id: avpId2,
-        avp_format_version: 1,
-        type: 'faims-core::String',
-        data: 'test value 2',
-        revision_id: initialResult.revision._id,
-        record_id: initialResult.record._id,
-        created: new Date().toISOString(),
-        created_by: 'user-1',
-      });
-
-      // Update parent revision to include these AVPs
-      await engine.core.updateRevision({
-        ...initialResult.revision,
-        avps: {
-          'field-1': avpId1,
-          'field-2': avpId2,
+        initial: {
+          'field-1': {data: 'test value 1'},
+          'field-2': {data: 'test value 2'},
         },
       });
 
@@ -240,8 +296,8 @@ describe('Form Operations', () => {
 
       // Child should have same AVP map
       expect(childRevision.avps).toEqual({
-        'field-1': avpId1,
-        'field-2': avpId2,
+        'field-1': initialResult.revision.avps['field-1'],
+        'field-2': initialResult.revision.avps['field-2'],
       });
     });
 
@@ -694,19 +750,12 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Set initial data on parent
-      const parentRev = await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {data: 'parent value'},
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
+      const parentRev = initialResult.revision;
       const parentAvpId = parentRev.avps['First-1'];
 
       // Create child revision
@@ -748,19 +797,12 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Set initial data on parent
-      const parentRev = await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {data: 'parent value'},
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
+      const parentRev = initialResult.revision;
       // Create child revision
       const childRev = await engine.form.createRevision({
         recordId: initialResult.record._id,
@@ -804,19 +846,12 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Set initial data on parent
-      const parentRev = await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {data: 'parent value'},
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
+      const parentRev = initialResult.revision;
       const parentAvpId = parentRev.avps['First-1'];
 
       // Create child revision
@@ -858,20 +893,13 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Set initial data on parent
-      const parentRev = await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {data: 'parent value 1'},
           'Second-1': {data: 'parent value 2'},
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
+      const parentRev = initialResult.revision;
       const parentAvp1Id = parentRev.avps['First-1'];
       const parentAvp2Id = parentRev.avps['Second-1'];
 
@@ -921,22 +949,15 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Set initial data on parent with annotation
-      const parentRev = await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {
             data: 'value',
             annotation: {annotation: 'parent note', uncertainty: false},
           },
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
+      const parentRev = initialResult.revision;
       const parentAvpId = parentRev.avps['First-1'];
 
       // Create child revision
@@ -978,20 +999,12 @@ describe('Form Operations', () => {
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      // Add some data
-      await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {
             data: 'test value',
             annotation: {annotation: 'test note', uncertainty: true},
           },
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
       const formData = await engine.form.getExistingFormData({
@@ -1101,17 +1114,12 @@ describe('Form Operations', () => {
     });
 
     test('should include attachment information', async () => {
+      const attachmentId = generateAttID();
+
       const initialResult = await engine.form.createRecord({
         formId: 'A',
         createdBy: 'user-1',
-      });
-
-      const attachmentId = generateAttID();
-
-      await engine.form.updateRevision({
-        revisionId: initialResult.revision._id,
-        recordId: initialResult.record._id,
-        update: {
+        initial: {
           'First-1': {
             data: 'value',
             attachments: [
@@ -1123,8 +1131,6 @@ describe('Form Operations', () => {
             ],
           },
         },
-        mode: 'new',
-        updatedBy: 'user-1',
       });
 
       const formData = await engine.form.getExistingFormData({

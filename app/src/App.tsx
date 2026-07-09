@@ -29,7 +29,7 @@
 // import '@capacitor-community/safe-area';
 // import {SafeArea} from '@capacitor-community/safe-area';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {
   createBrowserRouter,
   Outlet,
@@ -45,6 +45,7 @@ import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import {MapDownload} from './gui/components/maps/MapDownload';
+import {NotebookOfflineMapPrompt} from './gui/components/maps/OfflineMapPrompt';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
 import AboutBuild from './gui/pages/about-build';
@@ -57,6 +58,9 @@ import Workspace from './gui/pages/workspace';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
 import {VersionWarning} from './gui/components/VersionWarning';
+import {registerAppRouter} from './appRouter';
+import {queryClient} from './queryClient';
+import {useProjectRouteGuard} from './utils/useProjectRouteGuard';
 
 // =============================================================================
 // REACT QUERY CONFIGURATION
@@ -66,39 +70,9 @@ import {VersionWarning} from './gui/components/VersionWarning';
  * Global React Query client configuration.
  *
  * Provides sensible defaults for caching, retries, and refetching behaviour
- * across the application.
+ * across the application. The `queryClient` instance and per-option inline
+ * comments live in `./queryClient.ts` (also imported by non-React cleanup paths).
  */
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Queries are enabled by default
-      enabled: true,
-
-      // Retry failed queries up to 3 times with exponential backoff
-      retry: 3,
-
-      // Consider data fresh for 30 seconds before background refetch
-      staleTime: 30000,
-
-      // Refetch when component mounts if data is stale
-      refetchOnMount: true,
-
-      // Don't refetch on window focus (can be noisy on mobile)
-      refetchOnWindowFocus: false,
-
-      // Refetch when network reconnects (important for offline-first)
-      refetchOnReconnect: true,
-
-      // Always default to running queries with network mode always - as most
-      // queries are to Pouch - can be overridden for network only queries
-      networkMode: 'always',
-    },
-    mutations: {
-      // Don't retry mutations - let the user explicitly retry on failure
-      retry: 0,
-    },
-  },
-});
 
 // =============================================================================
 // ROUTE LAYOUT COMPONENTS
@@ -109,6 +83,7 @@ const queryClient = new QueryClient({
  *
  * Provides:
  * - Deep link handling via AppUrlListener
+ * - {@link useProjectRouteGuard} for stale notebook URLs after upstream removal
  * - Main application layout (header, navigation, etc.)
  * - Outlet for nested route content
  *
@@ -116,6 +91,9 @@ const queryClient = new QueryClient({
  * to use navigation hooks.
  */
 const RootLayout = () => {
+  // Redirect stale notebook URLs when upstream removal drops the project from Redux.
+  useProjectRouteGuard();
+
   return (
     <>
       {/* Handle deep links and app URL schemes */}
@@ -126,6 +104,7 @@ const RootLayout = () => {
 
       {/* Main application chrome (header, sidebar, etc.) */}
       <MainLayout>
+        <NotebookOfflineMapPrompt />
         {/* Nested route content renders here */}
         <Outlet />
       </MainLayout>
@@ -265,6 +244,8 @@ const routes: RouteObject[] = [
  * @see https://reactrouter.com/en/main/routers/create-browser-router
  */
 const router = createBrowserRouter(routes);
+// Expose router to thunks that need to leave a removed notebook route.
+registerAppRouter(router);
 
 // =============================================================================
 // APPLICATION ROOT

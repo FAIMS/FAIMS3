@@ -11,7 +11,7 @@ import {
   drillRoles,
   roleGrantsAction,
 } from '../src/permission/helpers';
-import {Action, Resource, Role} from '../src/permission/model';
+import {Action, actionDetails, Resource, Role} from '../src/permission/model';
 import {
   DecodedTokenPermissions,
   TokenPermissions,
@@ -1068,5 +1068,50 @@ describe('Virtual Resource Roles', () => {
       // No virtual roles should be generated
       expect(virtualRoles.length).toBe(0);
     });
+  });
+});
+
+describe('IMPERSONATE_USER permission', () => {
+  it('is granted to OPERATIONS_ADMIN', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.OPERATIONS_ADMIN],
+        action: Action.IMPERSONATE_USER,
+      })
+    ).toBe(true);
+  });
+
+  it('is granted to GENERAL_ADMIN (via inheritance)', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.GENERAL_ADMIN],
+        action: Action.IMPERSONATE_USER,
+      })
+    ).toBe(true);
+  });
+
+  it('is NOT granted to GENERAL_USER', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.GENERAL_USER],
+        action: Action.IMPERSONATE_USER,
+      })
+    ).toBe(false);
+  });
+
+  it('is NOT granted to GENERAL_CREATOR', () => {
+    expect(
+      roleGrantsAction({
+        roles: [Role.GENERAL_CREATOR],
+        action: Action.IMPERSONATE_USER,
+      })
+    ).toBe(false);
+  });
+
+  it('is a resource-specific USER action', () => {
+    const details = actionDetails[Action.IMPERSONATE_USER];
+    expect(details).toBeDefined();
+    expect(details.resource).toBe(Resource.USER);
+    expect(details.resourceSpecific).toBe(true);
   });
 });

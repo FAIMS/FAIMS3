@@ -18,17 +18,29 @@ The repository contains the following:
 
 ### Prerequisites
 
-You'll need Node.js 22 and pnpm installed. We strongly recommend
+You'll need Node.js 24 and pnpm installed. We strongly recommend
 using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager).
 
-Install and activate Node v22:
+Install and activate Node v24:
 
 ```bash
-nvm install 22
-nvm use 22
+nvm install 24
+nvm use 24
 ```
 
 You will also need Docker and Docker Compose installed.
+
+GeoPackage export requires [GDAL](https://gdal.org/) (`ogr2ogr` on PATH). This is
+included in the API Docker image and devcontainer. For native development, `./dev.sh`
+warns if GDAL is missing; install locally when you need `.gpkg` export:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install gdal-bin
+
+# macOS (Homebrew)
+brew install gdal
+```
 
 ### Starting all services
 

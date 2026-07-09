@@ -3,13 +3,20 @@ import {Field, Form} from '@/components/form';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
-import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useCanCreateTemplate} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
 } from '@/lib/rootDescriptionField';
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
+import {TemplateOwnerCallout} from './template-owner-callout';
+import {
+  buildTemplateTeamField,
+  getPossibleTeamsForAction,
+  getTemplateTeamFieldState,
+  resolveTemplateTeamId,
+} from './template-team-field';
 
 interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -19,11 +26,12 @@ interface CreateTemplateFromProjectForm {
 }
 
 /**
- * CreateTemplateForm component renders a form for creating a template.
- * It provides a button to open the dialog and a form to create the template.
+ * Form for creating a template from an existing project's UI specification.
+ *
+ * Uses the same team callout/dropdown rules as {@link CreateTemplateForm}.
  *
  * @param {CreateTemplateFromProjectForm} props - The props for the form.
- * @returns {JSX.Element} The rendered CreateTemplateForm component.
+ * @returns {JSX.Element} The rendered form component.
  */
 export function CreateTemplateFromProjectForm({
   setDialogOpen,
@@ -36,23 +44,25 @@ export function CreateTemplateFromProjectForm({
   const {data: teams} = useGetTeams({user});
   const {data: projectData} = useGetProject({user, projectId});
 
-  // can they create projects outside team?
+  const canCreateTemplate = useCanCreateTemplate();
+
+  /** `CREATE_TEMPLATE` — may omit teamId on POST /api/templates. */
   const canCreateGlobally = useIsAuthorisedTo({
     action: Action.CREATE_TEMPLATE,
   });
 
-  // filter teams by those we can create templates in
-  const possibleTeams = teams?.teams.filter(team => {
-    return (
-      user &&
-      userCanDo({
-        user,
-        action: Action.CREATE_TEMPLATE_IN_TEAM,
-        resourceId: team._id,
-      })
-    );
+  const possibleTeams = getPossibleTeamsForAction({
+    teams: teams?.teams,
+    canCreateGlobally,
+    createInTeamAction: Action.CREATE_TEMPLATE_IN_TEAM,
+    decodedToken: user?.decodedToken,
   });
-  const justOneTeam = specifiedTeam || possibleTeams?.length === 1;
+
+  const {showTeamCallout, showTeamDropdown} = getTemplateTeamFieldState({
+    canCreateGlobally,
+    specifiedTeam,
+    possibleTeams,
+  });
 
   const fields: Field[] = [
     {
@@ -68,16 +78,8 @@ export function CreateTemplateFromProjectForm({
     }),
   ];
 
-  if (!justOneTeam) {
-    fields.push({
-      name: 'team',
-      label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
-      options: possibleTeams?.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
-      schema: canCreateGlobally ? z.string().optional() : z.string(),
-    });
+  if (showTeamDropdown) {
+    fields.push(buildTemplateTeamField({canCreateGlobally, possibleTeams}));
   }
 
   const onSubmit = async (values: {
@@ -96,6 +98,13 @@ export function CreateTemplateFromProjectForm({
       };
     }
 
+    const chosenTeamId = resolveTemplateTeamId({
+      canCreateGlobally,
+      specifiedTeam,
+      possibleTeams,
+      team,
+    });
+
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/`,
@@ -109,7 +118,7 @@ export function CreateTemplateFromProjectForm({
             name,
             ...rootDescriptionForApi(description),
             uiSpecification: projectData.uiSpecification,
-            teamId: team ?? specifiedTeam,
+            teamId: chosenTeamId,
           }),
         }
       );
@@ -127,21 +136,20 @@ export function CreateTemplateFromProjectForm({
     }
 
     // query invalidations
-    if (specifiedTeam || team) {
-      await queryClient.invalidateQueries({
-        queryKey: ['templatesbyteam', specifiedTeam || team],
-      });
-    }
-    await queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+    await queryClient.invalidateQueries({queryKey: ['templates']});
+    await queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
     setDialogOpen(false);
   };
 
+  if (!canCreateTemplate) {
+    return <p>You do not have permission to create templates.</p>;
+  }
+
   return (
-    <>
-      {possibleTeams?.length === 1 && (
-        <span>
-          <strong>Template will be owned by:</strong> {possibleTeams[0].name}
-        </span>
+    <div className="flex flex-col gap-4">
+      {/* Fixed team — user cannot pick another or opt out. */}
+      {showTeamCallout && (
+        <TemplateOwnerCallout teamName={possibleTeams[0].name} />
       )}
       <Form
         fields={fields}
@@ -149,6 +157,6 @@ export function CreateTemplateFromProjectForm({
         submitButtonText="Create Template"
         defaultValues={{team: defaultValues?.teamId}}
       />
-    </>
+    </div>
   );
 }

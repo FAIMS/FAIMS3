@@ -46,6 +46,7 @@ import {
   ProjectListItem,
   ProjectStatus,
   PutUpdateNotebookMetadataInput,
+  PutUpdateNotebookOfflineMapRegionInput,
   PutUpdateNotebookUiSpecificationInput,
   Resource,
   resourceRoles,
@@ -61,7 +62,12 @@ import {
   CompiledNotebookUiSpec,
   compileUiSpecConditionals,
 } from '@faims3/data-model';
-import {initialiseDataDb, localGetProjectsDb, verifyCouchDBConnection} from '.';
+import {
+  getNanoDataDb,
+  initialiseDataDb,
+  localGetProjectsDb,
+  verifyCouchDBConnection,
+} from '.';
 import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
@@ -235,13 +241,22 @@ export const getUserProjectsDirectory = async (
 };
 
 /**
+ * How many projects {@link getUserProjectsDetailed} resolves per batch when
+ * computing each project's `byteCount`. Each `byteCount` costs one CouchDB
+ * `info()` call, so this caps the concurrent `info()` round-trips and stops a
+ * user/team with many notebooks from opening one connection per project at once
+ * and exhausting CouchDB's connection limits.
+ */
+const BYTE_COUNT_BATCH_SIZE = 10;
+
+/**
  * Lists notebooks using CouchDB views whose map `value` is the project doc
  * without `uiSpecification`. Uses `include_docs: false` on purpose: with
  * `include_docs: true`, CouchDB would also attach the full stored document for
  * each row (including `uiSpecification`), which would defeat the lean list.
  *
  * @param user - only return notebooks that this user can see
- * @returns notebook list rows (from each row's `value`) plus `is_admin`
+ * @returns notebook list rows (from each row's `value`) plus `is_admin` and `byteCount`
  */
 export const getUserProjectsDetailed = async (
   user: Express.User,
@@ -283,17 +298,27 @@ export const getUserProjectsDetailed = async (
       });
     });
 
-  return userProjects.map(project => {
-    const projectId = project._id;
-    return {
-      ...project,
-      is_admin: userHasProjectRole({
-        user,
-        projectId,
-        role: Role.PROJECT_ADMIN,
-      }),
-    } satisfies GetNotebookListResponse[number];
-  });
+  const detailed: APINotebookList[] = [];
+  for (let p = 0; p < userProjects.length; p += BYTE_COUNT_BATCH_SIZE) {
+    const batch = userProjects.slice(p, p + BYTE_COUNT_BATCH_SIZE);
+    detailed.push(
+      ...(await Promise.all(
+        batch.map(async project => {
+          const projectId = project._id;
+          return {
+            ...project,
+            is_admin: userHasProjectRole({
+              user,
+              projectId,
+              role: Role.PROJECT_ADMIN,
+            }),
+            byteCount: await getByteCount(projectId),
+          };
+        })
+      ))
+    );
+  }
+  return detailed;
 };
 
 /**
@@ -541,6 +566,31 @@ export const updateProjectUiSpecification = async (
 };
 
 /**
+ * Sets or clears the recommended offline map region on a project document.
+ *
+ * Passing `offlineMapRegion: null` removes the field from CouchDB so GET
+ * responses omit it rather than returning an explicit null.
+ */
+export const updateProjectOfflineMapRegion = async (
+  projectId: string,
+  input: PutUpdateNotebookOfflineMapRegionInput
+): Promise<ExistingProjectDocument> => {
+  const {offlineMapRegion} = input;
+  const project = await getProjectById(projectId);
+  const updated: ProjectDocument = {
+    ...project,
+    updatedAt: nowIso(),
+  };
+  if (offlineMapRegion == null) {
+    delete updated.offlineMapRegion;
+  } else {
+    updated.offlineMapRegion = offlineMapRegion;
+  }
+  await putProjectDoc(updated);
+  return getProjectById(projectId);
+};
+
+/**
  * Apply a lifecycle status change to an already-loaded project document.
  * Used by PUT /api/notebooks/:id/status after authorization.
  */
@@ -684,6 +734,25 @@ export async function countRecordsInNotebook(
   } catch (error) {
     console.log(error);
     return 0;
+  }
+}
+
+/**
+ * Returns the storage size in bytes of a notebook's data database.
+ *
+ * PouchDB does not surface database sizes, so this uses CouchDB's GET /{db}
+ * info endpoint via nano. `sizes.active` is the size of the live data, matching
+ * the value shown in CouchDB Fauxton. (Use `sizes.file` instead if you want the
+ * on-disk size including view indexes and not-yet-compacted revisions.)
+ */
+export async function getByteCount(project_id: ProjectID): Promise<number> {
+  try {
+    const dataDb = await getNanoDataDb(project_id);
+    const info = await dataDb.info();
+    return info.sizes.active;
+  } catch (error) {
+    console.error(error);
+    return -1;
   }
 }
 

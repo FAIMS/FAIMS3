@@ -5,6 +5,7 @@ import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-templ
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import {EditProjectDetailsDialog} from '@/components/dialogs/edit-project-details-dialog';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
+import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-records-dialog';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -19,16 +20,10 @@ import {
   useDesignerSaveMutation,
 } from '@/designer/integration';
 import type {NotebookWithHistory} from '@/designer/state/initial';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {generateTestRecordsForProject} from '@/hooks/project-hooks';
+import {useCanCreateTemplate, useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {
-  Action,
-  getUserResourcesForAction,
-  ProjectStatus,
-} from '@faims3/data-model';
-import {Input} from '@mui/material';
+import {Action, ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 
@@ -49,8 +44,6 @@ const ProjectActions = (): JSX.Element => {
 
   const [editorOpen, setEditorOpen] = useState(false);
 
-  // State for generating test records
-  const [generateCount, setGenerateCount] = useState('10');
   // Prepare notebook data for the Designer
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
     return toDesignerNotebookWithHistory(data);
@@ -70,7 +63,7 @@ const ProjectActions = (): JSX.Element => {
   };
 
   const handleEditorClose = (file?: File) => {
-    if (file) saveProjectNotebook.mutate(file);
+    if (file) saveProjectNotebook.mutateAsyncWithToast(file);
     setEditorOpen(false);
   };
 
@@ -95,13 +88,8 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
-  /** Matches {@link CreateTemplateFromProjectForm}: global create or any permitted team. */
-  const canCreateTemplateFromProject =
-    useIsAuthorisedTo({action: Action.CREATE_TEMPLATE}) ||
-    getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
-      action: Action.CREATE_TEMPLATE_IN_TEAM,
-    }).length > 0;
+  /** Matches create-from-project form: global create or team-scoped create on any team. */
+  const canCreateTemplateFromProject = useCanCreateTemplate();
 
   const canReadProjectMetadata = useIsAuthorisedTo({
     action: Action.READ_PROJECT_METADATA,
@@ -120,15 +108,6 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
-  const handleCreateTestRecords = async () => {
-    if (user)
-      await generateTestRecordsForProject({
-        projectId,
-        count: parseInt(generateCount),
-        user,
-      });
-  };
-
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
@@ -136,21 +115,16 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Generate Test Records</ListLabel>
+                <ListLabel>Generate test records</ListLabel>
               </ListItem>
-              <ListItem className="flex flex-wrap items-center gap-2">
-                <Input
-                  type="number"
-                  value={generateCount}
-                  onChange={e => setGenerateCount(e.target.value)}
-                />
-                <Button
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={handleCreateTestRecords}
-                >
-                  Generate Records
-                </Button>
+              <ListItem>
+                <ListDescription>
+                  Create random sample records for development and testing.
+                  Available only when developer mode is enabled on the server.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <GenerateTestRecordsDialog disabled={isLoading} />
               </ListItem>
             </List>
           </Card>

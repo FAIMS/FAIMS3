@@ -19,7 +19,7 @@
  *   logo blue (#223883).
  */
 import {colors, createTheme} from '@mui/material';
-import {defaultBrand} from '@faims3/data-model';
+import {defaultBrand, mapControlBrand} from '@faims3/data-model';
 import typography from './typography';
 import {buildSharedComponentOverrides} from '../sharedComponentOverrides';
 
@@ -29,6 +29,7 @@ const baseTheme = createTheme({
     visited: defaultBrand.primaryMain,
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
+    mobileBackground: '#FFFFFF',
   },
   palette: {
     background: {
@@ -89,6 +90,15 @@ const baseTheme = createTheme({
       divider: '#828789FF',
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
+    },
+    mapControl: {
+      groupBackground: 'rgba(255, 255, 255, 0.95)',
+      groupShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+      buttonBackground: '#171717',
+      buttonBackgroundHover: '#323232',
+      buttonActiveBackground: mapControlBrand.activeMain,
+      buttonActiveBackgroundHover: mapControlBrand.activeHover,
+      buttonForeground: '#FFFFFF',
     },
   },
   typography,

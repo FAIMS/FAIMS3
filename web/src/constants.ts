@@ -1,4 +1,5 @@
 import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
+import {Resource, resourceRoles} from '@faims3/data-model';
 import pluralize from 'pluralize';
 import {capitalize} from './lib/utils';
 
@@ -16,6 +17,8 @@ export const WEBSITE_TITLE =
 export const APP_NAME = getConfigValue('VITE_APP_NAME');
 export const APP_SHORT_NAME = import.meta.env.VITE_APP_SHORT_NAME || APP_NAME;
 export const WEB_URL = getConfigValue('VITE_WEB_URL');
+/** Control Centre home (`/` redirects to `/teams`). */
+export const WEB_HOME_URL = `${WEB_URL.replace(/\/$/, '')}/`;
 export const API_URL = getConfigValue('VITE_API_URL');
 export const APP_URL = getConfigValue('VITE_APP_URL');
 export const DOCS_URL = import.meta.env.VITE_DOCS_URL || '';
@@ -32,7 +35,37 @@ export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
 export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
   capitalize(NOTEBOOK_NAME_PLURAL);
 
+/** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
+export const brandNotebook = (text: string): string =>
+  text
+    .replaceAll('{notebooks}', NOTEBOOK_NAME_PLURAL)
+    .replaceAll('{notebook}', NOTEBOOK_NAME);
+
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
+
+const VALID_TEAM_ROLES = new Set(
+  resourceRoles[Resource.TEAM].map(r => r.role as string)
+);
+
+const requestedExcludedTeamRoles =
+  (import.meta.env.VITE_EXCLUDED_TEAM_ROLES as string | undefined)
+    ?.split(',')
+    .map(s => s.trim())
+    .filter(Boolean) ?? [];
+
+const invalidExcludedTeamRoles = requestedExcludedTeamRoles.filter(
+  r => !VALID_TEAM_ROLES.has(r)
+);
+if (invalidExcludedTeamRoles.length > 0) {
+  console.warn(
+    `VITE_EXCLUDED_TEAM_ROLES contains values that are not team roles and will be ignored: ${invalidExcludedTeamRoles.join(', ')}`
+  );
+}
+
+/** Team roles to hide from team-role dropdowns (`VITE_EXCLUDED_TEAM_ROLES`). */
+export const EXCLUDED_TEAM_ROLES = new Set(
+  requestedExcludedTeamRoles.filter(r => VALID_TEAM_ROLES.has(r))
+);
 
 /**
  * When the directory lists a notebook as archived (or id absent), the mobile app

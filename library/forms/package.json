@@ -1,6 +1,6 @@
 {
   "name": "@faims3/forms",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "private": true,
   "files": [
     "dist"
@@ -17,6 +17,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --p ./tsconfig-build.json && vite build",
+    "typecheck": "tsc --noEmit",
     "watch": "pnpm run watch:types & pnpm run watch:build",
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",
@@ -63,7 +64,7 @@
     "@types/lodash": "^4.17.21",
     "@types/markdown-it": "^14.1.2",
     "@types/mustache": "^4.2.6",
-    "@types/node": "^22.13.14",
+    "@types/node": "^24",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react-swc": "^4.0.1",
@@ -72,7 +73,7 @@
     "ol-mapbox-style": "^12.5.0",
     "typescript": "^5.9.2",
     "vite": "^7.3.2",
-    "vitest": "^4.0.6"
+    "vitest": "^4.1.8"
   },
   "peerDependencies": {
     "@capacitor-community/exif": "^7.0.0",
@@ -84,7 +85,7 @@
     "react-dom": "^18.3.1"
   },
   "engines": {
-    "node": "22"
+    "node": "24"
   },
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@11.6.0"
 }

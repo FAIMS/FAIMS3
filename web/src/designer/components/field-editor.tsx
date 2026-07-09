@@ -70,6 +70,8 @@ import {
 import DebouncedTextField from './debounced-text-field';
 import {keyframes} from '@emotion/react';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
+import {designerFieldSelector} from '../features/navigation/designerElementIds';
+import {scrollToDesignerElement} from '../features/navigation/scrollToElements';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -196,6 +198,12 @@ const FieldEditorComponent = ({
     null
   );
   const editorRootRef = useRef<HTMLDivElement>(null);
+  // Read latest onLabelFocused via a ref so it isn't an effect dependency; its
+  // identity changes each render and would re-run the autofocus effect.
+  const onLabelFocusedRef = useRef(onLabelFocused);
+  onLabelFocusedRef.current = onLabelFocused;
+  // Runs the autofocus once per activation, not on every render.
+  const didAutoFocusRef = useRef(false);
 
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
@@ -267,7 +275,10 @@ const FieldEditorComponent = ({
   };
 
   const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
+    // stop propagation if the field is already expanded as that would collapse it again
+    if (expanded) {
+      event.stopPropagation();
+    }
     const currentLabel = getFieldLabel();
     setDuplicateTitle(currentLabel + ' Copy');
     setOpenDuplicateDialog(true);
@@ -402,29 +413,96 @@ const FieldEditorComponent = ({
     CSS.Transform.toString(transform) || 'translate3d(0, 0, 0)';
   const canDragField = !expanded && !dragDisabled;
 
+  // Reset the guard when this field stops being the autofocus target so a later
+  // re-add can focus it again.
+  useEffect(() => {
+    if (!autoFocusLabel) didAutoFocusRef.current = false;
+  }, [autoFocusLabel]);
+
   useEffect(() => {
     if (!expanded || !autoFocusLabel) return;
+    // Run once per activation; otherwise the effect re-runs each render and the
+    // focus/scroll never settles.
+    if (didAutoFocusRef.current) return;
+    didAutoFocusRef.current = true;
 
-    const focusId = window.requestAnimationFrame(() => {
-      const labelInput = editorRootRef.current?.querySelector<HTMLInputElement>(
-        'input[data-field-label-input="true"]'
+    let cancelled = false;
+
+    const focusLabel = () => {
+      if (cancelled) return;
+      window.requestAnimationFrame(() => {
+        if (cancelled) return;
+        const labelInput =
+          editorRootRef.current?.querySelector<HTMLInputElement>(
+            'input[data-field-label-input="true"]'
+          );
+        if (!labelInput) return;
+        // Focus immediately (no browser auto-scroll) so typing works right away.
+        labelInput.focus({preventScroll: true});
+        labelInput.select();
+
+        // Nearest scrolling ancestor, used to tell when the expand animation has
+        // finished growing the page.
+        const getScrollParent = (el: HTMLElement | null): HTMLElement => {
+          let node = el?.parentElement ?? null;
+          while (node) {
+            const oy = window.getComputedStyle(node).overflowY;
+            if (oy === 'auto' || oy === 'scroll') return node;
+            node = node.parentElement;
+          }
+          return (document.scrollingElement as HTMLElement) ?? document.body;
+        };
+        const scrollParent = getScrollParent(labelInput);
+
+        // The accordion expands with a height animation. Scroll only once the
+        // page stops growing, so there is room to centre the input rather than
+        // leaving it pinned to the bottom edge. Bounded so it can never loop.
+        let lastHeight = Number.NaN;
+        let frames = 0;
+        const scrollWhenSettled = () => {
+          if (cancelled) return;
+          const height = scrollParent.scrollHeight;
+          if (height === lastHeight || frames >= 30) {
+            labelInput.scrollIntoView({behavior: 'smooth', block: 'center'});
+            onLabelFocusedRef.current?.();
+            return;
+          }
+          lastHeight = height;
+          frames += 1;
+          window.requestAnimationFrame(scrollWhenSettled);
+        };
+        window.requestAnimationFrame(scrollWhenSettled);
+      });
+    };
+
+    if (isHidden) {
+      // Hidden fields (e.g. templated string) render below visible fields; focus
+      // alone does not scroll the designer panel to them.
+      void scrollToDesignerElement(designerFieldSelector(fieldName)).then(
+        focusLabel
       );
-      if (!labelInput) return;
-      labelInput.focus();
-      labelInput.select();
-      onLabelFocused?.();
-    });
+    } else {
+      focusLabel();
+    }
 
-    return () => window.cancelAnimationFrame(focusId);
-  }, [expanded, autoFocusLabel, onLabelFocused]);
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, autoFocusLabel, fieldName, isHidden]);
 
   return (
     <Accordion
       key={fieldName}
       ref={setNodeRef}
+      // Scroll target for global design search (see designerElementIds).
+      data-designer-field={fieldName}
       expanded={expanded}
       onChange={handleAccordionChange}
-      slotProps={{transition: {unmountOnExit: true}}}
+      slotProps={{
+        transition: {
+          unmountOnExit: false,
+        },
+      }}
       disableGutters
       square
       elevation={0}

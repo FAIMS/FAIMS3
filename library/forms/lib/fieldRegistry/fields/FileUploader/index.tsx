@@ -1,4 +1,8 @@
-import {logError} from '@faims3/data-model';
+import {
+  formatFileSize,
+  attachmentSaveTrace,
+  logError,
+} from '@faims3/data-model';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -23,7 +27,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import Dropzone, {FileRejection} from 'react-dropzone';
 import {z} from 'zod';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
@@ -65,17 +69,6 @@ interface FullFileUploaderFieldProps extends FileUploaderFieldProps {
  */
 function isImageFile(contentType: string): boolean {
   return contentType.startsWith('image/');
-}
-
-/**
- * Formats file size in human-readable format
- */
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
 /**
@@ -239,18 +232,32 @@ const FileUploaderPreview: React.FC<FileUploaderFieldProps> = props => {
 const DropzoneArea: React.FC<{
   onDrop: (files: File[]) => void;
   onReject: (rejections: FileRejection[]) => void;
+  onFileDialogOpen?: () => void;
+  onFileDialogCancel?: () => void;
   disabled: boolean;
   multiple: boolean;
   maxFiles: number;
   maxSize?: number;
   minSize?: number;
-}> = ({onDrop, onReject, disabled, multiple, maxFiles, maxSize, minSize}) => {
+}> = ({
+  onDrop,
+  onReject,
+  onFileDialogOpen,
+  onFileDialogCancel,
+  disabled,
+  multiple,
+  maxFiles,
+  maxSize,
+  minSize,
+}) => {
   const theme = useTheme();
 
   return (
     <Dropzone
       onDrop={onDrop}
       onDropRejected={onReject}
+      onFileDialogOpen={onFileDialogOpen}
+      onFileDialogCancel={onFileDialogCancel}
       disabled={disabled}
       multiple={multiple}
       maxFiles={maxFiles}
@@ -518,6 +525,7 @@ const FileList: React.FC<{
  */
 const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   const {
+    fieldId,
     label,
     helperText,
     required,
@@ -538,6 +546,8 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   const [viewingAttachment, setViewingAttachment] = useState<number | null>(
     null
   );
+  /** True while the native file picker is open (click-to-select path). */
+  const filePickerLockHeldRef = useRef(false);
 
   // Get attachment service
   const attachmentService = context.attachmentEngine();
@@ -551,6 +561,18 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   /**
    * Handle file drop/selection
    */
+  const handleFileDialogOpen = useCallback(() => {
+    setAttachmentSaving?.(true);
+    filePickerLockHeldRef.current = true;
+  }, [setAttachmentSaving]);
+
+  const handleFileDialogCancel = useCallback(() => {
+    if (filePickerLockHeldRef.current) {
+      setAttachmentSaving?.(false);
+      filePickerLockHeldRef.current = false;
+    }
+  }, [setAttachmentSaving]);
+
   const handleDrop = useCallback(
     async (acceptedFiles: File[]) => {
       setError(null);
@@ -570,12 +592,26 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
           return;
         }
 
-        // Block section navigation until all files are stored in PouchDB
-        setAttachmentSaving?.(true);
+        // Block section navigation until all files are stored in PouchDB.
+        // Drag-and-drop sets the lock here; click-to-select sets it on dialog open.
+        const lockFromPicker = filePickerLockHeldRef.current;
+        if (!lockFromPicker) {
+          setAttachmentSaving?.(true);
+        }
+
+        attachmentSaveTrace('FileUploader:save-start', {
+          fieldId,
+          fileCount: acceptedFiles.length,
+        });
         try {
           // Upload each file
-          const newAttachments = [];
+          const newAttachments: string[] = [];
           for (const file of acceptedFiles) {
+            attachmentSaveTrace('FileUploader:upload-file', {
+              fieldId,
+              fileName: file.name,
+              fileSize: file.size,
+            });
             newAttachments.push(
               await addAttachment({
                 blob: file,
@@ -588,18 +624,31 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
             );
           }
 
-          // Update field value
-          const currentData = props.state.value?.data as string[] | undefined;
-          props.setFieldData([...(currentData ?? []), ...newAttachments]);
+          props.setFieldData((prev: string[] | undefined) => [
+            ...(prev ?? []),
+            ...newAttachments,
+          ]);
+
+          attachmentSaveTrace('FileUploader:save-complete', {
+            fieldId,
+            attachmentIds: newAttachments,
+          });
         } finally {
           setAttachmentSaving?.(false);
+          filePickerLockHeldRef.current = false;
         }
       } catch (err: any) {
         logError(err);
         setError('Failed to upload file(s). Please try again.');
       }
     },
-    [state.value, addAttachment, setAttachmentSaving, maximumNumberOfFiles]
+    [
+      state.value,
+      addAttachment,
+      setAttachmentSaving,
+      maximumNumberOfFiles,
+      fieldId,
+    ]
   );
 
   /**
@@ -701,6 +750,8 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
           <DropzoneArea
             onDrop={handleDrop}
             onReject={handleReject}
+            onFileDialogOpen={handleFileDialogOpen}
+            onFileDialogCancel={handleFileDialogCancel}
             disabled={disabled}
             multiple={multiple}
             maxFiles={maxFiles}

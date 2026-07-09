@@ -62,6 +62,7 @@ export function EditTemplateDetailsForm({
 
     await queryClient.invalidateQueries({queryKey: ['templates', templateId]});
     await queryClient.invalidateQueries({queryKey: ['templates']});
+    await queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
 
     setDialogOpen(false);
   };

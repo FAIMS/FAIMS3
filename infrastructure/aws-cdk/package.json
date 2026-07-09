@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "build-src": "cd src && pnpm install && pnpm run build",
     "package": "cd src && pnpm run package",
     "init-api": "CONFIG_FILE_NAME=${CONFIG_FILE_NAME:-dev.json} && curl -X POST https://conductor.$(jq -r .hostedZone.name < \"configs/${CONFIG_FILE_NAME}\")/api/initialise",
@@ -23,7 +24,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
-    "@types/node": "^22.13.14",
+    "@types/node": "^24",
     "aws-cdk": "^2.178.2",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
@@ -31,7 +32,7 @@
     "typescript": "^5.9.2"
   },
   "engines": {
-    "node": "22"
+    "node": "24"
   },
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@11.6.0"
 }

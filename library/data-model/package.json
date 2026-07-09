@@ -1,6 +1,6 @@
 {
   "name": "@faims3/data-model",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "description": "Database access layer for FAIMS3",
   "license": "Apache",
   "author": "",
@@ -30,6 +30,7 @@
   },
   "scripts": {
     "build": "pnpm run build:cjs && pnpm run build:esm",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "clean": "gts clean && rm -rf build",
@@ -46,7 +47,9 @@
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "dependencies": {
+    "@jsep-plugin/ternary": "^1.1.4",
     "@types/pouchdb": "^6.4.2",
+    "jsep": "^1.4.0",
     "lodash": "^4.18.1",
     "pouchdb-security-helper": "^2.1.2",
     "zod": "^3.24.1"
@@ -55,7 +58,7 @@
     "@fast-check/jest": "^1.6.0",
     "@types/jest": "^29.4.0",
     "@types/lodash": "^4.14.191",
-    "@types/node": "^22.13.14",
+    "@types/node": "^24",
     "fast-check": "^3.6.3",
     "gts": "^5.3.1",
     "jest": "^29.4.3",
@@ -69,7 +72,7 @@
     "pouchdb": "^9.0.0"
   },
   "engines": {
-    "node": "22"
+    "node": "24"
   },
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@11.6.0"
 }

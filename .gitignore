@@ -6,3 +6,6 @@ out
 app/public/manifest.json
 .env
 .pnpm-store
+__pycache__/
+*.py[cod]
+.cursor

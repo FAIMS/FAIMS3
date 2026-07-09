@@ -20,6 +20,7 @@ import {
   viewSetDeleted,
   viewSetHridUpdated,
   viewSetLayoutUpdated,
+  viewSetDisplayInOverviewMapUpdated,
   viewSetSummaryFieldsUpdated,
 } from '.';
 
@@ -69,6 +70,25 @@ describe('uiSpecificationReducer', () => {
     expect(Object.keys(next.fields)).toEqual(['Text-Field']);
     expect(next.fields['Text-Field'].designerIdentifier).toBeTypeOf('string');
     expect(next.views.sectionA.fields).toEqual(['Text-Field']);
+  });
+
+  it('adds templated string fields with a slugged key', () => {
+    const initial = createBaseUiSpec();
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldAdded({
+        fieldName: 'New Field',
+        fieldType: 'TemplatedStringField',
+        viewId: 'sectionA',
+        viewSetId: 'formA',
+        addAfter: '',
+      })
+    );
+
+    expect(Object.keys(next.fields)).toEqual(['New-Field']);
+    expect(next.views.sectionA.fields).toEqual(['New-Field']);
+    expect(next.fields['New-Field']['component-parameters'].hidden).toBe(true);
   });
 
   it('renames field and updates summary/hrid references', () => {
@@ -226,6 +246,15 @@ describe('uiSpecificationReducer', () => {
       viewSetLayoutUpdated({viewSetId: 'formA', layout: 'tabs'})
     );
     expect(layoutUpdated.viewsets.formA.layout).toBe('tabs');
+
+    const mapHidden = uiSpecificationReducer.reducer(
+      layoutUpdated,
+      viewSetDisplayInOverviewMapUpdated({
+        viewSetId: 'formA',
+        displayInOverviewMap: false,
+      })
+    );
+    expect(mapHidden.viewsets.formA.displayInOverviewMap).toBe(false);
 
     expect(layoutUpdated.visible_types).toEqual(['formA', 'formB']);
 

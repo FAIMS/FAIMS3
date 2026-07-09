@@ -1,6 +1,6 @@
 {
   "name": "@faims3/app",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -28,6 +28,7 @@
     "webapp-sync": "cap sync",
     "app-update": "cap update",
     "lint": "oxlint -c ../.oxlintrc.json .",
+    "typecheck": "tsc --noEmit",
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
@@ -71,7 +72,7 @@
     "@types/jest": "29.5.1",
     "@types/lodash": "^4.14.194",
     "@types/markdown-it": "^14.1.1",
-    "@types/node": "^22.13.14",
+    "@types/node": "^24",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@types/react-router": "5.1.20",
@@ -122,6 +123,7 @@
     "@types/pouchdb-browser": "^6.1.5",
     "@vitejs/plugin-react-swc": "^4.0.1",
     "@vitest/coverage-v8": "^2.1.8",
+    "env-cmd": "^10.1.0",
     "esbuild": "^0.25.0",
     "fast-check": "2.25.0",
     "gts": "^5.3.1",
@@ -135,7 +137,7 @@
     "vite": "^7.3.2",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.8"
   },
   "browserslist": {
     "production": [
@@ -150,7 +152,7 @@
     ]
   },
   "engines": {
-    "node": "22"
+    "node": "24"
   },
-  "packageManager": "pnpm@10.7.0"
+  "packageManager": "pnpm@11.6.0"
 }

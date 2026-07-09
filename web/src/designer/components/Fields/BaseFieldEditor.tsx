@@ -111,6 +111,17 @@ export const BaseFieldEditor = ({
   const uiSpec = useAppSelector(state => state.notebook.uiSpec.present);
   const dispatch = useAppDispatch();
   const mdxEditorRef = useRef<MDXEditorMethods>(null);
+  // The exact markdown the editor itself last emitted via onChange. The sync
+  // effect uses this to tell our own edits (echoed back through the store) from
+  // genuinely external changes such as undo/redo. We must NOT compare against
+  // mdxEditorRef.getMarkdown(): the editor re-serializes (e.g. trailing
+  // newline/escaping) so it never exactly equals the stored string, which would
+  // make the effect fire setMarkdown on every keystroke — and since setMarkdown
+  // re-emits onChange, that becomes a setMarkdown→onChange→setMarkdown loop
+  // (the visible flicker).
+  const lastEditorMarkdownRef = useRef(
+    field['component-parameters'].advancedHelperText || ''
+  );
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
@@ -122,24 +133,6 @@ export const BaseFieldEditor = ({
   const internalRenameInFlight = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
-  const [localHelperText, setLocalHelperText] = useState(
-    field['component-parameters'].helperText || ''
-  );
-
-  // Always-fresh ref so the debounce below never closes over a stale field
-  const fieldRef = useRef(field);
-  fieldRef.current = field;
-
-  const debouncedHelperTextDispatch = useCallback(
-    debounce((value: string) => {
-      const newField = JSON.parse(
-        JSON.stringify(fieldRef.current)
-      ) as FieldType;
-      newField['component-parameters'].helperText = value;
-      dispatch(fieldUpdated({fieldName, newField}));
-    }, 300),
-    [dispatch, fieldName]
-  );
 
   const debouncedRename = useCallback(
     debounce((newFieldName: string) => {
@@ -203,12 +196,19 @@ export const BaseFieldEditor = ({
   };
 
   const handleLabelBlur = () => {
-    // Flush pending one-time auto-sync immediately on blur.
+    // Only flush a sync the user's typing scheduled. Blurring an untouched fresh
+    // field (focus moving to a newly added field) must not rename it, or several
+    // default "New Field" fields chase the same slug in a rename loop.
+    const hadPendingSync = labelSyncTimerRef.current !== null;
     if (labelSyncTimerRef.current) {
       clearTimeout(labelSyncTimerRef.current);
       labelSyncTimerRef.current = null;
     }
-    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+    if (
+      hadPendingSync &&
+      autoSyncFieldIdEnabled.current &&
+      !initialAutoSyncDone.current
+    ) {
       syncFieldIDToLabel(state.label || '');
       initialAutoSyncDone.current = true;
       autoSyncFieldIdEnabled.current = false;
@@ -222,11 +222,14 @@ export const BaseFieldEditor = ({
     // "New-Field*" means this field was just created by designer scaffolding.
     // We allow first-time auto-sync only for this new-field state.
     const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
-    autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
-    initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+    // Don't re-arm after our own rename, or a synced "New-Field-N" id re-enables
+    // sync and the rename repeats.
+    if (!wasInternalRename) {
+      autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
+      initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+    }
 
     setLocalFieldName(fieldName);
-    setLocalHelperText(field['component-parameters'].helperText || '');
 
     if (isMounted.current && !wasInternalRename) {
       // Focus policy:
@@ -248,12 +251,6 @@ export const BaseFieldEditor = ({
       debouncedRename.cancel();
     };
   }, [debouncedRename]);
-
-  useEffect(() => {
-    return () => {
-      debouncedHelperTextDispatch.cancel();
-    };
-  }, [debouncedHelperTextDispatch]);
 
   const getFieldLabel = () => {
     return (
@@ -299,6 +296,19 @@ export const BaseFieldEditor = ({
       cParams.advancedHelperText !== ''
   );
   const [expanded, setExpanded] = useState(true);
+
+  // The MDX editor is uncontrolled (it reads `initialMarkdown` only once on
+  // mount), so it ignores store changes that originate outside the editor —
+  // most importantly global undo/redo, but also switching fields. When the
+  // store value differs from what the editor last emitted, the change is
+  // external, so push it into the editor imperatively. When they match, it is
+  // just our own debounced edit echoing back, so we leave the editor alone and
+  // the caret is never disturbed (and no setMarkdown→onChange loop occurs).
+  useEffect(() => {
+    if (state.advancedHelperText === lastEditorMarkdownRef.current) return;
+    lastEditorMarkdownRef.current = state.advancedHelperText;
+    mdxEditorRef.current?.setMarkdown(state.advancedHelperText || '');
+  }, [state.advancedHelperText]);
 
   const updateFieldFromState = (newState: StateType) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
@@ -517,30 +527,28 @@ export const BaseFieldEditor = ({
                 <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                   {useUnifiedFieldWrapper ? (
                     <SimpleFieldWrapper heading="Helper Text">
-                      <TextField
+                      <DebouncedTextField
                         fullWidth
                         label=""
                         placeholder="Enter helper text"
-                        value={localHelperText}
+                        value={state.helperText}
                         multiline
                         rows={2}
-                        onChange={e => {
-                          setLocalHelperText(e.target.value);
-                          debouncedHelperTextDispatch(e.target.value);
-                        }}
+                        onChange={e =>
+                          updateProperty('helperText', e.target.value)
+                        }
                       />
                     </SimpleFieldWrapper>
                   ) : (
-                    <TextField
+                    <DebouncedTextField
                       fullWidth
                       label="Helper Text"
-                      value={localHelperText}
+                      value={state.helperText}
                       multiline
                       rows={2}
-                      onChange={e => {
-                        setLocalHelperText(e.target.value);
-                        debouncedHelperTextDispatch(e.target.value);
-                      }}
+                      onChange={e =>
+                        updateProperty('helperText', e.target.value)
+                      }
                     />
                   )}
                   {hasAdvancedSupport && (
@@ -619,11 +627,29 @@ export const BaseFieldEditor = ({
                               <MdxEditor
                                 initialMarkdown={state.advancedHelperText}
                                 handleChange={debounce(
-                                  markdown =>
+                                  markdown => {
+                                    // Ignore the echo that a programmatic
+                                    // setMarkdown (undo/redo sync) re-emits: the
+                                    // value is already in the store, and the sync
+                                    // effect set lastEditorMarkdownRef to it
+                                    // first. Re-dispatching here would push a
+                                    // duplicate undo entry and wipe the redo
+                                    // stack.
+                                    if (
+                                      markdown === lastEditorMarkdownRef.current
+                                    ) {
+                                      return;
+                                    }
+                                    // Record what the editor emitted so the sync
+                                    // effect recognises the resulting store
+                                    // update as our own echo, not an external
+                                    // undo/redo.
+                                    lastEditorMarkdownRef.current = markdown;
                                     updateProperty(
                                       'advancedHelperText',
                                       markdown
-                                    ),
+                                    );
+                                  },
                                   500,
                                   {leading: false, trailing: true}
                                 )}

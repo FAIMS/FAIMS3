@@ -44,14 +44,14 @@ export const sampleNotebook: Notebook = {
           uncertainty: {include: true, label: 'uncertainty'},
         },
       },
-      'hridPrimary-Next-Section': {
+      Identifier: {
         'component-namespace': 'faims-custom',
         'component-name': 'TemplatedStringField',
         'type-returned': 'faims-core::String',
         'component-parameters': {
           fullWidth: true,
-          name: 'hridPrimary-Next-Section',
-          id: 'hrid-field',
+          name: 'Identifier',
+          id: 'identifier-field',
           helperText: 'Human Readable observation ID',
           variant: 'outlined',
           required: true,
@@ -232,12 +232,7 @@ export const sampleNotebook: Notebook = {
       },
       'Primary-Next-Section': {
         label: 'Identify',
-        fields: [
-          'Field-ID',
-          'hridPrimary-Next-Section',
-          'IGSN-QR-Code',
-          'survey-note',
-        ],
+        fields: ['Field-ID', 'Identifier', 'IGSN-QR-Code', 'survey-note'],
         description: 'That description.',
       },
     },
@@ -245,7 +240,7 @@ export const sampleNotebook: Notebook = {
       Primary: {
         label: 'Observation',
         views: ['Primary-Next-Section', 'Primary-New-Section'],
-        hridField: 'hridPrimary-Next-Section',
+        hridField: 'Identifier',
       },
     },
     visible_types: ['Primary'],

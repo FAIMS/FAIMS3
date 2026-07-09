@@ -184,6 +184,7 @@ export class FaimsInfraStack extends cdk.Stack {
       forceRemoteDeletion:
         config.uiConfiguration.forceRemoteDeletion ?? 'never',
       deleteOnDeactivation: config.uiConfiguration.deleteOnDeactivation,
+      excludedTeamRoles: config.uiConfiguration.excludedTeamRoles,
     });
 
     // Backup setup

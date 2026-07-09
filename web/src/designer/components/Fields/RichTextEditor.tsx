@@ -21,6 +21,7 @@ import {RichTextProps} from '@faims3/forms';
 import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {BaseFieldEditor} from './BaseFieldEditor';
 
 /** RichText display field: MDX body stored in `component-parameters.content`. */
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
@@ -58,19 +59,25 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   };
 
   return (
-    <Grid container size={{xs: 12, sm: 8}} sx={{m: 'auto'}}>
-      <Grid size={12}>
-        <MdxEditor
-          initialMarkdown={initContent}
-          editorRef={ref}
-          handleChange={() =>
-            updateProperty('content', ref.current?.getMarkdown())
-          }
-        />
-        <FormHelperText>
-          {`Use this editor to add rich text to your ${NOTEBOOK_NAME}.`}
-        </FormHelperText>
+    <BaseFieldEditor
+      fieldName={fieldName}
+      showHelperText={false}
+      showExtraConfig={false}
+    >
+      <Grid container size={{xs: 12, sm: 8}} sx={{m: 'auto'}}>
+        <Grid size={12}>
+          <MdxEditor
+            initialMarkdown={initContent}
+            editorRef={ref}
+            handleChange={() =>
+              updateProperty('content', ref.current?.getMarkdown())
+            }
+          />
+          <FormHelperText>
+            {`Use this editor to add rich text to your ${NOTEBOOK_NAME}.`}
+          </FormHelperText>
+        </Grid>
       </Grid>
-    </Grid>
+    </BaseFieldEditor>
   );
 };

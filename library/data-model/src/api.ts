@@ -11,6 +11,7 @@ import {
   PeopleDBDocumentSchema,
   ProjectStatus,
 } from './data_storage';
+import {OfflineMapRegionSchema} from './data_storage/projectsDB/offlineMapRegion';
 import {
   ExistingProjectDocumentSchema,
   ProjectDBFieldsSchema,
@@ -238,6 +239,17 @@ export type PostExchangeTokenResponse = z.infer<
   typeof PostExchangeTokenResponseSchema
 >;
 
+// Impersonation - an admin trades a target user id for a token pair that
+// authenticates as that user. No request body (target id is a path param).
+export const PostImpersonateUserResponseSchema = z.object({
+  // token pair for the impersonated user
+  refreshToken: z.string(),
+  accessToken: z.string(),
+});
+export type PostImpersonateUserResponse = z.infer<
+  typeof PostImpersonateUserResponseSchema
+>;
+
 // ==================
 // NOTEBOOKS CRUD
 // ==================
@@ -245,12 +257,14 @@ export type PostExchangeTokenResponse = z.infer<
 /** GET /api/notebooks list row (project summary + access flags; no uiSpecification). */
 export const APINotebookListSchema = ProjectListItemSchema.extend({
   is_admin: z.boolean(),
+  byteCount: z.number(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
 /** GET /api/notebooks/:id — full project document plus optional record count. */
 export const GetNotebookResponseSchema = ExistingProjectDocumentSchema.extend({
   recordCount: z.number().optional(),
+  byteCount: z.number(),
 });
 export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 
@@ -366,6 +380,18 @@ export type PutUpdateNotebookResponse = z.infer<
   typeof PutUpdateNotebookResponseSchema
 >;
 
+/**
+ * PUT /api/notebooks/:id/offlineMapRegion — set or clear the recommended offline map region.
+ * Requires `SET_OFFLINE_MAP_REGION` on the project.
+ * Pass `{ offlineMapRegion: polygon }` to set, or `{ offlineMapRegion: null }` to clear.
+ */
+export const PutUpdateNotebookOfflineMapRegionInputSchema = z.object({
+  offlineMapRegion: OfflineMapRegionSchema.nullable().optional(),
+});
+export type PutUpdateNotebookOfflineMapRegionInput = z.infer<
+  typeof PutUpdateNotebookOfflineMapRegionInputSchema
+>;
+
 // POST modify user for notebook
 export const PostAddNotebookUserInputSchema = z.object({
   // The username to add to the notebook roles
@@ -394,15 +420,21 @@ export type PostRecordStatusResponse = z.infer<
   typeof PostRecordStatusResponseSchema
 >;
 
-// Post generate random records RandomRecords input
-export const PostRandomRecordsInputSchema = z.object({count: z.number()});
+// Developer-mode bulk record generation (requires DEVELOPER_MODE on the API)
+export const PostRandomRecordsInputSchema = z.object({
+  /** Number of random records to create (1–1000 per request). */
+  count: z.number().int().min(1).max(1000),
+  /** When false, skip populating file/photo fields (faster). Defaults to true. */
+  includeAttachments: z.boolean().optional().default(true),
+  /** Concurrent record upserts (1–50). Higher = faster but more CouchDB load. */
+  parallelism: z.number().int().min(1).max(50).optional().default(10),
+});
 export type PostRandomRecordsInput = z.infer<
   typeof PostRandomRecordsInputSchema
 >;
 
-// Post generate random records RandomRecords response
+// Response: IDs of records created by bulk generation
 export const PostRandomRecordsResponseSchema = z.object({
-  // Ids of new records
   record_ids: z.array(z.string()),
 });
 export type PostRandomRecordsResponse = z.infer<

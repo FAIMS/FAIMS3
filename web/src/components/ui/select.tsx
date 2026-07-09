@@ -128,10 +128,12 @@ const SelectItem = React.forwardRef<
         <Check className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>
     </span>
-    <div className="flex flex-col">
+    <div className="flex flex-col min-w-0">
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
       {description && (
-        <span className="text-xs text-muted-foreground/70">{description}</span>
+        <span className="text-xs text-muted-foreground/70 whitespace-normal leading-snug mt-0.5">
+          {description}
+        </span>
       )}
     </div>
   </SelectPrimitive.Item>

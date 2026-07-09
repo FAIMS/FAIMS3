@@ -23,6 +23,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
+  getOverviewMapTypes,
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
@@ -35,19 +36,15 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Grid,
   Popover,
   Typography,
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import {Control} from 'ol/control';
-import type {EventsKey} from 'ol/events';
 import {Extent} from 'ol/extent';
 import {FeatureLike} from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {unByKey} from 'ol/Observable';
 import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
@@ -273,68 +270,6 @@ const SelectedRecordPopoverContent = ({
   );
 };
 
-/** Inline SVG: north-facing arrow (prominent) and subtle south-facing arrow, Google Maps style */
-const COMPASS_ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="white" d="M12 4 L8 14 L16 14 Z"/><path fill="white" fill-opacity="0.4" d="M12 20 L10 16 L14 16 Z"/></svg>';
-
-/** Rotation below this (radians) is treated as north-up; compass hidden at 0° (Google Maps style). */
-const ROTATION_NEAR_ZERO_THRESHOLD = 1e-6;
-
-/**
- * Creates a control button that resets the map rotation to north (rotation 0).
- * The compass is hidden when rotation is 0° (Google Maps style) and shown when the map is rotated.
- */
-const createResetNorthControl = (map: Map): Control => {
-  const button = document.createElement('button');
-  button.className = 'ol-custom-control-button';
-  button.type = 'button';
-  button.title = 'Reset map to north';
-  button.innerHTML = COMPASS_ICON_SVG;
-
-  button.addEventListener('click', () => {
-    const view = map.getView();
-    const currentRotation = view.getRotation();
-    if (
-      currentRotation !== undefined &&
-      Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD
-    ) {
-      view.animate({rotation: 0, duration: 200});
-    }
-  });
-
-  const element = document.createElement('div');
-  element.className = 'ol-custom-control ol-compass-box';
-  element.appendChild(button);
-
-  const control = new Control({element});
-  let rotationKey: EventsKey | undefined;
-
-  const updateVisibility = (rotation: number) => {
-    const nearZero =
-      rotation === undefined ||
-      Math.abs(rotation) < ROTATION_NEAR_ZERO_THRESHOLD;
-    element.style.display = nearZero ? 'none' : '';
-  };
-
-  const originalSetMap = control.setMap.bind(control);
-  control.setMap = (targetMap: Map | null) => {
-    if (rotationKey !== undefined) {
-      unByKey(rotationKey);
-      rotationKey = undefined;
-    }
-    originalSetMap(targetMap);
-    if (targetMap) {
-      const view = targetMap.getView();
-      updateVisibility(view.getRotation() ?? 0);
-      rotationKey = view.on('change:rotation', () => {
-        updateVisibility(view.getRotation() ?? 0);
-      });
-    }
-  };
-
-  return control;
-};
-
 /**
  * Create an overview map of the records in the notebook.
  */
@@ -365,25 +300,10 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const vectorLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
-  const resetNorthControlRef = useRef<Control | null>(null);
   // Ref so the vector layer style function can read current selection and highlight it
   const selectedFeatureRef = useRef<FeatureProps | null>(null);
 
   const mapConfig = getMapConfig();
-
-  // Add compass (reset to north) control when map is ready
-  useEffect(() => {
-    if (!map) return;
-    const control = createResetNorthControl(map);
-    map.addControl(control);
-    resetNorthControlRef.current = control;
-    return () => {
-      if (resetNorthControlRef.current) {
-        map.removeControl(resetNorthControlRef.current);
-        resetNorthControlRef.current = null;
-      }
-    };
-  }, [map]);
 
   // Memoize the data engine to prevent recreation on every render
   const dataEngine = useMemo(() => {
@@ -396,6 +316,16 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
   // Memoize GIS fields
   const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);
+
+  const overviewMapTypes = useMemo(() => getOverviewMapTypes(uiSpec), [uiSpec]);
+
+  const mapRecords = useMemo(
+    () =>
+      records.allRecords?.filter(record =>
+        overviewMapTypes.includes(record.type)
+      ) ?? [],
+    [records.allRecords, overviewMapTypes]
+  );
 
   /**
    * Extract features from a single record for the given GIS fields
@@ -471,7 +401,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Query function to fetch all features from all records
    */
   const fetchAllFeatures = useCallback(async (): Promise<FeatureCollection> => {
-    if (gisFields.length === 0 || !records.allRecords?.length) {
+    if (gisFields.length === 0 || mapRecords.length === 0) {
       return {type: 'FeatureCollection', features: []};
     }
 
@@ -479,8 +409,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const BATCH_SIZE = 10;
     const allFeatures: GeoJSONFeature[] = [];
 
-    for (let i = 0; i < records.allRecords.length; i += BATCH_SIZE) {
-      const batch = records.allRecords.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < mapRecords.length; i += BATCH_SIZE) {
+      const batch = mapRecords.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(
         batch.map(record => extractFeaturesFromRecord(record, gisFields))
       );
@@ -491,7 +421,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       type: 'FeatureCollection',
       features: allFeatures,
     };
-  }, [gisFields, records.allRecords, extractFeaturesFromRecord]);
+  }, [gisFields, mapRecords, extractFeaturesFromRecord]);
 
   // Use React Query to manage the async feature fetching
   const {
@@ -503,11 +433,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
     queryKey: [
       'overview-map-features',
       project_id,
-      records.allRecords?.map(r => `${r.recordId}:${r.revisionId}`).join(','),
+      mapRecords.map(r => `${r.recordId}:${r.revisionId}`).join(','),
       gisFields.join(','),
+      overviewMapTypes.join(','),
     ],
     queryFn: fetchAllFeatures,
-    enabled: gisFields.length > 0 && records.allRecords?.length > 0,
+    enabled: gisFields.length > 0 && mapRecords.length > 0,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     retry: 2,
@@ -774,14 +705,17 @@ export const OverviewMap = (props: OverviewMapProps) => {
   }
 
   return (
-    <Grid
-      container
-      spacing={2}
+    <Box
       sx={{
-        height: '600px',
-        width: '90vw',
-        marginTop: '20px',
-        marginLeft: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        minWidth: 0,
+        height: {
+          xs: 'clamp(320px, 55vh, 600px)',
+          sm: 'clamp(400px, 60vh, 600px)',
+        },
+        mt: {xs: 1, sm: 2.5},
       }}
     >
       <MapComponent
@@ -820,6 +754,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
           </Box>
         )}
       </Popover>
-    </Grid>
+    </Box>
   );
 };

@@ -97,7 +97,7 @@ export const InfoPanel = () => {
 
       <Card variant="outlined" sx={{mt: 2}}>
         <Grid container spacing={3} sx={{p: 3}}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="h6">Settings</Typography>
             <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
               Functional options that affect how the mobile app behaves for this
@@ -121,11 +121,11 @@ export const InfoPanel = () => {
             </FormHelperText>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Divider />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="h6">Notebook information</Typography>
             <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
               Optional details about this {NOTEBOOK_NAME}, such as who leads the
@@ -212,8 +212,8 @@ export const InfoPanel = () => {
             </Typography>
           </Grid>
 
-          <Grid container item xs={12} spacing={2.5}>
-            <Grid item xs={12} sm={5}>
+          <Grid container size={12} spacing={2.5}>
+            <Grid size={{xs: 12, sm: 5}}>
               <form
                 onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                   e.preventDefault();
@@ -261,9 +261,9 @@ export const InfoPanel = () => {
               </form>
             </Grid>
 
-            <Grid container item xs={12} sm={7} rowGap={1}>
+            <Grid container size={{xs: 12, sm: 7}} sx={{rowGap: 1}}>
               {Object.keys(custom).map(key => (
-                <Grid item xs={12} key={key}>
+                <Grid size={12} key={key}>
                   <DebouncedTextField
                     fullWidth
                     label={key}

@@ -1,5 +1,10 @@
-import {useAuth, User} from '@/context/auth-provider';
-import {Action, isAuthorized, Role} from '@faims3/data-model';
+import {isUserExpired, useAuth, User} from '@/context/auth-provider';
+import {
+  Action,
+  getUserResourcesForAction,
+  isAuthorized,
+  Role,
+} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 /**
@@ -35,6 +40,43 @@ export const webUserHasGlobalRole = ({
 };
 
 /**
+ * True when the user may create a template either globally (`CREATE_TEMPLATE`)
+ * or in at least one team (`CREATE_TEMPLATE_IN_TEAM`).
+ *
+ * Does not require team membership — global creators with zero teams still
+ * return true, matching the API permission model.
+ */
+export const userCanCreateTemplate = (user: User | null): boolean => {
+  if (!user?.decodedToken) {
+    return false;
+  }
+  return (
+    isAuthorized({
+      decodedToken: user.decodedToken,
+      action: Action.CREATE_TEMPLATE,
+    }) ||
+    getUserResourcesForAction({
+      decodedToken: user.decodedToken,
+      action: Action.CREATE_TEMPLATE_IN_TEAM,
+    }).length > 0
+  );
+};
+
+/**
+ * Hook wrapper for {@link userCanCreateTemplate}. Re-renders when the auth
+ * token changes.
+ */
+export const useCanCreateTemplate = (): boolean => {
+  const {user, isExpired} = useAuth();
+
+  if (!user || isExpired()) {
+    return false;
+  }
+
+  return useMemo(() => userCanCreateTemplate(user), [user.token]);
+};
+
+/**
  * A simple custom hook which returns whether the user can do the thing, and
  * re-renders if token changes. Applies to the active user.
  */
@@ -45,25 +87,16 @@ export const useIsAuthorisedTo = ({
   action: Action;
   resourceId?: string;
 }): boolean => {
-  const {user, isExpired} = useAuth();
+  const {user} = useAuth();
 
-  if (
-    // Checks for lack of authentication
-    !user ||
-    isExpired() ||
-    user.decodedToken === null ||
-    user.decodedToken === undefined
-  ) {
-    return false;
-  }
-
-  return useMemo(
-    () =>
-      userCanDo({
-        user,
-        action,
-        resourceId,
-      }),
-    [action, resourceId, user.token]
-  );
+  return useMemo(() => {
+    if (!user || isUserExpired(user) || user.decodedToken == null) {
+      return false;
+    }
+    return userCanDo({
+      user,
+      action,
+      resourceId,
+    });
+  }, [action, resourceId, user?.token, user?.decodedToken]);
 };

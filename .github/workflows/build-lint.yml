@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
@@ -27,9 +27,9 @@ jobs:
           run_install: false
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22.18.0
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -51,8 +51,14 @@ jobs:
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
 
+      - name: Format check
+        run: pnpm run format:check
+
       - name: Lint
         run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
 
       - name: Build
         run: pnpm run build

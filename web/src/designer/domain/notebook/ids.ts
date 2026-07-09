@@ -62,3 +62,26 @@ export const buildUniqueFieldName = (
 
   return candidate;
 };
+
+/**
+ * Resolves the storage key for a field about to be added via `fieldAdded`.
+ * Mirrors reducer logic so UI can expand/focus the new field after dispatch.
+ *
+ * @param fieldName - Default label passed to `fieldAdded` (e.g. "New Field").
+ * @param existingFieldNames - All field keys in the notebook spec.
+ */
+export const resolveAddedFieldKey = (
+  fieldName: string,
+  existingFieldNames: string[]
+): string => {
+  let fieldLabel = slugify(fieldName);
+
+  const taken = new Set(existingFieldNames);
+  let suffix = 1;
+  while (taken.has(fieldLabel)) {
+    fieldLabel = slugify(`${fieldName} ${suffix}`);
+    suffix += 1;
+  }
+
+  return fieldLabel;
+};

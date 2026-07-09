@@ -18,8 +18,18 @@
     --muted-foreground: 0 0% 45.1%;
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+    /* Warning surfaces (aligned with app palette.alert warning tokens). */
+    --warning: 32 95% 44%;
+    --warning-foreground: 25 95% 18%;
+    --warning-background: 36 100% 95%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
@@ -55,6 +65,9 @@
     --secondary: 173 58% 39%;
     --secondary-foreground: 0 0% 98%;
     --accented-row: 180 50% 36%;
+    --warning: 0 82% 49%;
+    --warning-foreground: 0 82% 49%;
+    --warning-background: 0 0% 100%;
   }
 
   .dark {
@@ -72,8 +85,17 @@
     --muted-foreground: 0 0% 63.9%;
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 36 100% 90%;
+    --warning-background: 30 40% 18%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
@@ -95,6 +117,9 @@
 
   .dark.theme-bss {
     --accented-row: 173 40% 56%;
+    --warning: 0 82% 55%;
+    --warning-foreground: 0 100% 90%;
+    --warning-background: 0 40% 12%;
   }
 }
 

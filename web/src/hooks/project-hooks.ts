@@ -2,6 +2,7 @@ import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
 import {
   prepareNotebookUiSpecificationInputForApi,
+  type OfflineMapRegion,
   type ProjectStatus,
   type PutUpdateNotebookMetadataInput,
 } from '@faims3/data-model';
@@ -160,6 +161,28 @@ export const updateNotebookUiSpecificationRequest = async ({
     }
   );
 
+/** PUT /api/notebooks/:projectId/offlineMapRegion — set or clear recommended region. */
+export const updateNotebookOfflineMapRegionRequest = async ({
+  user,
+  projectId,
+  offlineMapRegion,
+}: {
+  user: User;
+  projectId: string;
+  offlineMapRegion: OfflineMapRegion | null;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/offlineMapRegion`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({offlineMapRegion}),
+    }
+  );
+
 export const modifyTeamForProject = async ({
   projectId,
   teamId,
@@ -201,15 +224,23 @@ export const removeInviteForProject = async ({
     }
   );
 
+/**
+ * Developer-mode API: bulk-create random test records for a notebook.
+ * Requires server `DEVELOPER_MODE` and appropriate notebook permission.
+ */
 export const generateTestRecordsForProject = async ({
   projectId,
   count,
+  includeAttachments,
+  parallelism,
   user,
 }: {
   projectId: string;
   count: number;
+  includeAttachments: boolean;
+  parallelism: number;
   user: User;
-}) => {
+}): Promise<{record_ids: string[]}> => {
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/generate`,
     {
@@ -218,13 +249,16 @@ export const generateTestRecordsForProject = async ({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user?.token}`,
       },
-      body: JSON.stringify({count}),
+      body: JSON.stringify({count, includeAttachments, parallelism}),
     }
   );
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Save failed: ${res.status} ${err}`);
+    throw new Error(
+      `Failed to generate test records (${res.status}): ${err || res.statusText}`
+    );
   }
+  return res.json();
 };
 
 async function messageFromFailedNotebookResponse(

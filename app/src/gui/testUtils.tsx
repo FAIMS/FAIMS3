@@ -38,7 +38,7 @@ const testUser: ActiveUser = {
 const testProject = {
   created: 'Unknown',
   description: 'No description',
-  is_activated: true,
+  isActivated: true,
   last_updated: 'Unknown',
   listing_id: 'default',
   name: 'Test Name',
@@ -172,7 +172,6 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
       }),
-    devTools: process.env.NODE_ENV !== 'production',
   });
 
   const queryClient = new QueryClient();

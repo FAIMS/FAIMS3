@@ -1,4 +1,4 @@
-import {GetNotebookResponse} from '@faims3/data-model';
+import {GetNotebookResponse, ProjectStatus} from '@faims3/data-model';
 import {projectInformationFromGetNotebook} from './notebookDefinition';
 import PouchDB from 'pouchdb-browser';
 import {
@@ -516,3 +516,66 @@ export const fetchNotebookDetails = async ({
 
 /** @deprecated Use {@link fetchNotebookDetails}. */
 export const fetchProjectMetadataAndSpec = fetchNotebookDetails;
+
+/**
+ * How the server classifies a notebook that is absent from the active directory
+ * listing (`includeArchived=false`). Used to decide immediate archival cleanup
+ * vs absent-id streak confirmation.
+ */
+export type NotebookServerLifecycleProbe =
+  | 'active'
+  | 'archived'
+  | 'missing'
+  | 'unreachable';
+
+/**
+ * GET `/api/notebooks/:id` for a local notebook missing from the active directory.
+ *
+ * - `archived`: remove locally on first successful read
+ * - `missing`: deleted or no access (401/403/404) — caller applies absent streak
+ * - `active`: still exists but not directory-listed (unexpected); keep local copy
+ * - `unreachable`: network/other HTTP failure — do not advance absent streak
+ */
+export async function probeNotebookServerLifecycle({
+  projectId,
+  serverUrl,
+  token,
+}: {
+  projectId: string;
+  serverUrl: string;
+  token: string;
+}): Promise<NotebookServerLifecycleProbe> {
+  const url = `${serverUrl}/api/notebooks/${projectId}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    return 'unreachable';
+  }
+
+  if (
+    response.status === 401 ||
+    response.status === 403 ||
+    response.status === 404
+  ) {
+    return 'missing';
+  }
+
+  if (!response.ok) {
+    return 'unreachable';
+  }
+
+  const notebook = (await response.json()) as Pick<
+    GetNotebookResponse,
+    'status'
+  >;
+  if (notebook.status === ProjectStatus.ARCHIVED) {
+    return 'archived';
+  }
+
+  return 'active';
+}

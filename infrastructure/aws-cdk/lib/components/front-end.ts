@@ -97,6 +97,11 @@ export interface FaimsFrontEndProps {
    * Default false when omitted.
    */
   deleteOnDeactivation?: boolean;
+
+  /**
+   * Team roles hidden from Control Centre team-role dropdowns (VITE_EXCLUDED_TEAM_ROLES).
+   */
+  excludedTeamRoles?: string[];
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -387,6 +392,10 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupWebDistribution(props: FaimsFrontEndProps) {
+    const csp =
+      `connect-src 'self' ${props.conductorUrl} *.bugsnag.com ` +
+      MAP_ORIGINS_SHARED.join(' ');
+
     const website = new StaticWebsite(this, 'web-website', {
       hostedZone: props.faimsHz,
       domainNames: [props.webDomainName],
@@ -408,8 +417,8 @@ export class FaimsFrontEnd extends Construct {
       certificate: props.faimsUsEast1Certificate,
       securityHeadersBehavior: {
         contentSecurityPolicy: {
-          // enable connection to the API URL
-          contentSecurityPolicy: `connect-src 'self' ${props.conductorUrl}`,
+          // enable connection to the API URL and map tile services
+          contentSecurityPolicy: csp,
           override: true,
         },
       },
@@ -449,6 +458,9 @@ export class FaimsFrontEnd extends Construct {
       VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
       VITE_DELETE_ON_DEACTIVATION:
         props.deleteOnDeactivation === true ? 'true' : 'false',
+      ...(props.excludedTeamRoles?.length
+        ? {VITE_EXCLUDED_TEAM_ROLES: props.excludedTeamRoles.join(',')}
+        : {}),
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
     };

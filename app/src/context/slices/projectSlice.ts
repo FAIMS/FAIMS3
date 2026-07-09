@@ -2,6 +2,7 @@ import {
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
+  OfflineMapRegion,
   ProjectDataObject,
   ProjectListItem,
   ProjectStatus,
@@ -18,6 +19,7 @@ import {
   DELETE_ON_DEACTIVATION,
   FORCE_REMOTE_DELETION,
   NOTEBOOK_NAME,
+  OFFLINE_MAPS,
 } from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
@@ -31,6 +33,7 @@ import {
   createRemotePouchDbFromConnectionInfo,
   fetchNotebookDetails,
   getRemoteDatabaseNameFromId,
+  probeNotebookServerLifecycle,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
 import {databaseService} from './helpers/databaseService';
@@ -39,31 +42,36 @@ import {replaceProjectReplication} from './helpers/replicationLifecycle';
 import {syncStateService} from './helpers/syncStateService';
 import {addAlert} from './alertSlice';
 import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
+import {
+  reconcileOfflineMapRegionPlanChange,
+  shouldSkipOfflineMapActivationPrompt,
+} from '../../gui/components/maps/projectOfflineMap';
+import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
+import {
+  cancelProjectQueries,
+  handleRemoteProjectRemoved,
+} from '../../utils/remoteProjectRemoval';
 
 export type {SyncMode};
 
 /**
- * Per server+project: consecutive successful directory responses where the server
- * indicates the notebook should not be kept as an active local copy: either the id
- * is absent (deleted / no access) or the project is archived.
+ * Per server+project: consecutive directory polls where an id is absent from the
+ * active listing **and** GET `/api/notebooks/:id` reports missing (deleted / no access).
  */
 const directoryAbsentStreak = new Map<string, number>();
 
 /**
- * Successful directory responses where an id is absent (deleted / revoked).
- * Require this many before local cleanup — transient empty listings are unlikely
- * to repeat, so we confirm by automatically re-querying (see
+ * Successful directory polls where a local id is missing from the active listing
+ * and the individual notebook probe returns `missing`. Require this many before
+ * local cleanup — transient failures must not wipe local data (see
  * {@link scheduleAbsentDirectoryRetry}).
  */
 const DIRECTORY_ABSENT_STREAK_THRESHOLD = 3;
 
-/** Archived rows are explicit in the directory — one successful read is enough. */
-const DIRECTORY_ARCHIVED_STREAK_THRESHOLD = 1;
-
-/** Delay before the next directory poll while confirming an absent id. */
+/** Delay before the next directory poll while confirming a missing id. */
 const DIRECTORY_ABSENT_RETRY_DELAY_MS = 900;
 
 /**
@@ -123,23 +131,6 @@ function clearAbsentDirectoryRetry(serverId: string) {
     clearTimeout(t);
     pendingAbsentDirectoryRetryTimer.delete(serverId);
   }
-}
-
-function projectDocIsArchivedOnServer(doc: {status: ProjectStatus}): boolean {
-  return doc.status === ProjectStatus.ARCHIVED;
-}
-
-/**
- * True when local data for this id should count toward remote cleanup streak:
- * missing from the listing, or present with archived lifecycle.
- */
-function shouldAccumulateRemoteCleanupStreak(
-  directoryEntry: ProjectListItem | undefined
-): boolean {
-  if (directoryEntry === undefined) {
-    return true;
-  }
-  return projectDocIsArchivedOnServer(directoryEntry);
 }
 
 // TYPES
@@ -222,6 +213,8 @@ export interface ProjectInformation {
   updatedAt?: string;
   /** Server record count from GET /api/notebooks/:id when known. */
   recordCount?: number;
+  /** Recommended offline map download region (EPSG:4326 polygon). */
+  offlineMapRegion?: OfflineMapRegion;
 }
 
 // A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
@@ -281,6 +274,30 @@ export interface ProjectIdentity {
   serverId: string;
 }
 
+/** One queued post-activation or plan-change offline map download dialog. */
+export interface PendingOfflineMapDownloadPrompt extends ProjectIdentity {
+  /** True when an existing download was invalidated by a plan region change. */
+  isRegionUpdate?: boolean;
+}
+
+/** Dedupe key for the offline map prompt FIFO queue. */
+function offlineMapDownloadPromptKey({
+  projectId,
+  serverId,
+}: ProjectIdentity): string {
+  return `${serverId}:${projectId}`;
+}
+
+/** Migrate legacy persisted state that predates the prompt queue field. */
+function ensureOfflineMapPromptQueue(
+  state: ProjectsState
+): PendingOfflineMapDownloadPrompt[] {
+  if (!state.pendingOfflineMapDownloadPrompts) {
+    state.pendingOfflineMapDownloadPrompts = [];
+  }
+  return state.pendingOfflineMapDownloadPrompts;
+}
+
 // Map from server ID to server details
 export type ServerIdToServerMap = {[serverId: string]: Server};
 
@@ -289,6 +306,8 @@ export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
   selectedServerId?: string;
+  /** FIFO queue of offline map download dialogs to show one at a time. */
+  pendingOfflineMapDownloadPrompts?: PendingOfflineMapDownloadPrompt[];
 }
 
 // UTILITY FUNCTIONS
@@ -302,6 +321,7 @@ export const initialProjectState: ProjectsState = {
   servers: {},
   // start out uninitialised
   isInitialised: false,
+  pendingOfflineMapDownloadPrompts: [],
 };
 
 /**
@@ -312,6 +332,23 @@ function mergeRecordCount(
   existing: number | undefined
 ): number | undefined {
   return incoming !== undefined ? incoming : existing;
+}
+
+/** Superficial project fields that must survive database/sync-only updates. */
+function retainedProjectFields(project: Project) {
+  return {
+    projectId: project.projectId,
+    uiDefinition: project.uiDefinition,
+    uiSpecificationId: project.uiSpecificationId,
+    description: project.description,
+    templateId: project.templateId,
+    updatedAt: project.updatedAt,
+    serverId: project.serverId,
+    status: project.status,
+    name: project.name,
+    recordCount: project.recordCount,
+    offlineMapRegion: project.offlineMapRegion,
+  };
 }
 
 const projectsSlice = createSlice({
@@ -488,6 +525,7 @@ const projectsSlice = createSlice({
         database: undefined,
         status: payload.status,
         recordCount: payload.recordCount,
+        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
@@ -648,9 +686,11 @@ const projectsSlice = createSlice({
 
       server.couchDbUrl = payload.couchDbUrl;
 
+      const existingProject = server.projects[payload.projectId];
+
       // Now we can update it
       server.projects[payload.projectId] = {
-        ...server.projects[payload.projectId],
+        ...existingProject,
 
         // Superficial details updated only! You cannot change activated/sync
         // status here - these are controlled actions
@@ -663,8 +703,11 @@ const projectsSlice = createSlice({
         status: payload.status,
         recordCount: mergeRecordCount(
           payload.recordCount,
-          server.projects[payload.projectId].recordCount
+          existingProject.recordCount
         ),
+        // Successful GET /api/notebooks/:id (200) may omit cleared regions entirely;
+        // treat a missing payload field the same as explicit undefined.
+        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
@@ -690,21 +733,15 @@ const projectsSlice = createSlice({
         syncMode,
         recordCount,
       } = action.payload;
+      const mergedOfflineMapRegion =
+        'offlineMapRegion' in action.payload
+          ? action.payload.offlineMapRegion
+          : project.offlineMapRegion;
 
       // updates the state with all of this new information
       state.servers[serverId].projects[project.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-
-        // These are updated
+        ...retainedProjectFields(project),
+        offlineMapRegion: mergedOfflineMapRegion,
         isActivated: true,
         database: {
           syncMode,
@@ -796,22 +833,37 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated (to indicate de-activation)
+        ...retainedProjectFields(project),
         isActivated: false,
         database: undefined,
       };
+    },
+
+    /**
+     * Enqueue the post-activation offline map download dialog for a project.
+     * Dispatched after activation, when a plan region change invalidates tiles,
+     * or from notebook offline map settings when the user starts a download.
+     */
+    setPendingOfflineMapDownloadPrompt: (
+      state,
+      action: PayloadAction<PendingOfflineMapDownloadPrompt>
+    ) => {
+      const queue = ensureOfflineMapPromptQueue(state);
+      const key = offlineMapDownloadPromptKey(action.payload);
+      const alreadyQueued = queue.some(
+        prompt => offlineMapDownloadPromptKey(prompt) === key
+      );
+      if (!alreadyQueued) {
+        queue.push(action.payload);
+      }
+    },
+
+    /**
+     * Dismiss the current offline map download dialog and show the next queued
+     * prompt, if any.
+     */
+    clearPendingOfflineMapDownloadPrompt: state => {
+      ensureOfflineMapPromptQueue(state).shift();
     },
 
     /**
@@ -851,19 +903,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[serverId].projects[projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode,
@@ -884,16 +924,7 @@ const projectsSlice = createSlice({
         throw new Error('Project database not properly initialised');
       }
       state.servers[project.serverId].projects[project.projectId] = {
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -999,19 +1030,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1124,19 +1143,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1299,6 +1306,34 @@ export const selectProjectById = createSelector(
     // Project not found in any server
     return undefined;
   }
+);
+
+/**
+ * Returns the pending offline map download prompt, if any.
+ * Set after activation or when an activated project's plan region changes;
+ * cleared once the user dismisses or accepts the download offer.
+ *
+ * @param state Redux state
+ * @returns Project identity (and optional region-update flag) or undefined
+ */
+export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
+  state.projects.pendingOfflineMapDownloadPrompts?.[0];
+
+/**
+ * Finds a project by server and project ID.
+ * Memoized to prevent unnecessary re-renders.
+ *
+ * @param state Redux state
+ * @param identity Server and project IDs
+ * @returns The project on that server, or undefined
+ */
+export const selectProjectByIdentity = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (_: RootState, identity: ProjectIdentity) => identity,
+  ],
+  (servers, identity): Project | undefined =>
+    servers[identity.serverId]?.projects[identity.projectId]
 );
 
 /**
@@ -1600,6 +1635,9 @@ export const activateProject = createAsyncThunk<
       syncId: syncId ?? undefined,
       syncMode: initialSyncMode,
       recordCount: activationSync.recordCount,
+      ...(activationSync.offlineMapRegionSynced
+        ? {offlineMapRegion: activationSync.offlineMapRegion}
+        : {}),
     })
   );
 
@@ -1620,6 +1658,25 @@ export const activateProject = createAsyncThunk<
     config: {forceWrite: true, applyPermissions: false},
     content: initDataDB({projectId: payload.projectId}),
   });
+
+  const offlineMapRegion = activationSync.offlineMapRegionSynced
+    ? activationSync.offlineMapRegion
+    : project.offlineMapRegion;
+  // Offer to download the plan region unless tiles for it are already on device.
+  if (OFFLINE_MAPS && offlineMapRegion) {
+    const skipPrompt = await shouldSkipOfflineMapActivationPrompt(
+      payload.projectId,
+      offlineMapRegion
+    );
+    if (!skipPrompt) {
+      dispatch(
+        setPendingOfflineMapDownloadPrompt({
+          projectId: payload.projectId,
+          serverId: payload.serverId,
+        })
+      );
+    }
+  }
 });
 
 interface ActivateProjectSuccessPayload {
@@ -1631,6 +1688,7 @@ interface ActivateProjectSuccessPayload {
   syncId: string | undefined;
   syncMode: SyncMode;
   recordCount?: number;
+  offlineMapRegion?: OfflineMapRegion;
 }
 
 /**
@@ -1706,7 +1764,9 @@ export const initialiseServers = createAsyncThunk<void>(
  * Also updates the couchDBUrl - warning if there is a difference between
  * discovered project couchDB urls.
  *
- * TODO consider deletion - i.e. what happens if the server removes a project?
+ * When a local notebook is absent from the active directory listing, the app probes
+ * GET `/api/notebooks/:id`: archived → immediate removal; missing → absent streak
+ * then local teardown and {@link handleRemoteProjectRemoved} (no global snackbar).
  */
 export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
   'projects/initialiseProjects',
@@ -1738,15 +1798,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     }
 
     await withInitialiseProjectsLock(serverId, async () => {
-      // Include archived so a missing id means deleted/revoked, not merely archived.
-      const response = await fetch(
-        `${server.serverUrl}/api/directory?includeArchived=true`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Active directory only — archived surveys are detected via per-notebook probe.
+      const response = await fetch(`${server.serverUrl}/api/directory`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -1755,6 +1812,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       }
 
       const directoryResults = (await response.json()) as ProjectListItem[];
+
+      const stateBeforeSync = getState() as RootState;
+      // Snapshot local ids now — used later to decide whether removal warrants a user alert.
+      const localProjectIdsAtStart = new Set(
+        Object.keys(stateBeforeSync.projects.servers[serverId]?.projects ?? {})
+      );
 
       // Fetch all project metadata in parallel
       const metadataResults = await Promise.allSettled(
@@ -1797,8 +1860,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         })
       );
 
-      // Get fresh state before dispatching updates to avoid stale reads
-      // This is important because other thunks may have modified state during our async operations
+      // Re-read state before building add/update actions — metadata fetch is async and
+      // other thunks may have modified the store during that window.
       const freshState = getState() as RootState;
       const freshProjectState = freshState.projects;
 
@@ -1806,6 +1869,11 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       const actions: Array<
         ReturnType<typeof addProject | typeof updateProjectDetails>
       > = [];
+      const offlineMapRegionUpdates: Array<{
+        projectId: string;
+        previousRegion: OfflineMapRegion | undefined;
+        nextRegion: OfflineMapRegion | undefined;
+      }> = [];
 
       for (const result of metadataResults) {
         if (result.status === 'rejected') {
@@ -1876,9 +1944,27 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               serverId,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status,
+              offlineMapRegion: meta.offlineMapRegion,
             })
           );
         } else {
+          const nextOfflineMapRegion = meta.offlineMapRegion;
+          if (
+            OFFLINE_MAPS &&
+            existingProject.isActivated &&
+            !offlineMapRegionsEqual(
+              existingProject.offlineMapRegion,
+              nextOfflineMapRegion
+            )
+          ) {
+            // Defer side effects until after redux updates so reconciliation
+            // reads the new plan region from the store.
+            offlineMapRegionUpdates.push({
+              projectId,
+              previousRegion: existingProject.offlineMapRegion,
+              nextRegion: nextOfflineMapRegion,
+            });
+          }
           actions.push(
             updateProjectDetails({
               name: meta.name ?? existingProject.name,
@@ -1894,6 +1980,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                 meta.recordCount,
                 existingProject.recordCount
               ),
+              offlineMapRegion: nextOfflineMapRegion,
             })
           );
         }
@@ -1907,6 +1994,38 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         appDispatch(action);
       }
 
+      if (OFFLINE_MAPS) {
+        // After store updates, reconcile local tile downloads with any plan
+        // region changes and enqueue re-download prompts when needed.
+        for (const update of offlineMapRegionUpdates) {
+          const result = await reconcileOfflineMapRegionPlanChange({
+            projectId: update.projectId,
+            previousRegion: update.previousRegion,
+            nextRegion: update.nextRegion,
+          });
+          if (result.action === 'prompt') {
+            if (
+              update.nextRegion &&
+              (await shouldSkipOfflineMapActivationPrompt(
+                update.projectId,
+                update.nextRegion
+              ))
+            ) {
+              continue;
+            }
+            appDispatch(
+              setPendingOfflineMapDownloadPrompt({
+                projectId: update.projectId,
+                serverId,
+                isRegionUpdate: result.isRegionUpdate,
+              })
+            );
+          }
+        }
+      }
+
+      // Streak / cleanup decisions must see the same project list the user would
+      // after the dispatches above (add/update), not pre-dispatch state.
       // Streak / cleanup decisions must see the same project list the user would
       // after the dispatches above (add/update), not pre-dispatch state.
       const stateAfterDirectory = getState() as RootState;
@@ -1918,46 +2037,32 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         stateAfterDirectory.projects.servers[serverId]?.projects ?? {}
       );
 
-      // Remote deletion is inferred from repeated "id missing from directory"
-      // responses; one flaky empty listing must not wipe local data. Until the
-      // streak hits the threshold we may schedule a delayed re-fetch (see
-      // `scheduleAbsentDirectoryRetry`) — the mutex ensures that retry does not
-      // run concurrently with another `initialiseProjects` for this server.
-      let needsAbsentConfirmationRetry = false;
+      const missingFromActiveDirectory = localProjectIds.filter(
+        projectId => !directoryByProjectId.has(projectId)
+      );
 
-      for (const projectId of localProjectIds) {
-        const entry = directoryByProjectId.get(projectId);
-        // Still listed as active (or we cannot classify it as absent/archived) — drop any streak.
-        if (!shouldAccumulateRemoteCleanupStreak(entry)) {
-          directoryAbsentStreak.delete(streakKey(projectId));
-          continue;
-        }
-        const streakMapKey = streakKey(projectId);
-        const streakCount = (directoryAbsentStreak.get(streakMapKey) ?? 0) + 1;
-        directoryAbsentStreak.set(streakMapKey, streakCount);
-        // Missing from directory: need several consistent "absent" reads (threshold).
-        // Present but archived: directory row is authoritative — one read is enough.
-        const streakThreshold =
-          entry === undefined
-            ? DIRECTORY_ABSENT_STREAK_THRESHOLD
-            : DIRECTORY_ARCHIVED_STREAK_THRESHOLD;
-        if (streakCount < streakThreshold) {
-          // Only absent ids benefit from an automatic re-poll; archived entries
-          // already appeared in this directory response, so no retry scheduling.
-          if (entry === undefined) {
-            needsAbsentConfirmationRetry = true;
-          }
-          continue;
-        }
-        // Confirmed: clear streak so a future edge case starts counting from zero.
-        directoryAbsentStreak.delete(streakMapKey);
+      const lifecycleByMissingId = new Map(
+        (
+          await Promise.all(
+            missingFromActiveDirectory.map(async projectId => {
+              const lifecycle = await probeNotebookServerLifecycle({
+                projectId,
+                serverUrl: server.serverUrl,
+                token,
+              });
+              return {projectId, lifecycle};
+            })
+          )
+        ).map(({projectId, lifecycle}) => [projectId, lifecycle])
+      );
 
+      const removeLocalProjectAfterRemoteLifecycle = (projectId: string) => {
         const proj = projectByIdentity(stateAfterDirectory.projects, {
           serverId,
           projectId,
         });
         if (!proj) {
-          continue;
+          return;
         }
 
         if (FORCE_REMOTE_DELETION === 'allow') {
@@ -1965,6 +2070,53 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         } else {
           appDispatch(detachProjectRetainLocalData({serverId, projectId}));
         }
+
+        if (localProjectIdsAtStart.has(projectId)) {
+          handleRemoteProjectRemoved(projectId);
+        } else {
+          cancelProjectQueries(projectId);
+        }
+      };
+
+      // Local notebooks missing from the active directory: probe individually.
+      // Archived → remove immediately. Missing → absent streak + retry poll.
+      let needsAbsentConfirmationRetry = false;
+
+      for (const projectId of localProjectIds) {
+        if (directoryByProjectId.has(projectId)) {
+          directoryAbsentStreak.delete(streakKey(projectId));
+          continue;
+        }
+
+        const lifecycle = lifecycleByMissingId.get(projectId) ?? 'unreachable';
+
+        if (lifecycle === 'unreachable') {
+          // Do not advance absent streak on probe/network failure.
+          continue;
+        }
+
+        if (lifecycle === 'active') {
+          directoryAbsentStreak.delete(streakKey(projectId));
+          continue;
+        }
+
+        if (lifecycle === 'archived') {
+          directoryAbsentStreak.delete(streakKey(projectId));
+          removeLocalProjectAfterRemoteLifecycle(projectId);
+          continue;
+        }
+
+        // lifecycle === 'missing' — deleted or access revoked; confirm with streak.
+        const streakMapKey = streakKey(projectId);
+        const streakCount = (directoryAbsentStreak.get(streakMapKey) ?? 0) + 1;
+        directoryAbsentStreak.set(streakMapKey, streakCount);
+        if (streakCount < DIRECTORY_ABSENT_STREAK_THRESHOLD) {
+          needsAbsentConfirmationRetry = true;
+          continue;
+        }
+
+        directoryAbsentStreak.delete(streakMapKey);
+        removeLocalProjectAfterRemoteLifecycle(projectId);
       }
 
       // Fire at most one delayed `initialiseProjects` to bump absent streaks, or
@@ -1979,13 +2131,13 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 );
 
 /**
- * After a successful directory where a local id is still absent, schedule another
- * poll so the absent streak can reach {@link DIRECTORY_ABSENT_STREAK_THRESHOLD}
- * without requiring the user to refresh manually.
+ * After a directory poll where a local id is still missing and probes report
+ * `missing`, schedule another poll so the absent streak can reach
+ * {@link DIRECTORY_ABSENT_STREAK_THRESHOLD} without requiring the user to refresh manually.
  *
  * Clears any prior timer first so back-to-back runs collapse to a single
- * pending retry; when the streak is satisfied or absent ids disappear,
- * `clearAbsentDirectoryRetry` stops the loop.
+ * pending retry; when the streak is satisfied or the id reappears in the active
+ * directory, `clearAbsentDirectoryRetry` stops the loop.
  */
 function scheduleAbsentDirectoryRetry(
   serverId: string,
@@ -2318,6 +2470,8 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  setPendingOfflineMapDownloadPrompt,
+  clearPendingOfflineMapDownloadPrompt,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

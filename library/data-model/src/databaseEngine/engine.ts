@@ -1,3 +1,4 @@
+import {attachmentSaveTrace} from '../logging';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface} from '../types';
 import {
@@ -523,13 +524,23 @@ export class CoreOperations {
   async createAttachment(
     attachment: NewPendingAttachmentDBDocument
   ): Promise<ExistingAttachmentDBDocument> {
+    attachmentSaveTrace('core.createAttachment:start', {
+      id: attachment._id,
+      recordId: attachment.record_id,
+      revisionId: attachment.revision_id,
+    });
     await this.createDocument(
       attachment,
       pendingAttachmentDocumentSchema.parse
     );
 
+    attachmentSaveTrace('core.createAttachment:before-getAttachment', {
+      id: attachment._id,
+    });
     // Fetch it back out to get the existing version (where it should be encoded nicely)
-    return this.getAttachment(attachment._id);
+    const result = await this.getAttachment(attachment._id);
+    attachmentSaveTrace('core.createAttachment:complete', {id: attachment._id});
+    return result;
   }
 
   // ============================================================================
@@ -1128,7 +1139,18 @@ class FormOperations {
     };
 
     // Create the new revision
-    const rev = await this.core.createRevision(revisionDoc);
+    let rev = await this.core.createRevision(revisionDoc);
+
+    // If there is initial data, insert it at this point
+    if (validated.initial) {
+      rev = await this.updateRevision({
+        revisionId: rev._id,
+        recordId: rec._id,
+        update: validated.initial,
+        mode: 'new',
+        updatedBy: validated.createdBy,
+      });
+    }
 
     // Return all the new data
     return {record: rec, revision: rev};

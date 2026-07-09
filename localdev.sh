@@ -32,7 +32,7 @@ done
 
 # Function to check and set Node.js version
 setup_node_version() {
-  local required_major_version=22
+  local required_major_version=24
 
   # Try to load nvm if it exists
   if [ -f "$HOME/.nvm/nvm.sh" ]; then

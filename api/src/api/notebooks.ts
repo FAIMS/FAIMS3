@@ -47,6 +47,7 @@ import {
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookMetadataInputSchema,
+  PutUpdateNotebookOfflineMapRegionInputSchema,
   PutUpdateNotebookResponse,
   PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
@@ -75,8 +76,11 @@ import {
   generateFullExportFilename,
   streamFullExport,
 } from '../couchdb/export/fullExport';
+import {assertGdalAvailable} from '../couchdb/export/gdal';
 import {
+  projectHasSpatialFields,
   streamNotebookRecordsAsGeoJSON,
+  streamNotebookRecordsAsGeoPackage,
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
@@ -88,12 +92,14 @@ import {
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
+  getByteCount,
   getCompiledUiSpecModel,
   getProjectById,
   getRolesForNotebook,
   getUiSpecModel,
   getUserProjectsDetailed,
   updateProjectMetadata,
+  updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
@@ -152,7 +158,14 @@ function permissionRequiredForNotebookStatusChange(
 // Types for download format and token payloads (must be before records router)
 // =============================================================================
 
-const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
+const DownloadFormatSchema = z.enum([
+  'csv',
+  'zip',
+  'geojson',
+  'kml',
+  'geopackage',
+  'full',
+]);
 type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 
 const DownloadTokenPayloadSchema = z.object({
@@ -225,6 +238,7 @@ const validateDownloadToken = async ({
  * - zip: Optional viewID, exports attachments (all views if no viewID)
  * - geojson: Exports all spatial data as GeoJSON
  * - kml: Exports all spatial data as KML
+ * - geopackage: Exports all spatial data as GeoPackage (.gpkg)
  * - full: Exports everything into a single ZIP archive
  *
  * For full exports, additional query parameters control what's included:
@@ -232,6 +246,7 @@ const validateDownloadToken = async ({
  * - includeAttachments (default: true)
  * - includeGeoJSON (default: true)
  * - includeKML (default: true)
+ * - includeGeoPackage (default: true)
  * - includeMetadata (default: true)
  */
 api.get(
@@ -252,6 +267,7 @@ api.get(
       includeAttachments: z.string().optional().default('true'),
       includeGeoJSON: z.string().optional().default('true'),
       includeKML: z.string().optional().default('true'),
+      includeGeoPackage: z.string().optional().default('true'),
       includeMetadata: z.string().optional().default('true'),
     }),
     params: z.object({
@@ -277,6 +293,7 @@ api.get(
         includeAttachments: req.query.includeAttachments === 'true',
         includeGeoJSON: req.query.includeGeoJSON === 'true',
         includeKML: req.query.includeKML === 'true',
+        includeGeoPackage: req.query.includeGeoPackage === 'true',
         includeMetadata: req.query.includeMetadata === 'true',
       };
     } else if (
@@ -300,6 +317,16 @@ api.get(
       }
 
       payload.viewID = req.query.viewID;
+    }
+
+    if (req.query.format === 'geopackage') {
+      await assertGdalAvailable();
+    } else if (
+      req.query.format === 'full' &&
+      req.query.includeGeoPackage === 'true' &&
+      (await projectHasSpatialFields(req.params.id))
+    ) {
+      await assertGdalAvailable();
     }
 
     // Build the download token
@@ -551,6 +578,7 @@ api.get(
     res.json({
       ...project,
       recordCount: await countRecordsInNotebook(projectId),
+      byteCount: await getByteCount(projectId),
     } satisfies GetNotebookResponse);
   }
 );
@@ -597,6 +625,32 @@ api.put(
       throw new Exceptions.UnauthorizedException();
     }
     const updated = await updateProjectUiSpecification(req.params.id, req.body);
+    return res.json(updated);
+  }
+);
+
+// PUT set or clear recommended offline map download region
+api.put(
+  '/:id/offlineMapRegion',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.SET_OFFLINE_MAP_REGION,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutUpdateNotebookOfflineMapRegionInputSchema,
+  }),
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const updated = await updateProjectOfflineMapRegion(
+      req.params.id,
+      req.body
+    );
     return res.json(updated);
   }
 );
@@ -899,6 +953,15 @@ api.get(
         `attachment; filename="${slugify(payload.projectID)}-export.kml"`
       );
       streamNotebookRecordsAsKML(payload.projectID, res);
+    } else if (payload.format === 'geopackage') {
+      // Layers grouped by form + geometry type; built via temp GeoJSON + ogr2ogr.
+      await assertGdalAvailable();
+      res.setHeader('Content-Type', 'application/geopackage+sqlite3');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.gpkg"`
+      );
+      await streamNotebookRecordsAsGeoPackage(payload.projectID, res);
     } else if (payload.format === 'full') {
       const fullFilename = generateFullExportFilename(payload.projectID);
       res.setHeader('Content-Type', 'application/zip');
@@ -1073,7 +1136,11 @@ if (DEVELOPER_MODE) {
     async (req, res: Response<PostRandomRecordsResponse>) => {
       const record_ids = await createManyRandomRecords(
         req.params.notebookId,
-        req.body.count
+        req.body.count,
+        {
+          includeAttachments: req.body.includeAttachments,
+          parallelism: req.body.parallelism,
+        }
       );
       res.json({record_ids});
     }

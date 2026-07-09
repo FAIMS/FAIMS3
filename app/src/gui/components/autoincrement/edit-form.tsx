@@ -33,7 +33,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
 import {ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
@@ -64,19 +64,28 @@ export const AutoIncrementEditForm = ({
 }: Props) => {
   const [lastUsedInput, setLastUsedInput] = useState<number>(0);
   const [state, setState] = useState<LocalAutoIncrementState>();
+  const isMountedRef = useRef(false);
+
+  const dispatch = useAppDispatch();
+
+  const incrementer = new AutoIncrementer(project_id, form_id, field_id);
+
   const refreshState = async () => {
     const state = await incrementer.getState();
+    if (!isMountedRef.current) {
+      return;
+    }
     setState(state);
     setLastUsedInput(state.last_used_id ?? 0);
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     refreshState();
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
-
-  const dispatch = useAppDispatch();
-
-  const incrementer = new AutoIncrementer(project_id, form_id, field_id);
 
   const errorHandler = (error: Error) => {
     dispatch(

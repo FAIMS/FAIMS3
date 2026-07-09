@@ -31,7 +31,7 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
       isPublic: !isPublic,
     });
     await queryClient.invalidateQueries({queryKey: ['templates', templateId]});
-    await queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+    await queryClient.invalidateQueries({queryKey: ['templates']});
     setOpen(false);
   };
 

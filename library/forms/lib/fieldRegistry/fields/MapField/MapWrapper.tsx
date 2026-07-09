@@ -30,7 +30,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   Stack,
   Toolbar,
   Tooltip,
@@ -200,13 +199,15 @@ function MapWrapper(props: MapProps) {
         source.addFeatures(parsedFeatures);
 
         // pass the extent in the EPSG:4326 projection
-        const extent = transformExtent(
-          source.getExtent(),
-          theMap.getView().getProjection(),
-          'EPSG:4326'
-        );
-
-        if (!extent.includes(Infinity)) setFeaturesExtent(extent);
+        const sourceExtent = source.getExtent();
+        if (sourceExtent) {
+          const extent = transformExtent(
+            sourceExtent,
+            theMap.getView().getProjection(),
+            'EPSG:4326'
+          );
+          if (!extent.includes(Infinity)) setFeaturesExtent(extent);
+        }
       }
 
       // Add layer to the map
@@ -335,7 +336,7 @@ function MapWrapper(props: MapProps) {
             {props.label}
           </Button>
         ) : (
-          <Box>
+          <Box sx={{flexShrink: 0}}>
             {!props.disabled && (
               <Tooltip title="Edit location">
                 <Box
@@ -344,15 +345,16 @@ function MapWrapper(props: MapProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 80,
-                    height: 80,
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
                     backgroundColor: '#dfdfdf',
                     borderRadius: '6px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease-in-out',
                     '&:hover': {
                       backgroundColor: '#e0e0e0',
-                      transform: 'scale(1.1)',
+                      transform: 'scale(1.05)',
                       boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
                     },
                   }}
@@ -360,7 +362,7 @@ function MapWrapper(props: MapProps) {
                 >
                   <EditIcon
                     sx={{
-                      fontSize: 26,
+                      fontSize: 22,
                       color: theme.palette.primary.main,
                     }}
                   />
@@ -461,48 +463,7 @@ function MapWrapper(props: MapProps) {
             </Toolbar>
           </AppBar>
 
-          <Grid container spacing={2} sx={{height: '100%'}}>
-            {/* Info Banner */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top:
-                  props.featureType === 'Point' && props.allowSetToCurrentPoint
-                    ? '70px' // align properly
-                    : '68px',
-                left: 8,
-                // Account for the "Use Current Location" button if present
-                right:
-                  props.featureType === 'Point' && props.allowSetToCurrentPoint
-                    ? 70 // Leave space for the control button
-                    : 8,
-                zIndex: 1000,
-                backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                backdropFilter: 'blur(4px)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-                pointerEvents: 'none', // Allow clicks to pass through to map
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.primary,
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                }}
-              >
-                {props.featureType === 'Point'
-                  ? 'Click on the map to select a point.'
-                  : props.featureType === 'LineString'
-                    ? 'Click on the map for each segment of your line. Click twice on the final segment to complete your line.'
-                    : 'Click on the map for each corner of your shape, finishing where you started.'}
-              </Typography>
-            </Box>
-
+          <Box sx={{flex: 1, minHeight: 0, display: 'flex'}}>
             <MapComponent
               config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
@@ -513,6 +474,37 @@ function MapWrapper(props: MapProps) {
               center={props.center}
               extent={featuresExtent}
               zoom={props.zoom}
+              topOverlay={
+                /* Instruction banner - laid out by the map controls overlay so
+                   it never collides with the control buttons */
+                <Box
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                    pointerEvents: 'none', // Allow clicks to pass through to map
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.text.primary,
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    {props.featureType === 'Point'
+                      ? 'Click on the map to select a point.'
+                      : props.featureType === 'LineString'
+                        ? 'Click on the map for each segment of your line. Click twice on the final segment to complete your line.'
+                        : 'Click on the map for each corner of your shape, finishing where you started.'}
+                  </Typography>
+                </Box>
+              }
               additionalControls={{
                 // Add use current location control for points
                 setSelectionAsCurrentLocation:
@@ -537,7 +529,7 @@ function MapWrapper(props: MapProps) {
                     : undefined,
               }}
             />
-          </Grid>
+          </Box>
         </Dialog>
 
         <Dialog

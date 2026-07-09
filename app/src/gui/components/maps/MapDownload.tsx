@@ -36,12 +36,20 @@ import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
 import {ProgressBar} from '@faims3/forms';
 import {MapComponent} from '@faims3/forms';
-import {StoredTileSet, VectorTileStore} from '@faims3/forms';
+import {
+  formatOfflineMapSizeMb,
+  StoredTileSet,
+  tileSetDisplayName,
+  tileSetDownloadProgress,
+  VectorTileStore,
+} from '@faims3/forms';
 import {getMapConfig} from '../../../buildconfig';
 
 /**
  * Map download component presents the UI for downloading offline maps.
  *
+ * General-purpose tile cache manager (user-named sets). Project-specific
+ * downloads use {@link NotebookOfflineMapPrompt} and `@project/:id` tile sets.
  */
 export const MapDownload = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
@@ -51,9 +59,13 @@ export const MapDownload = () => {
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
   const [downloadListOpen, setDownloadListOpen] = useState(false);
 
-  const mapConfig = getMapConfig();
+  // Offline downloads are vector-only — omit satellite so the layer toggle is hidden
+  const mapConfig = useMemo(() => {
+    const {satelliteSource: _satellite, ...vectorOnly} = getMapConfig();
+    return vectorOnly;
+  }, []);
 
-  const tileStore = useMemo(() => new VectorTileStore(mapConfig), []);
+  const tileStore = useMemo(() => new VectorTileStore(mapConfig), [mapConfig]);
 
   // ensure we have a baseline tile set for this map
   tileStore.createBaselineTileSet();
@@ -97,20 +109,12 @@ export const MapDownload = () => {
     if (sets) setTileSets(sets);
   };
 
-  // Estimate the size of the current region for display
+  // Estimate the size of the current area for display
   const handleCacheMapExtent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
-      let sizeStr = '';
-      tileStore.estimateSizeForRegion(extent).then(size => {
-        if (size > 1024 * 1024) {
-          sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
-        } else if (size > 1024) {
-          sizeStr = (size / 1024).toFixed(2) + ' GB';
-        } else {
-          sizeStr = size + ' MB';
-        }
-        setCacheSize(sizeStr);
+      tileStore.estimateSizeForRegion(extent).then(sizeMb => {
+        setCacheSize(formatOfflineMapSizeMb(sizeMb));
       });
     }
   };
@@ -150,7 +154,7 @@ export const MapDownload = () => {
         </Alert>
 
         <Typography variant="body1" sx={{marginBottom: 2}}>
-          Download the current region for offline use. Note that download size
+          Download the current area for offline use. Note that download size
           estimates are approximate for metro areas, rural areas may be much
           smaller.
         </Typography>
@@ -196,7 +200,7 @@ export const MapDownload = () => {
               <Card variant="outlined" key={idx}>
                 <CardContent>
                   <Typography variant="h5" component="div">
-                    {mapSet.setName}
+                    {tileSetDisplayName(mapSet)}
                   </Typography>
 
                   <Typography variant="body2" color="text.secondary">
@@ -204,13 +208,12 @@ export const MapDownload = () => {
                     MB
                   </Typography>
 
-                  {mapSet.tileKeys.length !== mapSet.expectedTileCount && (
-                    <ProgressBar
-                      completion={
-                        mapSet.tileKeys.length / mapSet.expectedTileCount
-                      }
-                    />
-                  )}
+                  {(() => {
+                    const progress = tileSetDownloadProgress(mapSet);
+                    return progress !== null && progress < 1 ? (
+                      <ProgressBar completion={progress} />
+                    ) : null;
+                  })()}
                   <Typography variant="body2" color="text.secondary">
                     Downloaded on: {mapSet.created.toLocaleDateString()}
                   </Typography>
