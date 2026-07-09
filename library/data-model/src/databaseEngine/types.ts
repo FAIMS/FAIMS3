@@ -594,10 +594,8 @@ export type FormRelationship = z.infer<typeof formRelationshipSchema>;
 const baseFormRecordSchema = z.object({
   /** The ID of the form/viewset this record is an instance of */
   formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
-  /** The actual form data as a map of field IDs to their values */
-  // data: z.record(z.string(), z.unknown()).optional(),
-  /** Annotations for each field, mapped by field ID */
-  // annotations: z.record(z.string(), formAnnotationSchema.optional()).optional(),
+  /** An initial form update, can contain data/annotations/attachments for the initial record */
+  initial: formUpdateDataSchema.optional(),
   /** Username of the user who created this record */
   createdBy: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** Optional relationship information if this is a related/child record */
