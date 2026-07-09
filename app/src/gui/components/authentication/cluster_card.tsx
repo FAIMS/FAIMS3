@@ -52,7 +52,7 @@ import {
   removeServerConnection,
   selectActiveUser,
   selectAllServerUsers,
-  setActiveUser,
+  setActiveUserAndRefreshProjects,
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import MainCard from '../ui/main-card';
@@ -109,7 +109,7 @@ export default function ClusterCard(props: ClusterCardProps) {
     handleActionMenuClose();
     const identity = usernames.find(user => user.username === username);
     if (identity) {
-      dispatch(setActiveUser(identity));
+      dispatch(setActiveUserAndRefreshProjects(identity));
     }
   };
 

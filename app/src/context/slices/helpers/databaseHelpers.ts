@@ -527,7 +527,7 @@ export type NotebookServerLifecycleProbe =
  * GET `/api/notebooks/:id` for a local notebook missing from the active directory.
  *
  * - `archived`: remove locally on first successful read
- * - `missing`: deleted or no access (404/403) — caller applies absent streak
+ * - `missing`: deleted or no access (401/403/404) — caller applies absent streak
  * - `active`: still exists but not directory-listed (unexpected); keep local copy
  * - `unreachable`: network/other HTTP failure — do not advance absent streak
  */
@@ -552,7 +552,11 @@ export async function probeNotebookServerLifecycle({
     return 'unreachable';
   }
 
-  if (response.status === 404 || response.status === 403) {
+  if (
+    response.status === 401 ||
+    response.status === 403 ||
+    response.status === 404
+  ) {
     return 'missing';
   }
 

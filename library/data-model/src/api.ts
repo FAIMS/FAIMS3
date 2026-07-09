@@ -11,6 +11,7 @@ import {
   PeopleDBDocumentSchema,
   ProjectStatus,
 } from './data_storage';
+import {OfflineMapRegionSchema} from './data_storage/projectsDB/offlineMapRegion';
 import {
   ExistingProjectDocumentSchema,
   ProjectDBFieldsSchema,
@@ -238,6 +239,17 @@ export type PostExchangeTokenResponse = z.infer<
   typeof PostExchangeTokenResponseSchema
 >;
 
+// Impersonation - an admin trades a target user id for a token pair that
+// authenticates as that user. No request body (target id is a path param).
+export const PostImpersonateUserResponseSchema = z.object({
+  // token pair for the impersonated user
+  refreshToken: z.string(),
+  accessToken: z.string(),
+});
+export type PostImpersonateUserResponse = z.infer<
+  typeof PostImpersonateUserResponseSchema
+>;
+
 // ==================
 // NOTEBOOKS CRUD
 // ==================
@@ -366,6 +378,18 @@ export type PutUpdateNotebookUiSpecificationInput = z.infer<
 export const PutUpdateNotebookResponseSchema = ExistingProjectDocumentSchema;
 export type PutUpdateNotebookResponse = z.infer<
   typeof PutUpdateNotebookResponseSchema
+>;
+
+/**
+ * PUT /api/notebooks/:id/offlineMapRegion — set or clear the recommended offline map region.
+ * Requires `SET_OFFLINE_MAP_REGION` on the project.
+ * Pass `{ offlineMapRegion: polygon }` to set, or `{ offlineMapRegion: null }` to clear.
+ */
+export const PutUpdateNotebookOfflineMapRegionInputSchema = z.object({
+  offlineMapRegion: OfflineMapRegionSchema.nullable().optional(),
+});
+export type PutUpdateNotebookOfflineMapRegionInput = z.infer<
+  typeof PutUpdateNotebookOfflineMapRegionInputSchema
 >;
 
 // POST modify user for notebook

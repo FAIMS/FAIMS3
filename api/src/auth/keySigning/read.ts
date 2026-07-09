@@ -68,8 +68,15 @@ export const validateToken = async (
     // TODO consider if we want a more sophisticated permission merge, for
     // example in the case of blacklisting
 
+    // If this is an impersonation token, surface the acting admin's user id so
+    // it can be used for auditing/logging of downstream actions.
+    const impersonatingUserId =
+      typeof (payload as any).impersonatingUserId === 'string'
+        ? ((payload as any).impersonatingUserId as string)
+        : undefined;
+
     // overwrite user details with the token permissions!
-    return {...user, ...validatedToken};
+    return {...user, ...validatedToken, impersonatingUserId};
   } catch (error) {
     // expired token is ok, we just return undefined
     if (

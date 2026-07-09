@@ -174,7 +174,9 @@ api.post(
     const expressUser = await upgradeCouchUserToExpressUser({
       dbUser: resultingUser,
     });
-    const {token} = await generateUserToken(expressUser, false);
+    const {token} = await generateUserToken(expressUser, false, {
+      impersonatingUserId: refreshDocument.impersonatingUserId,
+    });
 
     // return the tokens
     res.json({accessToken: token, refreshToken: refreshDocument.token});
@@ -199,10 +201,8 @@ api.post(
     const userId: string | undefined = req.user?._id;
 
     // validate the token
-    const {valid, validationError, user} = await validateRefreshToken(
-      req.body.refreshToken,
-      userId
-    );
+    const {valid, validationError, user, impersonatingUserId} =
+      await validateRefreshToken(req.body.refreshToken, userId);
 
     // If the refresh token is not valid, let user know
     if (!valid) {
@@ -221,7 +221,9 @@ api.post(
     // From the db user, drill and generate permissions
     const expressUser = await upgradeCouchUserToExpressUser({dbUser: user!});
 
-    const {token} = await generateUserToken(expressUser, false);
+    const {token} = await generateUserToken(expressUser, false, {
+      impersonatingUserId: impersonatingUserId ?? req.user?.impersonatingUserId,
+    });
 
     // return the token
     res.json({token});

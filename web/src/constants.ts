@@ -13,9 +13,9 @@ import {capitalize} from './lib/utils';
  *   - Pass two (ConfigSchema + a little custom logic for required, derived or
  *     inter-dependent values) produces the typed `config` singleton.
  *
- * The `config` singleton is the source of truth. The individual named exports
- * below are retained (deriving from `config`) so existing call sites and the
- * many derived helpers in this module remain stable.
+ * The `config` singleton is the source of truth. Prefer importing `{config}`
+ * and reading `config.<field>`. Dedicated exports remain only for genuine
+ * helpers/derived values (e.g. brandNotebook, SIGNIN_PATH).
  */
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
@@ -295,13 +295,17 @@ const appName = buildAppName();
  */
 const notebookNamePlural = pluralize(parsedConfig.notebookName);
 
+const webUrl = requiredEnv(rawEnv.VITE_WEB_URL, 'VITE_WEB_URL');
+
 export const config = {
   ...parsedConfig,
   appName,
   appShortName: isBlank(rawEnv.VITE_APP_SHORT_NAME)
     ? appName
     : rawEnv.VITE_APP_SHORT_NAME,
-  webUrl: requiredEnv(rawEnv.VITE_WEB_URL, 'VITE_WEB_URL'),
+  webUrl,
+  /** Control Centre home (`/` redirects to `/teams`). */
+  webHomeUrl: `${webUrl.replace(/\/$/, '')}/`,
   apiUrl: requiredEnv(rawEnv.VITE_API_URL, 'VITE_API_URL'),
   appUrl: requiredEnv(rawEnv.VITE_APP_URL, 'VITE_APP_URL'),
   excludedTeamRoles: buildExcludedTeamRoles(),

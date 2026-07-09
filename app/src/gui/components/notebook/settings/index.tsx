@@ -46,6 +46,8 @@ import {
   stopSyncingAttachments,
 } from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
+import {logError} from '../../../../logging';
+import {removeProjectOfflineMaps} from '../../maps/projectOfflineMap';
 import {theme} from '../../../themes';
 import {
   DE_ACTIVATE_ACTIVE_VERB,
@@ -56,6 +58,7 @@ import {
   syncModeIncludesPush,
 } from '../../../../sync/syncMode';
 import AutoIncrementerSettingsList from './auto_incrementers';
+import NotebookOfflineMapSettings from './offlineMapSettings';
 import NotebookSyncSwitch from './sync_switch';
 import SyncModeHelpDialog from './syncModeHelpDialog';
 
@@ -80,7 +83,19 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
     setOpenDeactivateDialog(true);
   };
 
-  const handleDeactivateConfirm = () => {
+  const handleDeactivateConfirm = async () => {
+    if (config.offlineMaps) {
+      try {
+        await removeProjectOfflineMaps(projectId);
+      } catch (e) {
+        logError(
+          new Error(
+            `Failed to remove ${config.notebookName} offline maps on deactivation`,
+            {cause: e}
+          )
+        );
+      }
+    }
     dispatch(
       deactivateProject({
         projectId: projectId,
@@ -189,6 +204,10 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
               </Typography>
             </Box>
           </Box>
+
+          {config.offlineMaps && (
+            <NotebookOfflineMapSettings project={project} />
+          )}
 
           <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>

@@ -109,6 +109,12 @@ export interface StoredTileSet {
   expectedTileCount: number;
   created: Date;
   tileKeys: IDBValidKey[];
+  /** When set, this tile set is removed when the project is deactivated. */
+  projectId?: string;
+  /** Optional display label (defaults to setName in UI). */
+  label?: string;
+  /** Source offline map region this tile set was downloaded for. */
+  offlineMapRegion?: import('@faims3/data-model').OfflineMapRegion;
 }
 
 // MapTileDatabase - a singleton class holding the tile database references
@@ -193,13 +199,50 @@ export const initialiseMaps = () => {
  * Used by VectorTileStore and ImageTileStore to implement two kinds of map
  * tile sources.
  */
+/**
+ * Thrown when {@link TileStoreBase.downloadTileSet} is cancelled via
+ * {@link TileStoreBase.requestCancelDownloadTileSet}.
+ */
+export class OfflineMapDownloadCancelledError extends Error {
+  readonly setName: string;
+
+  constructor(setName: string) {
+    super(`Offline map download cancelled: ${setName}`);
+    this.name = 'OfflineMapDownloadCancelledError';
+    this.setName = setName;
+  }
+}
+
+/** Type guard for cancellation errors raised during tile-set downloads. */
+export function isOfflineMapDownloadCancelledError(
+  error: unknown
+): error is OfflineMapDownloadCancelledError {
+  return error instanceof OfflineMapDownloadCancelledError;
+}
+
 abstract class TileStoreBase {
   tileStore: MapTileDatabase;
   config: MapConfig;
+  private activeDownloads = new Map<string, {cancelled: boolean}>();
 
   constructor(config: MapConfig) {
     this.tileStore = MapTileDatabase.getInstance();
     this.config = config;
+  }
+
+  /** Request cancellation of an in-progress {@link downloadTileSet} call. */
+  requestCancelDownloadTileSet(setName: string): boolean {
+    const active = this.activeDownloads.get(setName);
+    if (!active) {
+      return false;
+    }
+    active.cancelled = true;
+    return true;
+  }
+
+  /** Whether {@link downloadTileSet} is currently running for `setName`. */
+  isDownloadTileSetActive(setName: string): boolean {
+    return this.activeDownloads.has(setName);
   }
 
   getVectorZoomRange(): {minZoom: number; maxZoom: number} {
@@ -415,22 +458,33 @@ abstract class TileStoreBase {
   /**
    * createTileSet - create a tile set that will be used to cache tiles
    *
-   * @param extent The extent of the region to get tiles for
+   * @param extent The extent of the region to get tiles for (EPSG:3857)
    * @param setName The name of the set to store the tiles in
    * @param minZoom The minimum zoom level to get tiles for
    * @param maxZoom The maximum zoom level to get tiles for
+   * @param options Optional metadata for project downloads and replacement
    */
   async createTileSet(
     extent: Extent,
     setName: string,
     minZoom = START_ZOOM,
-    maxZoom = MAX_ZOOM
+    maxZoom = MAX_ZOOM,
+    options?: {
+      projectId?: string;
+      label?: string;
+      replaceIfExists?: boolean;
+      offlineMapRegion?: import('@faims3/data-model').OfflineMapRegion;
+    }
   ) {
     const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
     if (existingTileSet) {
-      throw new Error(
-        `Offline map '${setName}' already exists, please choose a different name`
-      );
+      if (options?.replaceIfExists) {
+        await this.removeTileSet(setName);
+      } else {
+        throw new Error(
+          `Offline map '${setName}' already exists, please choose a different name`
+        );
+      }
     }
     // create a record for this region
     const tileSet: StoredTileSet = {
@@ -442,6 +496,13 @@ abstract class TileStoreBase {
       expectedTileCount: 0,
       created: new Date(),
       tileKeys: [],
+      ...(options?.projectId !== undefined
+        ? {projectId: options.projectId}
+        : {}),
+      ...(options?.label !== undefined ? {label: options.label} : {}),
+      ...(options?.offlineMapRegion !== undefined
+        ? {offlineMapRegion: options.offlineMapRegion}
+        : {}),
     };
     this.tileStore.tileSetDB.put(tileSet);
 
@@ -449,14 +510,13 @@ abstract class TileStoreBase {
   }
 
   /**
-   * downloadTileSet - download tiles for a tileSet if not already cached
-   *   this can take a long time so is separated from the creation of the
-   *   tileset above
+   * downloadTileSet - download tiles for a tileSet if not already cached.
    *
-   * @param extent The extent of the region to get tiles for
-   * @param minZoom Minimum zoom level to download
-   * @param maxZoom Maximum zoom level to download
-   * @param setName The name of the set to store the tiles in
+   * Runs in batches and dispatches `offline-map-download` events as tiles land.
+   * Call {@link requestCancelDownloadTileSet} to abort; cancellation removes the
+   * partial tile set and throws {@link OfflineMapDownloadCancelledError}.
+   *
+   * @param setName The name of the set to download tiles for
    */
   async downloadTileSet(setName: string) {
     const tileSet = await this.tileStore.tileSetDB.get([setName]);
@@ -464,54 +524,88 @@ abstract class TileStoreBase {
       throw new Error(`No offline map '${setName}' found`);
     }
 
-    const tileGrid = this.getTileGrid();
-    const tileCoords: number[][] = [];
-    for (let zoom = tileSet.minZoom; zoom <= tileSet.maxZoom; zoom += 1) {
-      tileGrid?.forEachTileCoord(
-        tileSet.extent,
-        Math.ceil(zoom),
-        (tileCoord: TileCoord) => {
-          tileCoords.push(tileCoord);
-        }
-      );
-    }
+    const control = {cancelled: false};
+    this.activeDownloads.set(setName, control);
 
-    // update the record with the tile count
-    tileSet.expectedTileCount = tileCoords.length;
-    this.tileStore.tileSetDB.put(tileSet);
-
-    // Create batches of downloads to avoid overwhelming the browser
-    const BATCH_SIZE = 10;
-    for (let i = 0; i < tileCoords.length; i += BATCH_SIZE) {
-      const batch = tileCoords.slice(i, i + BATCH_SIZE);
-
-      await Promise.all(
-        batch.map(async tileCoord => {
-          const [z, x, y] = tileCoord;
-          const url = this.getURLForTile({z, x, y});
-          const tileBlob = await this.getTileBlob(url);
-
-          if (tileBlob && url) {
-            const {tileKey, size} = await this.storeTileRecord(
-              url,
-              tileBlob,
-              tileSet.setName
-            );
-            if (tileKey) {
-              tileSet.tileKeys.push(tileKey);
-              tileSet.size += size;
-              await this.tileStore.tileSetDB.put(tileSet);
-
-              dispatchEvent(
-                // eslint-disable-next-line n/no-unsupported-features/node-builtins
-                new CustomEvent('offline-map-download', {
-                  detail: tileSet,
-                })
-              );
-            }
+    try {
+      const tileGrid = this.getTileGrid();
+      const tileCoords: number[][] = [];
+      for (let zoom = tileSet.minZoom; zoom <= tileSet.maxZoom; zoom += 1) {
+        tileGrid?.forEachTileCoord(
+          tileSet.extent,
+          Math.ceil(zoom),
+          (tileCoord: TileCoord) => {
+            tileCoords.push(tileCoord);
           }
-        })
-      );
+        );
+      }
+
+      // update the record with the tile count
+      tileSet.expectedTileCount = tileCoords.length;
+      this.tileStore.tileSetDB.put(tileSet);
+
+      // Create batches of downloads to avoid overwhelming the browser
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < tileCoords.length; i += BATCH_SIZE) {
+        if (control.cancelled) {
+          await this.removePartialDownloadTileSet(setName);
+          throw new OfflineMapDownloadCancelledError(setName);
+        }
+
+        const batch = tileCoords.slice(i, i + BATCH_SIZE);
+
+        await Promise.all(
+          batch.map(async tileCoord => {
+            if (control.cancelled) {
+              return;
+            }
+
+            const [z, x, y] = tileCoord;
+            const url = this.getURLForTile({z, x, y});
+            const tileBlob = await this.getTileBlob(url);
+
+            if (control.cancelled) {
+              return;
+            }
+
+            if (tileBlob && url) {
+              const {tileKey, size} = await this.storeTileRecord(
+                url,
+                tileBlob,
+                tileSet.setName
+              );
+              if (tileKey && !control.cancelled) {
+                tileSet.tileKeys.push(tileKey);
+                tileSet.size += size;
+                await this.tileStore.tileSetDB.put(tileSet);
+
+                dispatchEvent(
+                  // eslint-disable-next-line n/no-unsupported-features/node-builtins
+                  new CustomEvent('offline-map-download', {
+                    detail: tileSet,
+                  })
+                );
+              }
+            }
+          })
+        );
+      }
+
+      if (control.cancelled) {
+        await this.removePartialDownloadTileSet(setName);
+        throw new OfflineMapDownloadCancelledError(setName);
+      }
+    } finally {
+      this.activeDownloads.delete(setName);
+    }
+  }
+
+  /** Remove a partially downloaded tile set, ignoring missing records. */
+  private async removePartialDownloadTileSet(setName: string) {
+    try {
+      await this.removeTileSet(setName);
+    } catch {
+      // Tile set may already have been removed.
     }
   }
 
@@ -547,6 +641,19 @@ abstract class TileStoreBase {
           tileSetNames.splice(tileSetNames.indexOf(setName), 1);
           await this.tileStore.tileDB.put(tileRecord);
         }
+      }
+    }
+  }
+
+  /** Remove all tile sets tagged with `projectId` (see {@link StoredTileSet.projectId}). */
+  async removeTileSetsForProject(projectId: string) {
+    const tileSets = await this.tileStore.tileSetDB.getAll();
+    if (!tileSets) {
+      return;
+    }
+    for (const tileSet of tileSets) {
+      if (tileSet.projectId === projectId) {
+        await this.removeTileSet(tileSet.setName);
       }
     }
   }

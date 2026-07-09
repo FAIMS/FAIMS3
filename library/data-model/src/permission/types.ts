@@ -30,6 +30,9 @@ export const tokenPayloadSchema = z
     server: z.string(),
     // username
     username: z.string(),
+    // Present only for impersonation sessions: the user id of the admin who
+    // initiated the impersonation. Used for auditing.
+    impersonatingUserId: z.string().optional(),
   })
   .merge(tokenPermissionsSchema);
 export type TokenPayload = z.infer<typeof tokenPayloadSchema>;
@@ -43,6 +46,9 @@ export interface TokenContents extends DecodedTokenPermissions {
   server: string;
   // This is required now - all tokens must have an expiry
   exp: number;
+  // Present only for impersonation sessions: the user id of the admin who
+  // initiated the impersonation. Used for auditing.
+  impersonatingUserId?: string;
 }
 
 // =======================================

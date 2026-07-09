@@ -36,6 +36,9 @@ export enum Action {
   // records exist which are invalid/have extra/are missing data)
   UPDATE_PROJECT_UISPEC = 'UPDATE_PROJECT_UISPEC',
 
+  /** Set or clear the recommended offline map download region for a project. */
+  SET_OFFLINE_MAP_REGION = 'SET_OFFLINE_MAP_REGION',
+
   // Read records hor the project which are mine
   READ_MY_PROJECT_RECORDS = 'READ_MY_PROJECT_RECORDS',
   // Read records for the project which are not mine
@@ -205,6 +208,8 @@ export enum Action {
   DISABLE_USER_ACCOUNT = 'DISABLE_USER_ACCOUNT',
   // Re-enable a previously disabled user account
   ENABLE_USER_ACCOUNT = 'ENABLE_USER_ACCOUNT',
+  // Impersonate a user (obtain a session that authenticates as them)
+  IMPERSONATE_USER = 'IMPERSONATE_USER',
 
   // ============================================================
   // LONG LIVED TOKEN ACTIONS
@@ -305,6 +310,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     name: 'Update Project UI Specification',
     description:
       'Modify the UI specification of a project (potential consistency risk)',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.SET_OFFLINE_MAP_REGION]: {
+    name: 'Set Offline Map Region',
+    description:
+      'Configure the recommended offline map download region for a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -798,6 +810,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.USER,
   },
+  [Action.IMPERSONATE_USER]: {
+    name: 'Impersonate User',
+    description:
+      'Start a session that authenticates as another user (for support/debugging). Restricted to system operations administrators.',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
 
   // ============================================================
   // GLOBAL ACTIONS
@@ -1145,6 +1164,7 @@ export const roleActions: Record<
     actions: [
       Action.UPDATE_PROJECT_DETAILS,
       Action.UPDATE_PROJECT_UISPEC,
+      Action.SET_OFFLINE_MAP_REGION,
       Action.CHANGE_PROJECT_STATUS,
       Action.CHANGE_PROJECT_TEAM,
       Action.EXPORT_PROJECT_DATA,
@@ -1227,6 +1247,7 @@ export const roleActions: Record<
       Action.DELETE_USER,
       Action.DISABLE_USER_ACCOUNT,
       Action.ENABLE_USER_ACCOUNT,
+      Action.IMPERSONATE_USER,
 
       // Irreversible survey destruction (also on PROJECT_ADMIN for owned surveys)
       Action.DELETE_PROJECT,

@@ -62,6 +62,9 @@ const DEFAULT_WEBAPP_URL = 'http://localhost:3000';
 const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
 // 2 days refresh token expiry by default
 const DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES = 60 * 24 * 2;
+// 60 minute default expiry for impersonation sessions. Impersonation sessions
+// are kept short so that an admin's "log in as" session cannot linger.
+const DEFAULT_IMPERSONATION_SESSION_EXPIRY_MINUTES = 60;
 // 30 minute default expiry for email verification codes
 const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
 const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
@@ -96,6 +99,7 @@ const EnvSchema = z.object({
   PROVISION_SSO_USERS_POLICY: z.string().optional(),
   ACCESS_TOKEN_EXPIRY_MINUTES: z.string().optional(),
   REFRESH_TOKEN_EXPIRY_MINUTES: z.string().optional(),
+  IMPERSONATION_SESSION_EXPIRY_MINUTES: z.string().optional(),
   EMAIL_CODE_EXPIRY_MINUTES: z.string().optional(),
   RATE_LIMITER_WINDOW_MS: z.string().optional(),
   RATE_LIMITER_PER_WINDOW: z.string().optional(),
@@ -293,6 +297,10 @@ const ConfigSchema = z.object({
     DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES,
     'REFRESH_TOKEN_EXPIRY_MINUTES'
   ),
+  impersonationSessionExpiryMinutes: intFromEnv(
+    DEFAULT_IMPERSONATION_SESSION_EXPIRY_MINUTES,
+    'IMPERSONATION_SESSION_EXPIRY_MINUTES'
+  ),
   emailCodeExpiryMinutes: intFromEnv(
     DEFAULT_EMAIL_CODE_EXPIRY_MINUTES,
     'EMAIL_CODE_EXPIRY_MINUTES'
@@ -372,6 +380,8 @@ const parsedConfig = ConfigSchema.parse({
   provisionSSOUsersPolicy: rawEnv.PROVISION_SSO_USERS_POLICY,
   accessTokenExpiryMinutes: rawEnv.ACCESS_TOKEN_EXPIRY_MINUTES,
   refreshTokenExpiryMinutes: rawEnv.REFRESH_TOKEN_EXPIRY_MINUTES,
+  impersonationSessionExpiryMinutes:
+    rawEnv.IMPERSONATION_SESSION_EXPIRY_MINUTES,
   emailCodeExpiryMinutes: rawEnv.EMAIL_CODE_EXPIRY_MINUTES,
   rateLimiterWindowMs: rawEnv.RATE_LIMITER_WINDOW_MS,
   rateLimiterPerWindow: rawEnv.RATE_LIMITER_PER_WINDOW,
