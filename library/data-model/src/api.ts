@@ -60,19 +60,12 @@ export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
 export const PostChangePasswordInputSchema = z
   .object({
     username: IdInputSchema,
-    currentPassword: z
-      .string()
-      .trim()
-      .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
-    newPassword: z
-      .string()
-      .trim()
-      .min(10, 'New password must be at least 10 characters in length.')
-      .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
-    confirmPassword: z
-      .string()
-      .trim()
-      .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
+    currentPassword: PasswordInputSchema,
+    newPassword: PasswordInputSchema.min(
+      10,
+      'New password must be at least 10 characters in length.'
+    ),
+    confirmPassword: PasswordInputSchema,
     redirect: RedirectInputSchema.optional(),
   })
   .refine(data => data.newPassword === data.confirmPassword, {
@@ -98,15 +91,11 @@ export type PostForgotPasswordInput = z.infer<
 export const PostResetPasswordInputSchema = z
   .object({
     code: CodeInputSchema,
-    newPassword: z
-      .string()
-      .trim()
-      .min(10, 'Password must be at least 10 characters in length.')
-      .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
-    confirmPassword: z
-      .string()
-      .trim()
-      .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
+    newPassword: PasswordInputSchema.min(
+      10,
+      'Password must be at least 10 characters in length.'
+    ),
+    confirmPassword: PasswordInputSchema,
     redirect: RedirectInputSchema.optional(),
   })
   .refine(data => data.newPassword === data.confirmPassword, {
@@ -217,11 +206,7 @@ export const PostLoginInputSchema = AuthContextSchema.extend({
     .string()
     .trim()
     .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, 'Email address is too long'),
-  password: z
-    .string()
-    .trim()
-    .min(1)
-    .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
+  password: PasswordInputSchema.min(1),
 });
 export type PostLoginInput = z.infer<typeof PostLoginInputSchema>;
 export const PostRegisterInputSchema = AuthContextSchema.extend({
@@ -231,14 +216,11 @@ export const PostRegisterInputSchema = AuthContextSchema.extend({
     .trim()
     .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, 'Email address is too long')
     .email('Email address must be a valid email.'),
-  password: z
-    .string()
-    .trim()
-    .min(10, 'Password must be of at least 10 characters in length.')
-    .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
-  repeat: z
-    .string()
-    .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
+  password: PasswordInputSchema.min(
+    10,
+    'Password must be of at least 10 characters in length.'
+  ),
+  repeat: PasswordInputSchema,
   name: z
     .string()
     .trim()
@@ -656,10 +638,7 @@ export type PostRequestPasswordResetResponse = z.infer<
 // PUT /reset request schema
 export const PutRequestPasswordResetRequestSchema = z.object({
   code: CodeInputSchema,
-  newPassword: z
-    .string()
-    .min(10)
-    .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long'),
+  newPassword: PasswordInputSchema.min(10),
 });
 export type PutRequestPasswordResetRequest = z.infer<
   typeof PutRequestPasswordResetRequestSchema

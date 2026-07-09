@@ -91,7 +91,10 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
           addPunctuation: true,
           debugMode: false,
           onResult: text => {
-            setFieldData(text);
+            // HTML maxLength does not apply to programmatic speech updates
+            setFieldData(
+              text.length > maxLength ? text.slice(0, maxLength) : text
+            );
           },
           enabled: true,
         }
@@ -111,18 +114,21 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
 
   // Compute display value: show interim results while listening
   const displayValue = React.useMemo(() => {
+    let next = value;
     if (speech.isListening && speech.interimTranscript) {
       if (effectiveAppendMode && value) {
-        return `${value} ${speech.interimTranscript}`;
+        next = `${value} ${speech.interimTranscript}`;
+      } else {
+        next = speech.interimTranscript;
       }
-      return speech.interimTranscript;
     }
-    return value;
+    return next.length > maxLength ? next.slice(0, maxLength) : next;
   }, [
     speech.isListening,
     speech.interimTranscript,
     effectiveAppendMode,
     value,
+    maxLength,
   ]);
 
   // Build InputProps with speech button if enabled

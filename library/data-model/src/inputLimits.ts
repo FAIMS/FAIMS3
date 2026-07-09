@@ -60,6 +60,7 @@ export const EmailInputSchema = z
 /** Password input: bounded only (strength/min-length policies applied separately). */
 export const PasswordInputSchema = z
   .string()
+  .trim()
   .max(INPUT_LIMITS.PASSWORD_MAX_LENGTH, 'Password is too long');
 
 /** Redirect URL input (whitelisting is enforced server-side separately). */
@@ -88,6 +89,10 @@ export const IdInputSchema = boundedString(
 /**
  * Estimate the serialized JSON size of a value in bytes. Used to reject
  * oversized design files (ui-specifications) at the API boundary.
+ *
+ * Fail-closed: if the value cannot be serialized, returns a size larger than
+ * {@link INPUT_LIMITS.UI_SPEC_MAX_BYTES} so callers that compare against the
+ * cap will reject rather than accept.
  */
 export function estimateJsonBytes(value: unknown): number {
   try {
@@ -101,7 +106,7 @@ export function estimateJsonBytes(value: unknown): number {
     }
     return Buffer.byteLength(serialized, 'utf8');
   } catch {
-    // Circular or non-serializable structures cannot come from JSON input
-    return 0;
+    // Fail closed — treat non-serializable input as oversized
+    return INPUT_LIMITS.UI_SPEC_MAX_BYTES + 1;
   }
 }

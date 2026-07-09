@@ -38,6 +38,7 @@ import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -408,6 +409,9 @@ export const BaseFieldEditor = ({
                         onChange={handleIdChange}
                         inputRef={idInputRef}
                         slotProps={{
+                          htmlInput: designerHtmlInput(
+                            INPUT_LIMITS.ID_MAX_LENGTH
+                          ),
                           input: {
                             endAdornment:
                               state.label &&
@@ -456,6 +460,9 @@ export const BaseFieldEditor = ({
                             onChange={handleIdChange}
                             inputRef={idInputRef}
                             slotProps={{
+                              htmlInput: designerHtmlInput(
+                                INPUT_LIMITS.ID_MAX_LENGTH
+                              ),
                               input: {
                                 endAdornment:
                                   state.label &&
@@ -497,6 +504,9 @@ export const BaseFieldEditor = ({
                           onChange={handleIdChange}
                           inputRef={idInputRef}
                           slotProps={{
+                            htmlInput: designerHtmlInput(
+                              INPUT_LIMITS.ID_MAX_LENGTH
+                            ),
                             input: {
                               endAdornment:
                                 state.label &&

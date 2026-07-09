@@ -127,6 +127,7 @@ const EmailField: React.FC<TextFieldProps & FormFieldContextProps> = ({
       inputType="email"
       enableSpeech={enableSpeech}
       speechAppendMode={speechAppendMode ?? false}
+      maxLength={INPUT_LIMITS.EMAIL_MAX_LENGTH}
     />
   );
 };

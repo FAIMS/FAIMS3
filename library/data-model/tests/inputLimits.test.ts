@@ -232,4 +232,12 @@ describe('estimateJsonBytes', () => {
     expect(estimateJsonBytes({a: 'bb'})).toBe(JSON.stringify({a: 'bb'}).length);
     expect(estimateJsonBytes(undefined)).toBe(0);
   });
+
+  it('fails closed for non-serializable values', () => {
+    const circular: {self?: unknown} = {};
+    circular.self = circular;
+    expect(estimateJsonBytes(circular)).toBeGreaterThan(
+      INPUT_LIMITS.UI_SPEC_MAX_BYTES
+    );
+  });
 });

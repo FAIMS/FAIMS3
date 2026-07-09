@@ -26,9 +26,21 @@ export function resourceNameSchema(minLength: number, label: string) {
 export function designFileSchema() {
   return z
     .instanceof(File)
-    .refine(file => file.type === 'application/json', {
-      message: 'File must be a JSON file.',
-    })
+    .refine(
+      file => {
+        // Some browsers/OS report empty or octet-stream MIME for .json files
+        const type = (file.type || '').toLowerCase();
+        const name = file.name.toLowerCase();
+        return (
+          type === 'application/json' ||
+          type === 'text/json' ||
+          type === '' ||
+          type === 'application/octet-stream' ||
+          name.endsWith('.json')
+        );
+      },
+      {message: 'File must be a JSON file.'}
+    )
     .refine(file => file.size <= MAX_DESIGN_FILE_SIZE_BYTES, {
       message: `File must be at most ${MAX_DESIGN_FILE_SIZE_MB} MB.`,
     });
