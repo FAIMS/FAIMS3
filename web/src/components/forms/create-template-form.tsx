@@ -164,23 +164,20 @@ export function CreateTemplateForm({
     });
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/templates/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({
-            teamId: chosenTeamId,
-            name,
-            ...rootDescriptionForApi(description),
-            isPublic,
-            uiSpecification,
-          }),
-        }
-      );
+      const res = await fetch(`${config.apiUrl}/api/templates/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          teamId: chosenTeamId,
+          name,
+          ...rootDescriptionForApi(description),
+          isPublic,
+          uiSpecification,
+        }),
+      });
       if (!res.ok) throw new Error(res.statusText);
       // need to refresh our auth token to get permissions on this new template
       const {message, status} = await refreshToken();

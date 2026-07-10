@@ -15,6 +15,21 @@ monorepo (Node 22, `pnpm@10.7.0`). The relevant runnable services are:
 Shared libraries: `library/data-model` (`@faims3/data-model`) and
 `library/forms` (`@faims3/forms`).
 
+### Runtime configuration
+
+Each runnable package exposes a typed `config` singleton parsed once from env
+via Zod (shared helpers live in `@faims3/data-model` as `configHelpers`):
+
+| Package  | Module                            | Env source               |
+| -------- | --------------------------------- | ------------------------ |
+| `api`    | `api/src/buildconfig.ts`          | `process.env`            |
+| `app`    | `app/src/buildconfig.ts`          | `import.meta.env.VITE_*` |
+| `web`    | `web/src/constants.ts`            | `import.meta.env.VITE_*` |
+| designer | `web/src/designer/buildconfig.ts` | `import.meta.env.VITE_*` |
+
+Prefer `import {config} from '…'` and `config.<field>`. See each package's
+`.env.dist` for documented variables.
+
 ### Startup (services are NOT started by the update script)
 
 The update script only runs `pnpm install`. To bring the stack up in a fresh

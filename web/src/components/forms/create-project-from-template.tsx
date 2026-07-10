@@ -130,22 +130,19 @@ export function CreateProjectFromTemplateForm({
       team,
     });
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          template_id: templateId,
-          name,
-          ...rootDescriptionForApi(description),
-          ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
-        } satisfies PostCreateNotebookInput),
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/notebooks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        template_id: templateId,
+        name,
+        ...rootDescriptionForApi(description),
+        ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
+      } satisfies PostCreateNotebookInput),
+    });
 
     if (!response.ok)
       return {

@@ -54,7 +54,7 @@ export const RemoveUserFromProjectDialog = ({
           onClick={async () => {
             try {
               const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/users/${userId}`,
+                `${config.apiUrl}/api/notebooks/${projectId}/users/${userId}`,
                 {
                   method: 'DELETE',
                   headers: {

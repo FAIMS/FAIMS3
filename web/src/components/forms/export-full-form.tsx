@@ -8,6 +8,7 @@ import {
   isValidForSpatialExport,
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
+import {config} from '@/constants';
 
 interface ExportOptions {
   includeTabular: boolean;
@@ -72,7 +73,7 @@ const ExportFullForm = () => {
         includeMetadata: options.includeMetadata.toString(),
       });
 
-      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?${params.toString()}`;
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',

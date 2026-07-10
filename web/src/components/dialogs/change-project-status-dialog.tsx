@@ -26,19 +26,16 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
 
   const onClick = async () => {
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/status`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user?.token}`,
-          },
-          body: JSON.stringify({
-            status: isOpen ? ProjectStatus.CLOSED : ProjectStatus.OPEN,
-          }),
-        }
-      );
+      await fetch(`${config.apiUrl}/api/notebooks/${projectId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({
+          status: isOpen ? ProjectStatus.CLOSED : ProjectStatus.OPEN,
+        }),
+      });
       queryClient.invalidateQueries({queryKey: ['projects']});
       queryClient.invalidateQueries({queryKey: ['projects', projectId]});
       queryClient.invalidateQueries({queryKey: ['projectsbyteam']});

@@ -7,7 +7,7 @@ const expectedFailure = {valid: false, redirect: '/'};
 
 describe('validateRedirect tests', () => {
   // Define a test whitelist that we'll use throughout the tests
-  // Ensure CONDUCTOR_PUBLIC_URL is a valid URL string for these tests
+  // Ensure config.conductorPublicUrl is a valid URL string for these tests
   const testWhitelist = [
     'http://example.com',
     'https://trusted.domain.org',
@@ -190,11 +190,11 @@ describe('validateRedirect tests', () => {
     expect(result).to.deep.equal(expectedFailure);
   });
 
-  it('should correctly use CONDUCTOR_PUBLIC_URL from whitelist', () => {
-    // Ensure CONDUCTOR_PUBLIC_URL is treated as a valid URL string
+  it('should correctly use config.conductorPublicUrl from whitelist', () => {
+    // Ensure config.conductorPublicUrl is treated as a valid URL string
     const conductorUrl =
       config.conductorPublicUrl || 'http://conductor.test.local';
-    // Construct a redirect URL based on the potential CONDUCTOR_PUBLIC_URL
+    // Construct a redirect URL based on the configured conductor public URL
     const redirectUrl = `${conductorUrl}/some/path?query=1`;
     const result = validateRedirect(redirectUrl, testWhitelist);
     expect(result).to.deep.equal({valid: true, redirect: redirectUrl});

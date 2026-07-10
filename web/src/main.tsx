@@ -24,7 +24,7 @@ if (bugsnagEnabled) {
     appVersion: APP_VERSION,
   });
 } else {
-  console.warn('BUGSNAG_API_KEY not set, error reporting disabled');
+  console.warn('config.bugsnagApiKey not set, error reporting disabled');
 }
 
 /**

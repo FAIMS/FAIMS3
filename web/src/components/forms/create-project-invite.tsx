@@ -15,7 +15,7 @@ import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
-import {INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
+import {config, INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -127,7 +127,7 @@ export function CreateProjectInviteForm({
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}`,
+      `${config.apiUrl}/api/invites/notebook/${projectId}`,
       {
         method: 'POST',
         headers: {

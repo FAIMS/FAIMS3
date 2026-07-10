@@ -32,7 +32,7 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
     const willArchive = !archived;
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
+        `${config.apiUrl}/api/templates/${templateId}/archive`,
         {
           method: 'PUT',
           headers: {

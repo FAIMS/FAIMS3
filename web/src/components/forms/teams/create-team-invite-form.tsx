@@ -126,7 +126,7 @@ export function CreateTeamInviteForm({
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/team/${teamId}`,
+      `${config.apiUrl}/api/invites/team/${teamId}`,
       {
         method: 'POST',
         headers: {
