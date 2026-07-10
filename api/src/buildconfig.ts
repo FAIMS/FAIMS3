@@ -205,12 +205,26 @@ const EnvSchema = z
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
      */
-    NEW_CONDUCTOR_URL: z.string().optional(),
+    NEW_CONDUCTOR_URL: z
+      .string({
+        error: 'You must provide a NEW_CONDUCTOR_URL in your environment.',
+      })
+      .min(1, 'You must provide a NEW_CONDUCTOR_URL in your environment.')
+      .transform(v => {
+        if (v.endsWith('/')) {
+          console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
+          return v.substring(0, v.length - 1);
+        }
+        return v;
+      }),
     /**
-     * Env flag to disable local username/password login. Exported inverted as
-     * `config.localLoginEnabled` for clarity in the rest of the codebase.
+     * Env flag to disable local username/password login. Coerced here to the
+     * inverted `localLoginEnabled` boolean (unset → enabled).
      */
-    DISABLE_LOCAL_LOGIN: z.string().optional(),
+    DISABLE_LOCAL_LOGIN: z
+      .string()
+      .optional()
+      .transform(v => (v === undefined ? true : v.toLowerCase() !== 'true')),
     /** Configure migration of notebooks on startup. */
     MIGRATE_NOTEBOOKS_ON_STARTUP: configHelpers.equalsTrueBool(true),
     /** Where signing keys are loaded from (`FILE` or `AWS_SM`). */
@@ -249,7 +263,41 @@ const EnvSchema = z
      * Comma-separated list of domains to which auth-flow redirects are
      * allowed. Required; each entry must be a valid URL.
      */
-    REDIRECT_WHITELIST: z.string().optional(),
+    REDIRECT_WHITELIST: z
+      .string({
+        error:
+          'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.',
+      })
+      .min(
+        1,
+        'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
+      )
+      .transform((v, ctx) => {
+        const domains = v
+          .split(',')
+          .map(domain => domain.trim())
+          .filter(domain => domain.length !== 0);
+        if (domains.length === 0) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              'REDIRECT_WHITELIST must contain at least one valid domain.',
+          });
+          return z.NEVER;
+        }
+        for (const domain of domains) {
+          try {
+            new URL(domain);
+          } catch {
+            ctx.addIssue({
+              code: 'custom',
+              message: `Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`,
+            });
+            return z.NEVER;
+          }
+        }
+        return domains;
+      }),
     /**
      * Maximum duration in days for long-lived tokens. Use `"unlimited"` /
      * `"infinite"` / `"none"` for no cap; blank falls back to the default.
@@ -297,43 +345,6 @@ const EnvSchema = z
   })
   .strip()
   .transform(env => {
-    // Required: NEW_CONDUCTOR_URL
-    let newConductorUrl = env.NEW_CONDUCTOR_URL;
-    if (configHelpers.isBlank(newConductorUrl)) {
-      throw Error('You must provide a NEW_CONDUCTOR_URL in your environment.');
-    }
-    if (newConductorUrl.endsWith('/')) {
-      console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
-      newConductorUrl = newConductorUrl.substring(
-        0,
-        newConductorUrl.length - 1
-      );
-    }
-
-    // Required: REDIRECT_WHITELIST — comma-separated domains for auth redirects
-    if (configHelpers.isBlank(env.REDIRECT_WHITELIST)) {
-      throw new Error(
-        'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
-      );
-    }
-    const redirectWhitelist = env.REDIRECT_WHITELIST.split(',')
-      .map(domain => domain.trim())
-      .filter(domain => domain.length !== 0);
-    if (redirectWhitelist.length === 0) {
-      throw new Error(
-        'REDIRECT_WHITELIST must contain at least one valid domain.'
-      );
-    }
-    for (const domain of redirectWhitelist) {
-      try {
-        new URL(domain);
-      } catch {
-        throw new Error(
-          `Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`
-        );
-      }
-    }
-
     // AWS ARN only required when KEY_SOURCE is AWS_SM
     let awsSecretKeyArn: string | undefined;
     if (env.KEY_SOURCE === KeySource.AWS_SM) {
@@ -377,12 +388,6 @@ const EnvSchema = z
       };
     }
 
-    // DISABLE_LOCAL_LOGIN → localLoginEnabled (inverted for clarity elsewhere)
-    const localLoginEnabled =
-      env.DISABLE_LOCAL_LOGIN === undefined
-        ? true
-        : env.DISABLE_LOCAL_LOGIN.toLowerCase() !== 'true';
-
     const runningUnderTest =
       env.JEST_WORKER_ID !== undefined || env.NODE_ENV === 'test';
 
@@ -421,10 +426,10 @@ const EnvSchema = z
       bugsnagApiKey: env.BUGSNAG_API_KEY,
       localCouchdbAuth,
       conductorInstanceName,
-      localLoginEnabled,
+      localLoginEnabled: env.DISABLE_LOCAL_LOGIN,
       runningUnderTest,
-      newConductorUrl,
-      redirectWhitelist,
+      newConductorUrl: env.NEW_CONDUCTOR_URL,
+      redirectWhitelist: env.REDIRECT_WHITELIST,
       awsSecretKeyArn,
       // Internal: peeled off before exporting `config`.
       _email: {

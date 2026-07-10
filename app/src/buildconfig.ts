@@ -163,7 +163,18 @@ const EnvSchema = z
      * Comma-separated Conductor URLs the app can authenticate against.
      * Parsed via `parseConductorUrls`; falls back to DEFAULT_CONDUCTOR_URL.
      */
-    VITE_CONDUCTOR_URL: z.string().optional(),
+    VITE_CONDUCTOR_URL: z
+      .string()
+      .optional()
+      .transform(v => {
+        if (configHelpers.isBlank(v)) {
+          console.warn(
+            `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
+          );
+          return [DEFAULT_CONDUCTOR_URL];
+        }
+        return parseConductorUrls(v);
+      }),
     /** Notebook listing layout: `'tabs'` or `'headings'`. */
     VITE_NOTEBOOK_LIST_TYPE: configHelpers.enumDefault(
       ['tabs', 'headings'],
@@ -314,16 +325,6 @@ const EnvSchema = z
     const notebookName = env.VITE_NOTEBOOK_NAME;
     const notebookNamePlural = pluralize(notebookName);
 
-    let conductorUrls: string[];
-    if (env.VITE_CONDUCTOR_URL) {
-      conductorUrls = parseConductorUrls(env.VITE_CONDUCTOR_URL);
-    } else {
-      console.warn(
-        `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
-      );
-      conductorUrls = [DEFAULT_CONDUCTOR_URL];
-    }
-
     let directoryAuth: undefined | {username: string; password: string};
     if (
       configHelpers.isBlank(env.VITE_DIRECTORY_USERNAME) ||
@@ -395,7 +396,7 @@ const EnvSchema = z
       mapboxAddressCountry: env.VITE_MAPBOX_ADDRESS_COUNTRY,
       maptilerAddressCountry: env.VITE_MAPTILER_ADDRESS_COUNTRY,
       autosuggestSource: env.VITE_AUTOSUGGEST_SOURCE,
-      conductorUrls,
+      conductorUrls: env.VITE_CONDUCTOR_URL,
       directoryAuth,
       runningUnderTest: env.NODE_ENV === 'test',
       // OSM does not allow bulk downloads so we can't enable offline maps

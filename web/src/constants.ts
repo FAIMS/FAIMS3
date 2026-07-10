@@ -51,15 +51,23 @@ const EnvSchema = z
     /** Browser tab / chrome title for the Control Centre. */
     VITE_WEBSITE_TITLE: configHelpers.stringDefault('Control Centre'),
     /** Product display name (required). */
-    VITE_APP_NAME: z.string().optional(),
+    VITE_APP_NAME: z
+      .string({error: 'Missing required env variable VITE_APP_NAME'})
+      .min(1, 'Missing required env variable VITE_APP_NAME'),
     /** Optional short name; falls back to VITE_APP_NAME when blank. */
     VITE_APP_SHORT_NAME: z.string().optional(),
     /** Public Control Centre base URL (required). */
-    VITE_WEB_URL: z.string().optional(),
+    VITE_WEB_URL: z
+      .string({error: 'Missing required env variable VITE_WEB_URL'})
+      .min(1, 'Missing required env variable VITE_WEB_URL'),
     /** Public Conductor / API base URL (required). */
-    VITE_API_URL: z.string().optional(),
+    VITE_API_URL: z
+      .string({error: 'Missing required env variable VITE_API_URL'})
+      .min(1, 'Missing required env variable VITE_API_URL'),
     /** Public Field Mark app base URL (required). */
-    VITE_APP_URL: z.string().optional(),
+    VITE_APP_URL: z
+      .string({error: 'Missing required env variable VITE_APP_URL'})
+      .min(1, 'Missing required env variable VITE_APP_URL'),
     /** Optional docs / help site URL. */
     VITE_DOCS_URL: configHelpers.stringDefault(''),
     /** Theme identifier applied to the Control Centre chrome. */
@@ -73,7 +81,26 @@ const EnvSchema = z
      * Comma-separated team roles to hide from team-role dropdowns. Invalid
      * role names are ignored with a warning.
      */
-    VITE_EXCLUDED_TEAM_ROLES: z.string().optional(),
+    VITE_EXCLUDED_TEAM_ROLES: z
+      .string()
+      .optional()
+      .transform(v => {
+        const validTeamRoles = new Set(
+          resourceRoles[Resource.TEAM].map(r => r.role as string)
+        );
+        const requested =
+          v
+            ?.split(',')
+            .map(s => s.trim())
+            .filter(Boolean) ?? [];
+        const invalid = requested.filter(r => !validTeamRoles.has(r));
+        if (invalid.length > 0) {
+          console.warn(
+            `VITE_EXCLUDED_TEAM_ROLES contains values that are not team roles and will be ignored: ${invalid.join(', ')}`
+          );
+        }
+        return new Set(requested.filter(r => validTeamRoles.has(r)));
+      }),
     /**
      * When the directory lists a notebook as archived (or id absent), the
      * mobile app may drop local DBs after sync (`allow`) or keep them closed
@@ -152,34 +179,8 @@ const EnvSchema = z
   })
   .strip()
   .transform(env => {
-    const appName = configHelpers.requiredEnv(
-      env.VITE_APP_NAME,
-      'VITE_APP_NAME'
-    );
-    const webUrl = configHelpers.requiredEnv(env.VITE_WEB_URL, 'VITE_WEB_URL');
-    const apiUrl = configHelpers.requiredEnv(env.VITE_API_URL, 'VITE_API_URL');
-    const appUrl = configHelpers.requiredEnv(env.VITE_APP_URL, 'VITE_APP_URL');
-
     const notebookName = env.VITE_NOTEBOOK_NAME;
     const notebookNamePlural = pluralize(notebookName);
-
-    // Team roles to hide from team-role dropdowns (VITE_EXCLUDED_TEAM_ROLES)
-    const validTeamRoles = new Set(
-      resourceRoles[Resource.TEAM].map(r => r.role as string)
-    );
-    const requested =
-      env.VITE_EXCLUDED_TEAM_ROLES?.split(',')
-        .map(s => s.trim())
-        .filter(Boolean) ?? [];
-    const invalid = requested.filter(r => !validTeamRoles.has(r));
-    if (invalid.length > 0) {
-      console.warn(
-        `VITE_EXCLUDED_TEAM_ROLES contains values that are not team roles and will be ignored: ${invalid.join(', ')}`
-      );
-    }
-    const excludedTeamRoles = new Set(
-      requested.filter(r => validTeamRoles.has(r))
-    );
 
     // Duration hints for long-lived tokens (CSV of days, clamped to max)
     const maximumDays = env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS;
@@ -229,6 +230,8 @@ const EnvSchema = z
       (a, b) => a - b
     );
 
+    const webUrl = env.VITE_WEB_URL;
+
     return {
       notebookName,
       websiteTitle: env.VITE_WEBSITE_TITLE,
@@ -243,17 +246,17 @@ const EnvSchema = z
       mapStyle: env.VITE_MAP_STYLE,
       satelliteSource: env.VITE_SATELLITE_SOURCE,
       bugsnagApiKey: env.VITE_BUGSNAG_API_KEY,
-      appName,
+      appName: env.VITE_APP_NAME,
       appShortName: configHelpers.isBlank(env.VITE_APP_SHORT_NAME)
-        ? appName
+        ? env.VITE_APP_NAME
         : env.VITE_APP_SHORT_NAME,
       webUrl,
       /** Control Centre home (`/` redirects to `/teams`). */
       webHomeUrl: `${webUrl.replace(/\/$/, '')}/`,
-      apiUrl,
-      appUrl,
+      apiUrl: env.VITE_API_URL,
+      appUrl: env.VITE_APP_URL,
       /** Team roles hidden from team-role dropdowns. */
-      excludedTeamRoles,
+      excludedTeamRoles: env.VITE_EXCLUDED_TEAM_ROLES,
       longLivedTokenDurationHints,
       notebookNameCapitalized: capitalize(notebookName),
       /** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */

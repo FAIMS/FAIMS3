@@ -42,10 +42,8 @@ export const Field = React.memo((props: FieldProps) => {
         const setFieldData = (value: any) => {
           // Functional updater merges against latest field value so a write
           // here cannot clobber a concurrent attachments update (or vice versa).
-          // Cast: TanStack Form's Updater typing is stricter under Zod 4's
-          // `z.unknown()` inference for FormDataEntry.data.
-          field.handleChange(((prev: FormDataEntry | undefined) => {
-            const current: FormDataEntry = prev ?? {data: undefined};
+          field.handleChange((prev: FormDataEntry | undefined) => {
+            const current = prev ?? {};
             const nextData =
               typeof value === 'function'
                 ? value((current.data ?? undefined) as any)
@@ -54,19 +52,19 @@ export const Field = React.memo((props: FieldProps) => {
               ...current,
               data: nextData,
             };
-          }) as (prev: FormDataEntry | undefined) => FormDataEntry);
+          });
         };
         const setFieldAnnotation = (value: FormAnnotation) => {
-          field.handleChange(((prev: FormDataEntry | undefined) => ({
-            ...(prev ?? {data: undefined}),
+          field.handleChange((prev: FormDataEntry | undefined) => ({
+            ...(prev ?? {}),
             annotation: value,
-          })) as (prev: FormDataEntry | undefined) => FormDataEntry);
+          }));
         };
         const setFieldAttachment = (value: FaimsAttachments) => {
-          field.handleChange(((prev: FormDataEntry | undefined) => ({
-            ...(prev ?? {data: undefined}),
+          field.handleChange((prev: FormDataEntry | undefined) => ({
+            ...(prev ?? {}),
             attachments: value,
-          })) as (prev: FormDataEntry | undefined) => FormDataEntry);
+          }));
         };
 
         // TODO clean this up - duplicating the mode check here is ugly
