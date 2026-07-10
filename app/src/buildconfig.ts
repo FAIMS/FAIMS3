@@ -21,10 +21,10 @@
  *   Configuration is parsed from Vite's `import.meta.env` with a single zod
  *   schema:
  *     - Each env key is declared once with its coercion / defaulting logic.
- *     - The raw object uses explicit static `import.meta.env.VITE_*` accesses so
- *       Vite performs its build-time replacement.
- *     - `.strip()` drops unrelated keys; a final `.transform()` renames ENV_KEYS
- *       into the camelCase `config` shape (and builds cross-field values).
+ *     - The raw object is `import.meta.env` (Vite); `.strip()` drops built-ins
+ *       and undeclared keys.
+ *     - A final `.transform()` renames ENV_KEYS into the camelCase `config`
+ *       shape (and builds cross-field values).
  *
  *   Prefer importing `{config}` and reading `config.<field>`. Advanced surfaces
  *   (map config, address autosuggest) keep their existing functional interfaces
@@ -410,57 +410,10 @@ const EnvSchema = z
 /**
  * The singleton configuration object. Prefer reading values from here.
  *
- * Explicit static `import.meta.env.VITE_*` accesses are required so Vite
- * performs build-time string replacement for each variable.
+ * Pass the whole `import.meta.env` — `.strip()` drops Vite built-ins
+ * (`MODE`, `DEV`, …) and any other keys not declared above.
  */
-export const config = EnvSchema.parse({
-  VITE_DEBUG_POUCHDB: import.meta.env.VITE_DEBUG_POUCHDB,
-  VITE_DEBUG_APP: import.meta.env.VITE_DEBUG_APP,
-  VITE_SHOW_POUCHDB_BROWSER: import.meta.env.VITE_SHOW_POUCHDB_BROWSER,
-  VITE_SHOW_WIPE: import.meta.env.VITE_SHOW_WIPE,
-  VITE_SHOW_NEW_NOTEBOOK: import.meta.env.VITE_SHOW_NEW_NOTEBOOK,
-  VITE_POUCH_BATCH_SIZE: import.meta.env.VITE_POUCH_BATCH_SIZE,
-  VITE_POUCH_BATCHES_LIMIT: import.meta.env.VITE_POUCH_BATCHES_LIMIT,
-  VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: import.meta.env
-    .VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,
-  VITE_DIRECTORY_USERNAME: import.meta.env.VITE_DIRECTORY_USERNAME,
-  VITE_DIRECTORY_PASSWORD: import.meta.env.VITE_DIRECTORY_PASSWORD,
-  VITE_CLUSTER_ADMIN_GROUP_NAME: import.meta.env.VITE_CLUSTER_ADMIN_GROUP_NAME,
-  VITE_BUGSNAG_KEY: import.meta.env.VITE_BUGSNAG_KEY,
-  VITE_CONDUCTOR_URL: import.meta.env.VITE_CONDUCTOR_URL,
-  VITE_NOTEBOOK_LIST_TYPE: import.meta.env.VITE_NOTEBOOK_LIST_TYPE,
-  VITE_NOTEBOOK_NAME: import.meta.env.VITE_NOTEBOOK_NAME,
-  VITE_APP_ID: import.meta.env.VITE_APP_ID,
-  VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
-  VITE_HEADING_APP_NAME: import.meta.env.VITE_HEADING_APP_NAME,
-  VITE_APP_PRIVACY_POLICY_URL: import.meta.env.VITE_APP_PRIVACY_POLICY_URL,
-  VITE_APP_CONTACT_URL: import.meta.env.VITE_APP_CONTACT_URL,
-  VITE_SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL,
-  VITE_TOKEN_REFRESH_INTERVAL_MS: import.meta.env
-    .VITE_TOKEN_REFRESH_INTERVAL_MS,
-  VITE_TOKEN_REFRESH_WINDOW_MS: import.meta.env.VITE_TOKEN_REFRESH_WINDOW_MS,
-  VITE_LOGIN_BANNER_GRACE_MS: import.meta.env.VITE_LOGIN_BANNER_GRACE_MS,
-  VITE_IGNORE_TOKEN_EXP: import.meta.env.VITE_IGNORE_TOKEN_EXP,
-  VITE_MAP_SOURCE: import.meta.env.VITE_MAP_SOURCE,
-  VITE_MAP_SOURCE_KEY: import.meta.env.VITE_MAP_SOURCE_KEY,
-  VITE_MAP_STYLE: import.meta.env.VITE_MAP_STYLE,
-  VITE_SATELLITE_SOURCE: import.meta.env.VITE_SATELLITE_SOURCE,
-  VITE_OFFLINE_MAPS: import.meta.env.VITE_OFFLINE_MAPS,
-  VITE_NAVIGATION: import.meta.env.VITE_NAVIGATION,
-  VITE_SHOW_RECORD_LINKS: import.meta.env.VITE_SHOW_RECORD_LINKS,
-  VITE_MIGRATE_OLD_DATABASES: import.meta.env.VITE_MIGRATE_OLD_DATABASES,
-  VITE_FORCE_REMOTE_DELETION: import.meta.env.VITE_FORCE_REMOTE_DELETION,
-  VITE_DELETE_ON_DEACTIVATION: import.meta.env.VITE_DELETE_ON_DEACTIVATION,
-  VITE_ATTACHMENT_SERVICE_TYPE: import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE,
-  VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: import.meta.env
-    .VITE_ATTACHMENT_DOCUMENT_ID_PREFIX,
-  VITE_AUTOSUGGEST_SOURCE: import.meta.env.VITE_AUTOSUGGEST_SOURCE,
-  VITE_AUTOSUGGEST_MAPBOX_KEY: import.meta.env.VITE_AUTOSUGGEST_MAPBOX_KEY,
-  VITE_MAPBOX_ADDRESS_COUNTRY: import.meta.env.VITE_MAPBOX_ADDRESS_COUNTRY,
-  VITE_AUTOSUGGEST_MAPTILER_KEY: import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY,
-  VITE_MAPTILER_ADDRESS_COUNTRY: import.meta.env.VITE_MAPTILER_ADDRESS_COUNTRY,
-  NODE_ENV: import.meta.env.NODE_ENV,
-});
+export const config = EnvSchema.parse(import.meta.env);
 
 export type Config = typeof config;
 

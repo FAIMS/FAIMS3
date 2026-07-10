@@ -40,9 +40,9 @@ const EnvSchema = z
 
 /**
  * The singleton designer configuration object. Prefer reading values from here.
+ *
+ * Pass the whole `import.meta.env` — `.strip()` drops undeclared keys.
  */
-export const config = EnvSchema.parse({
-  VITE_TEMPLATE_PROTECTIONS: import.meta.env.VITE_TEMPLATE_PROTECTIONS,
-});
+export const config = EnvSchema.parse(import.meta.env);
 
 export type DesignerConfig = typeof config;

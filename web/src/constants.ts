@@ -8,11 +8,10 @@ import {capitalize} from './lib/utils';
  * Configuration is parsed from Vite's `import.meta.env` with a single zod
  * schema:
  *   - Each env key is declared once with its coercion / defaulting logic.
- *   - The raw object uses explicit static `import.meta.env.VITE_*` accesses so
- *     Vite performs its build-time replacement.
- *   - `.strip()` drops unrelated keys; a final `.transform()` renames ENV_KEYS
- *     into the camelCase `config` shape (and builds required / cross-field
- *     values).
+ *   - The raw object is `import.meta.env` (Vite); `.strip()` drops built-ins
+ *     and undeclared keys.
+ *   - A final `.transform()` renames ENV_KEYS into the camelCase `config` shape
+ *     (and builds required / cross-field values).
  *
  * The `config` singleton is the source of truth. Prefer importing `{config}`
  * and reading `config.<field>`. Dedicated exports remain only for genuine
@@ -45,7 +44,7 @@ const EnvSchema = z
   .object({
     /**
      * Singular display name for notebooks (defaults to `'project'` on web).
-     * Plural / capitalised forms are derived — same rules as the Field Mark app.
+     * Plural / capitalised forms are derived.
      */
     VITE_NOTEBOOK_NAME: configHelpers.stringDefault('project'),
     /** Browser tab / chrome title for the Control Centre. */
@@ -148,9 +147,31 @@ const EnvSchema = z
       }),
     /**
      * CSV of integer duration hints (days) for the long-lived token UI.
-     * Clamped to the maximum expiry window when one is set.
+     * Parsed here; clamped to the maximum expiry window in the rename pass.
      */
-    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z.string().optional(),
+    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: z
+      .string()
+      .optional()
+      .transform(v => {
+        if (configHelpers.isBlank(v)) {
+          console.log(
+            'VITE_LONG_LIVED_TOKEN_DURATION_HINTS not set, using defaults'
+          );
+          return DEFAULT_HINTS;
+        }
+        const parsedHints = v
+          .split(',')
+          .map(str => str.trim())
+          .map(str => parseInt(str, 10))
+          .filter(num => !Number.isNaN(num) && num > 0);
+        if (parsedHints.length === 0) {
+          console.warn(
+            `Invalid CSV format for VITE_LONG_LIVED_TOKEN_DURATION_HINTS: "${v}". Using defaults.`
+          );
+          return DEFAULT_HINTS;
+        }
+        return parsedHints;
+      }),
     /**
      * Map tile source (see app map `tile_source.ts`). Pair with
      * VITE_MAP_SOURCE_KEY when the provider needs an API key.
@@ -179,43 +200,9 @@ const EnvSchema = z
   })
   .strip()
   .transform(env => {
-    const notebookName = env.VITE_NOTEBOOK_NAME;
-    const notebookNamePlural = pluralize(notebookName);
-
-    // Duration hints for long-lived tokens (CSV of days, clamped to max)
+    // Cross-field: clamp duration hints to the configured maximum (if any).
     const maximumDays = env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-    const hintsEnv = env.VITE_LONG_LIVED_TOKEN_DURATION_HINTS;
-    let hints: number[];
-    if (configHelpers.isBlank(hintsEnv)) {
-      console.log(
-        'VITE_LONG_LIVED_TOKEN_DURATION_HINTS not set, using defaults'
-      );
-      hints = DEFAULT_HINTS;
-    } else {
-      try {
-        // Parse CSV of integers
-        const parsedHints = hintsEnv
-          .split(',')
-          .map(str => str.trim())
-          .map(str => parseInt(str, 10))
-          .filter(num => !isNaN(num) && num > 0);
-
-        if (parsedHints.length === 0) {
-          console.warn(
-            `Invalid CSV format for VITE_LONG_LIVED_TOKEN_DURATION_HINTS: "${hintsEnv}". Using defaults.`
-          );
-          hints = DEFAULT_HINTS;
-        } else {
-          hints = parsedHints;
-        }
-      } catch (error) {
-        console.warn(
-          `Error parsing VITE_LONG_LIVED_TOKEN_DURATION_HINTS: "${hintsEnv}". Using defaults.`,
-          error
-        );
-        hints = DEFAULT_HINTS;
-      }
-    }
+    let hints = env.VITE_LONG_LIVED_TOKEN_DURATION_HINTS;
     if (maximumDays !== undefined) {
       hints = hints.filter(hint => hint <= maximumDays);
       if (hints.length === 0) {
@@ -225,14 +212,16 @@ const EnvSchema = z
         hints = [maximumDays];
       }
     }
-    // Sort ascending and de-dupe
     const longLivedTokenDurationHints = [...new Set(hints)].sort(
       (a, b) => a - b
     );
 
+    const notebookName = env.VITE_NOTEBOOK_NAME;
+    const notebookNamePlural = pluralize(notebookName);
     const webUrl = env.VITE_WEB_URL;
 
     return {
+      // Direct renames (validated/coerced in the field schemas above).
       notebookName,
       websiteTitle: env.VITE_WEBSITE_TITLE,
       docsUrl: env.VITE_DOCS_URL,
@@ -247,19 +236,19 @@ const EnvSchema = z
       satelliteSource: env.VITE_SATELLITE_SOURCE,
       bugsnagApiKey: env.VITE_BUGSNAG_API_KEY,
       appName: env.VITE_APP_NAME,
+      webUrl,
+      apiUrl: env.VITE_API_URL,
+      appUrl: env.VITE_APP_URL,
+      excludedTeamRoles: env.VITE_EXCLUDED_TEAM_ROLES,
+      // Cross-field / derived.
       appShortName: configHelpers.isBlank(env.VITE_APP_SHORT_NAME)
         ? env.VITE_APP_NAME
         : env.VITE_APP_SHORT_NAME,
-      webUrl,
       /** Control Centre home (`/` redirects to `/teams`). */
       webHomeUrl: `${webUrl.replace(/\/$/, '')}/`,
-      apiUrl: env.VITE_API_URL,
-      appUrl: env.VITE_APP_URL,
-      /** Team roles hidden from team-role dropdowns. */
-      excludedTeamRoles: env.VITE_EXCLUDED_TEAM_ROLES,
       longLivedTokenDurationHints,
       notebookNameCapitalized: capitalize(notebookName),
-      /** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */
+      /** Lowercase plural, from `VITE_NOTEBOOK_NAME`. */
       notebookNamePlural,
       /** Plural with first letter capitalised — use for headings and labels. */
       notebookNamePluralCapitalized: capitalize(notebookNamePlural),
@@ -270,33 +259,10 @@ const EnvSchema = z
  * The singleton Control Centre configuration object. Prefer reading values
  * from here; the named exports below derive from it.
  *
- * Explicit static `import.meta.env.VITE_*` accesses are required so Vite
- * performs build-time string replacement for each variable.
+ * Pass the whole `import.meta.env` — `.strip()` drops Vite built-ins
+ * (`MODE`, `DEV`, …) and any other keys not declared above.
  */
-export const config = EnvSchema.parse({
-  VITE_NOTEBOOK_NAME: import.meta.env.VITE_NOTEBOOK_NAME,
-  VITE_WEBSITE_TITLE: import.meta.env.VITE_WEBSITE_TITLE,
-  VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
-  VITE_APP_SHORT_NAME: import.meta.env.VITE_APP_SHORT_NAME,
-  VITE_WEB_URL: import.meta.env.VITE_WEB_URL,
-  VITE_API_URL: import.meta.env.VITE_API_URL,
-  VITE_APP_URL: import.meta.env.VITE_APP_URL,
-  VITE_DOCS_URL: import.meta.env.VITE_DOCS_URL,
-  VITE_APP_THEME: import.meta.env.VITE_APP_THEME,
-  VITE_DEVELOPER_MODE: import.meta.env.VITE_DEVELOPER_MODE,
-  VITE_EXCLUDED_TEAM_ROLES: import.meta.env.VITE_EXCLUDED_TEAM_ROLES,
-  VITE_FORCE_REMOTE_DELETION: import.meta.env.VITE_FORCE_REMOTE_DELETION,
-  VITE_DELETE_ON_DEACTIVATION: import.meta.env.VITE_DELETE_ON_DEACTIVATION,
-  VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: import.meta.env
-    .VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS,
-  VITE_LONG_LIVED_TOKEN_DURATION_HINTS: import.meta.env
-    .VITE_LONG_LIVED_TOKEN_DURATION_HINTS,
-  VITE_MAP_SOURCE: import.meta.env.VITE_MAP_SOURCE,
-  VITE_SATELLITE_SOURCE: import.meta.env.VITE_SATELLITE_SOURCE,
-  VITE_MAP_SOURCE_KEY: import.meta.env.VITE_MAP_SOURCE_KEY,
-  VITE_MAP_STYLE: import.meta.env.VITE_MAP_STYLE,
-  VITE_BUGSNAG_API_KEY: import.meta.env.VITE_BUGSNAG_API_KEY,
-});
+export const config = EnvSchema.parse(import.meta.env);
 
 export type Config = typeof config;
 
