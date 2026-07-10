@@ -60,12 +60,26 @@ export const nativeEnumDefault = <const T extends Record<string, string>>(
     .transform(emptyToUndefined)
     .pipe(z.enum(values).default(def));
 
-/** Optional string schema; blank becomes the provided default. */
-export const stringDefault = (def: string) =>
+/**
+ * Optional string schema; blank becomes the provided default.
+ * When `label` is set (typically the env var name), logs a warning naming the
+ * key and the default applied.
+ */
+export const stringDefault = (def: string, label?: string) =>
   z
     .string()
     .optional()
-    .transform(v => (isBlank(v) ? def : v));
+    .transform(v => {
+      if (isBlank(v)) {
+        if (label) {
+          console.warn(
+            `No value for ${label} was provided in the environment. Defaulting to ${def}.`
+          );
+        }
+        return def;
+      }
+      return v;
+    });
 
 /**
  * Integer schema with default. Blank or unparseable falls back to `def`.

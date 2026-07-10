@@ -77,18 +77,10 @@ const DEFAULT_FROM_NAME = 'FAIMS System Notification';
 const EnvSchema = z
   .object({
     /** Public base URL of this Conductor server. */
-    CONDUCTOR_PUBLIC_URL: z
-      .string()
-      .optional()
-      .transform(v => {
-        if (configHelpers.isBlank(v)) {
-          console.warn(
-            `No value for CONDUCTOR_PUBLIC_URL was provided in the environment. Defaulting to ${DEFAULT_CONDUCTOR_URL}.`
-          );
-          return DEFAULT_CONDUCTOR_URL;
-        }
-        return v;
-      }),
+    CONDUCTOR_PUBLIC_URL: configHelpers.stringDefault(
+      DEFAULT_CONDUCTOR_URL,
+      'CONDUCTOR_PUBLIC_URL'
+    ),
     /** Public URL of the Field Mark web/data-collection app. */
     WEB_APP_PUBLIC_URL: configHelpers.stringDefault(DEFAULT_WEBAPP_URL),
     /** Public URL / store link for the Android app build (optional). */
@@ -139,18 +131,10 @@ const EnvSchema = z
     /** Human-readable instance name (falls back to PROFILE_NAME / key id). */
     CONDUCTOR_INSTANCE_NAME: z.string().optional(),
     /** Short-code prefix used when generating invite / project codes. */
-    CONDUCTOR_SHORT_CODE_PREFIX: z
-      .string()
-      .optional()
-      .transform(v => {
-        if (configHelpers.isBlank(v)) {
-          console.log(
-            'CONDUCTOR_SHORT_CODE_PREFIX not set, using "FAIMS" as default'
-          );
-          return 'FAIMS';
-        }
-        return v;
-      }),
+    CONDUCTOR_SHORT_CODE_PREFIX: configHelpers.stringDefault(
+      'FAIMS',
+      'CONDUCTOR_SHORT_CODE_PREFIX'
+    ),
     /** Free-text description of this Conductor instance. */
     CONDUCTOR_DESCRIPTION: configHelpers.stringDefault(
       'Fieldmark Conductor Server'
