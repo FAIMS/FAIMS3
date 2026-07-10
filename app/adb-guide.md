@@ -139,18 +139,26 @@ adb reverse tcp:5984 tcp:5984   # CouchDB
 ./dev.sh
 ```
 
-### Step 6: Switch Capacitor Config and launch
+### Step 6: Enable ADB mode and launch
 
 Then from within `/app`:
 
 ```bash
 # Sync to android build
-pnpm cap sync android
-# Replace config with local debugging version
-./setup-adb-testing.sh
+CAP_ANDROID_ADB_FORWARD=true pnpm cap sync android
 # Deploy to device
-pnpm cap run android
+CAP_ANDROID_ADB_FORWARD=true pnpm cap run android
 ```
+
+You can also use:
+
+```bash
+./setup-adb-testing.sh --run
+```
+
+`capacitor.config.ts` is the source of truth. `CAP_ANDROID_ADB_FORWARD=true`
+enables local device server settings (including `cleartext` and
+`http://localhost:3000` by default).
 
 Once the app is installed, changes to web code will hot-reload automatically.
 You only need to re-run `cap run android` if you:
@@ -236,6 +244,13 @@ Should show:
 (reverse) tcp:5984 tcp:5984
 ```
 
+Also verify you used ADB mode when syncing/running:
+
+```bash
+echo "$CAP_ANDROID_ADB_FORWARD"
+# Should be true when using one-off exports in the command line.
+```
+
 ### Build fails with Java errors
 
 Ensure Java 21 is installed and JAVA_HOME is set:
@@ -255,9 +270,7 @@ echo $JAVA_HOME        # Should point to Java 21
 
 ## Files Reference
 
-| File                                | Purpose                                |
-| ----------------------------------- | -------------------------------------- |
-| `capacitor.config.json`             | Active Capacitor config                |
-| `capacitor.config.adb-forward.json` | Config for ADB device testing          |
-| `capacitor.config.backup.json`      | Backup of original config              |
-| `setup-adb-testing.sh`              | Script to switch to ADB testing config |
+| File                   | Purpose                          |
+| ---------------------- | -------------------------------- |
+| `capacitor.config.ts`  | Active Capacitor config source   |
+| `setup-adb-testing.sh` | Helper for env-based ADB testing |
