@@ -36,7 +36,7 @@ import flash from 'req-flash';
 import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
 import {registerAuthProviders} from './auth/strategies/applyStrategies';
-import {API_VERSION, config} from './buildconfig';
+import {config} from './buildconfig';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -87,7 +87,7 @@ if (bugsnagEnabled) {
   Bugsnag.start({
     apiKey: config.bugsnagApiKey!,
     plugins: [BugsnagPluginExpress],
-    appVersion: API_VERSION,
+    appVersion: config.apiVersion,
   });
   console.log('Bugsnag enabled');
 } else {

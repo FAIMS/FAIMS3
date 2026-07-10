@@ -30,7 +30,7 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
 import {validateToken} from '../src/auth/keySigning/read';
-import {KEY_SERVICE} from '../src/buildconfig';
+import {keyService} from '../src/buildconfig';
 import {createUser, saveExpressUser} from '../src/couchdb/users';
 
 describe('roundtrip creating and reading token', () => {
@@ -38,7 +38,7 @@ describe('roundtrip creating and reading token', () => {
     const username = 'bobalooba-the-great';
     const name = 'Bob Bobalooba';
     const roles: Role[] = [Role.GENERAL_ADMIN, Role.GENERAL_USER];
-    const signing_key = await KEY_SERVICE.getSigningKey();
+    const signing_key = await keyService.getSigningKey();
 
     // need to make a user with these details
     const [dbUser, err] = await createUser({username, name});

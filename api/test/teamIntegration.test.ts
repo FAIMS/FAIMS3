@@ -45,7 +45,7 @@ import {
   getRelevantUserAssociations,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {KEY_SERVICE} from '../src/buildconfig';
+import {keyService} from '../src/buildconfig';
 import {getDataDb, localGetProjectsDb} from '../src/couchdb';
 import {
   createNotebook,
@@ -255,7 +255,7 @@ describe('Team integration with templates and projects', () => {
     await saveCouchUser(user);
     await addLocalPasswordForUser(user, password);
     // Generate token for this user
-    const signingKey = await KEY_SERVICE.getSigningKey();
+    const signingKey = await keyService.getSigningKey();
     const upgraded = await upgradeCouchUserToExpressUser({dbUser: user});
     const memberToken = await generateJwtFromUser({user: upgraded, signingKey});
 
@@ -380,7 +380,7 @@ describe('Team integration with templates and projects', () => {
     await addLocalPasswordForUser(user, password);
 
     // Generate token for this user
-    const signingKey = await KEY_SERVICE.getSigningKey();
+    const signingKey = await keyService.getSigningKey();
     const upgraded = await upgradeCouchUserToExpressUser({dbUser: user});
     const userToken = await generateJwtFromUser({user: upgraded, signingKey});
 

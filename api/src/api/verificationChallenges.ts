@@ -13,7 +13,7 @@ import {
   PutConfirmEmailVerificationResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
-import {processRequest} from 'zod-express-middleware';
+import {processRequest} from '../middleware/processRequest';
 import {
   checkCanCreateVerificationChallenge,
   createVerificationChallenge,

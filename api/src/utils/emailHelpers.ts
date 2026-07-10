@@ -5,7 +5,7 @@
  * through the email service.
  */
 
-import {config, EMAIL_SERVICE} from '../buildconfig';
+import {config, emailService} from '../buildconfig';
 import {EmailOptions} from '../services/emailService';
 
 /**
@@ -46,7 +46,6 @@ export async function sendEmailVerificationChallenge({
   const expiryMs = expiryTimestampMs - Date.now();
   // Convert ms to hours and round up
   const expiryHours = Math.ceil(expiryMs / (1000 * 60 * 60));
-  const emailService = EMAIL_SERVICE;
   const verificationUrl = buildVerificationUrl({code: verificationCode});
 
   const subject = 'Verify Your Email Address';
@@ -201,7 +200,6 @@ export async function sendPasswordResetEmail({
   const expiryMs = expiryTimestampMs - Date.now();
   // Convert ms to hours and round up
   const expiryHours = Math.ceil(expiryMs / (1000 * 60 * 60));
-  const emailService = EMAIL_SERVICE;
   const resetUrl = buildPasswordResetUrl({code: resetCode, redirect});
 
   const subject = 'Reset Your Password';

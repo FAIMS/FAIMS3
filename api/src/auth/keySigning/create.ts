@@ -28,7 +28,7 @@ import {
   TokenPayload,
 } from '@faims3/data-model';
 import {SignJWT} from 'jose';
-import {config, KEY_SERVICE} from '../../buildconfig';
+import {config, keyService} from '../../buildconfig';
 import {getProjectIdsByTeamId} from '../../couchdb/notebooks';
 import {createNewRefreshToken} from '../../couchdb/refreshTokens';
 import {getTemplateIdsByTeamId} from '../../couchdb/templates';
@@ -196,7 +196,7 @@ export async function generateUserToken(
   } = {}
 ) {
   const {impersonatingUserId, refreshExpiryMs} = options;
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
 
   if (signingKey === null || signingKey === undefined) {
     throw new Error('No signing key is available, check configuration');

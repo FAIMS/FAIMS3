@@ -582,8 +582,8 @@ export const EditableFormManager: React.FC<
         attachmentId,
       });
       // Attachments metadata only — fields own how the id is written into `data`.
-      form.setFieldValue(fieldId, (prev: FormDataEntry | undefined) => {
-        const state = prev || {};
+      form.setFieldValue(fieldId, ((prev: FormDataEntry | undefined) => {
+        const state: FormDataEntry = prev ?? {data: undefined};
         return {
           ...state,
           attachments: [
@@ -595,7 +595,7 @@ export const EditableFormManager: React.FC<
             ...(state.attachments ?? []),
           ],
         };
-      });
+      }) as (prev: FormDataEntry | undefined) => FormDataEntry);
       attachmentSaveTrace('handleAddAttachment:complete', {
         fieldId,
         attachmentId,
@@ -624,8 +624,8 @@ export const EditableFormManager: React.FC<
         throw new Error('No working revision available for attachment removal');
       }
 
-      form.setFieldValue(fieldId, (prev: FormDataEntry | undefined) => {
-        const state = prev || {};
+      form.setFieldValue(fieldId, ((prev: FormDataEntry | undefined) => {
+        const state: FormDataEntry = prev ?? {data: undefined};
         if (!state.attachments) {
           return state;
         }
@@ -635,7 +635,7 @@ export const EditableFormManager: React.FC<
             attachment => attachment.attachmentId !== attachmentId
           ),
         };
-      });
+      }) as (prev: FormDataEntry | undefined) => FormDataEntry);
     },
     [ensureWorkingRevision, form]
   );

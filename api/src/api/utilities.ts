@@ -30,21 +30,13 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
-import {processRequest} from 'zod-express-middleware';
+import {processRequest} from '../middleware/processRequest';
 import {z} from 'zod';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
-import {
-  API_VERSION,
-  config,
-  CONDUCTOR_SERVER_ID,
-  EMAIL_CONFIG,
-  EMAIL_SERVICE,
-  EMAIL_SERVICE_TYPE,
-  TEST_EMAIL_ADDRESS,
-} from '../buildconfig';
+import {config, emailService} from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getUserProjectsDirectory} from '../couchdb/notebooks';
@@ -105,13 +97,13 @@ api.post(
  */
 api.get('/info', async (req, res) => {
   const response: PublicServerInfo = {
-    id: CONDUCTOR_SERVER_ID,
+    id: config.conductorServerId,
     name: config.conductorInstanceName,
     conductor_url: config.conductorPublicUrl,
     description: config.instanceDescription,
     prefix: config.shortCodePrefix,
     // Report the server version e.g. 1.3.1
-    serverVersion: API_VERSION,
+    serverVersion: config.apiVersion,
   };
   res.json(response);
 });
@@ -331,13 +323,21 @@ api.post(
       // Start timing the config validation
       const configStartTime = Date.now();
 
+      const testEmailAddress = config.testEmailAddress;
+      if (!testEmailAddress) {
+        throw new Error(
+          'TEST_EMAIL_ADDRESS environment variable is required for testing email functionality. ' +
+            'Please add this to your environment configuration.'
+        );
+      }
+
       // End timing for config validation
       const configEndTime = Date.now();
       responseData.timings.configValidation = configEndTime - configStartTime;
 
       // Build the debug email content
       const emailOptions = {
-        to: TEST_EMAIL_ADDRESS,
+        to: testEmailAddress,
         subject: `Email Service Test from ${config.conductorInstanceName}`,
         html: `
           <h1>Email Service Test</h1>
@@ -346,10 +346,10 @@ api.post(
           <ul>
             <li><strong>Server:</strong> ${config.conductorInstanceName}</li>
             <li><strong>Conductor URL:</strong> ${config.conductorPublicUrl}</li>
-            <li><strong>Email Service Type:</strong> ${EMAIL_SERVICE_TYPE}</li>
-            <li><strong>From Address:</strong> ${EMAIL_CONFIG.fromEmail}</li>
-            <li><strong>From Name:</strong> ${EMAIL_CONFIG.fromName}</li>
-            <li><strong>Test Address:</strong> ${TEST_EMAIL_ADDRESS}</li>
+            <li><strong>Email Service Type:</strong> ${config.emailServiceType}</li>
+            <li><strong>From Address:</strong> ${config.email.fromEmail}</li>
+            <li><strong>From Name:</strong> ${config.email.fromName}</li>
+            <li><strong>Test Address:</strong> ${testEmailAddress}</li>
             <li><strong>Time Generated:</strong> ${nowIso()}</li>
             <li><strong>Requested by:</strong> ${req.user._id}</li>
           </ul>
@@ -363,10 +363,10 @@ This is a test email from the ${config.conductorInstanceName} server.
 Service Information:
 - Server: ${config.conductorInstanceName}
 - Conductor URL: ${config.conductorPublicUrl}
-- Email Service Type: ${EMAIL_SERVICE_TYPE}
-- From Address: ${EMAIL_CONFIG.fromEmail}
-- From Name: ${EMAIL_CONFIG.fromName}
-- Test Address: ${TEST_EMAIL_ADDRESS}
+- Email Service Type: ${config.emailServiceType}
+- From Address: ${config.email.fromEmail}
+- From Name: ${config.email.fromName}
+- Test Address: ${testEmailAddress}
 - Time Generated: ${nowIso()}
 - Requested by: ${req.user._id}
 
@@ -377,7 +377,7 @@ If you received this email, the email service is configured correctly.
       // Log sending attempt
       if (!config.runningUnderTest) {
         console.log(
-          `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
+          `[Email Test] Attempting to send test email to ${testEmailAddress}`
         );
       }
 
@@ -385,7 +385,7 @@ If you received this email, the email service is configured correctly.
       const emailStartTime = Date.now();
 
       // Send the test email
-      const emailResult = await EMAIL_SERVICE.sendEmail({
+      const emailResult = await emailService.sendEmail({
         options: emailOptions,
       });
 
@@ -396,11 +396,11 @@ If you received this email, the email service is configured correctly.
       // Email sent successfully
       responseData.success = true;
       responseData.status = 'sent';
-      responseData.message = `Test email successfully sent to ${TEST_EMAIL_ADDRESS}`;
+      responseData.message = `Test email successfully sent to ${testEmailAddress}`;
       responseData.details = {
         messageId: emailResult.messageId,
-        recipient: TEST_EMAIL_ADDRESS,
-        emailServiceType: EMAIL_SERVICE_TYPE,
+        recipient: testEmailAddress,
+        emailServiceType: config.emailServiceType,
         emailResponse: emailResult.response,
       };
 

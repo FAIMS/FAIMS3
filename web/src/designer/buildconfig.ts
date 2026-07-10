@@ -17,36 +17,32 @@
  * Description:
  *   This module exports the configuration for the designer, specifically
  *   managing template protections. Configuration is parsed from Vite's
- *   `import.meta.env` using a two-pass zod pipeline (env -> strings, then
- *   strings -> typed values) and exposed via the `config` singleton.
+ *   `import.meta.env` with a single zod schema (coerce + rename) and exposed
+ *   via the `config` singleton.
  */
 
+import {configHelpers} from '@faims3/data-model';
 import {z} from 'zod';
 
-const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
-
-// Pass one: read and validate the raw environment into (optional) strings.
-const EnvSchema = z.object({
-  VITE_TEMPLATE_PROTECTIONS: z.string().optional(),
-});
-
-const rawEnv = EnvSchema.parse({
-  VITE_TEMPLATE_PROTECTIONS: import.meta.env.VITE_TEMPLATE_PROTECTIONS,
-});
-
-// Pass two: build the typed configuration values. Defaults to false when unset.
-const ConfigSchema = z.object({
-  templateProtections: z
-    .string()
-    .optional()
-    .transform(v => (v ? TRUTHY_STRINGS.includes(v.toLowerCase()) : false)),
-});
+const EnvSchema = z
+  .object({
+    /**
+     * Enables template edit protections in the designer. Defaults to false
+     * when unset.
+     */
+    VITE_TEMPLATE_PROTECTIONS: configHelpers.truthyBool(false),
+  })
+  .strip()
+  .transform(({VITE_TEMPLATE_PROTECTIONS}) => ({
+    /** Whether template protections are enabled. */
+    templateProtections: VITE_TEMPLATE_PROTECTIONS,
+  }));
 
 /**
  * The singleton designer configuration object. Prefer reading values from here.
  */
-export const config = ConfigSchema.parse({
-  templateProtections: rawEnv.VITE_TEMPLATE_PROTECTIONS,
+export const config = EnvSchema.parse({
+  VITE_TEMPLATE_PROTECTIONS: import.meta.env.VITE_TEMPLATE_PROTECTIONS,
 });
 
 export type DesignerConfig = typeof config;

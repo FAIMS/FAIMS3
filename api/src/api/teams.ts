@@ -38,7 +38,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import {processRequest} from '../middleware/processRequest';
 import {
   createTeamDocument,
   deleteTeam,

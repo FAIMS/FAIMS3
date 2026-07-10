@@ -18,13 +18,13 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data.
  *
- *   Configuration is parsed from Vite's `import.meta.env` using a two-pass zod
- *   pipeline:
- *     - Pass one (EnvSchema) validates/narrows the raw environment into strings.
- *       The raw object is assembled with explicit static `import.meta.env.VITE_*`
- *       accesses so Vite performs its build-time replacement.
- *     - Pass two (ConfigSchema + a small amount of custom logic for derived or
- *       inter-dependent values) produces the typed `config` singleton.
+ *   Configuration is parsed from Vite's `import.meta.env` with a single zod
+ *   schema:
+ *     - Each env key is declared once with its coercion / defaulting logic.
+ *     - The raw object uses explicit static `import.meta.env.VITE_*` accesses so
+ *       Vite performs its build-time replacement.
+ *     - `.strip()` drops unrelated keys; a final `.transform()` renames ENV_KEYS
+ *       into the camelCase `config` shape (and builds cross-field values).
  *
  *   Prefer importing `{config}` and reading `config.<field>`. Advanced surfaces
  *   (map config, address autosuggest) keep their existing functional interfaces
@@ -32,6 +32,7 @@
  */
 
 import {Capacitor} from '@capacitor/core';
+import {configHelpers} from '@faims3/data-model';
 import {
   type IAutosuggestAddressService,
   MapboxAutosuggestAddressService,
@@ -45,13 +46,8 @@ import {z} from 'zod';
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
 
-// Constants
-
 // Default conductor URL
 export const DEFAULT_CONDUCTOR_URL = 'http://localhost:8154';
-
-const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
-const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 const DEFAULT_MAPBOX_ADDRESS_COUNTRY = ['AU'];
 
@@ -87,62 +83,336 @@ export type NavigationStyleOption = 'none' | 'breadcrumbs';
  */
 export type ForceRemoteDeletionMode = 'allow' | 'never';
 
+const MAP_STYLESHEET_NAMES = [
+  'basic',
+  'openstreetmap',
+  'osm-bright',
+  'toner',
+] as const satisfies readonly MapStylesheetNameType[];
+
+/**
+ * Splits the input, trimming for whitespace and filtering empty strings.
+ * Handles cases including an empty resulting list, and warns on empty strings
+ * being contained. Falls through to the DEFAULT_CONDUCTOR_URL where needed.
+ * @returns A list of conductor URLs which can act as servers.
+ */
+export function parseConductorUrls(conductorUrls: string): string[] {
+  const urls = conductorUrls.split(',');
+  if (urls.some((url: string) => url.length === 0)) {
+    console.warn(
+      `CONDUCTOR_URL value was provided, but when split, contained entries which were empty. Value: ${conductorUrls}. After split: ${urls}.`
+    );
+  }
+
+  const filteredUrls = urls
+    .map((url: string) => url.trim())
+    .filter((url: string) => url.length > 0);
+
+  if (!(filteredUrls.length > 0)) {
+    console.error(
+      `CONDUCTOR_URL value was provided, but when split, trimmed, and empty strings removed, had a length of zero. Value: ${conductorUrls}. After split: ${urls}. After filter: ${filteredUrls}. Returning default [${DEFAULT_CONDUCTOR_URL}]`
+    );
+    return [DEFAULT_CONDUCTOR_URL];
+  }
+
+  return filteredUrls;
+}
+
 // ---------------------------------------------------------------------------
-// Pass one: read and validate the raw environment into (optional) strings.
-//
-// The raw object uses explicit static `import.meta.env.VITE_*` accesses so that
-// Vite performs its build-time string replacement for each variable.
+// Single-pass env schema: validate/coerce, strip unknowns, rename to config.
 // ---------------------------------------------------------------------------
 
-const EnvSchema = z.object({
-  VITE_DEBUG_POUCHDB: z.string().optional(),
-  VITE_DEBUG_APP: z.string().optional(),
-  VITE_SHOW_POUCHDB_BROWSER: z.string().optional(),
-  VITE_SHOW_WIPE: z.string().optional(),
-  VITE_SHOW_NEW_NOTEBOOK: z.string().optional(),
-  VITE_POUCH_BATCH_SIZE: z.string().optional(),
-  VITE_POUCH_BATCHES_LIMIT: z.string().optional(),
-  VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: z.string().optional(),
-  VITE_DIRECTORY_USERNAME: z.string().optional(),
-  VITE_DIRECTORY_PASSWORD: z.string().optional(),
-  VITE_CLUSTER_ADMIN_GROUP_NAME: z.string().optional(),
-  VITE_BUGSNAG_KEY: z.string().optional(),
-  VITE_CONDUCTOR_URL: z.string().optional(),
-  VITE_NOTEBOOK_LIST_TYPE: z.string().optional(),
-  VITE_NOTEBOOK_NAME: z.string().optional(),
-  VITE_APP_ID: z.string().optional(),
-  VITE_APP_NAME: z.string().optional(),
-  VITE_HEADING_APP_NAME: z.string().optional(),
-  VITE_APP_PRIVACY_POLICY_URL: z.string().optional(),
-  VITE_APP_CONTACT_URL: z.string().optional(),
-  VITE_SUPPORT_EMAIL: z.string().optional(),
-  VITE_TOKEN_REFRESH_INTERVAL_MS: z.string().optional(),
-  VITE_TOKEN_REFRESH_WINDOW_MS: z.string().optional(),
-  VITE_LOGIN_BANNER_GRACE_MS: z.string().optional(),
-  VITE_IGNORE_TOKEN_EXP: z.string().optional(),
-  VITE_MAP_SOURCE: z.string().optional(),
-  VITE_MAP_SOURCE_KEY: z.string().optional(),
-  VITE_MAP_STYLE: z.string().optional(),
-  VITE_SATELLITE_SOURCE: z.string().optional(),
-  VITE_OFFLINE_MAPS: z.string().optional(),
-  VITE_NAVIGATION: z.string().optional(),
-  VITE_SHOW_RECORD_LINKS: z.string().optional(),
-  VITE_MIGRATE_OLD_DATABASES: z.string().optional(),
-  VITE_FORCE_REMOTE_DELETION: z.string().optional(),
-  VITE_DELETE_ON_DEACTIVATION: z.string().optional(),
-  VITE_ATTACHMENT_SERVICE_TYPE: z.string().optional(),
-  VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: z.string().optional(),
-  VITE_AUTOSUGGEST_SOURCE: z.string().optional(),
-  VITE_AUTOSUGGEST_MAPBOX_KEY: z.string().optional(),
-  VITE_MAPBOX_ADDRESS_COUNTRY: z.string().optional(),
-  VITE_AUTOSUGGEST_MAPTILER_KEY: z.string().optional(),
-  VITE_MAPTILER_ADDRESS_COUNTRY: z.string().optional(),
-  NODE_ENV: z.string().optional(),
-});
+const EnvSchema = z
+  .object({
+    /** Enable verbose PouchDB logging. */
+    VITE_DEBUG_POUCHDB: configHelpers.boolWithDefault(false),
+    /** Enable verbose app logging. */
+    VITE_DEBUG_APP: configHelpers.boolWithDefault(false),
+    /** Show the in-app PouchDB browser / inspector UI. */
+    VITE_SHOW_POUCHDB_BROWSER: configHelpers.boolWithDefault(true),
+    /** Show the "wipe local data" developer affordance. */
+    VITE_SHOW_WIPE: configHelpers.boolWithDefault(true),
+    /** Show the "create new notebook" UI affordance. */
+    VITE_SHOW_NEW_NOTEBOOK: configHelpers.boolWithDefault(true),
+    /** See `batch_size` in https://pouchdb.com/api.html#replication */
+    VITE_POUCH_BATCH_SIZE: configHelpers.intDefault(10),
+    /** See `batches_limit` in https://pouchdb.com/api.html#replication */
+    VITE_POUCH_BATCHES_LIMIT: configHelpers.intDefault(10),
+    /**
+     * Record count above which activation defaults to push-only sync (when
+     * online). 500 is a conservative estimate pending further load testing.
+     */
+    VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: configHelpers.intDefault(500),
+    /**
+     * Directory auth username (client). Paired with VITE_DIRECTORY_PASSWORD;
+     * distinct from server COUCHDB_USER/PASSWORD used for testing.
+     */
+    VITE_DIRECTORY_USERNAME: z.string().optional(),
+    /** Directory auth password paired with VITE_DIRECTORY_USERNAME. */
+    VITE_DIRECTORY_PASSWORD: z.string().optional(),
+    /** Couch / directory group name treated as cluster admin. */
+    VITE_CLUSTER_ADMIN_GROUP_NAME: configHelpers.stringDefault('cluster-admin'),
+    /** Bugsnag API key; unset / `'false'` disables Bugsnag. */
+    VITE_BUGSNAG_KEY: z
+      .string()
+      .optional()
+      .transform((v): string | undefined =>
+        configHelpers.isBlank(v) || v === 'false' ? undefined : v
+      ),
+    /**
+     * Comma-separated Conductor URLs the app can authenticate against.
+     * Parsed via `parseConductorUrls`; falls back to DEFAULT_CONDUCTOR_URL.
+     */
+    VITE_CONDUCTOR_URL: z.string().optional(),
+    /** Notebook listing layout: `'tabs'` or `'headings'`. */
+    VITE_NOTEBOOK_LIST_TYPE: configHelpers.enumDefault(
+      ['tabs', 'headings'],
+      'tabs'
+    ),
+    /**
+     * Singular display name for notebooks (e.g. `'notebook'` / `'project'`).
+     * Plural / capitalised forms are derived.
+     */
+    VITE_NOTEBOOK_NAME: configHelpers.stringDefault('notebook'),
+    /** Android / iOS application identifier. */
+    VITE_APP_ID: configHelpers.stringDefault('org.fedarch.faims3'),
+    /** Product display name. */
+    VITE_APP_NAME: configHelpers.stringDefault('Fieldmark'),
+    /** Optional heading override; falls back to VITE_APP_NAME when blank. */
+    VITE_HEADING_APP_NAME: z.string().optional(),
+    /** Privacy-policy URL (defaults to the EFN privacy policy). */
+    VITE_APP_PRIVACY_POLICY_URL: configHelpers.stringDefault(
+      'https://fieldnote.au/privacy'
+    ),
+    /**
+     * Contact URL shown in the app chrome. Falsy / empty hides the contact
+     * link.
+     */
+    VITE_APP_CONTACT_URL: configHelpers.stringDefault(''),
+    /** Support / contact email address. */
+    VITE_SUPPORT_EMAIL: configHelpers.stringDefault('support@fieldmark.au'),
+    /** Interval (ms) between attempts to refresh all tokens. Default 15s. */
+    VITE_TOKEN_REFRESH_INTERVAL_MS: configHelpers.intDefault(15000),
+    /**
+     * Refresh tokens when they have this much lifetime left (ms). Default
+     * 60s — try to refresh before expiry hits the 60-second mark.
+     */
+    VITE_TOKEN_REFRESH_WINDOW_MS: configHelpers.intDefault(60000),
+    /**
+     * Grace period (ms) after app initialisation before showing the
+     * logged-out banner. Default 10s.
+     */
+    VITE_LOGIN_BANNER_GRACE_MS: configHelpers.intDefault(10000),
+    /**
+     * When `'TRUE'` (case-insensitive), ignore JWT expiry and treat tokens as
+     * valid for 1 year — disables refreshing. Debug / compat only.
+     */
+    VITE_IGNORE_TOKEN_EXP: z
+      .string()
+      .optional()
+      .transform(v =>
+        configHelpers.isBlank(v) ? false : v.toUpperCase() === 'TRUE'
+      ),
+    /**
+     * Map tile source (see `src/gui/components/map/tile_source.ts`). Pair
+     * with VITE_MAP_SOURCE_KEY when the provider needs an API key.
+     */
+    VITE_MAP_SOURCE: configHelpers.stringDefault('osm'),
+    /** API key for the configured map source (when required). */
+    VITE_MAP_SOURCE_KEY: configHelpers.stringDefault(''),
+    /** Map stylesheet name (`basic`, `openstreetmap`, `osm-bright`, `toner`). */
+    VITE_MAP_STYLE: configHelpers.enumDefault(
+      [...MAP_STYLESHEET_NAMES],
+      'basic'
+    ),
+    /** Optional satellite imagery provider (`esri` or `maptiler`). */
+    VITE_SATELLITE_SOURCE: configHelpers.optionalEnum(['esri', 'maptiler']),
+    /**
+     * Enable offline map downloads when `'true'`. Forced off for OSM (bulk
+     * download not allowed).
+     */
+    VITE_OFFLINE_MAPS: z.string().optional(),
+    /** In-app navigation chrome: `'none'` or `'breadcrumbs'`. */
+    VITE_NAVIGATION: configHelpers.enumDefault(
+      [
+        'none',
+        'breadcrumbs',
+      ] as const satisfies readonly NavigationStyleOption[],
+      'none'
+    ),
+    /** Show the record-links feature when exactly `'true'`. */
+    VITE_SHOW_RECORD_LINKS: configHelpers.truthyOnlyEquals('true'),
+    /** Automatically migrate old v1.0-style databases on startup. */
+    VITE_MIGRATE_OLD_DATABASES: configHelpers.truthyOnlyBool(false),
+    /**
+     * When a local notebook is archived / deleted upstream: `'allow'` destroys
+     * the local Pouch DB; `'never'` (default) only closes handles so data can
+     * be recovered. See `ForceRemoteDeletionMode`.
+     */
+    VITE_FORCE_REMOTE_DELETION: configHelpers.enumDefault(
+      ['allow', 'never'] as const satisfies readonly ForceRemoteDeletionMode[],
+      'never'
+    ),
+    /**
+     * When true, manual notebook deactivation destroys the local
+     * Pouch/IndexedDB database. When false or unset, deactivation only closes
+     * sync and DB handles (IndexedDB may remain).
+     */
+    VITE_DELETE_ON_DEACTIVATION: configHelpers.boolWithDefault(false),
+    /** Attachment storage backend (defaults to `'COUCH'`). */
+    VITE_ATTACHMENT_SERVICE_TYPE: configHelpers.stringDefault('COUCH'),
+    /** Optional prefix for attachment document IDs. */
+    VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: z
+      .string()
+      .optional()
+      .transform((v): string | undefined =>
+        configHelpers.isBlank(v) ? undefined : v
+      ),
+    /**
+     * Address autosuggest provider. Resolves to `AutosuggestSource`; invalid
+     * or unset defaults to `NONE`.
+     */
+    VITE_AUTOSUGGEST_SOURCE: configHelpers.nativeEnumDefault(
+      AutosuggestSource,
+      AutosuggestSource.NONE
+    ),
+    /**
+     * Mapbox access token when AUTOSUGGEST_SOURCE is MAPBOX. Required for
+     * MAPBOX; if missing, address autosuggest is effectively disabled.
+     */
+    VITE_AUTOSUGGEST_MAPBOX_KEY: z
+      .string()
+      .optional()
+      .transform((v): string | undefined =>
+        v === undefined || v.trim() === '' ? undefined : v.trim()
+      ),
+    /**
+     * Mapbox address search country filter (ISO 3166-1 alpha-2).
+     * Comma-separated codes (e.g. `"AU"` or `"AU,NZ"`). Defaults to Australia.
+     */
+    VITE_MAPBOX_ADDRESS_COUNTRY: configHelpers.csvUpperWithDefault(
+      DEFAULT_MAPBOX_ADDRESS_COUNTRY
+    ),
+    /**
+     * Dedicated MapTiler API key for autosuggest. When blank and map source is
+     * `maptiler`, VITE_MAP_SOURCE_KEY is reused so one key serves tiles and
+     * geocoding.
+     */
+    VITE_AUTOSUGGEST_MAPTILER_KEY: z.string().optional(),
+    /**
+     * MapTiler address search country filter (ISO 3166-1 alpha-2).
+     * Comma-separated codes (e.g. `"AU"` or `"AU,NZ"`). Defaults to Australia.
+     */
+    VITE_MAPTILER_ADDRESS_COUNTRY: configHelpers.csvUpperWithDefault(
+      DEFAULT_MAPBOX_ADDRESS_COUNTRY
+    ),
+    /** Node environment; `'test'` sets `runningUnderTest`. */
+    NODE_ENV: z.string().optional(),
+  })
+  .strip()
+  .transform(env => {
+    const notebookName = env.VITE_NOTEBOOK_NAME;
+    const notebookNamePlural = pluralize(notebookName);
 
-type RawEnv = z.infer<typeof EnvSchema>;
+    let conductorUrls: string[];
+    if (env.VITE_CONDUCTOR_URL) {
+      conductorUrls = parseConductorUrls(env.VITE_CONDUCTOR_URL);
+    } else {
+      console.warn(
+        `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
+      );
+      conductorUrls = [DEFAULT_CONDUCTOR_URL];
+    }
 
-const rawEnv: RawEnv = EnvSchema.parse({
+    let directoryAuth: undefined | {username: string; password: string};
+    if (
+      configHelpers.isBlank(env.VITE_DIRECTORY_USERNAME) ||
+      configHelpers.isBlank(env.VITE_DIRECTORY_PASSWORD)
+    ) {
+      directoryAuth = undefined;
+    } else {
+      directoryAuth = {
+        username: env.VITE_DIRECTORY_USERNAME,
+        password: env.VITE_DIRECTORY_PASSWORD,
+      };
+    }
+
+    // MapTiler API key: dedicated key, else reuse map source key when maptiler.
+    let maptilerApiKey: string | undefined;
+    const dedicated = env.VITE_AUTOSUGGEST_MAPTILER_KEY;
+    if (dedicated !== undefined && dedicated.trim() !== '') {
+      maptilerApiKey = dedicated.trim();
+    } else if (
+      env.VITE_MAP_SOURCE === 'maptiler' &&
+      env.VITE_MAP_SOURCE_KEY !== ''
+    ) {
+      maptilerApiKey = env.VITE_MAP_SOURCE_KEY;
+    }
+
+    return {
+      debugPouchdb: env.VITE_DEBUG_POUCHDB,
+      debugApp: env.VITE_DEBUG_APP,
+      showPouchdbBrowser: env.VITE_SHOW_POUCHDB_BROWSER,
+      showWipe: env.VITE_SHOW_WIPE,
+      showNewNotebook: env.VITE_SHOW_NEW_NOTEBOOK,
+      pouchBatchSize: env.VITE_POUCH_BATCH_SIZE,
+      pouchBatchesLimit: env.VITE_POUCH_BATCHES_LIMIT,
+      syncPushOnlyRecordThreshold: env.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,
+      clusterAdminGroupName: env.VITE_CLUSTER_ADMIN_GROUP_NAME,
+      notebookListType: env.VITE_NOTEBOOK_LIST_TYPE,
+      notebookName,
+      notebookNameCapitalized:
+        notebookName.charAt(0).toUpperCase() + notebookName.slice(1),
+      notebookNamePlural,
+      notebookNamePluralCapitalized:
+        notebookNamePlural.charAt(0).toUpperCase() +
+        notebookNamePlural.slice(1),
+      appId: env.VITE_APP_ID,
+      appName: env.VITE_APP_NAME,
+      headingAppName: configHelpers.isBlank(env.VITE_HEADING_APP_NAME)
+        ? env.VITE_APP_NAME
+        : env.VITE_HEADING_APP_NAME,
+      privacyPolicyUrl: env.VITE_APP_PRIVACY_POLICY_URL,
+      contactUrl: env.VITE_APP_CONTACT_URL,
+      supportEmail: env.VITE_SUPPORT_EMAIL,
+      tokenRefreshIntervalMs: env.VITE_TOKEN_REFRESH_INTERVAL_MS,
+      tokenRefreshWindowMs: env.VITE_TOKEN_REFRESH_WINDOW_MS,
+      loginBannerGraceMs: env.VITE_LOGIN_BANNER_GRACE_MS,
+      ignoreTokenExp: env.VITE_IGNORE_TOKEN_EXP,
+      mapSource: env.VITE_MAP_SOURCE,
+      mapSourceKey: env.VITE_MAP_SOURCE_KEY,
+      mapStyle: env.VITE_MAP_STYLE,
+      satelliteSource: env.VITE_SATELLITE_SOURCE,
+      navigationStyle: env.VITE_NAVIGATION,
+      showRecordLinks: env.VITE_SHOW_RECORD_LINKS,
+      migrateOldDatabases: env.VITE_MIGRATE_OLD_DATABASES,
+      forceRemoteDeletion: env.VITE_FORCE_REMOTE_DELETION,
+      deleteOnDeactivation: env.VITE_DELETE_ON_DEACTIVATION,
+      attachmentServiceType: env.VITE_ATTACHMENT_SERVICE_TYPE,
+      attachmentDocumentIdPrefix: env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX,
+      bugsnagKey: env.VITE_BUGSNAG_KEY,
+      mapboxAccessToken: env.VITE_AUTOSUGGEST_MAPBOX_KEY,
+      mapboxAddressCountry: env.VITE_MAPBOX_ADDRESS_COUNTRY,
+      maptilerAddressCountry: env.VITE_MAPTILER_ADDRESS_COUNTRY,
+      autosuggestSource: env.VITE_AUTOSUGGEST_SOURCE,
+      conductorUrls,
+      directoryAuth,
+      runningUnderTest: env.NODE_ENV === 'test',
+      // OSM does not allow bulk downloads so we can't enable offline maps
+      offlineMaps:
+        (env.VITE_OFFLINE_MAPS === 'true' && env.VITE_MAP_SOURCE !== 'osm') ||
+        false,
+      maptilerApiKey,
+    };
+  });
+
+/**
+ * The singleton configuration object. Prefer reading values from here.
+ *
+ * Explicit static `import.meta.env.VITE_*` accesses are required so Vite
+ * performs build-time string replacement for each variable.
+ */
+export const config = EnvSchema.parse({
   VITE_DEBUG_POUCHDB: import.meta.env.VITE_DEBUG_POUCHDB,
   VITE_DEBUG_APP: import.meta.env.VITE_DEBUG_APP,
   VITE_SHOW_POUCHDB_BROWSER: import.meta.env.VITE_SHOW_POUCHDB_BROWSER,
@@ -191,347 +461,13 @@ const rawEnv: RawEnv = EnvSchema.parse({
   NODE_ENV: import.meta.env.NODE_ENV,
 });
 
-// ---------------------------------------------------------------------------
-// Reusable pass-two field builders.
-// ---------------------------------------------------------------------------
-
-const isBlank = (v: string | undefined): v is undefined | '' =>
-  v === undefined || v === '';
-
-/** Non-empty string with a default. */
-const stringFromEnv = (def: string) =>
-  z
-    .string()
-    .optional()
-    .transform(v => (isBlank(v) ? def : v));
-
-/** Integer with default; blank or unparseable falls back to the default. */
-const intFromEnv = (def: number) =>
-  z
-    .string()
-    .optional()
-    .transform(v => {
-      if (isBlank(v)) return def;
-      const parsed = parseInt(v, 10);
-      return Number.isNaN(parsed) ? def : parsed;
-    });
-
-/**
- * Boolean parsed from the truthy/falsey string sets. Blank falls back to
- * `def`; an unrecognised value logs a warning and falls back to `badFallback`
- * (defaults to `def`).
- */
-const boolFromEnv = (
-  def: boolean,
-  opts: {label?: string; badFallback?: boolean} = {}
-) =>
-  z
-    .string()
-    .optional()
-    .transform(v => {
-      if (isBlank(v)) return def;
-      const lower = v.toLowerCase();
-      if (FALSEY_STRINGS.includes(lower)) return false;
-      if (TRUTHY_STRINGS.includes(lower)) return true;
-      const fallback = opts.badFallback ?? def;
-      if (opts.label) {
-        logError(`${opts.label} badly defined, assuming ${fallback}`);
-      }
-      return fallback;
-    });
-
-/** Truthy-string boolean with a default when blank. */
-const truthyOnlyBool = (def: boolean) =>
-  z
-    .string()
-    .optional()
-    .transform(v =>
-      isBlank(v) ? def : TRUTHY_STRINGS.includes(v.toLowerCase())
-    );
-
-/** Boolean that is only true when the (exact) value equals `match`. */
-const truthyOnlyEquals = (match: string) =>
-  z
-    .string()
-    .optional()
-    .transform(v => v === match);
-
-/** Comma-separated uppercase list with a default when blank. */
-const csvUpperFromEnv = (def: string[]) =>
-  z
-    .string()
-    .optional()
-    .transform(v =>
-      v === undefined || v.trim() === ''
-        ? def
-        : v
-            .split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(Boolean)
-    );
-
-// ---------------------------------------------------------------------------
-// Pass two: build the typed configuration values.
-// ---------------------------------------------------------------------------
-
-const ConfigSchema = z.object({
-  debugPouchdb: boolFromEnv(false, {label: 'VITE_DEBUG_POUCHDB'}),
-  // Note: badly-defined VITE_DEBUG_APP historically defaults to true.
-  debugApp: boolFromEnv(false, {label: 'VITE_DEBUG_APP', badFallback: true}),
-  showPouchdbBrowser: boolFromEnv(true, {label: 'VITE_SHOW_POUCHDB_BROWSER'}),
-  showWipe: boolFromEnv(true, {label: 'VITE_SHOW_WIPE'}),
-  showNewNotebook: boolFromEnv(true, {label: 'VITE_SHOW_NEW_NOTEBOOK'}),
-  pouchBatchSize: intFromEnv(10),
-  pouchBatchesLimit: intFromEnv(10),
-  syncPushOnlyRecordThreshold: intFromEnv(500),
-  clusterAdminGroupName: stringFromEnv('cluster-admin'),
-  notebookListType: z
-    .string()
-    .optional()
-    .transform((v): 'tabs' | 'headings' =>
-      v === 'headings' ? 'headings' : 'tabs'
-    ),
-  notebookName: stringFromEnv('notebook'),
-  appId: stringFromEnv('org.fedarch.faims3'),
-  appName: stringFromEnv('Fieldmark'),
-  privacyPolicyUrl: stringFromEnv('https://fieldnote.au/privacy'),
-  contactUrl: stringFromEnv(''),
-  supportEmail: stringFromEnv('support@fieldmark.au'),
-  tokenRefreshIntervalMs: intFromEnv(15000),
-  tokenRefreshWindowMs: intFromEnv(60000),
-  loginBannerGraceMs: intFromEnv(10000),
-  ignoreTokenExp: z
-    .string()
-    .optional()
-    .transform(v => (isBlank(v) ? false : v.toUpperCase() === 'TRUE')),
-  mapSource: stringFromEnv('osm'),
-  mapSourceKey: stringFromEnv(''),
-  mapStyle: z
-    .string()
-    .optional()
-    .transform(
-      (v): MapStylesheetNameType =>
-        isBlank(v) ? 'basic' : (v as MapStylesheetNameType)
-    ),
-  satelliteSource: z
-    .string()
-    .optional()
-    .transform((v): 'esri' | 'maptiler' | undefined =>
-      isBlank(v) ? undefined : (v as 'esri' | 'maptiler')
-    ),
-  navigationStyle: z
-    .string()
-    .optional()
-    .transform(
-      (v): NavigationStyleOption =>
-        isBlank(v) ? 'none' : (v as NavigationStyleOption)
-    ),
-  showRecordLinks: truthyOnlyEquals('true'),
-  migrateOldDatabases: truthyOnlyBool(false),
-  forceRemoteDeletion: z
-    .string()
-    .optional()
-    .transform((v): ForceRemoteDeletionMode => {
-      if (v === 'allow') return 'allow';
-      if (v !== undefined && v !== '' && v !== 'never') {
-        logError(
-          `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
-        );
-      }
-      return 'never';
-    }),
-  deleteOnDeactivation: boolFromEnv(false, {
-    label: 'VITE_DELETE_ON_DEACTIVATION',
-  }),
-  attachmentServiceType: stringFromEnv('COUCH'),
-  attachmentDocumentIdPrefix: z
-    .string()
-    .optional()
-    .transform((v): string | undefined => (isBlank(v) ? undefined : v)),
-  bugsnagKey: z
-    .string()
-    .optional()
-    .transform((v): string | undefined =>
-      isBlank(v) || v === 'false' ? undefined : v
-    ),
-  mapboxAccessToken: z
-    .string()
-    .optional()
-    .transform((v): string | undefined =>
-      v === undefined || v.trim() === '' ? undefined : v.trim()
-    ),
-  mapboxAddressCountry: csvUpperFromEnv(DEFAULT_MAPBOX_ADDRESS_COUNTRY),
-  maptilerAddressCountry: csvUpperFromEnv(DEFAULT_MAPBOX_ADDRESS_COUNTRY),
-  autosuggestSource: z
-    .string()
-    .optional()
-    .transform((v): AutosuggestSource => {
-      if (v === undefined || v === '') {
-        return AutosuggestSource.NONE;
-      }
-      const upper = v.toUpperCase();
-      if (upper in AutosuggestSource) {
-        return AutosuggestSource[upper as keyof typeof AutosuggestSource];
-      }
-      logError(
-        `VITE_AUTOSUGGEST_SOURCE invalid (${v}), using NONE. Valid: NONE, MAPBOX, MAPTILER.`
-      );
-      return AutosuggestSource.NONE;
-    }),
-});
-
-const parsedConfig = ConfigSchema.parse({
-  debugPouchdb: rawEnv.VITE_DEBUG_POUCHDB,
-  debugApp: rawEnv.VITE_DEBUG_APP,
-  showPouchdbBrowser: rawEnv.VITE_SHOW_POUCHDB_BROWSER,
-  showWipe: rawEnv.VITE_SHOW_WIPE,
-  showNewNotebook: rawEnv.VITE_SHOW_NEW_NOTEBOOK,
-  pouchBatchSize: rawEnv.VITE_POUCH_BATCH_SIZE,
-  pouchBatchesLimit: rawEnv.VITE_POUCH_BATCHES_LIMIT,
-  syncPushOnlyRecordThreshold: rawEnv.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,
-  clusterAdminGroupName: rawEnv.VITE_CLUSTER_ADMIN_GROUP_NAME,
-  notebookListType: rawEnv.VITE_NOTEBOOK_LIST_TYPE,
-  notebookName: rawEnv.VITE_NOTEBOOK_NAME,
-  appId: rawEnv.VITE_APP_ID,
-  appName: rawEnv.VITE_APP_NAME,
-  privacyPolicyUrl: rawEnv.VITE_APP_PRIVACY_POLICY_URL,
-  contactUrl: rawEnv.VITE_APP_CONTACT_URL,
-  supportEmail: rawEnv.VITE_SUPPORT_EMAIL,
-  tokenRefreshIntervalMs: rawEnv.VITE_TOKEN_REFRESH_INTERVAL_MS,
-  tokenRefreshWindowMs: rawEnv.VITE_TOKEN_REFRESH_WINDOW_MS,
-  loginBannerGraceMs: rawEnv.VITE_LOGIN_BANNER_GRACE_MS,
-  ignoreTokenExp: rawEnv.VITE_IGNORE_TOKEN_EXP,
-  mapSource: rawEnv.VITE_MAP_SOURCE,
-  mapSourceKey: rawEnv.VITE_MAP_SOURCE_KEY,
-  mapStyle: rawEnv.VITE_MAP_STYLE,
-  satelliteSource: rawEnv.VITE_SATELLITE_SOURCE,
-  navigationStyle: rawEnv.VITE_NAVIGATION,
-  showRecordLinks: rawEnv.VITE_SHOW_RECORD_LINKS,
-  migrateOldDatabases: rawEnv.VITE_MIGRATE_OLD_DATABASES,
-  forceRemoteDeletion: rawEnv.VITE_FORCE_REMOTE_DELETION,
-  deleteOnDeactivation: rawEnv.VITE_DELETE_ON_DEACTIVATION,
-  attachmentServiceType: rawEnv.VITE_ATTACHMENT_SERVICE_TYPE,
-  attachmentDocumentIdPrefix: rawEnv.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX,
-  bugsnagKey: rawEnv.VITE_BUGSNAG_KEY,
-  mapboxAccessToken: rawEnv.VITE_AUTOSUGGEST_MAPBOX_KEY,
-  mapboxAddressCountry: rawEnv.VITE_MAPBOX_ADDRESS_COUNTRY,
-  maptilerAddressCountry: rawEnv.VITE_MAPTILER_ADDRESS_COUNTRY,
-  autosuggestSource: rawEnv.VITE_AUTOSUGGEST_SOURCE,
-});
-
-// ---------------------------------------------------------------------------
-// Derived / inter-dependent values.
-// ---------------------------------------------------------------------------
-
-/**
- * Splits the input, trimming for whitespace and filtering empty strings.
- * Handles cases including an empty resulting list, and warns on empty strings
- * being contained. Falls through to the DEFAULT_CONDUCTOR_URL where needed.
- * @returns A list of conductor URLs which can act as servers.
- */
-export function parseConductorUrls(conductorUrls: string): string[] {
-  const urls = conductorUrls.split(',');
-  // Provide a warning if the split results in any empty strings
-  if (urls.some((url: string) => url.length === 0)) {
-    console.warn(
-      `CONDUCTOR_URL value was provided, but when split, contained entries which were empty. Value: ${conductorUrls}. After split: ${urls}.`
-    );
-  }
-  // return URLs without trailing whitespace and excluding any values which are empty e.g. due to a trailing comma
-
-  const filteredUrls = urls
-    .map((url: string) => url.trim())
-    .filter((url: string) => url.length > 0);
-
-  // Provide a warning if the split results in an empty list
-  if (!(filteredUrls.length > 0)) {
-    console.error(
-      `CONDUCTOR_URL value was provided, but when split, trimmed, and empty strings removed, had a length of zero. Value: ${conductorUrls}. After split: ${urls}. After filter: ${filteredUrls}. Returning default [${DEFAULT_CONDUCTOR_URL}]`
-    );
-    return [DEFAULT_CONDUCTOR_URL];
-  }
-
-  return filteredUrls;
-}
-
-function buildConductorUrls(): string[] {
-  const conductorUrls = rawEnv.VITE_CONDUCTOR_URL;
-  if (conductorUrls) {
-    return parseConductorUrls(conductorUrls);
-  }
-  console.warn(
-    `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
-  );
-  return [DEFAULT_CONDUCTOR_URL];
-}
-
-function buildDirectoryAuth():
-  | undefined
-  | {username: string; password: string} {
-  const username = rawEnv.VITE_DIRECTORY_USERNAME;
-  const password = rawEnv.VITE_DIRECTORY_PASSWORD;
-  if (isBlank(username) || isBlank(password)) {
-    return undefined;
-  }
-  return {username, password};
-}
-
-/**
- * MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER. Uses the dedicated
- * VITE_AUTOSUGGEST_MAPTILER_KEY if set; otherwise, when the map source is
- * maptiler, reuses VITE_MAP_SOURCE_KEY so a single key can serve both tiles and
- * geocoding. If neither is set, returns undefined and autosuggest is disabled.
- */
-function buildMapTilerApiKey(): string | undefined {
-  const dedicated = rawEnv.VITE_AUTOSUGGEST_MAPTILER_KEY;
-  if (dedicated !== undefined && dedicated.trim() !== '') {
-    return dedicated.trim();
-  }
-  const mapSource = rawEnv.VITE_MAP_SOURCE;
-  const mapKey = rawEnv.VITE_MAP_SOURCE_KEY;
-  if (
-    mapSource === 'maptiler' &&
-    mapKey !== undefined &&
-    mapKey.trim() !== ''
-  ) {
-    return mapKey.trim();
-  }
-  return undefined;
-}
-
-const notebookName = parsedConfig.notebookName;
-const notebookNamePlural = pluralize(notebookName);
-
-/**
- * The singleton configuration object. Prefer reading values from here.
- */
-export const config = {
-  ...parsedConfig,
-  notebookNameCapitalized:
-    notebookName.charAt(0).toUpperCase() + notebookName.slice(1),
-  notebookNamePlural,
-  notebookNamePluralCapitalized:
-    notebookNamePlural.charAt(0).toUpperCase() + notebookNamePlural.slice(1),
-  headingAppName: isBlank(rawEnv.VITE_HEADING_APP_NAME)
-    ? parsedConfig.appName
-    : rawEnv.VITE_HEADING_APP_NAME,
-  conductorUrls: buildConductorUrls(),
-  directoryAuth: buildDirectoryAuth(),
-  runningUnderTest: rawEnv.NODE_ENV === 'test',
-  // OSM does not allow bulk downloads so we can't enable offline maps
-  offlineMaps:
-    (rawEnv.VITE_OFFLINE_MAPS === 'true' && parsedConfig.mapSource !== 'osm') ||
-    false,
-  maptilerApiKey: buildMapTilerApiKey(),
-};
-
 export type Config = typeof config;
 
 // ---------------------------------------------------------------------------
 // Advanced surfaces: keep the existing functional interfaces.
 // ---------------------------------------------------------------------------
 
-// get the map configuration
+/** Build the map configuration object consumed by map UI components. */
 export function getMapConfig(): MapConfig {
   const mapConfig: MapConfig = {
     mapSource: config.mapSource,
@@ -657,7 +593,9 @@ function commitHash(): string | undefined {
   if (
     hash === '' ||
     hash === undefined ||
-    FALSEY_STRINGS.includes(hash.toLowerCase())
+    (configHelpers.FALSEY_STRINGS as readonly string[]).includes(
+      hash.toLowerCase()
+    )
   ) {
     console.info('VITE_COMMIT_VERSION not provided');
     return undefined;

@@ -49,7 +49,7 @@ export type NotebookUiSpecificationInput = z.infer<
 >;
 
 function formatZodIssues(error: ZodError): string {
-  return error.errors
+  return error.issues
     .map(issue => {
       const path =
         issue.path.length > 0 ? issue.path.join('.') : 'uiSpecification';

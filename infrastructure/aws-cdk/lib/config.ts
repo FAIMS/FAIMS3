@@ -253,6 +253,7 @@ const AuthProvidersConfigSchema = z
     providers: z.array(z.string()),
     secretArn: z.string(),
     config: z.record(
+      z.string(),
       z.discriminatedUnion('type', [
         GoogleAuthProviderConfigSchema,
         OIDCAuthProviderConfigSchema,
@@ -640,7 +641,7 @@ export const loadConfig = (filePath: string): Config => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('Configuration validation failed:');
-      error.errors.forEach(err => {
+      error.issues.forEach(err => {
         console.error(`- ${err.path.join('.')}: ${err.message}`);
       });
     } else {

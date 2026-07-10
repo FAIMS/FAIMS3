@@ -669,8 +669,8 @@ export const TeamMembershipInputSchema = z
   .object({
     username: z.string().min(1, 'Username is required'),
     role: z
-      .nativeEnum(Role, {
-        errorMap: () => ({message: 'Must be a valid role'}),
+      .enum(Role, {
+        error: 'Must be a valid role',
       })
       .optional(),
     action: z.enum(['ADD_ROLE', 'REMOVE_ROLE', 'REMOVE_USER']),

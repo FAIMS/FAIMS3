@@ -1,12 +1,12 @@
 import axios from 'axios';
-import {config, KEY_SERVICE} from '../../buildconfig';
+import {config, keyService} from '../../buildconfig';
 
 export async function initialiseJWTKey(): Promise<void> {
   // don't try to do this if we're testing
   if (config.runningUnderTest) return;
   try {
     // Get current public key
-    const signingKey = await KEY_SERVICE.getSigningKey();
+    const signingKey = await keyService.getSigningKey();
 
     // Ensure new lines are encoded properly in the config file
     const publicKey = signingKey.publicKeyString.replace(/\n/g, '\\n');

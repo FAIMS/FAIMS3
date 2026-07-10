@@ -6,7 +6,7 @@ import {
   PutRequestPasswordResetResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
-import {processRequest} from 'zod-express-middleware';
+import {processRequest} from '../middleware/processRequest';
 import {DEFAULT_REDIRECT_URL} from '../auth/authRoutes';
 import {validateRedirect} from '../auth/helpers';
 import {

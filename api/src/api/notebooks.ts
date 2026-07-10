@@ -59,8 +59,8 @@ import {
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
-import {config, KEY_SERVICE} from '../buildconfig';
+import {processRequest} from '../middleware/processRequest';
+import {config, keyService} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -187,7 +187,7 @@ const generateDownloadToken = async ({
   user: Express.User;
   payload: DownloadTokenPayload;
 }) => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
   const token = await new SignJWT(payload)
     .setProtectedHeader({
       alg: signingKey.alg,
@@ -206,7 +206,7 @@ const validateDownloadToken = async ({
 }: {
   token: string;
 }): Promise<DownloadTokenPayload | null> => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
   try {
     const result = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],

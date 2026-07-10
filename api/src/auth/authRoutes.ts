@@ -36,7 +36,7 @@ import {
 import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
 import {Strategy as SamlStrategy} from 'passport-saml';
-import {processRequest} from 'zod-express-middleware';
+import {processRequest} from '../middleware/processRequest';
 import {config} from '../buildconfig';
 import {
   createNewEmailCode,

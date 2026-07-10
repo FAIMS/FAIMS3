@@ -22,7 +22,7 @@
 import {AuthContext} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import {processRequest} from '../middleware/processRequest';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
 import {DEFAULT_REDIRECT_URL} from './authRoutes';

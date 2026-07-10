@@ -139,23 +139,25 @@ export function Form<
   const form = useForm<TSchema>({
     resolver: zodResolver(
       z.object(
-        fields.reduce((acc, field) => {
+        fields.reduce<z.ZodRawShape>((acc, field) => {
           // HTML number inputs emit strings; coerce before Zod validation.
-          acc[field.name] =
-            field.type === 'number'
-              ? z.preprocess(value => {
-                  if (value === '' || value === undefined || value === null) {
-                    return undefined;
-                  }
-                  if (typeof value === 'number') {
-                    return value;
-                  }
-                  const parsed = Number(value);
-                  return Number.isNaN(parsed) ? value : parsed;
-                }, field.schema)
-              : field.schema;
-          return acc;
-        }, {} as z.ZodRawShape)
+          return {
+            ...acc,
+            [field.name]:
+              field.type === 'number'
+                ? z.preprocess(value => {
+                    if (value === '' || value === undefined || value === null) {
+                      return undefined;
+                    }
+                    if (typeof value === 'number') {
+                      return value;
+                    }
+                    const parsed = Number(value);
+                    return Number.isNaN(parsed) ? value : parsed;
+                  }, field.schema)
+                : field.schema,
+          };
+        }, {})
       )
     ),
     defaultValues,

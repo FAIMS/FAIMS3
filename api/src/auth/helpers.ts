@@ -13,7 +13,7 @@ import {
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
-import {config, CONDUCTOR_SERVER_ID} from '../buildconfig';
+import {config} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {
@@ -57,7 +57,7 @@ export const handleZodErrors = ({
     // Convert ZodError format to match express-validator's errors.mapped()
     const formattedErrors: Record<string, {msg: string}> = {};
 
-    error.errors.forEach(err => {
+    error.issues.forEach(err => {
       // Get the last part of the path as the field name
       const field = err.path[err.path.length - 1] as string;
       formattedErrors[field] = {msg: err.message};
@@ -171,7 +171,7 @@ export const redirectWithToken = async ({
 
   // Append the token to the redirect URL with exchange token and server ID
   // (this helps multi server clients know who is redirecting back)
-  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}&serverId=${CONDUCTOR_SERVER_ID}`;
+  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}&serverId=${config.conductorServerId}`;
 
   // Redirect to the app with the token
   return res.redirect(redirectUrlWithToken);

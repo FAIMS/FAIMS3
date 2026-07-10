@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import {importPKCS8, importSPKI, KeyLike} from 'jose';
-import {config, private_key_path, public_key_path} from '../buildconfig';
+import {config, privateKeyPath, publicKeyPath} from '../buildconfig';
 import {SecretsManager} from 'aws-sdk';
 import NodeCache from 'node-cache';
 
@@ -344,8 +344,8 @@ function createKeyService(keySource: KeySource = KeySource.FILE): IKeyService {
     case KeySource.FILE:
       return new FileKeyService(keyConfig, {
         // This will error if the configuration is not setup properly
-        publicKeyFile: public_key_path(),
-        privateKeyFile: private_key_path(),
+        publicKeyFile: publicKeyPath(),
+        privateKeyFile: privateKeyPath(),
       });
     case KeySource.ENV:
       return new EnvKeyService(keyConfig);
