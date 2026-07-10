@@ -347,37 +347,30 @@ export const DesignPanel = () => {
         >
           <HeadingWithInfo
             title="Forms"
+            modal
             tooltip={
-              <Box sx={{p: 0.25, maxWidth: 320}}>
-                <Typography
-                  variant="body2"
-                  sx={{fontWeight: 700, mb: 0.5, lineHeight: 1.35}}
-                >
-                  Forms are top-level data entry pages in your {NOTEBOOK_NAME}.
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{display: 'block', lineHeight: 1.45}}
-                >
-                  Define the user interface for your notebook here. Add one or
-                  more forms to collect data from users. Each form can have one
-                  or more sections, and each section can have one or more form
-                  fields.
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{display: 'block', mt: 0.75, lineHeight: 1.45}}
-                >
-                  Tip: Hold{' '}
+              <Box>
+                <Box component="ul" sx={{pl: 3, mt: 0, mb: 1.5}}>
+                  <Box component="li" sx={{mb: 1}}>
+                    You need at least one <strong>‘form’</strong> to begin
+                    your {NOTEBOOK_NAME}. Adding more than one form allows
+                    you to build more complex {NOTEBOOK_NAME}s
+                  </Box>
+                  <Box component="li">
+                    You can then add ‘sections’ and ‘fields’ to your form
+                  </Box>
+                </Box>
+                <Box>
+                  <strong>Tip:</strong> To scroll sideways through the form
+                  tabs, hold{' '}
                   <Box
                     component="span"
-                    sx={{fontFamily: 'monospace', fontWeight: 800}}
+                    sx={{fontFamily: 'monospace', fontWeight: 700}}
                   >
                     Shift
                   </Box>{' '}
-                  and scroll your mouse wheel to move sideways through the form
-                  and section tabs.
-                </Typography>
+                  and use your mouse wheel.
+                </Box>
               </Box>
             }
           />
