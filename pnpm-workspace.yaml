@@ -34,7 +34,6 @@ overrides:
 
 peerDependencyRules:
   allowedVersions:
-    'zod-express-middleware>zod': '4'
     '@tanstack/zod-adapter>zod': '4'
 
 trustPolicyExclude:
