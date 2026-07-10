@@ -22,7 +22,7 @@
 import {AuthContext} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
-import {processRequest} from '../middleware/processRequest';
+import validate from '../middleware/validate';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
 import {DEFAULT_REDIRECT_URL} from './authRoutes';
@@ -60,7 +60,7 @@ export function addAuthPages(
   // providers if present
   app.get(
     '/login',
-    processRequest({
+    validate({
       query: z.object({
         redirect: z.string().optional(),
         inviteId: z.string().optional(),
@@ -112,7 +112,7 @@ export function addAuthPages(
    */
   app.get(
     '/register',
-    processRequest({
+    validate({
       query: z.object({
         redirect: z.string().optional(),
         inviteId: z.string().optional(),
@@ -182,7 +182,7 @@ export function addAuthPages(
    */
   app.get(
     '/change-password',
-    processRequest({
+    validate({
       query: z.object({
         // Where should we go once finished?
         redirect: z.string().optional(),
@@ -223,7 +223,7 @@ export function addAuthPages(
    */
   app.get(
     '/verify-email',
-    processRequest({
+    validate({
       query: z.object({
         code: z.string().optional(),
         redirect: z.string().optional(),
@@ -264,7 +264,7 @@ export function addAuthPages(
 
   app.post(
     '/verify-email',
-    processRequest({
+    validate({
       body: z.object({
         code: z.string(),
         redirect: z.string().optional(),
@@ -310,7 +310,7 @@ export function addAuthPages(
    */
   app.get(
     '/forgot-password',
-    processRequest({
+    validate({
       query: z.object({
         redirect: z.string().optional(),
       }),
@@ -340,7 +340,7 @@ export function addAuthPages(
    */
   app.get(
     '/auth/reset-password',
-    processRequest({
+    validate({
       query: z.object({
         code: z.string(),
         redirect: z.string(),

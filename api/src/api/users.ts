@@ -34,7 +34,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from '../middleware/processRequest';
+import validate from '../middleware/validate';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
@@ -68,7 +68,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
@@ -148,7 +148,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  processRequest({
+  validate({
     query: z.object({
       includeArchived: z.enum(['true', 'false']).optional(),
     }),
@@ -184,7 +184,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}, user}, res) => {
@@ -226,7 +226,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}}, res) => {
@@ -263,7 +263,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}, user}, res: Response<PostImpersonateUserResponse>) => {
@@ -324,7 +324,7 @@ api.delete(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}}, res) => {

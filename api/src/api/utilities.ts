@@ -30,7 +30,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
-import {processRequest} from '../middleware/processRequest';
+import validate from '../middleware/validate';
 import {z} from 'zod';
 import {
   generateUserToken,
@@ -112,7 +112,7 @@ api.get(
   '/directory/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
-  processRequest({
+  validate({
     query: z.object({
       /** When `"true"`, includes surveys with status ARCHIVED. Default excludes them. */
       includeArchived: z.enum(['true', 'false']).optional(),
@@ -134,7 +134,7 @@ api.get(
 api.post(
   '/auth/exchange',
   optionalAuthenticationJWT,
-  processRequest({body: PostExchangeTokenInputSchema}),
+  validate({body: PostExchangeTokenInputSchema}),
   async (
     {user, body: {exchangeToken}},
     res: Response<PostExchangeTokenResponse>
@@ -183,7 +183,7 @@ api.post(
 api.post(
   '/auth/refresh',
   optionalAuthenticationJWT,
-  processRequest({body: PostRefreshTokenInputSchema}),
+  validate({body: PostRefreshTokenInputSchema}),
   async (req, res: Response<PostRefreshTokenResponse | ErrorResponse>) => {
     // If the user is logged in - then record the user ID as an additional
     // security measure - don't allow a user who currently has a JWT of user
@@ -230,7 +230,7 @@ api.post(
  */
 api.post(
   '/auth/exchange-long-lived-token',
-  processRequest({
+  validate({
     body: PostLongLivedTokenExchangeInputSchema,
   }),
   async (req, res: Response<PostLongLivedTokenExchangeResponse>) => {

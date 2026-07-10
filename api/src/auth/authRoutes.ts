@@ -36,7 +36,7 @@ import {
 import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
 import {Strategy as SamlStrategy} from 'passport-saml';
-import {processRequest} from '../middleware/processRequest';
+import validate from '../middleware/validate';
 import {config} from '../buildconfig';
 import {
   createNewEmailCode,
@@ -666,7 +666,7 @@ export function addAuthRoutes(
   app.put(
     '/auth/logout',
     requireAuthenticationAPI,
-    processRequest({
+    validate({
       body: PutLogoutInputSchema,
     }),
     async ({user, body: {refreshToken}}, res) => {
@@ -710,7 +710,7 @@ export function addAuthRoutes(
    */
   app.post(
     '/auth/forgotPassword',
-    processRequest({
+    validate({
       body: PostForgotPasswordInputSchema,
     }),
     async (req, res) => {
@@ -980,7 +980,7 @@ export function addAuthRoutes(
     // configured callback (see below)
     app.get(
       providerAuthUrl(provider),
-      processRequest({
+      validate({
         query: AuthContextSchema,
       }),
 

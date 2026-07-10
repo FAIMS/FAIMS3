@@ -59,7 +59,7 @@ import {
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
-import {processRequest} from '../middleware/processRequest';
+import validate from '../middleware/validate';
 import {config, keyService} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
@@ -254,7 +254,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     query: z.object({
       viewID: z.string().optional(),
       format: DownloadFormatSchema,
@@ -352,7 +352,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({
       id: z.string(),
       viewID: z.string(),
@@ -401,7 +401,7 @@ api.use('/:id/records', recordsRouter);
 api.get(
   '/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     query: z.object({
       teamId: z.string().min(1).optional(),
       /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
@@ -433,7 +433,7 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     body: PostCreateNotebookInputSchema,
   }),
   isAllowedToMiddleware({
@@ -554,7 +554,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string()})}),
+  validate({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
@@ -589,7 +589,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookMetadataInputSchema,
   }),
@@ -612,7 +612,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookUiSpecificationInputSchema,
   }),
@@ -635,7 +635,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookOfflineMapRegionInputSchema,
   }),
@@ -655,7 +655,7 @@ api.put(
 api.put(
   '/:id/status',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutChangeNotebookStatusInputSchema,
   }),
@@ -698,7 +698,7 @@ api.put(
       return req.params.projectId;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({projectId: z.string()}),
     body: PutChangeNotebookTeamInputSchema,
   }),
@@ -719,7 +719,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PostRecordStatusInputSchema,
   }),
@@ -758,7 +758,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   // TODO complete type annotations for this method
@@ -883,7 +883,7 @@ api.get(
  */
 api.get(
   '/download/:downloadToken',
-  processRequest({params: z.object({downloadToken: z.string()})}),
+  validate({params: z.object({downloadToken: z.string()})}),
   async (req, res) => {
     // Validate payload
     const payload = await validateDownloadToken({
@@ -988,7 +988,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string()})}),
+  validate({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
     const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
@@ -1018,7 +1018,7 @@ api.get(
 api.post(
   '/:id/users/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     body: PostAddNotebookUserInputSchema,
     params: z.object({id: z.string()}),
   }),
@@ -1095,7 +1095,7 @@ api.post(
       return req.params.notebookId;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({notebookId: z.string()}),
     body: PostDestroyNotebookInputSchema,
   }),
@@ -1125,7 +1125,7 @@ if (config.developerMode) {
         return req.params.notebookId;
       },
     }),
-    processRequest({
+    validate({
       body: PostRandomRecordsInputSchema,
       params: z.object({notebookId: z.string()}),
     }),
@@ -1147,7 +1147,7 @@ if (config.developerMode) {
 api.delete(
   '/:notebook_id/users/:user_id',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({notebook_id: z.string(), user_id: z.string()}),
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {
