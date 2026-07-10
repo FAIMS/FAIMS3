@@ -189,7 +189,7 @@ export function Form<
 
           setIsSubmitting(false);
         })}
-        className="flex flex-col gap-6"
+        className="flex min-w-0 flex-col gap-6"
       >
         <div className="flex flex-col gap-4">
           {fields.map(
@@ -384,7 +384,9 @@ export function Form<
         )}
         <FormMessage>{form.formState.errors.root?.message}</FormMessage>
         {shouldShowDisableMessage && (
-          <p className="text-sm text-destructive">{disableSubmission.reason}</p>
+          <p className="min-w-0 max-w-full break-words text-sm text-destructive">
+            {disableSubmission.reason}
+          </p>
         )}
         <Button
           type="submit"

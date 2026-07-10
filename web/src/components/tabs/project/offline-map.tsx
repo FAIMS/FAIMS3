@@ -443,7 +443,7 @@ export default function ProjectOfflineMap({
         )}
 
         {(saveMutation.isError || clearMutation.isError) && (
-          <p className="text-sm text-destructive">
+          <p className="min-w-0 max-w-full break-words text-sm text-destructive">
             {(saveMutation.error ?? clearMutation.error)?.message ??
               'Something went wrong'}
           </p>

@@ -319,7 +319,11 @@ const ExportFullForm = () => {
         </p>
       )}
 
-      {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+      {submitError && (
+        <p className="min-w-0 max-w-full break-words text-sm text-destructive">
+          {submitError}
+        </p>
+      )}
     </div>
   );
 };
