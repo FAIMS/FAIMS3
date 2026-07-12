@@ -4,6 +4,7 @@ import {
   ErrorOption,
   FieldValues,
   Path,
+  Resolver,
   useForm,
 } from 'react-hook-form';
 import {z} from 'zod';
@@ -136,6 +137,9 @@ export function Form<
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Schema is built at runtime from Field[]; Zod v4 + resolvers v5 infer
+  // Record<string, unknown> (and split input/output via preprocess), so cast
+  // to the caller-facing TSchema used by useForm.
   const form = useForm<TSchema>({
     resolver: zodResolver(
       z.object(
@@ -159,7 +163,7 @@ export function Form<
           };
         }, {})
       )
-    ),
+    ) as Resolver<TSchema>,
     defaultValues,
   });
 
