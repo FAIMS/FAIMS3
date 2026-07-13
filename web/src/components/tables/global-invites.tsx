@@ -9,7 +9,6 @@ import {
   roleDetails,
 } from '@faims3/data-model';
 import {displayDateTime} from '@/lib/time';
-import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Trash} from 'lucide-react';
@@ -29,16 +28,11 @@ export const useGetGlobalInviteColumns = ({
 }): ColumnDef<
   GetGlobalInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
-  const {user} = useAuth();
   const queryClient = useQueryClient();
 
   const canRemoveSomeInvite = useIsAuthorisedTo({
     action: Action.DELETE_GLOBAL_INVITE,
   });
-
-  if (!user) {
-    return [];
-  }
 
   const baseColumns: ColumnDef<
     GetGlobalInvitesResponse[number] & {url: string; qrCode: string}

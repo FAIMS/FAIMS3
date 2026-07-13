@@ -1,7 +1,7 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   INPUT_LIMITS,
   PostCreateInviteInput,
@@ -10,7 +10,6 @@ import {
   RoleScope,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 
@@ -25,7 +24,7 @@ export function CreateGlobalInviteForm({
 }: {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
     undefined
@@ -33,7 +32,6 @@ export function CreateGlobalInviteForm({
 
   // Memoize the role options to prevent re-computation on each render
   const roleOptions = useMemo(() => {
-    if (!user) return [];
     return Object.entries(roleDetails)
       .filter(
         ([role, detail]) =>
@@ -44,11 +42,7 @@ export function CreateGlobalInviteForm({
         value,
         description,
       }));
-  }, [user]);
-
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
+  }, []);
 
   const fields: Field[] = [
     {
@@ -97,8 +91,6 @@ export function CreateGlobalInviteForm({
     uses?: number;
     name: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not logged in'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};

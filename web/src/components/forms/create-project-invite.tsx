@@ -1,6 +1,5 @@
 import {Field, Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
-import {userCanDo} from '@/hooks/auth-hooks';
+import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   INPUT_LIMITS,
@@ -12,7 +11,6 @@ import {
   RoleScope,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
@@ -31,7 +29,7 @@ interface UpdateTemplateFormProps {
 export function CreateProjectInviteForm({
   setDialogOpen,
 }: UpdateTemplateFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
@@ -39,7 +37,6 @@ export function CreateProjectInviteForm({
   );
 
   const roleOptions = useMemo(() => {
-    if (!user) return [];
     return Object.entries(roleDetails)
       .filter(
         ([role, {scope, resource}]) =>
@@ -65,10 +62,6 @@ export function CreateProjectInviteForm({
         description: brandNotebook(description),
       }));
   }, [user, projectId]);
-
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
 
   const fields: Field[] = [
     {
@@ -118,8 +111,6 @@ export function CreateProjectInviteForm({
     uses?: number;
     name: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not logged in'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};

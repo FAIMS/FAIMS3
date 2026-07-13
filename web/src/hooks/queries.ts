@@ -239,13 +239,13 @@ export const useGetTemplatesForTeam = ({
   });
 
 /**
- * @param {User | null} user - The user object.
+ * @param {User} user - The user object.
  */
 export const useGetUsersForTeam = ({
   teamId,
   user,
 }: {
-  user: User | null;
+  user: User;
   teamId: string;
 }) =>
   useQuery({
@@ -256,7 +256,6 @@ export const useGetUsersForTeam = ({
         user
       )) as GetTeamMembersResponse;
     },
-    enabled: !!user,
   });
 
 /**

@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
 import {ErrorComponent} from '@tanstack/react-router';
 import {LoaderCircleIcon} from 'lucide-react';
@@ -21,13 +21,9 @@ export const UpdateTeamDialog = ({
   teamId: string;
   buttonContent?: React.ReactNode;
 }) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {data, isLoading, isError} = useGetTeam({user, teamId});
   const [open, setOpen] = useState(false);
-
-  if (!user) {
-    return <p>Not authenticated...</p>;
-  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -1,4 +1,3 @@
-import {useAuth} from '@/context/auth-provider';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
 import {
   Action,
@@ -20,14 +19,14 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {AddTeamRolePopover} from '../popovers/add-team-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 
 export const useGetColumns = ({
   teamId,
 }: {
   teamId: string;
 }): ColumnDef<GetTeamMembersResponse['members'][number]>[] => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const canRemoveAdmin = useIsAuthorisedTo({
@@ -54,10 +53,6 @@ export const useGetColumns = ({
     action: Action.ADD_ADMIN_TO_TEAM,
     resourceId: teamId,
   });
-
-  if (!user) {
-    return [];
-  }
 
   const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {

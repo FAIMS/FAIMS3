@@ -2,12 +2,10 @@ import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectInvite} from '@/components/dialogs/create-project-invite';
 import {useGetInviteColumns} from '@/components/tables/project-invites';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {removeInviteForProject} from '@/hooks/project-hooks';
 import {useGetProjectInvites} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
-import {ErrorComponent} from '@tanstack/react-router';
 
 /**
  * ProjectInvites component renders a table of invites for a project.
@@ -17,7 +15,7 @@ import {ErrorComponent} from '@tanstack/react-router';
  * @returns {JSX.Element} The rendered ProjectInvites component.
  */
 const ProjectInvites = ({projectId}: {projectId: string}) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const {data, isLoading} = useGetProjectInvites({
     user,
@@ -30,7 +28,6 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
   const columns = useGetInviteColumns({
     projectId,
     deleteInviteHandler: async inviteId => {
-      if (!user) throw new Error('Not authenticated');
       return await removeInviteForProject({inviteId, projectId, user});
     },
   });
@@ -51,10 +48,6 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
     action: Action.CREATE_ADMIN_PROJECT_INVITE,
     resourceId: projectId,
   });
-
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
 
   const canInviteSomeUser =
     canInviteAdminToTeam ||

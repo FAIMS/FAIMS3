@@ -1,5 +1,5 @@
 import {Popover, PopoverContent, PopoverTrigger} from '../ui/popover';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {RoleCard} from '../ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
@@ -26,13 +26,9 @@ export const AddTeamRolePopover = ({
   userId: string;
   teamId: string;
 }) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-
-  if (!user) {
-    return <p>Unauthenticated</p>;
-  }
 
   if (roles.length === 0) {
     return (
