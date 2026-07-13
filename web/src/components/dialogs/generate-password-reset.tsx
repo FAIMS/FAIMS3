@@ -16,6 +16,7 @@ import {Button} from '../ui/button';
 import {CopyButton} from '../ui/copy-button';
 import {Spinner} from '../ui/spinner';
 import {Card, CardContent} from '../ui/card';
+import {config} from '@/constants';
 
 /**
  * Displays a QR code in a clickable format that opens a larger view in a dialog.
@@ -79,7 +80,7 @@ export const GeneratePasswordReset = ({
   const {data, isPending, mutate, error, isError, reset} = useMutation({
     mutationKey: ['resetpassword', userId],
     mutationFn: async ({id}: {id: string}) => {
-      return await fetch(`${import.meta.env.VITE_API_URL}/api/reset`, {
+      return await fetch(`${config.apiUrl}/api/reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,8 +1,8 @@
 import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
-import {z} from 'zod';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {designFileSchema} from '@/lib/input-limits';
+import {config} from '@/constants';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   errorMessageFromNotebookJsonBody,
@@ -14,7 +14,7 @@ const fields = [
   {
     name: 'file',
     type: 'file',
-    schema: z.instanceof(File).refine(file => file.type === 'application/json'),
+    schema: designFileSchema(),
   },
 ];
 
@@ -75,7 +75,7 @@ export function UpdateProjectForm({
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText={`Replace ${NOTEBOOK_NAME_CAPITALIZED} JSON`}
+      submitButtonText={`Replace ${config.notebookNameCapitalized} JSON`}
       submitButtonVariant="destructive"
       warningMessage={
         "If the project's response format has changed, there will be inconsistences in responses."

@@ -1,6 +1,8 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
+import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
@@ -11,7 +13,7 @@ import {
 } from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
@@ -78,22 +80,16 @@ export function CreateTemplateForm({
       name: 'name',
       label: 'Template Name',
       description: 'A short display name for the template',
-      schema: z.string().min(5, {
-        message: 'Template name must be at least 5 characters.',
-      }),
+      schema: resourceNameSchema(5, 'Template name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField(),
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
-      description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
+      description: `Upload a .json ${config.notebookName} file to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
-      schema: z
-        .instanceof(File)
-        .refine(f => f.type === 'application/json', {
-          message: 'Only JSON files are allowed.',
-        })
-        .optional(),
+      schema: designFileSchema().optional(),
     },
   ];
 
@@ -164,23 +160,20 @@ export function CreateTemplateForm({
     });
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/templates/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({
-            teamId: chosenTeamId,
-            name,
-            ...rootDescriptionForApi(description),
-            isPublic,
-            uiSpecification,
-          }),
-        }
-      );
+      const res = await fetch(`${config.apiUrl}/api/templates/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          teamId: chosenTeamId,
+          name,
+          ...rootDescriptionForApi(description),
+          isPublic,
+          uiSpecification,
+        }),
+      });
       if (!res.ok) throw new Error(res.statusText);
       // need to refresh our auth token to get permissions on this new template
       const {message, status} = await refreshToken();

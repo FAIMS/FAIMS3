@@ -30,26 +30,13 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {z} from 'zod';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
-import {
-  API_VERSION,
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  CONDUCTOR_SERVER_ID,
-  CONDUCTOR_SHORT_CODE_PREFIX,
-  DEVELOPER_MODE,
-  EMAIL_CONFIG,
-  EMAIL_SERVICE,
-  EMAIL_SERVICE_TYPE,
-  RUNNING_UNDER_TEST,
-  TEST_EMAIL_ADDRESS,
-} from '../buildconfig';
+import {config, emailService} from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getUserProjectsDirectory} from '../couchdb/notebooks';
@@ -69,7 +56,11 @@ import {nowIso} from '../time';
 import {hashChallengeCode} from '../utils';
 
 // TODO: configure this directory
-const upload = multer({dest: '/tmp/'});
+// Cap the restore upload size (configurable via RESTORE_UPLOAD_MAX_BYTES)
+const upload = multer({
+  dest: '/tmp/',
+  limits: {fileSize: config.restoreUploadMaxBytes},
+});
 
 // This must occur before express api is used
 patch();
@@ -110,13 +101,13 @@ api.post(
  */
 api.get('/info', async (req, res) => {
   const response: PublicServerInfo = {
-    id: CONDUCTOR_SERVER_ID,
-    name: CONDUCTOR_INSTANCE_NAME,
-    conductor_url: CONDUCTOR_PUBLIC_URL,
-    description: CONDUCTOR_DESCRIPTION,
-    prefix: CONDUCTOR_SHORT_CODE_PREFIX,
+    id: config.conductorServerId,
+    name: config.conductorInstanceName,
+    conductor_url: config.conductorPublicUrl,
+    description: config.instanceDescription,
+    prefix: config.shortCodePrefix,
     // Report the server version e.g. 1.3.1
-    serverVersion: API_VERSION,
+    serverVersion: config.apiVersion,
   };
   res.json(response);
 });
@@ -125,7 +116,7 @@ api.get(
   '/directory/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
-  processRequest({
+  validate({
     query: z.object({
       /** When `"true"`, includes surveys with status ARCHIVED. Default excludes them. */
       includeArchived: z.enum(['true', 'false']).optional(),
@@ -147,7 +138,7 @@ api.get(
 api.post(
   '/auth/exchange',
   optionalAuthenticationJWT,
-  processRequest({body: PostExchangeTokenInputSchema}),
+  validate({body: PostExchangeTokenInputSchema}),
   async (
     {user, body: {exchangeToken}},
     res: Response<PostExchangeTokenResponse>
@@ -196,7 +187,7 @@ api.post(
 api.post(
   '/auth/refresh',
   optionalAuthenticationJWT,
-  processRequest({body: PostRefreshTokenInputSchema}),
+  validate({body: PostRefreshTokenInputSchema}),
   async (req, res: Response<PostRefreshTokenResponse | ErrorResponse>) => {
     // If the user is logged in - then record the user ID as an additional
     // security measure - don't allow a user who currently has a JWT of user
@@ -243,7 +234,7 @@ api.post(
  */
 api.post(
   '/auth/exchange-long-lived-token',
-  processRequest({
+  validate({
     body: PostLongLivedTokenExchangeInputSchema,
   }),
   async (req, res: Response<PostLongLivedTokenExchangeResponse>) => {
@@ -275,7 +266,7 @@ api.post(
     const {token: accessToken} = await generateUserToken(expressUser, false);
 
     // Log the token usage for security auditing
-    if (!RUNNING_UNDER_TEST) {
+    if (!config.runningUnderTest) {
       console.log(
         `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${nowIso()}`
       );
@@ -286,7 +277,7 @@ api.post(
   }
 );
 
-if (DEVELOPER_MODE) {
+if (config.developerMode) {
   api.post(
     '/restore',
     requireAuthenticationAPI,
@@ -314,7 +305,7 @@ api.post(
     const startTime = Date.now();
 
     // Log starting the test
-    if (!RUNNING_UNDER_TEST) {
+    if (!config.runningUnderTest) {
       console.log(
         `[Email Test] Starting email test requested by admin user ${req.user._id}`
       );
@@ -336,25 +327,33 @@ api.post(
       // Start timing the config validation
       const configStartTime = Date.now();
 
+      const testEmailAddress = config.testEmailAddress;
+      if (!testEmailAddress) {
+        throw new Error(
+          'TEST_EMAIL_ADDRESS environment variable is required for testing email functionality. ' +
+            'Please add this to your environment configuration.'
+        );
+      }
+
       // End timing for config validation
       const configEndTime = Date.now();
       responseData.timings.configValidation = configEndTime - configStartTime;
 
       // Build the debug email content
       const emailOptions = {
-        to: TEST_EMAIL_ADDRESS,
-        subject: `Email Service Test from ${CONDUCTOR_INSTANCE_NAME}`,
+        to: testEmailAddress,
+        subject: `Email Service Test from ${config.conductorInstanceName}`,
         html: `
           <h1>Email Service Test</h1>
-          <p>This is a test email from the ${CONDUCTOR_INSTANCE_NAME} server.</p>
+          <p>This is a test email from the ${config.conductorInstanceName} server.</p>
           <h2>Service Information</h2>
           <ul>
-            <li><strong>Server:</strong> ${CONDUCTOR_INSTANCE_NAME}</li>
-            <li><strong>Conductor URL:</strong> ${CONDUCTOR_PUBLIC_URL}</li>
-            <li><strong>Email Service Type:</strong> ${EMAIL_SERVICE_TYPE}</li>
-            <li><strong>From Address:</strong> ${EMAIL_CONFIG.fromEmail}</li>
-            <li><strong>From Name:</strong> ${EMAIL_CONFIG.fromName}</li>
-            <li><strong>Test Address:</strong> ${TEST_EMAIL_ADDRESS}</li>
+            <li><strong>Server:</strong> ${config.conductorInstanceName}</li>
+            <li><strong>Conductor URL:</strong> ${config.conductorPublicUrl}</li>
+            <li><strong>Email Service Type:</strong> ${config.emailServiceType}</li>
+            <li><strong>From Address:</strong> ${config.email.fromEmail}</li>
+            <li><strong>From Name:</strong> ${config.email.fromName}</li>
+            <li><strong>Test Address:</strong> ${testEmailAddress}</li>
             <li><strong>Time Generated:</strong> ${nowIso()}</li>
             <li><strong>Requested by:</strong> ${req.user._id}</li>
           </ul>
@@ -363,15 +362,15 @@ api.post(
         text: `
 Email Service Test
 
-This is a test email from the ${CONDUCTOR_INSTANCE_NAME} server.
+This is a test email from the ${config.conductorInstanceName} server.
 
 Service Information:
-- Server: ${CONDUCTOR_INSTANCE_NAME}
-- Conductor URL: ${CONDUCTOR_PUBLIC_URL}
-- Email Service Type: ${EMAIL_SERVICE_TYPE}
-- From Address: ${EMAIL_CONFIG.fromEmail}
-- From Name: ${EMAIL_CONFIG.fromName}
-- Test Address: ${TEST_EMAIL_ADDRESS}
+- Server: ${config.conductorInstanceName}
+- Conductor URL: ${config.conductorPublicUrl}
+- Email Service Type: ${config.emailServiceType}
+- From Address: ${config.email.fromEmail}
+- From Name: ${config.email.fromName}
+- Test Address: ${testEmailAddress}
 - Time Generated: ${nowIso()}
 - Requested by: ${req.user._id}
 
@@ -380,9 +379,9 @@ If you received this email, the email service is configured correctly.
       };
 
       // Log sending attempt
-      if (!RUNNING_UNDER_TEST) {
+      if (!config.runningUnderTest) {
         console.log(
-          `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
+          `[Email Test] Attempting to send test email to ${testEmailAddress}`
         );
       }
 
@@ -390,7 +389,7 @@ If you received this email, the email service is configured correctly.
       const emailStartTime = Date.now();
 
       // Send the test email
-      const emailResult = await EMAIL_SERVICE.sendEmail({
+      const emailResult = await emailService.sendEmail({
         options: emailOptions,
       });
 
@@ -401,15 +400,15 @@ If you received this email, the email service is configured correctly.
       // Email sent successfully
       responseData.success = true;
       responseData.status = 'sent';
-      responseData.message = `Test email successfully sent to ${TEST_EMAIL_ADDRESS}`;
+      responseData.message = `Test email successfully sent to ${testEmailAddress}`;
       responseData.details = {
         messageId: emailResult.messageId,
-        recipient: TEST_EMAIL_ADDRESS,
-        emailServiceType: EMAIL_SERVICE_TYPE,
+        recipient: testEmailAddress,
+        emailServiceType: config.emailServiceType,
         emailResponse: emailResult.response,
       };
 
-      if (!RUNNING_UNDER_TEST) {
+      if (!config.runningUnderTest) {
         console.log(
           `[Email Test] Test email sent successfully. Message ID: ${emailResult.messageId}`
         );
@@ -452,7 +451,7 @@ If you received this email, the email service is configured correctly.
       responseData.timings.total = endTime - startTime;
 
       // Log test completion
-      if (!RUNNING_UNDER_TEST) {
+      if (!config.runningUnderTest) {
         console.log(
           `[Email Test] Email test complete. Status: ${responseData.status}. Duration: ${responseData.timings.total}ms`
         );

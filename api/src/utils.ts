@@ -1,6 +1,6 @@
 import {slugify, TokenContents} from '@faims3/data-model';
 import crypto from 'crypto';
-import {CONDUCTOR_INSTANCE_NAME} from './buildconfig';
+import {config} from './buildconfig';
 
 /**
  * Generate a TokenContents object for use in API code
@@ -14,7 +14,7 @@ export const mockTokenContentsForUser = (user: Express.User): TokenContents => {
   return {
     globalRoles: user.globalRoles,
     resourceRoles: user.resourceRoles,
-    server: slugify(CONDUCTOR_INSTANCE_NAME),
+    server: slugify(config.conductorInstanceName),
     username: user.user_id,
     // Five minutes from now
     exp: Date.now() + 1000 * 60 * 5,

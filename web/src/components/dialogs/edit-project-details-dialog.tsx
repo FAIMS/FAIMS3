@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
@@ -34,10 +34,12 @@ export const EditProjectDetailsDialog = () => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit {NOTEBOOK_NAME_CAPITALIZED} details</DialogTitle>
+          <DialogTitle>
+            Edit {config.notebookNameCapitalized} details
+          </DialogTitle>
           <DialogDescription>
             Update the display name and short description for this{' '}
-            {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}. Design documentation
+            {config.notebookNameCapitalized.toLowerCase()}. Design documentation
             stays in the editor.
           </DialogDescription>
         </DialogHeader>
@@ -45,7 +47,8 @@ export const EditProjectDetailsDialog = () => {
           <LoaderCircleIcon className="animate-spin" aria-label="Loading" />
         ) : isError || !data ? (
           <p className="text-sm text-destructive">
-            Could not load {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()} details.
+            Could not load {config.notebookNameCapitalized.toLowerCase()}{' '}
+            details.
           </p>
         ) : (
           <EditProjectDetailsForm

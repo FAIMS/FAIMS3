@@ -3,7 +3,7 @@ import {PhotoExportDialog} from '@/components/dialogs/photo-export-dialog';
 import {FullExportDialog} from '@/components/dialogs/full-export-dialog';
 import {Card} from '@/components/ui/card';
 import {ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 
 /**
  * ProjectExport component renders a card with options to export a project's data.
@@ -20,9 +20,9 @@ const ProjectExport = (): JSX.Element => (
       <ListItem>
         <ListLabel>Full Export</ListLabel>
         <ListDescription>
-          Download a complete export of this {NOTEBOOK_NAME} as a single ZIP
-          file. Includes all records, photos, and spatial data with configurable
-          options.
+          Download a complete export of this {config.notebookName} as a single
+          ZIP file. Includes all records, photos, and spatial data with
+          configurable options.
         </ListDescription>
       </ListItem>
       <FullExportDialog />
@@ -31,9 +31,9 @@ const ProjectExport = (): JSX.Element => (
       <ListItem>
         <ListLabel>Data Export</ListLabel>
         <ListDescription>
-          Export all responses for this {NOTEBOOK_NAME}. You can select a data
-          format which suits your needs. Photos can be downloaded separately
-          below.
+          Export all responses for this {config.notebookName}. You can select a
+          data format which suits your needs. Photos can be downloaded
+          separately below.
         </ListDescription>
       </ListItem>
       <DataExportDialog />
@@ -42,7 +42,7 @@ const ProjectExport = (): JSX.Element => (
       <ListItem>
         <ListLabel>Photo Export</ListLabel>
         <ListDescription>
-          Export all photos for this {NOTEBOOK_NAME} to a ZIP file.
+          Export all photos for this {config.notebookName} to a ZIP file.
         </ListDescription>
       </ListItem>
       <PhotoExportDialog />

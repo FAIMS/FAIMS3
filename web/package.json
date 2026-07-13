@@ -25,7 +25,7 @@
     "@emotion/styled": "^11.14.1",
     "@faims3/data-model": "workspace:*",
     "@faims3/forms": "workspace:*",
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^5.2.1",
     "@lexical/react": "^0.12.4",
     "@mdxeditor/editor": "^1.13.5",
     "@mui/icons-material": "9.0.1",
@@ -68,7 +68,7 @@
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.0",
+    "react-hook-form": "^7.55.0",
     "react-json-view-lite": "^1.1.0",
     "react-redux": "^9.2.0",
     "react-router": "^6.26.0",
@@ -78,7 +78,7 @@
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.24.1"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.62.16",

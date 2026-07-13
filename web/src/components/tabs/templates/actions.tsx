@@ -2,7 +2,7 @@ import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
@@ -133,7 +133,8 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Edit Template</ListLabel>
                 <ListDescription>
-                  Edit this template in the {NOTEBOOK_NAME_CAPITALIZED} Editor.
+                  Edit this template in the {config.notebookNameCapitalized}{' '}
+                  Editor.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -230,9 +231,9 @@ const TemplateActions = () => {
           <Card>
             <List>
               <ListItem>
-                <ListLabel>Create {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                <ListLabel>Create {config.notebookNameCapitalized}</ListLabel>
                 <ListDescription>
-                  Create a new {NOTEBOOK_NAME} based on this template.
+                  Create a new {config.notebookName} based on this template.
                 </ListDescription>
               </ListItem>
               <ListItem>

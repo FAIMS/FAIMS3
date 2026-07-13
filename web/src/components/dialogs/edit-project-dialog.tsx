@@ -10,7 +10,7 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {UpdateProjectForm} from '../forms/update-project-form';
 import {Pencil} from 'lucide-react';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 
 /**
  * EditProjectDialog component renders a dialog for editing a project.
@@ -27,7 +27,7 @@ export const EditProjectDialog = ({onSuccess}: {onSuccess: () => void}) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
         <Button variant="outline">
-          Replace {NOTEBOOK_NAME_CAPITALIZED} File
+          Replace {config.notebookNameCapitalized} File
           <Pencil />
         </Button>
       </DialogTrigger>
@@ -36,8 +36,8 @@ export const EditProjectDialog = ({onSuccess}: {onSuccess: () => void}) => {
           <DialogTitle>Replace Project File</DialogTitle>
           <DialogDescription>
             Upload a JSON file with top-level metadata and uiSpec (same shape as
-            Download JSON). This replaces the {NOTEBOOK_NAME} design only; it
-            does not change title, description, or team.
+            Download JSON). This replaces the {config.notebookName} design only;
+            it does not change title, description, or team.
           </DialogDescription>
         </DialogHeader>
         <UpdateProjectForm setDialogOpen={setOpen} onSuccess={onSuccess} />

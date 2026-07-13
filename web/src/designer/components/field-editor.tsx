@@ -29,7 +29,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
 import {TemplatedStringProps} from '@faims3/forms';
-import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+import {config} from '../buildconfig';
 
 import {
   Accordion,
@@ -223,7 +223,7 @@ const FieldEditorComponent = ({
     }
   };
   const protection =
-    VITE_TEMPLATE_PROTECTIONS && field['component-parameters'].protection
+    config.templateProtections && field['component-parameters'].protection
       ? field['component-parameters'].protection
       : 'none';
 
@@ -233,7 +233,7 @@ const FieldEditorComponent = ({
   const notebookMetadata = useAppSelector(state => state.notebook.metadata);
 
   const isDerivedFromSet =
-    VITE_TEMPLATE_PROTECTIONS &&
+    config.templateProtections &&
     Boolean(notebookMetadata.information?.derivedFromTemplateId);
 
   const disableEditing =

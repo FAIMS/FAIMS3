@@ -18,6 +18,7 @@
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
+import {config} from '@/constants';
 
 /** React-query cache key prefix for the parent resource (e.g. `projects`). */
 type DesignerResourceType = 'projects' | 'templates';
@@ -67,7 +68,7 @@ export const useDesignerSaveMutation = ({
     mutationFn: async (file: File) => {
       const jsonText = await file.text();
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/${apiResourceType}/${resourceId}/uiSpecification`,
+        `${config.apiUrl}/api/${apiResourceType}/${resourceId}/uiSpecification`,
         {
           method: 'PUT',
           headers: {

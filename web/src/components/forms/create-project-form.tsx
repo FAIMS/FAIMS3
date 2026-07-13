@@ -1,5 +1,5 @@
 import {Field, Form} from '@/components/form';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplates} from '@/hooks/queries';
@@ -12,7 +12,8 @@ import {
   createProjectFromTemplate,
 } from '@/hooks/project-hooks';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
-import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
+import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -48,17 +49,15 @@ export function CreateProjectForm({
     {
       name: 'name',
       label: 'Name',
-      schema: z.string().min(5, {
-        message:
-          NOTEBOOK_NAME_CAPITALIZED + ' name must be at least 5 characters.',
-      }),
+      schema: resourceNameSchema(5, `${config.notebookNameCapitalized} name`),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField({
-      helperText: `Optional summary of this ${NOTEBOOK_NAME} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
+      helperText: `Optional summary of this ${config.notebookName} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
     }),
     {
       name: 'template',
-      label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template (optional)`,
+      label: `Existing ${config.notebookNameCapitalized} Template (optional)`,
       options: templates?.map(({_id, name}: TemplateListItem) => ({
         label: name,
         value: _id,
@@ -70,10 +69,7 @@ export function CreateProjectForm({
       name: 'file',
       label: 'JSON File (optional)',
       type: 'file',
-      schema: z
-        .instanceof(File)
-        .refine(file => file.type === 'application/json')
-        .optional(),
+      schema: designFileSchema().optional(),
       excludedBy: 'template',
     },
   ];
@@ -86,7 +82,7 @@ export function CreateProjectForm({
   if (!specifiedTeam) {
     fields.push({
       name: 'team',
-      label: `Create ${NOTEBOOK_NAME} in this team${
+      label: `Create ${config.notebookName} in this team${
         canCreateGlobally ? ' (optional)' : ''
       }`,
       options: teams?.teams.map(({_id, name}) => ({
@@ -155,7 +151,7 @@ export function CreateProjectForm({
     }
 
     if (!response.ok) {
-      return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}`};
+      return {type: 'submit', message: `Error creating ${config.notebookName}`};
     }
     // need to refresh our auth token to get permissions on this new template
     const {message, status} = await refreshToken();
@@ -177,7 +173,7 @@ export function CreateProjectForm({
       fields={fields}
       dividers={dividers}
       onSubmit={onSubmit}
-      submitButtonText={`Create ${NOTEBOOK_NAME_CAPITALIZED}`}
+      submitButtonText={`Create ${config.notebookNameCapitalized}`}
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
     />

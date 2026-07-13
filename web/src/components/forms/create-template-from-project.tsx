@@ -1,6 +1,8 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
 import {z} from 'zod';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo, useCanCreateTemplate} from '@/hooks/auth-hooks';
@@ -17,6 +19,7 @@ import {
   getTemplateTeamFieldState,
   resolveTemplateTeamId,
 } from './template-team-field';
+import {config} from '@/constants';
 
 interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -69,9 +72,8 @@ export function CreateTemplateFromProjectForm({
       name: 'name',
       label: 'Template Name',
       description: 'A short display name for the template',
-      schema: z.string().min(5, {
-        message: 'Template name must be at least 5 characters.',
-      }),
+      schema: resourceNameSchema(5, 'Template name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField({
       helperText: `Optional; not copied from the survey (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
@@ -106,22 +108,19 @@ export function CreateTemplateFromProjectForm({
     });
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/templates/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({
-            name,
-            ...rootDescriptionForApi(description),
-            uiSpecification: projectData.uiSpecification,
-            teamId: chosenTeamId,
-          }),
-        }
-      );
+      const res = await fetch(`${config.apiUrl}/api/templates/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          name,
+          ...rootDescriptionForApi(description),
+          uiSpecification: projectData.uiSpecification,
+          teamId: chosenTeamId,
+        }),
+      });
       if (!res.ok) throw new Error(res.statusText);
       // need to refresh our auth token to get permissions on this new template
       const {message, status} = await refreshToken();

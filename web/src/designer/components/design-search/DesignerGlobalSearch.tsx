@@ -6,6 +6,7 @@
  */
 
 import SearchIcon from '@mui/icons-material/Search';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {Box, Chip, TextField} from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import {
@@ -289,6 +290,7 @@ export const DesignerGlobalSearch = () => {
             ...params.slotProps,
             htmlInput: {
               ...params.slotProps.htmlInput,
+              ...designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
               ref: (node: HTMLInputElement | null) => {
                 inputRef.current = node;
                 const htmlInputRef = params.slotProps.htmlInput.ref;

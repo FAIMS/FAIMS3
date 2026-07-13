@@ -1,13 +1,10 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
-import {
-  EXCLUDED_TEAM_ROLES,
-  INVITE_TOKEN_HINTS,
-  brandNotebook,
-} from '@/constants';
+import {config, brandNotebook} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {
+  INPUT_LIMITS,
   PostCreateInviteInput,
   Resource,
   Role,
@@ -55,7 +52,7 @@ export function CreateTeamInviteForm({
         ([role, {scope, resource}]) =>
           scope === RoleScope.RESOURCE_SPECIFIC &&
           resource === Resource.TEAM &&
-          !EXCLUDED_TEAM_ROLES.has(role) &&
+          !config.excludedTeamRoles.has(role) &&
           userCanDo({
             user,
             resourceId: teamId,
@@ -76,7 +73,13 @@ export function CreateTeamInviteForm({
     {
       name: 'name',
       label: 'Invite title',
-      schema: z.string().min(4),
+      schema: z
+        .string()
+        .min(4)
+        .max(INPUT_LIMITS.INVITE_NAME_MAX_LENGTH, {
+          message: `Invite title must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`,
+        }),
+      maxLength: INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
     },
     {
       name: 'role',
@@ -87,9 +90,15 @@ export function CreateTeamInviteForm({
     {
       name: 'uses',
       label: 'Maximum uses (leave empty to set no limit)',
-      schema: z.number().min(1).optional(),
+      schema: z
+        .number()
+        .int()
+        .min(1)
+        .max(INPUT_LIMITS.INVITE_MAX_USES)
+        .optional(),
       type: 'number',
       min: 1,
+      max: INPUT_LIMITS.INVITE_MAX_USES,
     },
   ];
 
@@ -130,7 +139,7 @@ export function CreateTeamInviteForm({
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/team/${teamId}`,
+      `${config.apiUrl}/api/invites/team/${teamId}`,
       {
         method: 'POST',
         headers: {
@@ -160,7 +169,7 @@ export function CreateTeamInviteForm({
       submitButtonText={'Create Invite'}
       footer={
         <ExpirySelector
-          hints={INVITE_TOKEN_HINTS}
+          hints={config.inviteTokenHints}
           maxDurationDays={365}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}

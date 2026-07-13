@@ -9,11 +9,7 @@ import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-reco
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {
-  DEVELOPER_MODE,
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {
   toDesignerNotebookWithHistory,
@@ -111,7 +107,7 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {DEVELOPER_MODE && canGenerateTestRecords && (
+        {config.developerMode && canGenerateTestRecords && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
@@ -134,11 +130,13 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED} details</ListLabel>
+                <ListLabel>
+                  Edit {config.notebookNameCapitalized} details
+                </ListLabel>
               </ListItem>
               <ListItem>
                 <ListDescription>
-                  Update {NOTEBOOK_NAME_CAPITALIZED} title and short
+                  Update {config.notebookNameCapitalized} title and short
                   description.
                 </ListDescription>
               </ListItem>
@@ -153,7 +151,7 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
               </ListItem>
               <ListItem>
                 <Button
@@ -172,7 +170,7 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListLabel>Assign {config.notebookName} to a Team</ListLabel>
               </ListItem>
               <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
@@ -187,7 +185,7 @@ const ProjectActions = (): JSX.Element => {
               <ListItem>
                 <ListLabel>Download JSON</ListLabel>
                 <ListDescription>
-                  Download the {NOTEBOOK_NAME} design JSON file.
+                  Download the {config.notebookName} design JSON file.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -211,11 +209,11 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
-                  Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
+                  Replace {config.notebookNameCapitalized} JSON File
                 </ListLabel>
                 <ListDescription>
                   Upload a JSON design file to replace the existing{' '}
-                  {NOTEBOOK_NAME} design.
+                  {config.notebookName} design.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -230,7 +228,7 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
-                  Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
+                  Create Template from this {config.notebookNameCapitalized}
                 </ListLabel>
               </ListItem>
               <ListItem>
@@ -251,11 +249,11 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem className="flex flex-col items-start gap-2">
                 <ListLabel className="block">
-                  Archive {NOTEBOOK_NAME_CAPITALIZED}
+                  Archive {config.notebookNameCapitalized}
                 </ListLabel>
                 {!projectIsClosed && (
                   <ListDescription>
-                    To archive, you must close the {NOTEBOOK_NAME} first
+                    To archive, you must close the {config.notebookName} first
                   </ListDescription>
                 )}
                 <ArchiveProjectDialog
