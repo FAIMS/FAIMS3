@@ -542,17 +542,16 @@ export const useGetLongLivedTokens = ({
   user,
   fetchAll,
 }: {
-  user: User | undefined | null;
+  user: User;
   fetchAll: boolean;
 }) =>
   useQuery({
-    queryKey: ['long-lived-tokens', user?.user.id, fetchAll],
+    queryKey: ['long-lived-tokens', user.user.id, fetchAll],
     queryFn: () =>
       get<GetLongLivedTokensResponse>(
         '/api/long-lived-tokens' + (fetchAll ? '?all=true' : ''),
-        user!
+        user
       ),
-    enabled: !!user,
   });
 
 /**

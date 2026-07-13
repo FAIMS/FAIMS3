@@ -8,7 +8,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
-import {useAuth} from '@/context/auth-provider';
 import {useRestoreArchivedProject} from '@/hooks/archive-hooks';
 import {useState} from 'react';
 import {toast} from 'sonner';
@@ -26,7 +25,6 @@ export function RestoreArchivedProjectDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: RestoreArchivedProjectDialogProps) {
-  const {user} = useAuth();
   const {mutate, isPending} = useRestoreArchivedProject();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOnOpenChange !== undefined;
@@ -34,7 +32,6 @@ export function RestoreArchivedProjectDialog({
   const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
 
   const onRestore = () => {
-    if (!user) return;
     mutate(
       {projectId},
       {

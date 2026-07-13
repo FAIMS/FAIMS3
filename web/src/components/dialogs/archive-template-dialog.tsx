@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useNavigate} from '@tanstack/react-router';
 import {useQueryClient} from '@tanstack/react-query';
@@ -22,7 +22,7 @@ import {config} from '@/constants';
  * @returns {JSX.Element} The rendered ArchiveTemplateDialog component.
  */
 export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user?.token}`,
+            Authorization: `Bearer ${user.token}`,
           },
           body: JSON.stringify({
             archive: willArchive,

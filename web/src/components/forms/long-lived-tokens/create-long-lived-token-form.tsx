@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {createLongLivedToken} from '@/hooks/queries';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -22,7 +22,7 @@ export function CreateLongLivedTokenForm({
   setDialogOpen,
   onInterceptClose,
 }: CreateLongLivedTokenFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [createdToken, setCreatedToken] = useState<string | undefined>(
     undefined
@@ -101,8 +101,6 @@ export function CreateLongLivedTokenForm({
    * Handles the form submission
    */
   const onSubmit = async ({title, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};

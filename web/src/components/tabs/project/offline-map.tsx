@@ -15,8 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {updateNotebookOfflineMapRegionRequest} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {LARGE_OFFLINE_MAP_AREA_MB} from '@/lib/offline-map-size';
@@ -151,7 +150,7 @@ function OfflineMapStatusBox({
 export default function ProjectOfflineMap({
   projectId,
 }: ProjectOfflineMapProps): JSX.Element {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const {data: project, isLoading} = useGetProject({user, projectId});
   const canSetOfflineMapRegion = useIsAuthorisedTo({
@@ -206,9 +205,6 @@ export default function ProjectOfflineMap({
 
   const saveMutation = useMutation({
     mutationFn: async (region: OfflineMapRegion | null) => {
-      if (!user) {
-        throw new Error('Not signed in');
-      }
       const response = await updateNotebookOfflineMapRegionRequest({
         user,
         projectId,
@@ -231,9 +227,6 @@ export default function ProjectOfflineMap({
 
   const clearMutation = useMutation({
     mutationFn: async () => {
-      if (!user) {
-        throw new Error('Not signed in');
-      }
       const response = await updateNotebookOfflineMapRegionRequest({
         user,
         projectId,

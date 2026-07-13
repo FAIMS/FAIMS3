@@ -1,7 +1,6 @@
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
@@ -23,7 +22,7 @@ export function AddProjectToTeamForm({
   setDialogOpen,
   projectId,
 }: AddProjectToTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const teams = useGetTeams({user});
   const {data: project} = useGetProject({user, projectId});
@@ -73,8 +72,6 @@ export function AddProjectToTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({teamId}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await modifyTeamForProject({
       projectId,
       teamId,

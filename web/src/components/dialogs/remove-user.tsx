@@ -11,7 +11,7 @@ import {useState} from 'react';
 import {Trash} from 'lucide-react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Alert, AlertDescription, AlertTitle} from '../ui/alert';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {config} from '@/constants';
 
 /**
@@ -30,7 +30,7 @@ export const RemoveUserDialog = ({
   disabled?: boolean;
 }) => {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
 
   return (
@@ -61,7 +61,7 @@ export const RemoveUserDialog = ({
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json',
-                  Authorization: `Bearer ${user?.token}`,
+                  Authorization: `Bearer ${user.token}`,
                 },
               });
 

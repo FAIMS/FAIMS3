@@ -2,8 +2,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
@@ -21,14 +20,14 @@ export const Route = createFileRoute('/_protected/projects/')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function ProjectsRouteComponent() {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const {isLoading, data} = useGetProjects({user});
   const pathname = useRouter().state.location.pathname;
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
   const canCreateInSomeTeam =
     getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
+      decodedToken: user.decodedToken,
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 

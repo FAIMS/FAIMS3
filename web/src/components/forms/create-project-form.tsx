@@ -1,7 +1,7 @@
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Action, TemplateListItem} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
@@ -36,7 +36,8 @@ export function CreateProjectForm({
   defaultValues,
   specifiedTeam = undefined,
 }: CreateProjectFormProps) {
-  const {user, refreshToken} = useAuth();
+  const user = useRequiredUser();
+  const {refreshToken} = useAuth();
   const queryClient = useQueryClient();
 
   // can they create projects outside team?
@@ -115,10 +116,6 @@ export function CreateProjectForm({
     file,
     team,
   }: onSubmitProps) => {
-    if (!user) {
-      return {type: 'submit', message: 'User not authenticated'};
-    }
-
     let response;
     if (template) {
       // Create from selected template

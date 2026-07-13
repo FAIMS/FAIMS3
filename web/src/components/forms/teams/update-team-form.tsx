@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {updateTeam} from '@/hooks/teams-hooks';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
@@ -26,7 +26,7 @@ export function UpdateTeamForm({
   teamId,
   description,
 }: UpdateTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
 
   const fields = [
@@ -60,8 +60,6 @@ export function UpdateTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({name, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await updateTeam({description, name, user, teamId});
 
     if (!response.ok) return {type: 'submit', message: 'Error updating team'};

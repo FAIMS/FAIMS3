@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {updateLongLivedToken} from '@/hooks/queries';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -17,7 +17,7 @@ export function UpdateLongLivedTokenForm({
   setDialogOpen,
   token,
 }: UpdateLongLivedTokenFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const fields = [
@@ -58,8 +58,6 @@ export function UpdateLongLivedTokenForm({
    * Handles the form submission
    */
   const onSubmit = async ({title, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     try {
       await updateLongLivedToken({
         tokenId: token.id,

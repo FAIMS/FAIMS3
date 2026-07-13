@@ -4,7 +4,11 @@ import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
-import {useIsAuthorisedTo, useCanCreateTemplate} from '@/hooks/auth-hooks';
+import {
+  useIsAuthorisedTo,
+  useCanCreateTemplate,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 import {
   optionalRootDescriptionField,
@@ -41,7 +45,8 @@ export function CreateTemplateFromProjectForm({
   projectId,
   specifiedTeam = undefined,
 }: CreateTemplateFromProjectForm) {
-  const {user, refreshToken} = useAuth();
+  const user = useRequiredUser();
+  const {refreshToken} = useAuth();
   const queryClient = useQueryClient();
   const {data: teams} = useGetTeams({user});
   const {data: projectData} = useGetProject({user, projectId});
@@ -57,7 +62,7 @@ export function CreateTemplateFromProjectForm({
     teams: teams?.teams,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_TEMPLATE_IN_TEAM,
-    decodedToken: user?.decodedToken,
+    decodedToken: user.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTemplateTeamFieldState({
@@ -88,8 +93,6 @@ export function CreateTemplateFromProjectForm({
     description?: string;
     team?: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not authenticated'};
-
     const {name, description, team} = values;
 
     if (!projectData?.uiSpecification) {
