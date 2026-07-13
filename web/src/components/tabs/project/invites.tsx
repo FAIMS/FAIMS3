@@ -30,6 +30,7 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
   const columns = useGetInviteColumns({
     projectId,
     deleteInviteHandler: async inviteId => {
+      if (!user) throw new Error('Not authenticated');
       return await removeInviteForProject({inviteId, projectId, user});
     },
   });

@@ -38,7 +38,7 @@ const ExportProjectForm = () => {
     [uiSpec]
   );
 
-  if (!data) {
+  if (!data || !uiSpec) {
     return null;
   }
 

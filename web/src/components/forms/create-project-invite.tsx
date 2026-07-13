@@ -39,6 +39,7 @@ export function CreateProjectInviteForm({
   );
 
   const roleOptions = useMemo(() => {
+    if (!user) return [];
     return Object.entries(roleDetails)
       .filter(
         ([role, {scope, resource}]) =>

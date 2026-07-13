@@ -22,7 +22,7 @@
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",
     "circular-dep-check": "madge -c --extensions ts lib/",
-    "lint": "(pnpm run circular-dep-check || exit 0) && oxlint --config ../../.oxlintrc.json .",
+    "lint": "pnpm run circular-dep-check && oxlint --config ../../.oxlintrc.json .",
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json .",
     "preview": "vite preview",
     "test": "vitest"

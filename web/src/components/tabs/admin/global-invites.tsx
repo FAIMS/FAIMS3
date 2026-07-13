@@ -25,6 +25,7 @@ const GlobalInvites = () => {
 
   const columns = useGetGlobalInviteColumns({
     deleteInviteHandler: async (inviteId: string) => {
+      if (!user) throw new Error('Not authenticated');
       return await removeGlobalInvite({inviteId, user});
     },
   });

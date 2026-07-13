@@ -28,6 +28,7 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
   const columns = useGetTeamInviteColumns({
     teamId,
     deleteInviteHandler: async inviteId => {
+      if (!user) throw new Error('Not authenticated');
       return await removeInviteForTeam({teamId, inviteId, user});
     },
   });
