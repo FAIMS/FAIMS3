@@ -179,9 +179,12 @@ const handlebarsConfig = {
 
 const hbs = new ExpressHandlebars(handlebarsConfig);
 
-app.use(express.urlencoded({extended: true}));
-// allow large JSON objects to be posted
-app.use(express.json({limit: '200mb'}));
+// Bound request body sizes (configurable via URLENCODED_BODY_LIMIT /
+// JSON_BODY_LIMIT env vars) to protect against oversized malicious payloads
+app.use(
+  express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
+);
+app.use(express.json({limit: config.jsonBodyLimit}));
 app.use(cors());
 
 app.use(passport.initialize());

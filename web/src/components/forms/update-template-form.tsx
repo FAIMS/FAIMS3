@@ -1,7 +1,7 @@
 import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
-import {z} from 'zod';
+import {designFileSchema} from '@/lib/input-limits';
 import {config} from '@/constants';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {
@@ -14,7 +14,7 @@ export const fields = [
   {
     name: 'file',
     type: 'file',
-    schema: z.instanceof(File).refine(file => file.type === 'application/json'),
+    schema: designFileSchema(),
   },
 ];
 

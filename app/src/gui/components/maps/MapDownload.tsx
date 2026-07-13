@@ -17,6 +17,7 @@
  *  A component supporting downloading of offline maps
  */
 
+import {INPUT_LIMITS} from '@faims3/data-model';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Accordion,
@@ -167,6 +168,9 @@ export const MapDownload = () => {
             label="Name for Downloaded Map"
             value={downloadSetName}
             onChange={e => setDownloadSetName(e.target.value)}
+            slotProps={{
+              htmlInput: {maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH},
+            }}
           />
           <Button variant="outlined" onClick={confirmCacheMapExtent}>
             Download

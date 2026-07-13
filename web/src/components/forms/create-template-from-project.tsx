@@ -1,6 +1,8 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
 import {z} from 'zod';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo, useCanCreateTemplate} from '@/hooks/auth-hooks';
@@ -70,9 +72,8 @@ export function CreateTemplateFromProjectForm({
       name: 'name',
       label: 'Template Name',
       description: 'A short display name for the template',
-      schema: z.string().min(5, {
-        message: 'Template name must be at least 5 characters.',
-      }),
+      schema: resourceNameSchema(5, 'Template name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField({
       helperText: `Optional; not copied from the survey (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,

@@ -3,7 +3,7 @@ import {config, brandNotebook} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
-import {Action, Role, roleDetails} from '@faims3/data-model';
+import {Action, INPUT_LIMITS, Role, roleDetails} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 
@@ -56,7 +56,13 @@ export function AddUserToTeamForm({
     {
       name: 'email',
       label: 'User Email',
-      schema: z.string().email(),
+      schema: z
+        .string()
+        .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, {
+          message: 'Email address is too long',
+        })
+        .email(),
+      maxLength: INPUT_LIMITS.EMAIL_MAX_LENGTH,
     },
     {
       name: 'role',

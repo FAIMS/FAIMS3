@@ -46,6 +46,18 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
 // ============================================================================
 
+/**
+ * Default maximum file size (bytes) applied when the notebook design does not
+ * set `maximum_file_size`.
+ */
+export const DEFAULT_MAXIMUM_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MiB
+
+/**
+ * Hard ceiling for per-file uploads. Designer-configured `maximum_file_size`
+ * values above this are clamped so a notebook cannot opt into unbounded files.
+ */
+export const HARD_MAXIMUM_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MiB
+
 const fileUploaderPropsSchema = BaseFieldParametersSchema.extend({
   multiple: z.boolean().optional().default(true),
   maximum_number_of_files: z.number().optional().default(0),
@@ -533,7 +545,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     disabled = false,
     multiple = true,
     maximum_number_of_files: maximumNumberOfFiles = 0,
-    maximum_file_size: maximumFileSize,
+    maximum_file_size: maximumFileSize = DEFAULT_MAXIMUM_FILE_SIZE_BYTES,
     minimum_file_size: minimumFileSize,
     state,
     addAttachment,
@@ -541,6 +553,12 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     setAttachmentSaving,
     config: context,
   } = props;
+
+  // Clamp designer-configured sizes so notebooks cannot raise the limit unboundedly
+  const effectiveMaximumFileSize = Math.min(
+    maximumFileSize,
+    HARD_MAXIMUM_FILE_SIZE_BYTES
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [viewingAttachment, setViewingAttachment] = useState<number | null>(
@@ -664,9 +682,9 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
 
       switch (errorCode) {
         case 'file-too-large':
-          errorMessage = maximumFileSize
+          errorMessage = effectiveMaximumFileSize
             ? `File is too large. Maximum size: ${formatFileSize(
-                maximumFileSize
+                effectiveMaximumFileSize
               )}`
             : 'File is too large';
           break;
@@ -686,7 +704,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
 
       setError(errorMessage);
     },
-    [maximumFileSize, minimumFileSize]
+    [effectiveMaximumFileSize, minimumFileSize]
   );
 
   /**
@@ -755,7 +773,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
             disabled={disabled}
             multiple={multiple}
             maxFiles={maxFiles}
-            maxSize={maximumFileSize}
+            maxSize={effectiveMaximumFileSize}
             minSize={minimumFileSize}
           />
         )}

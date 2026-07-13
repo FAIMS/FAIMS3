@@ -18,7 +18,7 @@
  *   Dialog allowing an authorised admin to pick a user to impersonate.
  */
 
-import {GetListAllUsersItem, Role} from '@faims3/data-model';
+import {GetListAllUsersItem, INPUT_LIMITS, Role} from '@faims3/data-model';
 import {
   Alert,
   Box,
@@ -149,6 +149,9 @@ export default function ImpersonateDialog({
           value={search}
           onChange={e => setSearch(e.target.value)}
           sx={{mb: 2}}
+          slotProps={{
+            htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+          }}
         />
 
         {isLoading && (

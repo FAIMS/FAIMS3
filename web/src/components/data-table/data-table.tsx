@@ -20,6 +20,7 @@ import {useState, ReactNode} from 'react';
 import {DataTablePagination} from './pagination';
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {cn} from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
@@ -85,6 +86,7 @@ export function DataTable<TData, TValue>({
           value={table.getState().globalFilter || ''}
           onChange={event => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
+          maxLength={INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH}
         />
         {toolbarExtra}
         {button}

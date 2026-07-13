@@ -56,7 +56,11 @@ import {nowIso} from '../time';
 import {hashChallengeCode} from '../utils';
 
 // TODO: configure this directory
-const upload = multer({dest: '/tmp/'});
+// Cap the restore upload size (configurable via RESTORE_UPLOAD_MAX_BYTES)
+const upload = multer({
+  dest: '/tmp/',
+  limits: {fileSize: config.restoreUploadMaxBytes},
+});
 
 // This must occur before express api is used
 patch();

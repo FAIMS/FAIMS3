@@ -17,6 +17,7 @@ import {useNavigate, useRouterState} from '@tanstack/react-router';
 import {useState} from 'react';
 import {toast} from 'sonner';
 import {config} from '@/constants';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {AlertTriangle, Skull} from 'lucide-react';
 
 type DeleteArchivedProjectDialogProps = {
@@ -129,6 +130,7 @@ export function DeleteArchivedProjectDialog({
             value={confirmText}
             onChange={e => setConfirmText(e.target.value)}
             placeholder={`${config.notebookNameCapitalized} name`}
+            maxLength={INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH}
           />
         </div>
         <DialogFooter className="gap-2 sm:gap-0">

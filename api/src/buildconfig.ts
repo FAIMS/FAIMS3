@@ -66,6 +66,13 @@ const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000;
 const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000;
 // Long-lived token configuration
 const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
+// Request body / upload size limits (protect against oversized payloads)
+/** Default cap for JSON bodies (covers notebook/template design uploads). */
+const DEFAULT_JSON_BODY_LIMIT = '25mb';
+/** Default cap for urlencoded (HTML form) bodies — auth forms are tiny. */
+const DEFAULT_URLENCODED_BODY_LIMIT = '1mb';
+/** Default cap for the developer-mode restore-from-backup upload (bytes). */
+const DEFAULT_RESTORE_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024; // 1 GiB
 
 const DEFAULT_FROM_EMAIL = 'noreply@example.com';
 const DEFAULT_FROM_NAME = 'FAIMS System Notification';
@@ -81,7 +88,7 @@ const EnvSchema = z
       DEFAULT_CONDUCTOR_URL,
       'CONDUCTOR_PUBLIC_URL'
     ),
-    /** Public URL of the Field Mark web/data-collection app. */
+    /** Public URL of the Fieldmark web/data-collection app. */
     WEB_APP_PUBLIC_URL: configHelpers.stringDefault(DEFAULT_WEBAPP_URL),
     /** Public URL / store link for the Android app build (optional). */
     ANDROID_APP_PUBLIC_URL: configHelpers.stringDefault(''),
@@ -338,6 +345,38 @@ const EnvSchema = z
         }
         return v;
       }),
+    /**
+     * JSON body size limit for body-parser (e.g. `'25mb'`, `'500kb'`).
+     * Bounds notebook/template design uploads among other JSON payloads.
+     */
+    JSON_BODY_LIMIT: configHelpers.stringDefault(DEFAULT_JSON_BODY_LIMIT),
+    /**
+     * Urlencoded (HTML form) body size limit for body-parser
+     * (e.g. `'1mb'`, `'100kb'`). Auth forms are tiny.
+     */
+    URLENCODED_BODY_LIMIT: configHelpers.stringDefault(
+      DEFAULT_URLENCODED_BODY_LIMIT
+    ),
+    /**
+     * Maximum file size (bytes) accepted by the developer-mode
+     * POST /api/restore upload.
+     */
+    RESTORE_UPLOAD_MAX_BYTES: z
+      .string()
+      .optional()
+      .transform((v): number => {
+        if (configHelpers.isBlank(v)) {
+          return DEFAULT_RESTORE_UPLOAD_MAX_BYTES;
+        }
+        const parsed = parseInt(v, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+          console.warn(
+            `Invalid value "${v}" for RESTORE_UPLOAD_MAX_BYTES. Must be a positive integer (bytes). Falling back to default.`
+          );
+          return DEFAULT_RESTORE_UPLOAD_MAX_BYTES;
+        }
+        return parsed;
+      }),
     /** Present when running under Jest; contributes to `runningUnderTest`. */
     JEST_WORKER_ID: z.string().optional(),
     /** Node environment; `'test'` contributes to `runningUnderTest`. */
@@ -424,6 +463,9 @@ const EnvSchema = z
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
       bugsnagApiKey: env.BUGSNAG_API_KEY,
+      jsonBodyLimit: env.JSON_BODY_LIMIT,
+      urlencodedBodyLimit: env.URLENCODED_BODY_LIMIT,
+      restoreUploadMaxBytes: env.RESTORE_UPLOAD_MAX_BYTES,
       localCouchdbAuth,
       conductorInstanceName,
       localLoginEnabled: env.DISABLE_LOCAL_LOGIN,

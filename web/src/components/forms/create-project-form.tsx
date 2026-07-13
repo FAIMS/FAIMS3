@@ -12,7 +12,8 @@ import {
   createProjectFromTemplate,
 } from '@/hooks/project-hooks';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
-import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
+import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS, ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 
 // Import the default sample notebook JSON
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -48,11 +49,8 @@ export function CreateProjectForm({
     {
       name: 'name',
       label: 'Name',
-      schema: z.string().min(5, {
-        message:
-          config.notebookNameCapitalized +
-          ' name must be at least 5 characters.',
-      }),
+      schema: resourceNameSchema(5, `${config.notebookNameCapitalized} name`),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField({
       helperText: `Optional summary of this ${config.notebookName} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
@@ -71,10 +69,7 @@ export function CreateProjectForm({
       name: 'file',
       label: 'JSON File (optional)',
       type: 'file',
-      schema: z
-        .instanceof(File)
-        .refine(file => file.type === 'application/json')
-        .optional(),
+      schema: designFileSchema().optional(),
       excludedBy: 'template',
     },
   ];

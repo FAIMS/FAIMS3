@@ -12,7 +12,8 @@ import {
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
-import {z} from 'zod';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {TemplateOwnerCallout} from './template-owner-callout';
 import {
   buildTeamField,
@@ -86,9 +87,8 @@ export function CreateProjectFromTemplateForm({
       {
         name: 'name',
         label: `${config.notebookNameCapitalized} Name`,
-        schema: z.string().min(5, {
-          message: `${config.notebookNameCapitalized} name must be at least 5 characters.`,
-        }),
+        schema: resourceNameSchema(5, `${config.notebookNameCapitalized} name`),
+        maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
       },
       optionalRootDescriptionField({
         helperText: `Optional summary of this ${config.notebookName} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,

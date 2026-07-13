@@ -21,11 +21,13 @@ import {capitalize} from './lib/utils';
 const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
 /** Default duration-hint chips for long-lived tokens; clamped to the max. */
 const DEFAULT_HINTS = [1, 5, 10, 30, 90, 365];
+/** Default max size (MB) for uploaded notebook/template design JSON files. */
+const DEFAULT_MAX_DESIGN_FILE_SIZE_MB = 10;
 
 /**
  * When the directory lists a notebook as archived (or id absent), the mobile app
  * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
- * Set via VITE_FORCE_REMOTE_DELETION; must match the Field Mark app build for accurate web copy.
+ * Set via VITE_FORCE_REMOTE_DELETION; must match the Fieldmark app build for accurate web copy.
  */
 export type ForceRemoteDeletionMode = 'allow' | 'never';
 
@@ -63,7 +65,7 @@ const EnvSchema = z
     VITE_API_URL: z
       .string({error: 'Missing required env variable VITE_API_URL'})
       .min(1, 'Missing required env variable VITE_API_URL'),
-    /** Public Field Mark app base URL (required). */
+    /** Public Fieldmark app base URL (required). */
     VITE_APP_URL: z
       .string({error: 'Missing required env variable VITE_APP_URL'})
       .min(1, 'Missing required env variable VITE_APP_URL'),
@@ -103,7 +105,7 @@ const EnvSchema = z
     /**
      * When the directory lists a notebook as archived (or id absent), the
      * mobile app may drop local DBs after sync (`allow`) or keep them closed
-     * but recoverable (`never`). Must match the Field Mark app build for
+     * but recoverable (`never`). Must match the Fieldmark app build for
      * accurate web copy.
      */
     VITE_FORCE_REMOTE_DELETION: configHelpers.enumDefault(
@@ -112,7 +114,7 @@ const EnvSchema = z
     ),
     /**
      * When true, the mobile app destroys local Pouch data on manual notebook
-     * deactivation. Baked at build time; must match the Field Mark app build
+     * deactivation. Baked at build time; must match the Fieldmark app build
      * for accurate copy.
      */
     VITE_DELETE_ON_DEACTIVATION: configHelpers.boolWithDefault(false),
@@ -197,6 +199,26 @@ const EnvSchema = z
         }
         return v;
       }),
+    /**
+     * Maximum size (MB) allowed for uploaded notebook/template design JSON
+     * files. Mirrors the server-side ui-specification cap.
+     */
+    VITE_MAX_DESIGN_FILE_SIZE_MB: z
+      .string()
+      .optional()
+      .transform((v): number => {
+        if (configHelpers.isBlank(v)) {
+          return DEFAULT_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024;
+        }
+        const parsed = parseInt(v, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) {
+          console.warn(
+            `Invalid value "${v}" for VITE_MAX_DESIGN_FILE_SIZE_MB. Must be a positive integer (MB). Using default.`
+          );
+          return DEFAULT_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024;
+        }
+        return parsed * 1024 * 1024;
+      }),
   })
   .strip()
   .transform(env => {
@@ -240,6 +262,8 @@ const EnvSchema = z
       apiUrl: env.VITE_API_URL,
       appUrl: env.VITE_APP_URL,
       excludedTeamRoles: env.VITE_EXCLUDED_TEAM_ROLES,
+      /** Max upload size in bytes for notebook/template design JSON. */
+      maxDesignFileSizeBytes: env.VITE_MAX_DESIGN_FILE_SIZE_MB,
       // Cross-field / derived.
       appShortName: configHelpers.isBlank(env.VITE_APP_SHORT_NAME)
         ? env.VITE_APP_NAME
@@ -302,6 +326,13 @@ export function buildRegisterUrl({
 export const REFRESH_INTERVAL = 3 * 60 * 1000;
 
 export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
+
+/** Design-file upload size limit in bytes (from `VITE_MAX_DESIGN_FILE_SIZE_MB`). */
+export const MAX_DESIGN_FILE_SIZE_BYTES = config.maxDesignFileSizeBytes;
+/** Design-file upload size limit in MB (derived from bytes). */
+export const MAX_DESIGN_FILE_SIZE_MB = Math.floor(
+  MAX_DESIGN_FILE_SIZE_BYTES / (1024 * 1024)
+);
 
 /** Help link for long-lived token documentation. */
 export const LONG_LIVED_TOKEN_HELP_LINK =

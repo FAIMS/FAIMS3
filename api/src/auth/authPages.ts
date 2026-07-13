@@ -19,7 +19,12 @@
  *   which server to use and whether to include test data
  */
 
-import {AuthContext} from '@faims3/data-model';
+import {
+  AuthContext,
+  CodeInputSchema,
+  IdInputSchema,
+  RedirectInputSchema,
+} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
 import validate from '../middleware/validate';
@@ -62,8 +67,8 @@ export function addAuthPages(
     '/login',
     validate({
       query: z.object({
-        redirect: z.string().optional(),
-        inviteId: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
+        inviteId: IdInputSchema.optional(),
       }),
     }),
     (req, res) => {
@@ -114,8 +119,8 @@ export function addAuthPages(
     '/register',
     validate({
       query: z.object({
-        redirect: z.string().optional(),
-        inviteId: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
+        inviteId: IdInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -185,9 +190,9 @@ export function addAuthPages(
     validate({
       query: z.object({
         // Where should we go once finished?
-        redirect: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
         // Require username as query param - this lets us know who the user is
-        username: z.string(),
+        username: IdInputSchema,
       }),
     }),
     (req, res) => {
@@ -225,8 +230,8 @@ export function addAuthPages(
     '/verify-email',
     validate({
       query: z.object({
-        code: z.string().optional(),
-        redirect: z.string().optional(),
+        code: CodeInputSchema.optional(),
+        redirect: RedirectInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -266,8 +271,8 @@ export function addAuthPages(
     '/verify-email',
     validate({
       body: z.object({
-        code: z.string(),
-        redirect: z.string().optional(),
+        code: CodeInputSchema,
+        redirect: RedirectInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -312,7 +317,7 @@ export function addAuthPages(
     '/forgot-password',
     validate({
       query: z.object({
-        redirect: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -342,8 +347,8 @@ export function addAuthPages(
     '/auth/reset-password',
     validate({
       query: z.object({
-        code: z.string(),
-        redirect: z.string(),
+        code: CodeInputSchema,
+        redirect: RedirectInputSchema,
       }),
     }),
     async (req, res) => {
