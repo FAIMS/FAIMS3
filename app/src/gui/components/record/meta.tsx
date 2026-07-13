@@ -55,6 +55,7 @@ export default function RecordMeta(props: RecordMetaProps) {
 
   useEffect(() => {
     if (!uiSpec) return;
+    const uiSpecification = uiSpec;
 
     async function fetchRecordMeta() {
       const record = await getRecordMetadata({
@@ -62,7 +63,7 @@ export default function RecordMeta(props: RecordMetaProps) {
         recordId: record_id,
         revisionId: revision_id,
         dataDb: localGetDataDb(project_id),
-        uiSpecification: uiSpec,
+        uiSpecification,
       });
       setMeta({
         Created: record?.created.toString(),

@@ -922,7 +922,7 @@ const useTableColumns = ({
   size,
   hasConflict,
 }: {
-  uiSpec: UiSpecModel | null;
+  uiSpec: UiSpecModel | null | undefined;
   visibleTypes: string[];
   viewsets: UiSpecForms | null | undefined;
   size: SizeCategory;
