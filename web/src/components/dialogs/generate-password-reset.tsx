@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMutation} from '@tanstack/react-query';
 import {AlertCircle, LinkIcon, QrCode, RefreshCw} from 'lucide-react';
 import QRCode from 'qrcode';
@@ -63,7 +63,7 @@ const QRCodeViewDialog = ({qrData}: {qrData: string}) => {
  * @param userId - The ID of the user requesting password reset
  * @param open - Controls the visibility of the dialog
  * @param setOpen - Function to update dialog visibility
- * @returns Returns null if user is not authenticated or userId is missing
+ * @returns Returns null if userId is missing
  */
 export const GeneratePasswordReset = ({
   userId,
@@ -74,7 +74,7 @@ export const GeneratePasswordReset = ({
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const {data, isPending, mutate, error, isError, reset} = useMutation({
@@ -84,7 +84,7 @@ export const GeneratePasswordReset = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user!.token}`,
+          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
           email: id,
@@ -116,8 +116,7 @@ export const GeneratePasswordReset = ({
     mutate({id: userId!});
   };
 
-  // early returns are here because we need the hooks above to always run in the same order.
-  if (!user) return null;
+  // early return is here because we need the hooks above to always run in the same order.
   if (!userId) return null;
 
   return (

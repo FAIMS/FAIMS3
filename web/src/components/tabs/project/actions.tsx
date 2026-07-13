@@ -10,13 +10,16 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
 import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
 } from '@/designer/integration';
 import type {NotebookWithHistory} from '@/designer/state/initial';
-import {useCanCreateTemplate, useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {
+  useCanCreateTemplate,
+  useIsAuthorisedTo,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {Action, ProjectStatus} from '@faims3/data-model';
@@ -33,7 +36,7 @@ import {useMemo, useState} from 'react';
  * @returns {JSX.Element} The rendered ProjectActions component.
  */
 const ProjectActions = (): JSX.Element => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const {data, isLoading} = useGetProject({user, projectId});
   const queryClient = useQueryClient();
@@ -50,7 +53,7 @@ const ProjectActions = (): JSX.Element => {
     resourceType: 'projects',
     apiResourceType: 'notebooks',
     resourceId: projectId,
-    token: user?.token,
+    token: user.token,
   });
 
   // need to invalidate the project query after upload

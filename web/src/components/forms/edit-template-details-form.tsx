@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   errorMessageFromTemplateJsonBody,
   updateTemplateRequest,
@@ -25,7 +25,7 @@ export function EditTemplateDetailsForm({
   name,
   description,
 }: EditTemplateDetailsFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const fields = [
@@ -45,8 +45,6 @@ export function EditTemplateDetailsForm({
     name: string;
     description: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await updateTemplateRequest({
       user,
       templateId,

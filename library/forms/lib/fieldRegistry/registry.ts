@@ -26,7 +26,6 @@ import {emailFieldSpec, textFieldSpec} from './fields/TextFields';
 import {
   buildRegistryKey,
   FIELD_REGISTRY,
-  setRegistryFallback,
   splitRegistryKey,
 } from './registryApi';
 import {FieldInfo} from './types';
@@ -119,7 +118,6 @@ for (const alias of LEGACY_FIELD_ALIASES) {
     alias.spec
   );
 }
-setRegistryFallback(textFieldSpec);
 
 /**
  * Validate the registry on load. Legacy alias keys are intentionally allowed

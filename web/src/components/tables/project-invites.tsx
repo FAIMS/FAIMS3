@@ -11,9 +11,12 @@ import {
   projectInviteToAction,
 } from '@faims3/data-model';
 import {displayDateTime} from '@/lib/time';
-import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
-import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {
+  useIsAuthorisedTo,
+  userCanDo,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {Trash} from 'lucide-react';
 import {
   Tooltip,
@@ -34,7 +37,7 @@ export const useGetInviteColumns = ({
 }): ColumnDef<
   GetProjectInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const canDeleteAdminInvite = useIsAuthorisedTo({
@@ -53,10 +56,6 @@ export const useGetInviteColumns = ({
     action: Action.DELETE_GUEST_PROJECT_INVITE,
     resourceId: projectId,
   });
-
-  if (!user) {
-    return [];
-  }
 
   const canRemoveSomeInvite =
     canDeleteAdminInvite ||

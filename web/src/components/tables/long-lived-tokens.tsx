@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {displayDateTime, nowMs} from '@/lib/time';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
@@ -22,7 +21,7 @@ export const useGetLongLivedTokensColumns = ({
   revokeTokenHandler?: (tokenId: string) => Promise<void>;
   editTokenHandler?: (tokenId: string) => void;
 }): ColumnDef<GetLongLivedTokensResponse['tokens'][number]>[] => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   // Check permissions
   const canEditMyTokens = useIsAuthorisedTo({
@@ -37,10 +36,6 @@ export const useGetLongLivedTokensColumns = ({
   const canRevokeAnyTokens = useIsAuthorisedTo({
     action: Action.REVOKE_ANY_LONG_LIVED_TOKEN,
   });
-
-  if (!user) {
-    return [];
-  }
 
   const canEditToken = (tokenUserId: string) =>
     tokenUserId === user.user.id ? canEditMyTokens : canEditAnyTokens;

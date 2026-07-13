@@ -11,7 +11,6 @@ import {Button} from '@/components/ui/button';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
-import {useAuth} from '@/context/auth-provider';
 import {useArchiveProject} from '@/hooks/archive-hooks';
 import {useNavigate} from '@tanstack/react-router';
 import {useState} from 'react';
@@ -29,7 +28,6 @@ export function ArchiveProjectDialog({
   projectId,
   disabled = false,
 }: ArchiveProjectDialogProps) {
-  const {user} = useAuth();
   const {mutate, isPending} = useArchiveProject();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -43,7 +41,6 @@ export function ArchiveProjectDialog({
   };
 
   const onConfirm = () => {
-    if (!user) return;
     mutate(
       {projectId},
       {

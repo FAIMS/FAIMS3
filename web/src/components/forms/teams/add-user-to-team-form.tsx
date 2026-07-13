@@ -1,7 +1,6 @@
 import {Field, Form} from '@/components/form';
 import {config, brandNotebook} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
 import {Action, INPUT_LIMITS, Role, roleDetails} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
@@ -18,7 +17,7 @@ export function AddUserToTeamForm({
   setDialogOpen,
   teamId,
 }: AddUserToTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
 
   // can we add a user to the team?
@@ -90,8 +89,6 @@ export function AddUserToTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({email, role}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await modifyMemberForTeam({
       action: 'ADD_ROLE',
       email,

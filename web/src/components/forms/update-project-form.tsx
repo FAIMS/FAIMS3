@@ -1,4 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {designFileSchema} from '@/lib/input-limits';
@@ -30,12 +30,10 @@ export function UpdateProjectForm({
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onSuccess: () => void;
 }) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
 
   const onSubmit = async ({file}: {file: File}) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const jsonString = await readFileAsText(file);
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};

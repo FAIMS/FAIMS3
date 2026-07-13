@@ -12,8 +12,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
@@ -32,10 +31,10 @@ import Logo from '../logo';
  * based on the authenticated user's data, including projects and templates.
  *
  * @param {React.ComponentProps<typeof Sidebar>} props - The properties to pass to the Sidebar component.
- * @returns {JSX.Element} The rendered sidebar component, or an empty fragment if no user is authenticated.
+ * @returns {JSX.Element} The rendered sidebar component.
  */
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const {pathname} = useLocation();
 
@@ -50,8 +49,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
   const {data: templates} = useGetTemplates({user, enabled: canSeeTemplates});
   const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
-
-  if (!user) return <></>;
 
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];

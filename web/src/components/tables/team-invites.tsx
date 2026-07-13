@@ -11,9 +11,12 @@ import {
   teamInviteToAction,
 } from '@faims3/data-model';
 import {displayDateTime} from '@/lib/time';
-import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
-import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {
+  useIsAuthorisedTo,
+  userCanDo,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {Trash} from 'lucide-react';
 import {
   Tooltip,
@@ -33,7 +36,7 @@ export const useGetTeamInviteColumns = ({
 }): ColumnDef<
   GetTeamInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const canDeleteAdminInvite = useIsAuthorisedTo({
@@ -48,10 +51,6 @@ export const useGetTeamInviteColumns = ({
     action: Action.DELETE_MEMBER_TEAM_INVITE,
     resourceId: teamId,
   });
-
-  if (!user) {
-    return [];
-  }
 
   const canRemoveSomeInvite =
     canDeleteAdminInvite || canDeleteManagerInvite || canDeleteMemberInvite;

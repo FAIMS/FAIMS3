@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useDisableUserAccount} from '@/hooks/user-hooks';
 import {
   Dialog,
@@ -22,7 +21,7 @@ import {cn} from '@/lib/utils';
  */
 export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const disableUser = useDisableUserAccount();
   const canDisable = useIsAuthorisedTo({
     action: Action.DISABLE_USER_ACCOUNT,
@@ -30,7 +29,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   });
 
   const blocked =
-    rowUser._id === user?.user.id ||
+    rowUser._id === user.user.id ||
     (rowUser.globalRoles ?? []).includes(Role.GENERAL_ADMIN);
 
   if (!canDisable || blocked) {

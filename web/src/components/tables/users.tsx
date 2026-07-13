@@ -1,4 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   GetListAllUsersItem,
   Role,
@@ -29,7 +29,7 @@ export const useUsersColumns = ({
 }: {
   onReset: (id: string) => void;
 }): ColumnDef<GetListAllUsersItem>[] => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   return [
@@ -59,7 +59,7 @@ export const useUsersColumns = ({
         },
       }) => (
         <div className="flex flex-wrap gap-1 items-center">
-          {userId !== user?.user.id && (
+          {userId !== user.user.id && (
             <AddRolePopover
               roles={Object.entries(roleDetails)
                 .filter(([, {scope}]) => scope === RoleScope.GLOBAL)
@@ -71,7 +71,7 @@ export const useUsersColumns = ({
             <RoleCard
               key={role}
               onRemove={
-                userId === user?.user.id
+                userId === user.user.id
                   ? undefined
                   : async () => {
                       try {
@@ -81,7 +81,7 @@ export const useUsersColumns = ({
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
-                              Authorization: `Bearer ${user?.token}`,
+                              Authorization: `Bearer ${user.token}`,
                             },
                             body: JSON.stringify({
                               addrole: false,

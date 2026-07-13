@@ -7,8 +7,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useAuth} from '@/context/auth-provider';
-import {ErrorComponent} from '@tanstack/react-router';
 import React, {useState} from 'react';
 import {Button} from '../../ui/button';
 
@@ -19,12 +17,7 @@ export const AddTeamUserDialog = ({
   teamId: string;
   buttonContent: React.ReactNode;
 }) => {
-  const {user} = useAuth();
   const [open, setOpen] = useState(false);
-
-  if (!user) {
-    return <ErrorComponent error="Not authenticated." />;
-  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

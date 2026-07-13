@@ -1,7 +1,7 @@
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {Action, PostCreateNotebookInput} from '@faims3/data-model';
@@ -36,12 +36,13 @@ interface CreateProjectFromTemplateFormProps {
  * create outside any team.
  *
  * @param {CreateProjectFromTemplateFormProps} props - The props for the form.
- * @returns {JSX.Element | null} The rendered form, or null if unauthenticated.
+ * @returns {JSX.Element} The rendered form.
  */
 export function CreateProjectFromTemplateForm({
   setDialogOpen,
 }: CreateProjectFromTemplateFormProps) {
-  const {user, refreshToken} = useAuth();
+  const user = useRequiredUser();
+  const {refreshToken} = useAuth();
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
   const {data: teamsData} = useGetTeams({user});
@@ -52,7 +53,7 @@ export function CreateProjectFromTemplateForm({
     teams: teamsData?.teams,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_PROJECT_IN_TEAM,
-    decodedToken: user?.decodedToken,
+    decodedToken: user.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
@@ -107,8 +108,6 @@ export function CreateProjectFromTemplateForm({
     teamDescription,
     teamLabel,
   ]);
-
-  if (!user) return null;
 
   const onSubmit = async ({
     name,
