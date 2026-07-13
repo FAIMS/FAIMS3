@@ -120,7 +120,7 @@ const RelatedRecordListItem = ({
               primary: {
                 variant: 'body2',
                 color: 'error',
-                sx: {fontFamily: 'monospace'},
+                sx: {fontFamily: 'monospace', overflowWrap: 'anywhere'},
               },
             }}
           />
@@ -173,6 +173,7 @@ const RelatedRecordListItem = ({
               variant: 'body2',
               sx: {
                 fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+                overflowWrap: 'anywhere',
                 // Monospace only as a fallback when no real HRID was configured
                 // (i.e. we're showing the opaque record id). Real HRIDs use the
                 // theme's default font.
