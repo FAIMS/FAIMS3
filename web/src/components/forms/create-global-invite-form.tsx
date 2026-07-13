@@ -10,8 +10,21 @@ import {
   RoleScope,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {z} from 'zod';
+
+// Global-scope roles offered by the invite form; static because roleDetails is
+// a module-level constant
+const roleOptions = Object.entries(roleDetails)
+  .filter(
+    ([role, detail]) =>
+      detail.scope === RoleScope.GLOBAL && role !== Role.GENERAL_ADMIN
+  )
+  .map(([value, {name: label, description}]) => ({
+    label,
+    value,
+    description,
+  }));
 
 /**
  * Form to create a new global invite
@@ -29,20 +42,6 @@ export function CreateGlobalInviteForm({
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
     undefined
   );
-
-  // Memoize the role options to prevent re-computation on each render
-  const roleOptions = useMemo(() => {
-    return Object.entries(roleDetails)
-      .filter(
-        ([role, detail]) =>
-          detail.scope === RoleScope.GLOBAL && role !== Role.GENERAL_ADMIN
-      )
-      .map(([value, {name: label, description}]) => ({
-        label,
-        value,
-        description,
-      }));
-  }, []);
 
   const fields: Field[] = [
     {
