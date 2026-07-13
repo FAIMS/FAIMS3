@@ -40,8 +40,12 @@ export default function HeadingProjectGrid({
   serverId: string;
 }) {
   // pull out active/inactive notebooks
-  const activatedProjects = projects.filter(({isActivated}) => isActivated);
-  const availableProjects = projects.filter(({isActivated}) => !isActivated);
+  const activatedProjects = projects
+    .filter(({isActivated}) => isActivated)
+    .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+  const availableProjects = projects
+    .filter(({isActivated}) => !isActivated)
+    .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
 
   const history = useNavigate();
 

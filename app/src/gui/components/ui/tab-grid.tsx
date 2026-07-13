@@ -41,8 +41,12 @@ export default function TabProjectGrid({
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
 }) {
-  const activatedProjects = projects.filter(({isActivated}) => isActivated);
-  const availableProjects = projects.filter(({isActivated}) => !isActivated);
+  const activatedProjects = projects
+    .filter(({isActivated}) => isActivated)
+    .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+  const availableProjects = projects
+    .filter(({isActivated}) => !isActivated)
+    .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
 
   // we need a state variable to track pagination model since we want to use a
   // controlled component style to force pagination to behave how we want
