@@ -1,24 +1,19 @@
 import axios from 'axios';
-import {
-  COUCHDB_INTERNAL_URL,
-  KEY_SERVICE,
-  LOCAL_COUCHDB_AUTH,
-  RUNNING_UNDER_TEST,
-} from '../../buildconfig';
+import {config, keyService} from '../../buildconfig';
 
 export async function initialiseJWTKey(): Promise<void> {
   // don't try to do this if we're testing
-  if (RUNNING_UNDER_TEST) return;
+  if (config.runningUnderTest) return;
   try {
     // Get current public key
-    const signingKey = await KEY_SERVICE.getSigningKey();
+    const signingKey = await keyService.getSigningKey();
 
     // Ensure new lines are encoded properly in the config file
     const publicKey = signingKey.publicKeyString.replace(/\n/g, '\\n');
 
     // _local means referencing the specific node to which this URL references -
     // if in clustering situation would need to be more careful
-    const couchdbConfigUrl = `${COUCHDB_INTERNAL_URL}/_node/_local/_config/jwt_keys/`;
+    const couchdbConfigUrl = `${config.couchdbInternalUrl}/_node/_local/_config/jwt_keys/`;
 
     // rsa:kid format
     const keyName = `rsa:${signingKey.kid}`;
@@ -28,7 +23,7 @@ export async function initialiseJWTKey(): Promise<void> {
       `${couchdbConfigUrl}${encodeURIComponent(keyName)}`,
       JSON.stringify(publicKey),
       {
-        auth: LOCAL_COUCHDB_AUTH,
+        auth: config.localCouchdbAuth,
         headers: {'Content-Type': 'application/json'},
       }
     );

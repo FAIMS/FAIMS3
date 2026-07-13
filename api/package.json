@@ -44,6 +44,7 @@
     "express": "4.22.0",
     "express-handlebars": "7.1.2",
     "express-rate-limit": "^7.1.5",
+    "express-zod-safe": "^3.2.1",
     "fast-check": "2.25.0",
     "gts": "^5.3.1",
     "handlebars": "4.7.9",
@@ -70,8 +71,7 @@
     "req-flash": "^0.0.3",
     "swagger-ui-dist": "^5.9.1",
     "xml-crypto": "^6.1.2",
-    "zod": "^3.24.1",
-    "zod-express-middleware": "^1.4.0",
+    "zod": "^4.1.12",
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {

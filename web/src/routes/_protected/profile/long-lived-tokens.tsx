@@ -13,7 +13,7 @@ import {
 import {Label} from '@/components/ui/label';
 import {Separator} from '@/components/ui/separator';
 import {Switch} from '@/components/ui/switch';
-import {LONG_LIVED_TOKEN_HELP_LINK} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {revokeLongLivedToken, useGetLongLivedTokens} from '@/hooks/queries';
@@ -147,7 +147,7 @@ function RouteComponent() {
             </div>
             <div className="pt-3 border-t border-slate-200">
               <a
-                href={LONG_LIVED_TOKEN_HELP_LINK}
+                href={config.longLivedTokenHelpLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline"

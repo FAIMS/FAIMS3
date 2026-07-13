@@ -33,13 +33,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useState} from 'react';
-import {
-  APP_ID,
-  IS_WEB_PLATFORM,
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '../../buildconfig';
+import {config, IS_WEB_PLATFORM} from '../../buildconfig';
 import {useNotification} from '../../context/popup';
 import {addAlert} from '../../context/slices/alertSlice';
 import {Server} from '../../context/slices/projectSlice';
@@ -137,7 +131,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       window.location.href = url + '&redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${url}&redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${config.appId}://auth-return`,
       });
     }
   };
@@ -150,11 +144,11 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       title={
         <>
           <Typography variant="h6" gutterBottom>
-            Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+            Register for {config.notebookNamePluralCapitalized}
           </Typography>
           <Typography variant="body1" gutterBottom>
             Enter the short code which was shared with you to get access to a{' '}
-            {NOTEBOOK_NAME_CAPITALIZED}.
+            {config.notebookNameCapitalized}.
           </Typography>
         </>
       }
@@ -242,7 +236,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
       // Process the URL with our new function
       const finalUrl = replaceOrAppendRedirect({
         url,
-        redirectTo: `${APP_ID}://auth-return`,
+        redirectTo: `${config.appId}://auth-return`,
       });
 
       // Use the capacitor browser plugin in apps
@@ -265,10 +259,10 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         <Grid container>
           <Grid size="grow">
             <Typography variant={'overline'}>
-              Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+              Register for {config.notebookNamePluralCapitalized}
             </Typography>
             <Typography variant={'body2'} sx={{fontWeight: 700, mb: 0}}>
-              Scan a QRCode to get access to a {NOTEBOOK_NAME}.
+              Scan a QRCode to get access to a {config.notebookName}.
             </Typography>
           </Grid>
         </Grid>

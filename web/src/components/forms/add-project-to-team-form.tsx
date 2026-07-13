@@ -1,5 +1,5 @@
 import {Field, Form} from '@/components/form';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
@@ -40,7 +40,7 @@ export function AddProjectToTeamForm({
     return (
       <>
         You do not have permission to change the ownership of this{' '}
-        {NOTEBOOK_NAME}
+        {config.notebookName}
       </>
     );
   }
@@ -50,7 +50,7 @@ export function AddProjectToTeamForm({
   }
 
   if (!teams.isLoading && !teamsAvailable) {
-    return <>No teams available to assign this {NOTEBOOK_NAME} to.</>;
+    return <>No teams available to assign this {config.notebookName} to.</>;
   }
 
   const fields: Field[] = [

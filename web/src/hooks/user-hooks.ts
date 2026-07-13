@@ -1,6 +1,7 @@
 import {useAuth, type User} from '@/context/auth-provider';
 import {PostImpersonateUserResponseSchema} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {config} from '@/constants';
 
 function errorMessageFromUserJsonBody(
   json: unknown,
@@ -29,7 +30,7 @@ export const postDisableUserAccount = async ({
   targetUserId: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(targetUserId)}/disable`,
+    `${config.apiUrl}/api/users/${encodeURIComponent(targetUserId)}/disable`,
     {
       method: 'POST',
       headers: {
@@ -55,7 +56,7 @@ export const postEnableUserAccount = async ({
   targetUserId: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(targetUserId)}/enable`,
+    `${config.apiUrl}/api/users/${encodeURIComponent(targetUserId)}/enable`,
     {
       method: 'POST',
       headers: {
@@ -82,7 +83,7 @@ export const postImpersonateUser = async ({
   targetUserId: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(targetUserId)}/impersonate`,
+    `${config.apiUrl}/api/users/${encodeURIComponent(targetUserId)}/impersonate`,
     {
       method: 'POST',
       headers: {

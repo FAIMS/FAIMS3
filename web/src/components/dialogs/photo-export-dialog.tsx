@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import ExportPhotosForm from '../forms/export-photos-form';
 
 /**
@@ -26,7 +26,7 @@ export const PhotoExportDialog = () => {
         <DialogHeader>
           <DialogTitle>Photo Export</DialogTitle>
           <DialogDescription>
-            Export all photos for this {NOTEBOOK_NAME_CAPITALIZED} to a ZIP
+            Export all photos for this {config.notebookNameCapitalized} to a ZIP
             file.
           </DialogDescription>
         </DialogHeader>

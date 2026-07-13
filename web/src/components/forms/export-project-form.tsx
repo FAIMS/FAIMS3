@@ -9,6 +9,7 @@ import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {Field, Form} from '../form';
 import {ChevronRight} from 'lucide-react';
+import {config} from '@/constants';
 
 export type ExportType = 'csv' | 'geojson' | 'kml' | 'geopackage';
 type ExportCategory = 'tabular' | 'geospatial';
@@ -94,7 +95,7 @@ const ExportProjectForm = () => {
     format: ExportType;
   }) => {
     if (user) {
-      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
 
       const response = await fetch(exportUrl, {
         headers: {
@@ -112,7 +113,7 @@ const ExportProjectForm = () => {
 
   const handleGeospatialSubmit = async ({format}: {format: ExportType}) => {
     if (user) {
-      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}`;
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=${format}`;
 
       const response = await fetch(exportUrl, {
         headers: {

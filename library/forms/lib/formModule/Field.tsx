@@ -42,10 +42,10 @@ export const Field = React.memo((props: FieldProps) => {
           // Functional updater merges against latest field value so a write
           // here cannot clobber a concurrent attachments update (or vice versa).
           field.handleChange((prev: FormDataEntry | undefined) => {
-            const current = prev || {};
+            const current = prev ?? {};
             const nextData =
               typeof value === 'function'
-                ? value((current?.data ?? undefined) as any)
+                ? value((current.data ?? undefined) as any)
                 : value;
             return {
               ...current,
@@ -55,13 +55,13 @@ export const Field = React.memo((props: FieldProps) => {
         };
         const setFieldAnnotation = (value: FormAnnotation) => {
           field.handleChange((prev: FormDataEntry | undefined) => ({
-            ...(prev || {}),
+            ...(prev ?? {}),
             annotation: value,
           }));
         };
         const setFieldAttachment = (value: FaimsAttachments) => {
           field.handleChange((prev: FormDataEntry | undefined) => ({
-            ...(prev || {}),
+            ...(prev ?? {}),
             attachments: value,
           }));
         };

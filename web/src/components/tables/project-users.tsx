@@ -1,6 +1,6 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {RoleCard} from '../ui/role-card';
 import {GetNotebookUsersResponse, Role, roleDetails} from '@faims3/data-model';
 import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
@@ -17,7 +17,7 @@ export const columns: ColumnDef<GetNotebookUsersResponse['users'][number]>[] = [
     header: ({column}) => (
       <DataTableColumnHeader
         column={column}
-        title={`${NOTEBOOK_NAME_CAPITALIZED} Roles`}
+        title={`${config.notebookNameCapitalized} Roles`}
       />
     ),
     cell: ({

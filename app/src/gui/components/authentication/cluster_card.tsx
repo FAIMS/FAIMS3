@@ -46,7 +46,7 @@ import {
   useTheme,
 } from '@mui/material';
 import {useState} from 'react';
-import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {
   isTokenValid,
   removeServerConnection,
@@ -142,7 +142,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         props.conductor_url + '/login?redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${props.conductor_url}/login?redirect=${APP_ID}://auth-return`,
+        url: `${props.conductor_url}/login?redirect=${config.appId}://auth-return`,
       });
     }
   };

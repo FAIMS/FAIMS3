@@ -27,11 +27,13 @@ import {PostLoginInput} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
 import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
-import {LOCAL_COUCHDB_AUTH, LOCAL_LOGIN_ENABLED} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
 
-const adminPassword = LOCAL_COUCHDB_AUTH ? LOCAL_COUCHDB_AUTH.password : '';
+const adminPassword = config.localCouchdbAuth
+  ? config.localCouchdbAuth.password
+  : '';
 
 it('check is up', async () => {
   const result = await request(app).get('/up');
@@ -87,7 +89,7 @@ describe('Auth', () => {
   it('redirects with a token on login', done => {
     // TODO: would like to test with this both enabled and disabled
     // but the way config works just now makes this difficult.
-    if (LOCAL_LOGIN_ENABLED) {
+    if (config.localLoginEnabled) {
       const redirect = 'http://localhost:8080/';
       request(app)
         .post('/auth/local')

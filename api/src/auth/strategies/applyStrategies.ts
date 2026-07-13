@@ -14,7 +14,7 @@ import {
   OIDCAuthProviderConfig,
   SAMLAuthProviderConfig,
 } from './strategyTypes';
-import {LOCAL_LOGIN_ENABLED} from '../../buildconfig';
+import {config} from '../../buildconfig';
 
 // Convert a SNAKE_CASE identifier to camelCase with a few exceptions
 const snakeToCamel = (str: string): string => {
@@ -161,7 +161,7 @@ export const registerAuthProviders = (): RegisteredAuthProviders => {
   // register the local provider always
   console.log('Registering auth providers: ');
 
-  if (LOCAL_LOGIN_ENABLED) {
+  if (config.localLoginEnabled) {
     const localStrategy = getLocalAuthStrategy();
     console.log('  local');
     passport.use('local', localStrategy);

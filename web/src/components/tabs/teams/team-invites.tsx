@@ -1,7 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateTeamInvite} from '@/components/dialogs/teams/create-team-invite';
 import {useGetTeamInviteColumns} from '@/components/tables/team-invites';
-import {WEB_URL} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeamInvites} from '@/hooks/queries';
@@ -22,7 +22,7 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
   const {data, isLoading} = useGetTeamInvites({
     user,
     teamId,
-    redirect: `${WEB_URL}/teams/${teamId}`,
+    redirect: `${config.webUrl}/teams/${teamId}`,
   });
 
   const columns = useGetTeamInviteColumns({

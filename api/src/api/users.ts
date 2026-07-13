@@ -34,15 +34,12 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
-import {
-  IMPERSONATION_SESSION_EXPIRY_MINUTES,
-  RUNNING_UNDER_TEST,
-} from '../buildconfig';
+import {config} from '../buildconfig';
 import {
   filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
@@ -71,7 +68,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
@@ -151,7 +148,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  processRequest({
+  validate({
     query: z.object({
       includeArchived: z.enum(['true', 'false']).optional(),
     }),
@@ -187,7 +184,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}, user}, res) => {
@@ -229,7 +226,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}}, res) => {
@@ -266,7 +263,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}, user}, res: Response<PostImpersonateUserResponse>) => {
@@ -304,10 +301,10 @@ api.post(
     const expressTarget = await upgradeCouchUserToExpressUser({dbUser: target});
     const {token, refreshToken} = await generateUserToken(expressTarget, true, {
       impersonatingUserId: user.user_id,
-      refreshExpiryMs: IMPERSONATION_SESSION_EXPIRY_MINUTES * 60 * 1000,
+      refreshExpiryMs: config.impersonationSessionExpiryMinutes * 60 * 1000,
     });
 
-    if (!RUNNING_UNDER_TEST) {
+    if (!config.runningUnderTest) {
       console.log(
         `[Impersonation] ${user.user_id} started impersonating ${target.user_id} at ${nowIso()}`
       );
@@ -327,7 +324,7 @@ api.delete(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}}, res) => {
