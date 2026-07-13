@@ -69,11 +69,12 @@ export const userCanCreateTemplate = (user: User | null): boolean => {
 export const useCanCreateTemplate = (): boolean => {
   const {user, isExpired} = useAuth();
 
-  if (!user || isExpired()) {
-    return false;
-  }
-
-  return useMemo(() => userCanCreateTemplate(user), [user.token]);
+  return useMemo(() => {
+    if (!user || isExpired()) {
+      return false;
+    }
+    return userCanCreateTemplate(user);
+  }, [user, user?.token]);
 };
 
 /**

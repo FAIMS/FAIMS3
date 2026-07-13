@@ -42,10 +42,6 @@ export function CreateTeamInviteForm({
     undefined
   );
 
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
-
   // Memoize the role options to prevent re-computation on each render.
   // Hides brand-excluded roles (e.g. DASS hides TEAM_MEMBER_CREATOR) and
   // passes the description so the dropdown shows the new role copy.
@@ -72,6 +68,10 @@ export function CreateTeamInviteForm({
         description: brandNotebook(description),
       }));
   }, [user, teamId]);
+
+  if (!user) {
+    return <ErrorComponent error="Not authenticated" />;
+  }
 
   const fields: Field[] = [
     {

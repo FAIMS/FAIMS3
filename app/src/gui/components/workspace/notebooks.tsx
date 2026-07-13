@@ -103,31 +103,21 @@ export const notebookListDataGridSx = {
 };
 
 export default function NoteBooks() {
-  // get the active user - this will allow us to check roles against it
-  // TODO what do we do if this is not defined
   const dispatch = useAppDispatch();
-
-  // Are we online
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
-  if (!activeUser) {
-    // You shouldn't be here!
-    return <></>;
-  }
-
-  const activeServerId = activeUser.serverId;
+  const activeServerId = activeUser?.serverId ?? '';
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
-    // don't show de-activated closed notebooks
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
-
-  // Refresh mutation
+  const notify = useNotification();
   const doRefresh = useMutation({
     mutationFn: async () => {
-      await dispatch(initialiseProjects({serverId: activeServerId}));
+      if (!activeUser) return;
+      await dispatch(initialiseProjects({serverId: activeUser.serverId}));
     },
     onSuccess: () => {
       notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`);
@@ -139,15 +129,20 @@ export default function NoteBooks() {
       );
     },
   });
-  const showRefreshButton = isOnline.isOnline;
-
-  const activatedProjects = projects.filter(nb => nb.isActivated);
-
   const [tabID, setTabID] = useState('1');
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const servers = useAppSelector(selectServers);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  if (!activeUser) {
+    return <></>;
+  }
+
+  const showRefreshButton = isOnline.isOnline;
+  const activatedProjects = projects.filter(nb => nb.isActivated);
 
   const baseColumns: GridColDef<Project>[] = [
     {
@@ -264,14 +259,8 @@ export default function NoteBooks() {
     </>
   );
 
-  // use notification service
-  const notify = useNotification();
-
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const servers = useAppSelector(selectServers);
   const platform = CAPACITOR_PLATFORM;
   const allowQr = platform === 'ios' || platform === 'android';
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   return (
     <Box

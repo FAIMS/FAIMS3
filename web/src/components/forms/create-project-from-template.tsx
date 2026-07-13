@@ -12,7 +12,6 @@ import {
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
-import {z} from 'zod';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {TemplateOwnerCallout} from './template-owner-callout';
@@ -43,23 +42,17 @@ export function CreateProjectFromTemplateForm({
   setDialogOpen,
 }: CreateProjectFromTemplateFormProps) {
   const {user, refreshToken} = useAuth();
-  if (!user) return null;
-
   const {templateId} = Route.useParams();
-
   const queryClient = useQueryClient();
-
   const {data: teamsData} = useGetTeams({user});
   const {data: template} = useGetTemplate({user, templateId});
-
-  /** `CREATE_PROJECT` — may omit teamId on POST /api/notebooks. */
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const possibleTeams = getPossibleTeamsForAction({
     teams: teamsData?.teams,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_PROJECT_IN_TEAM,
-    decodedToken: user.decodedToken,
+    decodedToken: user?.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTeamFieldState({
@@ -67,7 +60,6 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
-  // Pre-select template owner when accessible; see defaultTeamFromOwner.
   const defaultTeamId = defaultTeamFromOwner({
     ownerTeamId: template?.ownedByTeamId,
     possibleTeams,
@@ -115,6 +107,8 @@ export function CreateProjectFromTemplateForm({
     teamDescription,
     teamLabel,
   ]);
+
+  if (!user) return null;
 
   const onSubmit = async ({
     name,

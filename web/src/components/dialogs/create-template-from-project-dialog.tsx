@@ -26,11 +26,11 @@ export const CreateTemplateFromProjectDialog = ({
 }) => {
   const [open, setOpen] = useState(false);
   const {user} = useAuth();
+  const {data: team} = useGetTeam({user, teamId: specifiedTeam});
+
   if (!user) {
     return <ErrorComponent error="Unauthenticated" />;
   }
-
-  const {data: team} = useGetTeam({user, teamId: specifiedTeam});
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

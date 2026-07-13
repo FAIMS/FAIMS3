@@ -48,7 +48,6 @@ import {
   adminToken,
   adminUserName,
   beforeApiTests,
-  localUserName,
   localUserToken,
 } from './utils';
 

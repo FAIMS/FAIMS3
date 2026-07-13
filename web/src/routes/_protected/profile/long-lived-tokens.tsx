@@ -39,11 +39,6 @@ function RouteComponent() {
   const {user: authUser} = useAuth();
   const queryClient = useQueryClient();
 
-  if (!authUser) {
-    return <ErrorComponent error={'Not authorised'} />;
-  }
-
-  // breadcrumbs addition
   const paths = useMemo(
     () => [
       {
@@ -68,7 +63,6 @@ function RouteComponent() {
     GetLongLivedTokensResponse['tokens'][number] | undefined
   >(undefined);
 
-  // Control panel state
   const [adminMode, setAdminMode] = useState<boolean>(false);
   const [showRevoked, setShowRevoked] = useState<boolean>(false);
   const [showExpired, setShowExpired] = useState<boolean>(false);
@@ -78,27 +72,22 @@ function RouteComponent() {
     fetchAll: adminMode,
   });
 
-  // Can the user create a long lived token?
   const canCreateToken = useIsAuthorisedTo({
     action: Action.CREATE_LONG_LIVED_TOKEN,
   });
 
-  // Can the user view all tokens (admin mode)?
   const canViewAllTokens = useIsAuthorisedTo({
     action: Action.READ_ANY_LONG_LIVED_TOKENS,
   });
 
-  // Filter tokens based on control panel settings
   const filteredTokens = useMemo(() => {
     if (!data?.tokens) return [];
 
     return data.tokens.filter(token => {
-      // Filter out revoked tokens if not showing them
       if (!showRevoked && !token.enabled) {
         return false;
       }
 
-      // Filter out expired tokens if not showing them
       if (!showExpired && token.expiresAt && token.expiresAt < nowMs()) {
         return false;
       }
@@ -106,6 +95,25 @@ function RouteComponent() {
       return true;
     });
   }, [data?.tokens, showRevoked, showExpired]);
+
+  const columns = useGetLongLivedTokensColumns({
+    editTokenHandler: async tokenId => {
+      const token = (data?.tokens ?? []).find(t => t.id === tokenId);
+      if (token) {
+        setSelectedToken(token);
+        setUpdateDialogOpen(true);
+      }
+    },
+    revokeTokenHandler: async tokenId => {
+      if (!authUser) return;
+      await revokeLongLivedToken({user: authUser, tokenId});
+      queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
+    },
+  });
+
+  if (!authUser) {
+    return <ErrorComponent error={'Not authorised'} />;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -254,19 +262,7 @@ function RouteComponent() {
 
         {/* Data Table */}
         <DataTable
-          columns={useGetLongLivedTokensColumns({
-            editTokenHandler: async tokenId => {
-              const token = (data?.tokens ?? []).find(t => t.id === tokenId);
-              if (token) {
-                setSelectedToken(token);
-                setUpdateDialogOpen(true);
-              }
-            },
-            revokeTokenHandler: async tokenId => {
-              await revokeLongLivedToken({user: authUser, tokenId});
-              queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
-            },
-          })}
+          columns={columns}
           data={filteredTokens}
           loading={isPending}
           defaultRowsPerPage={15}

@@ -22,11 +22,12 @@ export const UpdateTeamDialog = ({
   buttonContent?: React.ReactNode;
 }) => {
   const {user} = useAuth();
+  const {data, isLoading, isError} = useGetTeam({user, teamId});
+  const [open, setOpen] = useState(false);
+
   if (!user) {
     return <p>Not authenticated...</p>;
   }
-  const {data, isLoading, isError} = useGetTeam({user, teamId});
-  const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

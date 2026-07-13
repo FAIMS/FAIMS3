@@ -25,19 +25,21 @@ const ExportProjectForm = () => {
     null
   );
 
-  if (!data) {
-    return null;
-  }
-
-  const uiSpec = data.uiSpecification.uiSpec;
+  const uiSpec = data?.uiSpecification.uiSpec;
 
   const isValidForSpatial = useMemo(
     () =>
-      isValidForSpatialExport({
-        uiSpecification: uiSpec,
-      }),
+      uiSpec
+        ? isValidForSpatialExport({
+            uiSpecification: uiSpec,
+          })
+        : false,
     [uiSpec]
   );
+
+  if (!data) {
+    return null;
+  }
 
   const viewSets = uiSpec.viewsets;
 

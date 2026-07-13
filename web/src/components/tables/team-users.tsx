@@ -28,9 +28,6 @@ export const useGetColumns = ({
   teamId: string;
 }): ColumnDef<GetTeamMembersResponse['members'][number]>[] => {
   const {user} = useAuth();
-  if (!user) {
-    return [];
-  }
   const queryClient = useQueryClient();
 
   const canRemoveAdmin = useIsAuthorisedTo({
@@ -45,7 +42,6 @@ export const useGetColumns = ({
     action: Action.REMOVE_MEMBER_FROM_TEAM,
     resourceId: teamId,
   });
-
   const canAddMemberToTeam = useIsAuthorisedTo({
     action: Action.ADD_MEMBER_TO_TEAM,
     resourceId: teamId,
@@ -58,6 +54,10 @@ export const useGetColumns = ({
     action: Action.ADD_ADMIN_TO_TEAM,
     resourceId: teamId,
   });
+
+  if (!user) {
+    return [];
+  }
 
   const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {

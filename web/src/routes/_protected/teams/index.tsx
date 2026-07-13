@@ -41,16 +41,13 @@ function RouteComponent() {
     paths,
   });
 
+  const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
+  const {isPending, data} = useGetTeams({user});
+  const navigate = useNavigate();
+
   if (!user) {
     return <p>No user!</p>;
   }
-
-  // Can the user create a new team?
-  const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
-
-  const {isPending, data} = useGetTeams({user});
-
-  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col gap-6">

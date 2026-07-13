@@ -18,9 +18,6 @@ import {ErrorComponent} from '@tanstack/react-router';
  */
 const TeamInvites = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
 
   const {data, isLoading} = useGetTeamInvites({
     user,
@@ -35,7 +32,6 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
     },
   });
 
-  // can we add a user to the team?
   const canInviteMemberToTeam = useIsAuthorisedTo({
     action: Action.CREATE_MEMBER_TEAM_INVITE,
     resourceId: teamId,
@@ -48,6 +44,11 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
     action: Action.CREATE_ADMIN_TEAM_INVITE,
     resourceId: teamId,
   });
+
+  if (!user) {
+    return <ErrorComponent error="Not authenticated" />;
+  }
+
   const canAddSomeUser =
     canInviteAdminToTeam || canInviteManagerToTeam || canInviteMemberToTeam;
 

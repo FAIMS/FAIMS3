@@ -17,9 +17,6 @@ import {ErrorComponent} from '@tanstack/react-router';
  */
 const GlobalInvites = () => {
   const {user} = useAuth();
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
 
   const {data, isLoading} = useGetGlobalInvites({
     user,
@@ -32,10 +29,13 @@ const GlobalInvites = () => {
     },
   });
 
-  // can we create this invite?
   const canCreateGlobalInvite = useIsAuthorisedTo({
     action: Action.CREATE_GLOBAL_INVITE,
   });
+
+  if (!user) {
+    return <ErrorComponent error="Not authenticated" />;
+  }
 
   return (
     <DataTable

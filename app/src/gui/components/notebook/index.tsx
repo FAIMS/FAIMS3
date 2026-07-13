@@ -127,9 +127,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
-  if (!uiSpecification) {
-    return <CircularLoading label="Loading" />;
-  }
 
   const activeUser = useAppSelector(selectActiveUser);
 
@@ -160,7 +157,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setParam('tab', INDEX_TO_TAB.get(val) ?? 'my_records');
   };
 
-  // Fetch records from the (local) DB with configurable auto refetch
+  // Fetch records from the (local) DB with configurable auto refetch.
+  // Skip while the compiled UI spec is still loading.
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
@@ -170,15 +168,20 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     metadataRefreshIntervalMs: 10000,
-    uiSpecification: uiSpecification,
+    uiSpecification,
+    enabled: !!uiSpecification,
   });
   const forceRecordRefresh = records.initialQuery.refetch;
-
-  const viewsets = uiSpecification.viewsets;
 
   const templateId = useAppSelector(
     state => selectProjectById(state, project.projectId)?.templateId
   );
+
+  if (!uiSpecification) {
+    return <CircularLoading label="Loading" />;
+  }
+
+  const viewsets = uiSpecification.viewsets;
 
   /**
    * Handles the change event when the user switches between the tabs.

@@ -27,13 +27,12 @@ export const AddTeamRolePopover = ({
   teamId: string;
 }) => {
   const {user} = useAuth();
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   if (!user) {
     return <p>Unauthenticated</p>;
   }
-
-  const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
 
   if (roles.length === 0) {
     return (

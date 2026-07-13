@@ -53,18 +53,16 @@ export default function RecordMeta(props: RecordMetaProps) {
   )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
-  if (!uiSpec) {
-    return <p>Error... could not find ui specification.</p>;
-  }
-
   useEffect(() => {
+    if (!uiSpec) return;
+
     async function fetchRecordMeta() {
       const record = await getRecordMetadata({
         projectId: project_id,
         recordId: record_id,
         revisionId: revision_id,
         dataDb: localGetDataDb(project_id),
-        uiSpecification: uiSpec!,
+        uiSpecification: uiSpec,
       });
       setMeta({
         Created: record?.created.toString(),
@@ -74,7 +72,11 @@ export default function RecordMeta(props: RecordMetaProps) {
       });
     }
     fetchRecordMeta();
-  }, []);
+  }, [project_id, record_id, revision_id, uiSpec]);
+
+  if (!uiSpec) {
+    return <p>Error... could not find ui specification.</p>;
+  }
 
   return (
     <div>

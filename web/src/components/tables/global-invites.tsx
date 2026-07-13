@@ -30,14 +30,15 @@ export const useGetGlobalInviteColumns = ({
   GetGlobalInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
   const {user} = useAuth();
-  if (!user) {
-    return [];
-  }
   const queryClient = useQueryClient();
 
   const canRemoveSomeInvite = useIsAuthorisedTo({
     action: Action.DELETE_GLOBAL_INVITE,
   });
+
+  if (!user) {
+    return [];
+  }
 
   const baseColumns: ColumnDef<
     GetGlobalInvitesResponse[number] & {url: string; qrCode: string}

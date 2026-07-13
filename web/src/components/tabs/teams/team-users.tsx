@@ -11,15 +11,8 @@ import {LoaderCircle, Plus} from 'lucide-react';
 const TeamUsers = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
 
-  if (!user) {
-    return <ErrorComponent error="Unauthenticated" />;
-  }
-
   const {isLoading, data} = useGetUsersForTeam({user, teamId});
 
-  // permission checks
-
-  // can we add a user to the team?
   const canAddMemberToTeam = useIsAuthorisedTo({
     action: Action.ADD_MEMBER_TO_TEAM,
     resourceId: teamId,
@@ -32,10 +25,15 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
     action: Action.ADD_ADMIN_TO_TEAM,
     resourceId: teamId,
   });
-  const canAddSomeUser =
-    canAddAdminToTeam || canAddManagerToTeam || canAddMemberToTeam;
 
   const columns = useGetColumns({teamId});
+
+  if (!user) {
+    return <ErrorComponent error="Unauthenticated" />;
+  }
+
+  const canAddSomeUser =
+    canAddAdminToTeam || canAddManagerToTeam || canAddMemberToTeam;
 
   return (
     <div>

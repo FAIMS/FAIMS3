@@ -20,11 +20,11 @@ export const AddTeamUserDialog = ({
   buttonContent: React.ReactNode;
 }) => {
   const {user} = useAuth();
+  const [open, setOpen] = useState(false);
+
   if (!user) {
     return <ErrorComponent error="Not authenticated." />;
   }
-
-  const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

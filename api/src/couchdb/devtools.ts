@@ -56,7 +56,7 @@ const runWithConcurrency = async <T>(
     return [];
   }
 
-  const results: T[] = new Array(count);
+  const results: T[] = Array.from({length: count});
   let nextIndex = 0;
   const workerCount = Math.min(concurrency, count);
 

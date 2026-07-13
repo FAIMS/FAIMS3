@@ -35,9 +35,6 @@ export const useGetInviteColumns = ({
   GetProjectInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
   const {user} = useAuth();
-  if (!user) {
-    return [];
-  }
   const queryClient = useQueryClient();
 
   const canDeleteAdminInvite = useIsAuthorisedTo({
@@ -56,6 +53,10 @@ export const useGetInviteColumns = ({
     action: Action.DELETE_GUEST_PROJECT_INVITE,
     resourceId: projectId,
   });
+
+  if (!user) {
+    return [];
+  }
 
   const canRemoveSomeInvite =
     canDeleteAdminInvite ||

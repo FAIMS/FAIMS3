@@ -42,8 +42,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   const {pathname} = useLocation();
 
-  if (!user) return <></>;
-
   // Can see different bits
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
   const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
@@ -55,6 +53,8 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
   const {data: templates} = useGetTemplates({user, enabled: canSeeTemplates});
   const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
+
+  if (!user) return <></>;
 
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];

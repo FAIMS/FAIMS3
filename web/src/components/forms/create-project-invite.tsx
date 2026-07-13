@@ -38,10 +38,6 @@ export function CreateProjectInviteForm({
     undefined
   );
 
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
-
   const roleOptions = useMemo(() => {
     return Object.entries(roleDetails)
       .filter(
@@ -68,6 +64,10 @@ export function CreateProjectInviteForm({
         description: brandNotebook(description),
       }));
   }, [user, projectId]);
+
+  if (!user) {
+    return <ErrorComponent error="Not authenticated" />;
+  }
 
   const fields: Field[] = [
     {

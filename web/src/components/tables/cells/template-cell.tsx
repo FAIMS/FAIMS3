@@ -16,15 +16,15 @@ export const TemplateCellComponent = ({
 }: TemplateCellComponentProps) => {
   const {user} = useAuth();
 
-  if (!user) {
-    return <p>Unauthenticated</p>;
-  }
-
   const {
     data: template,
     isLoading,
     isError,
   } = useGetTemplate({user, templateId});
+
+  if (!user) {
+    return <p>Unauthenticated</p>;
+  }
 
   return isLoading ? (
     <Skeleton className="h-5 w-24" />

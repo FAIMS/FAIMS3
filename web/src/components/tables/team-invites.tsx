@@ -34,9 +34,6 @@ export const useGetTeamInviteColumns = ({
   GetTeamInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
   const {user} = useAuth();
-  if (!user) {
-    return [];
-  }
   const queryClient = useQueryClient();
 
   const canDeleteAdminInvite = useIsAuthorisedTo({
@@ -51,6 +48,10 @@ export const useGetTeamInviteColumns = ({
     action: Action.DELETE_MEMBER_TEAM_INVITE,
     resourceId: teamId,
   });
+
+  if (!user) {
+    return [];
+  }
 
   const canRemoveSomeInvite =
     canDeleteAdminInvite || canDeleteManagerInvite || canDeleteMemberInvite;

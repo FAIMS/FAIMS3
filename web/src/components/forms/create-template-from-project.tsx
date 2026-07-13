@@ -1,6 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
-import {z} from 'zod';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';

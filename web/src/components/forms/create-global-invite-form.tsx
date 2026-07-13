@@ -31,10 +31,6 @@ export function CreateGlobalInviteForm({
     undefined
   );
 
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
-
   // Memoize the role options to prevent re-computation on each render
   const roleOptions = useMemo(() => {
     if (!user) return [];
@@ -49,6 +45,10 @@ export function CreateGlobalInviteForm({
         description,
       }));
   }, [user]);
+
+  if (!user) {
+    return <ErrorComponent error="Not authenticated" />;
+  }
 
   const fields: Field[] = [
     {

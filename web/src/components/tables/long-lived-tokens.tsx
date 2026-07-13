@@ -24,10 +24,6 @@ export const useGetLongLivedTokensColumns = ({
 }): ColumnDef<GetLongLivedTokensResponse['tokens'][number]>[] => {
   const {user} = useAuth();
 
-  if (!user) {
-    return [];
-  }
-
   // Check permissions
   const canEditMyTokens = useIsAuthorisedTo({
     action: Action.EDIT_MY_LONG_LIVED_TOKEN,
@@ -41,6 +37,10 @@ export const useGetLongLivedTokensColumns = ({
   const canRevokeAnyTokens = useIsAuthorisedTo({
     action: Action.REVOKE_ANY_LONG_LIVED_TOKEN,
   });
+
+  if (!user) {
+    return [];
+  }
 
   const canEditToken = (tokenUserId: string) =>
     tokenUserId === user.user.id ? canEditMyTokens : canEditAnyTokens;
