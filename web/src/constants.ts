@@ -7,22 +7,33 @@ import {capitalize} from './lib/utils';
 /*
  * Configuration is parsed from Vite's `import.meta.env` with a single zod
  * schema:
- *   - Each env key is declared once with its coercion / defaulting logic.
+ *   - Each env key is declared once with its coercion / defaulting logic and
+ *     is the place to document that setting.
  *   - The raw object is `import.meta.env` (Vite); `.strip()` drops built-ins
  *     and undeclared keys.
  *   - A final `.transform()` renames ENV_KEYS into the camelCase `config` shape
- *     (and builds required / cross-field values).
+ *     and builds required / cross-field / derived values. Do not re-document
+ *     env-backed fields there — only note values that have no env key
+ *     (derived URLs, plurals, build-time injects, hardcoded defaults).
  *
  * The `config` singleton is the source of truth. Prefer importing `{config}`
  * and reading `config.<field>`. Dedicated exports remain only for genuine
- * helpers/derived values (e.g. brandNotebook, SIGNIN_PATH).
+ * helpers (e.g. brandNotebook, buildRegisterUrl, getMapConfig).
+ *
+ * Operational defaults and commented examples live in `web/.env.dist`.
  */
 
+/** Default max long-lived token lifetime (days) when the env var is blank. */
 const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
 /** Default duration-hint chips for long-lived tokens; clamped to the max. */
 const DEFAULT_HINTS = [1, 5, 10, 30, 90, 365];
 /** Default max size (MB) for uploaded notebook/template design JSON files. */
 const DEFAULT_MAX_DESIGN_FILE_SIZE_MB = 10;
+/** Token refresh interval for the Control Centre session (3 minutes). */
+const DEFAULT_REFRESH_INTERVAL_MS = 3 * 60 * 1000;
+/** Docs link for long-lived token help UI (not currently env-configurable). */
+const DEFAULT_LONG_LIVED_TOKEN_HELP_LINK =
+  'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
 
 /**
  * When the directory lists a notebook as archived (or id absent), the mobile app
@@ -201,23 +212,24 @@ const EnvSchema = z
       }),
     /**
      * Maximum size (MB) allowed for uploaded notebook/template design JSON
-     * files. Mirrors the server-side ui-specification cap.
+     * files. Exposed on config as `maxDesignFileSizeMb` and
+     * `maxDesignFileSizeBytes`. Mirrors the server-side ui-specification cap.
      */
     VITE_MAX_DESIGN_FILE_SIZE_MB: z
       .string()
       .optional()
       .transform((v): number => {
         if (configHelpers.isBlank(v)) {
-          return DEFAULT_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024;
+          return DEFAULT_MAX_DESIGN_FILE_SIZE_MB;
         }
         const parsed = parseInt(v, 10);
         if (Number.isNaN(parsed) || parsed <= 0) {
           console.warn(
             `Invalid value "${v}" for VITE_MAX_DESIGN_FILE_SIZE_MB. Must be a positive integer (MB). Using default.`
           );
-          return DEFAULT_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024;
+          return DEFAULT_MAX_DESIGN_FILE_SIZE_MB;
         }
-        return parsed * 1024 * 1024;
+        return parsed;
       }),
   })
   .strip()
@@ -238,13 +250,21 @@ const EnvSchema = z
       (a, b) => a - b
     );
 
-    const notebookName = env.VITE_NOTEBOOK_NAME;
-    const notebookNamePlural = pluralize(notebookName);
-    const webUrl = env.VITE_WEB_URL;
+    const notebookNamePlural = pluralize(env.VITE_NOTEBOOK_NAME);
+
+    // Build-time version inject via Vite `define` (__APP_VERSION__ from
+    // package.json at build time — not an import.meta.env key).
+    let appVersion = 'unknown';
+    if (__APP_VERSION__) {
+      console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
+      appVersion = __APP_VERSION__;
+    } else {
+      console.warn('__APP_VERSION__ not set in build. Using "unknown"');
+    }
 
     return {
-      // Direct renames (validated/coerced in the field schemas above).
-      notebookName,
+      // Env-backed renames (documented on EnvSchema above).
+      notebookName: env.VITE_NOTEBOOK_NAME,
       websiteTitle: env.VITE_WEBSITE_TITLE,
       docsUrl: env.VITE_DOCS_URL,
       appTheme: env.VITE_APP_THEME,
@@ -258,30 +278,57 @@ const EnvSchema = z
       satelliteSource: env.VITE_SATELLITE_SOURCE,
       bugsnagApiKey: env.VITE_BUGSNAG_API_KEY,
       appName: env.VITE_APP_NAME,
-      webUrl,
+      webUrl: env.VITE_WEB_URL,
       apiUrl: env.VITE_API_URL,
       appUrl: env.VITE_APP_URL,
       excludedTeamRoles: env.VITE_EXCLUDED_TEAM_ROLES,
-      /** Max upload size in bytes for notebook/template design JSON. */
-      maxDesignFileSizeBytes: env.VITE_MAX_DESIGN_FILE_SIZE_MB,
-      // Cross-field / derived.
+      maxDesignFileSizeMb: env.VITE_MAX_DESIGN_FILE_SIZE_MB,
+      maxDesignFileSizeBytes: env.VITE_MAX_DESIGN_FILE_SIZE_MB * 1024 * 1024,
+
+      // Derived / cross-field (no dedicated env key).
       appShortName: configHelpers.isBlank(env.VITE_APP_SHORT_NAME)
         ? env.VITE_APP_NAME
         : env.VITE_APP_SHORT_NAME,
-      /** Control Centre home (`/` redirects to `/teams`). */
-      webHomeUrl: `${webUrl.replace(/\/$/, '')}/`,
+      /** Control Centre home (`webUrl` with trailing slash; `/` → `/teams`). */
+      webHomeUrl: `${env.VITE_WEB_URL.replace(/\/$/, '')}/`,
       longLivedTokenDurationHints,
-      notebookNameCapitalized: capitalize(notebookName),
-      /** Lowercase plural, from `VITE_NOTEBOOK_NAME`. */
+      notebookNameCapitalized: capitalize(env.VITE_NOTEBOOK_NAME),
       notebookNamePlural,
-      /** Plural with first letter capitalised — use for headings and labels. */
       notebookNamePluralCapitalized: capitalize(notebookNamePlural),
+      /** Conductor login URL that redirects back to this Control Centre. */
+      signinPath: `${env.VITE_API_URL}/login?redirect=${env.VITE_WEB_URL}`,
+      /** Fieldmark auth-return URL that accepts a `?token` query string. */
+      appTokenReturnPath: `${env.VITE_APP_URL}/auth-return`,
+      /** Aggregated map settings for map UI / form preview components. */
+      mapConfig: {
+        mapSource: env.VITE_MAP_SOURCE,
+        mapSourceKey: env.VITE_MAP_SOURCE_KEY,
+        mapStyle: env.VITE_MAP_STYLE,
+        satelliteSource: env.VITE_SATELLITE_SOURCE,
+      },
+
+      // Build-time / hardcoded (not currently env-configurable).
+      /** Session token refresh interval (ms); currently hardcoded to 3 minutes. */
+      refreshIntervalMs: DEFAULT_REFRESH_INTERVAL_MS,
+      /**
+       * Invite expiry duration chips. Hardcoded; could later mirror
+       * `VITE_LONG_LIVED_TOKEN_DURATION_HINTS`.
+       */
+      inviteTokenHints: DEFAULT_HINTS,
+      /** Help-docs URL for long-lived tokens in the profile UI. */
+      longLivedTokenHelpLink: DEFAULT_LONG_LIVED_TOKEN_HELP_LINK,
+      /**
+       * Package version from Vite `define` (`__APP_VERSION__` ← package.json).
+       * Falls back to `'unknown'` when undefined.
+       */
+      appVersion,
     };
   });
 
 /**
  * The singleton Control Centre configuration object. Prefer reading values
- * from here; the named exports below derive from it.
+ * from here (`config.<field>`). Env-backed settings are documented on each
+ * `EnvSchema` property; derived fields are noted in the transform return.
  *
  * Pass the whole `import.meta.env` — `.strip()` drops Vite built-ins
  * (`MODE`, `DEV`, …) and any other keys not declared above.
@@ -291,9 +338,8 @@ export const config = EnvSchema.parse(import.meta.env);
 export type Config = typeof config;
 
 // ---------------------------------------------------------------------------
-// Derived helpers and non-env constants. Simple env values live on `config`
-// (import `{config}` and read `config.<field>`); the items below are genuine
-// helpers/derived values and remain dedicated exports.
+// Genuine helpers (not static config values). Prefer `config.<field>` for
+// everything else.
 // ---------------------------------------------------------------------------
 
 /** Replace `{notebook}` / `{notebooks}` placeholders with the deployment's notebook name. */
@@ -301,11 +347,6 @@ export const brandNotebook = (text: string): string =>
   text
     .replaceAll('{notebooks}', config.notebookNamePlural)
     .replaceAll('{notebook}', config.notebookName);
-
-export const SIGNIN_PATH = `${config.apiUrl}/login?redirect=${config.webUrl}`;
-
-// this is where the /app will accept a ?token query string
-export const APP_TOKEN_RETURN_PATH = config.appUrl + '/auth-return';
 
 /**
  * Builds a suitable register URL which will redirect back to the targeted
@@ -322,47 +363,11 @@ export function buildRegisterUrl({
   return `${config.apiUrl}/register?redirect=${redirect}&inviteId=${inviteId}`;
 }
 
-// Token refresh interval (every 3 minutes)
-export const REFRESH_INTERVAL = 3 * 60 * 1000;
-
-export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
-
-/** Design-file upload size limit in bytes (from `VITE_MAX_DESIGN_FILE_SIZE_MB`). */
-export const MAX_DESIGN_FILE_SIZE_BYTES = config.maxDesignFileSizeBytes;
-/** Design-file upload size limit in MB (derived from bytes). */
-export const MAX_DESIGN_FILE_SIZE_MB = Math.floor(
-  MAX_DESIGN_FILE_SIZE_BYTES / (1024 * 1024)
-);
-
-/** Help link for long-lived token documentation. */
-export const LONG_LIVED_TOKEN_HELP_LINK =
-  'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
-
-/** Build the map configuration object consumed by map UI components. */
-export function getMapConfig(): MapConfig {
-  return {
-    mapSource: config.mapSource,
-    mapSourceKey: config.mapSourceKey,
-    mapStyle: config.mapStyle,
-    satelliteSource: config.satelliteSource,
-  };
-}
-
 /**
- * Gets the app version from Vite's __APP_VERSION__ replacement or environment variables.
- * Falls back to 'unknown' if not configured.
- * @returns The app version.
+ * Map config factory for form managers that expect `() => MapConfig`
+ * (see `@faims3/forms` PreviewFormManager). Prefer `config.mapConfig` when a
+ * plain object is enough.
  */
-function getVersion(): string {
-  // First try the Vite define replacement (set at build time)
-  const version = __APP_VERSION__;
-  if (version) {
-    console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
-    return version;
-  }
-
-  console.warn('__APP_VERSION__ not set in build. Using "unknown"');
-  return 'unknown';
+export function getMapConfig(): MapConfig {
+  return config.mapConfig;
 }
-
-export const APP_VERSION = getVersion();

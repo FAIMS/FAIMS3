@@ -7,7 +7,7 @@ import {useState, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Copy, CheckCircle, AlertTriangle} from 'lucide-react';
-import {config, LONG_LIVED_TOKEN_HELP_LINK} from '@/constants';
+import {config} from '@/constants';
 import {ExpirySelector} from '@/components/expiry-selector';
 
 interface CreateLongLivedTokenFormProps {
@@ -220,7 +220,7 @@ export function CreateLongLivedTokenForm({
               Authorization: Bearer &lt;access_token&gt;
             </code>
             <a
-              href={LONG_LIVED_TOKEN_HELP_LINK}
+              href={config.longLivedTokenHelpLink}
               className="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
               target="_blank"
               rel="noopener noreferrer"

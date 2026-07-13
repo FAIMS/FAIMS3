@@ -44,7 +44,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
-import {config, APP_VERSION, COMMIT_HASH} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
@@ -144,11 +144,11 @@ export default function AboutBuild() {
               </tr>
               <tr>
                 <td>Release version:</td>
-                <td>{APP_VERSION}</td>
+                <td>{config.appVersion}</td>
               </tr>
               <tr>
                 <td>Version:</td>
-                <td>{COMMIT_HASH ?? 'Not provided.'}</td>
+                <td>{config.commitHash ?? 'Not provided.'}</td>
               </tr>
               <tr>
                 <td>{config.runningUnderTest ? 'Running under test' : ''}</td>

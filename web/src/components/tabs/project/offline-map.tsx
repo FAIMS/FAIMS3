@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {config, getMapConfig} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {updateNotebookOfflineMapRegionRequest} from '@/hooks/project-hooks';
@@ -269,7 +269,7 @@ export default function ProjectOfflineMap({
     try {
       const sizeMb = await estimateOfflineMapRegionSizeMb(
         draftRegion,
-        getMapConfig()
+        config.mapConfig
       );
       if (sizeMb > LARGE_OFFLINE_MAP_AREA_MB) {
         setLargeAreaDialog({sizeMb});
@@ -430,7 +430,7 @@ export default function ProjectOfflineMap({
 
         {showMap && (
           <OfflineMapRegionEditor
-            config={getMapConfig()}
+            config={config.mapConfig}
             region={draftRegion ?? undefined}
             onRegionChange={setDraftRegion}
             readOnly={!canSetOfflineMapRegion}

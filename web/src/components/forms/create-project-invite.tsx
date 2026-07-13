@@ -16,7 +16,7 @@ import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
-import {config, INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
+import {config, brandNotebook} from '@/constants';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -170,7 +170,7 @@ export function CreateProjectInviteForm({
       submitButtonText={'Create Invite'}
       footer={
         <ExpirySelector
-          hints={INVITE_TOKEN_HINTS}
+          hints={config.inviteTokenHints}
           maxDurationDays={365}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}

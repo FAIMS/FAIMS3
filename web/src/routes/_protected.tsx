@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {config, SIGNIN_PATH} from '@/constants';
+import {config} from '@/constants';
 import {getStoredUser, isUserExpired, useAuth} from '@/context/auth-provider';
 import {useRequestVerify} from '@/hooks/queries';
 import {
@@ -118,7 +118,7 @@ export const Route = createFileRoute('/_protected')({
       if (success) return;
 
       // otherwise we need to redirect to login
-      window.location.href = SIGNIN_PATH;
+      window.location.href = config.signinPath;
       return;
     }
 
@@ -132,7 +132,7 @@ export const Route = createFileRoute('/_protected')({
 
     // No valid authentication found - redirect to login
     if (!isAuthenticated) {
-      window.location.href = SIGNIN_PATH;
+      window.location.href = config.signinPath;
     }
   },
   component: RouteComponent,

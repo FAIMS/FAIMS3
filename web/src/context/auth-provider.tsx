@@ -1,4 +1,4 @@
-import {config, REFRESH_INTERVAL} from '@/constants';
+import {config} from '@/constants';
 import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
@@ -177,7 +177,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     if (isAuthenticated) {
       refreshToken();
 
-      const intervalId = setInterval(refreshToken, REFRESH_INTERVAL);
+      const intervalId = setInterval(refreshToken, config.refreshIntervalMs);
       return () => clearInterval(intervalId);
     }
   }, [isAuthenticated]);

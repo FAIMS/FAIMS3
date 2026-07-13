@@ -18,7 +18,8 @@
  *   This module exports the configuration for the designer, specifically
  *   managing template protections. Configuration is parsed from Vite's
  *   `import.meta.env` with a single zod schema (coerce + rename) and exposed
- *   via the `config` singleton.
+ *   via the `config` singleton. Document env keys on the schema; the transform
+ *   is rename-only.
  */
 
 import {configHelpers} from '@faims3/data-model';

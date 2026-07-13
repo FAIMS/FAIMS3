@@ -20,15 +20,17 @@
  *
  *   Configuration is parsed from Vite's `import.meta.env` with a single zod
  *   schema:
- *     - Each env key is declared once with its coercion / defaulting logic.
+ *     - Each env key is declared once with its coercion / defaulting logic and
+ *       is the place to document that setting.
  *     - The raw object is `import.meta.env` (Vite); `.strip()` drops built-ins
  *       and undeclared keys.
  *     - A final `.transform()` renames ENV_KEYS into the camelCase `config`
- *       shape (and builds cross-field values).
+ *       shape (and builds cross-field values). Do not re-document env-backed
+ *       fields in the transform.
  *
  *   Prefer importing `{config}` and reading `config.<field>`. Advanced surfaces
- *   (map config, address autosuggest) keep their existing functional interfaces
- *   (`getMapConfig()`, `getAddressAutosuggestService()`), sourced from `config`.
+ *   that need a factory (map config for form managers, address autosuggest)
+ *   keep thin functional wrappers sourced from `config`.
  */
 
 import {Capacitor} from '@capacitor/core';
@@ -159,6 +161,26 @@ const EnvSchema = z
       .transform((v): string | undefined =>
         configHelpers.isBlank(v) || v === 'false' ? undefined : v
       ),
+    /**
+     * Optional git commit hash / build identifier shown in About / support
+     * email. Blank or falsey strings are treated as unset.
+     */
+    VITE_COMMIT_VERSION: z
+      .string()
+      .optional()
+      .transform((v): string | undefined => {
+        if (
+          configHelpers.isBlank(v) ||
+          (configHelpers.FALSEY_STRINGS as readonly string[]).includes(
+            v.toLowerCase()
+          )
+        ) {
+          console.info('VITE_COMMIT_VERSION not provided');
+          return undefined;
+        }
+        console.info(`Using VITE_COMMIT_VERSION: ${v}`);
+        return v;
+      }),
     /**
      * Comma-separated Conductor URLs the app can authenticate against.
      * Parsed via `parseConductorUrls`; falls back to DEFAULT_CONDUCTOR_URL.
@@ -350,6 +372,30 @@ const EnvSchema = z
       maptilerApiKey = env.VITE_MAP_SOURCE_KEY;
     }
 
+    // Build-time version inject via Vite `define` (__APP_VERSION__ from
+    // package.json — not an import.meta.env key). Falls back to 'unknown'.
+    let appVersion = 'unknown';
+    if (__APP_VERSION__) {
+      console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
+      appVersion = __APP_VERSION__;
+    } else {
+      console.error('__APP_VERSION__ not defined in build. Using "unknown"');
+    }
+
+    const mapConfig: MapConfig = {
+      mapSource: env.VITE_MAP_SOURCE,
+      mapSourceKey: env.VITE_MAP_SOURCE_KEY,
+      mapStyle: env.VITE_MAP_STYLE,
+    };
+    if (env.VITE_SATELLITE_SOURCE) {
+      mapConfig.satelliteSource = env.VITE_SATELLITE_SOURCE;
+    }
+
+    // OSM does not allow bulk downloads so we can't enable offline maps.
+    const offlineMaps =
+      (env.VITE_OFFLINE_MAPS === 'true' && env.VITE_MAP_SOURCE !== 'osm') ||
+      false;
+
     return {
       debugPouchdb: env.VITE_DEBUG_POUCHDB,
       debugApp: env.VITE_DEBUG_APP,
@@ -399,11 +445,13 @@ const EnvSchema = z
       conductorUrls: env.VITE_CONDUCTOR_URL,
       directoryAuth,
       runningUnderTest: env.NODE_ENV === 'test',
-      // OSM does not allow bulk downloads so we can't enable offline maps
-      offlineMaps:
-        (env.VITE_OFFLINE_MAPS === 'true' && env.VITE_MAP_SOURCE !== 'osm') ||
-        false,
       maptilerApiKey,
+      // Build-time / aggregated (not direct env renames).
+      // OSM does not allow bulk downloads so we can't enable offline maps.
+      offlineMaps,
+      appVersion,
+      commitHash: env.VITE_COMMIT_VERSION,
+      mapConfig,
     };
   });
 
@@ -423,17 +471,7 @@ export type Config = typeof config;
 
 /** Build the map configuration object consumed by map UI components. */
 export function getMapConfig(): MapConfig {
-  const mapConfig: MapConfig = {
-    mapSource: config.mapSource,
-    mapSourceKey: config.mapSourceKey,
-    mapStyle: config.mapStyle,
-  };
-
-  if (config.satelliteSource) {
-    mapConfig.satelliteSource = config.satelliteSource;
-  }
-
-  return mapConfig;
+  return config.mapConfig;
 }
 
 let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
@@ -515,49 +553,3 @@ export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
 export const IS_MOBILE_PLATFORM =
   CAPACITOR_PLATFORM === 'ios' || CAPACITOR_PLATFORM === 'android';
 export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';
-
-// ==================
-// Version management
-// ==================
-
-/**
- * Gets the application version from Vite's __APP_VERSION__ replacement.
- * This should be defined in vite.config and filled at build time.
- * @returns The application version.
- */
-function appVersion(): string {
-  const version = __APP_VERSION__;
-  if (version) {
-    console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
-    return version;
-  }
-
-  console.error('__APP_VERSION__ not defined in build. Using "unknown"');
-  return 'unknown';
-}
-
-/**
- * Gets the commit hash from environment variables if available.
- * This is optional and may not be provided in all environments.
- * @returns The commit hash, or undefined if not provided.
- */
-function commitHash(): string | undefined {
-  const hash = import.meta.env.VITE_COMMIT_VERSION;
-
-  if (
-    hash === '' ||
-    hash === undefined ||
-    (configHelpers.FALSEY_STRINGS as readonly string[]).includes(
-      hash.toLowerCase()
-    )
-  ) {
-    console.info('VITE_COMMIT_VERSION not provided');
-    return undefined;
-  }
-
-  console.info(`Using VITE_COMMIT_VERSION: ${hash}`);
-  return hash;
-}
-
-export const APP_VERSION = appVersion();
-export const COMMIT_HASH = commitHash();

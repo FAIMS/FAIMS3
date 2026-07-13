@@ -1,7 +1,7 @@
 import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
-import {config, APP_VERSION, COMMIT_HASH} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 
@@ -12,8 +12,8 @@ export default function SupportEmail() {
 
   const bodyContent =
     `Server: ${config.conductorUrls.join(', ')} \r` +
-    `App Version: ${APP_VERSION} \r` +
-    `Commit Version: ${COMMIT_HASH ?? 'Not provided.'} \r` +
+    `App Version: ${config.appVersion} \r` +
+    `Commit Version: ${config.commitHash ?? 'Not provided.'} \r` +
     `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
     `Global Roles: ${
       activeUser?.parsedToken.globalRoles

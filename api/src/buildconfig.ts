@@ -19,10 +19,12 @@
  *   which server to use and whether to include test data.
  *
  *   Configuration is parsed from `process.env` with a single zod schema:
- *     - Each env key is declared once with its coercion / defaulting logic.
+ *     - Each env key is declared once with its coercion / defaulting logic and
+ *       is the place to document that setting.
  *     - `.strip()` drops unrelated process.env keys.
  *     - A final `.transform()` renames ENV_KEYS into the camelCase `config` shape
- *       (and builds a few cross-field / required values).
+ *       (and builds a few cross-field / required values). Do not re-document
+ *       env-backed fields in the transform.
  *
  *   Prefer importing `{config}` and reading `config.<field>`. Service singletons
  *   (`keyService`, `emailService`) and lazy key-file path helpers remain as

@@ -7,7 +7,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RouterProvider, createRouter} from '@tanstack/react-router';
 import {StrictMode, useEffect} from 'react';
 import ReactDOM from 'react-dom/client';
-import {config, APP_VERSION} from './constants';
+import {config} from './constants';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {BreadcrumbProvider} from './context/breadcrumb-provider';
 import './index.css';
@@ -21,7 +21,7 @@ if (bugsnagEnabled) {
   Bugsnag.start({
     apiKey: config.bugsnagApiKey!,
     plugins: [new BugsnagPluginReact()],
-    appVersion: APP_VERSION,
+    appVersion: config.appVersion,
   });
 } else {
   console.warn('config.bugsnagApiKey not set, error reporting disabled');
