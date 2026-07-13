@@ -47,6 +47,7 @@ import {
   EMAIL_CONFIG,
   EMAIL_SERVICE,
   EMAIL_SERVICE_TYPE,
+  RESTORE_UPLOAD_MAX_BYTES,
   RUNNING_UNDER_TEST,
   TEST_EMAIL_ADDRESS,
 } from '../buildconfig';
@@ -69,7 +70,11 @@ import {nowIso} from '../time';
 import {hashChallengeCode} from '../utils';
 
 // TODO: configure this directory
-const upload = multer({dest: '/tmp/'});
+// Cap the restore upload size (configurable via RESTORE_UPLOAD_MAX_BYTES)
+const upload = multer({
+  dest: '/tmp/',
+  limits: {fileSize: RESTORE_UPLOAD_MAX_BYTES},
+});
 
 // This must occur before express api is used
 patch();

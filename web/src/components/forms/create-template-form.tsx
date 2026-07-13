@@ -1,6 +1,8 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
+import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
@@ -78,9 +80,8 @@ export function CreateTemplateForm({
       name: 'name',
       label: 'Template Name',
       description: 'A short display name for the template',
-      schema: z.string().min(5, {
-        message: 'Template name must be at least 5 characters.',
-      }),
+      schema: resourceNameSchema(5, 'Template name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField(),
     {
@@ -88,12 +89,7 @@ export function CreateTemplateForm({
       label: 'JSON File (optional — leave blank to create a blank template)',
       description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
-      schema: z
-        .instanceof(File)
-        .refine(f => f.type === 'application/json', {
-          message: 'Only JSON files are allowed.',
-        })
-        .optional(),
+      schema: designFileSchema().optional(),
     },
   ];
 

@@ -24,16 +24,28 @@ export function UpdateLongLivedTokenForm({
     {
       name: 'title',
       label: 'Title',
-      schema: z.string().min(5, {
-        message: 'Title must be at least 5 characters',
-      }),
+      schema: z
+        .string()
+        .min(5, {
+          message: 'Title must be at least 5 characters',
+        })
+        .max(100, {
+          message: 'Title must be at most 100 characters',
+        }),
+      maxLength: 100,
     },
     {
       name: 'description',
       label: 'Description',
-      schema: z.string().min(10, {
-        message: 'Description must be at least 10 characters',
-      }),
+      schema: z
+        .string()
+        .min(10, {
+          message: 'Description must be at least 10 characters',
+        })
+        .max(500, {
+          message: 'Description must be at most 500 characters',
+        }),
+      maxLength: 500,
     },
   ];
 

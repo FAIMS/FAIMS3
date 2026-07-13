@@ -34,6 +34,7 @@ import {
   Typography,
 } from '@mui/material';
 import {ChoiceElementProps} from '@faims3/forms';
+import {designerHtmlInput} from '../../lib/input-limits';
 import {useMemo, useState} from 'react';
 import {useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -426,6 +427,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           value={condition.value ?? ''}
           onChange={e => updateValue(e.target.value)}
           sx={{minWidth: 200}}
+          slotProps={{htmlInput: designerHtmlInput()}}
         />
       );
     }
@@ -537,6 +539,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
               value={condition.value ?? ''}
               onChange={e => updateValue(e.target.value)}
               sx={{minWidth: 200}}
+              slotProps={{htmlInput: designerHtmlInput()}}
             />
           );
         } else {
@@ -552,6 +555,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
               onChange={e => updateValue(e.target.value)}
               sx={{minWidth: 200}}
               error={!isValidOption}
+              slotProps={{htmlInput: designerHtmlInput()}}
               helperText={
                 !isValidOption ? `Invalid value: "${condition.value}"` : ''
               }
@@ -678,7 +682,12 @@ export const FieldConditionControl = (props: ConditionProps) => {
         {targetFieldDef ? (
           renderValueEditor(targetFieldDef)
         ) : (
-          <TextField label="Value" sx={{minWidth: 200}} onChange={() => {}} />
+          <TextField
+            label="Value"
+            sx={{minWidth: 200}}
+            onChange={() => {}}
+            slotProps={{htmlInput: designerHtmlInput()}}
+          />
         )}
 
         {props.onDuplicate && (
