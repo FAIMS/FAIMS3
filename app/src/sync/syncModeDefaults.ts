@@ -6,11 +6,11 @@
  * When a user activates a notebook, the app must choose an initial
  * {@link SyncMode} before live PouchDB replication starts. This module applies a
  * single heuristic: compare the server's record count (from
- * `GET /api/notebooks/:id`) against {@link SYNC_PUSH_ONLY_RECORD_THRESHOLD}.
+ * `GET /api/notebooks/:id`) against {@link config.syncPushOnlyRecordThreshold}.
  *
  * ## Threshold
  *
- * Configured in `buildconfig.ts` as `SYNC_PUSH_ONLY_RECORD_THRESHOLD`
+ * Configured in `buildconfig.ts` as `config.syncPushOnlyRecordThreshold`
  * (override via `VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD`; default **500**). The
  * default is intentionally conservative — two-way sync of a few hundred
  * records is usually fine on mobile, but downloading thousands of existing
@@ -27,7 +27,7 @@
  * `setSyncMode` in `projectSlice`.
  */
 
-import {SYNC_PUSH_ONLY_RECORD_THRESHOLD} from '../buildconfig';
+import {config} from '../buildconfig';
 import {fetchNotebookDetails} from '../context/slices/helpers/databaseHelpers';
 import type {OfflineMapRegion} from '@faims3/data-model';
 import type {SyncMode} from './syncMode';
@@ -56,7 +56,7 @@ export interface ActivationSyncModeResult {
  * Resolve initial sync mode when a notebook is activated.
  *
  * Fetches notebook details when online and compares `recordCount` to
- * {@link SYNC_PUSH_ONLY_RECORD_THRESHOLD}. Never throws — any failure or
+ * {@link config.syncPushOnlyRecordThreshold}. Never throws — any failure or
  * ambiguous count falls back to two-way sync (`both`).
  *
  * @param serverUrl Base URL for the listing server
@@ -94,7 +94,7 @@ export async function resolveActivationSyncMode({
         ...offlineMapFromServer,
       };
     }
-    if (recordCount > SYNC_PUSH_ONLY_RECORD_THRESHOLD) {
+    if (recordCount > config.syncPushOnlyRecordThreshold) {
       return {
         syncMode: 'push',
         recordCount,

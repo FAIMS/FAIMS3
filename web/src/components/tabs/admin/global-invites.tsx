@@ -1,7 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateGlobalInvite} from '@/components/dialogs/create-global-invite';
 import {useGetGlobalInviteColumns} from '@/components/tables/global-invites';
-import {WEB_URL} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetGlobalInvites} from '@/hooks/queries';
@@ -23,7 +23,7 @@ const GlobalInvites = () => {
 
   const {data, isLoading} = useGetGlobalInvites({
     user,
-    redirect: `${WEB_URL}`,
+    redirect: `${config.webUrl}`,
   });
 
   const columns = useGetGlobalInviteColumns({

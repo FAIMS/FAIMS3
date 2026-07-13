@@ -1,7 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {TeamCellComponent} from './cells/team-cell';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {
   Tooltip,
   TooltipContent,
@@ -40,8 +40,8 @@ function ArchivedProjectRestoreCell({row}: {row: ArchivedProjectRow}) {
     });
 
   const tooltip = canRestore
-    ? `Restore this ${NOTEBOOK_NAME_CAPITALIZED} from archive`
-    : `You don't have permission to restore this ${NOTEBOOK_NAME_CAPITALIZED}`;
+    ? `Restore this ${config.notebookNameCapitalized} from archive`
+    : `You don't have permission to restore this ${config.notebookNameCapitalized}`;
 
   return (
     <>
@@ -107,8 +107,8 @@ function ArchivedProjectDeleteCell({row}: {row: ArchivedProjectRow}) {
     });
 
   const tooltip = canDelete
-    ? `Permanently delete this archived ${NOTEBOOK_NAME_CAPITALIZED}`
-    : `You don't have permission to delete this ${NOTEBOOK_NAME_CAPITALIZED}`;
+    ? `Permanently delete this archived ${config.notebookNameCapitalized}`
+    : `You don't have permission to delete this ${config.notebookNameCapitalized}`;
 
   return (
     <>

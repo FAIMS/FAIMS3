@@ -1,4 +1,4 @@
-import {buildRegisterUrl} from '@/constants';
+import {config, buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import {sortNotebookListNewestFirst} from '@/lib/utils';
 import type {
@@ -45,7 +45,7 @@ export const post = async <TPayload, TResponse>({
   data: TPayload;
   user: User;
 }) => {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+  const response = await fetch(`${config.apiUrl}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export const get = async <T = any>(
 ) => {
   if (!user && !token) throw new Error('Not authenticated');
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+  const response = await fetch(`${config.apiUrl}${path}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -601,7 +601,7 @@ export const updateLongLivedToken = async ({
   user: User;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/long-lived-tokens/${tokenId}`,
+    `${config.apiUrl}/api/long-lived-tokens/${tokenId}`,
     {
       method: 'PUT',
       headers: {
@@ -634,7 +634,7 @@ export const revokeLongLivedToken = async ({
   user: User;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/long-lived-tokens/${tokenId}`,
+    `${config.apiUrl}/api/long-lived-tokens/${tokenId}`,
     {
       method: 'DELETE',
       headers: {

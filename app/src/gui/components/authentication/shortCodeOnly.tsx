@@ -14,7 +14,7 @@ import {
   useTheme,
 } from '@mui/material';
 import React, {useState} from 'react';
-import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
@@ -48,7 +48,7 @@ export function QRCodeButtonOnly(props: QRCodeButtonOnlyProps) {
       // Process the URL with our new function
       const finalUrl = replaceOrAppendRedirect({
         url,
-        redirectTo: `${APP_ID}://auth-return`,
+        redirectTo: `${config.appId}://auth-return`,
       });
 
       // Use the capacitor browser plugin in apps
@@ -178,7 +178,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
       window.location.href = url + '&redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${url}&redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${config.appId}://auth-return`,
       });
     }
   };

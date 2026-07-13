@@ -1,7 +1,7 @@
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {API_URL, WEB_URL} from '@/constants';
+import {config} from '@/constants';
 import {useAuth, User} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, Link} from '@tanstack/react-router';
@@ -81,10 +81,10 @@ function RouteComponent() {
     }
 
     // Create the redirect URL back to the profile page
-    const redirectUrl = WEB_URL + '/profile';
+    const redirectUrl = config.webUrl + '/profile';
 
     // Build the URL for the change password page
-    const changePasswordUrl = `${API_URL}/change-password?username=${encodeURIComponent(username)}&redirect=${encodeURIComponent(redirectUrl)}`;
+    const changePasswordUrl = `${config.apiUrl}/change-password?username=${encodeURIComponent(username)}&redirect=${encodeURIComponent(redirectUrl)}`;
 
     // Navigate to the change password page
     window.location.href = changePasswordUrl;

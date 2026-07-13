@@ -24,7 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import {designerInfoIconSx} from './designer-style';
@@ -252,7 +252,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       {/* Overview map visibility */}
       <SettingSection
         title="Overview Map"
-        description={`Choose whether to show spatial features from this form in the ${NOTEBOOK_NAME} overview map e.g. points, lines, polygons.`}
+        description={`Choose whether to show spatial features from this form in the ${config.notebookName} overview map e.g. points, lines, polygons.`}
       >
         <Select
           fullWidth

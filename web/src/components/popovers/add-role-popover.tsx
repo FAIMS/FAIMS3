@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import {RoleDetails} from '@faims3/data-model';
+import {config} from '@/constants';
 
 // Extend RoleDetails with the Id of the role so we can identify it
 type RoleDetailWithId = RoleDetails & {id: string};
@@ -68,7 +69,7 @@ export const AddRolePopover = ({
             onClick={async () => {
               try {
                 const response = await fetch(
-                  `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                  `${config.apiUrl}/api/users/${userId}/admin`,
                   {
                     method: 'POST',
                     headers: {

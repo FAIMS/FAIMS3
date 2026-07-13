@@ -27,7 +27,7 @@ import {
 } from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
 import {DEFAULT_REDIRECT_URL} from './authRoutes';
@@ -40,7 +40,7 @@ import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
-import {LOCAL_LOGIN_ENABLED} from '../buildconfig';
+import {config} from '../buildconfig';
 
 // This must occur before express app is used
 patch();
@@ -65,7 +65,7 @@ export function addAuthPages(
   // providers if present
   app.get(
     '/login',
-    processRequest({
+    validate({
       query: z.object({
         redirect: RedirectInputSchema.optional(),
         inviteId: IdInputSchema.optional(),
@@ -103,7 +103,7 @@ export function addAuthPages(
           inviteId: inviteId,
           redirect: redirect,
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: config.localLoginEnabled,
         redirect,
         messages: messages,
       });
@@ -117,7 +117,7 @@ export function addAuthPages(
    */
   app.get(
     '/register',
-    processRequest({
+    validate({
       query: z.object({
         redirect: RedirectInputSchema.optional(),
         inviteId: IdInputSchema.optional(),
@@ -176,7 +176,7 @@ export function addAuthPages(
           inviteId,
           action: 'register',
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: config.localLoginEnabled,
         messages: req.flash(),
       });
     }
@@ -187,7 +187,7 @@ export function addAuthPages(
    */
   app.get(
     '/change-password',
-    processRequest({
+    validate({
       query: z.object({
         // Where should we go once finished?
         redirect: RedirectInputSchema.optional(),
@@ -228,7 +228,7 @@ export function addAuthPages(
    */
   app.get(
     '/verify-email',
-    processRequest({
+    validate({
       query: z.object({
         code: CodeInputSchema.optional(),
         redirect: RedirectInputSchema.optional(),
@@ -269,7 +269,7 @@ export function addAuthPages(
 
   app.post(
     '/verify-email',
-    processRequest({
+    validate({
       body: z.object({
         code: CodeInputSchema,
         redirect: RedirectInputSchema.optional(),
@@ -315,7 +315,7 @@ export function addAuthPages(
    */
   app.get(
     '/forgot-password',
-    processRequest({
+    validate({
       query: z.object({
         redirect: RedirectInputSchema.optional(),
       }),
@@ -345,7 +345,7 @@ export function addAuthPages(
    */
   app.get(
     '/auth/reset-password',
-    processRequest({
+    validate({
       query: z.object({
         code: CodeInputSchema,
         redirect: RedirectInputSchema,

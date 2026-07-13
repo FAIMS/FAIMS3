@@ -35,3 +35,5 @@ export * from './data_storage';
 export * from './permission';
 export * from './uiSpecification';
 export * from './databaseEngine';
+export {configHelpers} from './config';
+export type {ConfigHelpers} from './config';

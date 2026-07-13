@@ -26,7 +26,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import {Button, Grid, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import React, {ErrorInfo, useEffect} from 'react';
-import {APP_VERSION, BUGSNAG_KEY, DEBUG_APP} from './buildconfig';
+import {config} from './buildconfig';
 import * as ROUTES from './constants/routes';
 
 interface EBProps {
@@ -128,7 +128,7 @@ export const ErrorPage = () => {
 };
 
 export const logError = (error: any) => {
-  if (BUGSNAG_KEY) {
+  if (config.bugsnagKey) {
     Bugsnag.notify(error);
   } else {
     console.error('LogError:', error);
@@ -137,10 +137,10 @@ export const logError = (error: any) => {
 
 let bugsnag;
 
-if (BUGSNAG_KEY && BUGSNAG_KEY !== '<your bugsnag API key>') {
+if (config.bugsnagKey && config.bugsnagKey !== '<your bugsnag API key>') {
   Bugsnag.start({
-    apiKey: BUGSNAG_KEY,
-    appVersion: APP_VERSION,
+    apiKey: config.bugsnagKey,
+    appVersion: config.appVersion,
     plugins: [new BugsnagPluginReact()],
   });
 
@@ -194,7 +194,7 @@ const createBugsnagFormLogger = (
         });
       },
       warn: (message, ...args) => {
-        if (DEBUG_APP) {
+        if (config.debugApp) {
           console.warn('[FormLogger] Warning:', message, ...args);
         }
         bugsnagClient.leaveBreadcrumb(
@@ -204,7 +204,7 @@ const createBugsnagFormLogger = (
         );
       },
       info: (message, ...args) => {
-        if (DEBUG_APP) {
+        if (config.debugApp) {
           console.info('[FormLogger] Info:', message, ...args);
         }
         bugsnagClient.leaveBreadcrumb(
@@ -214,7 +214,7 @@ const createBugsnagFormLogger = (
         );
       },
       debug: (message, ...args) => {
-        if (DEBUG_APP) {
+        if (config.debugApp) {
           console.debug('[FormLogger] Debug:', message, ...args);
         }
         // Still leave breadcrumb for Bugsnag even if not logging to console
@@ -245,7 +245,7 @@ const createBugsnagFormLogger = (
         console.info('[FormLogger] Info:', message, ...args);
       },
       debug: (message, ...args) => {
-        if (DEBUG_APP) {
+        if (config.debugApp) {
           console.debug('[FormLogger] Debug:', message, ...args);
         }
       },
@@ -261,13 +261,13 @@ const createBugsnagFormLogger = (
  * This runs once when this module is loaded.
  */
 const registerFormsLogger = (): void => {
-  const formLogger = createBugsnagFormLogger(Bugsnag, BUGSNAG_KEY);
+  const formLogger = createBugsnagFormLogger(Bugsnag, config.bugsnagKey);
   LoggingService.register(formLogger);
-  setAttachmentSaveTraceEnabled(DEBUG_APP);
+  setAttachmentSaveTraceEnabled(config.debugApp);
   console.debug('[FormLogger] Registered with LoggingService', {
-    bugsnagEnabled: !!BUGSNAG_KEY,
-    debugEnabled: DEBUG_APP,
-    attachmentSaveTraceEnabled: DEBUG_APP,
+    bugsnagEnabled: !!config.bugsnagKey,
+    debugEnabled: config.debugApp,
+    attachmentSaveTraceEnabled: config.debugApp,
   });
 };
 

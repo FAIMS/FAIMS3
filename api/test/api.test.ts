@@ -45,14 +45,7 @@ import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  CONDUCTOR_SHORT_CODE_PREFIX,
-  DEVELOPER_MODE,
-  KEY_SERVICE,
-} from '../src/buildconfig';
+import {config, keyService} from '../src/buildconfig';
 import {getDataDb} from '../src/couchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
@@ -92,10 +85,10 @@ describe('API tests', () => {
       .get('/api/info')
       .expect(200)
       .expect(response => {
-        expect(response.body.name).to.equal(CONDUCTOR_INSTANCE_NAME);
-        expect(response.body.description).to.equal(CONDUCTOR_DESCRIPTION);
-        expect(response.body.conductor_url).to.equal(CONDUCTOR_PUBLIC_URL);
-        expect(response.body.prefix).to.equal(CONDUCTOR_SHORT_CODE_PREFIX);
+        expect(response.body.name).to.equal(config.conductorInstanceName);
+        expect(response.body.description).to.equal(config.instanceDescription);
+        expect(response.body.conductor_url).to.equal(config.conductorPublicUrl);
+        expect(response.body.prefix).to.equal(config.shortCodePrefix);
       });
   });
 
@@ -257,7 +250,7 @@ describe('API tests', () => {
       })
       .expect(200);
 
-    const signingKey = await KEY_SERVICE.getSigningKey();
+    const signingKey = await keyService.getSigningKey();
     const contributorUser =
       await getExpressUserFromEmailOrUserId(localUserName);
     if (!contributorUser) {
@@ -749,7 +742,7 @@ describe('API tests', () => {
         throw new Error('Bobby gone-a missin!');
       }
       const bobby = await upgradeCouchUserToExpressUser({dbUser: bobbyDb});
-      const signingKey = await KEY_SERVICE.getSigningKey();
+      const signingKey = await keyService.getSigningKey();
       const bobbyToken = await generateJwtFromUser({user: bobby, signingKey});
 
       // invalid user name
@@ -926,7 +919,7 @@ describe('API tests', () => {
 
   it('test email route - admin user', async () => {
     // Mock the email service
-    const originalEmailService = require('../src/buildconfig').EMAIL_SERVICE;
+    const originalEmailService = require('../src/buildconfig').emailService;
     const mockSendEmail = async () => ({
       messageId: 'test-message-id-123',
       response: 'Test email sent successfully',
@@ -937,7 +930,7 @@ describe('API tests', () => {
     });
 
     // Replace with mock temporarily
-    require('../src/buildconfig').EMAIL_SERVICE = {
+    require('../src/buildconfig').emailService = {
       sendEmail: mockSendEmail,
     };
 
@@ -953,13 +946,13 @@ describe('API tests', () => {
       expect(result.body.timings).to.have.property('total');
     } finally {
       // Restore original email service
-      require('../src/buildconfig').EMAIL_SERVICE = originalEmailService;
+      require('../src/buildconfig').emailService = originalEmailService;
     }
   });
 
   it('test email route - handles errors', async () => {
     // Mock the email service with an error
-    const originalEmailService = require('../src/buildconfig').EMAIL_SERVICE;
+    const originalEmailService = require('../src/buildconfig').emailService;
     const mockSendEmail = async () => {
       const error: any = new Error('SMTP connection failed');
       error.code = 'ECONNREFUSED';
@@ -967,7 +960,7 @@ describe('API tests', () => {
     };
 
     // Replace with mock temporarily
-    require('../src/buildconfig').EMAIL_SERVICE = {
+    require('../src/buildconfig').emailService = {
       sendEmail: mockSendEmail,
     };
 
@@ -991,14 +984,14 @@ describe('API tests', () => {
       );
     } finally {
       // Restore original email service
-      require('../src/buildconfig').EMAIL_SERVICE = originalEmailService;
+      require('../src/buildconfig').emailService = originalEmailService;
     }
   });
 
   //======= DEV ONLY ===========
   //============================
 
-  if (DEVELOPER_MODE) {
+  if (config.developerMode) {
     it('can create some random records', async () => {
       const projectID = await createNotebookFromSampleFile('Test Notebook');
 

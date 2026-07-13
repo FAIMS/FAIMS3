@@ -11,10 +11,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
@@ -61,7 +58,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (canSeeProjects) {
     topSectionNavItems.push({
-      title: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+      title: config.notebookNamePluralCapitalized,
       url: '/projects',
       icon: LetterText,
       isActive: pathname.startsWith('/projects') || pathname === '/',
@@ -72,7 +69,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: name,
               url: `/projects/${_id}`,
             }))
-          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME_PLURAL}...`}],
+          : [{id: 'no-projects', title: `No ${config.notebookNamePlural}...`}],
     });
   }
 

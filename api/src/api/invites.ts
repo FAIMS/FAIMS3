@@ -37,7 +37,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {
   createGlobalInvite,
   createResourceInvite,
@@ -62,7 +62,7 @@ export const api: express.Router = express.Router();
 api.get(
   '/notebook/:projectId',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({projectId: z.string()}),
   }),
   async (
@@ -107,7 +107,7 @@ api.get(
 api.get(
   '/team/:teamId',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({teamId: z.string()}),
   }),
   async ({user, params: {teamId}}, res: Response<GetTeamInvitesResponse>) => {
@@ -149,7 +149,7 @@ api.get(
 api.post(
   '/notebook/:projectId',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({projectId: z.string()}),
     body: PostCreateResourceInviteInputSchema,
   }),
@@ -202,7 +202,7 @@ api.post(
 api.post(
   '/team/:teamId',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({teamId: z.string()}),
     body: PostCreateResourceInviteInputSchema,
   }),
@@ -255,7 +255,7 @@ api.post(
 api.delete(
   '/notebook/:projectId/:inviteId',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({
       projectId: z.string(),
       inviteId: z.string(),
@@ -314,7 +314,7 @@ api.delete(
 api.delete(
   '/team/:teamId/:inviteId',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({
       teamId: z.string(),
       inviteId: z.string(),
@@ -396,7 +396,7 @@ api.post(
   '/global',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.CREATE_GLOBAL_INVITE}),
-  processRequest({
+  validate({
     body: PostCreateGlobalInviteInputSchema,
   }),
   async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
@@ -423,7 +423,7 @@ api.delete(
   '/global/:inviteId',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.DELETE_GLOBAL_INVITE}),
-  processRequest({
+  validate({
     params: z.object({
       inviteId: z.string(),
     }),
@@ -455,7 +455,7 @@ api.delete(
  */
 api.get(
   '/:inviteId',
-  processRequest({
+  validate({
     params: z.object({inviteId: z.string()}),
   }),
   async (req, res: Response<GetInviteByIdResponse>) => {

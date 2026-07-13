@@ -13,7 +13,7 @@ import {
 } from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
@@ -87,7 +87,7 @@ export function CreateTemplateForm({
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
-      description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
+      description: `Upload a .json ${config.notebookName} file to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
       schema: designFileSchema().optional(),
     },
@@ -160,23 +160,20 @@ export function CreateTemplateForm({
     });
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/templates/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({
-            teamId: chosenTeamId,
-            name,
-            ...rootDescriptionForApi(description),
-            isPublic,
-            uiSpecification,
-          }),
-        }
-      );
+      const res = await fetch(`${config.apiUrl}/api/templates/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          teamId: chosenTeamId,
+          name,
+          ...rootDescriptionForApi(description),
+          isPublic,
+          uiSpecification,
+        }),
+      });
       if (!res.ok) throw new Error(res.statusText);
       // need to refresh our auth token to get permissions on this new template
       const {message, status} = await refreshToken();

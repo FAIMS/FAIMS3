@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {designFileSchema} from '@/lib/input-limits';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {
   errorMessageFromTemplateJsonBody,
@@ -79,7 +79,7 @@ export function UpdateTemplateForm({
       onSubmit={onSubmit}
       submitButtonText="Replace Template JSON"
       submitButtonVariant="destructive"
-      warningMessage={`Editing the template does not change any of the ${NOTEBOOK_NAME}s created from it.  This may create inconsistencies in your data.`}
+      warningMessage={`Editing the template does not change any of the ${config.notebookName}s created from it.  This may create inconsistencies in your data.`}
     />
   );
 }
