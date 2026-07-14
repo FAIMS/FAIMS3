@@ -23,27 +23,56 @@ async function openBlueTeam() {
   );
 }
 
-async function openInviteRoleOptions() {
+/**
+ * Role values offered by the create-invite dialog.
+ *
+ * Prefer Radix's mirrored native <select> (always in the DOM, stable values)
+ * over getText() on portal options — visible-text scraping races the open
+ * animation and caused a CI flake where Team Administrator was on screen but
+ * labels.some(/team admin/i) was false.
+ */
+async function getInviteRoleValues(): Promise<string[]> {
   await byTestId('web-team-invite-create-button').click();
   await waitForTestId('web-team-invite-create-dialog');
+
+  await browser.waitUntil(
+    async () => {
+      const values = await readNativeSelectRoleValues();
+      return values.length > 0;
+    },
+    {
+      timeout: 5000,
+      timeoutMsg: 'Expected invite role options in create dialog',
+    }
+  );
+
+  // Open the combobox for the step screenshot (visual evidence of filtering).
   const roleTrigger = await $(
     '[data-testid="web-team-invite-create-dialog"] button[role="combobox"]'
   );
   await roleTrigger.waitForClickable({timeout: 10000});
   await roleTrigger.click();
   await browser.waitUntil(
-    async () => {
-      const count = await $$('div[role="option"]').length;
-      return count > 0;
-    },
+    async () => (await $$('div[role="option"]').length) > 0,
     {timeout: 5000}
   );
-  const options = await $$('div[role="option"]');
-  const labels: string[] = [];
-  for (const opt of options) {
-    labels.push(await opt.getText());
-  }
-  return labels;
+
+  return readNativeSelectRoleValues();
+}
+
+async function readNativeSelectRoleValues(): Promise<string[]> {
+  return browser.execute(() => {
+    const dialog = document.querySelector(
+      '[data-testid="web-team-invite-create-dialog"]'
+    );
+    const select = dialog?.querySelector('select');
+    if (!select) {
+      return [];
+    }
+    return Array.from(select.options)
+      .map(o => o.value)
+      .filter(v => v.length > 0);
+  });
 }
 
 describe('Web — Permissions matrix', () => {
@@ -56,10 +85,10 @@ describe('Web — Permissions matrix', () => {
     await invitesTab.click();
     await waitForTestId('web-team-invite-create-button');
 
-    const labels = await openInviteRoleOptions();
-    expect(labels.some(l => /team member/i.test(l))).toBe(true);
-    expect(labels.some(l => /team manager/i.test(l))).toBe(true);
-    expect(labels.some(l => /team admin/i.test(l))).toBe(false);
+    const roles = await getInviteRoleValues();
+    expect(roles).toContain('TEAM_MEMBER');
+    expect(roles).toContain('TEAM_MANAGER');
+    expect(roles).not.toContain('TEAM_ADMIN');
     await captureStep({
       surface: 'web',
       label: 'manager-invite-roles',
@@ -75,8 +104,8 @@ describe('Web — Permissions matrix', () => {
     await invitesTab.click();
     await waitForTestId('web-team-invite-create-button');
 
-    const labels = await openInviteRoleOptions();
-    expect(labels.some(l => /team admin/i.test(l))).toBe(true);
+    const roles = await getInviteRoleValues();
+    expect(roles).toContain('TEAM_ADMIN');
     await captureStep({
       surface: 'web',
       label: 'ops-invite-roles',
