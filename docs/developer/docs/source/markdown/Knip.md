@@ -85,7 +85,7 @@ The workspaces and their entry points:
 | `library/forms`          | `lib/index.ts`, `src/main.tsx`                                               | Published lib (`lib/`) + dev harness (`src/`)         |
 | `library/data-model`     | `src/index.ts`                                                               | Jest tests via plugin                                 |
 | `infrastructure/aws-cdk` | `bin/aws-cdk-faims-infra.ts`, `validateConfig.ts`                            | Code lives in `lib/`/`bin/`, not `src/`               |
-| `e2e`                    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium                                  |
+| `e2e` (`@faims3/e2e`)    | `wdio*.conf.ts`, `test/specs/**/*.e2e.ts`, `chrome-headless-capabilities.ts` | WebdriverIO + Appium                                  |
 
 Knip auto-detects and runs **tool plugins** based on each workspace's
 dependencies and config files (Vite, Vitest, Jest, Mocha, WebdriverIO,

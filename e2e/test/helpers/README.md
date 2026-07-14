@@ -47,8 +47,8 @@ Open `artifacts/<runId>/index.html` (or regenerate with `pnpm report` from `e2e/
 
 ## Manifest entry (v1)
 
-See `HANDOFF_E2E_SUITE.md` §3. Each `captureStep` / docs / failure / result
-appends one JSON line; `onComplete` writes `manifest.json`.
+See [SUITE.md](../../SUITE.md) for the schema. Each `captureStep` / docs /
+failure / result appends one JSON line; `onComplete` writes `manifest.json`.
 
 ## Usage sketch
 

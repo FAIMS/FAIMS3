@@ -116,11 +116,12 @@ test/specs/
   smoke/       # Tier 0 CI gate
   web/         # Control Centre
   app/         # Fieldmark
-  conductor/   # Auth HTML (expand Tier 2+)
+  conductor/   # Auth HTML
   journeys/    # Cross-surface
 ```
 
-See `HANDOFF_E2E_SUITE.md` for the full workflow inventory and tiers.
+Workflow ID → spec map (tiers, deferred work, manifest schema):
+[SUITE.md](./SUITE.md).
 
 ## CI (GitHub Actions)
 
@@ -136,10 +137,11 @@ lockfile/workflow files change (`workflow_dispatch` always available). The job:
 5. Starts `pnpm run dev` (api `:8080`, app `:3000`, web `:3001`)
 6. Installs pinned Chrome + ChromeDriver (`browser-actions/setup-chrome`)
 7. Runs `pnpm test:e2e:headless:ci` (smoke → web/conductor/journeys → app)
-8. Uploads `e2e/artifacts/` (including HTML galleries), `e2e/screenshots/`, and `/tmp/faims-dev.log`
+8. Stages and uploads a flat zip: `artifacts/` (HTML galleries), `screenshots/`,
+   and `faims-dev.log`
 
 Reviewers: download the `e2e-artifacts-*` Action artifact and open
-`e2e/artifacts/index.html` (or the latest `e2e/artifacts/<runId>/index.html`).
+`artifacts/index.html` (or the latest `artifacts/<runId>/index.html`).
 Failures are listed first with screenshot, error, and `page.html` / `meta.json`
 links; the gallery groups step shots by spec/test.
 
@@ -149,7 +151,7 @@ Chrome override env vars: `CHROME_BIN` / `CHROMEDRIVER_PATH`.
 Local equivalent after the stack is up:
 
 ```bash
-pnpm --filter e2e test:e2e:headless:ci
+pnpm --filter=@faims3/e2e test:e2e:headless:ci
 # or filter one describe:
 cd e2e && pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.grep 'Users admin'
 ```

@@ -1,0 +1,227 @@
+$ turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model --parallel
+ WARNING  --parallel is deprecated and will be removed in a future major version. Instead, define task behavior in your turbo.json task definitions using `persistent` and `with`.
+
+   • Packages in scope: @faims3/api, @faims3/app, @faims3/data-model, @faims3/web
+   • Running dev in 4 packages
+ WARNING     • Remote caching unavailable (Could not connect to "https://bss.turbocache.webapp.csiro.au")
+
+::group::@faims3/data-model:build
+cache hit, replaying logs 0774d5737b1dee20
+$ pnpm run build:cjs && pnpm run build:esm
+$ tsc -p tsconfig.json
+$ tsc -p tsconfig.esm.json
+::endgroup::
+::group::@faims3/api:build
+cache miss, executing cd7a406485615a15
+$ tsc && copyfiles views/* views/**/* public/* public/**/* build/src
+::endgroup::
+ WARNING  could not connect to the cache
+::group::@faims3/web:build
+cache miss, executing 5f194b6b189f5a7f
+$ vite build
+[36mvite v7.3.5 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 14997 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                                     [39m[1m[2m    0.46 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m
+[2mdist/[22m[2massets/[22m[35museDesignerSaveMutation-Bt-Vyjle.css    [39m[1m[2m   40.84 kB[22m[1m[22m[2m │ gzip:   7.13 kB[22m
+[2mdist/[22m[2massets/[22m[35mindex-Dz5EU4d8.css                      [39m[1m[2m   58.08 kB[22m[1m[22m[2m │ gzip:  10.47 kB[22m
+[2mdist/[22m[2massets/[22m[36m_admin-BH4Plb06.js                      [39m[1m[2m    0.10 kB[22m[1m[22m[2m │ gzip:   0.12 kB[22m
+[2mdist/[22m[2massets/[22m[36mloader-circle-EOXlOucS.js               [39m[1m[2m    0.14 kB[22m[1m[22m[2m │ gzip:   0.15 kB[22m
+[2mdist/[22m[2massets/[22m[36mcircle-check-big-CxOLE1RG.js            [39m[1m[2m    0.18 kB[22m[1m[22m[2m │ gzip:   0.18 kB[22m
+[2mdist/[22m[2massets/[22m[36mweb-An2CaGe0.js                         [39m[1m[2m    0.25 kB[22m[1m[22m[2m │ gzip:   0.16 kB[22m
+[2mdist/[22m[2massets/[22m[36mblank-notebook-paiHweIN.js              [39m[1m[2m    0.25 kB[22m[1m[22m[2m │ gzip:   0.21 kB[22m
+[2mdist/[22m[2massets/[22m[36mtriangle-alert-DA6yCssX.js              [39m[1m[2m    0.26 kB[22m[1m[22m[2m │ gzip:   0.21 kB[22m
+[2mdist/[22m[2massets/[22m[36msquare-pen-jAHdxX3h.js                  [39m[1m[2m    0.32 kB[22m[1m[22m[2m │ gzip:   0.24 kB[22m
+[2mdist/[22m[2massets/[22m[36mrefresh-cw-CmfAI--r.js                  [39m[1m[2m    0.32 kB[22m[1m[22m[2m │ gzip:   0.23 kB[22m
+[2mdist/[22m[2massets/[22m[36mvenetian-mask-CP6Rvvv9.js               [39m[1m[2m    0.34 kB[22m[1m[22m[2m │ gzip:   0.23 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-ZHPAR6ip.js                       [39m[1m[2m    0.44 kB[22m[1m[22m[2m │ gzip:   0.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mrole-card-B5NJ7LYL.js                   [39m[1m[2m    0.55 kB[22m[1m[22m[2m │ gzip:   0.37 kB[22m
+[2mdist/[22m[2massets/[22m[36mseparator-B95mpk04.js                   [39m[1m[2m    0.56 kB[22m[1m[22m[2m │ gzip:   0.37 kB[22m
+[2mdist/[22m[2massets/[22m[36minput-limits-D4WcF46i.js                [39m[1m[2m    0.64 kB[22m[1m[22m[2m │ gzip:   0.37 kB[22m
+[2mdist/[22m[2massets/[22m[36marchive-restore-BjzzGdmB.js             [39m[1m[2m    0.64 kB[22m[1m[22m[2m │ gzip:   0.41 kB[22m
+[2mdist/[22m[2massets/[22m[36mlist-oyWqkXKO.js                        [39m[1m[2m    0.67 kB[22m[1m[22m[2m │ gzip:   0.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mpopover-fLwdkTyG.js                     [39m[1m[2m    0.77 kB[22m[1m[22m[2m │ gzip:   0.41 kB[22m
+[2mdist/[22m[2massets/[22m[36muse-breadcrumbs-Cux49MZO.js             [39m[1m[2m    0.77 kB[22m[1m[22m[2m │ gzip:   0.48 kB[22m
+[2mdist/[22m[2massets/[22m[36mrootDescriptionField-BxG9dbnO.js        [39m[1m[2m    0.89 kB[22m[1m[22m[2m │ gzip:   0.56 kB[22m
+[2mdist/[22m[2massets/[22m[36mweb-BRTX-siX.js                         [39m[1m[2m    0.90 kB[22m[1m[22m[2m │ gzip:   0.47 kB[22m
+[2mdist/[22m[2massets/[22m[36mstatus-display-CM-NvF6y.js              [39m[1m[2m    0.93 kB[22m[1m[22m[2m │ gzip:   0.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mteams-hooks-CIgrrXkB.js                 [39m[1m[2m    0.96 kB[22m[1m[22m[2m │ gzip:   0.36 kB[22m
+[2mdist/[22m[2massets/[22m[36mcard-C-UFYVVM.js                        [39m[1m[2m    1.00 kB[22m[1m[22m[2m │ gzip:   0.37 kB[22m
+[2mdist/[22m[2massets/[22m[36mweb-BgPC8wOm-Ce683kw0.js                [39m[1m[2m    1.10 kB[22m[1m[22m[2m │ gzip:   0.34 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-B2HLHB-1.js                       [39m[1m[2m    1.25 kB[22m[1m[22m[2m │ gzip:   0.71 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-QaLSq9b_.js                       [39m[1m[2m    1.26 kB[22m[1m[22m[2m │ gzip:   0.75 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-DUS2Xxt6.js                       [39m[1m[2m    1.36 kB[22m[1m[22m[2m │ gzip:   0.82 kB[22m
+[2mdist/[22m[2massets/[22m[36mtemplate-team-field-BZewJpbH.js         [39m[1m[2m    1.46 kB[22m[1m[22m[2m │ gzip:   0.73 kB[22m
+[2mdist/[22m[2massets/[22m[36mqr-code-dialog-Bi2O_zPJ.js              [39m[1m[2m    1.67 kB[22m[1m[22m[2m │ gzip:   0.81 kB[22m
+[2mdist/[22m[2massets/[22m[36mprojects-CcxYffUJ.js                    [39m[1m[2m    1.84 kB[22m[1m[22m[2m │ gzip:   0.81 kB[22m
+[2mdist/[22m[2massets/[22m[36muser-hooks-HZEuXbAK.js                  [39m[1m[2m    1.89 kB[22m[1m[22m[2m │ gzip:   0.62 kB[22m
+[2mdist/[22m[2massets/[22m[36marchive-hooks-Op3jR_Zt.js               [39m[1m[2m    2.32 kB[22m[1m[22m[2m │ gzip:   0.67 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-D7VzcIdU.js                       [39m[1m[2m    2.75 kB[22m[1m[22m[2m │ gzip:   1.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mweb-BMxNpBtZ-BMle4pc6.js                [39m[1m[2m    2.94 kB[22m[1m[22m[2m │ gzip:   1.00 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-OvVlBXNp.js                       [39m[1m[2m    3.17 kB[22m[1m[22m[2m │ gzip:   1.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mtabs-B4yWllMx.js                        [39m[1m[2m    3.24 kB[22m[1m[22m[2m │ gzip:   1.37 kB[22m
+[2mdist/[22m[2massets/[22m[36mproject-hooks-BcqjevnJ.js               [39m[1m[2m    3.50 kB[22m[1m[22m[2m │ gzip:   0.99 kB[22m
+[2mdist/[22m[2massets/[22m[36mcreate-project-dialog-BWkAC4_Q.js       [39m[1m[2m    3.73 kB[22m[1m[22m[2m │ gzip:   1.67 kB[22m
+[2mdist/[22m[2massets/[22m[36mexpiry-selector-CnK_AXOh.js             [39m[1m[2m    4.05 kB[22m[1m[22m[2m │ gzip:   1.78 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-449D3VDr.js                       [39m[1m[2m    4.66 kB[22m[1m[22m[2m │ gzip:   1.69 kB[22m
+[2mdist/[22m[2massets/[22m[36mweb-DUxshLpP-Cp-QCuU5.js                [39m[1m[2m    5.24 kB[22m[1m[22m[2m │ gzip:   1.57 kB[22m
+[2mdist/[22m[2massets/[22m[36mtemplate-visibility-filter-QufhEOpU.js  [39m[1m[2m    6.83 kB[22m[1m[22m[2m │ gzip:   2.84 kB[22m
+[2mdist/[22m[2massets/[22m[36mtooltip-Dn9wy89p.js                     [39m[1m[2m    8.23 kB[22m[1m[22m[2m │ gzip:   3.05 kB[22m
+[2mdist/[22m[2massets/[22m[36m_teamId-DKRUkkGV.js                     [39m[1m[2m   17.07 kB[22m[1m[22m[2m │ gzip:   5.68 kB[22m
+[2mdist/[22m[2massets/[22m[36mlong-lived-tokens-t3P3N9v1.js           [39m[1m[2m   18.03 kB[22m[1m[22m[2m │ gzip:   6.04 kB[22m
+[2mdist/[22m[2massets/[22m[36musers-CvGqmSiV.js                       [39m[1m[2m   18.34 kB[22m[1m[22m[2m │ gzip:   6.05 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-CsIflSDm.js                       [39m[1m[2m   20.76 kB[22m[1m[22m[2m │ gzip:   5.30 kB[22m
+[2mdist/[22m[2massets/[22m[36m_templateId-Li_iiOHA.js                 [39m[1m[2m   21.24 kB[22m[1m[22m[2m │ gzip:   5.91 kB[22m
+[2mdist/[22m[2massets/[22m[36mIcon-DbKKKRdb.js                        [39m[1m[2m   27.82 kB[22m[1m[22m[2m │ gzip:   5.56 kB[22m
+[2mdist/[22m[2massets/[22m[36m_protected-B0Q2oFpr.js                  [39m[1m[2m   32.92 kB[22m[1m[22m[2m │ gzip:   9.77 kB[22m
+[2mdist/[22m[2massets/[22m[36mform-BLmDXZVX.js                        [39m[1m[2m   42.97 kB[22m[1m[22m[2m │ gzip:  15.45 kB[22m
+[2mdist/[22m[2massets/[22m[36m_projectId-DUZFa69m.js                  [39m[1m[2m   55.60 kB[22m[1m[22m[2m │ gzip:  14.21 kB[22m
+[2mdist/[22m[2massets/[22m[36mcolumn-header-CiHh0bg8.js               [39m[1m[2m   82.10 kB[22m[1m[22m[2m │ gzip:  23.51 kB[22m
+[2mdist/[22m[2massets/[22m[36mdialog-iJ91VN0z.js                      [39m[1m[2m   87.76 kB[22m[1m[22m[2m │ gzip:  29.13 kB[22m
+[2mdist/[22m[2massets/[22m[36museDesignerSaveMutation-COxBCC_3.js     [39m[1m[33m1,586.63 kB[39m[22m[2m │ gzip: 520.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-BT_JAXv4.js                       [39m[1m[33m3,067.11 kB[39m[22m[2m │ gzip: 906.70 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 42.66s[39m
+::endgroup::
+ WARNING  could not connect to the cache
+::group::@faims3/app:build
+cache miss, executing a3b76f4d1af31dce
+$ pnpm run runconfig
+$ env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh
+Package version during build: '1.6.2'
+Configuring app name Fieldmark and id org.fedarch.faims3
+Generating assets for default theme
+[log] xml(load) at /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/AndroidManifest.xml
+[log] xml(load) Found root namespaces in XML file: http://schemas.android.com/apk/res/android
+Generating assets for ios, android, pwa
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-ldpi/ic_launcher_foreground.png (3.33 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png (4.53 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png (6.74 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png (9.51 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png (14.36 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png (16.18 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-ldpi/ic_launcher_background.png (277 B)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png (350 B)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png (531 B)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png (697 B)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png (1.02 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png (1.69 KB)
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+CREATE android adaptive-icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-ldpi/ic_launcher.png (637 B)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png (1.14 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-hdpi/ic_launcher.png (2.58 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png (4.03 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png (7.16 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png (10.03 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-ldpi/ic_launcher_round.png (1.27 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png (1.82 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png (3.07 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png (4.15 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png (6.35 KB)
+CREATE android icon /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png (8.47 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable/splash.png (4.4 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-ldpi/splash.png (3.52 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-mdpi/splash.png (5.64 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-hdpi/splash.png (9.83 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-xhdpi/splash.png (17.19 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-xxhdpi/splash.png (23.45 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-xxxhdpi/splash.png (30.22 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-ldpi/splash.png (2.83 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-mdpi/splash.png (4.4 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-hdpi/splash.png (7.58 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-xhdpi/splash.png (13 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-xxhdpi/splash.png (18.41 KB)
+CREATE android splash /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-xxxhdpi/splash.png (25.67 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-night/splash.png (4.48 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-night-ldpi/splash.png (4.48 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-night-mdpi/splash.png (7.98 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-night-hdpi/splash.png (15.46 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-night-xhdpi/splash.png (30.07 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-night-xxhdpi/splash.png (45.56 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-land-night-xxxhdpi/splash.png (65.96 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-night-ldpi/splash.png (3.87 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-night-mdpi/splash.png (6.46 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-night-hdpi/splash.png (13.62 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-night-xhdpi/splash.png (27.44 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-night-xxhdpi/splash.png (40.91 KB)
+CREATE android splash-dark /home/runner/work/FAIMS3/FAIMS3/app/android/app/src/main/res/drawable-port-night-xxxhdpi/splash.png (61.42 KB)
+CREATE ios icon /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png (75.31 KB)
+CREATE ios splash /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/Splash.imageset/Default@1x~universal~anyany.png (38.24 KB)
+CREATE ios splash /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/Splash.imageset/Default@2x~universal~anyany.png (38.24 KB)
+CREATE ios splash /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/Splash.imageset/Default@3x~universal~anyany.png (38.24 KB)
+CREATE ios splash-dark /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/Splash.imageset/Default@1x~universal~anyany-dark.png (150.85 KB)
+CREATE ios splash-dark /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/Splash.imageset/Default@2x~universal~anyany-dark.png (150.85 KB)
+CREATE ios splash-dark /home/runner/work/FAIMS3/FAIMS3/app/ios/App/App/Assets.xcassets/Splash.imageset/Default@3x~universal~anyany-dark.png (150.85 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-48.webp (1.82 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-72.webp (3.07 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-96.webp (4.15 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-128.webp (5.54 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-192.webp (8.45 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-256.webp (11.42 KB)
+CREATE pwa icon /home/runner/work/FAIMS3/FAIMS3/app/public/assets/icons/icon-512.webp (21.94 KB)
+
+
+Totals:
+android: 74 generated, 603.71 KB total
+ios: 7 generated, 642.57 KB total
+pwa: 7 generated, 56.39 KB total
+$ tsc && vite build
+[36mvite v7.3.5 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 13111 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mbuild/[22m[32mindex.html                                          [39m[1m[2m    0.99 kB[22m[1m[22m[2m │ gzip:     0.47 kB[22m
+[2mbuild/[22m[2massets/[22m[35mindex-CNUI6e4f.css                           [39m[1m[2m    1.16 kB[22m[1m[22m[2m │ gzip:     0.58 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-CN2haLDd.js                              [39m[1m[2m    0.25 kB[22m[1m[22m[2m │ gzip:     0.16 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-Bb0PFLZy.js                              [39m[1m[2m    0.36 kB[22m[1m[22m[2m │ gzip:     0.25 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-CYxPQj2Q.js                              [39m[1m[2m    0.38 kB[22m[1m[22m[2m │ gzip:     0.25 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-DnbL3VYr.js                              [39m[1m[2m    0.76 kB[22m[1m[22m[2m │ gzip:     0.36 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-B5nvynKP.js                              [39m[1m[2m    0.90 kB[22m[1m[22m[2m │ gzip:     0.47 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-BgPC8wOm-Btk8V1ro.js                     [39m[1m[2m    1.10 kB[22m[1m[22m[2m │ gzip:     0.33 kB[22m
+[2mbuild/[22m[2massets/[22m[36mpwa-toast.entry-CKy1W_m3.js                  [39m[1m[2m    1.56 kB[22m[1m[22m[2m │ gzip:     0.74 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-BMxNpBtZ-BZCJFetD.js                     [39m[1m[2m    2.94 kB[22m[1m[22m[2m │ gzip:     1.00 kB[22m
+[2mbuild/[22m[2massets/[22m[36mpwa-camera-modal.entry-CxwkhvkL.js           [39m[1m[2m    2.98 kB[22m[1m[22m[2m │ gzip:     1.31 kB[22m
+[2mbuild/[22m[2massets/[22m[36mpwa-action-sheet.entry-CbHLNDf2.js           [39m[1m[2m    3.00 kB[22m[1m[22m[2m │ gzip:     1.10 kB[22m
+[2mbuild/[22m[2massets/[22m[36mpwa-camera-modal-instance.entry-BvX5-SeY.js  [39m[1m[2m    3.41 kB[22m[1m[22m[2m │ gzip:     1.48 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-DUxshLpP-BVy_4x4e.js                     [39m[1m[2m    5.24 kB[22m[1m[22m[2m │ gzip:     1.57 kB[22m
+[2mbuild/[22m[2massets/[22m[36mweb-CBC0ooOO.js                              [39m[1m[2m    8.68 kB[22m[1m[22m[2m │ gzip:     2.96 kB[22m
+[2mbuild/[22m[2massets/[22m[36mpwa-camera.entry-D6XhAbF3.js                 [39m[1m[2m   22.78 kB[22m[1m[22m[2m │ gzip:     6.73 kB[22m
+[2mbuild/[22m[2massets/[22m[36mindex-U8GSXHP1.js                            [39m[1m[33m4,262.78 kB[39m[22m[2m │ gzip: 1,268.53 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 26.96s[39m
+::endgroup::
+ WARNING  could not connect to the cache
