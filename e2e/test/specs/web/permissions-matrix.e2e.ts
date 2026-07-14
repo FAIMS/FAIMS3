@@ -33,7 +33,10 @@ async function openInviteRoleOptions() {
   await roleTrigger.waitForClickable({timeout: 10000});
   await roleTrigger.click();
   await browser.waitUntil(
-    async () => (await $$('div[role="option"]')).length > 0,
+    async () => {
+      const count = await $$('div[role="option"]').length;
+      return count > 0;
+    },
     {timeout: 5000}
   );
   const options = await $$('div[role="option"]');

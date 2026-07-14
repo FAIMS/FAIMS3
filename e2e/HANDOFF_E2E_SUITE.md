@@ -442,14 +442,14 @@ await captureStep({surface: 'web', workflowId: 'T2', label: 'teams-list'});
 
 ## 10. Definition of done (overall)
 
-- [ ] Phase A foundation merged/ready: helpers, hooks, config split, existing specs green headless.
-- [ ] `data-testid` scaffolding for all Tier 0–1 interactive targets.
-- [ ] Tier 0 smoke suite runnable via one script; suitable as CI gate.
-- [ ] Tier 1 specs green against seeded dataset.
-- [ ] At least one cross-surface journey green.
-- [ ] Screenshot/manifest pipeline documented and used in all new specs.
-- [ ] `e2e/README.md` updated: setup, commands, artifact layout, personas, troubleshooting.
-- [ ] Flaky Tier 2+ items either green or explicitly skipped with reason + follow-up note in this file’s Tier tables.
+- [x] Phase A foundation merged/ready: helpers, hooks, config split, existing specs green headless.
+- [x] `data-testid` scaffolding for all Tier 0–1 interactive targets.
+- [x] Tier 0 smoke suite runnable via one script; suitable as CI gate.
+- [x] Tier 1 specs green against seeded dataset.
+- [x] At least one cross-surface journey green.
+- [x] Screenshot/manifest pipeline documented and used in all new specs.
+- [x] `e2e/README.md` updated: setup, commands, artifact layout, personas, troubleshooting.
+- [x] Flaky Tier 2+ items either green or explicitly skipped with reason + follow-up note in this file’s Tier tables.
 
 ---
 
@@ -494,3 +494,9 @@ await captureStep({surface: 'web', workflowId: 'T2', label: 'teams-list'});
   - WDIO web configs now include `test/specs/conductor/**`.
   - `RATE_LIMITER_ENABLED` now also gates email-code + verification-challenge attempt limits (not only Express HTTP). Local `api/.env` sets `RATE_LIMITER_ENABLED=false` for e2e.
   - Still deferred: `conductor/register-invite` (C3/C4), Chrome download-dir assert for exports, CDP offline collect, SSO mock, OpenLayers draw/save region, deeper users admin (U2–U5).
+- 2026-07-14 (Phase E continued + Phase F start): Closed remaining Tier 2 invite-register + deeper users admin:
+  - Specs: `conductor/register-invite` (C3/C4 via API-created team invite + `api-register` page object), `web/users-admin` expanded to U1–U3 + U5 (U4 covered by app F8).
+  - Helpers: `seed.ts` `listTeams` / `findTeamIdByName` / `createTeamInvite` / `createGlobalInvite`.
+  - Product: global invite + disable-user testids; Users tab search now maps `email` to string (`emails[0].email`) so DataTable filter works.
+  - Phase F: CI job sketch expanded in `e2e/README.md`; remaining `browser.pause` only for documented mobile settle + `waitForNetworkIdle`.
+  - Still deferred (explicit): Chrome download-dir assert for exports (P6 dialog-only), CDP offline collect (S4), SSO mock (Tier 4), OpenLayers draw/save region (P7 UI-only), web impersonate dialog (U4 — app F8 covers flow).

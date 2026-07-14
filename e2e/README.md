@@ -107,20 +107,69 @@ See `HANDOFF_E2E_SUITE.md` for the full workflow inventory and tiers.
 
 ## CI sketch
 
+Suggested job (GitHub Actions-style). Services must already be up (or start
+CouchDB + migrate + seed in the job). Keep `maxInstances: 1` for auth-heavy
+suites (token-exchange races).
+
 ```yaml
-# pseudo
-- pnpm --filter e2e test:e2e:headless:ci
-- upload-artifact: e2e/artifacts/
+# .github/workflows/e2e.yml (sketch — not wired in this PR)
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm run generate-local-keys
+      - run: |
+          cp .env.dist .env
+          for d in api web app e2e; do cp "$d/.env.dist" "$d/.env"; done
+          # Disable CouchDB-backed auth attempt limits for repeated logins
+          sed -i 's/^RATE_LIMITER_ENABLED=.*/RATE_LIMITER_ENABLED=false/' api/.env
+      - run: sudo docker compose up -d --build couchdb
+      - run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:5984/_up && break
+            sleep 2
+          done
+      - run: pnpm build && pnpm run migrate-with-keys
+      - run: cd api && pnpm seed-test-dataset
+      - run: pnpm run dev &
+      - run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/login >/dev/null && \
+            curl -sf http://localhost:3000 >/dev/null && \
+            curl -sf http://localhost:3001 >/dev/null && break
+            sleep 2
+          done
+      - name: E2E (smoke + web + app)
+        working-directory: e2e
+        run: pnpm test:e2e:headless:ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-artifacts
+          path: |
+            e2e/artifacts/
+            e2e/screenshots/
+          retention-days: 14
 ```
 
-Keep `maxInstances: 1` for auth-heavy suites (token exchange races).
+Local equivalent: `pnpm --filter e2e test:e2e:headless:ci` after the stack is up.
+Filter one describe: `pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.grep 'Users admin'`.
 
 ## Troubleshooting
 
-| Symptom                  | Action                                                          |
-| ------------------------ | --------------------------------------------------------------- |
-| Stuck on `/login`        | Re-seed; check `api/.env` local auth                            |
-| Stuck on `exchangeToken` | API down / exchange failed                                      |
-| Element not found        | Add/wait for `data-testid`                                      |
-| Empty lists              | Wrong persona or seed incomplete                                |
-| HTTP 429 / flaky auth    | API rate limit from many logins — pause between full suite runs |
+| Symptom                  | Action                                                           |
+| ------------------------ | ---------------------------------------------------------------- |
+| Stuck on `/login`        | Re-seed; check `api/.env` local auth                             |
+| Stuck on `exchangeToken` | API down / exchange failed                                       |
+| Element not found        | Add/wait for `data-testid`                                       |
+| Empty lists              | Wrong persona or seed incomplete                                 |
+| Users search no results  | Email column must be a string (Users tab maps `emails[0].email`) |
+| HTTP 429 / flaky auth    | Set `RATE_LIMITER_ENABLED=false` in `api/.env`; restart API      |
