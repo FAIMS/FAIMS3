@@ -12,6 +12,9 @@ beginSuite('web');
  * baseUrl: WEB_URL / NEW_CONDUCTOR_URL (default http://localhost:3001)
  *
  * Suite label is `web` (includes Control Centre, journeys, and Conductor auth).
+ *
+ * Set WEB_URL env var to override the dashboard URL.
+ * Set VIEWPORT=desktop|wide (default: desktop) to control the screenshot size.
  */
 export const config = {
   ...baseConfig,

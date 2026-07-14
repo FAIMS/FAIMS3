@@ -3,6 +3,7 @@
  */
 import {browser} from '@wdio/globals';
 
+/** Common viewport sizes for testing (VIEWPORT env selects one of these). */
 export const VIEWPORTS = {
   mobile: {width: 430, height: 932}, // iPhone 14 Pro Max
   tablet: {width: 1024, height: 768}, // iPad
@@ -25,11 +26,18 @@ type CdpBrowser = WebdriverIO.Browser & {
   ) => Promise<unknown>;
 };
 
+/**
+ * Get viewport configuration from environment.
+ *
+ * Prefers SCREEN_WIDTH + SCREEN_HEIGHT when both are set; otherwise uses
+ * VIEWPORT (mobile|tablet|desktop|wide), defaulting to desktop.
+ */
 export function getViewportConfig(): ViewportConfig {
   const viewportName = process.env.VIEWPORT || 'desktop';
   const customWidth = process.env.SCREEN_WIDTH;
   const customHeight = process.env.SCREEN_HEIGHT;
 
+  // Use custom dimensions if provided
   if (customWidth && customHeight) {
     return {
       width: parseInt(customWidth, 10),
@@ -38,6 +46,7 @@ export function getViewportConfig(): ViewportConfig {
     };
   }
 
+  // Use predefined viewport
   const viewport = VIEWPORTS[viewportName as ViewportName];
   if (!viewport) {
     console.warn(`Unknown viewport: ${viewportName}, using desktop`);

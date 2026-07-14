@@ -40,8 +40,10 @@ describe('Login Page', () => {
   });
 
   it('should login successfully with valid credentials', async () => {
+    // App sign-in → Conductor local auth → redirect back (or success message)
     await loginApp(TEST_USER);
 
+    // Assert either redirect occurred or success message is shown
     const currentUrl = await browser.getUrl();
     const hasSuccessMessage = await API_Login.hasSuccessMessage();
     expect(!currentUrl.includes('/login') || hasSuccessMessage).toBe(true);
@@ -54,11 +56,13 @@ describe('Login Page', () => {
   });
 
   it('should show an error for invalid credentials', async () => {
+    // Start from app login page, then Conductor form with bad credentials
     await LoginPage.open();
     await LoginPage.clickSignIn();
     await API_Login.waitForPageLoad();
     await API_Login.login(INVALID_EMAIL, INVALID_PASSWORD);
 
+    // Wait for error message to appear
     await browser.waitUntil(
       async () =>
         (await API_Login.hasLoginError()) || (await API_Login.hasEmailError()),
@@ -68,6 +72,7 @@ describe('Login Page', () => {
       }
     );
 
+    // Check for error messages (not success)
     const hasError =
       (await API_Login.hasLoginError()) || (await API_Login.hasEmailError());
     expect(hasError).toBe(true);

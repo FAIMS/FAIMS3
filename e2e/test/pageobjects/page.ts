@@ -82,6 +82,7 @@ export class Page {
    */
   public async waitForPageLoad() {
     if (this.isMobilePlatform()) {
+      // Wait for webview content and debug what's there
       await browser.waitUntil(
         async () => {
           try {
@@ -98,6 +99,7 @@ export class Page {
       );
 
       try {
+        // Debug: log current page info
         const url = await browser.getUrl();
         const title = await browser.getTitle();
         const bodyText = await $('body').getText();
@@ -105,6 +107,7 @@ export class Page {
         console.log(`Page title: ${title}`);
         console.log(`Body content preview: ${bodyText.substring(0, 200)}...`);
 
+        // Try to find any elements with data-testid
         const testElements = await $$('[data-testid]');
         const testElementCount = await testElements.length;
         console.log(`Found ${testElementCount} elements with data-testid`);

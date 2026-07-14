@@ -9,6 +9,9 @@ beginSuite('web');
 /**
  * Web dashboard e2e (web + journeys + conductor) with headless Chrome.
  * Suite label: `web`.
+ *
+ * Set WEB_URL env var to override the dashboard URL.
+ * Set VIEWPORT=desktop|wide (default: desktop) to control the screenshot size.
  */
 export const config = {
   ...baseConfig,
@@ -18,6 +21,7 @@ export const config = {
     './test/specs/conductor/**/*.ts',
   ],
   baseUrl: getWebUrl(),
+  // Avoid parallel logins against the same API (token exchange races).
   maxInstances: 1,
   autoXvfb: false,
   capabilities: [...headlessChromeCapabilities],

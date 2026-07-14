@@ -46,6 +46,8 @@ describe('Web Dashboard - Projects - Member Creator', () => {
 
   it('should show a create project button', async () => {
     await WebProjectsPage.open();
+    // Wait for the button to become visible (it is rendered after the data
+    // fetch resolves, even when the list is empty).
     await WebProjectsPage.waitForCreateButton();
     expect(await WebProjectsPage.isCreateButtonDisplayed()).toBe(true);
   });

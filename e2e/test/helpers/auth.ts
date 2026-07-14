@@ -19,6 +19,10 @@ export function persona(key: PersonaKey): Credentials {
 
 /**
  * Log in via Conductor local auth form (must already be on /login with redirect).
+ *
+ * Do NOT call API_Login.open() before this — that would navigate away from the
+ * current URL (which already contains the correct ?redirect= parameter set by
+ * the server / caller).
  */
 export async function submitConductorLogin(user: Credentials): Promise<void> {
   await API_Login.waitForPageLoad();
@@ -49,11 +53,23 @@ export async function loginConductor(
 
 /**
  * Control Centre login: dashboard → Conductor redirect → exchangeToken → main.
+ *
+ * Flow:
+ *  1. Navigate to the dashboard root → triggers redirect to API login.
+ *  2. Fill credentials on the Conductor form (preserving ?redirect=).
+ *  3. Wait for redirect back with ?exchangeToken=...&serverId=...
+ *  4. Wait for TanStack Router beforeLoad (token exchange) and React render.
+ *
+ * Mobile viewports use an off-canvas Sheet for the sidebar; data-sidebar="sidebar"
+ * is only in the DOM when that sheet is open. The protected layout <main> is
+ * always rendered once auth + token exchange complete — wait on that.
  */
 export async function loginWeb(user: Credentials): Promise<void> {
   const webUrl = getWebUrl();
+  // Navigate to dashboard root (absolute URL — baseUrl may be app or web).
   await browser.url(webUrl);
 
+  // The protected route redirects unauthenticated users to the API login page.
   await waitForUrl('/login', {
     timeout: 15000,
     timeoutMsg:
@@ -62,6 +78,7 @@ export async function loginWeb(user: Credentials): Promise<void> {
 
   await submitConductorLogin(user);
 
+  // After a successful login the API redirects back with ?exchangeToken=...
   await browser.waitUntil(
     async () => (await browser.getUrl()).startsWith(webUrl),
     {
@@ -70,6 +87,7 @@ export async function loginWeb(user: Credentials): Promise<void> {
     }
   );
 
+  // Wait for the TanStack Router beforeLoad (token exchange) and React render.
   await browser.waitUntil(
     () => browser.execute(() => document.readyState === 'complete'),
     {timeout: 10000}

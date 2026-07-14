@@ -9,18 +9,22 @@ import AppNotebooksPage from './app-notebooks.ts';
  * Fieldmark record create / finish helpers.
  */
 class AppRecordsPage extends Page {
+  /** Add / new record control inside an open notebook. */
   get addButton() {
     return byTestId('app-record-add-button');
   }
 
+  /** Finish / save record control. */
   get finishButton() {
     return byTestId('app-record-finish-button');
   }
 
+  /** Notes text field on the e2e-minimal notebook form. */
   get notesField() {
     return byTestId('app-record-field-notes');
   }
 
+  /** Record list search input. */
   get searchInput() {
     return byTestId('record-search-input');
   }
@@ -69,11 +73,16 @@ class AppRecordsPage extends Page {
     await waitForUrl(/\/surveys\//, {timeout: 15000});
   }
 
+  /** Open the notebook Settings tab. */
   async openSettingsTab() {
     await waitForTestId('app-notebook-tab-settings', {timeout: 10000});
     await byTestId('app-notebook-tab-settings').click();
   }
 
+  /**
+   * Create a record with the given notes text and finish it.
+   * Handles optional "Finish anyway" validation dialogs.
+   */
   async createTextRecord(notes: string) {
     await this.addButton.waitForClickable({timeout: 15000});
     await this.addButton.click();
@@ -100,6 +109,7 @@ class AppRecordsPage extends Page {
     );
   }
 
+  /** Navigate to the app root without waiting for workspace readiness. */
   async openFromAppRoot() {
     await browser.url(`${getAppUrl()}/`);
     await this.setBrowserSize();
