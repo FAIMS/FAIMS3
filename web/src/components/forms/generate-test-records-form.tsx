@@ -29,7 +29,7 @@ export function GenerateTestRecordsForm({
       min: 1,
       max: 1000,
       schema: z
-        .number({invalid_type_error: 'Enter a number of records'})
+        .number({error: 'Enter a number of records'})
         .int()
         .min(1, 'At least 1 record is required')
         .max(1000, 'Maximum 1000 records per batch'),
@@ -43,7 +43,7 @@ export function GenerateTestRecordsForm({
       min: 1,
       max: 50,
       schema: z
-        .number({invalid_type_error: 'Enter a concurrency value'})
+        .number({error: 'Enter a concurrency value'})
         .int()
         .min(1, 'Concurrency must be at least 1')
         .max(50, 'Maximum concurrency is 50'),

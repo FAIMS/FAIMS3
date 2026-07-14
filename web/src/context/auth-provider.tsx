@@ -1,4 +1,4 @@
-import {API_URL, REFRESH_INTERVAL, WEB_HOME_URL, WEB_URL} from '@/constants';
+import {config} from '@/constants';
 import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
@@ -177,7 +177,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     if (isAuthenticated) {
       refreshToken();
 
-      const intervalId = setInterval(refreshToken, REFRESH_INTERVAL);
+      const intervalId = setInterval(refreshToken, config.refreshIntervalMs);
       return () => clearInterval(intervalId);
     }
   }, [isAuthenticated]);
@@ -190,7 +190,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       // Make a PUT to logout endpoint - we don't really care whether this
       // succeeds or fails - it's a client nicety to invalidate the refresh
       // token
-      await fetch(`${API_URL}/auth/logout`, {
+      await fetch(`${config.apiUrl}/auth/logout`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     // Clear any impersonation stash on logout.
     setStoredImpersonator(null);
     setImpersonatorState(null);
-    window.location.href = WEB_URL;
+    window.location.href = config.webUrl;
   };
 
   /**
@@ -252,7 +252,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     }
 
     // Leave admin-only routes; home (`/`) redirects to `/teams`.
-    window.location.href = WEB_HOME_URL;
+    window.location.href = config.webHomeUrl;
     return {status: 'success', message: ''};
   };
 
@@ -271,7 +271,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     }
 
     // Fresh reload so all cached queries refetch under the restored session.
-    window.location.href = WEB_URL;
+    window.location.href = config.webUrl;
   };
 
   /**
@@ -313,17 +313,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const refreshToken = async () => {
     if (!user) return {status: 'error', message: 'No user to refresh'};
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({refreshToken: user.refreshToken}),
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({refreshToken: user.refreshToken}),
+    });
 
     if (!response.ok) {
       // If we were impersonating, an expired/failed impersonation session

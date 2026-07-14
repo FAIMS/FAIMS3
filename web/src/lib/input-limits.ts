@@ -1,4 +1,4 @@
-import {MAX_DESIGN_FILE_SIZE_BYTES, MAX_DESIGN_FILE_SIZE_MB} from '@/constants';
+import {config} from '@/constants';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {z} from 'zod';
 
@@ -41,8 +41,8 @@ export function designFileSchema() {
       },
       {message: 'File must be a JSON file.'}
     )
-    .refine(file => file.size <= MAX_DESIGN_FILE_SIZE_BYTES, {
-      message: `File must be at most ${MAX_DESIGN_FILE_SIZE_MB} MB.`,
+    .refine(file => file.size <= config.maxDesignFileSizeBytes, {
+      message: `File must be at most ${config.maxDesignFileSizeMb} MB.`,
     });
 }
 

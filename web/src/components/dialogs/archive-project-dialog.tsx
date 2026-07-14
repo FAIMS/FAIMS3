@@ -16,7 +16,7 @@ import {useArchiveProject} from '@/hooks/archive-hooks';
 import {useNavigate} from '@tanstack/react-router';
 import {useState} from 'react';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {AlertTriangle} from 'lucide-react';
 
 type ArchiveProjectDialogProps = {
@@ -48,7 +48,7 @@ export function ArchiveProjectDialog({
       {projectId},
       {
         onSuccess: () => {
-          toast.success(`${NOTEBOOK_NAME_CAPITALIZED} archived`);
+          toast.success(`${config.notebookNameCapitalized} archived`);
           handleOpenChange(false);
           void navigate({to: '/projects', replace: true});
         },
@@ -63,7 +63,7 @@ export function ArchiveProjectDialog({
   if (disabled) {
     return (
       <Button variant="outline" className="w-fit" disabled>
-        Archive {NOTEBOOK_NAME_CAPITALIZED}
+        Archive {config.notebookNameCapitalized}
       </Button>
     );
   }
@@ -72,12 +72,14 @@ export function ArchiveProjectDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-fit">
-          Archive {NOTEBOOK_NAME_CAPITALIZED}
+          Archive {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Archive This {NOTEBOOK_NAME_CAPITALIZED}?</DialogTitle>
+          <DialogTitle>
+            Archive This {config.notebookNameCapitalized}?
+          </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-4 text-left">
               <Alert
@@ -88,8 +90,9 @@ export function ArchiveProjectDialog({
                 <AlertTitle>Data loss risk</AlertTitle>
                 <AlertDescription className="space-y-3 [&_ol]:mt-2 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_li]:pl-1">
                   <p>
-                    Archiving a {NOTEBOOK_NAME} can result in data loss if users
-                    have not completed their synchronization whilst online.
+                    Archiving a {config.notebookName} can result in data loss if
+                    users have not completed their synchronization whilst
+                    online.
                   </p>
                   <p>Please ensure the following:</p>
                   <ol>
@@ -117,7 +120,7 @@ export function ArchiveProjectDialog({
                   className="cursor-pointer text-left font-normal text-foreground"
                 >
                   I have performed the above steps and confirm that I would like
-                  to archive this {NOTEBOOK_NAME}
+                  to archive this {config.notebookName}
                 </Label>
               </div>
             </div>

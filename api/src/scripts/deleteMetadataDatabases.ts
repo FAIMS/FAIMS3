@@ -9,7 +9,7 @@
  */
 import * as readline from 'readline';
 import {ProjectDocument} from '@faims3/data-model';
-import {COUCHDB_INTERNAL_URL} from '../buildconfig';
+import {config} from '../buildconfig';
 import {
   destroyCouchDatabase,
   listCouchDatabaseNames,
@@ -169,7 +169,7 @@ const printBanner = () => {
   console.log('  This script does NOT delete data-* record databases or the');
   console.log('  projects / templates / auth / people databases.');
   console.log('');
-  console.log(`  Couch server: ${COUCHDB_INTERNAL_URL}`);
+  console.log(`  Couch server: ${config.couchdbInternalUrl}`);
   console.log('');
   console.log('='.repeat(72));
   console.log('');

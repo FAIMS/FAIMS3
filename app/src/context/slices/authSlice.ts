@@ -5,7 +5,7 @@ import {
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit';
-import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {impersonateUser} from '../../utils/apiOperations/users';
@@ -529,7 +529,7 @@ export const refreshAllUsers = createAsyncThunk<void, void>(
     // refresh all of them
     for (const conn of connections) {
       // Only dispatch a refresh operation if the token is going to expire soon
-      if (shouldTokenRefresh(conn, TOKEN_REFRESH_WINDOW_MS)) {
+      if (shouldTokenRefresh(conn, config.tokenRefreshWindowMs)) {
         appDispatch(
           refreshToken({
             serverId: conn.serverId,

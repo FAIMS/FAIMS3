@@ -1,13 +1,7 @@
 import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
-import {
-  APP_NAME,
-  APP_VERSION,
-  COMMIT_HASH,
-  CONDUCTOR_URLS,
-  SUPPORT_EMAIL,
-} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 
@@ -17,9 +11,9 @@ export default function SupportEmail() {
   const activeUser = useAppSelector(selectActiveUser);
 
   const bodyContent =
-    `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
-    `App Version: ${APP_VERSION} \r` +
-    `Commit Version: ${COMMIT_HASH ?? 'Not provided.'} \r` +
+    `Server: ${config.conductorUrls.join(', ')} \r` +
+    `App Version: ${config.appVersion} \r` +
+    `Commit Version: ${config.commitHash ?? 'Not provided.'} \r` +
     `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
     `Global Roles: ${
       activeUser?.parsedToken.globalRoles
@@ -37,9 +31,9 @@ export default function SupportEmail() {
       Support:{' '}
       <Obfuscate
         className={'support-link'}
-        email={SUPPORT_EMAIL}
+        email={config.supportEmail}
         headers={{
-          subject: `${APP_NAME} Support`,
+          subject: `${config.appName} Support`,
           body: bodyContent,
         }}
       />

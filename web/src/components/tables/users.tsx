@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {config} from '@/constants';
 
 /** Columns for the admin user list (GET /api/users); each row is a {@link GetListAllUsersItem}. */
 export const useUsersColumns = ({
@@ -75,7 +76,7 @@ export const useUsersColumns = ({
                   : async () => {
                       try {
                         const response = await fetch(
-                          `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                          `${config.apiUrl}/api/users/${userId}/admin`,
                           {
                             method: 'POST',
                             headers: {

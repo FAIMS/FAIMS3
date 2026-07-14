@@ -9,7 +9,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {Project} from '../../../context/slices/projectSlice';
 import MetadataRenderer from '../metadataRenderer';
 
@@ -48,7 +48,7 @@ export const MetadataDisplayComponent = (
             flexGrow: 1,
           }}
         >
-          {NOTEBOOK_NAME_CAPITALIZED} Details
+          {config.notebookNameCapitalized} Details
         </Typography>
       </Box>
 

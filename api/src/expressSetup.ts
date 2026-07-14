@@ -36,11 +36,7 @@ import flash from 'req-flash';
 import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
 import {registerAuthProviders} from './auth/strategies/applyStrategies';
-import {
-  API_VERSION,
-  BUGSNAG_API_KEY,
-  COUCHDB_INTERNAL_URL,
-} from './buildconfig';
+import {config} from './buildconfig';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -74,15 +70,6 @@ import {api as templatesApi} from './api/templates';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
-import {
-  COOKIE_SECRET,
-  JSON_BODY_LIMIT,
-  RATE_LIMITER_ENABLED,
-  RATE_LIMITER_PER_WINDOW,
-  RATE_LIMITER_WINDOW_MS,
-  URLENCODED_BODY_LIMIT,
-} from './buildconfig';
-
 import patch from './utils/patchExpressAsync';
 
 // This must occur before express app is used
@@ -94,13 +81,13 @@ const IS_TEST = process.env.NODE_ENV === 'test';
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginExpress from '@bugsnag/plugin-express';
 
-const bugsnagEnabled = !!BUGSNAG_API_KEY;
+const bugsnagEnabled = !!config.bugsnagApiKey;
 
 if (bugsnagEnabled) {
   Bugsnag.start({
-    apiKey: BUGSNAG_API_KEY!,
+    apiKey: config.bugsnagApiKey!,
     plugins: [BugsnagPluginExpress],
-    appVersion: API_VERSION,
+    appVersion: config.apiVersion,
   });
   console.log('Bugsnag enabled');
 } else {
@@ -123,8 +110,8 @@ if (bugsnagEnabled) {
 
 // Setup rate limiter (first - as we want to limit all requests)
 export const RATE_LIMITER = RateLimit({
-  windowMs: RATE_LIMITER_WINDOW_MS,
-  max: RATE_LIMITER_PER_WINDOW,
+  windowMs: config.rateLimiterWindowMs,
+  max: config.rateLimiterPerWindow,
   message: 'Too many requests from this IP, please try again after 10 minutes',
   // Return rate limit info in the `RateLimit-*` headers
   standardHeaders: true,
@@ -132,7 +119,7 @@ export const RATE_LIMITER = RateLimit({
   legacyHeaders: true,
 });
 
-if (!IS_TEST && RATE_LIMITER_ENABLED) {
+if (!IS_TEST && config.rateLimiterEnabled) {
   console.log('Activating rate limiter');
   app.use(RATE_LIMITER);
 } else {
@@ -152,7 +139,7 @@ app.set('query parser', 'simple');
 app.use(
   cookieSession({
     name: 'session',
-    secret: COOKIE_SECRET,
+    secret: config.cookieSecret,
     // cookie is used for login flow, only short lifetime needed
     // and reduces risk of stale sessions lingering around
     maxAge: 24 * 60 * 60 * 1000, // 1 day
@@ -194,8 +181,10 @@ const hbs = new ExpressHandlebars(handlebarsConfig);
 
 // Bound request body sizes (configurable via URLENCODED_BODY_LIMIT /
 // JSON_BODY_LIMIT env vars) to protect against oversized malicious payloads
-app.use(express.urlencoded({extended: true, limit: URLENCODED_BODY_LIMIT}));
-app.use(express.json({limit: JSON_BODY_LIMIT}));
+app.use(
+  express.urlencoded({extended: true, limit: config.urlencodedBodyLimit})
+);
+app.use(express.json({limit: config.jsonBodyLimit}));
 app.use(cors());
 
 app.use(passport.initialize());
@@ -246,7 +235,7 @@ app.get('/', async (req, res) => {
   } else {
     res.render('fallback', {
       report: databaseValidityReport,
-      couchdb_url: COUCHDB_INTERNAL_URL,
+      couchdb_url: config.couchdbInternalUrl,
       layout: 'fallback',
     });
   }

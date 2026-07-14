@@ -1,6 +1,6 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
-import {INVITE_TOKEN_HINTS} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {
   INPUT_LIMITS,
@@ -119,22 +119,19 @@ export function CreateGlobalInviteForm({
       }
     }
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/global`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          name,
-          role: role as Role,
-          uses,
-          expiry: expiryTimestampMs,
-        } satisfies PostCreateInviteInput),
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/invites/global`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        name,
+        role: role as Role,
+        uses,
+        expiry: expiryTimestampMs,
+      } satisfies PostCreateInviteInput),
+    });
 
     if (!response.ok)
       return {type: 'submit', message: 'Error creating invite.'};
@@ -150,7 +147,7 @@ export function CreateGlobalInviteForm({
       submitButtonText={'Create Invite'}
       footer={
         <ExpirySelector
-          hints={INVITE_TOKEN_HINTS}
+          hints={config.inviteTokenHints}
           maxDurationDays={365}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}

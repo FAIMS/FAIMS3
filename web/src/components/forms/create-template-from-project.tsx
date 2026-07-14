@@ -19,6 +19,7 @@ import {
   getTemplateTeamFieldState,
   resolveTemplateTeamId,
 } from './template-team-field';
+import {config} from '@/constants';
 
 interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -107,22 +108,19 @@ export function CreateTemplateFromProjectForm({
     });
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/templates/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({
-            name,
-            ...rootDescriptionForApi(description),
-            uiSpecification: projectData.uiSpecification,
-            teamId: chosenTeamId,
-          }),
-        }
-      );
+      const res = await fetch(`${config.apiUrl}/api/templates/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          name,
+          ...rootDescriptionForApi(description),
+          uiSpecification: projectData.uiSpecification,
+          teamId: chosenTeamId,
+        }),
+      });
       if (!res.ok) throw new Error(res.statusText);
       // need to refresh our auth token to get permissions on this new template
       const {message, status} = await refreshToken();

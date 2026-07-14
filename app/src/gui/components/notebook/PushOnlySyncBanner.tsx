@@ -1,9 +1,6 @@
 import {Alert, AlertTitle, Box, Button, Typography} from '@mui/material';
 import {useState} from 'react';
-import {
-  NOTEBOOK_NAME,
-  SYNC_PUSH_ONLY_RECORD_THRESHOLD,
-} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {
   dismissPushOnlyBanner,
   isPushOnlyBannerDismissed,
@@ -33,7 +30,7 @@ export default function PushOnlySyncBanner({
     dismissed ||
     syncMode !== 'both' ||
     recordCount === undefined ||
-    recordCount <= SYNC_PUSH_ONLY_RECORD_THRESHOLD
+    recordCount <= config.syncPushOnlyRecordThreshold
   ) {
     return null;
   }
@@ -48,11 +45,11 @@ export default function PushOnlySyncBanner({
 
   return (
     <Alert severity="warning" sx={{mb: 1}}>
-      <AlertTitle>Large {NOTEBOOK_NAME}</AlertTitle>
+      <AlertTitle>Large {config.notebookName}</AlertTitle>
       <Typography variant="body2">
-        This {NOTEBOOK_NAME} has a large number of records. Switch to "upload
-        only" to reduce device stress. Your records will be uploaded to the
-        server, but other users&apos; records will not be available on this
+        This {config.notebookName} has a large number of records. Switch to
+        "upload only" to reduce device stress. Your records will be uploaded to
+        the server, but other users&apos; records will not be available on this
         device.
       </Typography>
       <Box sx={{display: 'flex', gap: 1, mt: 1.5}}>

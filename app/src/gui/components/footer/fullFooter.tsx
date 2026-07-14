@@ -1,7 +1,7 @@
 import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
-import {CONTACT_URL, PRIVACY_POLICY_URL} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
 
@@ -71,10 +71,10 @@ export default function FullFooter() {
           </Typography>
           <SupportEmail />
           <Typography variant={'caption'}>
-            {CONTACT_URL && (
+            {config.contactUrl && (
               <>
                 <Link
-                  href={CONTACT_URL}
+                  href={config.contactUrl}
                   underline="none"
                   target="_blank"
                   rel="noreferrer"
@@ -86,7 +86,7 @@ export default function FullFooter() {
               </>
             )}
             <Link
-              href={PRIVACY_POLICY_URL}
+              href={config.privacyPolicyUrl}
               underline="none"
               target="_blank"
               rel="noreferrer"

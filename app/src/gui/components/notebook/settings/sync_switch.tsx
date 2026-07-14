@@ -33,7 +33,7 @@ import {
   Typography,
 } from '@mui/material';
 import {useState} from 'react';
-import {NOTEBOOK_NAME} from '../../../../buildconfig';
+import {config} from '../../../../buildconfig';
 import {
   Project,
   setSyncMode,
@@ -130,7 +130,8 @@ export default function NotebookSyncSwitch({
           </FormControl>
           {showHelperText ? (
             <FormHelperText>
-              Choose how this {NOTEBOOK_NAME} syncs record data with the server.
+              Choose how this {config.notebookName} syncs record data with the
+              server.
               {!syncModeIncludesPull(currentMode)
                 ? ' Attachment download requires two-way sync.'
                 : ''}

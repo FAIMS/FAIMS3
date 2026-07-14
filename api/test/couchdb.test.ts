@@ -33,7 +33,7 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
-import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
@@ -84,7 +84,7 @@ describe('notebook api', () => {
     expect(directoryDB).not.to.equal(undefined);
     if (directoryDB) {
       const default_document = (await directoryDB.get('default')) as any;
-      expect(default_document.name).to.equal(CONDUCTOR_INSTANCE_NAME);
+      expect(default_document.name).to.equal(config.conductorInstanceName);
 
       // This actually doesn't exist anymore as this record is redundant now
       //const permissions_document = (await directoryDB.get(

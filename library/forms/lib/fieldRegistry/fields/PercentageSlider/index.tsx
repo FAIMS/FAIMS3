@@ -304,9 +304,12 @@ const valueSchema = (props: PercentageSliderProps): z.ZodTypeAny => {
     .max(maxVal, {message: `Must be at most ${maxVal}`});
 
   if (maxVal > minVal && step >= 1) {
-    schema = schema.refine(v => (v - minVal) % step === 0, {
-      message: `Must align with step (${step})`,
-    });
+    schema = schema.refine(
+      (v: unknown) => typeof v === 'number' && (v - minVal) % step === 0,
+      {
+        message: `Must align with step (${step})`,
+      }
+    );
   }
 
   return schema;

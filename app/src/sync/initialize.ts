@@ -18,7 +18,7 @@
  *   TODO
  */
 import PouchDB from 'pouchdb-browser';
-import {DEBUG_POUCHDB, MIGRATE_OLD_DATABASES} from '../buildconfig';
+import {config} from '../buildconfig';
 import {store} from '../context/store';
 import {
   compileSpecs,
@@ -99,11 +99,11 @@ const migrateOldDatabases = async () => {
  * DBs synced
  */
 export async function initialise() {
-  if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
+  if (config.debugPouchdb) PouchDB.debug.enable('*');
   else PouchDB.debug.disable();
 
   // first migrate old databases if configured to do so
-  if (MIGRATE_OLD_DATABASES) await migrateOldDatabases();
+  if (config.migrateOldDatabases) await migrateOldDatabases();
 
   // Get current state/dispatch const state = store.getState();
 

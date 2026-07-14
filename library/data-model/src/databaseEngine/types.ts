@@ -553,7 +553,11 @@ export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
 
 // Form data
 export const formDataEntrySchema = z.object({
-  data: z.unknown(),
+  // Optional: an empty `{}` entry is valid (field present but not yet set).
+  // Prefer `.optional()` over `.nullable()` so the key may be absent; callers
+  // that store an explicit empty still use `undefined`/`null` in `data` itself
+  // (see completion checks). `.nullish()` would also allow `data: null`.
+  data: z.unknown().optional(),
   // NOTE: do we want to use the internal representation
   annotation: formAnnotationSchema.optional(),
   // NOTE: do we want to use the internal representation?

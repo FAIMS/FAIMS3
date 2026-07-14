@@ -3,6 +3,7 @@ import {
   GetTemplateSurveyReferencesResponseSchema,
   type GetTemplateSurveyReferencesResponse,
 } from '@faims3/data-model';
+import {config} from '@/constants';
 
 export function errorMessageFromTemplateJsonBody(
   json: unknown,
@@ -31,7 +32,7 @@ export const getTemplateSurveyReferences = async ({
   templateId: string;
 }): Promise<GetTemplateSurveyReferencesResponse> => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/references`,
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}/references`,
     {
       headers: {
         Authorization: `Bearer ${user.token}`,
@@ -58,7 +59,7 @@ export const postDeleteArchivedTemplate = async ({
   templateId: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/delete`,
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}/delete`,
     {
       method: 'POST',
       headers: {
@@ -85,7 +86,7 @@ export const createTemplateRequest = async ({
   teamId: string;
   templateData: any;
 }) => {
-  return await fetch(`${import.meta.env.VITE_API_URL}/api/templates/`, {
+  return await fetch(`${config.apiUrl}/api/templates/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ export const updateTemplateRequest = async ({
   description?: string;
 }) => {
   return await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}`,
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}`,
     {
       method: 'PUT',
       headers: {
@@ -138,7 +139,7 @@ export const updateTemplateUiSpecificationRequest = async ({
   uiSpecification: unknown;
 }) =>
   await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/uiSpecification`,
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}/uiSpecification`,
     {
       method: 'PUT',
       headers: {
@@ -160,7 +161,7 @@ export const modifyTeamForTemplate = async ({
   user: User;
 }) =>
   await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/team`,
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}/team`,
     {
       method: 'PUT',
       headers: {
@@ -184,7 +185,7 @@ export const putTemplateSetVisibility = async ({
   isPublic: boolean;
 }): Promise<void> => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/visibility`,
+    `${config.apiUrl}/api/templates/${encodeURIComponent(templateId)}/visibility`,
     {
       method: 'PUT',
       headers: {
