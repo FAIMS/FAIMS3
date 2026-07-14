@@ -120,7 +120,7 @@ const RelatedRecordListItem = ({
               primary: {
                 variant: 'body2',
                 color: 'error',
-                sx: {fontFamily: 'monospace'},
+                sx: {fontFamily: 'monospace', overflowWrap: 'break-word'},
               },
             }}
           />
@@ -162,17 +162,20 @@ const RelatedRecordListItem = ({
       <ListItemButton
         onClick={() => onNavigate(link.record_id)}
         title="Click to view record"
+        sx={{minWidth: 0}}
       >
         <ListItemIcon sx={{minWidth: 40}}>
           <LinkIcon fontSize="small" />
         </ListItemIcon>
         <ListItemText
           primary={data.hrid}
+          sx={{minWidth: 0}}
           slotProps={{
             primary: {
               variant: 'body2',
               sx: {
                 fontWeight: isHumanReadableHrid ? 'bold' : 'normal',
+                overflowWrap: 'break-word',
                 // Monospace only as a fallback when no real HRID was configured
                 // (i.e. we're showing the opaque record id). Real HRIDs use the
                 // theme's default font.
