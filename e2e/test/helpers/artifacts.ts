@@ -27,7 +27,6 @@ export type ManifestEntry = {
   surface?: Surface;
   spec?: string;
   test?: string;
-  workflowId?: string;
   step?: number;
   label: string;
   viewport?: string;

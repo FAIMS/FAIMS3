@@ -1,5 +1,4 @@
 /**
- * Workflows: T1, T2, T3, T4
  * Teams list, create team, open team detail.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -16,25 +15,24 @@ describe('Web Dashboard — Teams', () => {
     await loginWebPersona('operationsAdmin');
   });
 
-  it('T1: should display the teams list', async () => {
+  it('should display the teams list', async () => {
     await WebTeamsPage.open();
     expect(await WebTeamsPage.isPageDisplayed()).toBe(true);
-    await captureStep({surface: 'web', workflowId: 'T1', label: 'teams-list'});
+    await captureStep({surface: 'web', label: 'teams-list'});
   });
 
-  it('T2: should open the create team dialog', async () => {
+  it('should open the create team dialog', async () => {
     await WebTeamsPage.open();
     await WebTeamsPage.openCreateDialog();
     await expect(byTestId('web-teams-create-dialog')).toBeDisplayed();
     await expect(byTestId('web-teams-create-name')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'T2',
       label: 'create-team-dialog',
     });
   });
 
-  it('T2/T3: should create a team and show it in the list', async () => {
+  it('should create a team and show it in the list', async () => {
     await WebTeamsPage.open();
     await WebTeamsPage.createTeam(teamName, 'Created by e2e suite');
     // Create closes the dialog and refreshes the list (no auto-navigate)
@@ -50,12 +48,11 @@ describe('Web Dashboard — Teams', () => {
     );
     await captureStep({
       surface: 'web',
-      workflowId: 'T3',
       label: 'team-created',
     });
   });
 
-  it('T4: should show team detail tabs', async () => {
+  it('should show team detail tabs', async () => {
     await browser.url(`${getWebUrl()}/teams`);
     await WebTeamsPage.waitForPageLoad();
     const link = await $('a[href*="/teams/"]');
@@ -73,7 +70,6 @@ describe('Web Dashboard — Teams', () => {
     expect(await tab.isDisplayed()).toBe(true);
     await captureStep({
       surface: 'web',
-      workflowId: 'T4',
       label: 'team-detail-tabs',
     });
   });

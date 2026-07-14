@@ -1,5 +1,4 @@
 /**
- * Workflows: PR1, PR2, PR3
  * Profile long-lived API tokens: list, create, revoke.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -34,7 +33,7 @@ async function clickSubmit(testId: string) {
   }
 }
 
-describe('Tier 3 — Profile tokens (PR1–PR3)', () => {
+describe('Web — Profile tokens', () => {
   const tokenTitle = `E2E Token ${Date.now()}`;
   const tokenDescription = `E2E token description ${Date.now()}`;
 
@@ -43,7 +42,7 @@ describe('Tier 3 — Profile tokens (PR1–PR3)', () => {
     await loginWebPersona('operationsAdmin');
   });
 
-  it('PR1: should open long-lived tokens from profile', async () => {
+  it('should open long-lived tokens from profile', async () => {
     await browser.url(`${getWebUrl()}/profile`);
     await waitForTestId('web-profile-tokens-link');
     await byTestId('web-profile-tokens-link').click();
@@ -56,12 +55,11 @@ describe('Tier 3 — Profile tokens (PR1–PR3)', () => {
     await expect(byTestId('web-profile-tokens-admin-mode')).toBeExisting();
     await captureStep({
       surface: 'web',
-      workflowId: 'PR1',
       label: 'profile-tokens',
     });
   });
 
-  it('PR2: should create a long-lived token', async () => {
+  it('should create a long-lived token', async () => {
     await browser.url(`${getWebUrl()}/profile/long-lived-tokens`);
     await waitForTestId('web-profile-tokens-create-button');
     await byTestId('web-profile-tokens-create-button').click();
@@ -81,7 +79,6 @@ describe('Tier 3 — Profile tokens (PR1–PR3)', () => {
     expect(tokenText.length).toBeGreaterThan(10);
     await captureStep({
       surface: 'web',
-      workflowId: 'PR2',
       label: 'token-created',
     });
 
@@ -104,7 +101,7 @@ describe('Tier 3 — Profile tokens (PR1–PR3)', () => {
     );
   });
 
-  it('PR3: should revoke the created token', async () => {
+  it('should revoke the created token', async () => {
     await browser.url(`${getWebUrl()}/profile/long-lived-tokens`);
     await waitForTestId('web-profile-tokens-heading');
 
@@ -136,7 +133,6 @@ describe('Tier 3 — Profile tokens (PR1–PR3)', () => {
     );
     await captureStep({
       surface: 'web',
-      workflowId: 'PR3',
       label: 'token-revoked',
     });
   });

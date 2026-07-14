@@ -1,5 +1,4 @@
 /**
- * Workflows: T7, T8
  * Team invites tab + create invite dialog (managerBlue).
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -51,7 +50,7 @@ async function clickInviteSubmit(testId: string) {
   }
 }
 
-describe('Tier 2 — Team invites (T7/T8)', () => {
+describe('Web — Team invites', () => {
   const inviteName = `E2E Team Invite ${Date.now()}`;
 
   before(async () => {
@@ -59,7 +58,7 @@ describe('Tier 2 — Team invites (T7/T8)', () => {
     await loginWebPersona('managerBlue');
   });
 
-  it('T7: should open Blue Team Invites tab', async () => {
+  it('should open Blue Team Invites tab', async () => {
     await openBlueTeam();
     const invitesTab = await $('button*=Invites');
     await invitesTab.waitForClickable({timeout: 10000});
@@ -67,12 +66,11 @@ describe('Tier 2 — Team invites (T7/T8)', () => {
     await waitForTestId('web-team-invite-create-button', {timeout: 10000});
     await captureStep({
       surface: 'web',
-      workflowId: 'T7',
       label: 'team-invites',
     });
   });
 
-  it('T8: should create a team invite', async () => {
+  it('should create a team invite', async () => {
     await openBlueTeam();
     const invitesTab = await $('button*=Invites');
     await invitesTab.waitForClickable({timeout: 10000});
@@ -110,7 +108,6 @@ describe('Tier 2 — Team invites (T7/T8)', () => {
     );
     await captureStep({
       surface: 'web',
-      workflowId: 'T8',
       label: 'team-invite-created',
     });
   });

@@ -43,7 +43,6 @@ export function getViewportName(): string {
 
 export type CaptureStepOptions = {
   surface: Surface;
-  workflowId?: string;
   label: string;
   step?: number;
 };
@@ -78,7 +77,6 @@ export async function captureStep(
     surface: options.surface,
     spec,
     test,
-    workflowId: options.workflowId,
     step: seq,
     label: options.label,
     viewport: getViewportName(),

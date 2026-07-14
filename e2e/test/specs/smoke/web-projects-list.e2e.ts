@@ -1,5 +1,4 @@
 /**
- * Workflows: P1
  * Projects list smoke after Control Centre login.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -17,7 +16,6 @@ describe('Smoke — Web projects list', () => {
     await expect(byTestId('web-projects-heading')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'P1',
       label: 'projects-list',
     });
   });
@@ -31,7 +29,6 @@ describe('Smoke — Web projects list', () => {
     await expect(byTestId('web-projects-create-button')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'P1',
       label: 'create-button',
     });
   });

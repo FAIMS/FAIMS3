@@ -1,5 +1,4 @@
 /**
- * Workflows: T11 (+ guest vs admin button presence)
  * Permission-filtered UI: invite role options and create controls by persona.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -47,7 +46,7 @@ async function openInviteRoleOptions() {
   return labels;
 }
 
-describe('Tier 3 — Permissions matrix (T11)', () => {
+describe('Web — Permissions matrix', () => {
   it('managerBlue: team invite roles exclude Team Admin', async () => {
     await browser.reloadSession();
     await loginWebPersona('managerBlue');
@@ -63,7 +62,6 @@ describe('Tier 3 — Permissions matrix (T11)', () => {
     expect(labels.some(l => /team admin/i.test(l))).toBe(false);
     await captureStep({
       surface: 'web',
-      workflowId: 'T11',
       label: 'manager-invite-roles',
     });
   });
@@ -81,7 +79,6 @@ describe('Tier 3 — Permissions matrix (T11)', () => {
     expect(labels.some(l => /team admin/i.test(l))).toBe(true);
     await captureStep({
       surface: 'web',
-      workflowId: 'T11',
       label: 'ops-invite-roles',
     });
   });
@@ -95,7 +92,6 @@ describe('Tier 3 — Permissions matrix (T11)', () => {
     await expect(invitesTab).not.toBeExisting();
     await captureStep({
       surface: 'web',
-      workflowId: 'T11',
       label: 'member-no-invites-tab',
     });
   });
@@ -109,7 +105,6 @@ describe('Tier 3 — Permissions matrix (T11)', () => {
     await expect(byTestId('web-nav-users')).not.toBeExisting();
     await captureStep({
       surface: 'web',
-      workflowId: 'T11',
       label: 'guest-no-create',
     });
   });

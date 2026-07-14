@@ -34,7 +34,6 @@ type TestGroup = {
   spec: string;
   test: string;
   surface?: string;
-  workflowId?: string;
   passed?: boolean;
   result?: ManifestEntry;
   steps: ManifestEntry[];
@@ -97,7 +96,6 @@ function groupTests(runDir: string, entries: ManifestEntry[]): TestGroup[] {
       map.set(key, g);
     }
     if (e.surface) g.surface = e.surface;
-    if (e.workflowId) g.workflowId = e.workflowId;
 
     if (e.kind === 'result') {
       g.result = e;
@@ -137,7 +135,6 @@ function renderFailureCard(runDir: string, g: TestGroup): string {
   const shotHref = g.failure?.path ? hrefFromRun(runDir, g.failure.path) : '';
   const pageHref = shotHref ? siblingHref(shotHref, 'page.html') : '';
   const metaHref = shotHref ? siblingHref(shotHref, 'meta.json') : '';
-  const workflow = g.workflowId ? ` · ${escapeHtml(g.workflowId)}` : '';
   const surface = g.surface
     ? `<span class="pill">${escapeHtml(g.surface)}</span>`
     : '';
@@ -145,7 +142,7 @@ function renderFailureCard(runDir: string, g: TestGroup): string {
   return `<article class="fail-card" id="${escapeHtml(slugAnchor(g.spec, g.test))}">
   <header>
     ${surface}
-    <h3><code>${escapeHtml(g.spec)}</code>${workflow}</h3>
+    <h3><code>${escapeHtml(g.spec)}</code></h3>
     <p class="test-title">${escapeHtml(g.test)}</p>
   </header>
   <pre class="error">${escapeHtml(err)}</pre>
@@ -180,9 +177,6 @@ function renderStepThumb(runDir: string, e: ManifestEntry): string {
 function renderTestSection(runDir: string, g: TestGroup): string {
   const status =
     g.passed === false ? 'failed' : g.passed === true ? 'passed' : 'unknown';
-  const workflow = g.workflowId
-    ? `<span class="pill">${escapeHtml(g.workflowId)}</span>`
-    : '';
   const surface = g.surface
     ? `<span class="pill surface">${escapeHtml(g.surface)}</span>`
     : '';
@@ -190,7 +184,7 @@ function renderTestSection(runDir: string, g: TestGroup): string {
   return `<section class="test-block status-${status}" data-surface="${escapeHtml(g.surface || '')}" data-status="${status}">
   <header>
     <span class="badge ${status}">${status}</span>
-    ${surface}${workflow}
+    ${surface}
     <h3><code>${escapeHtml(g.spec)}</code></h3>
     <p class="test-title">${escapeHtml(g.test)}</p>
   </header>

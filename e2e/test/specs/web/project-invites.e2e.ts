@@ -1,5 +1,4 @@
 /**
- * Workflows: P4
  * Project invites tab + create invite dialog (managerBlue / Blue notebook).
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -50,7 +49,7 @@ async function clickInviteSubmit(testId: string) {
   }
 }
 
-describe('Tier 2 — Project invites (P4)', () => {
+describe('Web — Project invites', () => {
   const inviteName = `E2E Proj Invite ${Date.now()}`;
 
   before(async () => {
@@ -58,7 +57,7 @@ describe('Tier 2 — Project invites (P4)', () => {
     await loginWebPersona('managerBlue');
   });
 
-  it('P4: should open Invites tab and create a project invite', async () => {
+  it('should open Invites tab and create a project invite', async () => {
     await openFirstProject();
     const invitesTab = await $('button*=Invites');
     await invitesTab.waitForClickable({timeout: 10000});
@@ -97,7 +96,6 @@ describe('Tier 2 — Project invites (P4)', () => {
     );
     await captureStep({
       surface: 'web',
-      workflowId: 'P4',
       label: 'project-invite-created',
     });
   });

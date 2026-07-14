@@ -280,4 +280,4 @@ valid for the persona.
 - [Permissions Model](PermissionModel.md) — detailed description of roles,
   actions, resources, and virtual role inheritance.
 - [E2E README](../../../../../e2e/README.md) — how to run the browser suite and CI.
-- [E2E suite inventory](../../../../../e2e/SUITE.md) — workflow IDs → specs.
+- [E2E suite inventory](../../../../../e2e/SUITE.md) — specs by tier.

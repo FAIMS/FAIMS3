@@ -1,5 +1,4 @@
 /**
- * Workflows: F1
  * App sign-in UI and Conductor local login (valid / invalid).
  */
 import LoginPage from '../../pageobjects/app-signin.ts';
@@ -21,7 +20,7 @@ describe('Login Page', () => {
     await LoginPage.open();
     await LoginPage.verifyPageElements();
     await LoginPage.takeScreenshot('login', 'app-signin-page');
-    await captureStep({surface: 'app', workflowId: 'F1', label: 'signin-page'});
+    await captureStep({surface: 'app', label: 'signin-page'});
   });
 
   it('should show short code entry when button clicked', async () => {
@@ -50,7 +49,6 @@ describe('Login Page', () => {
     await API_Login.takeScreenshot('login', 'successful-login');
     await captureStep({
       surface: 'app',
-      workflowId: 'F1',
       label: 'login-success',
     });
   });

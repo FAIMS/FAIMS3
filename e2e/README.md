@@ -120,7 +120,7 @@ test/specs/
   journeys/    # Cross-surface
 ```
 
-Workflow ID → spec map (tiers, deferred work, manifest schema):
+Spec inventory (tiers, deferred work, manifest schema):
 [SUITE.md](./SUITE.md).
 
 ## CI (GitHub Actions)

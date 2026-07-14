@@ -1,5 +1,4 @@
 /**
- * Workflows: P7
  * Offline map tab UI (draw control presence / guest read-only).
  * Full OpenLayers rectangle draw is out of scope for Classic WDIO v1.
  */
@@ -25,8 +24,8 @@ async function openBlueProject() {
   );
 }
 
-describe('Tier 3 — Offline map region (P7)', () => {
-  it('P7: manager can open Offline Map and see Draw Area', async () => {
+describe('Web — Offline map region', () => {
+  it('manager can open Offline Map and see Draw Area', async () => {
     await browser.reloadSession();
     await loginWebPersona('managerBlue');
     await openBlueProject();
@@ -38,12 +37,11 @@ describe('Tier 3 — Offline map region (P7)', () => {
     expect(await draw.isEnabled()).toBe(true);
     await captureStep({
       surface: 'web',
-      workflowId: 'P7',
       label: 'offline-map-draw',
     });
   });
 
-  it('P7: projectGuest sees Offline Map without enabled Draw', async () => {
+  it('projectGuest sees Offline Map without enabled Draw', async () => {
     await browser.reloadSession();
     await loginWebPersona('projectGuest');
     await openBlueProject();
@@ -58,7 +56,6 @@ describe('Tier 3 — Offline map region (P7)', () => {
     expect(status.length).toBeGreaterThan(0);
     await captureStep({
       surface: 'web',
-      workflowId: 'P7',
       label: 'guest-offline-map',
     });
   });

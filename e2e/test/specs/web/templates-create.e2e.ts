@@ -1,5 +1,4 @@
 /**
- * Workflows: TP1, TP2, TP3
  * Templates list and create from team Templates tab (team manager).
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -37,17 +36,16 @@ describe('Web Dashboard — Templates create', () => {
     await loginWebPersona('managerBlue');
   });
 
-  it('TP1: should display the templates list', async () => {
+  it('should display the templates list', async () => {
     await WebTemplatesPage.open();
     expect(await WebTemplatesPage.isPageDisplayed()).toBe(true);
     await captureStep({
       surface: 'web',
-      workflowId: 'TP1',
       label: 'templates-list',
     });
   });
 
-  it('TP2: should open create template dialog from team Templates tab', async () => {
+  it('should open create template dialog from team Templates tab', async () => {
     await openBlueTeamTemplatesTab();
     await waitForTestId('web-templates-create-button', {timeout: 15000});
     await byTestId('web-templates-create-button').click();
@@ -55,12 +53,11 @@ describe('Web Dashboard — Templates create', () => {
     await expect(byTestId('web-templates-create-dialog')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'TP2',
       label: 'create-template-dialog',
     });
   });
 
-  it('TP3: should create a template in the team', async () => {
+  it('should create a template in the team', async () => {
     await openBlueTeamTemplatesTab();
     await waitForTestId('web-templates-create-button');
     await byTestId('web-templates-create-button').click();
@@ -79,7 +76,6 @@ describe('Web Dashboard — Templates create', () => {
     );
     await captureStep({
       surface: 'web',
-      workflowId: 'TP3',
       label: 'template-created',
     });
   });

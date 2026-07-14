@@ -1,5 +1,4 @@
 /**
- * Workflows: C6, C7, C8
  * Forgot-password form + admin-generated reset link (no mail catcher).
  * Requires RATE_LIMITER_ENABLED=false in api/.env for repeated local runs.
  */
@@ -13,12 +12,12 @@ import {
   requestPasswordResetLink,
 } from '../../helpers/seed.ts';
 
-describe('Tier 3 — Conductor password reset (C6–C8)', () => {
+describe('Conductor — Password reset', () => {
   const target = persona('user');
   const tempPassword = `TempReset${Date.now()}!`;
   let resetUrl = '';
 
-  it('C6: should show and submit forgot-password form', async () => {
+  it('should show and submit forgot-password form', async () => {
     await browser.reloadSession();
     await browser.url(`${getConductorUrl()}/forgot-password`);
     await waitForTestId('conductor-forgot-form');
@@ -28,12 +27,11 @@ describe('Tier 3 — Conductor password reset (C6–C8)', () => {
     await byTestId('conductor-forgot-submit').click();
     await captureStep({
       surface: 'conductor',
-      workflowId: 'C6',
       label: 'forgot-form',
     });
   });
 
-  it('C7: admin generates reset URL via API', async () => {
+  it('admin generates reset URL via API', async () => {
     await browser.reloadSession();
     await loginWebPersona('operationsAdmin');
     const {url} = await requestPasswordResetLink(target.email);
@@ -41,12 +39,11 @@ describe('Tier 3 — Conductor password reset (C6–C8)', () => {
     expect(resetUrl).toContain('reset-password');
     await captureStep({
       surface: 'web',
-      workflowId: 'C7',
       label: 'reset-url-issued',
     });
   });
 
-  it('C8: should complete reset with admin-issued link and restore password', async () => {
+  it('should complete reset with admin-issued link and restore password', async () => {
     expect(resetUrl.length).toBeGreaterThan(0);
     await browser.url(resetUrl);
     await waitForTestId('conductor-reset-form');
@@ -66,7 +63,6 @@ describe('Tier 3 — Conductor password reset (C6–C8)', () => {
     );
     await captureStep({
       surface: 'conductor',
-      workflowId: 'C8',
       label: 'reset-complete',
     });
 

@@ -1,5 +1,4 @@
 /**
- * Workflows: F8
  * Ops admin impersonates a seed user from the Fieldmark app menu, then returns.
  */
 import {loginAppPersona, persona} from '../../helpers/auth.ts';
@@ -7,7 +6,7 @@ import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
 import {waitForGone, waitForTestId} from '../../helpers/wait.ts';
 
-describe('Tier 3 — App impersonation (F8)', () => {
+describe('App — Impersonation', () => {
   const target = persona('user');
 
   before(async () => {
@@ -15,7 +14,7 @@ describe('Tier 3 — App impersonation (F8)', () => {
     await loginAppPersona('operationsAdmin');
   });
 
-  it('F8: should impersonate seed-user and return to admin', async () => {
+  it('should impersonate seed-user and return to admin', async () => {
     await waitForTestId('app-nav-user-menu', {timeout: 15000});
     await byTestId('app-nav-user-menu').click();
     await waitForTestId('app-nav-impersonate');
@@ -37,7 +36,6 @@ describe('Tier 3 — App impersonation (F8)', () => {
     expect(bannerText.toLowerCase()).toContain('impersonating');
     await captureStep({
       surface: 'app',
-      workflowId: 'F8',
       label: 'impersonating',
     });
 
@@ -45,12 +43,11 @@ describe('Tier 3 — App impersonation (F8)', () => {
     await waitForGone('app-impersonation-banner', {timeout: 15000});
     await captureStep({
       surface: 'app',
-      workflowId: 'F8',
       label: 'returned',
     });
   });
 
-  it('F8 negative: projectGuest has no impersonate menu', async () => {
+  it('projectGuest has no impersonate menu', async () => {
     await browser.reloadSession();
     await loginAppPersona('projectGuest');
     await waitForTestId('app-nav-user-menu', {timeout: 15000});
@@ -66,7 +63,6 @@ describe('Tier 3 — App impersonation (F8)', () => {
     await expect(byTestId('app-nav-impersonate')).not.toBeExisting();
     await captureStep({
       surface: 'app',
-      workflowId: 'F8',
       label: 'guest-no-impersonate',
     });
   });

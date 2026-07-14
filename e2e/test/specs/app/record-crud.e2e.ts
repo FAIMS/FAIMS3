@@ -1,5 +1,4 @@
 /**
- * Workflows: N8, N9, N11, N12
  * Activate seeded Red notebook, create a text record, return to list.
  */
 import {loginAppPersona} from '../../helpers/auth.ts';
@@ -16,34 +15,31 @@ describe('App — Record CRUD', () => {
     await AppRecordsPage.ensureNotebookOpen();
   });
 
-  it('N8: should open an activated notebook', async () => {
+  it('should open an activated notebook', async () => {
     await expect(byTestId('app-record-add-button')).toBeDisplayed();
     await captureStep({
       surface: 'app',
-      workflowId: 'N8',
       label: 'notebook-opened',
     });
   });
 
-  it('N9: should show add-record control', async () => {
+  it('should show add-record control', async () => {
     await expect(byTestId('app-record-add-button')).toBeDisplayed();
     await captureStep({
       surface: 'app',
-      workflowId: 'N9',
       label: 'add-record-button',
     });
   });
 
-  it('N11: should create a text record and finish', async () => {
+  it('should create a text record and finish', async () => {
     await AppRecordsPage.createTextRecord(noteText);
     await captureStep({
       surface: 'app',
-      workflowId: 'N11',
       label: 'record-created',
     });
   });
 
-  it('N12: should show the new record in the list/search', async () => {
+  it('should show the new record in the list/search', async () => {
     const search = byTestId('record-search-input');
     if (await search.isExisting()) {
       const input = await search.$('input');
@@ -62,7 +58,6 @@ describe('App — Record CRUD', () => {
     );
     await captureStep({
       surface: 'app',
-      workflowId: 'N12',
       label: 'record-listed',
     });
   });

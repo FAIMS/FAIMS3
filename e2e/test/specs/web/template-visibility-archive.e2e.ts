@@ -1,5 +1,4 @@
 /**
- * Workflows: TP9, TP10, A2
  * Template Actions: visibility (ops admin only) + archive (ops / template admin).
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -27,26 +26,25 @@ async function openTemplateActions(searchTerm: string) {
   await actionsTab.click();
 }
 
-describe('Tier 2 — Template visibility / archive (TP9/TP10)', () => {
+describe('Web — Template visibility / archive', () => {
   before(async () => {
     await browser.reloadSession();
     await loginWebPersona('operationsAdmin');
   });
 
-  it('TP9: should open visibility dialog and cancel', async () => {
+  it('should open visibility dialog and cancel', async () => {
     await openTemplateActions('E2E Minimal');
     await waitForTestId('web-template-visibility-toggle', {timeout: 10000});
     await byTestId('web-template-visibility-toggle').click();
     await waitForTestId('web-template-visibility-dialog');
     await captureStep({
       surface: 'web',
-      workflowId: 'TP9',
       label: 'visibility-dialog',
     });
     await browser.keys('Escape');
   });
 
-  it('TP10: should show archive template control', async () => {
+  it('should show archive template control', async () => {
     await openTemplateActions('E2E Minimal');
     await waitForTestId('web-template-archive-button', {timeout: 10000});
     await expect(byTestId('web-template-archive-button')).toBeDisplayed();
@@ -54,26 +52,25 @@ describe('Tier 2 — Template visibility / archive (TP9/TP10)', () => {
     await waitForTestId('web-template-archive-dialog');
     await captureStep({
       surface: 'web',
-      workflowId: 'TP10',
       label: 'archive-dialog',
     });
     await browser.keys('Escape');
   });
 });
 
-describe('Tier 2 — Archive nav templates (A2)', () => {
+describe('Web — Archive nav (templates)', () => {
   before(async () => {
     await browser.reloadSession();
     await loginWebPersona('operationsAdmin');
   });
 
-  it('A2: should reach archive page from sidebar', async () => {
+  it('should reach archive page from sidebar', async () => {
     await waitForTestId('web-nav-archive');
     await byTestId('web-nav-archive').click();
     await browser.waitUntil(
       async () => (await browser.getUrl()).includes('/archive'),
       {timeout: 10000}
     );
-    await captureStep({surface: 'web', workflowId: 'A2', label: 'archive-nav'});
+    await captureStep({surface: 'web', label: 'archive-nav'});
   });
 });

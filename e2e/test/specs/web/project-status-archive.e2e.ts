@@ -1,7 +1,6 @@
 /**
- * Workflows: P13, P14, A1
  * Project Actions: close/reopen (managerBlue = PROJECT_MANAGER via team).
- * Archive control requires PROJECT_ADMIN — use operationsAdmin for P14.
+ * Archive control requires PROJECT_ADMIN — use operationsAdmin.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -28,13 +27,13 @@ async function openBlueProjectActions() {
   await actionsTab.click();
 }
 
-describe('Tier 2 — Project status (P13)', () => {
+describe('Web — Project close/reopen', () => {
   before(async () => {
     await browser.reloadSession();
     await loginWebPersona('managerBlue');
   });
 
-  it('P13: should close then reopen the project', async () => {
+  it('should close then reopen the project', async () => {
     await openBlueProjectActions();
     await waitForTestId('web-project-status-close', {timeout: 10000});
     await byTestId('web-project-status-close').click();
@@ -43,7 +42,6 @@ describe('Tier 2 — Project status (P13)', () => {
     await waitForTestId('web-project-status-reopen', {timeout: 15000});
     await captureStep({
       surface: 'web',
-      workflowId: 'P13',
       label: 'project-closed',
     });
 
@@ -53,43 +51,41 @@ describe('Tier 2 — Project status (P13)', () => {
     await waitForTestId('web-project-status-close', {timeout: 15000});
     await captureStep({
       surface: 'web',
-      workflowId: 'P13',
       label: 'project-reopened',
     });
   });
 });
 
-describe('Tier 2 — Project archive control (P14)', () => {
+describe('Web — Project archive control', () => {
   before(async () => {
     await browser.reloadSession();
     await loginWebPersona('operationsAdmin');
   });
 
-  it('P14: ops admin (PROJECT_ADMIN on Blue) sees archive control', async () => {
+  it('ops admin (PROJECT_ADMIN on Blue) sees archive control', async () => {
     await openBlueProjectActions();
     await waitForTestId('web-project-archive-button', {timeout: 10000});
     await expect(byTestId('web-project-archive-button')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'P14',
       label: 'archive-control',
     });
   });
 });
 
-describe('Tier 2 — Archive nav (A1)', () => {
+describe('Web — Archive nav (projects)', () => {
   before(async () => {
     await browser.reloadSession();
     await loginWebPersona('operationsAdmin');
   });
 
-  it('A1: should navigate to archive via sidebar', async () => {
+  it('should navigate to archive via sidebar', async () => {
     await waitForTestId('web-nav-archive');
     await byTestId('web-nav-archive').click();
     await browser.waitUntil(
       async () => (await browser.getUrl()).includes('/archive'),
       {timeout: 10000}
     );
-    await captureStep({surface: 'web', workflowId: 'A1', label: 'archive'});
+    await captureStep({surface: 'web', label: 'archive'});
   });
 });

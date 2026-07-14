@@ -1,5 +1,4 @@
 /**
- * Workflows: N1, N2, N4
  * Notebook workspace and activation (contributor persona).
  */
 import {loginAppPersona} from '../../helpers/auth.ts';
@@ -13,30 +12,28 @@ describe('App — Notebook activate', () => {
     await loginAppPersona('projectContributor');
   });
 
-  it('N1: should show notebook workspace after login', async () => {
+  it('should show notebook workspace after login', async () => {
     await AppNotebooksPage.open();
     await AppNotebooksPage.waitForWorkspace();
     await expect(byTestId('app-notebooks-heading')).toBeDisplayed();
     await captureStep({
       surface: 'app',
-      workflowId: 'N1',
       label: 'notebook-workspace',
     });
   });
 
-  it('N2: should show Active / Not Active tabs', async () => {
+  it('should show Active / Not Active tabs', async () => {
     await AppNotebooksPage.open();
     await AppNotebooksPage.waitForWorkspace();
     await expect(byTestId('app-notebooks-tab-active')).toBeDisplayed();
     await expect(byTestId('app-notebooks-tab-not-active')).toBeDisplayed();
     await captureStep({
       surface: 'app',
-      workflowId: 'N2',
       label: 'notebook-tabs',
     });
   });
 
-  it('N4: should expose activate control on Not Active tab when available', async () => {
+  it('should expose activate control on Not Active tab when available', async () => {
     await AppNotebooksPage.open();
     await AppNotebooksPage.waitForWorkspace();
     await AppNotebooksPage.openNotActiveTab();
@@ -47,14 +44,12 @@ describe('App — Notebook activate', () => {
       await expect(activate).toBeDisplayed();
       await captureStep({
         surface: 'app',
-        workflowId: 'N4',
         label: 'activate-button',
       });
     } else {
       // Seed may already have activated notebooks for this user — still a valid state
       await captureStep({
         surface: 'app',
-        workflowId: 'N4',
         label: 'no-activate-needed',
       });
     }

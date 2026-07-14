@@ -1,5 +1,4 @@
 /**
- * Workflows: W1, W3, W5 (partial)
  * Control Centre login shell + sidebar + profile landmark.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -16,7 +15,7 @@ describe('Smoke — Web login shell', () => {
   it('should render authenticated main shell', async () => {
     await waitForTestId('web-main');
     await expect(byTestId('web-main')).toBeDisplayed();
-    await captureStep({surface: 'web', workflowId: 'W1', label: 'web-main'});
+    await captureStep({surface: 'web', label: 'web-main'});
   });
 
   it('should show primary sidebar nav items', async () => {
@@ -24,7 +23,7 @@ describe('Smoke — Web login shell', () => {
     await expect(byTestId('web-nav-teams')).toBeDisplayed();
     await expect(byTestId('web-nav-projects')).toBeDisplayed();
     await expect(byTestId('web-nav-templates')).toBeDisplayed();
-    await captureStep({surface: 'web', workflowId: 'W3', label: 'sidebar-nav'});
+    await captureStep({surface: 'web', label: 'sidebar-nav'});
   });
 
   it('should open profile from user menu', async () => {
@@ -33,6 +32,6 @@ describe('Smoke — Web login shell', () => {
     await byTestId('web-nav-profile').click();
     await waitForTestId('web-profile-heading');
     expect(await browser.getUrl()).toContain('/profile');
-    await captureStep({surface: 'web', workflowId: 'W5', label: 'profile'});
+    await captureStep({surface: 'web', label: 'profile'});
   });
 });

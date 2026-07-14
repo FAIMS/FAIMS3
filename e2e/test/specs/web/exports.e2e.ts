@@ -1,5 +1,4 @@
 /**
- * Workflows: P6
  * Export tab opens Data Export dialog (download prefs / file assert deferred).
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -24,13 +23,13 @@ async function openBlueProject() {
   );
 }
 
-describe('Tier 3 — Project exports (P6)', () => {
+describe('Web — Project exports', () => {
   before(async () => {
     await browser.reloadSession();
     await loginWebPersona('managerBlue');
   });
 
-  it('P6: should open Export tab and Data Export dialog', async () => {
+  it('should open Export tab and Data Export dialog', async () => {
     await openBlueProject();
     await waitForTestId('web-project-tab-export');
     await byTestId('web-project-tab-export').click();
@@ -40,7 +39,6 @@ describe('Tier 3 — Project exports (P6)', () => {
     await waitForTestId('web-export-data-dialog');
     await captureStep({
       surface: 'web',
-      workflowId: 'P6',
       label: 'export-dialog',
     });
   });

@@ -1,5 +1,4 @@
 /**
- * Workflows: F1
  * Fieldmark app login smoke (trimmed from app/login.e2e.ts).
  */
 import LoginPage from '../../pageobjects/app-signin.ts';
@@ -17,7 +16,7 @@ describe('Smoke — App login', () => {
     await LoginPage.open();
     await waitForTestId('onboarding-component');
     await expect(byTestId('app-signin-button')).toBeDisplayed();
-    await captureStep({surface: 'app', workflowId: 'F1', label: 'signin'});
+    await captureStep({surface: 'app', label: 'signin'});
   });
 
   it('should login as project contributor', async () => {
@@ -26,7 +25,6 @@ describe('Smoke — App login', () => {
     expect(url.includes('/login')).toBe(false);
     await captureStep({
       surface: 'app',
-      workflowId: 'F1',
       label: 'login-success',
     });
   });

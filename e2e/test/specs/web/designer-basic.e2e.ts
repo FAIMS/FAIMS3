@@ -1,5 +1,4 @@
 /**
- * Workflows: TP5/P9, D1, D5, D8 (minimal)
  * Open designer from a seeded template Actions tab when possible.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -14,7 +13,7 @@ describe('Web Dashboard — Designer basic', () => {
     await loginWebPersona('redMemberCreator');
   });
 
-  it('D1: should open designer from a template when Open in Editor is available', async () => {
+  it('should open designer from a template when Open in Editor is available', async () => {
     await browser.url(`${getWebUrl()}/templates`);
     await browser.waitUntil(
       async () =>
@@ -27,7 +26,6 @@ describe('Web Dashboard — Designer basic', () => {
     if (!(await link.isExisting())) {
       await captureStep({
         surface: 'web',
-        workflowId: 'D1',
         label: 'no-template-link',
       });
       return;
@@ -43,7 +41,6 @@ describe('Web Dashboard — Designer basic', () => {
     if (!(await openEditor.isExisting())) {
       await captureStep({
         surface: 'web',
-        workflowId: 'D1',
         label: 'open-editor-unavailable',
       });
       return;
@@ -55,7 +52,6 @@ describe('Web Dashboard — Designer basic', () => {
     await expect(byTestId('web-designer-save-button')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'D1',
       label: 'designer-open',
     });
   });

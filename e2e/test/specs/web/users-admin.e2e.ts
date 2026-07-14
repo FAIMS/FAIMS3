@@ -1,7 +1,6 @@
 /**
- * Tier 3 — Users admin (U1–U5)
- * Workflows: U1 list, U2 reset link dialog, U3 disable dialog (cancel),
- * U4 deferred to app F8, U5 global invite create.
+ * Users admin: list, password-reset link, disable dialog, global invite.
+ * Impersonation is covered in app/impersonation.e2e.ts.
  */
 import {loginWebPersona, persona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -82,7 +81,7 @@ async function clickInviteSubmit(testId: string) {
   }
 }
 
-describe('Tier 3 — Users admin (U1–U5)', () => {
+describe('Web — Users admin', () => {
   const target = persona('user');
   const inviteName = `E2E Global Invite ${Date.now()}`;
 
@@ -91,7 +90,7 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
     await loginWebPersona('operationsAdmin');
   });
 
-  it('U1: should open Users admin from sidebar', async () => {
+  it('should open Users admin from sidebar', async () => {
     await waitForTestId('web-nav-users');
     await byTestId('web-nav-users').click();
     await browser.waitUntil(
@@ -99,10 +98,10 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
       {timeout: 10000}
     );
     await waitForTestId('web-main');
-    await captureStep({surface: 'web', workflowId: 'U1', label: 'users-admin'});
+    await captureStep({surface: 'web', label: 'users-admin'});
   });
 
-  it('U2: should generate password reset link for seed-user', async () => {
+  it('should generate password reset link for seed-user', async () => {
     await openUsersAdmin();
     await searchUsers(target.email);
 
@@ -115,7 +114,6 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
     expect(urlText).toContain('reset-password');
     await captureStep({
       surface: 'web',
-      workflowId: 'U2',
       label: 'reset-link-dialog',
     });
 
@@ -123,7 +121,7 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
     await browser.keys('Escape');
   });
 
-  it('U3: should open disable-user dialog and cancel', async () => {
+  it('should open disable-user dialog and cancel', async () => {
     await openUsersAdmin();
     await searchUsers(target.email);
 
@@ -132,7 +130,6 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
     await expect(byTestId('web-users-disable-confirm')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'U3',
       label: 'disable-dialog',
     });
     await browser.keys('Escape');
@@ -145,7 +142,7 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
     );
   });
 
-  it('U5: should create a global invite', async () => {
+  it('should create a global invite', async () => {
     await openUsersAdmin();
     const invitesTab = await $('button*=Invites');
     await invitesTab.waitForClickable({timeout: 10000});
@@ -190,7 +187,6 @@ describe('Tier 3 — Users admin (U1–U5)', () => {
     );
     await captureStep({
       surface: 'web',
-      workflowId: 'U5',
       label: 'global-invite-created',
     });
   });

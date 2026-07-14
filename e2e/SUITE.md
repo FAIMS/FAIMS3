@@ -1,8 +1,8 @@
 # E2E suite inventory
 
-Durable map of workflow IDs → specs for the WebdriverIO suite. How to run the
-suite, configure env, and read CI artifacts: see [README.md](./README.md).
-Helper contracts: [test/helpers/README.md](./test/helpers/README.md).
+Map of specs for the WebdriverIO suite. How to run the suite, configure env,
+and read CI artifacts: see [README.md](./README.md). Helper contracts:
+[test/helpers/README.md](./test/helpers/README.md).
 
 ## Spec layout → WDIO conf
 
@@ -20,55 +20,55 @@ Headed counterparts: `wdio.smoke.conf.ts`, `wdio.web.conf.ts`, `wdio.conf.ts`.
 
 ### Tier 0 — Smoke (CI gate)
 
-| Spec                             | Workflows            |
-| -------------------------------- | -------------------- |
-| `smoke/conductor-login.e2e.ts`   | C1                   |
-| `smoke/web-login-shell.e2e.ts`   | W1, W3, W5 (partial) |
-| `smoke/app-login.e2e.ts`         | F1                   |
-| `smoke/web-projects-list.e2e.ts` | P1                   |
+| Spec                             | Covers                                          |
+| -------------------------------- | ----------------------------------------------- |
+| `smoke/conductor-login.e2e.ts`   | Conductor local login                           |
+| `smoke/web-login-shell.e2e.ts`   | Control Centre shell, sidebar, profile landmark |
+| `smoke/app-login.e2e.ts`         | Fieldmark sign-in                               |
+| `smoke/web-projects-list.e2e.ts` | Projects list after login                       |
 
 ### Tier 1 — Core happy paths
 
-| Spec                                 | Workflows                                       |
-| ------------------------------------ | ----------------------------------------------- |
-| `web/teams.e2e.ts`                   | T1–T4                                           |
-| `web/templates-create.e2e.ts`        | TP1–TP3                                         |
-| `web/projects-create.e2e.ts`         | P2, P3, P8                                      |
-| `web/designer-basic.e2e.ts`          | TP5/P9, D1, D5, D8 (minimal form + text + save) |
-| `app/notebook-activate.e2e.ts`       | N1, N2, N4                                      |
-| `app/record-crud.e2e.ts`             | N8, N9, N11, N12                                |
-| `journeys/template-to-record.e2e.ts` | Cross: TP2 → Designer → P8 → F1 → N2 → N8       |
+| Spec                                 | Covers                                                                  |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| `web/teams.e2e.ts`                   | Teams list, create team, team detail tabs                               |
+| `web/templates-create.e2e.ts`        | Templates list, create template from team                               |
+| `web/projects-create.e2e.ts`         | Create project dialog                                                   |
+| `web/designer-basic.e2e.ts`          | Open designer from template (minimal form + text + save when available) |
+| `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control          |
+| `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search              |
+| `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace        |
 
 ### Tier 2 — Lifecycle & invites
 
-| Spec                                     | Workflows     |
-| ---------------------------------------- | ------------- |
-| `web/team-invites.e2e.ts`                | T7, T8        |
-| `web/project-invites.e2e.ts`             | P4            |
-| `conductor/register-invite.e2e.ts`       | C3, C4        |
-| `web/project-status-archive.e2e.ts`      | P13, P14, A1  |
-| `web/template-visibility-archive.e2e.ts` | TP9, TP10, A2 |
-| `app/sync-settings.e2e.ts`               | S1, S2, S5    |
+| Spec                                     | Covers                                                      |
+| ---------------------------------------- | ----------------------------------------------------------- |
+| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                        |
+| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                  |
+| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user) |
+| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav          |
+| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav   |
+| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control |
 
 ### Tier 3 — Admin, permissions, offline UI, exports
 
-| Spec                              | Workflows                                        |
-| --------------------------------- | ------------------------------------------------ |
-| `web/users-admin.e2e.ts`          | U1–U3, U5 (U4 covered by app F8)                 |
-| `web/profile-tokens.e2e.ts`       | PR1–PR3                                          |
-| `web/exports.e2e.ts`              | P6 (dialog; download-dir assert deferred)        |
-| `web/offline-map-region.e2e.ts`   | P7 (UI; OpenLayers draw/save deferred)           |
-| `web/permissions-matrix.e2e.ts`   | T11                                              |
-| `app/impersonation.e2e.ts`        | F8                                               |
-| `conductor/password-reset.e2e.ts` | C6–C8 (admin `POST /api/reset`; no mail catcher) |
+| Spec                              | Covers                                                               |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `web/users-admin.e2e.ts`          | Users admin list, password-reset link, disable dialog, global invite |
+| `web/profile-tokens.e2e.ts`       | Long-lived API tokens: list, create, revoke                          |
+| `web/exports.e2e.ts`              | Export tab / Data Export dialog (download-dir assert deferred)       |
+| `web/offline-map-region.e2e.ts`   | Offline Map UI; OpenLayers draw/save deferred                        |
+| `web/permissions-matrix.e2e.ts`   | Invite role options and create controls by persona                   |
+| `app/impersonation.e2e.ts`        | Ops admin impersonates seed user; guest has no impersonate menu      |
+| `conductor/password-reset.e2e.ts` | Forgot-password form + admin-generated reset link (no mail catcher)  |
 
 ### Tier 4 — Deferred / not yet automated
 
 | Area                          | Notes                                              |
 | ----------------------------- | -------------------------------------------------- |
-| CDP offline collect (S4)      | Classic WebDriver limitation; no `offline-collect` |
-| Chrome download assert (P6)   | Export dialog covered; file download not asserted  |
-| OpenLayers draw/save (P7)     | Region UI only                                     |
+| CDP offline collect           | Classic WebDriver limitation; no `offline-collect` |
+| Chrome download assert        | Export dialog covered; file download not asserted  |
+| OpenLayers draw/save          | Region UI only                                     |
 | SSO mock                      | External IdP                                       |
 | Designer field-type matrix    | Beyond minimal text field                          |
 | Appium mobile (`wdio.mobile`) | Separate path; not in CI Chromium job              |
@@ -102,8 +102,7 @@ Appended as JSONL during a run; finalized to `manifest.json` on complete.
   "timestamp": "2026-07-14T05:30:15.123Z",
   "surface": "web",
   "spec": "web/teams.e2e.ts",
-  "test": "T2: should open create team dialog",
-  "workflowId": "T2",
+  "test": "should open the create team dialog",
   "step": 3,
   "label": "create-team-dialog",
   "viewport": "desktop",
@@ -121,7 +120,8 @@ may include `error` and `durationMs`.
 
 - Prefer `data-testid` + `byTestId` / `waitForTestId` over CSS hashes or
   `browser.pause`.
-- Each new spec should list workflow IDs in a header comment.
+- Name tests with a short description (e.g. `should create a team and show it
+in the list`); avoid opaque handover IDs.
 - Keep `maxInstances: 1` for auth-heavy suites (token-exchange races).
 - Product scaffolding for tests belongs in `app` / `web` / `api/views` as
   stable `data-testid`s, not brittle text selectors.

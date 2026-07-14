@@ -1,5 +1,4 @@
 /**
- * Workflows: P2, P3, P8
  * Create project dialog from projects list.
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
@@ -13,25 +12,23 @@ describe('Web Dashboard — Projects create', () => {
     await loginWebPersona('redMemberCreator');
   });
 
-  it('P2: should open create project dialog', async () => {
+  it('should open create project dialog', async () => {
     await WebProjectsPage.open();
     await WebProjectsPage.openCreateDialog();
     await expect(byTestId('web-projects-create-dialog')).toBeDisplayed();
     await expect(byTestId('web-projects-create-name')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'P2',
       label: 'create-project-dialog',
     });
   });
 
-  it('P3: should show submit control in create dialog', async () => {
+  it('should show submit control in create dialog', async () => {
     await WebProjectsPage.open();
     await WebProjectsPage.openCreateDialog();
     await expect(byTestId('web-projects-create-submit')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'P3',
       label: 'create-project-submit',
     });
   });

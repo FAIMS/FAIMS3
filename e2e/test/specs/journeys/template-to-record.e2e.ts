@@ -1,6 +1,5 @@
 /**
  * Cross-surface journey: Control Centre templates → Fieldmark workspace.
- * Workflows: TP2 → F1 → N2 (full designer→project→record when seed allows).
  */
 import {
   loginWebPersona,
@@ -20,7 +19,6 @@ describe('Journey — template to record', () => {
     await expect(byTestId('web-templates-heading')).toBeDisplayed();
     await captureStep({
       surface: 'web',
-      workflowId: 'TP2',
       label: 'journey-templates',
     });
 
@@ -44,14 +42,12 @@ describe('Journey — template to record', () => {
       await expect(byTestId('app-notebooks-heading')).toBeDisplayed();
       await captureStep({
         surface: 'app',
-        workflowId: 'N2',
         label: 'journey-app-workspace',
       });
     } else {
       // Contributor may land without workspace heading if notebooks not provisioned
       await captureStep({
         surface: 'app',
-        workflowId: 'N2',
         label: 'journey-app-post-login',
       });
     }

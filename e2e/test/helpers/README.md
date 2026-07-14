@@ -59,5 +59,5 @@ import {loginWebPersona} from '../helpers/auth.ts';
 
 await loginWebPersona('memberBoth');
 await expect(byTestId('web-teams-create-button')).toBeDisplayed();
-await captureStep({surface: 'web', workflowId: 'T2', label: 'teams-list'});
+await captureStep({surface: 'web', label: 'teams-list'});
 ```

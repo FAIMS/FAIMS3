@@ -1,5 +1,4 @@
 /**
- * Workflows: C1
  * Conductor local login smoke.
  */
 import API_Login from '../../pageobjects/api-login.ts';
@@ -22,7 +21,6 @@ describe('Smoke — Conductor login', () => {
     await expect(byTestId('login-submit-button')).toBeDisplayed();
     await captureStep({
       surface: 'conductor',
-      workflowId: 'C1',
       label: 'login-form',
     });
   });
@@ -38,7 +36,6 @@ describe('Smoke — Conductor login', () => {
     );
     await captureStep({
       surface: 'conductor',
-      workflowId: 'C1',
       label: 'login-success',
     });
   });

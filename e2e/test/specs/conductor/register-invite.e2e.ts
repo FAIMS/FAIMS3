@@ -1,7 +1,6 @@
 /**
- * Workflows: C3, C4
  * Conductor registration via team invite (API-created code; no email).
- * C3 = brand-new account; C4 = existing seed-user accepts invite.
+ * Covers brand-new account registration and existing seed-user accept.
  */
 import {loginWebPersona, persona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -9,7 +8,7 @@ import {getConductorUrl, getWebUrl} from '../../helpers/env.ts';
 import {createTeamInvite, findTeamIdByName} from '../../helpers/seed.ts';
 import API_Register from '../../pageobjects/api-register.ts';
 
-describe('Tier 2 — Conductor register via invite (C3/C4)', () => {
+describe('Conductor — Register via invite', () => {
   const password = `E2eInvitePass${Date.now()}!`;
   let registerUrl = '';
   let inviteId = '';
@@ -28,7 +27,7 @@ describe('Tier 2 — Conductor register via invite (C3/C4)', () => {
     registerUrl = invite.registerUrl;
   });
 
-  it('C3: should register a new user with a team invite', async () => {
+  it('should register a new user with a team invite', async () => {
     expect(inviteId.length).toBeGreaterThan(0);
     await browser.reloadSession();
     await browser.url(registerUrl);
@@ -54,12 +53,11 @@ describe('Tier 2 — Conductor register via invite (C3/C4)', () => {
     );
     await captureStep({
       surface: 'conductor',
-      workflowId: 'C3',
       label: 'register-new-user',
     });
   });
 
-  it('C4: existing seed-user should accept a team invite', async () => {
+  it('existing seed-user should accept a team invite', async () => {
     await browser.reloadSession();
     await loginWebPersona('managerBlue');
     const teamId = await findTeamIdByName('Blue');
@@ -123,7 +121,6 @@ describe('Tier 2 — Conductor register via invite (C3/C4)', () => {
 
     await captureStep({
       surface: 'conductor',
-      workflowId: 'C4',
       label: 'existing-user-invite',
     });
   });
