@@ -11,9 +11,7 @@ import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
 import {Plus} from 'lucide-react';
 import {useGetTeam} from '@/hooks/queries';
-import {useAuth} from '@/context/auth-provider';
-import {useCanCreateTemplate} from '@/hooks/auth-hooks';
-import {ErrorComponent} from '@tanstack/react-router';
+import {useCanCreateTemplate, useRequiredUser} from '@/hooks/auth-hooks';
 
 /**
  * Dialog entry point for creating a new template.
@@ -30,13 +28,9 @@ export const CreateTemplateDialog = ({
   specifiedTeam?: string;
 }) => {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const canCreateTemplate = useCanCreateTemplate();
   const {data: team} = useGetTeam({user, teamId: specifiedTeam});
-
-  if (!user) {
-    return <ErrorComponent error="Unauthenticated" />;
-  }
 
   // Global list: hide trigger when user cannot create at all.
   // Team tab passes specifiedTeam and relies on parent permission checks.

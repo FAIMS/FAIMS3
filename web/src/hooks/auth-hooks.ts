@@ -8,6 +8,29 @@ import {
 import {useMemo} from 'react';
 
 /**
+ * Returns the authenticated user, asserting it is present.
+ *
+ * Every route under `_protected` renders `SessionExpiredOverlay` instead of
+ * the `<Outlet />` when the user is null or expired, so components below that
+ * layout can never render without a user. This hook exists so those
+ * components can take a non-null `User` directly instead of each hand-rolling
+ * an `if (!user)` guard (dead code that also forces hooks-ordering gymnastics
+ * under `react/rules-of-hooks`).
+ *
+ * @throws If called outside an authenticated route — a programming error, not
+ *   a reachable user state.
+ */
+export const useRequiredUser = (): User => {
+  const {user} = useAuth();
+  if (!user) {
+    throw new Error(
+      'useRequiredUser rendered without an authenticated user. It must only be used under the _protected route layout.'
+    );
+  }
+  return user;
+};
+
+/**
  * helper to map our user to the isAuthorized user
  */
 export const userCanDo = ({
@@ -69,11 +92,12 @@ export const userCanCreateTemplate = (user: User | null): boolean => {
 export const useCanCreateTemplate = (): boolean => {
   const {user, isExpired} = useAuth();
 
-  if (!user || isExpired()) {
-    return false;
-  }
-
-  return useMemo(() => userCanCreateTemplate(user), [user.token]);
+  return useMemo(() => {
+    if (!user || isExpired()) {
+      return false;
+    }
+    return userCanCreateTemplate(user);
+  }, [user, user?.token, isExpired()]);
 };
 
 /**

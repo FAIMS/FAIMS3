@@ -1,7 +1,7 @@
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {Action, PostCreateNotebookInput} from '@faims3/data-model';
@@ -36,22 +36,17 @@ interface CreateProjectFromTemplateFormProps {
  * create outside any team.
  *
  * @param {CreateProjectFromTemplateFormProps} props - The props for the form.
- * @returns {JSX.Element | null} The rendered form, or null if unauthenticated.
+ * @returns {JSX.Element} The rendered form.
  */
 export function CreateProjectFromTemplateForm({
   setDialogOpen,
 }: CreateProjectFromTemplateFormProps) {
-  const {user, refreshToken} = useAuth();
-  if (!user) return null;
-
+  const user = useRequiredUser();
+  const {refreshToken} = useAuth();
   const {templateId} = Route.useParams();
-
   const queryClient = useQueryClient();
-
   const {data: teamsData} = useGetTeams({user});
   const {data: template} = useGetTemplate({user, templateId});
-
-  /** `CREATE_PROJECT` — may omit teamId on POST /api/notebooks. */
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const possibleTeams = getPossibleTeamsForAction({

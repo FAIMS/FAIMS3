@@ -65,18 +65,20 @@ import SyncModeHelpDialog from './syncModeHelpDialog';
 export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   const nav = useNavigate();
   const {projectId} = useParams<{projectId: ProjectID}>();
-  if (!projectId) return <></>;
   const dispatch = useAppDispatch();
-  const project = useAppSelector(state => selectProjectById(state, projectId));
-  if (!project) return <></>;
+  const project = useAppSelector(state =>
+    projectId ? selectProjectById(state, projectId) : undefined
+  );
+  const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
+  const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
+    React.useState(false);
+
+  if (!projectId || !project) return <></>;
 
   const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
   const syncMode = project.database?.syncMode ?? 'none';
   const pullSyncEnabled = syncModeIncludesPull(syncMode);
   const pushSyncEnabled = syncModeIncludesPush(syncMode);
-  const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
-  const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
-    React.useState(false);
 
   const handleDeactivateClick = () => {
     setDeactivateSyncAcknowledged(false);

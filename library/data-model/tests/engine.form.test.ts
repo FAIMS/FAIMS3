@@ -7,7 +7,6 @@ import {
   DataDocument,
   DataEngine,
   generateAttID,
-  generateAvpID,
   NewFormRecord,
   NotebookDefinition,
 } from '../src';

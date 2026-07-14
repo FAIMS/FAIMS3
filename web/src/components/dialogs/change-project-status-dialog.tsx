@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {AlertCircle, CheckCircle, Info} from 'lucide-react';
@@ -16,7 +16,7 @@ import {Button} from '../ui/button';
 import {useGetProject} from '@/hooks/queries';
 
 export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -30,7 +30,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.token}`,
+          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
           status: isOpen ? ProjectStatus.CLOSED : ProjectStatus.OPEN,

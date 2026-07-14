@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {createTeam} from '@/hooks/teams-hooks';
 import {resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
@@ -18,7 +18,7 @@ interface CreateTeamFormProps {
  * @returns {JSX.Element} The rendered CreateProjectForm component.
  */
 export function CreateTeamForm({setDialogOpen}: CreateTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
 
   const fields = [
@@ -52,8 +52,6 @@ export function CreateTeamForm({setDialogOpen}: CreateTeamFormProps) {
    * Handles the form submission
    */
   const onSubmit = async ({name, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await createTeam({description, name, user});
 
     if (!response.ok) return {type: 'submit', message: 'Error creating team'};

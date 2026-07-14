@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react"],
   "ignorePatterns": [
     "**/node_modules/**",
     "**/build/**",
@@ -24,6 +25,8 @@
     "no-unused-expressions": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
     "oxc/const-comparisons": "off",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "off",
     "no-unused-vars": [
       "warn",
       {

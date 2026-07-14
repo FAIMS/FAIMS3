@@ -2,12 +2,12 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {config} from '@/constants';
-import {useAuth, User} from '@/context/auth-provider';
+import {User} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, Link} from '@tanstack/react-router';
 import {CheckCircle, Key, ShieldAlert, XCircle} from 'lucide-react';
 import React, {useMemo} from 'react';
-import {toast} from 'sonner';
 
 export const Route = createFileRoute('/_protected/profile/')({
   component: RouteComponent,
@@ -50,7 +50,7 @@ const userFields: {
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -73,12 +73,7 @@ function RouteComponent() {
    */
   const handleChangePassword = () => {
     // Get the username (email) from the user object
-    const username = user?.user.id;
-
-    if (!username) {
-      toast.error('Unable to identify user for password change');
-      return;
-    }
+    const username = user.user.id;
 
     // Create the redirect URL back to the profile page
     const redirectUrl = config.webUrl + '/profile';
@@ -100,7 +95,7 @@ function RouteComponent() {
               <ListItem key={field}>
                 <ListLabel>{label}</ListLabel>
                 <ListDescription>
-                  {render ? render(user?.user[field]) : user?.user[field]}
+                  {render ? render(user.user[field]) : user.user[field]}
                 </ListDescription>
               </ListItem>
             ))}

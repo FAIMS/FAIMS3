@@ -6,7 +6,11 @@ import {INPUT_LIMITS} from '@faims3/data-model';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
-import {useIsAuthorisedTo, useCanCreateTemplate} from '@/hooks/auth-hooks';
+import {
+  useIsAuthorisedTo,
+  useCanCreateTemplate,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {
   Action,
   prepareNotebookUiSpecificationInputForApi,
@@ -47,7 +51,8 @@ export function CreateTemplateForm({
   defaultValues,
   specifiedTeam = undefined,
 }: CreateTemplateFormProps) {
-  const {user, refreshToken} = useAuth();
+  const user = useRequiredUser();
+  const {refreshToken} = useAuth();
   const queryClient = useQueryClient();
   const {data: teams} = useGetTeams({user});
 
@@ -66,7 +71,7 @@ export function CreateTemplateForm({
     teams: teams?.teams,
     canCreateGlobally,
     createInTeamAction: Action.CREATE_TEMPLATE_IN_TEAM,
-    decodedToken: user?.decodedToken,
+    decodedToken: user.decodedToken,
   });
 
   const {showTeamCallout, showTeamDropdown} = getTemplateTeamFieldState({
@@ -128,8 +133,6 @@ export function CreateTemplateForm({
     team?: string;
     visibility?: 'private' | 'public';
   }) => {
-    if (!user) return {type: 'submit', message: 'Not authenticated'};
-
     const {name, description, file, team, visibility} = values;
     const isPublic = canCreatePublicTemplate && visibility === 'public';
     let uiSpecification: unknown = blankNotebook;

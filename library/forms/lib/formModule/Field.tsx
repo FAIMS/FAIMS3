@@ -36,9 +36,8 @@ export const Field = React.memo((props: FieldProps) => {
   const Component = fieldInfo?.component;
 
   return (
-    <props.form.Field
-      name={props.fieldSpec['component-parameters'].name}
-      children={field => {
+    <props.form.Field name={props.fieldSpec['component-parameters'].name}>
+      {field => {
         const setFieldData = (value: any) => {
           // Functional updater merges against latest field value so a write
           // here cannot clobber a concurrent attachments update (or vice versa).
@@ -151,6 +150,6 @@ export const Field = React.memo((props: FieldProps) => {
           </div>
         );
       }}
-    />
+    </props.form.Field>
   );
 });

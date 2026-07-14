@@ -1,5 +1,5 @@
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {RoleCard} from '@/components/ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
@@ -30,7 +30,7 @@ export const AddRolePopover = ({
   roles: RoleDetailWithId[];
   userId: string;
 }) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -74,7 +74,7 @@ export const AddRolePopover = ({
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${user?.token}`,
+                      Authorization: `Bearer ${user.token}`,
                     },
                     body: JSON.stringify({
                       addrole: true,

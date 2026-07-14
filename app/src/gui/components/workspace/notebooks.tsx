@@ -103,12 +103,7 @@ export default function NoteBooks() {
   // Are we online
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
-  if (!activeUser) {
-    // You shouldn't be here!
-    return <></>;
-  }
-
-  const activeServerId = activeUser.serverId;
+  const activeServerId = activeUser?.serverId ?? '';
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
@@ -116,11 +111,13 @@ export default function NoteBooks() {
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
-
+  // use notification service
+  const notify = useNotification();
   // Refresh mutation
   const doRefresh = useMutation({
     mutationFn: async () => {
-      await dispatch(initialiseProjects({serverId: activeServerId}));
+      if (!activeUser) return;
+      await dispatch(initialiseProjects({serverId: activeUser.serverId}));
     },
     onSuccess: () => {
       notify.showSuccess(`Refreshed ${config.notebookNamePluralCapitalized}`);
@@ -132,15 +129,21 @@ export default function NoteBooks() {
       );
     },
   });
-  const showRefreshButton = isOnline.isOnline;
-
-  const activatedProjects = projects.filter(nb => nb.isActivated);
-
   const [tabID, setTabID] = useState('1');
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const servers = useAppSelector(selectServers);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  if (!activeUser) {
+    // You shouldn't be here!
+    return <></>;
+  }
+
+  const showRefreshButton = isOnline.isOnline;
+  const activatedProjects = projects.filter(nb => nb.isActivated);
 
   const baseColumns: GridColDef<Project>[] = [
     {
@@ -259,14 +262,8 @@ export default function NoteBooks() {
     </>
   );
 
-  // use notification service
-  const notify = useNotification();
-
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const servers = useAppSelector(selectServers);
   const platform = CAPACITOR_PLATFORM;
   const allowQr = platform === 'ios' || platform === 'android';
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   return (
     <Box

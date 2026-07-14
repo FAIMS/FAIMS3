@@ -14,14 +14,13 @@ import {Label} from '@/components/ui/label';
 import {Separator} from '@/components/ui/separator';
 import {Switch} from '@/components/ui/switch';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {revokeLongLivedToken, useGetLongLivedTokens} from '@/hooks/queries';
 import {nowMs} from '@/lib/time';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {createFileRoute, ErrorComponent} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
 import {RefreshCw, AlertTriangle, ExternalLink} from 'lucide-react';
 import {useMemo, useState} from 'react';
 
@@ -36,12 +35,8 @@ export const Route = createFileRoute('/_protected/profile/long-lived-tokens')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
-  const {user: authUser} = useAuth();
+  const authUser = useRequiredUser();
   const queryClient = useQueryClient();
-
-  if (!authUser) {
-    return <ErrorComponent error={'Not authorised'} />;
-  }
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -106,6 +101,20 @@ function RouteComponent() {
       return true;
     });
   }, [data?.tokens, showRevoked, showExpired]);
+
+  const columns = useGetLongLivedTokensColumns({
+    editTokenHandler: async tokenId => {
+      const token = (data?.tokens ?? []).find(t => t.id === tokenId);
+      if (token) {
+        setSelectedToken(token);
+        setUpdateDialogOpen(true);
+      }
+    },
+    revokeTokenHandler: async tokenId => {
+      await revokeLongLivedToken({user: authUser, tokenId});
+      queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
+    },
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -254,19 +263,7 @@ function RouteComponent() {
 
         {/* Data Table */}
         <DataTable
-          columns={useGetLongLivedTokensColumns({
-            editTokenHandler: async tokenId => {
-              const token = (data?.tokens ?? []).find(t => t.id === tokenId);
-              if (token) {
-                setSelectedToken(token);
-                setUpdateDialogOpen(true);
-              }
-            },
-            revokeTokenHandler: async tokenId => {
-              await revokeLongLivedToken({user: authUser, tokenId});
-              queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
-            },
-          })}
+          columns={columns}
           data={filteredTokens}
           loading={isPending}
           defaultRowsPerPage={15}

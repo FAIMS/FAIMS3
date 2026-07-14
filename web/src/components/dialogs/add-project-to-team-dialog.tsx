@@ -9,18 +9,10 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {ErrorComponent} from '@tanstack/react-router';
 import {AddProjectToTeamForm} from '../forms/add-project-to-team-form';
 
 export const AddProjectToTeamDialog = ({projectId}: {projectId: string}) => {
   const [open, setOpen] = useState(false);
-
-  const {user} = useAuth();
-
-  if (!user) {
-    return <ErrorComponent error="Unauthenticated" />;
-  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

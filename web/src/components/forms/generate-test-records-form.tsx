@@ -1,6 +1,6 @@
 import {Field, Form} from '@/components/form';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {AlertTriangle} from 'lucide-react';
 import {toast} from 'sonner';
@@ -18,7 +18,7 @@ export function GenerateTestRecordsForm({
   setDialogOpen,
   projectId,
 }: GenerateTestRecordsFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const fields: Field[] = [
     {
@@ -68,10 +68,6 @@ export function GenerateTestRecordsForm({
     parallelism: number;
     includeAttachments: boolean;
   }) => {
-    if (!user) {
-      return {type: 'submit', message: 'User not authenticated'};
-    }
-
     try {
       const result = await generateTestRecordsForProject({
         projectId,

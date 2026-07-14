@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {config} from '@/constants';
 import {useState} from 'react';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Trash} from 'lucide-react';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
@@ -28,7 +28,7 @@ export const RemoveUserFromProjectDialog = ({
   admin: boolean;
 }) => {
   const [error, setError] = useState('');
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -59,7 +59,7 @@ export const RemoveUserFromProjectDialog = ({
                   method: 'DELETE',
                   headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user?.token}`,
+                    Authorization: `Bearer ${user.token}`,
                   },
                 }
               );

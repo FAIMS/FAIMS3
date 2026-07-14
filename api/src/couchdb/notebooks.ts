@@ -31,7 +31,6 @@ import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
-  GetNotebookListResponse,
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
   notebookUiSpecificationNeedsMigration,

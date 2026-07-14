@@ -10,8 +10,7 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {Plus} from 'lucide-react';
 import {useGetTeam} from '@/hooks/queries';
-import {useAuth} from '@/context/auth-provider';
-import {ErrorComponent} from '@tanstack/react-router';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {CreateTemplateFromProjectForm} from '../forms/create-template-from-project';
 import {config} from '@/constants';
 
@@ -25,11 +24,7 @@ export const CreateTemplateFromProjectDialog = ({
   specifiedTeam?: string;
 }) => {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
-  if (!user) {
-    return <ErrorComponent error="Unauthenticated" />;
-  }
-
+  const user = useRequiredUser();
   const {data: team} = useGetTeam({user, teamId: specifiedTeam});
 
   return (

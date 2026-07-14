@@ -1,6 +1,5 @@
 import {Field, Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {
   errorMessageFromTemplateJsonBody,
@@ -27,7 +26,7 @@ export function AddTemplateToTeamForm({
   setDialogOpen,
   templateId,
 }: AddTemplateToTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const teams = useGetTeams({user});
   const {data: template} = useGetTemplate({user, templateId});
@@ -63,8 +62,6 @@ export function AddTemplateToTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({teamId}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await modifyTeamForTemplate({
       templateId,
       teamId,

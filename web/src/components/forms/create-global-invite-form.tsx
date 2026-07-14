@@ -1,7 +1,7 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   INPUT_LIMITS,
   PostCreateInviteInput,
@@ -10,9 +10,21 @@ import {
   RoleScope,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {ErrorComponent} from '@tanstack/react-router';
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {z} from 'zod';
+
+// Global-scope roles offered by the invite form; static because roleDetails is
+// a module-level constant
+const roleOptions = Object.entries(roleDetails)
+  .filter(
+    ([role, detail]) =>
+      detail.scope === RoleScope.GLOBAL && role !== Role.GENERAL_ADMIN
+  )
+  .map(([value, {name: label, description}]) => ({
+    label,
+    value,
+    description,
+  }));
 
 /**
  * Form to create a new global invite
@@ -25,30 +37,11 @@ export function CreateGlobalInviteForm({
 }: {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
     undefined
   );
-
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
-
-  // Memoize the role options to prevent re-computation on each render
-  const roleOptions = useMemo(() => {
-    if (!user) return [];
-    return Object.entries(roleDetails)
-      .filter(
-        ([role, detail]) =>
-          detail.scope === RoleScope.GLOBAL && role !== Role.GENERAL_ADMIN
-      )
-      .map(([value, {name: label, description}]) => ({
-        label,
-        value,
-        description,
-      }));
-  }, [user]);
 
   const fields: Field[] = [
     {
@@ -97,8 +90,6 @@ export function CreateGlobalInviteForm({
     uses?: number;
     name: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not logged in'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};

@@ -1,8 +1,7 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
 import {config, brandNotebook} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {userCanDo} from '@/hooks/auth-hooks';
+import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
 import {
   INPUT_LIMITS,
   PostCreateInviteInput,
@@ -13,7 +12,6 @@ import {
   teamInviteToAction,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 
@@ -32,21 +30,16 @@ export function CreateTeamInviteForm({
   setDialogOpen,
   teamId,
 }: UpdateTemplateFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
     undefined
   );
 
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
-
   // Memoize the role options to prevent re-computation on each render.
   // Hides brand-excluded roles (e.g. DASS hides TEAM_MEMBER_CREATOR) and
   // passes the description so the dropdown shows the new role copy.
   const roleOptions = useMemo(() => {
-    if (!user) return [];
     return Object.entries(roleDetails)
       .filter(
         ([role, {scope, resource}]) =>
@@ -116,8 +109,6 @@ export function CreateTeamInviteForm({
     uses?: number;
     name: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not logged in'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};
