@@ -40,6 +40,7 @@ function RouteComponent() {
     paths,
   });
 
+  // Can the user create a new team?
   const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
   const {isPending, data} = useGetTeams({user});
   const navigate = useNavigate();

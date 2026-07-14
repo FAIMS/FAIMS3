@@ -32,6 +32,7 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
     },
   });
 
+  // can we create project invites?
   const canInviteGuestToTeam = useIsAuthorisedTo({
     action: Action.CREATE_GUEST_PROJECT_INVITE,
     resourceId: projectId,

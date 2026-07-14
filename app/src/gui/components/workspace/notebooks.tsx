@@ -96,17 +96,24 @@ export const notebookListDataGridSx = {
 };
 
 export default function NoteBooks() {
+  // get the active user - this will allow us to check roles against it
+  // TODO what do we do if this is not defined
   const dispatch = useAppDispatch();
+
+  // Are we online
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
   const activeServerId = activeUser?.serverId ?? '';
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
+    // don't show de-activated closed notebooks
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
+  // use notification service
   const notify = useNotification();
+  // Refresh mutation
   const doRefresh = useMutation({
     mutationFn: async () => {
       if (!activeUser) return;
@@ -131,6 +138,7 @@ export default function NoteBooks() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   if (!activeUser) {
+    // You shouldn't be here!
     return <></>;
   }
 

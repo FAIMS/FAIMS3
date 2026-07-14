@@ -61,6 +61,7 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
+  // Pre-select template owner when accessible; see defaultTeamFromOwner.
   const defaultTeamId = defaultTeamFromOwner({
     ownerTeamId: template?.ownedByTeamId,
     possibleTeams,

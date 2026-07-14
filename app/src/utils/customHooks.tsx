@@ -780,7 +780,7 @@ export const useIsAuthorisedTo = ({
       action,
       resourceId,
     });
-  }, [action, resourceId, activeUser, activeUser?.token]);
+  }, [action, resourceId, activeUser, activeUser?.parsedToken]);
 };
 
 /** For a given record, determines the form type, then fetches the layout from

@@ -97,7 +97,7 @@ export const useCanCreateTemplate = (): boolean => {
       return false;
     }
     return userCanCreateTemplate(user);
-  }, [user, user?.token]);
+  }, [user, user?.token, isExpired()]);
 };
 
 /**

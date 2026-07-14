@@ -30,6 +30,7 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
     },
   });
 
+  // can we create team invites?
   const canInviteMemberToTeam = useIsAuthorisedTo({
     action: Action.CREATE_MEMBER_TEAM_INVITE,
     resourceId: teamId,

@@ -11,6 +11,9 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
 
   const {isLoading, data} = useGetUsersForTeam({user, teamId});
 
+  // permission checks
+
+  // can we add a user to the team?
   const canAddMemberToTeam = useIsAuthorisedTo({
     action: Action.ADD_MEMBER_TO_TEAM,
     resourceId: teamId,
@@ -23,11 +26,10 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
     action: Action.ADD_ADMIN_TO_TEAM,
     resourceId: teamId,
   });
-
-  const columns = useGetColumns({teamId});
-
   const canAddSomeUser =
     canAddAdminToTeam || canAddManagerToTeam || canAddMemberToTeam;
+
+  const columns = useGetColumns({teamId});
 
   return (
     <div>

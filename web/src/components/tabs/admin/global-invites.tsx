@@ -27,6 +27,7 @@ const GlobalInvites = () => {
     },
   });
 
+  // can we create this invite?
   const canCreateGlobalInvite = useIsAuthorisedTo({
     action: Action.CREATE_GLOBAL_INVITE,
   });

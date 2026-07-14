@@ -38,6 +38,7 @@ function RouteComponent() {
   const authUser = useRequiredUser();
   const queryClient = useQueryClient();
 
+  // breadcrumbs addition
   const paths = useMemo(
     () => [
       {
@@ -62,6 +63,7 @@ function RouteComponent() {
     GetLongLivedTokensResponse['tokens'][number] | undefined
   >(undefined);
 
+  // Control panel state
   const [adminMode, setAdminMode] = useState<boolean>(false);
   const [showRevoked, setShowRevoked] = useState<boolean>(false);
   const [showExpired, setShowExpired] = useState<boolean>(false);
@@ -71,22 +73,27 @@ function RouteComponent() {
     fetchAll: adminMode,
   });
 
+  // Can the user create a long lived token?
   const canCreateToken = useIsAuthorisedTo({
     action: Action.CREATE_LONG_LIVED_TOKEN,
   });
 
+  // Can the user view all tokens (admin mode)?
   const canViewAllTokens = useIsAuthorisedTo({
     action: Action.READ_ANY_LONG_LIVED_TOKENS,
   });
 
+  // Filter tokens based on control panel settings
   const filteredTokens = useMemo(() => {
     if (!data?.tokens) return [];
 
     return data.tokens.filter(token => {
+      // Filter out revoked tokens if not showing them
       if (!showRevoked && !token.enabled) {
         return false;
       }
 
+      // Filter out expired tokens if not showing them
       if (!showExpired && token.expiresAt && token.expiresAt < nowMs()) {
         return false;
       }
