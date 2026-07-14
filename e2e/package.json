@@ -29,7 +29,8 @@
     "test:e2e:headless:web:wide": "VIEWPORT=wide pnpm run test:e2e:headless:web",
     "test:e2e:headless:web:all": "pnpm run test:e2e:headless:web:desktop && pnpm run test:e2e:headless:web:wide",
     "test:e2e:headless:smoke": "wdio run wdio.headless.smoke.conf.ts",
-    "test:e2e:headless:ci": "pnpm run test:e2e:headless:smoke && pnpm run test:e2e:headless:web && pnpm run test:e2e:headless"
+    "test:e2e:headless:ci": "pnpm run test:e2e:headless:smoke && pnpm run test:e2e:headless:web && pnpm run test:e2e:headless",
+    "report": "node --experimental-strip-types scripts/generate-report.ts"
   },
   "devDependencies": {
     "@testing-library/webdriverio": "^3.2.1",

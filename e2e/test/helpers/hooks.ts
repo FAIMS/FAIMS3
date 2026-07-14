@@ -5,6 +5,7 @@ import type {Frameworks} from '@wdio/types';
 import {loadE2eEnv} from './env.ts';
 import {
   appendManifest,
+  cleanupPendingArtifactDirs,
   finalizeArtifacts,
   getRunContext,
   initArtifactRun,
@@ -24,8 +25,11 @@ export function createE2eHooks() {
   return {
     onPrepare() {
       loadE2eEnv();
+      cleanupPendingArtifactDirs();
+      // Fresh suite-labelled run per WDIO invocation (smoke / web / app).
       initArtifactRun(undefined, {forceNew: true});
-      console.log(`[e2e] artifact run ${getRunContext().runId}`);
+      const {runId, suite} = getRunContext();
+      console.log(`[e2e] artifact run ${runId} (suite=${suite})`);
     },
 
     beforeSession() {
@@ -85,16 +89,16 @@ export function createE2eHooks() {
         path: '',
         url,
         kind: 'result',
+        error: passed ? undefined : error?.message,
+        durationMs: typeof duration === 'number' ? duration : undefined,
       });
-
-      // duration available for future reporting
-      void duration;
     },
 
     onComplete(exitCode: number) {
       finalizeArtifacts(exitCode);
+      const {runId, runDir} = getRunContext();
       console.log(
-        `[e2e] wrote artifacts for run ${getRunContext().runId} (exit ${exitCode})`
+        `[e2e] wrote artifacts for run ${runId} (exit ${exitCode}) → ${runDir}/index.html`
       );
     },
   };

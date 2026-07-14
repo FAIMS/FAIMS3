@@ -12,7 +12,8 @@ duplicating env reads, waits, or screenshot logic in specs.
 | `wait.ts`       | `waitForUrl`, `waitForTestId`, `waitForGone` (prefer over `browser.pause`) |
 | `selectors.ts`  | `byTestId('…')` → `$('[data-testid="…"]')`                                 |
 | `screenshot.ts` | `captureStep`, `captureDocs`, `captureRaw`, failure dumps                  |
-| `artifacts.ts`  | Run id, dirs, JSONL → `manifest.json` + `summary.md`                       |
+| `artifacts.ts`  | Run id (`{stamp}-{suite}-{hex}`), dirs, manifest + gallery                 |
+| `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`           |
 | `hooks.ts`      | WDIO hooks wired from conf files                                           |
 | `seed.ts`       | Optional API helpers for invites / project ids                             |
 
@@ -28,14 +29,21 @@ duplicating env reads, waits, or screenshot logic in specs.
 ## Artifact layout
 
 ```
-artifacts/<runId>/
-  manifest.jsonl          # append-only during run
-  manifest.json           # finalized onComplete
-  summary.md
-  downloads/              # Chrome download dir for export tests
-  <spec>/<test>/001-….png
-  failures/<spec>/<test>/{failure.png,page.html,meta.json}
+artifacts/
+  index.html              # all runs (newest first)
+  <stamp>-<suite>-<hex>/  # e.g. 20260714T053007Z-web-a1b2c3
+    index.html            # failure-first gallery + step thumbs
+    manifest.jsonl        # append-only during run
+    manifest.json         # finalized onComplete (includes suite)
+    summary.md
+    downloads/            # Chrome download dir for export tests
+    <spec>/<test>/001-….png
+    failures/<spec>/<test>/{failure.png,page.html,meta.json}
 ```
+
+Suites: `smoke`, `web`, `app` (set via `beginSuite()` in each WDIO conf).
+
+Open `artifacts/<runId>/index.html` (or regenerate with `pnpm report` from `e2e/`).
 
 ## Manifest entry (v1)
 

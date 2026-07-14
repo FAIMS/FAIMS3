@@ -22,6 +22,7 @@
   },
   "include": [
     "test",
+    "scripts",
     "wdio.conf.ts",
     "wdio.headless.conf.ts",
     "wdio.web.conf.ts",

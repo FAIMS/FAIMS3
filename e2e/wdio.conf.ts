@@ -1,33 +1,27 @@
-import {dirname, join, resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
 import {createE2eHooks} from './test/helpers/hooks.ts';
+import {loadE2eEnv, getAppUrl, getWdioLogLevel} from './test/helpers/env.ts';
 import {
-  loadE2eEnv,
-  getArtifactDir,
-  getAppUrl,
-  getWdioLogLevel,
-} from './test/helpers/env.ts';
-import {initArtifactRun, getRunContext} from './test/helpers/artifacts.ts';
+  beginSuite,
+  getRunContext,
+  junitOutputDir,
+} from './test/helpers/artifacts.ts';
 import {chromeViewportArgs} from './test/helpers/viewport.ts';
 
 loadE2eEnv();
 
-const e2eRoot = dirname(fileURLToPath(import.meta.url));
 const hooks = createE2eHooks();
 
-function junitOutputDir(): string {
-  // Ensure run context exists so reporter path is stable for this process
-  try {
-    initArtifactRun();
-  } catch {
-    // ignore
-  }
-  const runId = process.env.E2E_RUN_ID || 'unknown';
-  return join(resolve(e2eRoot, getArtifactDir()), runId, 'junit');
+/** True when this file is the WDIO entry config (not imported by smoke/web/app confs). */
+function isDirectEntry(): boolean {
+  return process.argv.some(a => /(?:^|[/\\])wdio\.conf\.ts$/.test(a));
+}
+
+if (isDirectEntry()) {
+  beginSuite('app');
 }
 
 /**
- * Base WDIO config. App/web/smoke conf files override specs + baseUrl.
+ * Base WDIO config. App/web/smoke conf files override specs + baseUrl + suite.
  */
 export const config: WebdriverIO.Config = {
   runner: 'local',

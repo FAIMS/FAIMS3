@@ -1,13 +1,17 @@
 import {config as baseConfig} from './wdio.conf.ts';
 import {getWebUrl, loadE2eEnv} from './test/helpers/env.ts';
+import {beginSuite, junitOutputDir} from './test/helpers/artifacts.ts';
 
 loadE2eEnv();
+beginSuite('web');
 
 /**
  * WebdriverIO configuration for the web management dashboard (web/).
  *
- * specs: test/specs/web/**
+ * specs: test/specs/web/** + journeys + conductor
  * baseUrl: WEB_URL / NEW_CONDUCTOR_URL (default http://localhost:3001)
+ *
+ * Suite label is `web` (includes Control Centre, journeys, and Conductor auth).
  */
 export const config = {
   ...baseConfig,
@@ -17,4 +21,16 @@ export const config = {
     './test/specs/conductor/**/*.ts',
   ],
   baseUrl: getWebUrl(),
+  reporters: [
+    'spec',
+    [
+      'junit',
+      {
+        outputDir: junitOutputDir(),
+        outputFileFormat(options: {cid: string}) {
+          return `results-${options.cid}.xml`;
+        },
+      },
+    ],
+  ],
 };

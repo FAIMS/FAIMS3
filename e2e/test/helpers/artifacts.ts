@@ -5,13 +5,16 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import {dirname, join, relative, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomBytes} from 'node:crypto';
-import {getArtifactDir} from './env.ts';
+import {getArtifactDir, getSuiteSlug, setSuiteSlug} from './env.ts';
+import {generateReportsForRun} from './report.ts';
 import {readCurrentRunId, writeCurrentRunId} from './run-id.ts';
 
 const e2eRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -32,6 +35,9 @@ export type ManifestEntry = {
   path: string;
   url?: string;
   kind?: 'step' | 'docs' | 'failure' | 'result';
+  /** Present on failed `result` / `failure` entries when available */
+  error?: string;
+  durationMs?: number;
 };
 
 export type TestResultEntry = {
@@ -50,6 +56,7 @@ type RunContext = {
   runDir: string;
   jsonlPath: string;
   stepCounter: number;
+  suite: string;
   currentSpec?: string;
   currentTest?: string;
 };
@@ -64,13 +71,57 @@ function slugify(input: string): string {
     .slice(0, 80);
 }
 
+/**
+ * Run folder id: `{utcStamp}-{suite}-{hex}` e.g. `20260714T053007Z-app-4d403d`.
+ */
 function makeRunId(): string {
   const stamp = new Date()
     .toISOString()
     .replace(/[-:]/g, '')
     .replace(/\.\d+Z$/, 'Z');
+  const suite = getSuiteSlug();
   const suffix = randomBytes(3).toString('hex');
-  return `${stamp}-${suffix}`;
+  return `${stamp}-${suite}-${suffix}`;
+}
+
+/**
+ * Label this WDIO entry conf (`smoke` | `web` | `app`).
+ * Does not mint a run id — workers re-import conf files, so run creation
+ * stays in launcher `onPrepare` (see hooks).
+ */
+export function beginSuite(suite: string): string {
+  return setSuiteSlug(suite);
+}
+
+/**
+ * JUnit output dir under the current artifact run.
+ * Does not mint a run id (config load happens before onPrepare / in workers).
+ */
+export function junitOutputDir(): string {
+  const runId = process.env.E2E_RUN_ID || readCurrentRunId();
+  if (runId) {
+    return join(resolve(e2eRoot, getArtifactDir()), runId, 'junit');
+  }
+  // Launcher config evaluation before onPrepare — workers always have .current-run.
+  return join(
+    resolve(e2eRoot, getArtifactDir()),
+    `_pending-${getSuiteSlug()}`,
+    'junit'
+  );
+}
+
+/** Remove `_pending-*` dirs left from config evaluation before onPrepare. */
+export function cleanupPendingArtifactDirs(): void {
+  const artifactRoot = resolve(e2eRoot, getArtifactDir());
+  if (!existsSync(artifactRoot)) return;
+  for (const name of readdirSync(artifactRoot)) {
+    if (!name.startsWith('_pending-')) continue;
+    try {
+      rmSync(join(artifactRoot, name), {recursive: true, force: true});
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export function getRunContext(): RunContext {
@@ -101,6 +152,7 @@ export function initArtifactRun(
     runDir,
     jsonlPath,
     stepCounter: 0,
+    suite: getSuiteSlug(),
   };
   return ctx;
 }
@@ -161,11 +213,11 @@ export function padSeq(n: number): string {
 export {slugify};
 
 /**
- * Finalize JSONL → manifest.json + summary.md (onComplete).
+ * Finalize JSONL → manifest.json + summary.md + HTML gallery (onComplete).
  */
 export function finalizeArtifacts(exitCode: number): void {
   if (!ctx) return;
-  const {runDir, jsonlPath, runId} = ctx;
+  const {runDir, jsonlPath, runId, suite} = ctx;
   const lines = existsSync(jsonlPath)
     ? readFileSync(jsonlPath, 'utf8').split('\n').filter(Boolean)
     : [];
@@ -178,13 +230,15 @@ export function finalizeArtifacts(exitCode: number): void {
     }
   }
 
+  const finishedAt = new Date().toISOString();
   const manifestPath = join(runDir, 'manifest.json');
   writeFileSync(
     manifestPath,
     JSON.stringify(
       {
         runId,
-        finishedAt: new Date().toISOString(),
+        suite,
+        finishedAt,
         exitCode,
         entryCount: entries.length,
         entries,
@@ -202,10 +256,12 @@ export function finalizeArtifacts(exitCode: number): void {
   const summary = [
     `# E2E run ${runId}`,
     '',
-    `- Finished: ${new Date().toISOString()}`,
+    `- Suite: ${suite}`,
+    `- Finished: ${finishedAt}`,
     `- Exit code: ${exitCode}`,
     `- Test results recorded: ${results.length} (passed ${passed}, failed ${failed})`,
     `- Screenshot / artifact entries: ${shots.length}`,
+    `- HTML gallery: [index.html](./index.html)`,
     '',
     '## Failures',
     '',
@@ -230,4 +286,12 @@ export function finalizeArtifacts(exitCode: number): void {
   summary.push('');
 
   writeFileSync(join(runDir, 'summary.md'), summary.join('\n'));
+
+  try {
+    const {runReport, index} = generateReportsForRun(runDir);
+    console.log(`[e2e] wrote gallery ${relativeToE2e(runReport)}`);
+    console.log(`[e2e] wrote run index ${relativeToE2e(index)}`);
+  } catch (err) {
+    console.warn('[e2e] failed to write HTML gallery:', err);
+  }
 }

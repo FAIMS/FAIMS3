@@ -68,12 +68,29 @@ unnecessary with `--headless=new` and can distort shots.
 | `ARTIFACT_DIR`    | Run artifacts (default `./artifacts`)                                          |
 | `WDIO_LOG_LEVEL`  | `silent` \| `error` \| `warn` \| `info` \| `debug` \| `trace` (default `warn`) |
 
-Each run writes `artifacts/<runId>/`:
+Each run writes `artifacts/<runId>/` where `runId` is
+`{utcStamp}-{suite}-{hex}` (e.g. `20260714T053007Z-app-4d403d`):
 
+| Suite   | Conf / CI stage                                          |
+| ------- | -------------------------------------------------------- |
+| `smoke` | `wdio.headless.smoke.conf.ts`                            |
+| `web`   | `wdio.headless.web.conf.ts` (web + conductor + journeys) |
+| `app`   | `wdio.headless.conf.ts` / `wdio.conf.ts`                 |
+
+Contents:
+
+- `index.html` — failure-first HTML gallery + step screenshot thumbs
 - `manifest.jsonl` / `manifest.json` / `summary.md`
 - `junit/` — JUnit XML for CI
 - `<spec>/<test>/001-….png` — step shots
 - `failures/<spec>/<test>/{failure.png,page.html,meta.json}`
+
+`artifacts/index.html` lists all runs. Regenerate galleries anytime:
+
+```bash
+cd e2e && pnpm report
+cd e2e && pnpm report -- <runId>
+```
 
 Helpers live in `test/helpers/` (see `test/helpers/README.md`). Prefer
 `byTestId`, `captureStep`, and `waitForTestId` over CSS hashes or `browser.pause`.
@@ -105,63 +122,37 @@ test/specs/
 
 See `HANDOFF_E2E_SUITE.md` for the full workflow inventory and tiers.
 
-## CI sketch
+## CI (GitHub Actions)
 
-Suggested job (GitHub Actions-style). Services must already be up (or start
-CouchDB + migrate + seed in the job). Keep `maxInstances: 1` for auth-heavy
-suites (token-exchange races).
+Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
 
-```yaml
-# .github/workflows/e2e.yml (sketch — not wired in this PR)
-jobs:
-  e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: pnpm
-      - run: pnpm install
-      - run: pnpm run generate-local-keys
-      - run: |
-          cp .env.dist .env
-          for d in api web app e2e; do cp "$d/.env.dist" "$d/.env"; done
-          # Disable CouchDB-backed auth attempt limits for repeated logins
-          sed -i 's/^RATE_LIMITER_ENABLED=.*/RATE_LIMITER_ENABLED=false/' api/.env
-      - run: sudo docker compose up -d --build couchdb
-      - run: |
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:5984/_up && break
-            sleep 2
-          done
-      - run: pnpm build && pnpm run migrate-with-keys
-      - run: cd api && pnpm seed-test-dataset
-      - run: pnpm run dev &
-      - run: |
-          for i in $(seq 1 60); do
-            curl -sf http://localhost:8080/login >/dev/null && \
-            curl -sf http://localhost:3000 >/dev/null && \
-            curl -sf http://localhost:3001 >/dev/null && break
-            sleep 2
-          done
-      - name: E2E (smoke + web + app)
-        working-directory: e2e
-        run: pnpm test:e2e:headless:ci
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-artifacts
-          path: |
-            e2e/artifacts/
-            e2e/screenshots/
-          retention-days: 14
+Runs on PRs / pushes to `main` when `e2e`, `app`, `web`, `api`, `library`, or
+lockfile/workflow files change (`workflow_dispatch` always available). The job:
+
+1. Installs deps (Node 24 / pnpm, same as Build & Lint)
+2. Copies `.env.dist` → `.env`, sets `FAIMS_COOKIE_SECRET` + `RATE_LIMITER_ENABLED=false`
+3. Generates signing keys + CouchDB `local.ini`, starts CouchDB via Compose
+4. `pnpm build`, `migrate-with-keys`, `seed-test-dataset`
+5. Starts `pnpm run dev` (api `:8080`, app `:3000`, web `:3001`)
+6. Installs pinned Chrome + ChromeDriver (`browser-actions/setup-chrome`)
+7. Runs `pnpm test:e2e:headless:ci` (smoke → web/conductor/journeys → app)
+8. Uploads `e2e/artifacts/` (including HTML galleries), `e2e/screenshots/`, and `/tmp/faims-dev.log`
+
+Reviewers: download the `e2e-artifacts-*` Action artifact and open
+`e2e/artifacts/index.html` (or the latest `e2e/artifacts/<runId>/index.html`).
+Failures are listed first with screenshot, error, and `page.html` / `meta.json`
+links; the gallery groups step shots by spec/test.
+
+Keep `maxInstances: 1` for auth-heavy suites (token-exchange races). Optional
+Chrome override env vars: `CHROME_BIN` / `CHROMEDRIVER_PATH`.
+
+Local equivalent after the stack is up:
+
+```bash
+pnpm --filter e2e test:e2e:headless:ci
+# or filter one describe:
+cd e2e && pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.grep 'Users admin'
 ```
-
-Local equivalent: `pnpm --filter e2e test:e2e:headless:ci` after the stack is up.
-Filter one describe: `pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.grep 'Users admin'`.
 
 ## Troubleshooting
 
@@ -173,3 +164,4 @@ Filter one describe: `pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.g
 | Empty lists              | Wrong persona or seed incomplete                                 |
 | Users search no results  | Email column must be a string (Users tab maps `emails[0].email`) |
 | HTTP 429 / flaky auth    | Set `RATE_LIMITER_ENABLED=false` in `api/.env`; restart API      |
+| CI Chrome session fails  | Check Actions artifact `e2e-artifacts-*` + pinned Chrome setup   |

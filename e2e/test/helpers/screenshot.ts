@@ -210,5 +210,6 @@ export async function captureFailure(options: {
     path: relativeToE2e(shotPath),
     url,
     kind: 'failure',
+    error: options.error,
   });
 }

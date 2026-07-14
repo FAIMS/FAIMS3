@@ -70,6 +70,29 @@ export function getArtifactDir(): string {
   return optionalEnv('ARTIFACT_DIR', './artifacts');
 }
 
+/**
+ * Suite slug for artifact run ids (`smoke` | `web` | `app` | …).
+ * Set via `E2E_SUITE` or `beginSuite()` in each WDIO conf entrypoint.
+ */
+export function getSuiteSlug(): string {
+  const raw = (process.env.E2E_SUITE || 'e2e').toLowerCase();
+  const slug = raw
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32);
+  return slug || 'e2e';
+}
+
+export function setSuiteSlug(suite: string): string {
+  const slug = suite
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32);
+  process.env.E2E_SUITE = slug || 'e2e';
+  return process.env.E2E_SUITE;
+}
+
 export function getScreenshotMode(): ScreenshotMode {
   const mode = (process.env.SCREENSHOT_MODE || 'all').toLowerCase();
   if (
