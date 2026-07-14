@@ -6,7 +6,7 @@ import {browser} from '@wdio/globals';
 export const VIEWPORTS = {
   mobile: {width: 430, height: 932}, // iPhone 14 Pro Max
   tablet: {width: 1024, height: 768}, // iPad
-  desktop: {width: 1280, height: 720}, // Desktop
+  desktop: {width: 1440, height: 900}, // Typical laptop CSS viewport (16:10)
   wide: {width: 1920, height: 1080}, // Full HD
 } as const;
 
