@@ -260,7 +260,7 @@ jobs:
               `| **Artifacts** | ${artifactLine} |`,
               `| **Run** | [View workflow run](${runUrl}) |`,
               '',
-              'After downloading, open `artifacts/index.html` (failures listed first).',
+              'After downloading and extracting the .zip file, open `artifacts/index.html` (failures listed first).',
               '',
               `_Updated for commit ${context.sha.slice(0, 7)}_`,
             ].join('\n');
