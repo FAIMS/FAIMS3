@@ -21,12 +21,13 @@ export const CreateTeamDialog = () => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-teams-create-button"
         >
           <Plus />
           Create Team
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-teams-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>

@@ -55,6 +55,7 @@ export default function NotebookActivationSwitch({
         size="small"
         variant="outlined"
         disableElevation
+        data-testid="app-notebook-activate-button"
       >
         {ACTIVATE_VERB_LABEL}
       </Button>

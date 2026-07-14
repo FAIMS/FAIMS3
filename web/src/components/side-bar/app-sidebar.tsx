@@ -58,6 +58,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: config.notebookNamePluralCapitalized,
       url: '/projects',
       icon: LetterText,
+      testId: 'web-nav-projects',
       isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
         projects && projects?.length > 0
@@ -75,6 +76,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Templates',
       url: '/templates',
       icon: LayoutTemplate,
+      testId: 'web-nav-templates',
       isActive: pathname.startsWith('/templates'),
       items:
         templates && templates?.length > 0
@@ -94,6 +96,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Users',
       url: '/users',
       icon: Users,
+      testId: 'web-nav-users',
     });
   }
 
@@ -102,6 +105,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Teams',
       url: '/teams',
       icon: House,
+      testId: 'web-nav-teams',
       isActive: pathname.startsWith('/teams'),
       items:
         teams && teams.teams.length > 0
@@ -134,6 +138,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Archive',
       url: '/archive',
       icon: ArchiveRestore,
+      testId: 'web-nav-archive',
       isActive: pathname.startsWith('/archive'),
       linkSearch: {tab: defaultArchiveTab},
       items: archiveSubItems,
@@ -141,7 +146,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" data-testid="web-sidebar" {...props}>
       <SidebarHeader>
         <Link to="/">
           <Logo />

@@ -203,7 +203,10 @@ function RouteComponent() {
             </div>
           </header>
 
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <main
+            className="flex flex-1 flex-col gap-4 p-4 pt-0"
+            data-testid="web-main"
+          >
             <ImpersonationBanner />
             {verification.showNeedsVerification && (
               <VerificationAlertComponent
@@ -231,7 +234,7 @@ function RouteComponent() {
               />
             )}
             <Outlet />
-          </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </Dialog>

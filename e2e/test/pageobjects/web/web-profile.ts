@@ -1,59 +1,39 @@
-import {$, browser} from '@wdio/globals';
+import {browser} from '@wdio/globals';
 import {Page} from '../page.ts';
-
-const WEB_URL = process.env.WEB_URL || 'http://localhost:3001';
+import {getWebUrl} from '../../helpers/env.ts';
+import {byTestId} from '../../helpers/selectors.ts';
+import {waitForTestId} from '../../helpers/wait.ts';
 
 /**
- * Page object for the User Profile page (/_protected/profile/).
- *
- * The page renders:
- *  - An <h1>User Profile</h1> heading.
- *  - A card listing Email, Name, and Email Verification status.
- *  - A "Change Password" button (navigates to the API change-password page).
- *  - A "Manage Long-Lived Tokens" button (links to /profile/long-lived-tokens).
+ * Page object for the User Profile page (/profile).
  */
 class WebProfilePage extends Page {
-  /**
-   * Navigate to the profile page.
-   * Uses a root-relative URL so wdio prepends the configured baseUrl.
-   */
   public async open() {
-    await browser.url(`${WEB_URL}/profile`);
+    await browser.url(`${getWebUrl()}/profile`);
     await this.setBrowserSize();
     await this.waitForPageLoad();
     await this.waitForProfileReady();
   }
 
-  /** Wait until the profile route has rendered (not login redirect). */
   async waitForProfileReady() {
-    await this.heading.waitForDisplayed({
+    await waitForTestId('web-profile-heading', {
       timeout: 15000,
       timeoutMsg: 'Expected User Profile heading on /profile',
     });
   }
 
-  /** Page heading — always "User Profile". */
   get heading() {
-    return $('h1=User Profile');
+    return byTestId('web-profile-heading');
   }
 
-  /**
-   * "Change Password" button.
-   * Redirects to the API change-password page with the current user's email
-   * pre-filled and a redirect back to the profile page.
-   */
   get changePasswordButton() {
-    return $('button=Change Password');
+    return byTestId('web-profile-change-password-button');
   }
 
-  /**
-   * Control for /profile/long-lived-tokens (TanStack Link wrapping a Button).
-   */
   get manageTokensButton() {
-    return $('a[href*="long-lived-tokens"]');
+    return byTestId('web-profile-tokens-link');
   }
 
-  /** Returns true when the profile heading is visible. */
   async isPageDisplayed(): Promise<boolean> {
     try {
       await this.waitForProfileReady();
@@ -63,13 +43,9 @@ class WebProfilePage extends Page {
     }
   }
 
-  /**
-   * Returns the full visible text of the page's main content area.
-   * Used to verify the logged-in user's email is shown on the page.
-   */
   async getPageText(): Promise<string> {
     await this.waitForProfileReady();
-    const main = await $('main');
+    const main = await byTestId('web-main');
     await main.waitForExist({timeout: 10000});
     return main.getText();
   }

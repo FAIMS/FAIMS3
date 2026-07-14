@@ -52,6 +52,7 @@ export function CreateProjectForm({
       label: 'Name',
       schema: resourceNameSchema(5, `${config.notebookNameCapitalized} name`),
       maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      testId: 'web-projects-create-name',
     },
     optionalRootDescriptionField({
       helperText: `Optional summary of this ${config.notebookName} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
@@ -171,6 +172,7 @@ export function CreateProjectForm({
       dividers={dividers}
       onSubmit={onSubmit}
       submitButtonText={`Create ${config.notebookNameCapitalized}`}
+      submitButtonTestId="web-projects-create-submit"
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
     />

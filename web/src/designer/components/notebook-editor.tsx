@@ -174,6 +174,7 @@ export const NotebookEditor = ({
                     color="primary"
                     size="small"
                     onClick={onSave}
+                    data-testid="web-designer-save-button"
                     sx={{
                       textTransform: 'none',
                       fontWeight: 700,
@@ -189,6 +190,7 @@ export const NotebookEditor = ({
                     onClick={onCancelRequest}
                     color="primary"
                     size="small"
+                    data-testid="web-designer-cancel-button"
                     sx={{
                       ...designerCancelButtonSx,
                       fontSize: '0.78rem',

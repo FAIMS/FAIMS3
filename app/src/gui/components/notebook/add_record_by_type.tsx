@@ -141,6 +141,7 @@ export default function AddRecordButtons({
               }}
               startIcon={<AddCircleSharpIcon />}
               key="newRecord"
+              data-testid="app-record-add-button"
               onClick={handleNewRecord(visibleTypes[0])}
             >
               Add new {recordLabel}
@@ -153,6 +154,7 @@ export default function AddRecordButtons({
                     key={viewset_name}
                     startIcon={<AddCircleSharpIcon />}
                     variant="contained"
+                    data-testid="app-record-add-button"
                     sx={{
                       borderRadius: '8px',
                       fontWeight: 'bold',

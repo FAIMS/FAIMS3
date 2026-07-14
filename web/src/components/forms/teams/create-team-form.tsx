@@ -27,6 +27,7 @@ export function CreateTeamForm({setDialogOpen}: CreateTeamFormProps) {
       label: 'Name',
       schema: resourceNameSchema(5, 'Team name'),
       maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      testId: 'web-teams-create-name',
     },
     {
       name: 'description',
@@ -66,6 +67,7 @@ export function CreateTeamForm({setDialogOpen}: CreateTeamFormProps) {
       fields={fields}
       onSubmit={onSubmit}
       submitButtonText={'Create team'}
+      submitButtonTestId="web-teams-create-submit"
     />
   );
 }

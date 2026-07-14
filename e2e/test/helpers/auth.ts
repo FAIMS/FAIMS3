@@ -1,0 +1,168 @@
+/**
+ * Shared login/logout helpers for app, web (Control Centre), and Conductor.
+ */
+import {browser, $} from '@wdio/globals';
+import API_Login from '../pageobjects/api-login.ts';
+import LoginPage from '../pageobjects/app-signin.ts';
+import {
+  getAppUrl,
+  getPersona,
+  getWebUrl,
+  type Credentials,
+  type PersonaKey,
+} from './env.ts';
+import {waitForUrl} from './wait.ts';
+
+export function persona(key: PersonaKey): Credentials {
+  return getPersona(key);
+}
+
+/**
+ * Log in via Conductor local auth form (must already be on /login with redirect).
+ */
+export async function submitConductorLogin(user: Credentials): Promise<void> {
+  await API_Login.waitForPageLoad();
+  if (!(await API_Login.isLocalAuthAvailable())) {
+    throw new Error('Local auth form not available on Conductor login page');
+  }
+  await API_Login.enterEmail(user.email);
+  await API_Login.enterPassword(user.password);
+  await API_Login.clickLogin();
+}
+
+/**
+ * Open Conductor login (optionally with redirect) and authenticate.
+ */
+export async function loginConductor(
+  user: Credentials,
+  options: {redirect?: string} = {}
+): Promise<void> {
+  const redirect = options.redirect;
+  const path = redirect
+    ? `/login?redirect=${encodeURIComponent(redirect)}`
+    : '/login';
+  // Conductor is on :8080 — navigate absolutely
+  const conductorBase = process.env.CONDUCTOR_URL || 'http://localhost:8080';
+  await browser.url(`${conductorBase.replace(/\/$/, '')}${path}`);
+  await submitConductorLogin(user);
+}
+
+/**
+ * Control Centre login: dashboard → Conductor redirect → exchangeToken → main.
+ */
+export async function loginWeb(user: Credentials): Promise<void> {
+  const webUrl = getWebUrl();
+  await browser.url(webUrl);
+
+  await waitForUrl('/login', {
+    timeout: 15000,
+    timeoutMsg:
+      'Expected redirect to API login page after navigating to the dashboard',
+  });
+
+  await submitConductorLogin(user);
+
+  await browser.waitUntil(
+    async () => (await browser.getUrl()).startsWith(webUrl),
+    {
+      timeout: 15000,
+      timeoutMsg: 'Expected redirect back to the web dashboard after login',
+    }
+  );
+
+  await browser.waitUntil(
+    () => browser.execute(() => document.readyState === 'complete'),
+    {timeout: 10000}
+  );
+
+  await browser.waitUntil(
+    async () => {
+      const url = await browser.getUrl();
+      return (
+        url.startsWith(webUrl) &&
+        !url.includes('exchangeToken') &&
+        (await $('main').isExisting())
+      );
+    },
+    {
+      timeout: 15000,
+      timeoutMsg: 'Expected authenticated dashboard (main content) after login',
+    }
+  );
+}
+
+export async function loginWebPersona(key: PersonaKey): Promise<void> {
+  await loginWeb(getPersona(key));
+}
+
+/**
+ * Fieldmark app login: /signin → Sign in → Conductor → back to app.
+ */
+export async function loginApp(user: Credentials): Promise<void> {
+  const appUrl = getAppUrl();
+  await LoginPage.open();
+  await LoginPage.clickSignIn();
+  await API_Login.waitForPageLoad();
+  await submitConductorLogin(user);
+
+  await browser.waitUntil(
+    async () => {
+      const url = await browser.getUrl();
+      const leftLogin = !url.includes('/login');
+      const hasSuccess = await API_Login.hasSuccessMessage();
+      return leftLogin || hasSuccess || url.startsWith(appUrl);
+    },
+    {
+      timeout: 20000,
+      timeoutMsg: 'Expected redirect away from Conductor login after app login',
+    }
+  );
+}
+
+export async function loginAppPersona(key: PersonaKey): Promise<void> {
+  await loginApp(getPersona(key));
+}
+
+/**
+ * Best-effort logout for Control Centre (user menu).
+ * Falls back to clearing cookies/storage + navigating away.
+ */
+export async function logoutWeb(): Promise<void> {
+  const webUrl = getWebUrl();
+  try {
+    const logout = await $('[data-testid="web-nav-logout"]');
+    if (await logout.isExisting()) {
+      const menu = await $('[data-testid="web-nav-user-menu"]');
+      if (await menu.isExisting()) {
+        await menu.click();
+      }
+      await logout.waitForClickable({timeout: 5000});
+      await logout.click();
+      return;
+    }
+  } catch {
+    // fall through
+  }
+  await browser.deleteCookies();
+  await browser.execute(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await browser.url(webUrl);
+}
+
+/**
+ * Best-effort app logout / session clear.
+ */
+export async function logoutApp(): Promise<void> {
+  await browser.deleteCookies();
+  try {
+    await browser.execute(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  } catch {
+    // ignore
+  }
+  await browser.url(`${getAppUrl()}/signin`);
+}

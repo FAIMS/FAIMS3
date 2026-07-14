@@ -1,13 +1,20 @@
 import {config as baseConfig} from './wdio.conf.ts';
 import {headlessChromeCapabilities} from './chrome-headless-capabilities.ts';
+import {getAppUrl, loadE2eEnv} from './test/helpers/env.ts';
+
+loadE2eEnv();
 
 /**
- * Same as wdio.conf.ts but runs Chrome headless (no X server / xvfb required).
+ * Fieldmark app e2e (test/specs/app/**) with headless Chrome.
+ * baseUrl = WEB_APP_PUBLIC_URL (default http://localhost:3000).
  */
 export const config = {
   ...baseConfig,
-  baseUrl: process.env.WEB_URL || 'http://localhost:3001',
+  specs: ['./test/specs/app/**/*.ts'],
+  baseUrl: getAppUrl(),
   // Avoid parallel logins against the same API (token exchange races).
   maxInstances: 1,
+  // Headless Chrome does not need Xvfb; wrapping it distorts screenshot aspect.
+  autoXvfb: false,
   capabilities: [...headlessChromeCapabilities],
 };

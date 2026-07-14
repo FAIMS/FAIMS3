@@ -387,6 +387,7 @@ export const DesignPanel = () => {
             size="small"
             startIcon={<AddRoundedIcon />}
             onClick={openAddFormDialog}
+            data-testid="web-designer-new-form-button"
             sx={{
               ...designerPrimaryActionButtonSx,
               boxShadow: 'none',

@@ -64,7 +64,7 @@
         <a href="/forgot-password{{#if localLoginPostPayload.redirect}}?redirect={{localLoginPostPayload.redirect}}{{/if}}" class="auth-link" data-testid="forgot-password-link">Forgot password?</a>
       </div>
     </div>
-    <button type='submit' class='auth-button'>Sign in</button>
+    <button type='submit' class='auth-button' data-testid="login-submit-button">Sign in</button>
   </form>
 {{/if}}
 {{#if messages.error.loginError}}

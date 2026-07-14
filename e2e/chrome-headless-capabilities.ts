@@ -1,6 +1,16 @@
+import {
+  getViewportConfig,
+  chromeViewportArgs,
+} from './test/helpers/viewport.ts';
+
 /**
  * Chrome capabilities for CI and headless Linux environments (no DISPLAY / xvfb).
+ *
+ * --window-size + --force-device-scale-factor=1 keep screenshot pixels square
+ * (avoids horizontally stretched docs shots under headless Chrome).
  */
+const viewport = getViewportConfig();
+
 export const headlessChromeCapabilities = [
   {
     browserName: 'chrome',
@@ -12,6 +22,7 @@ export const headlessChromeCapabilities = [
         '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        ...chromeViewportArgs(viewport),
       ],
     },
   },
