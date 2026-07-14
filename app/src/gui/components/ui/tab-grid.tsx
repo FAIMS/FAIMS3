@@ -18,6 +18,7 @@ import {
   notebookListDataGridSx,
 } from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
+import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
 /**
  * Renders a tabbed grid component.
@@ -41,8 +42,12 @@ export default function TabProjectGrid({
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
 }) {
-  const activatedProjects = projects.filter(({isActivated}) => isActivated);
-  const availableProjects = projects.filter(({isActivated}) => !isActivated);
+  const activatedProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => isActivated)
+  );
+  const availableProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => !isActivated)
+  );
 
   // we need a state variable to track pagination model since we want to use a
   // controlled component style to force pagination to behave how we want
