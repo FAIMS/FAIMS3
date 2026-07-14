@@ -11,6 +11,10 @@ loadE2eEnv();
  */
 export const config = {
   ...baseConfig,
-  specs: ['./test/specs/web/**/*.ts', './test/specs/journeys/**/*.ts'],
+  specs: [
+    './test/specs/web/**/*.ts',
+    './test/specs/journeys/**/*.ts',
+    './test/specs/conductor/**/*.ts',
+  ],
   baseUrl: getWebUrl(),
 };

@@ -488,3 +488,9 @@ await captureStep({surface: 'web', workflowId: 'T2', label: 'teams-list'});
   - Web scaffolding: team/project invite dialogs + submit, project status/archive, template visibility/archive, expiry select.
   - Specs green headless: `app/record-crud` (N8–N12), `app/sync-settings` (S1/S2/S5), `web/team-invites` (T7/T8), `web/project-invites` (P4), `web/project-status-archive` (P13/P14/A1), `web/template-visibility-archive` (TP9/TP10/A2).
   - Still deferred: `conductor/register-invite` (C3/C4), exports download prefs, CDP offline, password-reset mail, SSO mock, deeper designer field matrix.
+- 2026-07-14 (Phase E): Tier 3 happy-path coverage expanded:
+  - Specs: `web/profile-tokens` (PR1–PR3), `web/permissions-matrix` (T11), `web/offline-map-region` (P7 UI), `web/exports` (P6 dialog), `app/impersonation` (F8), `conductor/password-reset` (C6–C8 via admin `POST /api/reset`, no mail).
+  - Helpers: `test/helpers/seed.ts` (`requestPasswordResetLink`, `completePasswordReset`).
+  - WDIO web configs now include `test/specs/conductor/**`.
+  - `RATE_LIMITER_ENABLED` now also gates email-code + verification-challenge attempt limits (not only Express HTTP). Local `api/.env` sets `RATE_LIMITER_ENABLED=false` for e2e.
+  - Still deferred: `conductor/register-invite` (C3/C4), Chrome download-dir assert for exports, CDP offline collect, SSO mock, OpenLayers draw/save region, deeper users admin (U2–U5).

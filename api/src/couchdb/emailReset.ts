@@ -82,6 +82,11 @@ export const checkCanCreateEmailCode = async ({
   reason?: string;
   nextAttemptAllowedAt?: number;
 }> => {
+  // Shared with HTTP limiter via RATE_LIMITER_ENABLED (local/e2e often disables).
+  if (!config.rateLimiterEnabled) {
+    return {canCreate: true};
+  }
+
   // Get all email codes for this user within the rate limit window
   const timeThreshold = Date.now() - rateLimitWindowMs;
 

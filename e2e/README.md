@@ -18,6 +18,16 @@ cd api && pnpm seed-test-dataset
 
 4. Dev stack: `pnpm run dev` (api `:8080`, app `:3000`, web `:3001`).
 
+For repeated local password-reset / invite e2e, set in `api/.env`:
+
+```bash
+RATE_LIMITER_ENABLED=false
+```
+
+This disables both the Express HTTP IP limiter and CouchDB-backed email-code /
+verification-challenge attempt limits (see `api/.env.dist`). Restart the API
+after changing it.
+
 Copy `e2e/.env.dist` → `e2e/.env` (seed passwords match the dist defaults).
 
 ## Commands

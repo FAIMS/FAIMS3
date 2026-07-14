@@ -14,6 +14,7 @@ import {
   VerificationChallengeFields,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
+import {config} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {expiryMsFromNow, nowMs} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
@@ -109,6 +110,11 @@ export const checkCanCreateVerificationChallenge = async ({
   reason?: string;
   nextAttemptAllowedAt?: number;
 }> => {
+  // Shared with HTTP limiter via RATE_LIMITER_ENABLED (local/e2e often disables).
+  if (!config.rateLimiterEnabled) {
+    return {canCreate: true};
+  }
+
   // Get all verification challenges for this user and email within the rate
   // limit window
   const timeThreshold = Date.now() - rateLimitWindowMs;

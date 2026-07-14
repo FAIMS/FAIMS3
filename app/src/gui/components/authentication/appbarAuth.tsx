@@ -203,6 +203,7 @@ const AuthenticatedDisplayComponent = () => {
         color="primary"
         disableElevation
         onClick={handleClick}
+        data-testid="app-nav-user-menu"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -386,6 +387,7 @@ const AuthenticatedDisplayComponent = () => {
         {/* Impersonate user (admins only) */}
         {canImpersonate && (
           <MenuItem
+            data-testid="app-nav-impersonate"
             onClick={() => {
               setImpersonateOpen(true);
               handleClose();

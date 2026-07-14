@@ -208,7 +208,11 @@ const EnvSchema = z
       DEFAULT_RATE_LIMITER_PER_WINDOW,
       'RATE_LIMITER_PER_WINDOW'
     ),
-    /** Whether HTTP rate limiting is enabled (`true` / other). */
+    /**
+     * Whether rate limiting is enabled (`true` / other).
+     * Covers the Express HTTP IP limiter and email-code /
+     * verification-challenge attempt limits.
+     */
     RATE_LIMITER_ENABLED: configHelpers.equalsTrueBool(true),
     /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
