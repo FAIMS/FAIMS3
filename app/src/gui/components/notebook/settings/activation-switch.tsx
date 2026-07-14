@@ -70,6 +70,8 @@ export default function NotebookActivationSwitch({
         primaryActionColor="primary"
         primaryActionVariant="contained"
         cancelButtonText="Cancel"
+        primaryActionTestId="app-notebook-activate-confirm"
+        cancelTestId="app-notebook-activate-cancel"
       >
         <Box sx={{mb: 2}}>
           <Typography variant="body2" sx={{mb: 2}}>

@@ -11,6 +11,7 @@ import {
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
+import type {HTMLAttributes} from 'react';
 import {theme} from '../../themes';
 import {
   ACTIVATED_LABEL,
@@ -126,6 +127,12 @@ export default function TabProjectGrid({
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
+              slotProps={{
+                row: {
+                  // Shared landmark for e2e; activated rows navigate on click.
+                  'data-testid': 'app-notebook-row',
+                } as HTMLAttributes<HTMLDivElement>,
+              }}
             />
           </div>
         </TabPanel>

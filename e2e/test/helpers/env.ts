@@ -84,6 +84,30 @@ export function getScreenshotMode(): ScreenshotMode {
   return 'all';
 }
 
+/** WDIO protocol/logger levels (quiet → loud). Default `warn` avoids flooding CI. */
+export type WdioLogLevel =
+  | 'trace'
+  | 'debug'
+  | 'info'
+  | 'warn'
+  | 'error'
+  | 'silent';
+
+export function getWdioLogLevel(): WdioLogLevel {
+  const level = (process.env.WDIO_LOG_LEVEL || 'warn').toLowerCase();
+  if (
+    level === 'trace' ||
+    level === 'debug' ||
+    level === 'info' ||
+    level === 'warn' ||
+    level === 'error' ||
+    level === 'silent'
+  ) {
+    return level;
+  }
+  return 'warn';
+}
+
 export function getTheme(): string {
   return optionalEnv('VITE_THEME', 'default');
 }

@@ -7,7 +7,7 @@ duplicating env reads, waits, or screenshot logic in specs.
 
 | Module          | Role                                                                       |
 | --------------- | -------------------------------------------------------------------------- |
-| `env.ts`        | Load `e2e/.env`, URLs, screenshot mode, personas                           |
+| `env.ts`        | Load `e2e/.env`, URLs, screenshot mode, `WDIO_LOG_LEVEL`, personas         |
 | `auth.ts`       | `loginWeb` / `loginApp` / `loginConductor` / logout                        |
 | `wait.ts`       | `waitForUrl`, `waitForTestId`, `waitForGone` (prefer over `browser.pause`) |
 | `selectors.ts`  | `byTestId('…')` → `$('[data-testid="…"]')`                                 |

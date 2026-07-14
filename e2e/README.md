@@ -51,11 +51,12 @@ unnecessary with `--headless=new` and can distort shots.
 
 ## Artifacts & screenshots
 
-| Env               | Purpose                                                         |
-| ----------------- | --------------------------------------------------------------- |
-| `SCREENSHOT_MODE` | `off` \| `on` \| `docs` \| `artifacts` \| `all` (default `all`) |
-| `SCREENSHOT_DIR`  | Docs screenshots (default `./screenshots`)                      |
-| `ARTIFACT_DIR`    | Run artifacts (default `./artifacts`)                           |
+| Env               | Purpose                                                                        |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `SCREENSHOT_MODE` | `off` \| `on` \| `docs` \| `artifacts` \| `all` (default `all`)                |
+| `SCREENSHOT_DIR`  | Docs screenshots (default `./screenshots`)                                     |
+| `ARTIFACT_DIR`    | Run artifacts (default `./artifacts`)                                          |
+| `WDIO_LOG_LEVEL`  | `silent` \| `error` \| `warn` \| `info` \| `debug` \| `trace` (default `warn`) |
 
 Each run writes `artifacts/<runId>/`:
 
@@ -69,14 +70,17 @@ Helpers live in `test/helpers/` (see `test/helpers/README.md`). Prefer
 
 ## Personas (seed)
 
-| Env prefix                        | Typical use                       |
-| --------------------------------- | --------------------------------- |
-| `TEST_OPERATIONS_ADMIN_*`         | Users admin, global ops           |
-| `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management           |
-| `TEST_MEMBER_BOTH_*`              | Create within team; projects list |
-| `TEST_RED_MEMBER_CREATOR_*`       | Template creation                 |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit            |
-| `TEST_PROJECT_GUEST_*`            | Read-only / limited UI            |
+| Env prefix                        | Typical use                                                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `TEST_OPERATIONS_ADMIN_*`         | Users admin, global ops; also seeded with Red `TEMPLATE_ADMIN` + Blue `PROJECT_ADMIN` for archive/visibility e2e |
+| `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                                                                          |
+| `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                                                                |
+| `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                                                                |
+| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                                                              |
+| `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                                                                           |
+
+Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =
+`api/notebooks/sample_notebook.json` (override via `TEST_SEED_NOTEBOOKS`).
 
 ## Spec layout
 

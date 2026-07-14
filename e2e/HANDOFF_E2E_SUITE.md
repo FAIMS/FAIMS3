@@ -481,3 +481,10 @@ await captureStep({surface: 'web', workflowId: 'T2', label: 'teams-list'});
 
 - 2026-07-14: Initial handoff created from platform UI workflow audit + existing `e2e/` inventory.
 - 2026-07-14: Phase A foundation landed (helpers, hooks, config split, artifacts/manifest, smoke scripts). Existing specs green headless. Tier 0 smoke green. Tier 1 mostly green (teams/templates/projects/designer/journey/app activate). Tier 2/3 thin coverage added (invites tab, archive nav, users admin, profile tokens). Deferred with reason: full invite register (C3/C4), exports download prefs, CDP offline, password-reset mail, SSO mock, deep record CRUD when contributor has no activated notebook.
+- 2026-07-14 (continued): Closed Tier 1 record CRUD gap + Phase D Tier 2 happy paths:
+  - Seed Red notebook now defaults to `api/notebooks/e2e-minimal.json` (single required text field) so headless record create is practical; Blue remains `sample_notebook.json`.
+  - Seed ops admin gains `TEMPLATE_ADMIN` on Red + `PROJECT_ADMIN` on Blue so visibility/archive Actions are reachable (ops global roles alone cannot READ private team templates).
+  - App scaffolding: activate confirm, notebook row, notebook tabs, deactivate, `app-record-field-*`, `app-record-finish-button`.
+  - Web scaffolding: team/project invite dialogs + submit, project status/archive, template visibility/archive, expiry select.
+  - Specs green headless: `app/record-crud` (N8–N12), `app/sync-settings` (S1/S2/S5), `web/team-invites` (T7/T8), `web/project-invites` (P4), `web/project-status-archive` (P13/P14/A1), `web/template-visibility-archive` (TP9/TP10/A2).
+  - Still deferred: `conductor/register-invite` (C3/C4), exports download prefs, CDP offline, password-reset mail, SSO mock, deeper designer field matrix.

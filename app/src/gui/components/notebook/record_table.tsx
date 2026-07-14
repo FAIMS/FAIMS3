@@ -1066,7 +1066,8 @@ const useRowHydration = (
     const map = new Map<string, RecordMetadata>();
     pageRows.forEach((row, index) => {
       const query = hydratedQueries[index];
-      if (query.data) {
+      // Queries may be empty while pageRows is not (e.g. token briefly null)
+      if (query?.data) {
         map.set(row.recordId, query.data);
       }
     });
@@ -1165,9 +1166,9 @@ export function RecordsTable(props: RecordsTableProps) {
   const activeUser = useAppSelector(selectActiveUser);
   const dataDb = localGetDataDb(project_id);
 
-  // Hydrate visible rows (skip while uiSpec is loading)
+  // Hydrate visible rows (skip while uiSpec or auth token is unavailable)
   const {hydratedMap, isLoading: isHydrating} = useRowHydration(
-    uiSpec ? pageRows : [],
+    uiSpec && activeUser?.parsedToken ? pageRows : [],
     project_id,
     uiSpec,
     dataDb,

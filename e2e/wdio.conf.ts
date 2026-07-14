@@ -1,7 +1,12 @@
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createE2eHooks} from './test/helpers/hooks.ts';
-import {loadE2eEnv, getArtifactDir, getAppUrl} from './test/helpers/env.ts';
+import {
+  loadE2eEnv,
+  getArtifactDir,
+  getAppUrl,
+  getWdioLogLevel,
+} from './test/helpers/env.ts';
 import {initArtifactRun, getRunContext} from './test/helpers/artifacts.ts';
 import {chromeViewportArgs} from './test/helpers/viewport.ts';
 
@@ -37,7 +42,7 @@ export const config: WebdriverIO.Config = {
       },
     },
   ],
-  logLevel: 'info',
+  logLevel: getWdioLogLevel(),
   bail: 0,
   baseUrl: getAppUrl(),
   waitforTimeout: 10000,

@@ -22,8 +22,10 @@
  *   TEST_SEED_PASSWORD   Shared password for all seeded users.
  *                        Defaults to "TestPassword123!".
  *   TEST_SEED_NOTEBOOKS  Comma-separated paths to notebook JSON files.
- *                        Defaults to "./notebooks/Field-Sampler.json,
+ *                        Defaults to "./notebooks/e2e-minimal.json,
  *                        ./notebooks/sample_notebook.json"
+ *                        (Red = minimal one-field notebook for app record
+ *                        CRUD e2e; Blue = sample survey).
  *
  * WARNING: This is a destructive operation.  All existing data in the
  * configured CouchDB will be wiped and replaced with seed data.
@@ -33,6 +35,7 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
+  addTemplateRole,
   PeopleDBDocument,
   Role,
   roleDetails,
@@ -53,7 +56,7 @@ import {createUser, saveCouchUser} from '../couchdb/users';
 const SEED_PASSWORD = process.env.TEST_SEED_PASSWORD || 'TestPassword123!';
 
 const DEFAULT_NOTEBOOK_PATHS = [
-  './notebooks/Field-Sampler.json',
+  './notebooks/e2e-minimal.json',
   './notebooks/sample_notebook.json',
 ];
 
@@ -106,8 +109,20 @@ const USER_SPECS: UserSpec[] = [
     tag: 'OPERATIONS_ADMIN',
     name: 'Seed Administrator',
     globalRoles: [Role.OPERATIONS_ADMIN],
-    // no resource roles, purely admin role
-    assignResourceRoles() {},
+    // TEMPLATE_ADMIN on Red so e2e can exercise visibility/archive Actions
+    // (ops global roles alone do not grant READ on private team templates).
+    assignResourceRoles(user, ctx) {
+      addTemplateRole({
+        user,
+        role: Role.TEMPLATE_ADMIN,
+        templateId: ctx.redTemplateId,
+      });
+      addProjectRole({
+        user,
+        role: Role.PROJECT_ADMIN,
+        projectId: ctx.blueNotebookId,
+      });
+    },
   },
 
   // ── seed-manager-cross ────────────────────────────────────────────────────

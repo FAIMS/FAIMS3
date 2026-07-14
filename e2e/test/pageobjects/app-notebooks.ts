@@ -34,6 +34,14 @@ class AppNotebooksPage extends Page {
     return byTestId('app-notebook-activate-button');
   }
 
+  get activateConfirm() {
+    return byTestId('app-notebook-activate-confirm');
+  }
+
+  get notebookRow() {
+    return byTestId('app-notebook-row');
+  }
+
   async waitForWorkspace() {
     await waitForTestId('app-notebooks-heading', {timeout: 20000});
   }
@@ -43,10 +51,20 @@ class AppNotebooksPage extends Page {
     await this.notActiveTab.click();
   }
 
+  async openActiveTab() {
+    await this.activeTab.waitForEnabled({timeout: 15000});
+    await this.activeTab.click();
+  }
+
   async activateFirstAvailable() {
     await this.openNotActiveTab();
     await this.activateButton.waitForClickable({timeout: 15000});
     await this.activateButton.click();
+  }
+
+  async confirmActivation() {
+    await this.activateConfirm.waitForClickable({timeout: 10000});
+    await this.activateConfirm.click();
   }
 }
 

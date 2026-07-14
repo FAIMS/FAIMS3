@@ -1,82 +1,69 @@
 /**
  * Workflows: N8, N9, N11, N12
- * Record CRUD smoke once a notebook is available.
- * Soft assertions when contributor has no activated notebooks yet.
+ * Activate seeded Red notebook, create a text record, return to list.
  */
 import {loginAppPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
 import {byTestId} from '../../helpers/selectors.ts';
-import {getAppUrl} from '../../helpers/env.ts';
-import {waitForUrl} from '../../helpers/wait.ts';
+import AppRecordsPage from '../../pageobjects/app-records.ts';
 
 describe('App — Record CRUD', () => {
+  const noteText = `E2E note ${Date.now()}`;
+
   before(async () => {
     await browser.reloadSession();
     await loginAppPersona('projectContributor');
-    // Allow auth-return / workspace settle
-    await browser.url(`${getAppUrl()}/`);
+    await AppRecordsPage.ensureNotebookOpen();
+  });
+
+  it('N8: should open an activated notebook', async () => {
+    await expect(byTestId('app-record-add-button')).toBeDisplayed();
+    await captureStep({
+      surface: 'app',
+      workflowId: 'N8',
+      label: 'notebook-opened',
+    });
+  });
+
+  it('N9: should show add-record control', async () => {
+    await expect(byTestId('app-record-add-button')).toBeDisplayed();
+    await captureStep({
+      surface: 'app',
+      workflowId: 'N9',
+      label: 'add-record-button',
+    });
+  });
+
+  it('N11: should create a text record and finish', async () => {
+    await AppRecordsPage.createTextRecord(noteText);
+    await captureStep({
+      surface: 'app',
+      workflowId: 'N11',
+      label: 'record-created',
+    });
+  });
+
+  it('N12: should show the new record in the list/search', async () => {
+    const search = byTestId('record-search-input');
+    if (await search.isExisting()) {
+      const input = await search.$('input');
+      await input.waitForDisplayed({timeout: 5000});
+      await input.setValue(noteText);
+    }
     await browser.waitUntil(
       async () => {
-        const url = await browser.getUrl();
-        return (
-          !url.includes('/login') &&
-          !url.includes('/signin') &&
-          ((await byTestId('app-notebooks-heading')
-            .isExisting()
-            .catch(() => false)) ||
-            (await $('body').getText()).length > 0)
-        );
+        const body = await $('body').getText();
+        return body.includes(noteText) || body.includes(noteText.slice(0, 12));
       },
-      {timeout: 20000, timeoutMsg: 'App did not settle after login'}
+      {
+        timeout: 20000,
+        timeoutMsg: `Expected record containing "${noteText}" in notebook list`,
+      }
     );
-  });
-
-  it('N8: should reach an activated notebook when available', async () => {
-    await browser.url(`${getAppUrl()}/`);
-    const heading = byTestId('app-notebooks-heading');
-    if (!(await heading.isExisting())) {
-      await captureStep({
-        surface: 'app',
-        workflowId: 'N8',
-        label: 'workspace-not-ready',
-      });
-      return;
-    }
-    await heading.waitForDisplayed({timeout: 10000});
-
-    const row = await $('a[href*="/surveys/"], .MuiDataGrid-row');
-    if (await row.isExisting()) {
-      await row.click();
-      await waitForUrl(/surveys\//, {timeout: 15000});
-      await captureStep({
-        surface: 'app',
-        workflowId: 'N8',
-        label: 'notebook-opened',
-      });
-    } else {
-      await captureStep({
-        surface: 'app',
-        workflowId: 'N8',
-        label: 'no-active-notebook',
-      });
-    }
-  });
-
-  it('N9: should show add-record control when inside a notebook', async () => {
-    const add = byTestId('app-record-add-button');
-    if (await add.isExisting()) {
-      await expect(add).toBeDisplayed();
-      await captureStep({
-        surface: 'app',
-        workflowId: 'N9',
-        label: 'add-record-button',
-      });
-    } else {
-      await captureStep({
-        surface: 'app',
-        workflowId: 'N9',
-        label: 'add-record-unavailable',
-      });
-    }
+    await captureStep({
+      surface: 'app',
+      workflowId: 'N12',
+      label: 'record-listed',
+    });
   });
 });
