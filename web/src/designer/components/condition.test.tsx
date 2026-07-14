@@ -30,6 +30,7 @@ import {migrateNotebook} from '@faims3/data-model';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {AppState, NotebookUISpec} from '../state/initial';
 import {loaded} from '../store/slices/uiSpec';
+import {isBooleanCondition} from '@/lib/conditionUtils';
 
 const WithProviders = ({
   children,
@@ -48,7 +49,7 @@ describe('ConditionControl', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
-    const condition = {
+    const condition: ConditionType = {
       operator: 'equal',
       field: 'New-Text-Field',
       value: 'test',
@@ -245,7 +246,7 @@ describe('ConditionControl', () => {
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
 
-    const condition = {
+    const condition: ConditionType = {
       operator: 'equal',
       field: 'Sample-Location',
       value: 100,
@@ -264,8 +265,11 @@ describe('ConditionControl', () => {
         fireEvent.click(splitButton);
         expect(onChangeFn).toHaveBeenCalled();
         const last = onChangeFn.mock.lastCall as ConditionType[];
-        expect(last[0].operator).toBe('and');
-        expect(last[0].conditions?.length).toBe(2);
+        expect(isBooleanCondition(last[0])).toBe(true);
+        if (isBooleanCondition(last[0])) {
+          expect(last[0].operator).toBe('and');
+          expect(last[0].conditions?.length).toBe(2);
+        }
       }
     });
   });

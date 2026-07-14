@@ -16,65 +16,70 @@
  * @file Modal entry point for editing a visibility condition with save/cancel.
  */
 
+import QuizIcon from '@mui/icons-material/Quiz';
 import {
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  SxProps,
   Stack,
+  SxProps,
   Theme,
 } from '@mui/material';
 import type {ReactNode} from 'react';
-import {useCallback, useEffect, useState} from 'react';
-import {ConditionControl} from './ConditionControl';
-import {ConditionProps, ConditionType} from '../../types/condition';
-import QuizIcon from '@mui/icons-material/Quiz';
+import {useCallback, useState} from 'react';
+import {ConditionType} from '../../types/condition';
 import {
   designerCancelButtonSx,
   designerDialogContentSx,
 } from '../designer-style';
+import {ConditionControl, ConditionControlProps} from './ConditionControl';
+import {normaliseConditionForCompare} from '@/lib/conditionUtils';
 
 /** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
 export const ConditionModal = (
-  props: ConditionProps & {
+  props: ConditionControlProps & {
     label: string;
     icon?: ReactNode;
     buttonSx?: SxProps<Theme>;
   }
 ) => {
   const [open, setOpen] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
   // Local draft copy
   const [draft, setDraft] = useState<ConditionType | null>(
     props.initial ?? null
   );
 
-  // Reset the draft whenever the parent value changes while closed
-  // Doing it this way because the modal exists even when closed
-  useEffect(() => {
-    if (!open) setDraft(props.initial ?? null);
-  }, [props.initial, open]);
-
-  // Open the dialog and refresh draft from parent prop
+  // Open the dialog, refresh draft when opening
+  // Reset confirmCancel when opening/closing.
   const handleOpen = () => {
+    setConfirmCancel(false);
     setDraft(props.initial ?? null);
     setOpen(true);
   };
 
-  const close = () => setOpen(false);
-
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  // clear local draft when closing
+  const close = () => {
+    setOpen(false);
+    setConfirmCancel(false);
+    setDraft(null);
+  };
 
   // Warn when cancelling
   const handleCancel = useCallback(() => {
-    const changed =
-      JSON.stringify(draft) !== JSON.stringify(props.initial || null);
-    if (changed) setConfirmCancel(true);
+    const currentDraft = normaliseConditionForCompare(draft);
+    const initialCondition = normaliseConditionForCompare(props.initial);
+
+    const hasUnsavedChanges =
+      JSON.stringify(currentDraft) !== JSON.stringify(initialCondition);
+
+    if (hasUnsavedChanges) setConfirmCancel(true);
     else close();
   }, [draft, props.initial]);
 
   const handleCancelConfirm = () => {
-    setConfirmCancel(false);
     close();
   };
 

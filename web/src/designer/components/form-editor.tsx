@@ -61,7 +61,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {findFormExternalUsage} from './condition/utils';
+import {findFormExternalUsage} from '@/lib/conditionUtils';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';

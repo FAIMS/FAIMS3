@@ -11,6 +11,7 @@ import {
 } from './conditionReferences';
 import type {FieldType} from '../../state/initial';
 import type {ConditionType} from '../../types/condition';
+import {isBooleanCondition} from '@/lib/conditionUtils';
 
 describe('conditionReferences — field usage and rename', () => {
   it('detects field usage in nested boolean conditions', () => {
@@ -117,7 +118,20 @@ describe('conditionReferences — option value references', () => {
 
     const updated = updateConditionReferences(condition, 'choice', 'A', 'AA');
 
-    expect(updated.conditions?.[0].value).toBe('AA');
-    expect(updated.conditions?.[1].value).toBe('A');
+    expect(isBooleanCondition(updated)).toBe(true);
+
+    if (isBooleanCondition(updated)) {
+      const [firstCondition, secondCondition] = updated.conditions ?? [];
+      expect(isBooleanCondition(firstCondition)).toBe(false);
+      expect(isBooleanCondition(secondCondition)).toBe(false);
+
+      if (
+        !isBooleanCondition(firstCondition) &&
+        !isBooleanCondition(secondCondition)
+      ) {
+        expect(firstCondition.value).toBe('AA');
+        expect(secondCondition.value).toBe('A');
+      }
+    }
   });
 });

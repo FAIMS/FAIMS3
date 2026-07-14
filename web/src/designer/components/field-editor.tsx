@@ -66,7 +66,7 @@ import {
   findFieldDependencyReferences,
   type FieldDependencyReference,
   findInvalidConditionReferences,
-} from './condition/utils';
+} from '@/lib/conditionUtils';
 import DebouncedTextField from './debounced-text-field';
 import {keyframes} from '@emotion/react';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
