@@ -141,7 +141,7 @@ export const BooleanOperatorTooltip = () => (
           overflow: 'auto',
         }}
       >
-        <HelperBox title="AND / OR group">
+        <HelperBox title="AND or OR group">
           <Typography variant="body2">
             The <BooleanOperatorText operator="and" /> and{' '}
             <BooleanOperatorText operator="or" /> allow you to stack multiple

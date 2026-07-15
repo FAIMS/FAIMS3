@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @file Entry point for editing visibility conditions.
+ * @file Entry point for the condition editor.
  */
 
 import {

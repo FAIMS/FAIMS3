@@ -54,12 +54,12 @@ export const DraggableConditionEditor = (props: {
 
   const handleDragStart: DragStartHandler = event => {
     const sourceId = event.operation.source?.id;
-    setActiveDragId(sourceId == null ? null : String(sourceId));
+    setActiveDragId(sourceId ? String(sourceId) : null);
   };
 
   const handleDragOver: DragOverHandler = event => {
     const targetId = event.operation.target?.id;
-    setActiveDropTargetId(targetId == null ? null : String(targetId));
+    setActiveDropTargetId(targetId ? String(targetId) : null);
   };
 
   const handleDragEnd: DragEndHandler = event => {
@@ -71,7 +71,7 @@ export const DraggableConditionEditor = (props: {
     const sourceId = event.operation.source?.id;
     const targetId = event.operation.target?.id;
 
-    if (sourceId == null || targetId == null) return;
+    if (!sourceId || !targetId) return;
 
     const parsedTarget = parseDropTarget(String(targetId));
     if (!parsedTarget) return;

@@ -119,7 +119,7 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
           </Box>
 
           {/* Wrap this condition in a group button */}
-          <Tooltip title="Make this an 'And' or 'OR' condition">
+          <Tooltip title="Create an AND or OR group from this condition">
             <IconButton
               size="small"
               color="success"

@@ -251,7 +251,7 @@ describe('ConditionControl', () => {
     expect(optionLabels).not.toContain('Cross Form Widget');
   });
 
-  test('adds another condition row from a field condition', () => {
+  test('wraps a field condition with a new empty condition row', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
@@ -290,7 +290,7 @@ describe('ConditionControl', () => {
     ).toStrictEqual(normaliseConditionForCompare(condition));
   });
 
-  test('makes a boolean condition after completing the new rule', async () => {
+  test('creates a boolean condition group after completing the new rule', async () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
