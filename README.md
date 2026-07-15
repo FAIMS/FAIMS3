@@ -132,6 +132,29 @@ These three commands are bundled into `dev.sh` i.e.
 ./dev.sh
 ```
 
+Another way to run the applications on MacOS or Linux is to use the `Procfile` and
+a tool such as [Overmind](https://github.com/DarthSim/overmind). The `Procfile`
+contains the commands to run the different services and Overmind can be used
+to run them together. The advantage over `pnpm run dev` is that you can
+run them in the background, restart individual services easily and attach/detach
+the output from the servers in the terminal.
+
+Example commands:
+
+```bash
+# Run all services and detach
+overmind start -d
+
+# Echo output to the terminal
+overmind echo
+
+# Restart the app
+overmind restart app
+
+# Restart everything
+overmind restart
+```
+
 ## Manual Setup
 
 These steps are done by the `localdev.sh` script but in case you want to do them manually they are listed here.
