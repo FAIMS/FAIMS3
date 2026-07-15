@@ -36,11 +36,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-  OFFLINE_MAPS,
-} from '../../../../buildconfig';
+import {config} from '../../../../buildconfig';
 import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {
@@ -69,18 +65,20 @@ import SyncModeHelpDialog from './syncModeHelpDialog';
 export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   const nav = useNavigate();
   const {projectId} = useParams<{projectId: ProjectID}>();
-  if (!projectId) return <></>;
   const dispatch = useAppDispatch();
-  const project = useAppSelector(state => selectProjectById(state, projectId));
-  if (!project) return <></>;
+  const project = useAppSelector(state =>
+    projectId ? selectProjectById(state, projectId) : undefined
+  );
+  const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
+  const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
+    React.useState(false);
+
+  if (!projectId || !project) return <></>;
 
   const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
   const syncMode = project.database?.syncMode ?? 'none';
   const pullSyncEnabled = syncModeIncludesPull(syncMode);
   const pushSyncEnabled = syncModeIncludesPush(syncMode);
-  const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
-  const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
-    React.useState(false);
 
   const handleDeactivateClick = () => {
     setDeactivateSyncAcknowledged(false);
@@ -88,13 +86,13 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
   };
 
   const handleDeactivateConfirm = async () => {
-    if (OFFLINE_MAPS) {
+    if (config.offlineMaps) {
       try {
         await removeProjectOfflineMaps(projectId);
       } catch (e) {
         logError(
           new Error(
-            `Failed to remove ${NOTEBOOK_NAME} offline maps on deactivation`,
+            `Failed to remove ${config.notebookName} offline maps on deactivation`,
             {cause: e}
           )
         );
@@ -209,16 +207,18 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
             </Box>
           </Box>
 
-          {OFFLINE_MAPS && <NotebookOfflineMapSettings project={project} />}
+          {config.offlineMaps && (
+            <NotebookOfflineMapSettings project={project} />
+          )}
 
           <Box component={Paper} variant={'outlined'} elevation={0} sx={{p: 2}}>
             <Typography variant={'h6'} sx={{mb: 2}}>
-              {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+              {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
             </Typography>
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
-                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME} will remove it
-                from your device and delete all records on your device.{' '}
+                {DE_ACTIVATE_ACTIVE_VERB} this {config.notebookName} will remove
+                it from your device and delete all records on your device.{' '}
                 {syncMode === 'none'
                   ? 'Ensure any records you need on the server have been synced before deactivating.'
                   : 'Ensure all your records have a green sync status (uploaded) before deactivating.'}
@@ -228,7 +228,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
                 color={'error'}
                 onClick={handleDeactivateClick}
               >
-                {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
               </Button>
             </Box>
           </Box>
@@ -244,13 +244,13 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
       {/* Deactivation Confirmation Dialog */}
       <Dialog open={openDeactivateDialog} onClose={handleDeactivateCancel}>
         <DialogTitle>
-          {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+          {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
             <Typography variant="body1">
               Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} the{' '}
-              {NOTEBOOK_NAME} and remove it from your device?
+              {config.notebookName} and remove it from your device?
             </Typography>
             <FormControlLabel
               control={

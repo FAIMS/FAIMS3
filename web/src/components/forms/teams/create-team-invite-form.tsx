@@ -1,13 +1,9 @@
 import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
+import {config, brandNotebook} from '@/constants';
+import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
 import {
-  EXCLUDED_TEAM_ROLES,
-  INVITE_TOKEN_HINTS,
-  brandNotebook,
-} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {userCanDo} from '@/hooks/auth-hooks';
-import {
+  INPUT_LIMITS,
   PostCreateInviteInput,
   Resource,
   Role,
@@ -16,7 +12,6 @@ import {
   teamInviteToAction,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 
@@ -35,27 +30,22 @@ export function CreateTeamInviteForm({
   setDialogOpen,
   teamId,
 }: UpdateTemplateFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
     undefined
   );
 
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
-
   // Memoize the role options to prevent re-computation on each render.
   // Hides brand-excluded roles (e.g. DASS hides TEAM_MEMBER_CREATOR) and
   // passes the description so the dropdown shows the new role copy.
   const roleOptions = useMemo(() => {
-    if (!user) return [];
     return Object.entries(roleDetails)
       .filter(
         ([role, {scope, resource}]) =>
           scope === RoleScope.RESOURCE_SPECIFIC &&
           resource === Resource.TEAM &&
-          !EXCLUDED_TEAM_ROLES.has(role) &&
+          !config.excludedTeamRoles.has(role) &&
           userCanDo({
             user,
             resourceId: teamId,
@@ -76,7 +66,13 @@ export function CreateTeamInviteForm({
     {
       name: 'name',
       label: 'Invite title',
-      schema: z.string().min(4),
+      schema: z
+        .string()
+        .min(4)
+        .max(INPUT_LIMITS.INVITE_NAME_MAX_LENGTH, {
+          message: `Invite title must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`,
+        }),
+      maxLength: INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
     },
     {
       name: 'role',
@@ -87,9 +83,15 @@ export function CreateTeamInviteForm({
     {
       name: 'uses',
       label: 'Maximum uses (leave empty to set no limit)',
-      schema: z.number().min(1).optional(),
+      schema: z
+        .number()
+        .int()
+        .min(1)
+        .max(INPUT_LIMITS.INVITE_MAX_USES)
+        .optional(),
       type: 'number',
       min: 1,
+      max: INPUT_LIMITS.INVITE_MAX_USES,
     },
   ];
 
@@ -107,8 +109,6 @@ export function CreateTeamInviteForm({
     uses?: number;
     name: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not logged in'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};
@@ -130,7 +130,7 @@ export function CreateTeamInviteForm({
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/team/${teamId}`,
+      `${config.apiUrl}/api/invites/team/${teamId}`,
       {
         method: 'POST',
         headers: {
@@ -160,7 +160,7 @@ export function CreateTeamInviteForm({
       submitButtonText={'Create Invite'}
       footer={
         <ExpirySelector
-          hints={INVITE_TOKEN_HINTS}
+          hints={config.inviteTokenHints}
           maxDurationDays={365}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}

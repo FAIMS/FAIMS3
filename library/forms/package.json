@@ -1,6 +1,6 @@
 {
   "name": "@faims3/forms",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "private": true,
   "files": [
     "dist"
@@ -22,7 +22,7 @@
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",
     "circular-dep-check": "madge -c --extensions ts lib/",
-    "lint": "(pnpm run circular-dep-check || exit 0) && oxlint --config ../../.oxlintrc.json .",
+    "lint": "pnpm run circular-dep-check && oxlint --config ../../.oxlintrc.json .",
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json .",
     "preview": "vite preview",
     "test": "vitest"
@@ -55,7 +55,7 @@
     "react-dropzone": "14.2.3",
     "react-router-dom": "^6.26.0",
     "react-zoom-pan-pinch": "^4.0.3",
-    "zod": "^3.24.1"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.4.6",

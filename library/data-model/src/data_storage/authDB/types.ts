@@ -352,8 +352,12 @@ export type VerificationChallengeV4ExistingDocument = z.infer<
 // V5 Definition
 // =============
 
-// V5 - Refresh token schema remains the same as V4
-export const RefreshRecordV5FieldsSchema = RefreshRecordV4FieldsSchema;
+// V5 - Refresh token schema extends V4 with optional impersonation audit field
+export const RefreshRecordV5FieldsSchema = RefreshRecordV4FieldsSchema.extend({
+  // Present only for impersonation sessions: the user id of the admin who
+  // initiated the impersonation. Copied into refreshed access tokens.
+  impersonatingUserId: z.string().optional(),
+});
 
 // V5 - Email code schema remains the same as V4
 export const EmailCodeV5FieldsSchema = EmailCodeV4FieldsSchema;

@@ -6,8 +6,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {config} from '@/constants';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {AlertCircle, CheckCircle, Info} from 'lucide-react';
@@ -16,7 +16,7 @@ import {Button} from '../ui/button';
 import {useGetProject} from '@/hooks/queries';
 
 export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -26,19 +26,16 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
 
   const onClick = async () => {
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/status`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user?.token}`,
-          },
-          body: JSON.stringify({
-            status: isOpen ? ProjectStatus.CLOSED : ProjectStatus.OPEN,
-          }),
-        }
-      );
+      await fetch(`${config.apiUrl}/api/notebooks/${projectId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          status: isOpen ? ProjectStatus.CLOSED : ProjectStatus.OPEN,
+        }),
+      });
       queryClient.invalidateQueries({queryKey: ['projects']});
       queryClient.invalidateQueries({queryKey: ['projects', projectId]});
       queryClient.invalidateQueries({queryKey: ['projectsbyteam']});
@@ -53,7 +50,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
       <div className="mb-2">
         <div className="flex items-center gap-1.5 mb-2">
           <h3 className="text-base font-medium text-card-foreground">
-            {NOTEBOOK_NAME_CAPITALIZED} Status
+            {config.notebookNameCapitalized} Status
           </h3>
           <Dialog>
             <DialogTrigger asChild>
@@ -62,7 +59,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                aria-label={`More about ${NOTEBOOK_NAME} status`}
+                aria-label={`More about ${config.notebookName} status`}
               >
                 <Info className="h-4 w-4" aria-hidden />
               </Button>
@@ -70,7 +67,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-foreground">
-                  {NOTEBOOK_NAME_CAPITALIZED} status
+                  {config.notebookNameCapitalized} status
                 </DialogTitle>
                 <DialogDescription asChild>
                   <div className="space-y-3 text-left text-sm text-foreground">
@@ -78,16 +75,16 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                       <span className="font-medium text-emerald-600 dark:text-emerald-500">
                         Open:
                       </span>{' '}
-                      {NOTEBOOK_NAME_CAPITALIZED} is active and available for
-                      data collection on user devices.
+                      {config.notebookNameCapitalized} is active and available
+                      for data collection on user devices.
                     </p>
                     <p>
                       <span className="font-medium text-destructive">
                         Closed:
                       </span>{' '}
-                      {NOTEBOOK_NAME_CAPITALIZED} is read-only. Users will not
-                      be able to activate this {NOTEBOOK_NAME} for data
-                      collection.
+                      {config.notebookNameCapitalized} is read-only. Users will
+                      not be able to activate this {config.notebookName} for
+                      data collection.
                     </p>
                   </div>
                 </DialogDescription>
@@ -121,13 +118,13 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
               variant="outline"
               className="text-destructive border-border hover:bg-destructive/10 hover:text-destructive"
             >
-              Close {NOTEBOOK_NAME_CAPITALIZED}
+              Close {config.notebookNameCapitalized}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg text-black dark:text-foreground">
             <DialogHeader>
               <DialogTitle className="pb-2 text-black dark:text-foreground">
-                Closed {NOTEBOOK_NAME_CAPITALIZED}
+                Closed {config.notebookNameCapitalized}
               </DialogTitle>
               <DialogDescription asChild>
                 <div className="space-y-3 text-left text-sm !text-black dark:!text-foreground [&_*]:text-inherit [&_strong]:font-semibold [&_li]:marker:text-black [&_li]:dark:marker:text-foreground">
@@ -135,7 +132,8 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                     <li>
                       Stops users from{' '}
                       <strong>
-                        activating the {NOTEBOOK_NAME} and creating new records
+                        activating the {config.notebookName} and creating new
+                        records
                       </strong>
                       .
                     </li>
@@ -143,15 +141,15 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                       <strong>
                         Data will remain on the user&apos;s device
                       </strong>{' '}
-                      until they manually deactivate the {NOTEBOOK_NAME}. This
-                      allows them to finish synchronization if needed.
+                      until they manually deactivate the {config.notebookName}.
+                      This allows them to finish synchronization if needed.
                     </li>
                     <li className="space-y-2">
                       <span>Can be reopened.</span>
                     </li>
                     <p className="text-sm">
                       To remove data from all user devices, you will need to
-                      &apos;close&apos; the {NOTEBOOK_NAME}, then
+                      &apos;close&apos; the {config.notebookName}, then
                       &apos;archive&apos; it.
                     </p>
                   </ul>
@@ -159,7 +157,7 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
               </DialogDescription>
             </DialogHeader>
             <Button variant="destructive" onClick={onClick}>
-              Yes, Close {NOTEBOOK_NAME_CAPITALIZED}
+              Yes, Close {config.notebookNameCapitalized}
             </Button>
           </DialogContent>
         </Dialog>
@@ -167,21 +165,21 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="outline">
-              Reopen {NOTEBOOK_NAME_CAPITALIZED}
+              Reopen {config.notebookNameCapitalized}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="text-foreground">
-                Reopen {NOTEBOOK_NAME_CAPITALIZED}
+                Reopen {config.notebookNameCapitalized}
               </DialogTitle>
               <DialogDescription className="text-foreground">
-                Reopen this {NOTEBOOK_NAME} to allow data collection and
+                Reopen this {config.notebookName} to allow data collection and
                 editing.
               </DialogDescription>
             </DialogHeader>
             <Button variant="default" onClick={onClick}>
-              Reopen {NOTEBOOK_NAME_CAPITALIZED}
+              Reopen {config.notebookNameCapitalized}
             </Button>
           </DialogContent>
         </Dialog>

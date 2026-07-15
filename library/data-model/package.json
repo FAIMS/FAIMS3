@@ -1,6 +1,6 @@
 {
   "name": "@faims3/data-model",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Database access layer for FAIMS3",
   "license": "Apache",
   "author": "",
@@ -52,7 +52,7 @@
     "jsep": "^1.4.0",
     "lodash": "^4.18.1",
     "pouchdb-security-helper": "^2.1.2",
-    "zod": "^3.24.1"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@fast-check/jest": "^1.6.0",

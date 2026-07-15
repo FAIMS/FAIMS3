@@ -40,14 +40,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
 import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
-import {
-  CAPACITOR_PLATFORM,
-  NOTEBOOK_LIST_TYPE,
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '../../../buildconfig';
+import {config, CAPACITOR_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {
@@ -70,7 +63,7 @@ import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 
-// Notebook status naming conventions (labels are fixed English; surrounding UI uses NOTEBOOK_NAME* from build config).
+// Notebook status naming conventions (labels are fixed English; surrounding UI uses config.notebookName* from build config).
 
 // E.g. "This notebook is not active"
 export const NOT_ACTIVATED_LABEL = 'Not Active';
@@ -110,12 +103,7 @@ export default function NoteBooks() {
   // Are we online
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
-  if (!activeUser) {
-    // You shouldn't be here!
-    return <></>;
-  }
-
-  const activeServerId = activeUser.serverId;
+  const activeServerId = activeUser?.serverId ?? '';
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
@@ -123,31 +111,39 @@ export default function NoteBooks() {
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
-
+  // use notification service
+  const notify = useNotification();
   // Refresh mutation
   const doRefresh = useMutation({
     mutationFn: async () => {
-      await dispatch(initialiseProjects({serverId: activeServerId}));
+      if (!activeUser) return;
+      await dispatch(initialiseProjects({serverId: activeUser.serverId}));
     },
     onSuccess: () => {
-      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`);
+      notify.showSuccess(`Refreshed ${config.notebookNamePluralCapitalized}`);
     },
     onError: err => {
       console.log(err);
       notify.showError(
-        `Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`
+        `Issue while refreshing ${config.notebookNamePluralCapitalized}.`
       );
     },
   });
-  const showRefreshButton = isOnline.isOnline;
-
-  const activatedProjects = projects.filter(nb => nb.isActivated);
-
   const [tabID, setTabID] = useState('1');
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const servers = useAppSelector(selectServers);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  if (!activeUser) {
+    // You shouldn't be here!
+    return <></>;
+  }
+
+  const showRefreshButton = isOnline.isOnline;
+  const activatedProjects = projects.filter(nb => nb.isActivated);
 
   const baseColumns: GridColDef<Project>[] = [
     {
@@ -186,7 +182,7 @@ export default function NoteBooks() {
                 color: row.isActivated ? 'black' : grey[800],
               }}
             >
-              {row.name ?? 'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
+              {row.name ?? 'Unknown ' + config.notebookNameCapitalized}
             </Typography>
             {listDescription &&
               (isNotebookListDescriptionTruncated(row.description) ? (
@@ -218,7 +214,7 @@ export default function NoteBooks() {
   ]);
 
   // What type of layout are we using?
-  const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
+  const isTabs = config.notebookListType === 'tabs';
   const sectionLabel = isTabs ? 'tab' : 'section';
 
   const buildTabLink = (target: 'active' | 'not active') => {
@@ -241,9 +237,11 @@ export default function NoteBooks() {
   const notActivatedAdvice = (
     <>
       You have {activatedProjects.length}{' '}
-      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME}{' '}
+      {activatedProjects.length !== 1
+        ? config.notebookNamePlural
+        : config.notebookName}{' '}
       currently {ACTIVATED_LABEL} on this device.{' '}
-      {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
+      {config.notebookNamePluralCapitalized} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -252,7 +250,7 @@ export default function NoteBooks() {
         </>
       )}{' '}
       need to be {ACTIVATED_VERB_PAST.toLowerCase()} before they can be used. To
-      start using a {NOTEBOOK_NAME_CAPITALIZED} in the{' '}
+      start using a {config.notebookNameCapitalized} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -264,14 +262,8 @@ export default function NoteBooks() {
     </>
   );
 
-  // use notification service
-  const notify = useNotification();
-
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const servers = useAppSelector(selectServers);
   const platform = CAPACITOR_PLATFORM;
   const allowQr = platform === 'ios' || platform === 'android';
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   return (
     <Box
@@ -309,7 +301,7 @@ export default function NoteBooks() {
               setAddDialogOpen(true);
             }}
           >
-            Add {NOTEBOOK_NAME}
+            Add {config.notebookName}
           </Button>
           {doRefresh.isPending && <CircularProgress size={24} />}
         </Stack>
@@ -325,10 +317,10 @@ export default function NoteBooks() {
           }}
         >
           Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
-          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME_PLURAL}
+          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {config.notebookNamePlural}
         </Button>
       </Stack>
-      {NOTEBOOK_LIST_TYPE === 'tabs' ? (
+      {config.notebookListType === 'tabs' ? (
         <Tabs
           projects={projects}
           tabID={tabID}
@@ -380,12 +372,12 @@ export default function NoteBooks() {
         >
           <Box sx={{p: 2.5, pb: 0}}>
             <Typography variant="h4" gutterBottom>
-              Add a new {NOTEBOOK_NAME_CAPITALIZED}
+              Add a new {config.notebookNameCapitalized}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{mb: 2}}>
               {allowQr
-                ? `Enter an access code or scan a QR code to get access to a ${NOTEBOOK_NAME}.`
-                : `Enter an access code to get access to a ${NOTEBOOK_NAME}.`}
+                ? `Enter an access code or scan a QR code to get access to a ${config.notebookName}.`
+                : `Enter an access code to get access to a ${config.notebookName}.`}
             </Typography>
           </Box>
           <Box sx={{px: 2.5, py: 2, borderTop: 1, borderColor: 'divider'}}>
@@ -440,30 +432,30 @@ export default function NoteBooks() {
       >
         <DialogTitle>
           <Typography variant="h4">
-            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+            {ACTIVATE_ACTIVE_VERB_LABEL} {config.notebookNamePluralCapitalized}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Typography sx={{mb: 2}}>
-            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
-            ensures that you are safe to work offline at any point by
-            downloading any existing records onto your device. Please do this
-            with a stable internet connection.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a{' '}
+            {config.notebookName} ensures that you are safe to work offline at
+            any point by downloading any existing records onto your device.
+            Please do this with a stable internet connection.
           </Typography>
           <Typography sx={{mb: 2}}>
-            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
+            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {config.notebookName}{' '}
             offloads records from your device, to{' '}
-            {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
+            {DE_ACTIVATE_VERB.toLowerCase()} a {config.notebookName}:
           </Typography>
           <Typography component="div">
             <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
               <li>
-                Select the {NOTEBOOK_NAME} you want to{' '}
+                Select the {config.notebookName} you want to{' '}
                 {DE_ACTIVATE_VERB.toLowerCase()}
               </li>
               <li>
-                Ensure you are online, and all data in the {NOTEBOOK_NAME} has
-                been synced to the cloud
+                Ensure you are online, and all data in the {config.notebookName}{' '}
+                has been synced to the cloud
               </li>
               <li>
                 Click <strong>"Settings"</strong> tab (next to Map and Details
@@ -472,7 +464,7 @@ export default function NoteBooks() {
               <li>
                 Select the red{' '}
                 <strong>
-                  "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
+                  "{DE_ACTIVATE_VERB} {config.notebookName}"
                 </strong>{' '}
                 at the bottom that looks like the following:
                 <Box sx={{mt: 1, mb: 0.5}}>
@@ -489,7 +481,7 @@ export default function NoteBooks() {
                       px: 1,
                     }}
                   >
-                    {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                    {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
                   </Button>
                 </Box>
               </li>

@@ -27,7 +27,7 @@ importers:
         version: 24.13.1
       gts:
         specifier: ^5.3.1
-        version: 5.3.1(supports-color@8.1.1)(typescript@5.9.3)
+        version: 5.3.1(typescript@5.9.3)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -70,9 +70,6 @@ importers:
       aws-sdk:
         specifier: ^2.1664.0
         version: 2.1693.0
-      axios:
-        specifier: ^1.15.2
-        version: 1.17.0
       body-parser:
         specifier: 1.20.3
         version: 1.20.3
@@ -97,6 +94,9 @@ importers:
       express-rate-limit:
         specifier: ^7.1.5
         version: 7.5.1(express@4.22.0)
+      express-zod-safe:
+        specifier: ^3.2.1
+        version: 3.2.1(@types/express@4.17.18)(express@4.22.0)(zod@4.4.3)
       fast-check:
         specifier: 2.25.0
         version: 2.25.0
@@ -176,11 +176,8 @@ importers:
         specifier: ^6.1.2
         version: 6.1.2
       zod:
-        specifier: ^3.24.1
-        version: 3.25.76
-      zod-express-middleware:
-        specifier: ^1.4.0
-        version: 1.4.0(@types/express@4.17.18)(express@4.22.0)(zod@3.25.76)
+        specifier: ^4.1.12
+        version: 4.4.3
       zxcvbn:
         specifier: ^4.4.2
         version: 4.4.2
@@ -679,8 +676,8 @@ importers:
         specifier: ^0.5.21
         version: 0.5.21
       zod:
-        specifier: ^3.24.1
-        version: 3.25.76
+        specifier: ^4.1.12
+        version: 4.4.3
     devDependencies:
       '@types/jest':
         specifier: ^29.5.12
@@ -725,8 +722,8 @@ importers:
         specifier: ^2.1.2
         version: 2.1.2(encoding@0.1.13)
       zod:
-        specifier: ^3.24.1
-        version: 3.25.76
+        specifier: ^4.1.12
+        version: 4.4.3
     devDependencies:
       '@fast-check/jest':
         specifier: ^1.6.0
@@ -849,8 +846,8 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod:
-        specifier: ^3.24.1
-        version: 3.25.76
+        specifier: ^4.1.12
+        version: 4.4.3
     devDependencies:
       '@testing-library/jest-dom':
         specifier: 6.4.6
@@ -934,8 +931,8 @@ importers:
         specifier: workspace:*
         version: link:../library/forms
       '@hookform/resolvers':
-        specifier: ^3.9.1
-        version: 3.10.0(react-hook-form@7.78.0(react@18.3.1))
+        specifier: ^5.2.1
+        version: 5.4.0(react-hook-form@7.78.0(react@18.3.1))
       '@lexical/react':
         specifier: ^0.12.4
         version: 0.12.6(lexical@0.12.6)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(yjs@13.6.31)
@@ -1013,7 +1010,7 @@ importers:
         version: 1.167.0(@tanstack/react-router@1.170.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.171.13)(csstype@3.2.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/zod-adapter':
         specifier: ^1.106.0
-        version: 1.167.0(@tanstack/react-router@1.170.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(zod@3.25.76)
+        version: 1.167.0(@tanstack/react-router@1.170.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(zod@4.4.3)
       ajv:
         specifier: ^8.18.0
         version: 8.20.0
@@ -1063,7 +1060,7 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       react-hook-form:
-        specifier: ^7.54.0
+        specifier: ^7.55.0
         version: 7.78.0(react@18.3.1)
       react-json-view-lite:
         specifier: ^1.1.0
@@ -1093,8 +1090,8 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: ^3.24.1
-        version: 3.25.76
+        specifier: ^4.1.12
+        version: 4.4.3
     devDependencies:
       '@tanstack/eslint-plugin-query':
         specifier: ^5.62.16
@@ -2232,10 +2229,10 @@ packages:
   '@gar/promisify@1.1.3':
     resolution: {integrity: sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==}
 
-  '@hookform/resolvers@3.10.0':
-    resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
+  '@hookform/resolvers@5.4.0':
+    resolution: {integrity: sha512-EIsqr/t/qbinPIhGjMdtvutIN1Kk4uwbROE9/UQ93CAVGR7GkA7Y92+fX80OzXi/OB67jVFYwKGO1WzkxmkFZw==}
     peerDependencies:
-      react-hook-form: ^7.0.0
+      react-hook-form: ^7.55.0
 
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
@@ -7528,6 +7525,13 @@ packages:
     peerDependencies:
       express: '>= 4.11'
 
+  express-zod-safe@3.2.1:
+    resolution: {integrity: sha512-fPq5dU7JbkEYrPRWF3/uG9MozrczOZJtXcaKAwzn/lIFkfsm7jc4HtVj+43j2+qaNdYXwVpbr2c3mJyjQInTYQ==}
+    peerDependencies:
+      '@types/express': ^4.0.0 || ^5.0.0
+      express: ^4.0.0 || ^5.0.0
+      zod: ^4.0.0
+
   express@4.21.2:
     resolution: {integrity: sha512-28HqgMZAmih1Czt9ny7qr6ek2qddF4FclbMzwhCREB6OFfH+rXAnuNCwo1/wFvrtbgsQDb4kSbX9de9lFbrXnA==}
     engines: {node: '>= 0.10.0'}
@@ -12778,16 +12782,6 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod-express-middleware@1.4.0:
-    resolution: {integrity: sha512-C1pBbwbuotitG1L3I1cr9QD/nuepHAdZEUbVn7y1o2cJq0oaUuS7gTVGby1+DGHL4t2P4eEZKCX0QQDv6hEs3A==}
-    peerDependencies:
-      '@types/express': ^4.17.12
-      express: ^4.17.1
-      zod: ^3.2.0
-
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -13975,8 +13969,9 @@ snapshots:
 
   '@gar/promisify@1.1.3': {}
 
-  '@hookform/resolvers@3.10.0(react-hook-form@7.78.0(react@18.3.1))':
+  '@hookform/resolvers@5.4.0(react-hook-form@7.78.0(react@18.3.1))':
     dependencies:
+      '@standard-schema/utils': 0.3.0
       react-hook-form: 7.78.0(react@18.3.1)
 
   '@humanwhocodes/config-array@0.11.14':
@@ -16610,10 +16605,10 @@ snapshots:
 
   '@tanstack/virtual-file-routes@1.162.0': {}
 
-  '@tanstack/zod-adapter@1.167.0(@tanstack/react-router@1.170.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(zod@3.25.76)':
+  '@tanstack/zod-adapter@1.167.0(@tanstack/react-router@1.170.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(zod@4.4.3)':
     dependencies:
       '@tanstack/react-router': 1.170.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@testim/chrome-version@1.1.4': {}
 
@@ -17266,29 +17261,10 @@ snapshots:
 
   '@types/zxcvbn@4.4.5': {}
 
-  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3))(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)':
+  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)
-      '@typescript-eslint/scope-manager': 5.62.0
-      '@typescript-eslint/type-utils': 5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)
-      '@typescript-eslint/utils': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
-      debug: 4.4.3(supports-color@8.1.1)
-      eslint: 8.57.0
-      graphemer: 1.4.0
-      ignore: 5.3.2
-      natural-compare-lite: 1.4.0
-      semver: 7.8.2
-      tsutils: 3.21.0(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)
+      '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
       '@typescript-eslint/scope-manager': 5.62.0
       '@typescript-eslint/type-utils': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
       '@typescript-eslint/utils': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
@@ -17299,18 +17275,6 @@ snapshots:
       natural-compare-lite: 1.4.0
       semver: 7.8.2
       tsutils: 3.21.0(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
-  '@typescript-eslint/parser@5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/scope-manager': 5.62.0
-      '@typescript-eslint/types': 5.62.0
-      '@typescript-eslint/typescript-estree': 5.62.0(supports-color@8.1.1)(typescript@5.9.3)
-      debug: 4.4.3(supports-color@8.1.1)
-      eslint: 8.57.0
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -17351,18 +17315,6 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  '@typescript-eslint/type-utils@5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.9.3)
-      '@typescript-eslint/utils': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
-      debug: 4.4.3(supports-color@8.1.1)
-      eslint: 8.57.0
-      tsutils: 3.21.0(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/type-utils@5.62.0(eslint@8.57.0)(typescript@5.9.3)':
     dependencies:
       '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.9.3)
@@ -17378,20 +17330,6 @@ snapshots:
   '@typescript-eslint/types@5.62.0': {}
 
   '@typescript-eslint/types@8.60.1': {}
-
-  '@typescript-eslint/typescript-estree@5.62.0(supports-color@8.1.1)(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/types': 5.62.0
-      '@typescript-eslint/visitor-keys': 5.62.0
-      debug: 4.4.3(supports-color@8.1.1)
-      globby: 11.1.0
-      is-glob: 4.0.3
-      semver: 7.8.2
-      tsutils: 3.21.0(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
 
   '@typescript-eslint/typescript-estree@5.62.0(typescript@5.9.3)':
     dependencies:
@@ -17490,7 +17428,7 @@ snapshots:
   '@vitest/browser-webdriverio@4.1.8(msw@2.14.6(@types/node@24.13.1)(typescript@5.9.3))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))(vitest@4.1.8)(webdriverio@9.27.2)':
     dependencies:
       '@vitest/browser': 4.1.8(msw@2.14.6(@types/node@24.13.1)(typescript@5.9.3))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))(vitest@4.1.8)
-      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@5.9.3))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(@vitest/coverage-v8@2.1.9)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@5.9.3))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       webdriverio: 9.27.2
     transitivePeerDependencies:
       - bufferutil
@@ -17525,7 +17463,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@5.9.3))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/browser-webdriverio@4.1.8)(@vitest/coverage-v8@2.1.9)(jsdom@22.1.0)(msw@2.14.6(@types/node@24.13.1)(typescript@5.9.3))(vite@7.3.5(@types/node@24.13.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
@@ -20148,6 +20086,12 @@ snapshots:
     dependencies:
       express: 4.22.0
 
+  express-zod-safe@3.2.1(@types/express@4.17.18)(express@4.22.0)(zod@4.4.3):
+    dependencies:
+      '@types/express': 4.17.18
+      express: 4.22.0
+      zod: 4.4.3
+
   express@4.21.2:
     dependencies:
       accepts: 1.3.8
@@ -20780,31 +20724,9 @@ snapshots:
 
   graphql@16.14.1: {}
 
-  gts@5.3.1(supports-color@8.1.1)(typescript@5.9.3):
-    dependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3))(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)
-      '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3)
-      chalk: 4.1.2
-      eslint: 8.57.0
-      eslint-config-prettier: 9.1.0(eslint@8.57.0)
-      eslint-plugin-n: 15.7.0(eslint@8.57.0)
-      eslint-plugin-prettier: 5.1.3(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.2.5)
-      execa: 5.1.1
-      inquirer: 7.3.3
-      json5: 2.2.3
-      meow: 9.0.0
-      ncp: 2.0.0
-      prettier: 3.2.5
-      rimraf: 3.0.2
-      typescript: 5.9.3
-      write-file-atomic: 4.0.2
-    transitivePeerDependencies:
-      - '@types/eslint'
-      - supports-color
-
   gts@5.3.1(typescript@5.9.3):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(supports-color@8.1.1)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)
       '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
       chalk: 4.1.2
       eslint: 8.57.0
@@ -26775,14 +26697,6 @@ snapshots:
       archiver-utils: 5.0.2
       compress-commons: 6.0.2
       readable-stream: 4.7.0
-
-  zod-express-middleware@1.4.0(@types/express@4.17.18)(express@4.22.0)(zod@3.25.76):
-    dependencies:
-      '@types/express': 4.17.18
-      express: 4.22.0
-      zod: 3.25.76
-
-  zod@3.25.76: {}
 
   zod@4.4.3: {}
 

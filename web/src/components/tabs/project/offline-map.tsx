@@ -14,9 +14,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {getMapConfig, NOTEBOOK_NAME} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {config} from '@/constants';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {updateNotebookOfflineMapRegionRequest} from '@/hooks/project-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {LARGE_OFFLINE_MAP_AREA_MB} from '@/lib/offline-map-size';
@@ -151,7 +150,7 @@ function OfflineMapStatusBox({
 export default function ProjectOfflineMap({
   projectId,
 }: ProjectOfflineMapProps): JSX.Element {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const {data: project, isLoading} = useGetProject({user, projectId});
   const canSetOfflineMapRegion = useIsAuthorisedTo({
@@ -206,9 +205,6 @@ export default function ProjectOfflineMap({
 
   const saveMutation = useMutation({
     mutationFn: async (region: OfflineMapRegion | null) => {
-      if (!user) {
-        throw new Error('Not signed in');
-      }
       const response = await updateNotebookOfflineMapRegionRequest({
         user,
         projectId,
@@ -231,9 +227,6 @@ export default function ProjectOfflineMap({
 
   const clearMutation = useMutation({
     mutationFn: async () => {
-      if (!user) {
-        throw new Error('Not signed in');
-      }
       const response = await updateNotebookOfflineMapRegionRequest({
         user,
         projectId,
@@ -269,7 +262,7 @@ export default function ProjectOfflineMap({
     try {
       const sizeMb = await estimateOfflineMapRegionSizeMb(
         draftRegion,
-        getMapConfig()
+        config.mapConfig
       );
       if (sizeMb > LARGE_OFFLINE_MAP_AREA_MB) {
         setLargeAreaDialog({sizeMb});
@@ -389,7 +382,7 @@ export default function ProjectOfflineMap({
           variant: 'info' as const,
           message: canSetOfflineMapRegion
             ? 'Click Draw Area to select a map area for offline download.'
-            : `No offline map area has been selected for this ${NOTEBOOK_NAME}.`,
+            : `No offline map area has been selected for this ${config.notebookName}.`,
           actions: (
             <RestrictedOfflineMapButton allowed={canSetOfflineMapRegion}>
               <Button
@@ -414,12 +407,12 @@ export default function ProjectOfflineMap({
       <Card className="space-y-4 p-6">
         <div>
           <h2 className="text-lg font-semibold">
-            Select an offline map area for this {NOTEBOOK_NAME}
+            Select an offline map area for this {config.notebookName}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Collectors who activate this {NOTEBOOK_NAME} on their device will be
-            asked if they&apos;d like to download the selected map area for
-            offline use.
+            Collectors who activate this {config.notebookName} on their device
+            will be asked if they&apos;d like to download the selected map area
+            for offline use.
           </p>
         </div>
 
@@ -430,7 +423,7 @@ export default function ProjectOfflineMap({
 
         {showMap && (
           <OfflineMapRegionEditor
-            config={getMapConfig()}
+            config={config.mapConfig}
             region={draftRegion ?? undefined}
             onRegionChange={setDraftRegion}
             readOnly={!canSetOfflineMapRegion}
@@ -443,7 +436,7 @@ export default function ProjectOfflineMap({
         )}
 
         {(saveMutation.isError || clearMutation.isError) && (
-          <p className="text-sm text-destructive">
+          <p className="min-w-0 max-w-full break-words text-sm text-destructive">
             {(saveMutation.error ?? clearMutation.error)?.message ??
               'Something went wrong'}
           </p>

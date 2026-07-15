@@ -1,8 +1,4 @@
-import {
-  NOTEBOOK_NAME_CAPITALIZED,
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 
 /** Central strings for the archived-template delete dialog — edit here only. */
 export const templateDeleteDialogLabels = {
@@ -12,7 +8,7 @@ export const templateDeleteDialogLabels = {
   introAfter: '. This cannot be undone.',
   cancel: 'Cancel',
   confirm: 'Delete permanently',
-  loadingReferences: `Loading ${NOTEBOOK_NAME_CAPITALIZED} references…`,
+  loadingReferences: `Loading ${config.notebookNameCapitalized} references…`,
   loadError: 'Could not load reference count. Try again or contact support.',
 } as const;
 
@@ -31,9 +27,9 @@ export function getTemplateDeleteDialogBody({
   linkedWarningText: string | null;
 } {
   const nameLabel = templateName.trim() || 'this template';
-  const nbCap = NOTEBOOK_NAME_CAPITALIZED;
-  const nbPlural = NOTEBOOK_NAME_PLURAL;
-  const nbPluralCap = NOTEBOOK_NAME_PLURAL_CAPITALIZED;
+  const nbCap = config.notebookNameCapitalized;
+  const nbPlural = config.notebookNamePlural;
+  const nbPluralCap = config.notebookNamePluralCapitalized;
 
   if (referencingNotebookCount === 0) {
     return {nameLabel, linkedWarningText: null};

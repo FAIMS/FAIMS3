@@ -61,6 +61,7 @@ import {
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {ChoiceElementProps} from '@faims3/forms';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -1026,6 +1027,11 @@ export const OptionsEditor = ({
                           error={addOptionHasError}
                           focused={addOptionHasError}
                           fullWidth
+                          slotProps={{
+                            htmlInput: designerHtmlInput(
+                              INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH
+                            ),
+                          }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               ...(addOptionHasError && {
@@ -1185,6 +1191,9 @@ export const OptionsEditor = ({
             fullWidth
             value={editValue}
             onChange={e => setEditValue(e.target.value)}
+            slotProps={{
+              htmlInput: designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
+            }}
           />
           {errorMessage && (
             <Alert severity="error" sx={{mt: 2}}>

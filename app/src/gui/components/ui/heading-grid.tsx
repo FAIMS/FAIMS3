@@ -5,10 +5,7 @@ import {
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
@@ -19,6 +16,7 @@ import {
   notebookListDataGridSx,
 } from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
+import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -40,8 +38,12 @@ export default function HeadingProjectGrid({
   serverId: string;
 }) {
   // pull out active/inactive notebooks
-  const activatedProjects = projects.filter(({isActivated}) => isActivated);
-  const availableProjects = projects.filter(({isActivated}) => !isActivated);
+  const activatedProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => isActivated)
+  );
+  const availableProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => !isActivated)
+  );
 
   const history = useNavigate();
 
@@ -113,7 +115,7 @@ export default function HeadingProjectGrid({
                 justifyContent: 'center',
               }}
             >
-              No {NOTEBOOK_NAME_PLURAL_CAPITALIZED} have been activated yet.
+              No {config.notebookNamePluralCapitalized} have been activated yet.
             </Stack>
           ),
         }}
@@ -150,7 +152,7 @@ export default function HeadingProjectGrid({
                 justifyContent: 'center',
               }}
             >
-              You don't have any unactivated {NOTEBOOK_NAME_PLURAL}.
+              You don't have any unactivated {config.notebookNamePlural}.
             </Stack>
           ),
         }}

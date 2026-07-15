@@ -1,8 +1,8 @@
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
-import {z} from 'zod';
-import {NOTEBOOK_NAME} from '@/constants';
+import {designFileSchema} from '@/lib/input-limits';
+import {config} from '@/constants';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {
   errorMessageFromTemplateJsonBody,
@@ -14,7 +14,7 @@ export const fields = [
   {
     name: 'file',
     type: 'file',
-    schema: z.instanceof(File).refine(file => file.type === 'application/json'),
+    schema: designFileSchema(),
   },
 ];
 
@@ -32,12 +32,10 @@ export function UpdateTemplateForm({
   setDialogOpen,
   onSuccess,
 }: UpdateTemplateFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {templateId} = Route.useParams();
 
   const onSubmit = async ({file}: {file: File}) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const jsonString = await readFileAsText(file);
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
@@ -79,7 +77,7 @@ export function UpdateTemplateForm({
       onSubmit={onSubmit}
       submitButtonText="Replace Template JSON"
       submitButtonVariant="destructive"
-      warningMessage={`Editing the template does not change any of the ${NOTEBOOK_NAME}s created from it.  This may create inconsistencies in your data.`}
+      warningMessage={`Editing the template does not change any of the ${config.notebookName}s created from it.  This may create inconsistencies in your data.`}
     />
   );
 }

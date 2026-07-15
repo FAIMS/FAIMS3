@@ -1,8 +1,8 @@
 import {Field, Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
-import {userCanDo} from '@/hooks/auth-hooks';
+import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
+  INPUT_LIMITS,
   PostCreateInviteInput,
   projectInviteToAction,
   Resource,
@@ -11,11 +11,10 @@ import {
   RoleScope,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
-import {ErrorComponent} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
-import {INVITE_TOKEN_HINTS, brandNotebook} from '@/constants';
+import {config, brandNotebook} from '@/constants';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,16 +29,12 @@ interface UpdateTemplateFormProps {
 export function CreateProjectInviteForm({
   setDialogOpen,
 }: UpdateTemplateFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
     undefined
   );
-
-  if (!user) {
-    return <ErrorComponent error="Not authenticated" />;
-  }
 
   const roleOptions = useMemo(() => {
     return Object.entries(roleDetails)
@@ -72,7 +67,13 @@ export function CreateProjectInviteForm({
     {
       name: 'name',
       label: 'Invite title',
-      schema: z.string().min(4),
+      schema: z
+        .string()
+        .min(4)
+        .max(INPUT_LIMITS.INVITE_NAME_MAX_LENGTH, {
+          message: `Invite title must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`,
+        }),
+      maxLength: INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
     },
     {
       name: 'role',
@@ -83,9 +84,15 @@ export function CreateProjectInviteForm({
     {
       name: 'uses',
       label: 'Maximum uses (leave empty to set no limit)',
-      schema: z.number().min(1).optional(),
+      schema: z
+        .number()
+        .int()
+        .min(1)
+        .max(INPUT_LIMITS.INVITE_MAX_USES)
+        .optional(),
       type: 'number',
       min: 1,
+      max: INPUT_LIMITS.INVITE_MAX_USES,
     },
   ];
 
@@ -104,8 +111,6 @@ export function CreateProjectInviteForm({
     uses?: number;
     name: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'Not logged in'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};
@@ -127,7 +132,7 @@ export function CreateProjectInviteForm({
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}`,
+      `${config.apiUrl}/api/invites/notebook/${projectId}`,
       {
         method: 'POST',
         headers: {
@@ -157,7 +162,7 @@ export function CreateProjectInviteForm({
       submitButtonText={'Create Invite'}
       footer={
         <ExpirySelector
-          hints={INVITE_TOKEN_HINTS}
+          hints={config.inviteTokenHints}
           maxDurationDays={365}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}

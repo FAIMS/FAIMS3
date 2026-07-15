@@ -1,13 +1,15 @@
+import {config} from '@/constants';
+
 /**
  * Web theme selector aligned with app theme names.
  *
  * Precedence:
- * 1. `VITE_THEME` (matches mobile app naming)
- * 2. `VITE_APP_THEME` (legacy web naming)
+ * 1. `VITE_THEME` (matches mobile app naming; build-time Vite-only)
+ * 2. `config.appTheme` from `VITE_APP_THEME` (typed web config)
  * 3. `default`
  */
 export const THEME: string =
-  import.meta.env.VITE_THEME || import.meta.env.VITE_APP_THEME || 'default';
+  import.meta.env.VITE_THEME || config.appTheme || 'default';
 
 export const getThemeClass = () => {
   switch (THEME) {

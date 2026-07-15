@@ -19,7 +19,7 @@
 
 import {Profile, Strategy, VerifyCallback} from 'passport-openidconnect';
 
-import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
 import {OIDCAuthProviderConfig} from './strategyTypes';
@@ -89,7 +89,8 @@ export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
       userInfoURL: options.userInfoURL,
       clientID: options.clientID,
       clientSecret: options.clientSecret,
-      callbackURL: CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
+      callbackURL:
+        config.conductorPublicUrl + providerAuthReturnUrl(options.id),
       passReqToCallback: true,
       scope: options.scope,
     },

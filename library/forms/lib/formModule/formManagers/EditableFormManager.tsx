@@ -583,7 +583,7 @@ export const EditableFormManager: React.FC<
       });
       // Attachments metadata only — fields own how the id is written into `data`.
       form.setFieldValue(fieldId, (prev: FormDataEntry | undefined) => {
-        const state = prev || {};
+        const state = prev ?? {};
         return {
           ...state,
           attachments: [
@@ -625,7 +625,7 @@ export const EditableFormManager: React.FC<
       }
 
       form.setFieldValue(fieldId, (prev: FormDataEntry | undefined) => {
-        const state = prev || {};
+        const state = prev ?? {};
         if (!state.attachments) {
           return state;
         }

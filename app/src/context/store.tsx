@@ -18,7 +18,7 @@ import {
   REHYDRATE,
 } from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
-import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
+import {config} from '../buildconfig';
 import {logError, logInfo, logWarn} from '@faims3/forms';
 import LoadingApp from '../gui/components/loadingApp';
 import {logError as logAppError} from '../logging';
@@ -202,7 +202,7 @@ const TokenRefreshTimer: React.FC = () => {
     // Set up interval
     const intervalId = setInterval(
       refreshTokenAndCheckAuth,
-      TOKEN_REFRESH_INTERVAL_MS
+      config.tokenRefreshIntervalMs
     );
 
     // Cleanup

@@ -32,6 +32,10 @@ overrides:
   'level': '^7.0.0'
   'sharp': '^0.34.2'
 
+peerDependencyRules:
+  allowedVersions:
+    '@tanstack/zod-adapter>zod': '4'
+
 trustPolicyExclude:
   - '@wdio/logger@9.18.0'
   - 'chokidar@4.0.3'

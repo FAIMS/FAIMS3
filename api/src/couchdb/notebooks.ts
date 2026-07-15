@@ -31,7 +31,6 @@ import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
-  GetNotebookListResponse,
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
   notebookUiSpecificationNeedsMigration,
@@ -68,7 +67,7 @@ import {
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
+import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
 import {nowIso} from '../time';
@@ -212,7 +211,7 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
       // delete rev so that we don't include in the result
       delete project._rev;
       // add database connection details
-      if (project.dataDb) project.dataDb.base_url = COUCHDB_PUBLIC_URL;
+      if (project.dataDb) project.dataDb.base_url = config.couchdbPublicUrl;
       projects.push(project);
     }
   });
@@ -375,7 +374,7 @@ export const validateDatabases = async () => {
 
   try {
     logNotebookStartup('begin', {
-      migrateNotebooksOnStartup: MIGRATE_NOTEBOOKS_ON_STARTUP,
+      migrateNotebooksOnStartup: config.migrateNotebooksOnStartup,
       targetSchemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
     });
 
@@ -389,7 +388,7 @@ export const validateDatabases = async () => {
     const projects = await getAllProjectsDirectory();
     logNotebookStartup('projects_loaded', {count: projects.length});
 
-    if (!MIGRATE_NOTEBOOKS_ON_STARTUP) {
+    if (!config.migrateNotebooksOnStartup) {
       logNotebookStartup('ui_spec_migration_skipped', {
         reason: 'MIGRATE_NOTEBOOKS_ON_STARTUP=false',
       });
@@ -399,7 +398,7 @@ export const validateDatabases = async () => {
       const projectId = project._id;
       const projectName = project.name;
 
-      if (MIGRATE_NOTEBOOKS_ON_STARTUP) {
+      if (config.migrateNotebooksOnStartup) {
         const raw = project.uiSpecification;
         if (raw == null) {
           uiSpecCounts.skipped_no_ui_spec++;
@@ -445,7 +444,7 @@ export const validateDatabases = async () => {
 
     logNotebookStartup('complete', {
       projects: projects.length,
-      migrateNotebooksOnStartup: MIGRATE_NOTEBOOKS_ON_STARTUP,
+      migrateNotebooksOnStartup: config.migrateNotebooksOnStartup,
       uiSpecMigrated: uiSpecCounts.migrated,
       uiSpecUpToDate: uiSpecCounts.up_to_date,
       uiSpecSkippedNoUiSpec: uiSpecCounts.skipped_no_ui_spec,

@@ -4,6 +4,7 @@ import {
   ErrorOption,
   FieldValues,
   Path,
+  Resolver,
   useForm,
 } from 'react-hook-form';
 import {z} from 'zod';
@@ -136,28 +137,33 @@ export function Form<
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Schema is built at runtime from Field[]; Zod v4 + resolvers v5 infer
+  // Record<string, unknown> (and split input/output via preprocess), so cast
+  // to the caller-facing TSchema used by useForm.
   const form = useForm<TSchema>({
     resolver: zodResolver(
       z.object(
-        fields.reduce((acc, field) => {
+        fields.reduce<z.ZodRawShape>((acc, field) => {
           // HTML number inputs emit strings; coerce before Zod validation.
-          acc[field.name] =
-            field.type === 'number'
-              ? z.preprocess(value => {
-                  if (value === '' || value === undefined || value === null) {
-                    return undefined;
-                  }
-                  if (typeof value === 'number') {
-                    return value;
-                  }
-                  const parsed = Number(value);
-                  return Number.isNaN(parsed) ? value : parsed;
-                }, field.schema)
-              : field.schema;
-          return acc;
-        }, {} as z.ZodRawShape)
+          return {
+            ...acc,
+            [field.name]:
+              field.type === 'number'
+                ? z.preprocess(value => {
+                    if (value === '' || value === undefined || value === null) {
+                      return undefined;
+                    }
+                    if (typeof value === 'number') {
+                      return value;
+                    }
+                    const parsed = Number(value);
+                    return Number.isNaN(parsed) ? value : parsed;
+                  }, field.schema)
+                : field.schema,
+          };
+        }, {})
       )
-    ),
+    ) as Resolver<TSchema>,
     defaultValues,
   });
 
@@ -187,7 +193,7 @@ export function Form<
 
           setIsSubmitting(false);
         })}
-        className="flex flex-col gap-6"
+        className="flex min-w-0 flex-col gap-6"
       >
         <div className="flex flex-col gap-4">
           {fields.map(
@@ -382,7 +388,9 @@ export function Form<
         )}
         <FormMessage>{form.formState.errors.root?.message}</FormMessage>
         {shouldShowDisableMessage && (
-          <p className="text-sm text-destructive">{disableSubmission.reason}</p>
+          <p className="min-w-0 max-w-full break-words text-sm text-destructive">
+            {disableSubmission.reason}
+          </p>
         )}
         <Button
           type="submit"

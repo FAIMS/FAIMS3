@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useDisableUserAccount} from '@/hooks/user-hooks';
 import {
   Dialog,
@@ -14,7 +13,7 @@ import {useState} from 'react';
 import {UserX} from 'lucide-react';
 import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {cn} from '@/lib/utils';
 
 /**
@@ -22,7 +21,7 @@ import {cn} from '@/lib/utils';
  */
 export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const disableUser = useDisableUserAccount();
   const canDisable = useIsAuthorisedTo({
     action: Action.DISABLE_USER_ACCOUNT,
@@ -30,7 +29,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   });
 
   const blocked =
-    rowUser._id === user?.user.id ||
+    rowUser._id === user.user.id ||
     (rowUser.globalRoles ?? []).includes(Role.GENERAL_ADMIN);
 
   if (!canDisable || blocked) {
@@ -61,7 +60,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
                   system.
                 </li>
                 <li>
-                  {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and records they
+                  {config.notebookNamePluralCapitalized} and records they
                   contributed will not be affected.
                 </li>
                 <li>The user will not be notified.</li>

@@ -922,7 +922,7 @@ const useTableColumns = ({
   size,
   hasConflict,
 }: {
-  uiSpec: UiSpecModel | null;
+  uiSpec: UiSpecModel | null | undefined;
   visibleTypes: string[];
   viewsets: UiSpecForms | null | undefined;
   size: SizeCategory;
@@ -1021,41 +1021,44 @@ const useSortedAndPaginatedRows = (
 const useRowHydration = (
   pageRows: MinimalRecordMetadata[],
   projectId: string,
-  uiSpec: UiSpecModel,
+  uiSpec: UiSpecModel | null | undefined,
   dataDb: DataDbType,
   activeUser: ReturnType<typeof selectActiveUser>
 ) => {
   const token = activeUser?.parsedToken;
 
   const hydratedQueries = useQueries({
-    queries: pageRows.map(row => ({
-      queryKey: [
-        activeUser?.username,
-        token?.globalRoles,
-        token?.resourceRoles,
-        ...buildHydrateKeys({
-          projectId,
-          recordId: row.recordId,
-          revisionId: '',
-        }),
-      ],
-      queryFn: async () => {
-        return await fetchAndHydrateRecord({
-          dataDb,
-          uiSpecification: uiSpec,
-          projectId,
-          recordId: row.recordId,
-          revisionId: undefined,
-        });
-      },
-      networkMode: 'always',
-      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-      // Force a refresh on mount - this will help to ensure that the live page
-      // is not stale - this does not invalidate the total record list query
-      // which is more expensive in very large record lists. The old data will
-      // also be shown in the meantime.
-      refetchOnMount: 'always',
-    })),
+    queries:
+      !uiSpec || !token
+        ? []
+        : pageRows.map(row => ({
+            queryKey: [
+              activeUser?.username,
+              token?.globalRoles,
+              token?.resourceRoles,
+              ...buildHydrateKeys({
+                projectId,
+                recordId: row.recordId,
+                revisionId: '',
+              }),
+            ],
+            queryFn: async () => {
+              return await fetchAndHydrateRecord({
+                dataDb,
+                uiSpecification: uiSpec,
+                projectId,
+                recordId: row.recordId,
+                revisionId: undefined,
+              });
+            },
+            networkMode: 'always' as const,
+            staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+            // Force a refresh on mount - this will help to ensure that the live page
+            // is not stale - this does not invalidate the total record list query
+            // which is more expensive in very large record lists. The old data will
+            // also be shown in the meantime.
+            refetchOnMount: 'always' as const,
+          })),
   });
 
   // Build a map of hydrated records by ID
@@ -1108,13 +1111,10 @@ export function RecordsTable(props: RecordsTableProps) {
 
   // Get UI specification
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
-  if (!uiSpec) {
-    return <CircularLoading label="Loading" />;
-  }
 
   // Get visible types from UI spec
   const visibleTypes = useMemo(() => {
-    return getVisibleTypes(uiSpec);
+    return uiSpec ? getVisibleTypes(uiSpec) : [];
   }, [uiSpec]);
 
   // Screen size for responsive columns
@@ -1165,9 +1165,9 @@ export function RecordsTable(props: RecordsTableProps) {
   const activeUser = useAppSelector(selectActiveUser);
   const dataDb = localGetDataDb(project_id);
 
-  // Hydrate visible rows
+  // Hydrate visible rows (skip while uiSpec is loading)
   const {hydratedMap, isLoading: isHydrating} = useRowHydration(
-    pageRows,
+    uiSpec ? pageRows : [],
     project_id,
     uiSpec,
     dataDb,
@@ -1216,6 +1216,10 @@ export function RecordsTable(props: RecordsTableProps) {
     },
     [history, project_id, serverId]
   );
+
+  if (!uiSpec) {
+    return <CircularLoading label="Loading" />;
+  }
 
   console.log('RecordsTable render');
 
