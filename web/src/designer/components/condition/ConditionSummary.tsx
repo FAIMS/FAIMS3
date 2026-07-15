@@ -190,6 +190,7 @@ const OperatorChip = (props: {operator: ConditionBooleanOperator}) => {
         fontSize: 'small',
         color: conditionBooleanOperatorColours[props.operator],
         whiteSpace: 'nowrap',
+        lineHeight: '1rem',
       }}
     >
       {props.operator.toUpperCase()}

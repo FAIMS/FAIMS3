@@ -20,12 +20,11 @@ import {
   ConditionEditorActions,
   ConditionRuleNode,
 } from '@/designer/types/condition';
-import {useConditionRuleFieldContext} from '@/hooks/use-condition-field-context';
 import {useDraggable} from '@dnd-kit/react';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import {Box, IconButton, Paper, Tooltip, Typography} from '@mui/material';
+import {Box, IconButton, Paper, Tooltip} from '@mui/material';
 import {ConditionRuleInputs} from './ConditionRuleInputs';
 
 /**
@@ -44,11 +43,6 @@ export type ConditionRuleRowProps = {
 export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
   const {rule, actions, field, view} = props;
 
-  const {selectableFieldCount} = useConditionRuleFieldContext({
-    field,
-    view,
-  });
-
   /**
    * ref marks the whole row as the draggable item.
    * handleRef marks the small drag icon as the drag handle.
@@ -56,35 +50,6 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
   const {ref, handleRef, isDragging} = useDraggable({
     id: rule.editorId,
   });
-
-  // If there are no fields to select, show a message instead of the editor.
-  if (selectableFieldCount <= 0) {
-    return (
-      <Paper
-        variant="outlined"
-        sx={{
-          p: 1.5,
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <Typography variant="body2" color="error">
-          {view ? (
-            <>
-              This form has only one section. Adding conditions for a section
-              requires more than one section so that fields from other sections
-              can be referenced.
-            </>
-          ) : (
-            <>
-              This form only has one field. Please add fields to this form to
-              enable adding conditions.
-            </>
-          )}
-        </Typography>
-      </Paper>
-    );
-  }
 
   return (
     <div ref={ref} style={{width: '100%'}}>

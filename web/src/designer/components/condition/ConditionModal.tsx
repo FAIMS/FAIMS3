@@ -25,6 +25,7 @@ import {
   Stack,
   SxProps,
   Theme,
+  Typography,
 } from '@mui/material';
 import type {ReactNode} from 'react';
 import {useCallback, useState} from 'react';
@@ -35,6 +36,27 @@ import {
 } from '../designer-style';
 import {ConditionControl, ConditionControlProps} from './ConditionControl';
 import {normaliseConditionForCompare} from '@/lib/conditionUtils';
+import {useConditionRuleFieldContext} from '@/hooks/use-condition-field-context';
+
+/**
+ * Message shown when there are not enough fields/sections to build a condition.
+ */
+const NoConditionFieldsMessage = (props: {view?: string}) => (
+  <Typography variant="body2" color="error">
+    {props.view ? (
+      <>
+        This form has only one section. Adding conditions for a section requires
+        more than one section so that fields from other sections can be
+        referenced.
+      </>
+    ) : (
+      <>
+        This form only has one field. Please add fields to this form to enable
+        adding conditions.
+      </>
+    )}
+  </Typography>
+);
 
 /** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
 export const ConditionModal = (
@@ -51,6 +73,13 @@ export const ConditionModal = (
   const [draft, setDraft] = useState<ConditionType | null>(
     props.initial ?? null
   );
+
+  const {selectableFieldCount} = useConditionRuleFieldContext({
+    field: props.field,
+    view: props.view,
+  });
+  // If there are no fields to select, show a message instead of the editor.
+  const canEditCondition = selectableFieldCount > 0;
 
   // Open the dialog, refresh draft when opening
   // Reset confirmCancel when opening/closing.
@@ -102,12 +131,16 @@ export const ConditionModal = (
 
       <Dialog open={open} fullWidth={true} maxWidth="lg" onClose={handleCancel}>
         <DialogContent sx={designerDialogContentSx}>
-          <ConditionControl
-            initial={draft}
-            onChange={setDraft}
-            field={props.field}
-            view={props.view}
-          />
+          {canEditCondition ? (
+            <ConditionControl
+              initial={draft}
+              onChange={setDraft}
+              field={props.field}
+              view={props.view}
+            />
+          ) : (
+            <NoConditionFieldsMessage view={props.view} />
+          )}
         </DialogContent>
 
         <DialogActions>
@@ -138,7 +171,11 @@ export const ConditionModal = (
               >
                 Cancel Edit
               </Button>
-              <Button variant="contained" onClick={handleSave}>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={!canEditCondition}
+              >
                 Save Changes
               </Button>
             </Stack>

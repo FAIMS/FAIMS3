@@ -52,16 +52,16 @@ export type ConditionControlProps = {
 };
 
 export const ConditionControl = (props: ConditionControlProps) => {
-  // use for draggable UI nodes
+  // Editor tree used by the draggable condition UI.
   const [root, setRoot] = useState<ConditionGroupNode>(() =>
     conditionToEditorTree(props.initial ?? null)
   );
 
-  // use for updaing parent condition object
+  // Persisted condition generated from the editor tree.
   const condition = useMemo(() => editorTreeToCondition(root), [root]);
 
   useEffect(() => {
-    // update parent's/ConditionModal draft state
+    // Notify parent component when the editor tree produces a new condition.
     props.onChange?.(condition);
   }, [condition]);
 
