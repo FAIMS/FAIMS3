@@ -42,8 +42,6 @@ import {DraggableConditionEditor} from './DraggableConditionEditor';
 
 /**
  * Main condition editor used by ConditionModal.
- *
- * Contains simple condition editor, and advanced condition editor.
  */
 export type ConditionControlProps = {
   onChange?: (condition: ConditionType | null) => void;
