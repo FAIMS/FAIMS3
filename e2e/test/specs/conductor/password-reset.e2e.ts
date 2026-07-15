@@ -1,6 +1,7 @@
 /**
  * Forgot-password form + admin-generated reset link (no mail catcher).
- * Requires RATE_LIMITER_ENABLED=false in api/.env for repeated local runs.
+ * Requires AUTH_ATTEMPT_LIMITER_ENABLED=false (and usually
+ * RATE_LIMITER_ENABLED=false) in api/.env for repeated local runs.
  */
 import {loginWebPersona, persona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -51,25 +52,28 @@ describe('Conductor — Password reset', () => {
     await byTestId('conductor-reset-confirm-password').setValue(tempPassword);
     await byTestId('conductor-reset-submit').click();
 
-    await browser.waitUntil(
-      async () => {
-        const url = await browser.getUrl();
-        const success = await byTestId('conductor-reset-success')
-          .isExisting()
-          .catch(() => false);
-        return success || !url.includes('reset-password');
-      },
-      {timeout: 20000, timeoutMsg: 'Expected password reset to complete'}
-    );
-    await captureStep({
-      surface: 'conductor',
-      label: 'reset-complete',
-    });
-
-    // Restore original seed password for later suites.
-    await browser.reloadSession();
-    await loginWebPersona('operationsAdmin');
-    const {code} = await requestPasswordResetLink(target.email);
-    await completePasswordReset(code, target.password);
+    try {
+      await browser.waitUntil(
+        async () => {
+          const url = await browser.getUrl();
+          const success = await byTestId('conductor-reset-success')
+            .isExisting()
+            .catch(() => false);
+          return success || !url.includes('reset-password');
+        },
+        {timeout: 20000, timeoutMsg: 'Expected password reset to complete'}
+      );
+      await captureStep({
+        surface: 'conductor',
+        label: 'reset-complete',
+      });
+    } finally {
+      // Restore original seed password for later suites — even if the
+      // wait/capture above fails and leaves the persona on tempPassword.
+      await browser.reloadSession();
+      await loginWebPersona('operationsAdmin');
+      const {code} = await requestPasswordResetLink(target.email);
+      await completePasswordReset(code, target.password);
+    }
   });
 });

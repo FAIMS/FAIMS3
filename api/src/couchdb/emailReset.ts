@@ -82,8 +82,9 @@ export const checkCanCreateEmailCode = async ({
   reason?: string;
   nextAttemptAllowedAt?: number;
 }> => {
-  // Shared with HTTP limiter via RATE_LIMITER_ENABLED (local/e2e often disables).
-  if (!config.rateLimiterEnabled) {
+  // Independent of the HTTP IP limiter (RATE_LIMITER_ENABLED). Local/e2e
+  // may set AUTH_ATTEMPT_LIMITER_ENABLED=false for repeated auth flows.
+  if (!config.authAttemptLimiterEnabled) {
     return {canCreate: true};
   }
 

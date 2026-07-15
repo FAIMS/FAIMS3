@@ -11,7 +11,8 @@ import {
   type Credentials,
   type PersonaKey,
 } from './env.ts';
-import {waitForUrl} from './wait.ts';
+import {byTestId} from './selectors.ts';
+import {waitForTestId, waitForUrl} from './wait.ts';
 
 export function persona(key: PersonaKey): Credentials {
   return getPersona(key);
@@ -143,21 +144,21 @@ export async function loginAppPersona(key: PersonaKey): Promise<void> {
 
 /**
  * Best-effort logout for Control Centre (user menu).
- * Falls back to clearing cookies/storage + navigating away.
+ * Opens the user dropdown first — `web-nav-logout` is a Radix DropdownMenuItem
+ * and is only mounted while the menu is open. Falls back to clearing
+ * cookies/storage + navigating away (web origin only; Conductor session on
+ * :8080 may survive — prefer the UI path).
  */
 export async function logoutWeb(): Promise<void> {
   const webUrl = getWebUrl();
   try {
-    const logout = await $('[data-testid="web-nav-logout"]');
-    if (await logout.isExisting()) {
-      const menu = await $('[data-testid="web-nav-user-menu"]');
-      if (await menu.isExisting()) {
-        await menu.click();
-      }
-      await logout.waitForClickable({timeout: 5000});
-      await logout.click();
-      return;
-    }
+    const menu = byTestId('web-nav-user-menu');
+    await menu.waitForClickable({timeout: 5000});
+    await menu.click();
+    const logout = await waitForTestId('web-nav-logout', {timeout: 5000});
+    await logout.waitForClickable({timeout: 5000});
+    await logout.click();
+    return;
   } catch {
     // fall through
   }

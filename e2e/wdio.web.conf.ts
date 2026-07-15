@@ -24,6 +24,8 @@ export const config = {
     './test/specs/conductor/**/*.ts',
   ],
   baseUrl: getWebUrl(),
+  // Avoid parallel logins against the same API (token exchange races).
+  maxInstances: 1,
   reporters: [
     'spec',
     [

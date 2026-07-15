@@ -16,6 +16,28 @@ and read CI artifacts: see [README.md](./README.md). Helper contracts:
 
 Headed counterparts: `wdio.smoke.conf.ts`, `wdio.web.conf.ts`, `wdio.conf.ts`.
 
+## Scripts & viewport scope
+
+Preferred entry points: `test:e2e:smoke`, `test:e2e:web`, `test:e2e:app`
+(and their `headless:` twins), or `test:e2e:headless:ci` for the full CI chain.
+
+`wdio.conf.ts` / `wdio.headless.conf.ts` default to **Fieldmark app** specs
+(`test/specs/app/**`). Legacy aliases that shell into those confs are therefore
+**app-only**, including:
+
+- `test:e2e`, `test:e2e:headless`
+- viewport variants (`:mobile`, `:tablet`, `:desktop`, `:wide`)
+- multi-viewport aggregators (`test:e2e:all`, `test:e2e:headless:all`)
+
+Prefer `test:e2e:app` / `test:e2e:headless:app` when the intent is explicit.
+
+Web / conductor / journeys run via `test:e2e:web` (and headless). Viewport
+scripts for that surface are **desktop and wide only**
+(`test:e2e:web:desktop`, `:wide`, `:all`). **Mobile and tablet coverage for
+Control Centre / Conductor is out of scope** for this suite; those viewports
+apply to the Fieldmark app path above. Appium (`test:e2e:android` /
+`test:e2e:ios`) is a separate path (see Tier 4).
+
 ## Tiers
 
 ### Tier 0 — Smoke (CI gate)

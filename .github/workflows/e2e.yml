@@ -87,11 +87,17 @@ jobs:
           COOKIE_SECRET="$(uuidgen | tr -d '-')"
           sed -i "s|^FAIMS_COOKIE_SECRET=.*|FAIMS_COOKIE_SECRET=${COOKIE_SECRET}|" api/.env
 
-          # Disable HTTP + CouchDB-backed auth attempt limits for repeated logins.
+          # Disable HTTP IP limiter and CouchDB-backed auth attempt limits
+          # for repeated password-reset / invite flows.
           if grep -q '^RATE_LIMITER_ENABLED=' api/.env; then
             sed -i 's/^RATE_LIMITER_ENABLED=.*/RATE_LIMITER_ENABLED=false/' api/.env
           else
             echo 'RATE_LIMITER_ENABLED=false' >> api/.env
+          fi
+          if grep -q '^AUTH_ATTEMPT_LIMITER_ENABLED=' api/.env; then
+            sed -i 's/^AUTH_ATTEMPT_LIMITER_ENABLED=.*/AUTH_ATTEMPT_LIMITER_ENABLED=false/' api/.env
+          else
+            echo 'AUTH_ATTEMPT_LIMITER_ENABLED=false' >> api/.env
           fi
 
           # Stable commit string for Vite builds in CI.
@@ -224,7 +230,7 @@ jobs:
           retention-days: 14
 
       - name: Comment e2e result on PR
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
         uses: actions/github-script@v7
         env:
           E2E_OUTCOME: ${{ steps.e2e-tests.outcome }}

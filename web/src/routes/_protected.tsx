@@ -203,7 +203,7 @@ function RouteComponent() {
             </div>
           </header>
 
-          <main
+          <div
             className="flex flex-1 flex-col gap-4 p-4 pt-0"
             data-testid="web-main"
           >
@@ -234,7 +234,7 @@ function RouteComponent() {
               />
             )}
             <Outlet />
-          </main>
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </Dialog>

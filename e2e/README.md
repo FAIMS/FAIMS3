@@ -11,8 +11,7 @@ Fieldmark (`app`). Primary browser: Chromium (headed locally, headless in CI).
 3. `pnpm run migrate-with-keys`, then seed:
 
 ```bash
-# Non-interactive clear (scripts/clearCouchDb.sh prompts interactively)
-sudo docker compose restart couchdb   # or reset volume if you need a blank DB
+# Seed (idempotent — restores Red/Blue teams, templates, notebooks, personas)
 cd api && pnpm seed-test-dataset
 ```
 
@@ -22,11 +21,13 @@ For repeated local password-reset / invite e2e, set in `api/.env`:
 
 ```bash
 RATE_LIMITER_ENABLED=false
+AUTH_ATTEMPT_LIMITER_ENABLED=false
 ```
 
-This disables both the Express HTTP IP limiter and CouchDB-backed email-code /
+`RATE_LIMITER_ENABLED` is the Express HTTP IP limiter;
+`AUTH_ATTEMPT_LIMITER_ENABLED` is the CouchDB-backed email-code /
 verification-challenge attempt limits (see `api/.env.dist`). Restart the API
-after changing it.
+after changing them.
 
 Copy `e2e/.env.dist` → `e2e/.env` (seed passwords match the dist defaults).
 
@@ -52,7 +53,10 @@ pnpm test:e2e:headless:ci
 
 Headed variants: `pnpm test:e2e:web`, `pnpm test:e2e:app`, `pnpm test:e2e:smoke`.
 
-Viewport: `VIEWPORT=mobile|tablet|desktop|wide` (default `desktop`).
+Viewport: `VIEWPORT=mobile|tablet|desktop|wide` (default `desktop`). Mobile /
+tablet scripts (`test:e2e:mobile`, `test:e2e:headless:all`, etc.) target the
+**app** conf only; web is desktop/wide. Details: [SUITE.md](./SUITE.md)
+(“Scripts & viewport scope”).
 
 Screenshots use CSS pixels at `deviceScaleFactor=1` (Chrome CDP
 `Emulation.setDeviceMetricsOverride` under Classic WebDriver) so images are not
@@ -131,7 +135,8 @@ Runs on PRs / pushes to `main` when `e2e`, `app`, `web`, `api`, `library`, or
 lockfile/workflow files change (`workflow_dispatch` always available). The job:
 
 1. Installs deps (Node 24 / pnpm, same as Build & Lint)
-2. Copies `.env.dist` → `.env`, sets `FAIMS_COOKIE_SECRET` + `RATE_LIMITER_ENABLED=false`
+2. Copies `.env.dist` → `.env`, sets `FAIMS_COOKIE_SECRET`,
+   `RATE_LIMITER_ENABLED=false`, and `AUTH_ATTEMPT_LIMITER_ENABLED=false`
 3. Generates signing keys + CouchDB `local.ini`, starts CouchDB via Compose
 4. `pnpm build`, `migrate-with-keys`, `seed-test-dataset`
 5. Starts `pnpm run dev` (api `:8080`, app `:3000`, web `:3001`)
@@ -158,12 +163,12 @@ cd e2e && pnpm exec wdio run wdio.headless.web.conf.ts --mochaOpts.grep 'Users a
 
 ## Troubleshooting
 
-| Symptom                  | Action                                                           |
-| ------------------------ | ---------------------------------------------------------------- |
-| Stuck on `/login`        | Re-seed; check `api/.env` local auth                             |
-| Stuck on `exchangeToken` | API down / exchange failed                                       |
-| Element not found        | Add/wait for `data-testid`                                       |
-| Empty lists              | Wrong persona or seed incomplete                                 |
-| Users search no results  | Email column must be a string (Users tab maps `emails[0].email`) |
-| HTTP 429 / flaky auth    | Set `RATE_LIMITER_ENABLED=false` in `api/.env`; restart API      |
-| CI Chrome session fails  | Check Actions artifact `e2e-artifacts-*` + pinned Chrome setup   |
+| Symptom                  | Action                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Stuck on `/login`        | Re-seed; check `api/.env` local auth                                                                 |
+| Stuck on `exchangeToken` | API down / exchange failed                                                                           |
+| Element not found        | Add/wait for `data-testid`                                                                           |
+| Empty lists              | Wrong persona or seed incomplete                                                                     |
+| Users search no results  | Email column must be a string (Users tab maps `emails[0].email`)                                     |
+| HTTP 429 / flaky auth    | Set `RATE_LIMITER_ENABLED=false` and `AUTH_ATTEMPT_LIMITER_ENABLED=false` in `api/.env`; restart API |
+| CI Chrome session fails  | Check Actions artifact `e2e-artifacts-*` + pinned Chrome setup                                       |

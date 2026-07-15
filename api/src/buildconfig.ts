@@ -209,11 +209,19 @@ const EnvSchema = z
       'RATE_LIMITER_PER_WINDOW'
     ),
     /**
-     * Whether rate limiting is enabled (`true` / other).
-     * Covers the Express HTTP IP limiter and email-code /
-     * verification-challenge attempt limits.
+     * Whether the Express HTTP IP rate limiter is enabled (`true` / other).
+     * Does not control CouchDB-backed auth attempt limits — see
+     * AUTH_ATTEMPT_LIMITER_ENABLED.
      */
     RATE_LIMITER_ENABLED: configHelpers.equalsTrueBool(true),
+    /**
+     * Whether per-user email-code / verification-challenge attempt limits
+     * are enabled (`true` / other). Independent of the HTTP IP limiter so
+     * deployments that disable RATE_LIMITER_ENABLED upstream still keep
+     * password-reset and verification brute-force protection. Default on;
+     * e2e may set false for repeated auth flows.
+     */
+    AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.equalsTrueBool(true),
     /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
@@ -465,6 +473,7 @@ const EnvSchema = z
       rateLimiterWindowMs: env.RATE_LIMITER_WINDOW_MS,
       rateLimiterPerWindow: env.RATE_LIMITER_PER_WINDOW,
       rateLimiterEnabled: env.RATE_LIMITER_ENABLED,
+      authAttemptLimiterEnabled: env.AUTH_ATTEMPT_LIMITER_ENABLED,
       migrateNotebooksOnStartup: env.MIGRATE_NOTEBOOKS_ON_STARTUP,
       keySource: env.KEY_SOURCE,
       maximumLongLivedDurationDays: env.MAXIMUM_LONG_LIVED_DURATION_DAYS,
