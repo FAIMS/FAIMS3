@@ -5,14 +5,12 @@ import ProjectInvites from '@/components/tabs/project/invites';
 import ProjectUsers from '@/components/tabs/project/users';
 import ProjectExport from '@/components/tabs/project/export';
 import ProjectActions from '@/components/tabs/project/actions';
+import ProjectOfflineMap from '@/components/tabs/project/offline-map';
 import {useGetProject} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo} from 'react';
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 import {ProjectStatus} from '@faims3/data-model';
 
 const tabs = [
@@ -20,6 +18,7 @@ const tabs = [
   {name: 'Invites', Component: ProjectInvites},
   {name: 'Users', Component: ProjectUsers},
   {name: 'Export', Component: ProjectExport},
+  {name: 'Offline Map', Component: ProjectOfflineMap},
   {name: 'Actions', Component: ProjectActions},
 ];
 
@@ -45,7 +44,7 @@ function RouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+        label: config.notebookNamePluralCapitalized,
       },
       // project name
       {
@@ -63,7 +62,11 @@ function RouteComponent() {
 
   if (!isLoading && project?.status === ProjectStatus.ARCHIVED) {
     return (
-      <Navigate to="/archive" search={{tab: NOTEBOOK_NAME_PLURAL}} replace />
+      <Navigate
+        to="/archive"
+        search={{tab: config.notebookNamePlural}}
+        replace
+      />
     );
   }
 

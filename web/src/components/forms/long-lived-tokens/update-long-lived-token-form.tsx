@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {updateLongLivedToken} from '@/hooks/queries';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -17,23 +17,35 @@ export function UpdateLongLivedTokenForm({
   setDialogOpen,
   token,
 }: UpdateLongLivedTokenFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const fields = [
     {
       name: 'title',
       label: 'Title',
-      schema: z.string().min(5, {
-        message: 'Title must be at least 5 characters',
-      }),
+      schema: z
+        .string()
+        .min(5, {
+          message: 'Title must be at least 5 characters',
+        })
+        .max(100, {
+          message: 'Title must be at most 100 characters',
+        }),
+      maxLength: 100,
     },
     {
       name: 'description',
       label: 'Description',
-      schema: z.string().min(10, {
-        message: 'Description must be at least 10 characters',
-      }),
+      schema: z
+        .string()
+        .min(10, {
+          message: 'Description must be at least 10 characters',
+        })
+        .max(500, {
+          message: 'Description must be at most 500 characters',
+        }),
+      maxLength: 500,
     },
   ];
 
@@ -46,8 +58,6 @@ export function UpdateLongLivedTokenForm({
    * Handles the form submission
    */
   const onSubmit = async ({title, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     try {
       await updateLongLivedToken({
         tokenId: token.id,

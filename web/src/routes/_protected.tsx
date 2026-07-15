@@ -1,3 +1,4 @@
+import {ImpersonationBanner} from '@/components/alerts/impersonation-banner';
 import {VerificationAlertComponent} from '@/components/alerts/verification-alert';
 import Breadcrumbs from '@/components/breadcrumbs';
 import {LogoIcon} from '@/components/logo';
@@ -13,14 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  API_URL,
-  APP_NAME,
-  APP_SHORT_NAME,
-  APP_URL,
-  DOCS_URL,
-  SIGNIN_PATH,
-} from '@/constants';
+import {config} from '@/constants';
 import {getStoredUser, isUserExpired, useAuth} from '@/context/auth-provider';
 import {useRequestVerify} from '@/hooks/queries';
 import {
@@ -53,7 +47,7 @@ const upgradeExchangeTokenForRefresh = async ({
   errorCallback: (msg: string) => void;
 }) => {
   // We have the URL - do the exchange
-  const response = await fetch(API_URL + '/api/auth/exchange', {
+  const response = await fetch(config.apiUrl + '/api/auth/exchange', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -124,7 +118,7 @@ export const Route = createFileRoute('/_protected')({
       if (success) return;
 
       // otherwise we need to redirect to login
-      window.location.href = SIGNIN_PATH;
+      window.location.href = config.signinPath;
       return;
     }
 
@@ -138,7 +132,7 @@ export const Route = createFileRoute('/_protected')({
 
     // No valid authentication found - redirect to login
     if (!isAuthenticated) {
-      window.location.href = SIGNIN_PATH;
+      window.location.href = config.signinPath;
     }
   },
   component: RouteComponent,
@@ -169,9 +163,9 @@ function RouteComponent() {
                 <Breadcrumbs />
               </div>
               <div className="flex">
-                {DOCS_URL && (
+                {config.docsUrl && (
                   <Button variant="outline" className="mr-2 p-2">
-                    <a href={DOCS_URL} target="_blank">
+                    <a href={config.docsUrl} target="_blank">
                       <span className="align-middle font-semibold">
                         Documentation{' '}
                       </span>
@@ -185,12 +179,12 @@ function RouteComponent() {
                       {/* asChild and span here avoids a DOM nesting issue with TooltipTrigger */}
                       <span>
                         <Button variant="outline" className="mr-2 p-2">
-                          <a href={APP_URL} target="_blank">
+                          <a href={config.appUrl} target="_blank">
                             <span className="mr-2">
                               <LogoIcon size={24} />
                             </span>
                             <span className="align-middle font-semibold">
-                              {APP_SHORT_NAME} App{' '}
+                              {config.appShortName} App{' '}
                             </span>
                             <ExternalLinkIcon className="inline-block" />
                           </a>
@@ -198,7 +192,8 @@ function RouteComponent() {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="w-32 text-balance">
-                      Open the {APP_NAME} data collection app in a new window
+                      Open the {config.appName} data collection app in a new
+                      window
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -209,6 +204,7 @@ function RouteComponent() {
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            <ImpersonationBanner />
             {verification.showNeedsVerification && (
               <VerificationAlertComponent
                 email={verification.email ?? 'Unknown'}

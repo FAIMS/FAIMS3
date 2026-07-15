@@ -9,18 +9,17 @@ import {GenerateTestRecordsDialog} from '@/components/dialogs/generate-test-reco
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {
-  DEVELOPER_MODE,
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {config} from '@/constants';
 import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
 } from '@/designer/integration';
 import type {NotebookWithHistory} from '@/designer/state/initial';
-import {useCanCreateTemplate, useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {
+  useCanCreateTemplate,
+  useIsAuthorisedTo,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {Action, ProjectStatus} from '@faims3/data-model';
@@ -37,7 +36,7 @@ import {useMemo, useState} from 'react';
  * @returns {JSX.Element} The rendered ProjectActions component.
  */
 const ProjectActions = (): JSX.Element => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const {data, isLoading} = useGetProject({user, projectId});
   const queryClient = useQueryClient();
@@ -54,7 +53,7 @@ const ProjectActions = (): JSX.Element => {
     resourceType: 'projects',
     apiResourceType: 'notebooks',
     resourceId: projectId,
-    token: user?.token,
+    token: user.token,
   });
 
   // need to invalidate the project query after upload
@@ -111,7 +110,7 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {DEVELOPER_MODE && canGenerateTestRecords && (
+        {config.developerMode && canGenerateTestRecords && (
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
@@ -134,11 +133,13 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED} details</ListLabel>
+                <ListLabel>
+                  Edit {config.notebookNameCapitalized} details
+                </ListLabel>
               </ListItem>
               <ListItem>
                 <ListDescription>
-                  Update {NOTEBOOK_NAME_CAPITALIZED} title and short
+                  Update {config.notebookNameCapitalized} title and short
                   description.
                 </ListDescription>
               </ListItem>
@@ -153,7 +154,7 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                <ListLabel>Edit {config.notebookNameCapitalized}</ListLabel>
               </ListItem>
               <ListItem>
                 <Button
@@ -172,7 +173,7 @@ const ProjectActions = (): JSX.Element => {
           <Card className="flex-1">
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
-                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListLabel>Assign {config.notebookName} to a Team</ListLabel>
               </ListItem>
               <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
@@ -187,7 +188,7 @@ const ProjectActions = (): JSX.Element => {
               <ListItem>
                 <ListLabel>Download JSON</ListLabel>
                 <ListDescription>
-                  Download the {NOTEBOOK_NAME} design JSON file.
+                  Download the {config.notebookName} design JSON file.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -211,11 +212,11 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
-                  Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
+                  Replace {config.notebookNameCapitalized} JSON File
                 </ListLabel>
                 <ListDescription>
                   Upload a JSON design file to replace the existing{' '}
-                  {NOTEBOOK_NAME} design.
+                  {config.notebookName} design.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -230,7 +231,7 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
-                  Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
+                  Create Template from this {config.notebookNameCapitalized}
                 </ListLabel>
               </ListItem>
               <ListItem>
@@ -251,11 +252,11 @@ const ProjectActions = (): JSX.Element => {
             <List className="flex flex-col gap-2 space-y-0">
               <ListItem className="flex flex-col items-start gap-2">
                 <ListLabel className="block">
-                  Archive {NOTEBOOK_NAME_CAPITALIZED}
+                  Archive {config.notebookNameCapitalized}
                 </ListLabel>
                 {!projectIsClosed && (
                   <ListDescription>
-                    To archive, you must close the {NOTEBOOK_NAME} first
+                    To archive, you must close the {config.notebookName} first
                   </ListDescription>
                 )}
                 <ArchiveProjectDialog

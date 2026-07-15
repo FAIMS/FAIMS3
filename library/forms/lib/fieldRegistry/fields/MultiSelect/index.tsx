@@ -44,7 +44,7 @@ import {
   TextField,
 } from '@mui/material';
 import {z} from 'zod';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
@@ -302,7 +302,6 @@ const MuiMultiSelect = ({
       <FormControl
         sx={{
           width: '100%',
-          mt: 2,
           '& .MuiSelect-select': {
             whiteSpace: 'normal',
             wordBreak: 'break-word',
@@ -409,6 +408,11 @@ const MuiMultiSelect = ({
                   variant="standard"
                   multiline
                   fullWidth
+                  slotProps={{
+                    htmlInput: {
+                      maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
+                    },
+                  }}
                   sx={{
                     flex: 1,
                     ...otherTextFieldSx,
@@ -551,7 +555,7 @@ export const MultiSelect = (props: FieldProps) => {
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
-      <Box sx={{mt: 2, mb: 2}}>
+      <Box sx={{mb: 1}}>
         {isExpandedChecklist ? (
           <ExpandedChecklist
             options={ElementProps.options}
@@ -594,15 +598,18 @@ const valueSchema = (props: MultiSelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
+  // Bounded to stop maliciously long values / oversized arrays
+  const boundedItem = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
+
   if (optionValues.length === 0) {
-    const baseSchema = z.array(z.string());
+    const baseSchema = z.array(boundedItem);
     return props.required
       ? baseSchema.min(1, {message: 'Please select at least one option'})
       : baseSchema;
   }
 
   if (enableOtherOption) {
-    const baseSchema = z.array(z.string());
+    const baseSchema = z.array(boundedItem);
 
     if (props.required) {
       return baseSchema

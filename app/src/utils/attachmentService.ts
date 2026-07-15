@@ -5,10 +5,7 @@ import {
   DataDocument,
   IAttachmentService,
 } from '@faims3/data-model';
-import {
-  ATTACHMENT_DOCUMENT_ID_PREFIX,
-  ATTACHMENT_SERVICE_TYPE,
-} from '../buildconfig';
+import {config} from '../buildconfig';
 import {localGetDataDb} from './database';
 
 /**
@@ -30,11 +27,11 @@ export function createProjectAttachmentService(
   return createAttachmentService({
     serviceType:
       AttachmentServiceType[
-        ATTACHMENT_SERVICE_TYPE as keyof typeof AttachmentServiceType
+        config.attachmentServiceType as keyof typeof AttachmentServiceType
       ],
     serviceConfig: {
       dataDb,
-      documentIdPrefix: ATTACHMENT_DOCUMENT_ID_PREFIX,
+      documentIdPrefix: config.attachmentDocumentIdPrefix,
     },
   });
 }

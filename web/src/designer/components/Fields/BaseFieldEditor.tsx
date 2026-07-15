@@ -37,7 +37,8 @@ import {
 import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import {config} from '../../buildconfig';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -196,12 +197,19 @@ export const BaseFieldEditor = ({
   };
 
   const handleLabelBlur = () => {
-    // Flush pending one-time auto-sync immediately on blur.
+    // Only flush a sync the user's typing scheduled. Blurring an untouched fresh
+    // field (focus moving to a newly added field) must not rename it, or several
+    // default "New Field" fields chase the same slug in a rename loop.
+    const hadPendingSync = labelSyncTimerRef.current !== null;
     if (labelSyncTimerRef.current) {
       clearTimeout(labelSyncTimerRef.current);
       labelSyncTimerRef.current = null;
     }
-    if (autoSyncFieldIdEnabled.current && !initialAutoSyncDone.current) {
+    if (
+      hadPendingSync &&
+      autoSyncFieldIdEnabled.current &&
+      !initialAutoSyncDone.current
+    ) {
       syncFieldIDToLabel(state.label || '');
       initialAutoSyncDone.current = true;
       autoSyncFieldIdEnabled.current = false;
@@ -215,8 +223,12 @@ export const BaseFieldEditor = ({
     // "New-Field*" means this field was just created by designer scaffolding.
     // We allow first-time auto-sync only for this new-field state.
     const isFreshGeneratedFieldId = /^New-Field(?:-\d+)?$/i.test(fieldName);
-    autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
-    initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+    // Don't re-arm after our own rename, or a synced "New-Field-N" id re-enables
+    // sync and the rename repeats.
+    if (!wasInternalRename) {
+      autoSyncFieldIdEnabled.current = isFreshGeneratedFieldId;
+      initialAutoSyncDone.current = !isFreshGeneratedFieldId;
+    }
 
     setLocalFieldName(fieldName);
 
@@ -397,6 +409,9 @@ export const BaseFieldEditor = ({
                         onChange={handleIdChange}
                         inputRef={idInputRef}
                         slotProps={{
+                          htmlInput: designerHtmlInput(
+                            INPUT_LIMITS.ID_MAX_LENGTH
+                          ),
                           input: {
                             endAdornment:
                               state.label &&
@@ -445,6 +460,9 @@ export const BaseFieldEditor = ({
                             onChange={handleIdChange}
                             inputRef={idInputRef}
                             slotProps={{
+                              htmlInput: designerHtmlInput(
+                                INPUT_LIMITS.ID_MAX_LENGTH
+                              ),
                               input: {
                                 endAdornment:
                                   state.label &&
@@ -486,6 +504,9 @@ export const BaseFieldEditor = ({
                           onChange={handleIdChange}
                           inputRef={idInputRef}
                           slotProps={{
+                            htmlInput: designerHtmlInput(
+                              INPUT_LIMITS.ID_MAX_LENGTH
+                            ),
                             input: {
                               endAdornment:
                                 state.label &&
@@ -1025,7 +1046,7 @@ export const BaseFieldEditor = ({
             </Grid>
 
             {/* Template protection — bottom strip (only when VITE_TEMPLATE_PROTECTIONS is on) */}
-            {VITE_TEMPLATE_PROTECTIONS && (
+            {config.templateProtections && (
               <Box sx={{px: 2, pb: 2, pt: 0}}>
                 <Divider sx={{mb: 1.5}} />
                 <Grid container spacing={1}>

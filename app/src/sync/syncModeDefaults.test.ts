@@ -1,3 +1,4 @@
+import type {OfflineMapRegion} from '@faims3/data-model';
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 
 vi.mock('../context/slices/helpers/databaseHelpers', () => ({
@@ -8,6 +9,19 @@ import {fetchNotebookDetails} from '../context/slices/helpers/databaseHelpers';
 import {resolveActivationSyncMode} from './syncModeDefaults';
 
 const mockFetchNotebookDetails = vi.mocked(fetchNotebookDetails);
+
+const sampleOfflineMapRegion: OfflineMapRegion = {
+  type: 'Polygon',
+  coordinates: [
+    [
+      [150.0, -34.0],
+      [151.0, -34.0],
+      [151.0, -33.0],
+      [150.0, -33.0],
+      [150.0, -34.0],
+    ],
+  ],
+};
 
 describe('resolveActivationSyncMode', () => {
   beforeEach(() => {
@@ -75,4 +89,29 @@ describe('resolveActivationSyncMode', () => {
     expect(result.syncMode).toBe('both');
     expect(result.usedPushOnlyDefault).toBe(false);
   });
+
+  it.each([
+    {label: 'undefined', recordCount: undefined},
+    {label: 'NaN', recordCount: Number.NaN},
+  ])(
+    'includes offline map region when record count is $label',
+    async ({recordCount}) => {
+      mockFetchNotebookDetails.mockResolvedValue({
+        recordCount,
+        offlineMapRegion: sampleOfflineMapRegion,
+      } as Awaited<ReturnType<typeof fetchNotebookDetails>>);
+
+      const result = await resolveActivationSyncMode({
+        serverUrl: 'https://example.com',
+        projectId: 'p1',
+        token: 'token',
+      });
+
+      expect(result.syncMode).toBe('both');
+      expect(result.usedPushOnlyDefault).toBe(false);
+      expect(result.recordCount).toBeUndefined();
+      expect(result.offlineMapRegion).toEqual(sampleOfflineMapRegion);
+      expect(result.offlineMapRegionSynced).toBe(true);
+    }
+  );
 });

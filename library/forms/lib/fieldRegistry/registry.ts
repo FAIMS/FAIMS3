@@ -23,7 +23,15 @@ import {takePhotoFieldSpec} from './fields/TakePhoto';
 import {takePointFieldSpec} from './fields/TakePoint';
 import {templatedStringFieldSpec} from './fields/TemplatedStringField';
 import {emailFieldSpec, textFieldSpec} from './fields/TextFields';
+import {
+  buildRegistryKey,
+  FIELD_REGISTRY,
+  splitRegistryKey,
+} from './registryApi';
 import {FieldInfo} from './types';
+
+// Re-export the lookup API so existing `from './registry'` imports keep working.
+export {FORCE_IGNORED_FIELDS, getFieldInfo} from './registryApi';
 
 // Canonical field specifications. Each spec is registered under its own
 // `namespace::name`. To add a new field type, add it here.
@@ -97,64 +105,19 @@ const LEGACY_FIELD_ALIASES: Array<{
   },
 ];
 
-// Build the map from `namespace::name` to the field info, including legacy aliases.
-const FIELD_REGISTRY: Map<string, FieldInfo> = new Map();
+// Populate the shared lookup map (including legacy aliases).
 for (const spec of FieldSpecList) {
   FIELD_REGISTRY.set(
-    buildKey({namespace: spec.namespace, name: spec.name}),
+    buildRegistryKey({namespace: spec.namespace, name: spec.name}),
     spec
   );
 }
 for (const alias of LEGACY_FIELD_ALIASES) {
   FIELD_REGISTRY.set(
-    buildKey({namespace: alias.namespace, name: alias.name}),
+    buildRegistryKey({namespace: alias.namespace, name: alias.name}),
     alias.spec
   );
 }
-
-// Internal helper to build the registry key
-function buildKey({
-  namespace,
-  name,
-}: {
-  namespace: string;
-  name: string;
-}): string {
-  return `${namespace}::${name}`;
-}
-
-// Internal helper to split the registry key
-function splitKey(key: string): {
-  namespace: string;
-  name: string;
-} {
-  const parts = key.split('::');
-  if (parts.length !== 2) {
-    throw new Error(`Invalid key: ${key}`);
-  }
-  return {
-    namespace: parts[0],
-    name: parts[1],
-  };
-}
-
-/**
- * Get field info by namespace and name
- *  if we can't find the field, fall back to a text field
- *  returns {info, fallback}
- */
-export const getFieldInfo = ({
-  namespace,
-  name,
-}: {
-  namespace: string;
-  name: string;
-}): {fieldInfo: FieldInfo<any>; fallback: boolean} => {
-  const key = buildKey({namespace, name});
-  const fieldInfo = FIELD_REGISTRY.get(key);
-  if (fieldInfo) return {fieldInfo, fallback: false};
-  else return {fieldInfo: textFieldSpec, fallback: true};
-};
 
 /**
  * Validate the registry on load. Legacy alias keys are intentionally allowed
@@ -164,12 +127,12 @@ export const getFieldInfo = ({
 const validateFieldRegistry = (registry: Map<string, FieldInfo>) => {
   const aliasKeys = new Set(
     LEGACY_FIELD_ALIASES.map(a =>
-      buildKey({namespace: a.namespace, name: a.name})
+      buildRegistryKey({namespace: a.namespace, name: a.name})
     )
   );
   for (const [key, spec] of registry) {
     if (aliasKeys.has(key)) continue;
-    const {namespace, name} = splitKey(key);
+    const {namespace, name} = splitRegistryKey(key);
     if (namespace !== spec.namespace || name !== spec.name) {
       throw new Error(
         `Field registry key mismatch: key "${key}" does not match spec namespace "${spec.namespace}" and name "${spec.name}"`
@@ -180,14 +143,3 @@ const validateFieldRegistry = (registry: Map<string, FieldInfo>) => {
 
 // Always validate the registry on load
 validateFieldRegistry(FIELD_REGISTRY);
-
-// Ignored fields - narrow exception cases which should never be rendered.
-// NOTE: do NOT add deprecated fields here — they will silently disappear from
-// existing notebooks. Deprecated fields should only be hidden from the chooser
-// (showInChooser: false in fields.tsx). Use migrations to move existing data.
-export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
-  {
-    namespace: 'faims-custom',
-    name: 'BasicAutoIncrementer',
-  },
-];

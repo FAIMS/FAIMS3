@@ -20,7 +20,7 @@
 
 import {Profile, Strategy, VerifyWithRequest} from 'passport-saml';
 import {SignedXml} from 'xml-crypto';
-import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
 import {SAMLAuthProviderConfig} from './strategyTypes';
@@ -152,7 +152,7 @@ export const samlStrategyGenerator = (
       // Callback URL
       callbackUrl:
         options.callbackURL ||
-        CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
+        config.conductorPublicUrl + providerAuthReturnUrl(options.id),
       path: options.path,
       authnRequestBinding: options.authnRequestBinding,
       skipRequestCompression: options.skipRequestCompression,
@@ -251,7 +251,7 @@ export const buildSamlMetadataErrorUrl = (
   if (trimmed) {
     return trimmed;
   }
-  const base = CONDUCTOR_PUBLIC_URL.replace(/\/$/, '');
+  const base = config.conductorPublicUrl.replace(/\/$/, '');
   return `${base}/auth/${encodeURIComponent(providerId)}/sso-error`;
 };
 

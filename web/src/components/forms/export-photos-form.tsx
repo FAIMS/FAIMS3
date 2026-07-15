@@ -6,6 +6,7 @@ import {ChevronRight} from 'lucide-react';
 import {useState} from 'react';
 import {z} from 'zod';
 import {Field, Form} from '../form';
+import {config} from '@/constants';
 
 type ExportScope = 'all' | 'single';
 
@@ -45,7 +46,7 @@ const ExportPhotosForm = () => {
    */
   const handleSingleFormSubmit = async ({form}: {form: string}) => {
     if (user) {
-      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=zip&viewID=${form}`;
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=zip&viewID=${form}`;
       const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +66,7 @@ const ExportPhotosForm = () => {
    */
   const handleAllFormsSubmit = async () => {
     if (user) {
-      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=zip`;
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=zip`;
       const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',

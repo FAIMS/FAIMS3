@@ -1,10 +1,11 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {config} from '@/constants';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
 import {useMemo} from 'react';
 
@@ -19,10 +20,16 @@ export const Route = createFileRoute('/_protected/projects/')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function ProjectsRouteComponent() {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const {isLoading, data} = useGetProjects({user});
   const pathname = useRouter().state.location.pathname;
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
+  const canCreateInSomeTeam =
+    getUserResourcesForAction({
+      decodedToken: user.decodedToken,
+      action: Action.CREATE_PROJECT_IN_TEAM,
+    }).length > 0;
 
   // breadcrumbs addition
   const paths = useMemo(
@@ -30,7 +37,7 @@ function ProjectsRouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+        label: config.notebookNamePluralCapitalized,
       },
     ],
     [pathname, isLoading]
@@ -46,7 +53,7 @@ function ProjectsRouteComponent() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">
-        {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+        {config.notebookNamePluralCapitalized}
       </h1>
       <DataTable
         columns={columns}
@@ -54,7 +61,9 @@ function ProjectsRouteComponent() {
         loading={isLoading}
         initialSorting={[{id: 'createdAt', desc: true}]}
         onRowClick={({_id}) => navigate({to: `/projects/${_id}`})}
-        button={<CreateProjectDialog />}
+        button={
+          (canCreateGlobally || canCreateInSomeTeam) && <CreateProjectDialog />
+        }
       />
     </div>
   );

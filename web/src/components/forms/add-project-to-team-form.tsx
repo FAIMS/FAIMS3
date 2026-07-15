@@ -1,9 +1,8 @@
 import {Field, Form} from '@/components/form';
-import {NOTEBOOK_NAME} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {config} from '@/constants';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
-import {useGetTeams} from '@/hooks/queries';
+import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -23,9 +22,10 @@ export function AddProjectToTeamForm({
   setDialogOpen,
   projectId,
 }: AddProjectToTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const teams = useGetTeams({user});
+  const {data: project} = useGetProject({user, projectId});
 
   // can we add a user to the team?
   const canAddProjectToTeam = useIsAuthorisedTo({
@@ -39,7 +39,7 @@ export function AddProjectToTeamForm({
     return (
       <>
         You do not have permission to change the ownership of this{' '}
-        {NOTEBOOK_NAME}
+        {config.notebookName}
       </>
     );
   }
@@ -49,7 +49,7 @@ export function AddProjectToTeamForm({
   }
 
   if (!teams.isLoading && !teamsAvailable) {
-    return <>No teams available to assign this {NOTEBOOK_NAME} to.</>;
+    return <>No teams available to assign this {config.notebookName} to.</>;
   }
 
   const fields: Field[] = [
@@ -72,8 +72,6 @@ export function AddProjectToTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({teamId}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await modifyTeamForProject({
       projectId,
       teamId,
@@ -86,9 +84,18 @@ export function AddProjectToTeamForm({
         message: 'Error adding project to team: ' + response.statusText,
       };
 
+    const previousTeamId = project?.ownedByTeamId;
+
+    QueryClient.invalidateQueries({queryKey: ['projects', projectId]});
+    QueryClient.invalidateQueries({queryKey: ['projects']});
     QueryClient.invalidateQueries({
       queryKey: ['projectsbyteam', user.token, teamId],
     });
+    if (previousTeamId && previousTeamId !== teamId) {
+      QueryClient.invalidateQueries({
+        queryKey: ['projectsbyteam', user.token, previousTeamId],
+      });
+    }
 
     setDialogOpen(false);
   };

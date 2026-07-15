@@ -2,6 +2,7 @@ import {
   couchInitialiser,
   initDataDB,
   NotebookDefinition,
+  OfflineMapRegion,
   ProjectDataObject,
   ProjectListItem,
   ProjectStatus,
@@ -13,12 +14,7 @@ import {
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit';
-import {
-  CONDUCTOR_URLS,
-  DELETE_ON_DEACTIVATION,
-  FORCE_REMOTE_DELETION,
-  NOTEBOOK_NAME,
-} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
@@ -40,6 +36,11 @@ import {replaceProjectReplication} from './helpers/replicationLifecycle';
 import {syncStateService} from './helpers/syncStateService';
 import {addAlert} from './alertSlice';
 import {resolveActivationSyncMode} from '../../sync/syncModeDefaults';
+import {
+  reconcileOfflineMapRegionPlanChange,
+  shouldSkipOfflineMapActivationPrompt,
+} from '../../gui/components/maps/projectOfflineMap';
+import {offlineMapRegionsEqual} from '@faims3/forms';
 import type {SyncMode} from '../../sync/syncMode';
 import {isReplicating, syncModeIncludesPull} from '../../sync/syncMode';
 import {clearPushOnlyBannerDismissal} from '../../utils/pushOnlyBannerDismissal';
@@ -206,9 +207,11 @@ export interface ProjectInformation {
   updatedAt?: string;
   /** Server record count from GET /api/notebooks/:id when known. */
   recordCount?: number;
+  /** Recommended offline map download region (EPSG:4326 polygon). */
+  offlineMapRegion?: OfflineMapRegion;
 }
 
-// A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
+// A project is a notebook (configurable label via config.notebookName) — it is relevant to a server, can be
 // inactive or active, and was activated by someone. This extends with
 // non-trivial or side-effecting elements like database connections and
 // activated status
@@ -265,6 +268,30 @@ export interface ProjectIdentity {
   serverId: string;
 }
 
+/** One queued post-activation or plan-change offline map download dialog. */
+export interface PendingOfflineMapDownloadPrompt extends ProjectIdentity {
+  /** True when an existing download was invalidated by a plan region change. */
+  isRegionUpdate?: boolean;
+}
+
+/** Dedupe key for the offline map prompt FIFO queue. */
+function offlineMapDownloadPromptKey({
+  projectId,
+  serverId,
+}: ProjectIdentity): string {
+  return `${serverId}:${projectId}`;
+}
+
+/** Migrate legacy persisted state that predates the prompt queue field. */
+function ensureOfflineMapPromptQueue(
+  state: ProjectsState
+): PendingOfflineMapDownloadPrompt[] {
+  if (!state.pendingOfflineMapDownloadPrompts) {
+    state.pendingOfflineMapDownloadPrompts = [];
+  }
+  return state.pendingOfflineMapDownloadPrompts;
+}
+
 // Map from server ID to server details
 export type ServerIdToServerMap = {[serverId: string]: Server};
 
@@ -273,6 +300,8 @@ export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
   selectedServerId?: string;
+  /** FIFO queue of offline map download dialogs to show one at a time. */
+  pendingOfflineMapDownloadPrompts?: PendingOfflineMapDownloadPrompt[];
 }
 
 // UTILITY FUNCTIONS
@@ -286,6 +315,7 @@ export const initialProjectState: ProjectsState = {
   servers: {},
   // start out uninitialised
   isInitialised: false,
+  pendingOfflineMapDownloadPrompts: [],
 };
 
 /**
@@ -296,6 +326,23 @@ function mergeRecordCount(
   existing: number | undefined
 ): number | undefined {
   return incoming !== undefined ? incoming : existing;
+}
+
+/** Superficial project fields that must survive database/sync-only updates. */
+function retainedProjectFields(project: Project) {
+  return {
+    projectId: project.projectId,
+    uiDefinition: project.uiDefinition,
+    uiSpecificationId: project.uiSpecificationId,
+    description: project.description,
+    templateId: project.templateId,
+    updatedAt: project.updatedAt,
+    serverId: project.serverId,
+    status: project.status,
+    name: project.name,
+    recordCount: project.recordCount,
+    offlineMapRegion: project.offlineMapRegion,
+  };
 }
 
 const projectsSlice = createSlice({
@@ -472,12 +519,13 @@ const projectsSlice = createSlice({
         database: undefined,
         status: payload.status,
         recordCount: payload.recordCount,
+        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
     /**
      * Remove a project from the store after the server signals archived/deleted
-     * with {@link FORCE_REMOTE_DELETION} === `allow` only.
+     * with {@link config.forceRemoteDeletion} === `allow` only.
      *
      * Stops sync and remote Pouch handles, then **destroys** the local Pouch DB
      * (IndexedDB) so no local notebook data remains on device.
@@ -546,8 +594,8 @@ const projectsSlice = createSlice({
      * Same sync/remote teardown as manual deactivate; local Pouch is always
      * **closed** but not destroyed so IndexedDB stays recoverable. Then remove the
      * project from the store. Used when the server archived/deleted the notebook but
-     * {@link FORCE_REMOTE_DELETION} is not `allow` (independent of
-     * {@link DELETE_ON_DEACTIVATION}).
+     * {@link config.forceRemoteDeletion} is not `allow` (independent of
+     * {@link config.deleteOnDeactivation}).
      */
     detachProjectRetainLocalData: (
       state,
@@ -632,9 +680,11 @@ const projectsSlice = createSlice({
 
       server.couchDbUrl = payload.couchDbUrl;
 
+      const existingProject = server.projects[payload.projectId];
+
       // Now we can update it
       server.projects[payload.projectId] = {
-        ...server.projects[payload.projectId],
+        ...existingProject,
 
         // Superficial details updated only! You cannot change activated/sync
         // status here - these are controlled actions
@@ -647,8 +697,11 @@ const projectsSlice = createSlice({
         status: payload.status,
         recordCount: mergeRecordCount(
           payload.recordCount,
-          server.projects[payload.projectId].recordCount
+          existingProject.recordCount
         ),
+        // Successful GET /api/notebooks/:id (200) may omit cleared regions entirely;
+        // treat a missing payload field the same as explicit undefined.
+        offlineMapRegion: payload.offlineMapRegion,
       };
     },
 
@@ -674,21 +727,15 @@ const projectsSlice = createSlice({
         syncMode,
         recordCount,
       } = action.payload;
+      const mergedOfflineMapRegion =
+        'offlineMapRegion' in action.payload
+          ? action.payload.offlineMapRegion
+          : project.offlineMapRegion;
 
       // updates the state with all of this new information
       state.servers[serverId].projects[project.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-
-        // These are updated
+        ...retainedProjectFields(project),
+        offlineMapRegion: mergedOfflineMapRegion,
         isActivated: true,
         database: {
           syncMode,
@@ -708,7 +755,7 @@ const projectsSlice = createSlice({
      * De-activates an existing (active) project.
      *
      * - Stops and removes sync, closes remote and local Pouch handles, clears sync state.
-     * - Local data: when {@link DELETE_ON_DEACTIVATION} is true, destroys the local
+     * - Local data: when {@link config.deleteOnDeactivation} is true, destroys the local
      *   Pouch DB (IndexedDB). When false (default), only closes the local DB so data
      *   may remain on disk for recovery.
      *
@@ -768,7 +815,7 @@ const projectsSlice = createSlice({
       // establish ID of local DB
       const localDatabaseId = project.database.localDbId;
       // NOTE destroy/close are async; completion may not be immediate
-      if (DELETE_ON_DEACTIVATION) {
+      if (config.deleteOnDeactivation) {
         void databaseService.destroyLocalDatabase(localDatabaseId);
       } else {
         void databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
@@ -780,22 +827,37 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated (to indicate de-activation)
+        ...retainedProjectFields(project),
         isActivated: false,
         database: undefined,
       };
+    },
+
+    /**
+     * Enqueue the post-activation offline map download dialog for a project.
+     * Dispatched after activation, when a plan region change invalidates tiles,
+     * or from notebook offline map settings when the user starts a download.
+     */
+    setPendingOfflineMapDownloadPrompt: (
+      state,
+      action: PayloadAction<PendingOfflineMapDownloadPrompt>
+    ) => {
+      const queue = ensureOfflineMapPromptQueue(state);
+      const key = offlineMapDownloadPromptKey(action.payload);
+      const alreadyQueued = queue.some(
+        prompt => offlineMapDownloadPromptKey(prompt) === key
+      );
+      if (!alreadyQueued) {
+        queue.push(action.payload);
+      }
+    },
+
+    /**
+     * Dismiss the current offline map download dialog and show the next queued
+     * prompt, if any.
+     */
+    clearPendingOfflineMapDownloadPrompt: state => {
+      ensureOfflineMapPromptQueue(state).shift();
     },
 
     /**
@@ -835,19 +897,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[serverId].projects[projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode,
@@ -868,16 +918,7 @@ const projectsSlice = createSlice({
         throw new Error('Project database not properly initialised');
       }
       state.servers[project.serverId].projects[project.projectId] = {
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -983,19 +1024,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1108,19 +1137,7 @@ const projectsSlice = createSlice({
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
-        // These are retained
-        projectId: project.projectId,
-        uiDefinition: project.uiDefinition,
-        uiSpecificationId: project.uiSpecificationId,
-        description: project.description,
-        templateId: project.templateId,
-        updatedAt: project.updatedAt,
-        serverId: project.serverId,
-        status: project.status,
-        name: project.name,
-        recordCount: project.recordCount,
-
-        // These are updated
+        ...retainedProjectFields(project),
         isActivated: true,
         database: {
           syncMode: project.database.syncMode,
@@ -1283,6 +1300,34 @@ export const selectProjectById = createSelector(
     // Project not found in any server
     return undefined;
   }
+);
+
+/**
+ * Returns the pending offline map download prompt, if any.
+ * Set after activation or when an activated project's plan region changes;
+ * cleared once the user dismisses or accepts the download offer.
+ *
+ * @param state Redux state
+ * @returns Project identity (and optional region-update flag) or undefined
+ */
+export const selectPendingOfflineMapDownloadPrompt = (state: RootState) =>
+  state.projects.pendingOfflineMapDownloadPrompts?.[0];
+
+/**
+ * Finds a project by server and project ID.
+ * Memoized to prevent unnecessary re-renders.
+ *
+ * @param state Redux state
+ * @param identity Server and project IDs
+ * @returns The project on that server, or undefined
+ */
+export const selectProjectByIdentity = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (_: RootState, identity: ProjectIdentity) => identity,
+  ],
+  (servers, identity): Project | undefined =>
+    servers[identity.serverId]?.projects[identity.projectId]
 );
 
 /**
@@ -1584,6 +1629,9 @@ export const activateProject = createAsyncThunk<
       syncId: syncId ?? undefined,
       syncMode: initialSyncMode,
       recordCount: activationSync.recordCount,
+      ...(activationSync.offlineMapRegionSynced
+        ? {offlineMapRegion: activationSync.offlineMapRegion}
+        : {}),
     })
   );
 
@@ -1593,7 +1641,7 @@ export const activateProject = createAsyncThunk<
         severity: 'info',
         title: 'Sync mode changed',
         autoHideDuration: 12000,
-        message: `This ${NOTEBOOK_NAME} has a large number of records. Sync has been set to "upload only" to reduce device stress. Other users' records won't be available unless you change the sync mode in the ${NOTEBOOK_NAME}'s Settings.`,
+        message: `This ${config.notebookName} has a large number of records. Sync has been set to "upload only" to reduce device stress. Other users' records won't be available unless you change the sync mode in the ${config.notebookName}'s Settings.`,
       })
     );
   }
@@ -1604,6 +1652,25 @@ export const activateProject = createAsyncThunk<
     config: {forceWrite: true, applyPermissions: false},
     content: initDataDB({projectId: payload.projectId}),
   });
+
+  const offlineMapRegion = activationSync.offlineMapRegionSynced
+    ? activationSync.offlineMapRegion
+    : project.offlineMapRegion;
+  // Offer to download the plan region unless tiles for it are already on device.
+  if (config.offlineMaps && offlineMapRegion) {
+    const skipPrompt = await shouldSkipOfflineMapActivationPrompt(
+      payload.projectId,
+      offlineMapRegion
+    );
+    if (!skipPrompt) {
+      dispatch(
+        setPendingOfflineMapDownloadPrompt({
+          projectId: payload.projectId,
+          serverId: payload.serverId,
+        })
+      );
+    }
+  }
 });
 
 interface ActivateProjectSuccessPayload {
@@ -1615,6 +1682,7 @@ interface ActivateProjectSuccessPayload {
   syncId: string | undefined;
   syncMode: SyncMode;
   recordCount?: number;
+  offlineMapRegion?: OfflineMapRegion;
 }
 
 /**
@@ -1632,7 +1700,7 @@ export const initialiseServers = createAsyncThunk<void>(
 
     // for each URL in the conductor URLs - fetch directory
     const discoveredServers: PublicServerInfo[] = [];
-    for (const conductorUrl of CONDUCTOR_URLS) {
+    for (const conductorUrl of config.conductorUrls) {
       // firstly - try and call the info endpoint
       await fetch(`${conductorUrl}/api/info`, {})
         .then(response => response.json())
@@ -1795,6 +1863,11 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       const actions: Array<
         ReturnType<typeof addProject | typeof updateProjectDetails>
       > = [];
+      const offlineMapRegionUpdates: Array<{
+        projectId: string;
+        previousRegion: OfflineMapRegion | undefined;
+        nextRegion: OfflineMapRegion | undefined;
+      }> = [];
 
       for (const result of metadataResults) {
         if (result.status === 'rejected') {
@@ -1865,9 +1938,27 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               serverId,
               couchDbUrl: details.dataDb.base_url!,
               status: meta.status,
+              offlineMapRegion: meta.offlineMapRegion,
             })
           );
         } else {
+          const nextOfflineMapRegion = meta.offlineMapRegion;
+          if (
+            config.offlineMaps &&
+            existingProject.isActivated &&
+            !offlineMapRegionsEqual(
+              existingProject.offlineMapRegion,
+              nextOfflineMapRegion
+            )
+          ) {
+            // Defer side effects until after redux updates so reconciliation
+            // reads the new plan region from the store.
+            offlineMapRegionUpdates.push({
+              projectId,
+              previousRegion: existingProject.offlineMapRegion,
+              nextRegion: nextOfflineMapRegion,
+            });
+          }
           actions.push(
             updateProjectDetails({
               name: meta.name ?? existingProject.name,
@@ -1883,6 +1974,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                 meta.recordCount,
                 existingProject.recordCount
               ),
+              offlineMapRegion: nextOfflineMapRegion,
             })
           );
         }
@@ -1894,6 +1986,36 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       // Otherwise, dispatch sequentially (React 18+ auto-batches in event handlers)
       for (const action of actions) {
         appDispatch(action);
+      }
+
+      if (config.offlineMaps) {
+        // After store updates, reconcile local tile downloads with any plan
+        // region changes and enqueue re-download prompts when needed.
+        for (const update of offlineMapRegionUpdates) {
+          const result = await reconcileOfflineMapRegionPlanChange({
+            projectId: update.projectId,
+            previousRegion: update.previousRegion,
+            nextRegion: update.nextRegion,
+          });
+          if (result.action === 'prompt') {
+            if (
+              update.nextRegion &&
+              (await shouldSkipOfflineMapActivationPrompt(
+                update.projectId,
+                update.nextRegion
+              ))
+            ) {
+              continue;
+            }
+            appDispatch(
+              setPendingOfflineMapDownloadPrompt({
+                projectId: update.projectId,
+                serverId,
+                isRegionUpdate: result.isRegionUpdate,
+              })
+            );
+          }
+        }
       }
 
       // Streak / cleanup decisions must see the same project list the user would
@@ -1937,7 +2059,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           return;
         }
 
-        if (FORCE_REMOTE_DELETION === 'allow') {
+        if (config.forceRemoteDeletion === 'allow') {
           appDispatch(removeProject({serverId, projectId}));
         } else {
           appDispatch(detachProjectRetainLocalData({serverId, projectId}));
@@ -2342,6 +2464,8 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
+  setPendingOfflineMapDownloadPrompt,
+  clearPendingOfflineMapDownloadPrompt,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

@@ -2,10 +2,12 @@ import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
 import {
   prepareNotebookUiSpecificationInputForApi,
+  type OfflineMapRegion,
   type ProjectStatus,
   type PutUpdateNotebookMetadataInput,
 } from '@faims3/data-model';
 import {rootDescriptionForApi} from '@/lib/rootDescriptionField';
+import {config} from '@/constants';
 
 export function errorMessageFromNotebookJsonBody(
   json: unknown,
@@ -43,7 +45,7 @@ export const createProjectFromTemplate = async ({
   template: string;
   teamId?: string;
 }) =>
-  await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
+  await fetch(`${config.apiUrl}/api/notebooks`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -94,7 +96,7 @@ export const createProjectFromFile = async ({
     return new Response(null, {status: 400, statusText: prepared.message});
   }
 
-  return await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
+  return await fetch(`${config.apiUrl}/api/notebooks`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -126,7 +128,7 @@ export const updateNotebookMetadataRequest = async ({
   if (description !== undefined) body.description = description;
 
   return await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}`,
+    `${config.apiUrl}/api/notebooks/${encodeURIComponent(projectId)}`,
     {
       method: 'PUT',
       headers: {
@@ -149,7 +151,7 @@ export const updateNotebookUiSpecificationRequest = async ({
   uiSpecification: unknown;
 }) =>
   await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/uiSpecification`,
+    `${config.apiUrl}/api/notebooks/${encodeURIComponent(projectId)}/uiSpecification`,
     {
       method: 'PUT',
       headers: {
@@ -157,6 +159,28 @@ export const updateNotebookUiSpecificationRequest = async ({
         Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify(uiSpecification),
+    }
+  );
+
+/** PUT /api/notebooks/:projectId/offlineMapRegion — set or clear recommended region. */
+export const updateNotebookOfflineMapRegionRequest = async ({
+  user,
+  projectId,
+  offlineMapRegion,
+}: {
+  user: User;
+  projectId: string;
+  offlineMapRegion: OfflineMapRegion | null;
+}) =>
+  await fetch(
+    `${config.apiUrl}/api/notebooks/${encodeURIComponent(projectId)}/offlineMapRegion`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({offlineMapRegion}),
     }
   );
 
@@ -169,17 +193,14 @@ export const modifyTeamForProject = async ({
   teamId: string;
   user: User;
 }) =>
-  await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/team`,
-    {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({teamId}),
-    }
-  );
+  await fetch(`${config.apiUrl}/api/notebooks/${projectId}/team`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.token}`,
+    },
+    body: JSON.stringify({teamId}),
+  });
 
 export const removeInviteForProject = async ({
   inviteId,
@@ -191,7 +212,7 @@ export const removeInviteForProject = async ({
   user: User;
 }) =>
   await fetch(
-    `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}/${inviteId}`,
+    `${config.apiUrl}/api/invites/notebook/${projectId}/${inviteId}`,
     {
       method: 'DELETE',
       headers: {
@@ -219,7 +240,7 @@ export const generateTestRecordsForProject = async ({
   user: User;
 }): Promise<{record_ids: string[]}> => {
   const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/generate`,
+    `${config.apiUrl}/api/notebooks/${projectId}/generate`,
     {
       method: 'POST',
       headers: {
@@ -264,7 +285,7 @@ export const putNotebookStatus = async ({
   status: ProjectStatus;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/status`,
+    `${config.apiUrl}/api/notebooks/${encodeURIComponent(projectId)}/status`,
     {
       method: 'PUT',
       headers: {
@@ -292,7 +313,7 @@ export const postDeleteArchivedNotebook = async ({
   confirmName: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/delete`,
+    `${config.apiUrl}/api/notebooks/${encodeURIComponent(projectId)}/delete`,
     {
       method: 'POST',
       headers: {

@@ -17,6 +17,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import {designerHtmlInput, INPUT_LIMITS} from '../lib/input-limits';
 import {
   Dialog,
   DialogTitle,
@@ -228,6 +229,7 @@ export default function FieldChooserDialog({
             variant="outlined"
             size="small"
             slotProps={{
+              htmlInput: designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
               input: {
                 startAdornment: (
                   <InputAdornment position="start">

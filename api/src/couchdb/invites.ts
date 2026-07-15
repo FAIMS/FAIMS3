@@ -33,7 +33,7 @@ import {
   writeNewDocument,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
-import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
+import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 
 // Default 30 days expiry
@@ -142,7 +142,7 @@ function generateInviteId(): string {
     const char = chars[Math.floor(Math.random() * chars.length)];
     ident = ident + char;
   }
-  return CONDUCTOR_SHORT_CODE_PREFIX + '-' + ident;
+  return config.shortCodePrefix + '-' + ident;
 }
 
 /**

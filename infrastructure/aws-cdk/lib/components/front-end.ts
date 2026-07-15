@@ -392,6 +392,10 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupWebDistribution(props: FaimsFrontEndProps) {
+    const csp =
+      `connect-src 'self' ${props.conductorUrl} *.bugsnag.com ` +
+      MAP_ORIGINS_SHARED.join(' ');
+
     const website = new StaticWebsite(this, 'web-website', {
       hostedZone: props.faimsHz,
       domainNames: [props.webDomainName],
@@ -413,8 +417,8 @@ export class FaimsFrontEnd extends Construct {
       certificate: props.faimsUsEast1Certificate,
       securityHeadersBehavior: {
         contentSecurityPolicy: {
-          // enable connection to the API URL
-          contentSecurityPolicy: `connect-src 'self' ${props.conductorUrl}`,
+          // enable connection to the API URL and map tile services
+          contentSecurityPolicy: csp,
           override: true,
         },
       },

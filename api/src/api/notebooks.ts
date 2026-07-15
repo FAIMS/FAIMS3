@@ -47,6 +47,7 @@ import {
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookMetadataInputSchema,
+  PutUpdateNotebookOfflineMapRegionInputSchema,
   PutUpdateNotebookResponse,
   PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
@@ -58,12 +59,8 @@ import {
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
-import {
-  CONDUCTOR_PUBLIC_URL,
-  DEVELOPER_MODE,
-  KEY_SERVICE,
-} from '../buildconfig';
+import validate from '../middleware/validate';
+import {config, keyService} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -98,6 +95,7 @@ import {
   getUiSpecModel,
   getUserProjectsDetailed,
   updateProjectMetadata,
+  updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
@@ -189,7 +187,7 @@ const generateDownloadToken = async ({
   user: Express.User;
   payload: DownloadTokenPayload;
 }) => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
   const token = await new SignJWT(payload)
     .setProtectedHeader({
       alg: signingKey.alg,
@@ -208,7 +206,7 @@ const validateDownloadToken = async ({
 }: {
   token: string;
 }): Promise<DownloadTokenPayload | null> => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
   try {
     const result = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
@@ -256,7 +254,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     query: z.object({
       viewID: z.string().optional(),
       format: DownloadFormatSchema,
@@ -336,7 +334,7 @@ api.get(
     // Return the url explicitly - rather than a redirect. Hard to carefully
     // handle the auto redirect while triggering export only once
     return res.json({
-      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
+      url: config.conductorPublicUrl + `/api/notebooks/download/${jwt}`,
     });
   }
 );
@@ -354,7 +352,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({
       id: z.string(),
       viewID: z.string(),
@@ -403,7 +401,7 @@ api.use('/:id/records', recordsRouter);
 api.get(
   '/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     query: z.object({
       teamId: z.string().min(1).optional(),
       /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
@@ -435,7 +433,7 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     body: PostCreateNotebookInputSchema,
   }),
   isAllowedToMiddleware({
@@ -556,7 +554,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string()})}),
+  validate({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
@@ -591,7 +589,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookMetadataInputSchema,
   }),
@@ -614,7 +612,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookUiSpecificationInputSchema,
   }),
@@ -627,11 +625,37 @@ api.put(
   }
 );
 
+// PUT set or clear recommended offline map download region
+api.put(
+  '/:id/offlineMapRegion',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.SET_OFFLINE_MAP_REGION,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: z.string()}),
+    body: PutUpdateNotebookOfflineMapRegionInputSchema,
+  }),
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const updated = await updateProjectOfflineMapRegion(
+      req.params.id,
+      req.body
+    );
+    return res.json(updated);
+  }
+);
+
 // PUT set notebook lifecycle status (open / closed / archived)
 api.put(
   '/:id/status',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutChangeNotebookStatusInputSchema,
   }),
@@ -674,7 +698,7 @@ api.put(
       return req.params.projectId;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({projectId: z.string()}),
     body: PutChangeNotebookTeamInputSchema,
   }),
@@ -695,7 +719,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PostRecordStatusInputSchema,
   }),
@@ -734,7 +758,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   // TODO complete type annotations for this method
@@ -859,7 +883,7 @@ api.get(
  */
 api.get(
   '/download/:downloadToken',
-  processRequest({params: z.object({downloadToken: z.string()})}),
+  validate({params: z.object({downloadToken: z.string()})}),
   async (req, res) => {
     // Validate payload
     const payload = await validateDownloadToken({
@@ -964,7 +988,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string()})}),
+  validate({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
     const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
@@ -994,7 +1018,7 @@ api.get(
 api.post(
   '/:id/users/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     body: PostAddNotebookUserInputSchema,
     params: z.object({id: z.string()}),
   }),
@@ -1071,7 +1095,7 @@ api.post(
       return req.params.notebookId;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({notebookId: z.string()}),
     body: PostDestroyNotebookInputSchema,
   }),
@@ -1091,7 +1115,7 @@ api.post(
   }
 );
 
-if (DEVELOPER_MODE) {
+if (config.developerMode) {
   api.post(
     '/:notebookId/generate',
     requireAuthenticationAPI,
@@ -1101,7 +1125,7 @@ if (DEVELOPER_MODE) {
         return req.params.notebookId;
       },
     }),
-    processRequest({
+    validate({
       body: PostRandomRecordsInputSchema,
       params: z.object({notebookId: z.string()}),
     }),
@@ -1123,7 +1147,7 @@ if (DEVELOPER_MODE) {
 api.delete(
   '/:notebook_id/users/:user_id',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({notebook_id: z.string(), user_id: z.string()}),
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {

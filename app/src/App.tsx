@@ -37,7 +37,7 @@ import {
   RouterProvider,
 } from 'react-router-dom';
 import './App.css';
-import {OFFLINE_MAPS} from './buildconfig';
+import {config} from './buildconfig';
 import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
 import {getEditRecordRoute} from './constants/routes';
@@ -45,6 +45,7 @@ import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import {MapDownload} from './gui/components/maps/MapDownload';
+import {NotebookOfflineMapPrompt} from './gui/components/maps/OfflineMapPrompt';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
 import AboutBuild from './gui/pages/about-build';
@@ -103,6 +104,7 @@ const RootLayout = () => {
 
       {/* Main application chrome (header, sidebar, etc.) */}
       <MainLayout>
+        <NotebookOfflineMapPrompt />
         {/* Nested route content renders here */}
         <Outlet />
       </MainLayout>
@@ -203,7 +205,7 @@ const routes: RouteObject[] = [
         element: <AboutBuild />,
       },
       // Offline maps route (conditionally included based on build config)
-      ...(OFFLINE_MAPS
+      ...(config.offlineMaps
         ? [
             {
               path: ROUTES.OFFLINE_MAPS,

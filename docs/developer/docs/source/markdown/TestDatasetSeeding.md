@@ -45,8 +45,8 @@ success or `1` on failure.
 | `TEST_SEED_NOTEBOOKS` | `./notebooks/Field-Sampler.json,./notebooks/sample_notebook.json` | Comma-separated paths to notebook JSON files used to create templates and notebooks. The script requires at least two files. |
 
 Standard CouchDB connection variables (`COUCHDB_INTERNAL_URL`,
-`LOCAL_COUCHDB_AUTH_*`) are read from the project `.env` file via `env-cmd`,
-the same as all other API scripts.
+`COUCHDB_USER`, `COUCHDB_PASSWORD`) are read from the project `.env` file via
+`env-cmd`, the same as all other API scripts.
 
 ---
 

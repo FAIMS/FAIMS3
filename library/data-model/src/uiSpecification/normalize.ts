@@ -1,4 +1,5 @@
 import {z, ZodError} from 'zod';
+import {estimateJsonBytes, INPUT_LIMITS} from '../inputLimits';
 import {
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   getNotebookSchemaVersion,
@@ -36,20 +37,26 @@ export function notebookUiSpecificationNeedsMigration(
   return version !== CURRENT_NOTEBOOK_UI_SCHEMA_VERSION;
 }
 
+/** Maximum serialized size (bytes) for an incoming ui-specification (design file). */
+export const UI_SPEC_MAX_BYTES = INPUT_LIMITS.UI_SPEC_MAX_BYTES;
+
 /**
  * Loose API/upload shape: any JSON object (legacy wire or current {@link NotebookDefinition}).
+ * Rejects design files whose serialized size exceeds {@link UI_SPEC_MAX_BYTES}.
  */
-export const NotebookUiSpecificationInputSchema = z.custom<
-  Record<string, unknown>
->(val => isPlainObject(val), {
-  message: 'uiSpecification must be a JSON object',
-});
+export const NotebookUiSpecificationInputSchema = z
+  .custom<Record<string, unknown>>(val => isPlainObject(val), {
+    message: 'uiSpecification must be a JSON object',
+  })
+  .refine(val => estimateJsonBytes(val) <= UI_SPEC_MAX_BYTES, {
+    message: `uiSpecification is too large (maximum ${Math.floor(UI_SPEC_MAX_BYTES / (1024 * 1024))} MB)`,
+  });
 export type NotebookUiSpecificationInput = z.infer<
   typeof NotebookUiSpecificationInputSchema
 >;
 
 function formatZodIssues(error: ZodError): string {
-  return error.errors
+  return error.issues
     .map(issue => {
       const path =
         issue.path.length > 0 ? issue.path.join('.') : 'uiSpecification';
@@ -79,6 +86,12 @@ export function normalizeNotebookUiSpecification(
 ): NotebookDefinition {
   if (!isPlainObject(raw)) {
     throw new Error('uiSpecification must be a JSON object');
+  }
+
+  if (estimateJsonBytes(raw) > UI_SPEC_MAX_BYTES) {
+    throw new Error(
+      `uiSpecification is too large (maximum ${Math.floor(UI_SPEC_MAX_BYTES / (1024 * 1024))} MB)`
+    );
   }
 
   let candidate: unknown = raw;

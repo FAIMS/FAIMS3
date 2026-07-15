@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTemplate} from '@/hooks/queries';
 import {putTemplateSetVisibility} from '@/hooks/template-hooks';
 import {useQueryClient} from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import {Button} from '../ui/button';
 import {List, ListItem, ListLabel} from '../ui/list';
 
 export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -24,20 +24,15 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   const isPublic = template?.isPublic === true;
 
   const onConfirmToggle = async () => {
-    if (!user) return;
     await putTemplateSetVisibility({
       user,
       templateId,
       isPublic: !isPublic,
     });
     await queryClient.invalidateQueries({queryKey: ['templates', templateId]});
-    await queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+    await queryClient.invalidateQueries({queryKey: ['templates']});
     setOpen(false);
   };
-
-  if (!user) {
-    return null;
-  }
 
   const toggleVisibilityDialog = isPublic ? (
     <Dialog open={open} onOpenChange={setOpen}>

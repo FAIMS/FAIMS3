@@ -1,5 +1,6 @@
 import {User} from '@/context/auth-provider';
 import {Role, TeamMembershipInput} from '@faims3/data-model';
+import {config} from '@/constants';
 
 /**
  * Creates a new team
@@ -17,7 +18,7 @@ export const createTeam = async ({
   name: string;
   description: string;
 }) =>
-  await fetch(`${import.meta.env.VITE_API_URL}/api/teams`, {
+  await fetch(`${config.apiUrl}/api/teams`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ export const updateTeam = async ({
   name: string;
   description: string;
 }) =>
-  await fetch(`${import.meta.env.VITE_API_URL}/api/teams/${teamId}`, {
+  await fetch(`${config.apiUrl}/api/teams/${teamId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ export const modifyMemberForTeam = async ({
   teamId: string;
   action: TeamMembershipInput['action'];
 }) =>
-  await fetch(`${import.meta.env.VITE_API_URL}/api/teams/${teamId}/members`, {
+  await fetch(`${config.apiUrl}/api/teams/${teamId}/members`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -99,13 +100,10 @@ export const removeInviteForTeam = async ({
   teamId: string;
   user: User;
 }) =>
-  await fetch(
-    `${import.meta.env.VITE_API_URL}/api/invites/team/${teamId}/${inviteId}`,
-    {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-    }
-  );
+  await fetch(`${config.apiUrl}/api/invites/team/${teamId}/${inviteId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.token}`,
+    },
+  });

@@ -10,7 +10,7 @@
  * {@link removedNotebookUnavailableCopy} when the project is already gone from Redux;
  * {@link useProjectRouteGuard} is the React-side backup redirect.
  */
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../buildconfig';
+import {config} from '../buildconfig';
 import {NOTEBOOK_LIST_ROUTE} from '../constants/routes';
 import {navigateToNotebookListIfViewingProject} from '../appRouter';
 import {queryClient} from '../queryClient';
@@ -36,8 +36,8 @@ export function cancelProjectQueries(projectId: string): void {
 
 /** Copy for the notebook unavailable page (not a global snackbar). */
 export const removedNotebookUnavailableCopy = {
-  title: `${NOTEBOOK_NAME_CAPITALIZED} unavailable`,
-  message: `This ${NOTEBOOK_NAME} was archived or removed on the server and is no longer available on this device.`,
+  title: `${config.notebookNameCapitalized} unavailable`,
+  message: `This ${config.notebookName} was archived or removed on the server and is no longer available on this device.`,
 };
 
 /**
