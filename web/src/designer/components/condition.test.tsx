@@ -16,21 +16,31 @@
  * @file Interaction tests for {@link ConditionControl} against a hydrated store.
  */
 
-import {vi, describe, expect, test} from 'vitest';
-import {act, fireEvent, render, screen, within} from '@testing-library/react';
-import {ConditionControl} from './condition/ConditionControl';
-import {ConditionType} from '../types/condition';
-import {sampleNotebook} from '../test-notebook';
-import {createDesignerStore} from '../createDesignerStore';
-import {Provider} from 'react-redux';
-import {ThemeProvider} from '@mui/material/styles';
-import globalTheme from '../theme/index';
-import {ReactNode} from 'react';
+import {
+  isBooleanCondition,
+  normaliseConditionForCompare,
+} from '@/lib/conditionUtils';
 import {migrateNotebook} from '@faims3/data-model';
+import {ThemeProvider} from '@mui/material/styles';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import {ReactNode} from 'react';
+import {Provider} from 'react-redux';
+import {describe, expect, test, vi} from 'vitest';
+import {createDesignerStore} from '../createDesignerStore';
 import {AppState, NotebookUISpec} from '../state/initial';
 import {loaded} from '../store/slices/uiSpec';
-import {isBooleanCondition} from '@/lib/conditionUtils';
+import {sampleNotebook} from '../test-notebook';
+import globalTheme from '../theme/index';
+import {ConditionType} from '../types/condition';
+import {ConditionControl} from './condition/ConditionControl';
 
 const WithProviders = ({
   children,
@@ -241,7 +251,7 @@ describe('ConditionControl', () => {
     expect(optionLabels).not.toContain('Cross Form Widget');
   });
 
-  test('make a boolean condition from a field', () => {
+  test('adds another condition row from a field condition', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
@@ -259,18 +269,193 @@ describe('ConditionControl', () => {
       </WithProviders>
     );
 
-    act(() => {
-      const splitButton = screen.getByTestId('split-button');
-      if (splitButton) {
-        fireEvent.click(splitButton);
-        expect(onChangeFn).toHaveBeenCalled();
-        const last = onChangeFn.mock.lastCall as ConditionType[];
-        expect(isBooleanCondition(last[0])).toBe(true);
-        if (isBooleanCondition(last[0])) {
-          expect(last[0].operator).toBe('and');
-          expect(last[0].conditions?.length).toBe(2);
-        }
+    expect(screen.getAllByTestId('field-input')).toHaveLength(1);
+
+    fireEvent.click(screen.getByTestId('split-button'));
+
+    // The existing rule is now grouped with a new empty rule.
+    expect(screen.getAllByTestId('field-input')).toHaveLength(2);
+
+    expect(onChangeFn).toHaveBeenCalled();
+
+    const updatedCondition = onChangeFn.mock
+      .lastCall?.[0] as ConditionType | null;
+
+    // The UI will still show the empty row, so it will still have two rows
+    expect(screen.getAllByTestId('field-input')).toHaveLength(2);
+
+    // But the empty rule is excluded from the normalised condition.
+    expect(
+      normaliseConditionForCompare(updatedCondition ?? null)
+    ).toStrictEqual(normaliseConditionForCompare(condition));
+  });
+
+  test('makes a boolean condition after completing the new rule', async () => {
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
+
+    const condition: ConditionType = {
+      operator: 'equal',
+      field: 'Sample-Location',
+      value: 100,
+    };
+
+    const onChangeFn = vi.fn();
+
+    render(
+      <WithProviders store={store}>
+        <ConditionControl initial={condition} onChange={onChangeFn} />
+      </WithProviders>
+    );
+
+    // Wrap the existing rule in a group with a new empty rule.
+    fireEvent.click(screen.getByTestId('split-button'));
+    expect(screen.getAllByTestId('field-input')).toHaveLength(2);
+
+    // Get the field picker for the new rule.
+    const secondFieldInput = within(
+      screen.getAllByTestId('field-input')[1]
+    ).getByRole('combobox');
+
+    // Search for a field to use in the new rule.
+    fireEvent.change(secondFieldInput, {
+      target: {value: 'Sample Location'},
+    });
+
+    // Select the matching field from the Autocomplete options.
+    const option = await screen.findByRole('option', {
+      name: /sample location/i,
+    });
+    fireEvent.click(option);
+
+    // Wait for the value input for the new rule to be rendered.
+    await waitFor(() => {
+      expect(screen.getAllByTestId('value-input')).toHaveLength(2);
+    });
+
+    const secondValueInput = screen
+      .getAllByTestId('value-input')[1]
+      .querySelector('input');
+
+    if (!secondValueInput) {
+      throw new Error('Expected the second rule to have a value input');
+    }
+
+    // Ignore changes emitted while creating and selecting the new rule.
+    onChangeFn.mockClear();
+
+    // Complete the new rule.
+    fireEvent.change(secondValueInput, {
+      target: {value: '200'},
+    });
+
+    // Check the completed rules are saved as an AND condition.
+    await waitFor(() => {
+      const updatedCondition = onChangeFn.mock
+        .lastCall?.[0] as ConditionType | null;
+
+      expect(updatedCondition).toBeDefined();
+      expect(updatedCondition).not.toBeNull();
+
+      // Narrow the type for the remaining assertions.
+      if (!updatedCondition || !isBooleanCondition(updatedCondition)) {
+        throw new Error(
+          'Expected the completed rules to produce a boolean condition'
+        );
       }
+
+      expect(isBooleanCondition(updatedCondition)).toBe(true);
+
+      expect(updatedCondition.operator).toBe('and');
+      expect(updatedCondition.conditions).toHaveLength(2);
+
+      // Normalises conditions to the same key order before comparison.
+      expect(
+        normaliseConditionForCompare(updatedCondition.conditions?.[0] ?? null)
+      ).toStrictEqual(normaliseConditionForCompare(condition));
+      expect(
+        normaliseConditionForCompare(updatedCondition.conditions?.[1] ?? null)
+      ).toStrictEqual(
+        normaliseConditionForCompare({
+          operator: 'equal',
+          field: 'Sample-Location',
+          value: '200',
+        })
+      );
+    });
+  });
+
+  test('deletes a rule and keeps the remaining condition', async () => {
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
+
+    const remainingCondition: ConditionType = {
+      operator: 'equal',
+      field: 'Sample-Location',
+      value: 100,
+    };
+
+    const deletedCondition: ConditionType = {
+      operator: 'equal',
+      field: 'Sample-Location',
+      value: 200,
+    };
+
+    const initialCondition: ConditionType = {
+      operator: 'and',
+      conditions: [remainingCondition, deletedCondition],
+    };
+
+    const onChangeFn = vi.fn();
+
+    render(
+      <WithProviders store={store}>
+        <ConditionControl initial={initialCondition} onChange={onChangeFn} />
+      </WithProviders>
+    );
+
+    // Both initial rules are rendered.
+    expect(screen.getAllByTestId('field-input')).toHaveLength(2);
+    expect(screen.getAllByTestId('delete-button')).toHaveLength(2);
+
+    // Check the initial condition keeps its boolean shape.
+    const renderedCondition = onChangeFn.mock
+      .lastCall?.[0] as ConditionType | null;
+
+    if (!renderedCondition || !isBooleanCondition(renderedCondition)) {
+      throw new Error(
+        'Expected the initial condition to be a boolean condition'
+      );
+    }
+
+    expect(renderedCondition.conditions).toHaveLength(2);
+    expect(renderedCondition.conditions?.[0]).toStrictEqual(remainingCondition);
+    expect(renderedCondition.conditions?.[1]).toStrictEqual(deletedCondition);
+
+    // Ignore the change emitted from the initial render.
+    onChangeFn.mockClear();
+
+    // Delete the second rule.
+    fireEvent.click(screen.getAllByTestId('delete-button')[1]);
+
+    // Only the first rule remains in the editor.
+    expect(screen.getAllByTestId('field-input')).toHaveLength(1);
+
+    await waitFor(() => {
+      const updatedCondition = onChangeFn.mock
+        .lastCall?.[0] as ConditionType | null;
+      if (!updatedCondition) {
+        throw new Error('Expected the remaining condition to exist');
+      }
+
+      // The one-rule group is normalised to the remaining rule.
+      expect(isBooleanCondition(updatedCondition)).toBe(false);
+      // Normalises conditions to the same key order before comparison.
+      expect(normaliseConditionForCompare(updatedCondition)).toStrictEqual(
+        normaliseConditionForCompare(remainingCondition)
+      );
     });
   });
 });
