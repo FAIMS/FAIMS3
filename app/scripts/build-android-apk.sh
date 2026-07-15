@@ -166,7 +166,9 @@ run_cap_sync() {
     return
   fi
 
-  log "Syncing web assets into Android project (rebuilds app with current env)"
+  # Web assets were already built by turbo with the exported VITE_* env;
+  # this only copies/syncs them into the Android project.
+  log "Syncing web assets into Android project"
   cd "${APP_DIR}"
   pnpm run webapp-sync -- android
 }
