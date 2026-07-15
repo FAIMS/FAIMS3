@@ -13,7 +13,7 @@
  * TODO: Investigate better key setup process for one-click deploy
  */
 
-import {Duration, RemovalPolicy, Size} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Size, Stack} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import {GraphWidget, Metric, TextWidget} from 'aws-cdk-lib/aws-cloudwatch';
@@ -684,8 +684,10 @@ EOL`,
    * Adds left annotations for alarm thresholds to improve visibility
    */
   private createDashboard() {
+    // Dashboard names are account+region unique; include stack name so
+    // multiple environments (e.g. DASS-dev and DASS-stage) can coexist.
     const dashboard = new cloudwatch.Dashboard(this, 'CouchDBDashboard', {
-      dashboardName: 'CouchDB-Dashboard',
+      dashboardName: `${Stack.of(this).stackName}-CouchDB-Dashboard`,
     });
 
     const instanceId = this.instance.instanceId;
