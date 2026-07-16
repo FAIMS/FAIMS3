@@ -1,10 +1,12 @@
 # FAIMS3 Local Device Testing via ADB Forward
 
-This guide explains how to test FAIMS3 on a physical Android device when developing on a remote VM via SSH.
+This guide explains how to test FAIMS3 on a physical Android device or emulator.
+It covers MacOS based development and also use of a remote Linux VM from a
+Windows environment.
 
 ## Architecture Overview
 
-```
+```text
 ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
 │  Android Phone  │   USB   │  Windows PC     │   SSH   │  Linux VM       │
 │                 │◄───────►│                 │◄───────►│                 │
@@ -15,6 +17,19 @@ This guide explains how to test FAIMS3 on a physical Android device when develop
 │  localhost:8080 │◄────────────────adb reverse─────────│  CouchDB (5984) │
 │  localhost:5984 │◄────────────────adb reverse─────────│                 │
 └─────────────────┘         └─────────────────┘         └─────────────────┘
+```
+
+```text
+┌─────────────────┐                ┌─────────────────┐
+│  Android Phone  │                │  MacOS          │
+│                 │◄──────────────►│                 │
+│  FAIMS3 App     │                │  Dev Server     │
+│       │         │                │  (port 3000)    │
+│       ▼         │                │                 │
+│  localhost:3000 │◄──adb reverse──│  API (8080)     │
+│  localhost:8080 │◄──adb reverse──│  CouchDB (5984) │
+│  localhost:5984 │◄──adb reverse──│                 │
+└─────────────────┘                └─────────────────┘
 ```
 
 ---
@@ -85,6 +100,45 @@ This guide explains how to test FAIMS3 on a physical Android device when develop
    ```
 
 4. **Verify installation**
+
+   ```bash
+   adb --version
+   ```
+
+### 4. MacOS Setup
+
+1. **Install Java 21**
+
+Build requires version 21 of Java. Install via brew if you don't have this:
+
+```bash
+brew install openjdk@21
+```
+
+Note the instructions from brew about making this available to the system. If you have a later version of Java installed you may need to adjust settings (JAVA_HOME) to
+use Java 21 in the build.
+
+2. **Install Android SDK command-line tools**
+
+Install command line tools:
+
+```bash
+brew install --cask android-commandlinetools
+brew install --cask android-platform-tools
+```
+
+Another way to install these tools is to install the latest Android Studio. See [Android Command Line Tools](https://developer.android.com/tools) for further details on how
+to add the command line tools to your path.
+
+3. **Install SDK packages**
+
+   ```bash
+   sdkmanager --licenses
+   sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+   ```
+
+4. **Verify installation**
+
    ```bash
    adb --version
    ```
@@ -93,15 +147,15 @@ This guide explains how to test FAIMS3 on a physical Android device when develop
 
 ## Each Development Session
 
-### Step 1: Start ADB on Windows
+### Step 1: Start ADB
 
 Plugin phone, then:
 
-```powershell
+```shell
 adb kill-server
 adb start-server
 adb devices
-# Confirm your phone is listed
+# Confirm your phone or emulator is listed
 ```
 
 ### Step 2: SSH to VM with ADB Tunnel
@@ -124,33 +178,22 @@ adb kill-server    # Kill any local server
 adb devices        # Should show your phone
 ```
 
-### Step 4: Setup ADB Port Forwarding
+### Step 4: Run the App with Port Forwarding
+
+The shell script `dev-adb.sh` sets up port forwarding to the android device/simulator
+so that the API, CouchDB and the app development server are visible as localhost.
+It then runs `cap sync` and `cap run android` with the `CAP_ANDROID_ADB_FORWARD`
+environment variable set.
 
 ```bash
-adb reverse tcp:3000 tcp:3000   # Dev server
-adb reverse tcp:8080 tcp:8080   # API server
-adb reverse tcp:5984 tcp:5984   # CouchDB
+./dev-adb.sh
 ```
 
-### Step 5: Build
-
-```bash
-# From the top level FAIMS
-./dev.sh
-```
-
-### Step 6: Switch Capacitor Config and launch
-
-Then from within `/app`:
-
-```bash
-# Sync to android build
-pnpm cap sync android
-# Replace config with local debugging version
-./setup-adb-testing.sh
-# Deploy to device
-pnpm cap run android
-```
+`capacitor.config.ts` is the source of truth for app configuration.
+`CAP_ANDROID_ADB_FORWARD=true` enables local device server settings (including `cleartext` and
+`http://localhost:3000` by default). When combined with the port forwarding
+above, this allows the on-device app to use the local running servers
+and enables live-reload of application code.
 
 Once the app is installed, changes to web code will hot-reload automatically.
 You only need to re-run `cap run android` if you:
@@ -236,6 +279,13 @@ Should show:
 (reverse) tcp:5984 tcp:5984
 ```
 
+Also verify you used ADB mode when syncing/running:
+
+```bash
+echo "$CAP_ANDROID_ADB_FORWARD"
+# Should be true when using one-off exports in the command line.
+```
+
 ### Build fails with Java errors
 
 Ensure Java 21 is installed and JAVA_HOME is set:
@@ -255,9 +305,7 @@ echo $JAVA_HOME        # Should point to Java 21
 
 ## Files Reference
 
-| File                                | Purpose                                |
-| ----------------------------------- | -------------------------------------- |
-| `capacitor.config.json`             | Active Capacitor config                |
-| `capacitor.config.adb-forward.json` | Config for ADB device testing          |
-| `capacitor.config.backup.json`      | Backup of original config              |
-| `setup-adb-testing.sh`              | Script to switch to ADB testing config |
+| File                   | Purpose                          |
+| ---------------------- | -------------------------------- |
+| `capacitor.config.ts`  | Active Capacitor config source   |
+| `setup-adb-testing.sh` | Helper for env-based ADB testing |

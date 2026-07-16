@@ -16,6 +16,7 @@ import {
   notebookListDataGridSx,
 } from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
+import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -37,8 +38,12 @@ export default function HeadingProjectGrid({
   serverId: string;
 }) {
   // pull out active/inactive notebooks
-  const activatedProjects = projects.filter(({isActivated}) => isActivated);
-  const availableProjects = projects.filter(({isActivated}) => !isActivated);
+  const activatedProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => isActivated)
+  );
+  const availableProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => !isActivated)
+  );
 
   const history = useNavigate();
 
