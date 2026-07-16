@@ -115,7 +115,12 @@ export async function loginWebPersona(key: PersonaKey): Promise<void> {
 }
 
 /**
- * Fieldmark app login: /signin → Sign in → Conductor → back to app.
+ * Fieldmark app login: /signin → Sign in → Conductor → auth-return → workspace.
+ *
+ * Conductor redirects to `/auth-return/?exchangeToken=...&serverId=...`. Do not
+ * treat that as "logged in": a later full navigation (e.g. AppNotebooksPage.open)
+ * aborts the in-flight exchange and leaves the session on /signin/. Mirror
+ * loginWeb — wait until exchangeToken is gone and the authenticated shell is up.
  */
 export async function loginApp(user: Credentials): Promise<void> {
   const appUrl = getAppUrl();
@@ -125,15 +130,34 @@ export async function loginApp(user: Credentials): Promise<void> {
   await submitConductorLogin(user);
 
   await browser.waitUntil(
+    async () => (await browser.getUrl()).startsWith(appUrl),
+    {
+      timeout: 20000,
+      timeoutMsg: 'Expected redirect back to the app after Conductor login',
+    }
+  );
+
+  await browser.waitUntil(
+    () => browser.execute(() => document.readyState === 'complete'),
+    {timeout: 10000}
+  );
+
+  await browser.waitUntil(
     async () => {
       const url = await browser.getUrl();
-      const leftLogin = !url.includes('/login');
-      const hasSuccess = await API_Login.hasSuccessMessage();
-      return leftLogin || hasSuccess || url.startsWith(appUrl);
+      return (
+        url.startsWith(appUrl) &&
+        !url.includes('exchangeToken') &&
+        !url.includes('/auth-return') &&
+        !url.includes('/signin') &&
+        ((await byTestId('app-notebooks-heading').isExisting()) ||
+          (await byTestId('app-nav-user-menu').isExisting()))
+      );
     },
     {
       timeout: 20000,
-      timeoutMsg: 'Expected redirect away from Conductor login after app login',
+      timeoutMsg:
+        'Expected authenticated app workspace after exchangeToken handling',
     }
   );
 }
