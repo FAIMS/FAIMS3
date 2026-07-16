@@ -25,12 +25,13 @@ export const CreateProjectInvite = () => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-project-invite-create-button"
         >
           <Plus />
           Create Invite
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-project-invite-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Invite</DialogTitle>
           <DialogDescription>

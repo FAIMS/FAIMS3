@@ -133,9 +133,16 @@ export function CreateGlobalInviteForm({
 
   return (
     <Form
-      fields={fields}
+      fields={fields.map(field =>
+        field.name === 'name'
+          ? {...field, testId: 'web-global-invite-create-name'}
+          : field.name === 'role'
+            ? {...field, testId: 'web-global-invite-create-role'}
+            : field
+      )}
       onSubmit={onSubmit}
       submitButtonText={'Create Invite'}
+      submitButtonTestId="web-global-invite-create-submit"
       footer={
         <ExpirySelector
           hints={config.inviteTokenHints}

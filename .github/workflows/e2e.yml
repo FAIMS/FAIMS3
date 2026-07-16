@@ -1,0 +1,310 @@
+name: E2E
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'e2e/**'
+      - 'app/**'
+      - 'web/**'
+      - 'api/**'
+      - 'library/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'docker-compose.yml'
+      - '.github/workflows/e2e.yml'
+  push:
+    branches: ['main']
+    paths:
+      - 'e2e/**'
+      - 'app/**'
+      - 'web/**'
+      - 'api/**'
+      - 'library/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'docker-compose.yml'
+      - '.github/workflows/e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Headless Chromium suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    env:
+      CI: true
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      # Keep WDIO logs readable in Actions; artifacts carry screenshots/manifest.
+      WDIO_LOG_LEVEL: warn
+      SCREENSHOT_MODE: all
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Turborepo Remote Cache
+        run: |
+          mkdir -p .turbo
+          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
+            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+          fi
+
+      - name: Prepare env files and signing keys
+        run: |
+          set -euo pipefail
+          cp ./.env.dist ./.env
+          for d in api web app e2e; do
+            cp "./$d/.env.dist" "./$d/.env"
+          done
+
+          # .env.dist ships a placeholder; CouchDB local.ini needs a real secret.
+          COOKIE_SECRET="$(uuidgen | tr -d '-')"
+          sed -i "s|^FAIMS_COOKIE_SECRET=.*|FAIMS_COOKIE_SECRET=${COOKIE_SECRET}|" api/.env
+
+          # Disable HTTP IP limiter and CouchDB-backed auth attempt limits
+          # for repeated password-reset / invite flows.
+          if grep -q '^RATE_LIMITER_ENABLED=' api/.env; then
+            sed -i 's/^RATE_LIMITER_ENABLED=.*/RATE_LIMITER_ENABLED=false/' api/.env
+          else
+            echo 'RATE_LIMITER_ENABLED=false' >> api/.env
+          fi
+          if grep -q '^AUTH_ATTEMPT_LIMITER_ENABLED=' api/.env; then
+            sed -i 's/^AUTH_ATTEMPT_LIMITER_ENABLED=.*/AUTH_ATTEMPT_LIMITER_ENABLED=false/' api/.env
+          else
+            echo 'AUTH_ATTEMPT_LIMITER_ENABLED=false' >> api/.env
+          fi
+
+          # Stable commit string for Vite builds in CI.
+          if grep -q '^VITE_COMMIT_VERSION=' app/.env; then
+            sed -i "s|^VITE_COMMIT_VERSION=.*|VITE_COMMIT_VERSION=${GITHUB_SHA}|" app/.env
+          fi
+
+          pnpm run generate-local-keys
+
+      - name: Start CouchDB
+        run: |
+          set -euo pipefail
+          sudo docker compose up -d --build couchdb
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5984/_up >/dev/null; then
+              echo "CouchDB ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "CouchDB did not become ready"
+          sudo docker compose logs couchdb || true
+          exit 1
+
+      - name: Build shared packages and apps
+        run: pnpm build
+
+      - name: Migrate + seed test dataset
+        run: |
+          set -euo pipefail
+          pnpm run migrate-with-keys
+          pnpm --filter=@faims3/api run seed-test-dataset
+
+      - name: Setup Chrome + ChromeDriver
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+          install-dependencies: true
+          install-chromedriver: true
+
+      - name: Start API, app, and Control Centre
+        run: |
+          set -euo pipefail
+          nohup pnpm run dev > /tmp/faims-dev.log 2>&1 &
+          echo $! > /tmp/faims-dev.pid
+          echo "Started pnpm run dev (pid $(cat /tmp/faims-dev.pid))"
+
+          for i in $(seq 1 90); do
+            api_ok=0
+            app_ok=0
+            web_ok=0
+            curl -sf http://localhost:8080/login >/dev/null && api_ok=1 || true
+            curl -sf http://localhost:3000 >/dev/null && app_ok=1 || true
+            curl -sf http://localhost:3001 >/dev/null && web_ok=1 || true
+            if [ "$api_ok" = 1 ] && [ "$app_ok" = 1 ] && [ "$web_ok" = 1 ]; then
+              echo "Dev stack ready (api/app/web)"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Dev stack did not become ready"
+          echo "==== /tmp/faims-dev.log (tail) ===="
+          tail -n 200 /tmp/faims-dev.log || true
+          exit 1
+
+      - name: Run e2e (smoke + web + app)
+        id: e2e-tests
+        working-directory: e2e
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROMEDRIVER_PATH: ${{ steps.setup-chrome.outputs.chromedriver-path }}
+          WDIO_CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          WDIO_CHROME_DRIVER: ${{ steps.setup-chrome.outputs.chromedriver-path }}
+        run: pnpm test:e2e:headless:ci
+
+      - name: Refresh HTML galleries
+        if: always()
+        working-directory: e2e
+        run: pnpm report
+
+      - name: E2E report summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## E2E HTML gallery"
+            echo ""
+            echo "Download the \`e2e-artifacts-*\` artifact, then open:"
+            echo ""
+            echo "- All runs: \`artifacts/index.html\`"
+            if [ -f e2e/artifacts/.current-run ]; then
+              RUN_ID="$(cat e2e/artifacts/.current-run)"
+              echo "- Latest run: \`artifacts/${RUN_ID}/index.html\`"
+            fi
+            echo ""
+            echo "Failures are listed first (screenshot + error + page.html)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Stage under one directory so the zip root is artifacts/, screenshots/,
+      # faims-dev.log — not home/runner/work/... (LCA of mixed repo + /tmp paths).
+      - name: Stage e2e artifacts for upload
+        if: always()
+        run: |
+          set -euo pipefail
+          STAGE="${RUNNER_TEMP}/e2e-upload"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          if [ -d e2e/artifacts ]; then
+            cp -a e2e/artifacts "$STAGE/artifacts"
+          fi
+          if [ -d e2e/screenshots ]; then
+            cp -a e2e/screenshots "$STAGE/screenshots"
+          fi
+          if [ -f /tmp/faims-dev.log ]; then
+            cp /tmp/faims-dev.log "$STAGE/faims-dev.log"
+          fi
+          echo "Staged:"
+          find "$STAGE" -maxdepth 2 -print | sort
+
+      - name: Upload e2e artifacts
+        id: e2e-artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ github.run_id }}
+          path: ${{ runner.temp }}/e2e-upload/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Comment e2e result on PR
+        if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+        uses: actions/github-script@v7
+        env:
+          E2E_OUTCOME: ${{ steps.e2e-tests.outcome }}
+          ARTIFACT_URL: ${{ steps.e2e-artifacts.outputs.artifact-url }}
+          ARTIFACT_NAME: e2e-artifacts-${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const marker = '<!-- e2e-artifact-bot -->';
+            const outcome = process.env.E2E_OUTCOME || 'skipped';
+            const artifactUrl = process.env.ARTIFACT_URL || '';
+            const artifactName = process.env.ARTIFACT_NAME;
+            const runUrl = process.env.RUN_URL;
+
+            const status = {
+              success: {emoji: '✅', label: 'passed'},
+              failure: {emoji: '❌', label: 'failed'},
+              cancelled: {emoji: '⚠️', label: 'cancelled'},
+              skipped: {emoji: '⏭️', label: 'skipped (did not run)'},
+            }[outcome] || {emoji: '❓', label: outcome};
+
+            const artifactLine = artifactUrl
+              ? `[Download \`${artifactName}.zip\`](${artifactUrl})`
+              : `_Artifact upload unavailable — see [workflow run](${runUrl})_`;
+
+            const body = [
+              marker,
+              `## E2E ${status.emoji} ${status.label}`,
+              '',
+              `| | |`,
+              `| --- | --- |`,
+              `| **Result** | ${status.emoji} Suite **${status.label}** |`,
+              `| **Artifacts** | ${artifactLine} |`,
+              `| **Run** | [View workflow run](${runUrl}) |`,
+              '',
+              'After downloading and extracting the .zip file, open `artifacts/index.html` (failures listed first).',
+              '',
+              `_Updated for commit ${context.sha.slice(0, 7)}_`,
+            ].join('\n');
+
+            const {owner, repo} = context.repo;
+            const issue_number = context.issue.number;
+            const {data: comments} = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (c) =>
+                c.user?.type === 'Bot' &&
+                c.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: |
+          echo "==== docker couchdb ===="
+          sudo docker compose logs --tail=200 couchdb || true
+          echo "==== faims-dev.log ===="
+          tail -n 400 /tmp/faims-dev.log || true

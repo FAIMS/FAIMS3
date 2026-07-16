@@ -304,12 +304,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               <Tab
                 label={`My ${recordLabel}s (${visibleMyRecords.length})`}
                 value={0}
+                data-testid="app-notebook-tab-my-records"
                 {...a11yProps(0, `${config.notebookName}-myrecords`)}
               />
               {(tabIndex === 1 || visibleOtherRecords.length > 0) && (
                 <Tab
                   value={1}
                   label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
+                  data-testid="app-notebook-tab-other-records"
                   {...a11yProps(2, `${config.notebookName}-otherrecords`)}
                 />
               )}
@@ -317,16 +319,19 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               <Tab
                 value={2}
                 label="Map"
+                data-testid="app-notebook-tab-map"
                 {...a11yProps(2, config.notebookName)}
               />
               <Tab
                 value={3}
                 label="Details"
+                data-testid="app-notebook-tab-details"
                 {...a11yProps(3, config.notebookName)}
               />
               <Tab
                 value={4}
                 label="Settings"
+                data-testid="app-notebook-tab-settings"
                 {...a11yProps(4, config.notebookName)}
               />
             </Tabs>

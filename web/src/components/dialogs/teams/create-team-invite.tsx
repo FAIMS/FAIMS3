@@ -24,12 +24,13 @@ export const CreateTeamInvite = ({teamId}: {teamId: string}) => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-team-invite-create-button"
         >
           <Plus />
           Create Team Invite
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-team-invite-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Team Invite</DialogTitle>
           <DialogDescription>

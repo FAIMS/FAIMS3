@@ -108,6 +108,16 @@ export interface FaimsConductorProps {
   localhostWhitelist: boolean;
   /** Maximum long-lived token duration in days (undefined = infinite) */
   maximumLongLivedDurationDays?: number;
+  /**
+   * Express HTTP IP rate limiter. Default true. Set false when per-IP
+   * limiting is handled upstream. Independent of authAttemptLimiterEnabled.
+   */
+  rateLimiterEnabled?: boolean;
+  /**
+   * Per-user email-code / verification-challenge attempt limits. Default
+   * true. Keep enabled in production even when HTTP limiting is upstream.
+   */
+  authAttemptLimiterEnabled?: boolean;
   /** Bugsnag config */
   /** Version e.g. v1.2.3 */
   apiVersion?: string;
@@ -283,6 +293,10 @@ export class FaimsConductor extends Construct {
         MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
           ? props.maximumLongLivedDurationDays.toString()
           : 'infinite',
+        RATE_LIMITER_ENABLED:
+          props.rateLimiterEnabled === false ? 'false' : 'true',
+        AUTH_ATTEMPT_LIMITER_ENABLED:
+          props.authAttemptLimiterEnabled === false ? 'false' : 'true',
 
         // Email Service Configuration
         EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,

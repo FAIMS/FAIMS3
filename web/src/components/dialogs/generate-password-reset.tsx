@@ -121,7 +121,10 @@ export const GeneratePasswordReset = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+        data-testid="web-users-reset-dialog"
+      >
         <DialogHeader>
           <DialogTitle>Reset User Password</DialogTitle>
           <DialogDescription>
@@ -165,8 +168,11 @@ export const GeneratePasswordReset = ({
                     <span>Reset Link</span>
                   </div>
                   <div className="flex flex-row items-center gap-3">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Copy
+                    <p
+                      className="text-sm font-medium text-muted-foreground break-all max-w-[220px]"
+                      data-testid="web-users-reset-url"
+                    >
+                      {data.url}
                     </p>
                     <CopyButton value={data.url} />
                   </div>
@@ -198,7 +204,10 @@ export const GeneratePasswordReset = ({
               <QrCode className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
               <p>Generate a secure password reset link with QR code</p>
             </div>
-            <Button onClick={() => mutate({id: userId})}>
+            <Button
+              onClick={() => mutate({id: userId})}
+              data-testid="web-users-reset-generate"
+            >
               Generate Reset Link
             </Button>
           </div>

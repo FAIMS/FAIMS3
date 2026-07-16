@@ -47,7 +47,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Teams</h1>
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-teams-heading"
+      >
+        Teams
+      </h1>
       <DataTable
         columns={columns}
         data={data ? data?.teams : []}

@@ -59,7 +59,12 @@ export function ArchiveProjectDialog({
 
   if (disabled) {
     return (
-      <Button variant="outline" className="w-fit" disabled>
+      <Button
+        variant="outline"
+        className="w-fit"
+        disabled
+        data-testid="web-project-archive-button"
+      >
         Archive {config.notebookNameCapitalized}
       </Button>
     );
@@ -68,11 +73,18 @@ export function ArchiveProjectDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-fit">
+        <Button
+          variant="outline"
+          className="w-fit"
+          data-testid="web-project-archive-button"
+        >
           Archive {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="web-project-archive-dialog"
+      >
         <DialogHeader>
           <DialogTitle>
             Archive This {config.notebookNameCapitalized}?
@@ -108,6 +120,7 @@ export function ArchiveProjectDialog({
               <div className="flex items-center gap-3 text-sm leading-relaxed">
                 <Checkbox
                   id="archive-project-confirm"
+                  data-testid="web-project-archive-ack"
                   checked={confirmed}
                   onCheckedChange={v => setConfirmed(v === true)}
                   className="shrink-0"
@@ -131,6 +144,7 @@ export function ArchiveProjectDialog({
             variant="destructive"
             disabled={isPending || !confirmed}
             onClick={onConfirm}
+            data-testid="web-project-archive-confirm"
           >
             {isPending ? 'Archiving…' : 'Archive'}
           </Button>
