@@ -9,9 +9,19 @@ import AppNotebooksPage from './app-notebooks.ts';
  * Fieldmark record create / finish helpers.
  */
 class AppRecordsPage extends Page {
-  /** Add / new record control inside an open notebook. */
+  /**
+   * Add / new record control for a specific viewset (record type).
+   * Matches `data-testid="{viewsetName}-app-record-add-button"`.
+   */
+  addButtonFor(viewsetName: string) {
+    return byTestId(`${viewsetName}-app-record-add-button`);
+  }
+
+  /**
+   * Add / new record control for the e2e-minimal notebook (`Main` viewset).
+   */
   get addButton() {
-    return byTestId('app-record-add-button');
+    return this.addButtonFor('Main');
   }
 
   /** Finish / save record control. */

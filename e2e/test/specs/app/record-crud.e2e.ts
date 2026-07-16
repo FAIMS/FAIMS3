@@ -16,7 +16,7 @@ describe('App — Record CRUD', () => {
   });
 
   it('should open an activated notebook', async () => {
-    await expect(byTestId('app-record-add-button')).toBeDisplayed();
+    await expect(AppRecordsPage.addButton).toBeDisplayed();
     await captureStep({
       surface: 'app',
       label: 'notebook-opened',
@@ -24,7 +24,7 @@ describe('App — Record CRUD', () => {
   });
 
   it('should show add-record control', async () => {
-    await expect(byTestId('app-record-add-button')).toBeDisplayed();
+    await expect(AppRecordsPage.addButton).toBeDisplayed();
     await captureStep({
       surface: 'app',
       label: 'add-record-button',

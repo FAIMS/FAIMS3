@@ -209,19 +209,21 @@ const EnvSchema = z
       'RATE_LIMITER_PER_WINDOW'
     ),
     /**
-     * Whether the Express HTTP IP rate limiter is enabled (`true` / other).
-     * Does not control CouchDB-backed auth attempt limits — see
+     * Whether the Express HTTP IP rate limiter is enabled. Blank → on;
+     * unrecognised values fail parse (do not silently disable). Does not
+     * control CouchDB-backed auth attempt limits — see
      * AUTH_ATTEMPT_LIMITER_ENABLED.
      */
-    RATE_LIMITER_ENABLED: configHelpers.equalsTrueBool(true),
+    RATE_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
      * Whether per-user email-code / verification-challenge attempt limits
-     * are enabled (`true` / other). Independent of the HTTP IP limiter so
-     * deployments that disable RATE_LIMITER_ENABLED upstream still keep
-     * password-reset and verification brute-force protection. Default on;
-     * e2e may set false for repeated auth flows.
+     * are enabled. Independent of the HTTP IP limiter so deployments that
+     * disable RATE_LIMITER_ENABLED upstream still keep password-reset and
+     * verification brute-force protection. Blank → on; unrecognised values
+     * fail parse (do not silently disable). E2e may set false for repeated
+     * auth flows.
      */
-    AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.equalsTrueBool(true),
+    AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
      * Canonical public URL of this Conductor (required). Trailing `/` is
      * stripped.
