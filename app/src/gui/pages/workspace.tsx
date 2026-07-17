@@ -42,6 +42,7 @@ export default function Workspace() {
             variant="h2"
             color="text.secondary"
             sx={{mb: theme.spacing(2)}}
+            data-testid="app-notebooks-heading"
           >
             My {config.notebookNamePluralCapitalized}
           </Typography>

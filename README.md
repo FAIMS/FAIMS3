@@ -7,12 +7,12 @@ FAIMS3 is an open-source tool for offline field data-collection brought to you b
 The repository contains the following:
 
 - /api: contains the conductor
-- /app: contains the the web, Android and iOS applications
-- /designer: contains designer web application
+- /app: contains the web, Android and iOS applications
+- /web: contains the Control Centre and embedded designer
 - /docs: contains the high level documentation for the project
-- /infrastucture: contains the AWS CDK deployment scripts
+- /infrastructure: contains the AWS CDK and DigitalOcean deployment scripts
 - /library: shared library for the project
-- /tests: contains the end-to-end tests for the project
+- /e2e: contains the WebdriverIO end-to-end tests
 
 ## Local development quick start
 
@@ -130,6 +130,29 @@ These three commands are bundled into `dev.sh` i.e.
 
 ```bash
 ./dev.sh
+```
+
+Another way to run the applications on MacOS or Linux is to use the `Procfile` and
+a tool such as [Overmind](https://github.com/DarthSim/overmind). The `Procfile`
+contains the commands to run the different services and Overmind can be used
+to run them together. The advantage over `pnpm run dev` is that you can
+run them in the background, restart individual services easily and attach/detach
+the output from the servers in the terminal.
+
+Example commands:
+
+```bash
+# Run all services and detach
+overmind start -d
+
+# Echo output to the terminal
+overmind echo
+
+# Restart the app
+overmind restart app
+
+# Restart everything
+overmind restart
 ```
 
 ## Manual Setup
@@ -258,6 +281,24 @@ action after setting up your environment or run:
 ```
 
 which will remove the local docker volume containing the database and force recreation.
+
+Seed personas, notebook defaults, and role matrix are documented in
+[Test Dataset Seeding](docs/developer/docs/source/markdown/TestDatasetSeeding.md).
+Copy matching credentials into `e2e/.env` from `e2e/.env.dist` when running e2e.
+
+### End-to-end tests
+
+Browser e2e lives in [`e2e/`](e2e/) (WebdriverIO 9 + Mocha). With CouchDB,
+migrate, seed, and `pnpm run dev` already up:
+
+```bash
+cd e2e
+pnpm test:e2e:headless:ci   # smoke → web/conductor/journeys → app
+```
+
+CI runs the same path via [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml)
+and uploads HTML galleries under `e2e/artifacts/`. Details, personas, and
+workflow inventory: [e2e/README.md](e2e/README.md) and [e2e/SUITE.md](e2e/SUITE.md).
 
 ## IOS Notes
 

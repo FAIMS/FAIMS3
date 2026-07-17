@@ -113,6 +113,7 @@ const OnboardingComponent = ({
             <Button
               variant="outlined"
               fullWidth
+              data-testid="app-signin-button"
               startIcon={
                 <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
               }
@@ -177,6 +178,7 @@ const OnboardingComponent = ({
               <Button
                 variant="outlined"
                 fullWidth
+                data-testid="app-signin-enter-code-button"
                 onClick={() => setShowCodeInput(true)}
                 startIcon={
                   <LockOpenIcon sx={{color: theme.palette.primary.main}} />

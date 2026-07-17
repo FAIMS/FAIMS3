@@ -16,13 +16,10 @@ fi
 
 # replace occurrences of the app name 'Fieldmark' and id 'org.fedarch.faims3'
 # with configured values VITE_APP_NAME and VITE_APP_ID
+# Note: Capacitor runtime config now comes from capacitor.config.ts.
+# This script updates manifest/resources/assets only.
 
 echo "Configuring app name ${VITE_APP_NAME} and id ${VITE_APP_ID}"
-
-# app name and appId
-# capacitor.config.json
-sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./capacitor.config.dist.json |
-  sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APP_ID}/g" >./capacitor.config.json
 
 # public/manifest.json
 

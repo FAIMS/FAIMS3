@@ -87,6 +87,7 @@ export function CreateTemplateForm({
       description: 'A short display name for the template',
       schema: resourceNameSchema(5, 'Template name'),
       maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      testId: 'web-templates-create-name',
     },
     optionalRootDescriptionField(),
     {
@@ -210,6 +211,7 @@ export function CreateTemplateForm({
         fields={fields}
         onSubmit={onSubmit}
         submitButtonText="Create Template"
+        submitButtonTestId="web-templates-create-submit"
         defaultValues={{
           team: defaultValues?.teamId,
           ...(canCreatePublicTemplate ? {visibility: 'private' as const} : {}),

@@ -117,11 +117,15 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
             <Button
               variant="outline"
               className="text-destructive border-border hover:bg-destructive/10 hover:text-destructive"
+              data-testid="web-project-status-close"
             >
               Close {config.notebookNameCapitalized}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg text-black dark:text-foreground">
+          <DialogContent
+            className="max-w-lg text-black dark:text-foreground"
+            data-testid="web-project-status-close-dialog"
+          >
             <DialogHeader>
               <DialogTitle className="pb-2 text-black dark:text-foreground">
                 Closed {config.notebookNameCapitalized}
@@ -156,7 +160,11 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                 </div>
               </DialogDescription>
             </DialogHeader>
-            <Button variant="destructive" onClick={onClick}>
+            <Button
+              variant="destructive"
+              onClick={onClick}
+              data-testid="web-project-status-close-confirm"
+            >
               Yes, Close {config.notebookNameCapitalized}
             </Button>
           </DialogContent>
@@ -164,11 +172,11 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline">
+            <Button variant="outline" data-testid="web-project-status-reopen">
               Reopen {config.notebookNameCapitalized}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent data-testid="web-project-status-reopen-dialog">
             <DialogHeader>
               <DialogTitle className="text-foreground">
                 Reopen {config.notebookNameCapitalized}
@@ -178,7 +186,11 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                 editing.
               </DialogDescription>
             </DialogHeader>
-            <Button variant="default" onClick={onClick}>
+            <Button
+              variant="default"
+              onClick={onClick}
+              data-testid="web-project-status-reopen-confirm"
+            >
               Reopen {config.notebookNameCapitalized}
             </Button>
           </DialogContent>

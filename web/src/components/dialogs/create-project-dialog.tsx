@@ -50,12 +50,13 @@ export const CreateProjectDialog = ({
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-projects-create-button"
         >
           <Plus />
           Create {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-projects-create-dialog">
         <DialogHeader>
           <DialogTitle>
             Create {config.notebookNameCapitalized}

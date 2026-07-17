@@ -22,6 +22,8 @@ export interface NavItem {
   url: string;
   icon?: LucideIcon;
   isActive?: boolean;
+  /** Optional stable selector for e2e tests. */
+  testId?: string;
   /** Optional search params for the primary nav link (e.g. Archive default tab). */
   linkSearch?: Record<string, string>;
   items?: {
@@ -100,6 +102,7 @@ export function NavMain({title, items}: NavMainProps) {
                       <Link
                         to={item.url}
                         {...(item.linkSearch ? {search: item.linkSearch} : {})}
+                        {...(item.testId ? {'data-testid': item.testId} : {})}
                         className={cn(
                           'flex items-center gap-2',
                           isActive && 'bg-sidebar-accent'
@@ -116,6 +119,7 @@ export function NavMain({title, items}: NavMainProps) {
                     <Link
                       to={item.url}
                       {...(item.linkSearch ? {search: item.linkSearch} : {})}
+                      {...(item.testId ? {'data-testid': item.testId} : {})}
                       className="flex items-center gap-2"
                     >
                       {item.icon && <item.icon />}

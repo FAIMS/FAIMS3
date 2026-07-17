@@ -177,6 +177,7 @@ bump_versions() {
     "web/package.json"
     "library/data-model/package.json"
     "library/forms/package.json"
+    "e2e/package.json"
   )
 
   for file in "${package_files[@]}"; do

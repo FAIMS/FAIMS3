@@ -118,7 +118,10 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-profile-tokens-heading"
+      >
         Manage API Tokens
       </h1>
       <div className="space-y-4">
@@ -173,6 +176,7 @@ function RouteComponent() {
                       checked={adminMode}
                       onCheckedChange={setAdminMode}
                       className="data-[state=checked]:bg-green-300"
+                      data-testid="web-profile-tokens-admin-mode"
                     />
                     <div>
                       <Label
@@ -236,6 +240,7 @@ function RouteComponent() {
               <Button
                 variant="outline"
                 size="sm"
+                data-testid="web-profile-tokens-refresh"
                 onClick={() => {
                   queryClient.invalidateQueries({
                     queryKey: ['long-lived-tokens'],

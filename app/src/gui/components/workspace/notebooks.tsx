@@ -297,6 +297,7 @@ export default function NoteBooks() {
             variant="contained"
             sx={{backgroundColor: theme.palette.primary.main, flex: 1}}
             startIcon={<AddOutlined />}
+            data-testid="app-notebooks-add-button"
             onClick={() => {
               setAddDialogOpen(true);
             }}

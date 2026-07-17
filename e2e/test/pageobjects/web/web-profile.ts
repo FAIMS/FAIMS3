@@ -1,24 +1,26 @@
-import {$, browser} from '@wdio/globals';
+import {browser} from '@wdio/globals';
 import {Page} from '../page.ts';
-
-const WEB_URL = process.env.WEB_URL || 'http://localhost:3001';
+import {getWebUrl} from '../../helpers/env.ts';
+import {byTestId} from '../../helpers/selectors.ts';
+import {waitForTestId} from '../../helpers/wait.ts';
 
 /**
- * Page object for the User Profile page (/_protected/profile/).
+ * Page object for the User Profile page (/profile).
  *
  * The page renders:
- *  - An <h1>User Profile</h1> heading.
+ *  - A heading (data-testid web-profile-heading).
  *  - A card listing Email, Name, and Email Verification status.
  *  - A "Change Password" button (navigates to the API change-password page).
- *  - A "Manage Long-Lived Tokens" button (links to /profile/long-lived-tokens).
+ *  - A "Manage Long-Lived Tokens" control (links to /profile/long-lived-tokens).
  */
 class WebProfilePage extends Page {
   /**
    * Navigate to the profile page.
-   * Uses a root-relative URL so wdio prepends the configured baseUrl.
+   * Uses getWebUrl() so the absolute Control Centre origin is correct regardless
+   * of which WDIO conf / baseUrl is active.
    */
   public async open() {
-    await browser.url(`${WEB_URL}/profile`);
+    await browser.url(`${getWebUrl()}/profile`);
     await this.setBrowserSize();
     await this.waitForPageLoad();
     await this.waitForProfileReady();
@@ -26,7 +28,7 @@ class WebProfilePage extends Page {
 
   /** Wait until the profile route has rendered (not login redirect). */
   async waitForProfileReady() {
-    await this.heading.waitForDisplayed({
+    await waitForTestId('web-profile-heading', {
       timeout: 15000,
       timeoutMsg: 'Expected User Profile heading on /profile',
     });
@@ -34,7 +36,7 @@ class WebProfilePage extends Page {
 
   /** Page heading — always "User Profile". */
   get heading() {
-    return $('h1=User Profile');
+    return byTestId('web-profile-heading');
   }
 
   /**
@@ -43,14 +45,14 @@ class WebProfilePage extends Page {
    * pre-filled and a redirect back to the profile page.
    */
   get changePasswordButton() {
-    return $('button=Change Password');
+    return byTestId('web-profile-change-password-button');
   }
 
   /**
    * Control for /profile/long-lived-tokens (TanStack Link wrapping a Button).
    */
   get manageTokensButton() {
-    return $('a[href*="long-lived-tokens"]');
+    return byTestId('web-profile-tokens-link');
   }
 
   /** Returns true when the profile heading is visible. */
@@ -69,7 +71,7 @@ class WebProfilePage extends Page {
    */
   async getPageText(): Promise<string> {
     await this.waitForProfileReady();
-    const main = await $('main');
+    const main = await byTestId('web-main');
     await main.waitForExist({timeout: 10000});
     return main.getText();
   }

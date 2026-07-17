@@ -14,6 +14,7 @@ import {
   VerificationChallengeFields,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
+import {config} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {expiryMsFromNow, nowMs} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
@@ -109,6 +110,12 @@ export const checkCanCreateVerificationChallenge = async ({
   reason?: string;
   nextAttemptAllowedAt?: number;
 }> => {
+  // Independent of the HTTP IP limiter (RATE_LIMITER_ENABLED). Local/e2e
+  // may set AUTH_ATTEMPT_LIMITER_ENABLED=false for repeated auth flows.
+  if (!config.authAttemptLimiterEnabled) {
+    return {canCreate: true};
+  }
+
   // Get all verification challenges for this user and email within the rate
   // limit window
   const timeThreshold = Date.now() - rateLimitWindowMs;

@@ -43,6 +43,10 @@ type FaimsDialogProps = {
   primaryActionColor?: 'primary' | 'secondary' | 'error';
   primaryActionVariant?: 'contained' | 'outlined';
   cancelButtonText?: string;
+  /** Optional data-testid for the primary action button (e2e). */
+  primaryActionTestId?: string;
+  /** Optional data-testid for the cancel button (e2e). */
+  cancelTestId?: string;
 };
 
 /**
@@ -73,6 +77,8 @@ export default function FaimsDialog({
   primaryActionColor = 'primary',
   primaryActionVariant = 'contained',
   cancelButtonText = 'Cancel',
+  primaryActionTestId,
+  cancelTestId,
 }: FaimsDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -94,7 +100,7 @@ export default function FaimsDialog({
       <Divider />
       <DialogContent>{children}</DialogContent>
       <DialogActions className="faims-dialogActions">
-        <Button onClick={onClose} color="primary">
+        <Button onClick={onClose} color="primary" data-testid={cancelTestId}>
           {cancelButtonText}
         </Button>
         <Button
@@ -102,6 +108,7 @@ export default function FaimsDialog({
           color={primaryActionColor}
           onClick={onPrimaryAction}
           disabled={primaryActionLoading}
+          data-testid={primaryActionTestId}
         >
           {primaryActionText}
         </Button>

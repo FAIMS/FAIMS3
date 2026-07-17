@@ -39,11 +39,18 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" title="Disable user account">
+        <Button
+          variant="outline"
+          title="Disable user account"
+          data-testid="web-users-disable-button"
+        >
           <UserX className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="text-black">
+      <DialogContent
+        className="text-black"
+        data-testid="web-users-disable-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-black">Disable User Account</DialogTitle>
           <DialogDescription asChild className="text-black">
@@ -72,6 +79,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
           className="w-full"
           variant="destructive"
           disabled={disableUser.isPending}
+          data-testid="web-users-disable-confirm"
           onClick={() =>
             disableUser.mutate(
               {targetUserId: rowUser._id},

@@ -397,8 +397,10 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
 - `web`: Placeholder configuration for further web/new-conductor config - currently use {}
 - `docs`: Placeholder configuration for the documentation site - currently use `{}`
-
-## Using Your Configuration
+- `security`: (Optional) Security-related Conductor API settings. Defaults applied when omitted.
+  - `maximumLongLivedTokenDurationDays`: (Optional) Max lifetime in days for long-lived tokens (default 90). Omit or leave unset for infinite when wiring through the stack prop as undefined.
+  - `rateLimiterEnabled`: (default `true`) Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Set `false` when per-IP limiting is handled upstream (e.g. ALB/WAF). Does **not** control CouchDB-backed auth attempt limits.
+  - `authAttemptLimiterEnabled`: (default `true`) Per-user email-code / verification-challenge attempt limits (`AUTH_ATTEMPT_LIMITER_ENABLED`). Keep `true` in production even when HTTP rate limiting is disabled upstream.
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 

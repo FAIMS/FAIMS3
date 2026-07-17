@@ -120,6 +120,7 @@ export default function NotebookSyncSwitch({
               onChange={handleModeSelect}
               renderValue={value => SYNC_MODE_LABELS[value as SyncMode]}
               aria-label="Sync mode"
+              data-testid="app-notebook-sync-mode-select"
             >
               {SYNC_MODE_OPTIONS.map(mode => (
                 <MenuItem key={mode} value={mode}>

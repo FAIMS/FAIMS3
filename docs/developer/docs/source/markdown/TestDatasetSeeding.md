@@ -13,10 +13,12 @@ dataset in the configured CouchDB instance. It is designed to support:
   to exercise the scenarios where a user's visibility of projects differs between
   the two teams they belong to.
 
-> **Warning: This is a destructive operation.**
-> Running the seed script calls `initialiseAndMigrateDBs` with `force: true`,
-> which re-creates CouchDB design documents and wipes all existing data.
-> **Never run this against a production or shared staging instance.**
+> **Idempotent seed.** Re-running the script restores the canonical Red/Blue
+> teams, templates, notebooks, and seed personas (stable document IDs under
+> `team_seed_*` / `template_seed_*` / `notebook_seed_*`) to the intended state.
+> It only creates or updates those seed documents and personas — it does not
+> delete other CouchDB data. Prefer not to run it against a production or
+> shared staging instance unless you intend to reset those seed entities.
 
 ---
 
@@ -35,14 +37,15 @@ pnpm --filter @faims3/api run seed-test-dataset
 ```
 
 The script prints a summary of all created entities and exits with code `0` on
-success or `1` on failure.
+success or `1` on failure. It is safe to re-run against an already-seeded
+database.
 
 ### Environment Variables
 
-| Variable              | Default                                                           | Description                                                                                                                  |
-| --------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `TEST_SEED_PASSWORD`  | `TestPassword123!`                                                | Shared local-auth password for all seeded users.                                                                             |
-| `TEST_SEED_NOTEBOOKS` | `./notebooks/Field-Sampler.json,./notebooks/sample_notebook.json` | Comma-separated paths to notebook JSON files used to create templates and notebooks. The script requires at least two files. |
+| Variable              | Default                                                         | Description                                                                                                                  |
+| --------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `TEST_SEED_PASSWORD`  | `TestPassword123!`                                              | Shared local-auth password for all seeded users.                                                                             |
+| `TEST_SEED_NOTEBOOKS` | `./notebooks/e2e-minimal.json,./notebooks/sample_notebook.json` | Comma-separated paths to notebook JSON files used to create templates and notebooks. The script requires at least two files. |
 
 Standard CouchDB connection variables (`COUCHDB_INTERNAL_URL`,
 `COUCHDB_USER`, `COUCHDB_PASSWORD`) are read from the project `.env` file via
@@ -54,36 +57,42 @@ Standard CouchDB connection variables (`COUCHDB_INTERNAL_URL`,
 
 ### Teams
 
-Two teams are created, giving a Red/Blue axis for cross-team visibility tests.
+Two teams are upserted (stable IDs `team_seed_red` / `team_seed_blue`), giving
+a Red/Blue axis for cross-team visibility tests.
 
-| Internal alias | Name      | Purpose                                           |
-| -------------- | --------- | ------------------------------------------------- |
-| `redTeamId`    | Red Team  | Team where cross-team manager has elevated access |
-| `blueTeamId`   | Blue Team | Team where the same user has only member access   |
+| Internal alias | Document ID      | Name      | Purpose                                           |
+| -------------- | ---------------- | --------- | ------------------------------------------------- |
+| `redTeamId`    | `team_seed_red`  | Red Team  | Team where cross-team manager has elevated access |
+| `blueTeamId`   | `team_seed_blue` | Blue Team | Team where the same user has only member access   |
 
 ---
 
 ### Templates
 
-One template is created per team, sourced from the first two notebook JSON
-files resolved from `TEST_SEED_NOTEBOOKS`.
+One template is upserted per team (stable IDs `template_seed_red` /
+`template_seed_blue`), sourced from the first two notebook JSON files resolved
+from `TEST_SEED_NOTEBOOKS`.
 
-| Internal alias   | Owner     | Source file               |
-| ---------------- | --------- | ------------------------- |
-| `redTemplateId`  | Red Team  | First notebook JSON file  |
-| `blueTemplateId` | Blue Team | Second notebook JSON file |
+| Internal alias   | Document ID          | Owner     | Default source file                |
+| ---------------- | -------------------- | --------- | ---------------------------------- |
+| `redTemplateId`  | `template_seed_red`  | Red Team  | `./notebooks/e2e-minimal.json`     |
+| `blueTemplateId` | `template_seed_blue` | Blue Team | `./notebooks/sample_notebook.json` |
+
+The Red default is a single required text field so Fieldmark app record CRUD
+e2e stays practical in headless Chromium. Blue keeps the fuller sample survey.
 
 ---
 
 ### Notebooks (Surveys)
 
-One notebook (project/survey) is created per team, using the same JSON
-sources as the templates above.
+One notebook (project/survey) is upserted per team (stable IDs
+`notebook_seed_red` / `notebook_seed_blue`), using the same JSON sources as the
+templates above.
 
-| Internal alias   | Owner     | Source file               |
-| ---------------- | --------- | ------------------------- |
-| `redNotebookId`  | Red Team  | First notebook JSON file  |
-| `blueNotebookId` | Blue Team | Second notebook JSON file |
+| Internal alias   | Document ID          | Owner     | Default source file                |
+| ---------------- | -------------------- | --------- | ---------------------------------- |
+| `redNotebookId`  | `notebook_seed_red`  | Red Team  | `./notebooks/e2e-minimal.json`     |
+| `blueNotebookId` | `notebook_seed_blue` | Blue Team | `./notebooks/sample_notebook.json` |
 
 ---
 
@@ -94,15 +103,18 @@ Every user receives `GENERAL_USER` by default.
 
 #### seed-admin@faims.test — Seed Administrator
 
-Covers operations-level administration without team, template, or project
-memberships.
+Operations-level administration plus resource roles needed for Control Centre
+archive / visibility e2e (ops global roles alone do not grant READ on private
+team templates).
 
-| Scope  | Role               |
-| ------ | ------------------ |
-| Global | `OPERATIONS_ADMIN` |
+| Scope         | Role               |
+| ------------- | ------------------ |
+| Global        | `OPERATIONS_ADMIN` |
+| Red Template  | `TEMPLATE_ADMIN`   |
+| Blue Notebook | `PROJECT_ADMIN`    |
 
-**Test use:** Log in to the dashboard as an operations admin and verify
-administrative features that are controlled by global admin roles.
+**Test use:** Log in to the dashboard as an operations admin; exercise Users
+admin, global invites, and Red template / Blue project archive controls.
 
 ---
 
@@ -214,9 +226,11 @@ seeded users.
 | --------------------- | ------------------------------------------------------- |
 | `GENERAL_USER`        | All users (default)                                     |
 | `OPERATIONS_ADMIN`    | seed-admin                                              |
+| `TEMPLATE_ADMIN`      | seed-admin (Red)                                        |
 | `TEAM_MANAGER`        | seed-manager-blue (Blue), seed-manager-cross (Red)      |
 | `TEAM_MEMBER`         | seed-manager-cross (Blue), seed-member-both (Red, Blue) |
 | `TEAM_MEMBER_CREATOR` | seed-red-member-creator (Red)                           |
+| `PROJECT_ADMIN`       | seed-admin (Blue)                                       |
 | `PROJECT_CONTRIBUTOR` | seed-project-contributor (Red)                          |
 | `PROJECT_GUEST`       | seed-project-guest (Blue)                               |
 
@@ -224,19 +238,27 @@ seeded users.
 
 ## E2E Test Credentials
 
-After running the seed script, set these environment variables before running
-the e2e test suite:
+After running the seed script, copy `e2e/.env.dist` → `e2e/.env` (defaults
+match the seed password and persona emails). Key personas:
 
 ```bash
-export TEST_ADMIN_USERNAME="seed-admin@faims.test"
-export TEST_ADMIN_PASSWORD="TestPassword123!"   # or value of TEST_SEED_PASSWORD
+# Operations admin (Users admin, archive/visibility)
+TEST_OPERATIONS_ADMIN_USERNAME=seed-admin@faims.test
+TEST_OPERATIONS_ADMIN_PASSWORD=TestPassword123!
 
-export TEST_USER_USERNAME="seed-member-both@faims.test"
-export TEST_USER_PASSWORD="TestPassword123!"
+# Dual team member (projects list / create-within-team)
+TEST_MEMBER_BOTH_USERNAME=seed-member-both@faims.test
+TEST_MEMBER_BOTH_PASSWORD=TestPassword123!
+
+# Also used as TEST_USER_* in some older specs
+TEST_USER_USERNAME=seed-user@faims.test
+TEST_USER_PASSWORD=TestPassword123!
 ```
 
-Role-specific test users follow the naming convention
-`seed-<persona>@faims.test` and all share the same password.
+Role-specific users follow `seed-<persona>@faims.test` and share
+`TEST_SEED_PASSWORD`. Full env map and suite commands:
+[e2e/README.md](../../../../../e2e/README.md), workflow inventory:
+[e2e/SUITE.md](../../../../../e2e/SUITE.md).
 
 ---
 
@@ -263,3 +285,5 @@ valid for the persona.
 
 - [Permissions Model](PermissionModel.md) — detailed description of roles,
   actions, resources, and virtual role inheritance.
+- [E2E README](../../../../../e2e/README.md) — how to run the browser suite and CI.
+- [E2E suite inventory](../../../../../e2e/SUITE.md) — specs by tier.

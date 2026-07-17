@@ -37,9 +37,14 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   const toggleVisibilityDialog = isPublic ? (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Make private</Button>
+        <Button variant="outline" data-testid="web-template-visibility-toggle">
+          Make private
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="web-template-visibility-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-foreground">
             Make template private
@@ -50,7 +55,11 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
             and system administrators) will still see it.
           </DialogDescription>
         </DialogHeader>
-        <Button variant="default" onClick={onConfirmToggle}>
+        <Button
+          variant="default"
+          onClick={onConfirmToggle}
+          data-testid="web-template-visibility-confirm"
+        >
           Yes, make private
         </Button>
       </DialogContent>
@@ -58,9 +67,14 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Make public</Button>
+        <Button variant="outline" data-testid="web-template-visibility-toggle">
+          Make public
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="web-template-visibility-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-foreground">
             Make template public
@@ -72,7 +86,11 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
             </p>
           </DialogDescription>
         </DialogHeader>
-        <Button variant="default" onClick={onConfirmToggle}>
+        <Button
+          variant="default"
+          onClick={onConfirmToggle}
+          data-testid="web-template-visibility-confirm"
+        >
           Yes, make public
         </Button>
       </DialogContent>
