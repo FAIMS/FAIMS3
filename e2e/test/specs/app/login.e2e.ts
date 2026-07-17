@@ -1,42 +1,26 @@
-import LoginPage from '../../pageobjects/app-signin.js';
-import API_Login from '../../pageobjects/api-login.js';
-
-const doLogin = async (username: string, password: string) => {
-  // Start from app login page
-  await LoginPage.open();
-  await LoginPage.clickSignIn();
-
-  // Wait for redirect to API login page
-  await API_Login.waitForPageLoad();
-
-  // Perform login if local auth is available
-  if (await API_Login.isLocalAuthAvailable()) {
-    await API_Login.login(username, password);
-
-    // Wait for redirect or success
-    await browser.pause(2000);
-  }
-};
+/**
+ * App sign-in UI and Conductor local login (valid / invalid).
+ */
+import LoginPage from '../../pageobjects/app-signin.ts';
+import API_Login from '../../pageobjects/api-login.ts';
+import {loginApp, persona} from '../../helpers/auth.ts';
+import {captureStep} from '../../helpers/screenshot.ts';
 
 describe('Login Page', () => {
-  const TEST_USERNAME =
-    process.env.TEST_PROJECT_CONTRIBUTOR_USERNAME || 'test@example.com';
-  const TEST_PASSWORD =
-    process.env.TEST_PROJECT_CONTRIBUTOR_PASSWORD || 'testpassword123';
+  const TEST_USER = persona('projectContributor');
   const INVALID_EMAIL = 'invalid@example.com';
   const INVALID_PASSWORD = 'wrongpassword';
 
   beforeEach(async () => {
-    // More aggressive cleanup
     await browser.reloadSession();
     await LoginPage.open();
-    await browser.pause(1000);
   });
 
   it('should display login page correctly', async () => {
     await LoginPage.open();
     await LoginPage.verifyPageElements();
     await LoginPage.takeScreenshot('login', 'app-signin-page');
+    await captureStep({surface: 'app', label: 'signin-page'});
   });
 
   it('should show short code entry when button clicked', async () => {
@@ -50,28 +34,33 @@ describe('Login Page', () => {
     await LoginPage.open();
     await LoginPage.clickSignIn();
 
-    // Wait for redirect to API login page
     await API_Login.waitForPageLoad();
     await API_Login.verifyPageElements();
     await API_Login.takeScreenshot('login', 'api-login-page');
   });
 
   it('should login successfully with valid credentials', async () => {
-    await doLogin(TEST_USERNAME, TEST_PASSWORD);
-
-    // Check if we were redirected away from login page or got success message
-    const currentUrl = await browser.getUrl();
-    const hasSuccessMessage = await API_Login.hasSuccessMessage();
+    // App sign-in → Conductor local auth → redirect back (or success message)
+    await loginApp(TEST_USER);
 
     // Assert either redirect occurred or success message is shown
+    const currentUrl = await browser.getUrl();
+    const hasSuccessMessage = await API_Login.hasSuccessMessage();
     expect(!currentUrl.includes('/login') || hasSuccessMessage).toBe(true);
 
     await API_Login.takeScreenshot('login', 'successful-login');
+    await captureStep({
+      surface: 'app',
+      label: 'login-success',
+    });
   });
 
   it('should show an error for invalid credentials', async () => {
-    // Start from app login page
-    await doLogin(INVALID_EMAIL, INVALID_PASSWORD);
+    // Start from app login page, then Conductor form with bad credentials
+    await LoginPage.open();
+    await LoginPage.clickSignIn();
+    await API_Login.waitForPageLoad();
+    await API_Login.login(INVALID_EMAIL, INVALID_PASSWORD);
 
     // Wait for error message to appear
     await browser.waitUntil(

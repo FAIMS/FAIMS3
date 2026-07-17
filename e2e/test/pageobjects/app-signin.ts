@@ -21,11 +21,11 @@ class LoginPage extends Page {
   }
 
   get signInButton() {
-    return $('button*=Sign in'); // Button containing "Sign in" text
+    return $('[data-testid="app-signin-button"]');
   }
 
   get enterCodeButton() {
-    return $('button*=Enter code'); // Button containing "Enter code" text
+    return $('[data-testid="app-signin-enter-code-button"]');
   }
 
   get qrCodeButton() {

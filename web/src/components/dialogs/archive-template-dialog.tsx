@@ -77,9 +77,11 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   return archived ? (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Un-archive Template</Button>
+        <Button variant="outline" data-testid="web-template-archive-button">
+          Un-archive Template
+        </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-template-archive-dialog">
         <DialogHeader>
           <DialogTitle>Un-archive Template</DialogTitle>
           <DialogDescription>
@@ -87,7 +89,12 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
             edited and used to create {config.notebookName}s.
           </DialogDescription>
         </DialogHeader>
-        <Button variant="destructive" className="w-full" onClick={onClick}>
+        <Button
+          variant="destructive"
+          className="w-full"
+          onClick={onClick}
+          data-testid="web-template-archive-confirm"
+        >
           Un-archive Template
         </Button>
       </DialogContent>
@@ -95,9 +102,11 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Archive Template</Button>
+        <Button variant="outline" data-testid="web-template-archive-button">
+          Archive Template
+        </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-template-archive-dialog">
         <DialogHeader>
           <DialogTitle>Archive Template</DialogTitle>
           <DialogDescription>
@@ -105,7 +114,12 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
             {config.notebookName}s from being created from it.
           </DialogDescription>
         </DialogHeader>
-        <Button variant="destructive" className="w-full" onClick={onClick}>
+        <Button
+          variant="destructive"
+          className="w-full"
+          onClick={onClick}
+          data-testid="web-template-archive-confirm"
+        >
           Archive Template
         </Button>
       </DialogContent>

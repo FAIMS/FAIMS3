@@ -53,6 +53,7 @@ export type BaseMuiTextFieldProps = BaseFieldParameters &
 export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
   const {
     // Field context props
+    fieldId,
     state,
     setFieldData,
     handleBlur,
@@ -188,6 +189,7 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
           multiline={multiline}
           minRows={rows}
           type={inputType}
+          data-testid={fieldId ? `app-record-field-${fieldId}` : undefined}
           {...muiProps}
           slotProps={{
             ...muiProps.slotProps,

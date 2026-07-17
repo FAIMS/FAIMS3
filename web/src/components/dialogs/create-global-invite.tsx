@@ -24,12 +24,13 @@ export const CreateGlobalInvite = () => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-global-invite-create-button"
         >
           <Plus />
           Create Global Invite
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-global-invite-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Global Invite</DialogTitle>
           <DialogDescription>

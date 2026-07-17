@@ -35,7 +35,7 @@ export function UsersTab() {
             ? []
             : data.map((user: any) => ({
                 ...user,
-                email: user.emails[0],
+                email: user.emails[0]?.email ?? '',
               }))
         }
         loading={isPending}

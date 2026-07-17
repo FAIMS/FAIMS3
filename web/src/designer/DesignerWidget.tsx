@@ -236,6 +236,7 @@ export function DesignerWidget({
       <ThemeProvider theme={mergedTheme}>
         <ScopedCssBaseline />
         <Box
+          data-testid="web-designer-shell"
           sx={{
             opacity: isVisible ? 1 : 0,
             transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
@@ -252,6 +253,7 @@ export function DesignerWidget({
               </Typography>
               <IconButton
                 aria-label="close designer"
+                data-testid="web-designer-close-button"
                 onClick={() => setCancelDialogOpen(true)}
                 size="small"
                 sx={{

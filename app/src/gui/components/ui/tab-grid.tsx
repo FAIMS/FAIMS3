@@ -101,6 +101,11 @@ export default function TabProjectGrid({
                   : `${NOT_ACTIVATED_LABEL} (${availableProjects.length})`
               }
               value={tab}
+              data-testid={
+                tab === '1'
+                  ? 'app-notebooks-tab-active'
+                  : 'app-notebooks-tab-not-active'
+              }
               disabled={
                 !projects.filter(r => r.isActivated).length && tab === '1'
               }
@@ -126,6 +131,12 @@ export default function TabProjectGrid({
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
+              slotProps={{
+                row: {
+                  // Shared landmark for e2e; activated rows navigate on click.
+                  'data-testid': 'app-notebook-row',
+                },
+              }}
             />
           </div>
         </TabPanel>

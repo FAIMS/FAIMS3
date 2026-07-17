@@ -27,6 +27,7 @@
     "webapp-build": "cap copy",
     "webapp-sync": "cap sync",
     "app-update": "cap update",
+    "app-run": "env-cmd cap run",
     "lint": "oxlint -c ../.oxlintrc.json .",
     "typecheck": "tsc --noEmit",
     "clean": "gts clean",

@@ -197,6 +197,7 @@ export const useGetLongLivedTokensColumns = ({
                   <TooltipTrigger asChild>
                     <Button
                       disabled={!canRevoke}
+                      data-testid="web-profile-tokens-revoke-button"
                       onClick={async () => {
                         try {
                           await revokeTokenHandler(id);

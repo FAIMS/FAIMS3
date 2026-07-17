@@ -44,12 +44,16 @@ export const CreateTemplateDialog = ({
         <Button
           variant="outline"
           className="flex items-center space-x-2 bg-primary text-primary-foreground"
+          data-testid="web-templates-create-button"
         >
           <Plus size={16} />
           <span>Create Template</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="web-templates-create-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-lg font-medium">
             Create Template

@@ -52,7 +52,10 @@ function ProjectsRouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-projects-heading"
+      >
         {config.notebookNamePluralCapitalized}
       </h1>
       <DataTable

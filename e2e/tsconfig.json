@@ -20,5 +20,16 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["test", "wdio.conf.ts"]
+  "include": [
+    "test",
+    "scripts",
+    "wdio.conf.ts",
+    "wdio.headless.conf.ts",
+    "wdio.web.conf.ts",
+    "wdio.headless.web.conf.ts",
+    "wdio.smoke.conf.ts",
+    "wdio.headless.smoke.conf.ts",
+    "wdio.mobile.conf.ts",
+    "chrome-headless-capabilities.ts"
+  ]
 }

@@ -53,6 +53,8 @@ export interface Field {
   placeholder?: string;
   /** HTML `maxLength` for text inputs */
   maxLength?: number;
+  /** Optional stable selector for e2e tests. */
+  testId?: string;
   /** Inline label beside the control when `type` is `checkbox` (defaults to `label`) */
   checkboxLabel?: string;
   /** When true, optional select fields show a clear button to reset the value. */
@@ -117,6 +119,7 @@ export function Form<
   onSubmit,
   submitButtonText = 'Submit',
   submitButtonVariant = 'default',
+  submitButtonTestId,
   warningMessage,
   defaultValues,
   footer = undefined,
@@ -127,6 +130,7 @@ export function Form<
   onSubmit: (data: TSchema) => Promise<ErrorOption | undefined>;
   submitButtonText?: string;
   submitButtonVariant?: ButtonProps['variant'];
+  submitButtonTestId?: string;
   warningMessage?: string;
   defaultValues?: DefaultValues<TSchema>;
   footer?: React.ReactNode;
@@ -213,6 +217,7 @@ export function Form<
                 maxLength,
                 checkboxLabel,
                 clearable,
+                testId,
               },
               index
             ) => {
@@ -322,6 +327,7 @@ export function Form<
                                 disabled={isDisabled}
                                 className="cursor-pointer"
                                 placeholder={placeholder}
+                                data-testid={testId}
                                 onChange={event =>
                                   event.target.files &&
                                   field.onChange(event.target.files[0])
@@ -352,6 +358,7 @@ export function Form<
                                 disabled={isDisabled}
                                 value={field.value ?? ''}
                                 placeholder={placeholder}
+                                data-testid={testId}
                                 onChange={event =>
                                   type === 'number'
                                     ? field.onChange(
@@ -397,6 +404,7 @@ export function Form<
           variant={submitButtonVariant}
           className="w-full"
           disabled={isSubmitDisabled}
+          data-testid={submitButtonTestId}
         >
           {submitButtonText}
         </Button>

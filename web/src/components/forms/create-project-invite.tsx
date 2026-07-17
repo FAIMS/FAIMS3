@@ -74,12 +74,14 @@ export function CreateProjectInviteForm({
           message: `Invite title must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`,
         }),
       maxLength: INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
+      testId: 'web-project-invite-create-name',
     },
     {
       name: 'role',
       label: 'Role',
       options: roleOptions,
       schema: z.nativeEnum(Role),
+      testId: 'web-project-invite-create-role',
     },
     {
       name: 'uses',
@@ -160,6 +162,7 @@ export function CreateProjectInviteForm({
       fields={fields}
       onSubmit={onSubmit}
       submitButtonText={'Create Invite'}
+      submitButtonTestId="web-project-invite-create-submit"
       footer={
         <ExpirySelector
           hints={config.inviteTokenHints}

@@ -52,6 +52,7 @@ export function CreateLongLivedTokenForm({
           message: 'Title must be at most 100 characters',
         }),
       maxLength: 100,
+      testId: 'web-profile-tokens-create-title',
     },
     {
       name: 'description',
@@ -65,6 +66,7 @@ export function CreateLongLivedTokenForm({
           message: 'Description must be at most 500 characters',
         }),
       maxLength: 500,
+      testId: 'web-profile-tokens-create-description',
     },
   ];
 
@@ -172,7 +174,10 @@ export function CreateLongLivedTokenForm({
         <div className="space-y-2">
           <label className="text-sm font-medium">Your API Token:</label>
           <div className="flex gap-2">
-            <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm break-all border overflow-hidden">
+            <div
+              className="flex-1 p-3 bg-muted rounded-md font-mono text-sm break-all border overflow-hidden"
+              data-testid="web-profile-tokens-created-value"
+            >
               <div className="whitespace-pre-wrap break-all">
                 {createdToken}
               </div>
@@ -231,6 +236,7 @@ export function CreateLongLivedTokenForm({
           onClick={handleConfirmedClose}
           variant="destructive"
           className="w-full"
+          data-testid="web-profile-tokens-created-close"
         >
           I've Saved My Token - Close
         </Button>
@@ -247,6 +253,7 @@ export function CreateLongLivedTokenForm({
         onSubmit={onSubmit}
         submitButtonText="Create Long-Lived Token"
         submitButtonVariant="outline"
+        submitButtonTestId="web-profile-tokens-create-submit"
         footer={
           <ExpirySelector
             hints={config.longLivedTokenDurationHints}

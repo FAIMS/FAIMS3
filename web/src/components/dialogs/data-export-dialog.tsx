@@ -17,9 +17,9 @@ import {Button} from '../ui/button';
 export const DataExportDialog = () => (
   <Dialog>
     <DialogTrigger asChild className="w-fit">
-      <Button>Data Export</Button>
+      <Button data-testid="web-export-data-button">Data Export</Button>
     </DialogTrigger>
-    <DialogContent>
+    <DialogContent data-testid="web-export-data-dialog">
       <DialogHeader>
         <DialogTitle>Data Export</DialogTitle>
       </DialogHeader>

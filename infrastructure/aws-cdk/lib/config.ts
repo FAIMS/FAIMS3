@@ -550,6 +550,18 @@ export const UiConfiguration = z
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
   maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
+  /**
+   * Express HTTP IP rate limiter (`RATE_LIMITER_ENABLED`). Default true.
+   * Set false when per-IP limiting is handled upstream (e.g. ALB/WAF).
+   * Does not control CouchDB-backed auth attempt limits.
+   */
+  rateLimiterEnabled: z.boolean().default(true),
+  /**
+   * Per-user email-code / verification-challenge attempt limits
+   * (`AUTH_ATTEMPT_LIMITER_ENABLED`). Default true. Keep enabled in
+   * production even when HTTP rate limiting is disabled upstream.
+   */
+  authAttemptLimiterEnabled: z.boolean().default(true),
 });
 
 // Define the schema
@@ -610,6 +622,8 @@ export const ConfigSchema = z.object({
   /** Security parameters */
   security: SecurityConfigSchema.optional().default({
     maximumLongLivedTokenDurationDays: 90,
+    rateLimiterEnabled: true,
+    authAttemptLimiterEnabled: true,
   }),
   /** Bugsnag/monitoring */
   bugMonitoring: BugMonitoringConfigurationSchema,

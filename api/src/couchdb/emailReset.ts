@@ -82,6 +82,12 @@ export const checkCanCreateEmailCode = async ({
   reason?: string;
   nextAttemptAllowedAt?: number;
 }> => {
+  // Independent of the HTTP IP limiter (RATE_LIMITER_ENABLED). Local/e2e
+  // may set AUTH_ATTEMPT_LIMITER_ENABLED=false for repeated auth flows.
+  if (!config.authAttemptLimiterEnabled) {
+    return {canCreate: true};
+  }
+
   // Get all email codes for this user within the rate limit window
   const timeThreshold = Date.now() - rateLimitWindowMs;
 
