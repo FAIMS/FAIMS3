@@ -193,6 +193,26 @@ export const createDesignerTheme = (
           },
         },
       },
+      MuiFormControlLabel: {
+        styleOverrides: {
+          label: {
+            fontSize: '0.8125rem',
+            '& .MuiTypography-root': {
+              fontSize: 'inherit',
+            },
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: {
+            fontSize: '0.8125rem',
+            '& .MuiTypography-root': {
+              fontSize: 'inherit',
+            },
+          },
+        },
+      },
       MuiDialog: {
         styleOverrides: {
           root: {
@@ -277,6 +297,9 @@ export const createDesignerTheme = (
             },
           },
           input: {
+            paddingTop: 10,
+            paddingBottom: 10,
+            fontSize: '0.875rem',
             '&::placeholder': {
               color: alpha(colors.blueGrey[700], 0.6),
               opacity: 1,
@@ -308,6 +331,7 @@ export const createDesignerTheme = (
       MuiTabs: {
         styleOverrides: {
           root: {
+            minHeight: 34,
             '&.MuiTabs-root': {
               boxShadow: 'none',
               fontWeight: 'bold',
@@ -332,6 +356,10 @@ export const createDesignerTheme = (
       MuiTab: {
         styleOverrides: {
           root: {
+            minHeight: 34,
+            paddingTop: 4,
+            paddingBottom: 4,
+            fontSize: '0.75rem',
             '&.MuiTab-root': {
               fontWeight: 'bold',
             },

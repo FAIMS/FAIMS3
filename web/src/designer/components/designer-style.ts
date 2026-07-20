@@ -1,6 +1,10 @@
 import {SxProps, Theme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 
+const DESIGNER_GROUP_HEADING_FONT_SIZE = '1.125rem';
+const DESIGNER_CONTROL_FONT_SIZE = '0.8125rem';
+const DESIGNER_CONTROL_ICON_SIZE = '1rem';
+
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
   alignItems: 'center',
@@ -10,6 +14,7 @@ export const designerHeadingRowSx: SxProps<Theme> = {
 export const designerHeadingTextSx: SxProps<Theme> = {
   color: 'text.primary',
   fontWeight: 700,
+  fontSize: DESIGNER_GROUP_HEADING_FONT_SIZE,
   lineHeight: 1.1,
 };
 
@@ -17,7 +22,7 @@ export const designerInfoIconSx: SxProps<Theme> = {
   // Shared info-marker style used across Designer.
   // Use the icon's native circular glyph (no extra wrapper), to avoid double-ring visuals.
   color: '#1FB1FF',
-  fontSize: '1.7rem',
+  fontSize: DESIGNER_CONTROL_ICON_SIZE,
   ml: 0.28,
   verticalAlign: 'middle',
   filter: 'drop-shadow(0 4px 8px rgba(31, 177, 255, 0.25))',
@@ -47,11 +52,11 @@ export const designerControlLabelSx: SxProps<Theme> = {
   color: 'text.secondary',
   fontWeight: 700,
   textTransform: 'none',
-  fontSize: '1.05rem',
+  fontSize: DESIGNER_CONTROL_FONT_SIZE,
   letterSpacing: '0.01em',
   whiteSpace: 'nowrap',
   '& .MuiSvgIcon-root': {
-    fontSize: '1.55rem',
+    fontSize: DESIGNER_CONTROL_ICON_SIZE,
   },
 };
 
@@ -64,12 +69,15 @@ export const designerScrollableControlRowSx: SxProps<Theme> = {
 
 export const designerControlActionRowSx: SxProps<Theme> = {
   ...designerScrollableControlRowSx,
-  mt: 0.5,
+  mt: 0,
 };
 
 export const designerIconControlButtonSx: SxProps<Theme> = {
   color: 'text.secondary',
-  p: 0.5,
+  p: 0.375,
+  '& .MuiSvgIcon-root': {
+    fontSize: DESIGNER_CONTROL_ICON_SIZE,
+  },
 };
 
 export const designerInlineEditFocusOverlaySx: SxProps<Theme> = {
@@ -108,7 +116,16 @@ export const designerInlineEditActionIconSx: SxProps<Theme> = {
   },
 };
 
-export const designerPrimaryActionButtonSx: SxProps<Theme> = {};
+export const designerPrimaryActionButtonSx: SxProps<Theme> = {
+  fontSize: DESIGNER_CONTROL_FONT_SIZE,
+  lineHeight: 1.35,
+  py: 0.3,
+  px: 1,
+  minHeight: 0,
+  '& .MuiSvgIcon-root': {
+    fontSize: DESIGNER_CONTROL_ICON_SIZE,
+  },
+};
 
 export const designerControlHeadingSx: SxProps<Theme> = {
   color: 'text.primary',
@@ -121,7 +138,7 @@ export const designerControlHeadingSx: SxProps<Theme> = {
 export const designerFieldSubHeadingSx: SxProps<Theme> = {
   color: 'text.primary',
   fontWeight: 700,
-  fontSize: '1.25rem',
+  fontSize: '1rem',
   lineHeight: 1.2,
   textAlign: 'left',
 };

@@ -11,7 +11,7 @@ import {
 type HeadingWithInfoProps = {
   title: string;
   tooltip: ReactNode;
-  variant?: 'h2' | 'subtitle1' | 'body1' | 'body2';
+  variant?: 'h2' | 'h4' | 'subtitle1' | 'body1' | 'body2';
   titleSx?: Record<string, unknown>;
   containerSx?: Record<string, unknown>;
   iconSx?: Record<string, unknown>;
@@ -20,7 +20,7 @@ type HeadingWithInfoProps = {
 export const HeadingWithInfo = ({
   title,
   tooltip,
-  variant = 'h2',
+  variant = 'h4',
   titleSx,
   containerSx,
   iconSx,

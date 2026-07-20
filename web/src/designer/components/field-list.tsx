@@ -16,7 +16,7 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
-import {Alert, Box, Button, Stack, Tooltip, Typography} from '@mui/material';
+import {Alert, Box, Button, Stack, Typography} from '@mui/material';
 import {
   DndContext,
   DragEndEvent,
@@ -29,7 +29,6 @@ import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
-import InfoIcon from '@mui/icons-material/Info';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
@@ -40,8 +39,6 @@ import {
   designerControlLabelSx,
   designerFieldSubHeadingSx,
   designerHeadingRowSx,
-  designerHeadingTextSx,
-  designerInfoIconSx,
   designerPrimaryActionButtonSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
@@ -225,15 +222,18 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     <>
       <Stack
         direction="row"
-        spacing={1}
-        sx={{...designerHeadingRowSx, alignItems: 'center', mt: 2, mb: 1}}
+        sx={{
+          ...designerHeadingRowSx,
+          alignItems: 'center',
+          gap: 1,
+          mt: 1,
+          mb: 0.5,
+        }}
       >
-        <Typography variant="h2" sx={designerHeadingTextSx}>
-          Fields
-        </Typography>
-        <Tooltip title="Fields are the individual inputs that collect data in this section.">
-          <InfoIcon sx={designerInfoIconSx} />
-        </Tooltip>
+        <HeadingWithInfo
+          title="Fields"
+          tooltip="Fields are the individual inputs that collect data in this section."
+        />
         <Button
           variant="contained"
           size="small"
@@ -268,8 +268,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       <Box
         sx={{
           width: '100%',
-          mt: 3,
-          mb: 1.5,
+          mt: 1,
+          mb: 0.75,
           ml: 0,
           mr: 'auto',
           textAlign: 'left',
@@ -284,11 +284,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             title="Visible fields"
             variant="subtitle1"
             tooltip="Visible fields are shown to users in this section. They will appear in the survey."
-            titleSx={{
-              ...(designerFieldSubHeadingSx as Record<string, unknown>),
-              fontSize: '1.1rem',
-            }}
-            iconSx={{fontSize: '1.35rem', ml: 0.35}}
+            titleSx={designerFieldSubHeadingSx as Record<string, unknown>}
             containerSx={{
               justifyContent: 'flex-start',
               alignItems: 'center',
@@ -301,16 +297,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             variant="text"
             size="small"
             onClick={() => setIsExpanded(allOpen)}
-            startIcon={
-              <ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />
-            }
+            startIcon={<ExpandCircleDownRoundedIcon />}
             sx={{
               ...designerControlLabelSx,
               minWidth: 'auto',
-              px: 0.6,
-              py: 0.1,
-              fontSize: '0.72rem',
-              '& .MuiButton-startIcon': {mr: 0.4},
+              px: 0.75,
+              py: 0.25,
+              '& .MuiButton-startIcon': {mr: 0.5},
             }}
           >
             Expand all
@@ -320,17 +313,14 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             size="small"
             onClick={() => setIsExpanded(allClosed)}
             startIcon={
-              <ExpandCircleDownRoundedIcon
-                sx={{fontSize: '0.95rem', transform: 'rotate(180deg)'}}
-              />
+              <ExpandCircleDownRoundedIcon sx={{transform: 'rotate(180deg)'}} />
             }
             sx={{
               ...designerControlLabelSx,
               minWidth: 'auto',
-              px: 0.6,
-              py: 0.1,
-              fontSize: '0.72rem',
-              '& .MuiButton-startIcon': {mr: 0.4},
+              px: 0.75,
+              py: 0.25,
+              '& .MuiButton-startIcon': {mr: 0.5},
             }}
           >
             Collapse all
@@ -386,11 +376,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             title="Hidden fields"
             variant="subtitle1"
             tooltip="Hidden fields stay in the schema but are not shown to users. They are available but do not appear in the survey."
-            titleSx={{
-              ...(designerFieldSubHeadingSx as Record<string, unknown>),
-              fontSize: '1.1rem',
-            }}
-            iconSx={{fontSize: '1.35rem', ml: 0.35}}
+            titleSx={designerFieldSubHeadingSx as Record<string, unknown>}
             containerSx={{
               justifyContent: 'flex-start',
               alignSelf: 'flex-start',
@@ -402,16 +388,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             variant="text"
             size="small"
             onClick={() => setIsExpanded(allOpen)}
-            startIcon={
-              <ExpandCircleDownRoundedIcon sx={{fontSize: '0.95rem'}} />
-            }
+            startIcon={<ExpandCircleDownRoundedIcon />}
             sx={{
               ...designerControlLabelSx,
               minWidth: 'auto',
-              px: 0.6,
-              py: 0.1,
-              fontSize: '0.72rem',
-              '& .MuiButton-startIcon': {mr: 0.4},
+              px: 0.75,
+              py: 0.25,
+              '& .MuiButton-startIcon': {mr: 0.5},
             }}
           >
             Expand all
@@ -421,17 +404,14 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             size="small"
             onClick={() => setIsExpanded(allClosed)}
             startIcon={
-              <ExpandCircleDownRoundedIcon
-                sx={{fontSize: '0.95rem', transform: 'rotate(180deg)'}}
-              />
+              <ExpandCircleDownRoundedIcon sx={{transform: 'rotate(180deg)'}} />
             }
             sx={{
               ...designerControlLabelSx,
               minWidth: 'auto',
-              px: 0.6,
-              py: 0.1,
-              fontSize: '0.72rem',
-              '& .MuiButton-startIcon': {mr: 0.4},
+              px: 0.75,
+              py: 0.25,
+              '& .MuiButton-startIcon': {mr: 0.5},
             }}
           >
             Collapse all
