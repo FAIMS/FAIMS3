@@ -24,7 +24,7 @@ import {
   ConditionGroupNode,
 } from '@/designer/types/condition';
 import {useDraggable} from '@dnd-kit/react';
-import AddIcon from '@mui/icons-material/Add';
+import {AddCircle} from '@mui/icons-material';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -136,6 +136,8 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
           sx={{
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 1,
           }}
         >
           {/* Group operator selection */}
@@ -144,7 +146,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
               {isRoot ? 'Root group' : 'Group'}
             </Typography>
 
-            <FormControl size="small" sx={{minWidth: 120}}>
+            <FormControl size="small" sx={{minWidth: 90}}>
               <InputLabel id={`operator-${group.editorId}`}>
                 <Box
                   component="span"
@@ -180,7 +182,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
               <Tooltip title="Remove the group structure while keeping its conditions">
                 <Button
                   size="small"
-                  variant="outlined"
+                  variant="text"
                   color="warning"
                   startIcon={<CallSplitIcon />}
                   onClick={() => actions.ungroup(group.editorId)}
@@ -195,7 +197,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
               <Tooltip title="Delete this group and all conditions inside it">
                 <Button
                   size="small"
-                  variant="outlined"
+                  variant="text"
                   color="error"
                   startIcon={<DeleteIcon />}
                   onClick={() => actions.deleteNode(group.editorId)}
@@ -288,31 +290,24 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
           </Fragment>
         ))}
 
-        {/* Group actions */}
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{
-            pt: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            borderTop: '1px dashed',
-            borderColor: 'divider',
-          }}
-        >
-          <Tooltip title="Add a new condition to the end of this group">
-            <Button
-              size="small"
-              variant="contained"
-              color="success"
-              startIcon={<AddIcon />}
-              onClick={() => actions.addRule(group.editorId)}
-            >
-              Add condition
-            </Button>
-          </Tooltip>
-        </Stack>
+        {/* Add a new condition at the end of this group. */}
+        <Tooltip title="Add a new condition to the end of this group">
+          <Button
+            fullWidth
+            size="small"
+            variant="outlined"
+            color="success"
+            startIcon={<AddCircle />}
+            onClick={() => actions.addRule(group.editorId)}
+            sx={{
+              py: 1,
+              borderStyle: 'dashed',
+              justifyContent: 'center',
+            }}
+          >
+            Add condition
+          </Button>
+        </Tooltip>
       </Stack>
     </Paper>
   );
