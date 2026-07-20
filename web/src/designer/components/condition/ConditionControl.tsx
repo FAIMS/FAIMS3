@@ -21,6 +21,7 @@ import {
   conditionToEditorTree,
   deleteNodeFromTree,
   editorTreeToCondition,
+  groupNodeWithRuleInTree,
   moveNodeInTree,
   ROOT_CONDITION_GROUP_ID,
   ungroupNode,
@@ -97,6 +98,15 @@ export const ConditionControl = (props: ConditionControlProps) => {
       moveNode: (nodeId: string, targetGroupId: string, targetIndex: number) =>
         commitRoot(current =>
           moveNodeInTree(current, nodeId, targetGroupId, targetIndex)
+        ),
+
+      groupNodeWithRule: (
+        nodeId: string,
+        targetRuleId: string,
+        operator: ConditionBooleanOperator = 'and'
+      ) =>
+        commitRoot(current =>
+          groupNodeWithRuleInTree(current, nodeId, targetRuleId, operator)
         ),
 
       wrapRuleInGroup: (

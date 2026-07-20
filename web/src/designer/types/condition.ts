@@ -248,6 +248,12 @@ export type ConditionEditorActions = {
   /** Moves a rule or group node into a target group at the given index. */
   moveNode: (id: string, targetGroupId: string, targetIndex: number) => void;
   // group
+  /** Moves a rule or group into a new group with the target rule. */
+  groupNodeWithRule: (
+    id: string,
+    targetRuleId: string,
+    operator?: ConditionBooleanOperator
+  ) => void;
   /** Wraps a rule in a new group. */
   wrapRuleInGroup: (id: string, operator?: ConditionBooleanOperator) => void;
   /** Removes a group and moves its children up into the parent group. */

@@ -17,11 +17,11 @@
  *
  */
 
-import {getGroupChildCount, parseDropTarget} from '@/lib/conditionUtils';
 import {
   ConditionEditorActions,
   ConditionGroupNode,
 } from '@/designer/types/condition';
+import {getGroupChildCount, parseDropTarget} from '@/lib/conditionUtils';
 import {DragDropProvider} from '@dnd-kit/react';
 import {type ComponentProps, useState} from 'react';
 import {ConditionGroupCard} from './ConditionGroupCard';
@@ -75,6 +75,11 @@ export const DraggableConditionEditor = (props: {
 
     const parsedTarget = parseDropTarget(String(targetId));
     if (!parsedTarget) return;
+
+    if (parsedTarget.type === 'rule') {
+      actions.groupNodeWithRule(String(sourceId), parsedTarget.ruleId);
+      return;
+    }
 
     const targetIndex =
       parsedTarget.index ?? getGroupChildCount(root, parsedTarget.groupId);

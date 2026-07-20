@@ -72,6 +72,7 @@ export const ConditionDropZone = (props: ConditionDropZoneProps) => {
             borderColor: isActive ? 'success.main' : 'transparent',
           }}
         >
+          {/* Show a feedback chip for the active drop target. */}
           {isActive && (
             <Typography
               variant="caption"
@@ -79,6 +80,7 @@ export const ConditionDropZone = (props: ConditionDropZoneProps) => {
                 position: 'absolute',
                 left: '50%',
                 top: '-12px',
+                zIndex: 1,
                 transform: 'translateX(-50%)',
                 px: 1,
                 py: 0.1,

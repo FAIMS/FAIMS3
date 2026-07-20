@@ -93,7 +93,11 @@ export const createEmptyRootGroup = (): ConditionGroupNode => ({
 /**
  * Normalises one editor node.
  *
- * Empty groups are removed, and non-root one-child groups are flattened.
+ * Empty groups are removed. One-child groups are preserved because they can
+ * represent a group that the user is still building in the editor.
+ *
+ * One-child groups are still flattened when converting to the saved condition
+ * shape.
  *
  * @param node - The node to normalise.
  * @returns The normalised node, or `null` if the node should be removed.
@@ -108,9 +112,6 @@ const normalizeNode = (
     .filter((child): child is ConditionEditorNode => child !== null);
 
   if (children.length === 0) return null;
-
-  // Non-root one-child groups do not add any logical meaning.
-  if (children.length === 1) return children[0];
 
   return {
     ...node,
@@ -134,8 +135,8 @@ export const ensureRootHasChild = (
 /**
  * Normalises the editor tree.
  *
- * Empty groups are removed, non-root one-child groups are flattened, and the
- * root group is kept valid.
+ * Empty groups are removed and the root group is kept valid. One-child groups
+ * are preserved as editor state but flattened when converted for saving.
  *
  * @param root - The root group to normalise.
  * @returns The normalised root group.
@@ -583,6 +584,22 @@ const containsGroup = (group: ConditionGroupNode, groupId: string): boolean => {
 };
 
 /**
+ * Checks whether a group contains a node with the supplied editor ID.
+ *
+ * sed to prevent moving a group onto one of its own descendant rules.
+ *
+ * @param group - The group to search inside.
+ * @param nodeId - The editor ID of the node to find.
+ * @returns `true` if the node is found inside the supplied group.
+ */
+const containsNode = (group: ConditionGroupNode, nodeId: string): boolean =>
+  group.children.some(
+    child =>
+      child.editorId === nodeId ||
+      (child.type === 'group' && containsNode(child, nodeId))
+  );
+
+/**
  * Inserts a node into a target group at a specific index.
  *
  * The index is clamped so it always stays within the target group's child list.
@@ -697,10 +714,73 @@ export const moveNodeInTree = (
 };
 
 /**
+ * Moves a rule or group into a new group with an existing rule.
+ *
+ * The target rule remains first and the dragged node is added after it.
+ *
+ * @param root - The current editor root.
+ * @param nodeId - The editor ID of the rule or group to move.
+ * @param targetRuleId - The editor ID of the rule to group with.
+ * @param operator - The boolean operator for the new group.
+ * @returns The updated and normalised editor root.
+ */
+export const groupNodeWithRuleInTree = (
+  root: ConditionGroupNode,
+  nodeId: string,
+  targetRuleId: string,
+  operator: ConditionBooleanOperator = 'and'
+): ConditionGroupNode => {
+  if (nodeId === root.editorId || nodeId === targetRuleId) return root;
+
+  const sourceLocation = findNodeLocation(root, nodeId);
+  if (!sourceLocation) return root;
+
+  const targetLocation = findNodeLocation(root, targetRuleId);
+  if (!targetLocation || targetLocation.node.type !== 'rule') {
+    return root;
+  }
+
+  // Prevent moving a group onto one of its own descendant rules.
+  if (
+    sourceLocation.node.type === 'group' &&
+    containsNode(sourceLocation.node, targetRuleId)
+  )
+    return root;
+
+  // remove node first
+  const removed = removeNode(root, nodeId);
+  const sourceNode = removed.node;
+
+  if (!sourceNode) return root;
+
+  // The target could have disappeared if it was inside the dragged group.
+  const remainingTarget = findNodeLocation(removed.root, targetRuleId);
+
+  if (!remainingTarget || remainingTarget.node.type !== 'rule') {
+    return root;
+  }
+
+  const nextRoot = mapRoot(removed.root, node => {
+    if (node.type !== 'rule' || node.editorId !== targetRuleId) {
+      return node;
+    }
+
+    return {
+      editorId: createEditorId('group'),
+      type: 'group',
+      operator,
+      children: [node, sourceNode],
+    };
+  });
+
+  return normalizeEditorTree(nextRoot);
+};
+
+/**
  * Wraps a rule row in a new group.
  *
- * A blank rule is added after the original rule so the new group has a visible
- * AND/OR purpose immediately.
+ * The new group initially contains only the selected rule. The UI displays an
+ * add/drop prompt until another condition is added.
  *
  * @param root - The current editor root.
  * @param nodeId - The editor ID of the rule to wrap.
@@ -719,9 +799,10 @@ export const wrapRuleInGroup = (
       editorId: createEditorId('group'),
       type: 'group',
       operator,
-      children: [node, createEmptyRule()],
+      children: [node],
     };
   });
+
   return normalizeEditorTree(nextRoot);
 };
 
@@ -795,6 +876,15 @@ export const makeIndexedDropId = (groupId: string, index: number) =>
   `group:${groupId}:index:${index}`;
 
 /**
+ * Drop target id.
+ * Used to create a new group around a rule.
+ *
+ * Format:
+ * rule:<ruleId>:group
+ */
+export const makeRuleGroupDropId = (ruleId: string) => `rule:${ruleId}:group`;
+
+/**
  * Checks whether the active drop target belongs to a group.
  *
  * Each group owns indexed drop slots with IDs like:
@@ -816,13 +906,39 @@ export const isActiveGroupDropTarget = (
 /**
  * Parses a dnd-kit target id back into a group id and insert index.
  */
-export type ParsedDropTarget = {
-  groupId: string;
-  index?: number;
-};
+export type ParsedDropTarget =
+  | {
+      type: 'group';
+      groupId: string;
+      index?: number;
+    }
+  | {
+      type: 'rule';
+      ruleId: string;
+    };
+
+/**
+ * Parses a drag/drop target ID.
+ *
+ * Group targets insert into an existing group. Rule targets create a new group
+ * containing the target rule and the dragged node.
+ */
 export const parseDropTarget = (id: string): ParsedDropTarget | null => {
   const parts = id.split(':');
 
+  // Rule target
+  if (parts[0] === 'rule') {
+    const ruleId = parts[1];
+
+    if (!ruleId || parts[2] !== 'group') return null;
+
+    return {
+      type: 'rule',
+      ruleId,
+    };
+  }
+
+  // Group targets
   if (parts[0] !== 'group') return null;
 
   const groupId = parts[1];
@@ -830,10 +946,19 @@ export const parseDropTarget = (id: string): ParsedDropTarget | null => {
 
   if (parts[2] === 'index' && parts[3] !== undefined) {
     const index = Number(parts[3]);
-    return Number.isFinite(index) ? {groupId, index} : null;
+    return Number.isFinite(index)
+      ? {
+          type: 'group',
+          groupId,
+          index,
+        }
+      : null;
   }
 
-  return {groupId};
+  return {
+    type: 'group',
+    groupId,
+  };
 };
 
 ///

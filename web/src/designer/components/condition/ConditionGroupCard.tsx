@@ -133,12 +133,47 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
       <Stack spacing={0}>
         <Stack
           direction="row"
-          spacing={1}
           sx={{
+            justifyContent: 'space-between',
             alignItems: 'center',
             mb: 1,
           }}
         >
+          {/* Group operator selection */}
+          <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+            <Typography variant="subtitle2">
+              {isRoot ? 'Root group' : 'Group'}
+            </Typography>
+
+            <FormControl size="small" sx={{minWidth: 120}}>
+              <InputLabel id={`operator-${group.editorId}`}>
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  Operator
+                  <BooleanOperatorTooltip />
+                </Box>
+              </InputLabel>
+              <Select
+                label="Operator"
+                value={group.operator}
+                onChange={event =>
+                  actions.updateGroupOperator(
+                    group.editorId,
+                    event.target.value as ConditionBooleanOperator
+                  )
+                }
+              >
+                <MenuItem value="and">AND</MenuItem>
+                <MenuItem value="or">OR</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+
           {/* Drag group button */}
           {!isRoot && (
             <Tooltip title="Drag group">
@@ -158,38 +193,6 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
               </Box>
             </Tooltip>
           )}
-
-          <Typography variant="subtitle2">
-            {isRoot ? 'Root group' : 'Group'}
-          </Typography>
-
-          <FormControl size="small" sx={{minWidth: 120}}>
-            <InputLabel id={`operator-${group.editorId}`}>
-              <Box
-                component="span"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                }}
-              >
-                Operator
-                <BooleanOperatorTooltip />
-              </Box>
-            </InputLabel>
-            <Select
-              label="Operator"
-              value={group.operator}
-              onChange={event =>
-                actions.updateGroupOperator(
-                  group.editorId,
-                  event.target.value as ConditionBooleanOperator
-                )
-              }
-            >
-              <MenuItem value="and">AND</MenuItem>
-              <MenuItem value="or">OR</MenuItem>
-            </Select>
-          </FormControl>
         </Stack>
 
         <ConditionDropZone
@@ -234,6 +237,8 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                 field={field}
                 view={view}
                 actions={actions}
+                activeDragId={activeDragId}
+                activeDropTargetId={activeDropTargetId}
               />
             )}
 
@@ -264,6 +269,16 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
             borderColor: 'divider',
           }}
         >
+          <Button
+            size="small"
+            variant="contained"
+            color="success"
+            startIcon={<AddIcon />}
+            onClick={() => actions.addRule(group.editorId)}
+          >
+            Add condition
+          </Button>
+
           {!isRoot && (
             <Button
               size="small"
@@ -275,16 +290,6 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
               Ungroup
             </Button>
           )}
-
-          <Button
-            size="small"
-            variant="contained"
-            color="success"
-            startIcon={<AddIcon />}
-            onClick={() => actions.addRule(group.editorId)}
-          >
-            Add condition
-          </Button>
 
           {!isRoot && (
             <Button
