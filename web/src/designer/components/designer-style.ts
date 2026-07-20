@@ -268,3 +268,25 @@ export const designerConditionFrameSx: SxProps<Theme> = {
   borderColor: 'divider',
   p: 1.25,
 };
+
+/**
+ * Shared styles for the feedback label shown above an active condition drop
+ * target.
+ */
+export const designerConditionDropFeedbackSx: SxProps<Theme> = {
+  position: 'absolute',
+  left: '50%',
+  top: '-12px',
+  zIndex: 1,
+  transform: 'translateX(-50%)',
+  px: 1,
+  py: 0.1,
+  borderRadius: 1,
+  fontWeight: 700,
+  color: 'success.dark',
+  backgroundColor: 'background.paper',
+  border: '1px solid',
+  borderColor: 'success.light',
+  whiteSpace: 'nowrap',
+  boxShadow: 1,
+};

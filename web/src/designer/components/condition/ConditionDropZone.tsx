@@ -22,6 +22,7 @@
 import {useDroppable} from '@dnd-kit/react';
 import {Box, Typography} from '@mui/material';
 import {makeIndexedDropId} from '../../../lib/conditionUtils';
+import {designerConditionDropFeedbackSx} from '../designer-style';
 
 /**
  * Renders an indexed drop slot inside a condition group.
@@ -54,7 +55,7 @@ export const ConditionDropZone = (props: ConditionDropZoneProps) => {
          * Keep this height stable all the time.
          * That avoids the modal jumping taller/shorter when dragging starts.
          */
-        height: 8,
+        height: 24,
         position: 'relative',
         visibility: isVisible ? 'visible' : 'hidden',
         pointerEvents: isVisible ? 'auto' : 'none',
@@ -74,26 +75,7 @@ export const ConditionDropZone = (props: ConditionDropZoneProps) => {
         >
           {/* Show a feedback chip for the active drop target. */}
           {isActive && (
-            <Typography
-              variant="caption"
-              sx={{
-                position: 'absolute',
-                left: '50%',
-                top: '-12px',
-                zIndex: 1,
-                transform: 'translateX(-50%)',
-                px: 1,
-                py: 0.1,
-                borderRadius: 1,
-                fontWeight: 700,
-                color: 'success.dark',
-                backgroundColor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'success.light',
-                whiteSpace: 'nowrap',
-                boxShadow: 1,
-              }}
-            >
+            <Typography variant="caption" sx={designerConditionDropFeedbackSx}>
               Drop here
             </Typography>
           )}

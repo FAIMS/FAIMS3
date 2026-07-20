@@ -26,6 +26,7 @@ import {AddBoxOutlined} from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import {Box, IconButton, Paper, Tooltip, Typography} from '@mui/material';
+import {designerConditionDropFeedbackSx} from '../designer-style';
 import {ConditionRuleInputs} from './ConditionRuleInputs';
 
 /**
@@ -41,10 +42,21 @@ export type ConditionRuleRowProps = {
   activeDropTargetId: string | null;
   field?: string;
   view?: string;
+  // Disables this rule as a drop target.
+  // Used when this rule is inside a group currently being dragged.
+  disableDropZones?: boolean;
 };
 
 export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
-  const {rule, actions, activeDragId, activeDropTargetId, field, view} = props;
+  const {
+    rule,
+    actions,
+    activeDragId,
+    activeDropTargetId,
+    field,
+    view,
+    disableDropZones = false,
+  } = props;
 
   /**
    * draggableRef marks the whole row as the draggable item.
@@ -64,8 +76,9 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
     id: groupDropTargetId,
   });
 
-  // Highlight this rule when it is the active drop target.
+  // Highlight this rule only when it is an enabled drop target.
   const isGroupDropTarget =
+    !disableDropZones &&
     activeDragId !== null &&
     activeDragId !== rule.editorId &&
     activeDropTargetId === groupDropTargetId;
@@ -77,9 +90,10 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
         variant="outlined"
         sx={{
           position: 'relative',
-          p: 1.5,
+          p: 1,
           width: '100%',
           boxSizing: 'border-box',
+          borderStyle: 'solid',
           // dragging styles
           opacity: isDragging ? 0.4 : 1,
           borderColor: isGroupDropTarget ? 'success.main' : undefined,
@@ -89,26 +103,7 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
       >
         {/* Show a feedback chip when dropping here will create a new group. */}
         {isGroupDropTarget && (
-          <Typography
-            variant="caption"
-            sx={{
-              position: 'absolute',
-              left: '50%',
-              top: '-12px',
-              zIndex: 1,
-              transform: 'translateX(-50%)',
-              px: 1,
-              py: 0.1,
-              borderRadius: 1,
-              fontWeight: 700,
-              color: 'success.dark',
-              backgroundColor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'success.light',
-              whiteSpace: 'nowrap',
-              boxShadow: 1,
-            }}
-          >
+          <Typography variant="caption" sx={designerConditionDropFeedbackSx}>
             Drop to create a new group
           </Typography>
         )}

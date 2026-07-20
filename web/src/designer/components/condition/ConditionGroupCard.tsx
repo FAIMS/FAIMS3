@@ -66,8 +66,8 @@ export type ConditionGroupCardProps = {
   isRoot?: boolean;
   field?: string;
   view?: string;
-  //Disables drop zones inside this group.
-  //sed when this group or one of its parent groups is being dragged.
+  // Disables drop zones inside this group.
+  // Used when this group or one of its parent groups is being dragged.
   disableDropZones?: boolean;
 };
 
@@ -136,7 +136,6 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
           sx={{
             justifyContent: 'space-between',
             alignItems: 'center',
-            mb: 1,
           }}
         >
           {/* Group operator selection */}
@@ -174,25 +173,58 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
             </FormControl>
           </Stack>
 
-          {/* Drag group button */}
-          {!isRoot && (
-            <Tooltip title="Drag group">
-              <Box
-                ref={handleRef}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'text.secondary',
-                  cursor: isThisGroupDragging ? 'grabbing' : 'grab',
-                }}
-              >
-                <DragIndicatorIcon fontSize="small" />
-              </Box>
-            </Tooltip>
-          )}
+          {/* Group actions buttons */}
+          <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+            {/* Ungroup group button */}
+            {!isRoot && (
+              <Tooltip title="Remove the group structure while keeping its conditions">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<CallSplitIcon />}
+                  onClick={() => actions.ungroup(group.editorId)}
+                >
+                  Ungroup
+                </Button>
+              </Tooltip>
+            )}
+
+            {/* Delete group button */}
+            {!isRoot && (
+              <Tooltip title="Delete this group and all conditions inside it">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => actions.deleteNode(group.editorId)}
+                >
+                  Delete group
+                </Button>
+              </Tooltip>
+            )}
+
+            {/* Drag group button */}
+            {!isRoot && (
+              <Tooltip title="Drag group">
+                <Box
+                  ref={handleRef}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'text.secondary',
+                    cursor: isThisGroupDragging ? 'grabbing' : 'grab',
+                  }}
+                >
+                  <DragIndicatorIcon fontSize="small" />
+                </Box>
+              </Tooltip>
+            )}
+          </Stack>
         </Stack>
 
         <ConditionDropZone
@@ -239,6 +271,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                 actions={actions}
                 activeDragId={activeDragId}
                 activeDropTargetId={activeDropTargetId}
+                disableDropZones={disabledInsideThisGroup}
               />
             )}
 
@@ -260,48 +293,25 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
           direction="row"
           spacing={1}
           sx={{
-            pt: 1.5,
-            mt: 1,
+            pt: 1,
             alignItems: 'center',
-            justifyContent: 'flex-end',
+            justifyContent: 'center',
             flexWrap: 'wrap',
-            borderTop: '1px solid',
+            borderTop: '1px dashed',
             borderColor: 'divider',
           }}
         >
-          <Button
-            size="small"
-            variant="contained"
-            color="success"
-            startIcon={<AddIcon />}
-            onClick={() => actions.addRule(group.editorId)}
-          >
-            Add condition
-          </Button>
-
-          {!isRoot && (
+          <Tooltip title="Add a new condition to the end of this group">
             <Button
               size="small"
               variant="contained"
-              color="warning"
-              startIcon={<CallSplitIcon />}
-              onClick={() => actions.ungroup(group.editorId)}
+              color="success"
+              startIcon={<AddIcon />}
+              onClick={() => actions.addRule(group.editorId)}
             >
-              Ungroup
+              Add condition
             </Button>
-          )}
-
-          {!isRoot && (
-            <Button
-              size="small"
-              variant="contained"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={() => actions.deleteNode(group.editorId)}
-            >
-              Delete group
-            </Button>
-          )}
+          </Tooltip>
         </Stack>
       </Stack>
     </Paper>
