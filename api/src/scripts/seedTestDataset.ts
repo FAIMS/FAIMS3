@@ -160,15 +160,39 @@ const USER_SPECS: UserSpec[] = [
     },
   },
 
-  // ── seed-manager-cross ────────────────────────────────────────────────────
+  // ── seed-manager-blue ────────────────────────────────────────────────────
   // TEAM_MANAGER on Blue
-  // Exercises visibility differences across teams for the same user.
+  // Manager for the blue team
   {
     email: 'seed-manager-blue@faims.test',
     tag: 'MANAGER_BLUE',
     name: 'Blue Team Manager',
     assignResourceRoles(user, ctx) {
       addTeamRole({user, role: Role.TEAM_MANAGER, teamId: ctx.blueTeamId});
+    },
+  },
+
+  // ── seed-manager-red ────────────────────────────────────────────────────
+  // TEAM_MANAGER on Red
+  // Manager for the red team
+  {
+    email: 'seed-manager-red@faims.test',
+    tag: 'MANAGER_RED',
+    name: 'Red Team Manager',
+    assignResourceRoles(user, ctx) {
+      addTeamRole({user, role: Role.TEAM_MANAGER, teamId: ctx.redTeamId});
+    },
+  },
+
+  // ── seed-admin-red ────────────────────────────────────────────────────
+  // TEAM_ADMIN on Red
+  // Admin for the red team
+  {
+    email: 'seed-admin-red@faims.test',
+    tag: 'ADMIN_RED',
+    name: 'Red Team Admin',
+    assignResourceRoles(user, ctx) {
+      addTeamRole({user, role: Role.TEAM_ADMIN, teamId: ctx.redTeamId});
     },
   },
 
