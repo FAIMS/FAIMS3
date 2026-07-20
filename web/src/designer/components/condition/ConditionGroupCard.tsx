@@ -129,6 +129,9 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
         borderStyle: isGroupTarget ? 'solid' : 'dotted',
         boxShadow: isThisGroupDragging || isGroupTarget ? 2 : 0,
       }}
+      data-testid={
+        isRoot ? 'root-condition-group-card' : 'condition-group-card'
+      }
     >
       <Stack spacing={0}>
         <Stack
@@ -186,6 +189,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                   color="warning"
                   startIcon={<CallSplitIcon />}
                   onClick={() => actions.ungroup(group.editorId)}
+                  data-testid="condition-ungroup-button"
                 >
                   Ungroup
                 </Button>
@@ -201,6 +205,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                   color="error"
                   startIcon={<DeleteIcon />}
                   onClick={() => actions.deleteNode(group.editorId)}
+                  data-testid="condition-delete-group-button"
                 >
                   Delete group
                 </Button>
@@ -304,6 +309,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
               borderStyle: 'dashed',
               justifyContent: 'center',
             }}
+            data-testid="add-condition-button"
           >
             Add condition
           </Button>
