@@ -135,7 +135,8 @@ const ConditionExpression = (props: {
       sx={{
         display: 'inline-flex',
         flexWrap: 'wrap',
-        overflowWrap: 'break-word',
+        whiteSpace: 'normal',
+        overflowWrap: 'anywhere',
         alignItems: 'center',
         px: isNestedGroup ? 0.65 : 0,
         py: isNestedGroup ? 0.25 : 0,
@@ -154,7 +155,8 @@ const ConditionExpression = (props: {
           sx={{
             display: 'inline-flex',
             flexWrap: 'wrap',
-            overflowWrap: 'break-word',
+            whiteSpace: 'normal',
+            overflowWrap: 'anywhere',
             alignItems: 'center',
             gap: 0.2,
           }}
@@ -220,6 +222,7 @@ const ConditionLeaf = (props: {
       component="span"
       sx={{
         display: 'inline-flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         gap: 0.5,
         px: 0.65,
@@ -228,7 +231,8 @@ const ConditionLeaf = (props: {
         border: '1px solid',
         borderColor: 'grey.200',
         backgroundColor: 'background.paper',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'normal',
+        overflowWrap: 'anywhere',
       }}
     >
       <Box component="span" sx={{fontWeight: 700}}>
