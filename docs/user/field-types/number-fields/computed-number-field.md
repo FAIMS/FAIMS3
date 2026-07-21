@@ -60,7 +60,7 @@ hand.
 | Setting          | What It Does                                                                                                                                      |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Expression**   | A text area where you define the calculation using literals, operators, and field references in single-brace syntax (e.g., `{Width} * {Height}`). |
-| **Insert chips** | A chip for each referenceable field in the form. Clicking one inserts its braced reference into the expression at the end.                        |
+| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts its braced reference into the expression.                      |
 
 The expression is typed and checked when the {{notebook}} is designed —
 mixing types is an error rather than a silent wrong answer. The overall
@@ -95,8 +95,8 @@ records — see
 
 ## Tips
 
-- **Use the field chips to build expressions** rather than typing Field
-  IDs by hand. Clicking a chip inserts the exact braced reference, so you
+- **Use the field picker to build expressions** rather than typing Field
+  IDs by hand. Clicking a field inserts the exact braced reference, so you
   avoid typos and do not need to remember a field's ID.
 - **The result stays blank until all referenced fields have values.**
   This is intentional — a partially complete record shows no value rather

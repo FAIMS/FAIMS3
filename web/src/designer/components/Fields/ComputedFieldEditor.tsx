@@ -1,9 +1,24 @@
-import {Box, Chip, FormHelperText, Typography} from '@mui/material';
+import {Alert, Box, FormHelperText, Typography} from '@mui/material';
 import {useMemo} from 'react';
-import {FAIMS_TYPE_TO_EXPR_TYPE} from '@faims3/data-model';
+import {
+  compileComputedExpression,
+  ExpressionError,
+  ExprType,
+  FAIMS_TYPE_TO_EXPR_TYPE,
+} from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {FieldSearchAutocomplete} from '../field-selector';
+import {
+  applyFieldFilters,
+  getViewsetFieldIds,
+} from '../../features/field-search';
+import {
+  selectUiFields,
+  selectUiViews,
+  selectUiViewSets,
+} from '../../store/selectors';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
@@ -33,41 +48,59 @@ const isReferenceableField = (field: {
  * Property editor shared by ComputedNumber and ComputedText. Uses
  * BaseFieldEditor for the standard field settings and adds the typed
  * expression below. Field references are wrapped in braces, e.g.
- * {Width} * {Height}; the chips insert a reference for each referenceable
- * field in the form.
+ * {Width} * {Height}; the field picker inserts a reference. The expression is
+ * compiled as it changes and compile errors are shown inline.
  */
 export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const field = useAppSelector(
     state => state.notebook.uiSpec.present.fields[fieldName]
   );
-  const allFields = useAppSelector(
-    state => state.notebook.uiSpec.present.fields
-  );
-  const viewSet = useAppSelector(
-    state => state.notebook.uiSpec.present.viewsets[viewsetId]
-  );
-  const views = useAppSelector(state => state.notebook.uiSpec.present.views);
+  const allFields = useAppSelector(selectUiFields);
+  const views = useAppSelector(selectUiViews);
+  const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
 
   const expression =
     (field['component-parameters'].expression as string | undefined) || '';
   const isText = field['component-name'] === 'ComputedText';
+  const requiredType: ExprType = isText ? 'string' : 'number';
 
-  // Referenceable field ids in this form, excluding this field itself.
-  const referenceableFieldIds = useMemo(() => {
-    const ids: string[] = [];
-    const seen = new Set<string>();
-    viewSet?.views.forEach(viewId => {
-      views[viewId]?.fields.forEach(id => {
-        if (id === fieldName || seen.has(id)) return;
-        seen.add(id);
-        if (isReferenceableField(allFields[id] ?? {})) {
-          ids.push(id);
-        }
-      });
-    });
-    return ids;
-  }, [viewSet?.views, views, allFields, fieldName]);
+  const referenceableFieldFilters = useMemo(
+    () => ({
+      excludeFieldIds: [fieldName],
+      predicate: (_id: string, f: (typeof allFields)[string]) =>
+        isReferenceableField(f),
+    }),
+    [fieldName]
+  );
+
+  const referenceableFieldCount = useMemo(
+    () =>
+      applyFieldFilters(
+        getViewsetFieldIds(viewsetId, views, viewsets),
+        allFields,
+        referenceableFieldFilters
+      ).length,
+    [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
+  );
+
+  // Compile the expression against the current field types, mirroring the
+  // notebook-load compile. Runs when the (debounced) expression or the spec
+  // changes; returns the compile error message, or null when valid/empty.
+  const validationError = useMemo(() => {
+    if (expression.trim() === '') return null;
+    const fieldTypes = new Map<string, ExprType>();
+    for (const [id, f] of Object.entries(allFields)) {
+      const t = FAIMS_TYPE_TO_EXPR_TYPE[f['type-returned'] ?? ''];
+      if (t) fieldTypes.set(id, t);
+    }
+    try {
+      compileComputedExpression(expression, fieldTypes, requiredType);
+      return null;
+    } catch (e) {
+      return e instanceof ExpressionError ? e.message : 'Invalid expression';
+    }
+  }, [expression, allFields, requiredType]);
 
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -96,45 +129,45 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
           rows={3}
           value={expression}
           onChange={e => updateExpression(e.target.value)}
+          error={validationError !== null}
           helperText={
             isText
               ? "Text expression over other fields, e.g. {Site-Code} & '-' & {Plot}"
               : 'Numeric expression over other fields, e.g. {Width} * {Height}'
           }
         />
-        {referenceableFieldIds.length > 0 && (
-          <Box sx={{mt: 2}}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{display: 'block', mb: 1}}
-            >
-              Insert a field:
-            </Typography>
-            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
-              {referenceableFieldIds.map(id => {
-                const label =
-                  (
-                    allFields[id]?.['component-parameters'] as
-                      | {label?: string}
-                      | undefined
-                  )?.label || id;
-                return (
-                  <Chip
-                    key={id}
-                    label={label === id ? id : `${label} (${id})`}
-                    size="small"
-                    variant="outlined"
-                    onClick={() => insertFieldRef(id)}
-                  />
-                );
-              })}
-            </Box>
+        {validationError && (
+          <Alert severity="error" sx={{mt: 1}} data-testid="expression-error">
+            {validationError}
+          </Alert>
+        )}
+        {referenceableFieldCount > 0 ? (
+          <Box sx={{mt: 2, maxWidth: 400}}>
+            <FieldSearchAutocomplete
+              value={null}
+              onChange={fieldId => {
+                if (fieldId) insertFieldRef(fieldId);
+              }}
+              scope={{kind: 'viewset', viewsetId}}
+              filters={referenceableFieldFilters}
+              label="Insert field"
+              placeholder="Search fields…"
+              size="small"
+              clearOnSelect
+              noOptionsText="No field search results"
+              data-testid="computed-field-insert"
+            />
           </Box>
+        ) : (
+          <Alert severity="info" sx={{mt: 2}}>
+            No referenceable fields in this form. Add number, text, or checkbox
+            fields to reference them in the expression.
+          </Alert>
         )}
         <FormHelperText>
-          Reference other fields by wrapping their ID in braces. Click a field
-          above to insert it.
+          Reference other fields by wrapping their ID in braces.
+          {referenceableFieldCount > 0 &&
+            ' Use the field picker above to insert a reference.'}
         </FormHelperText>
       </Box>
     </BaseFieldEditor>

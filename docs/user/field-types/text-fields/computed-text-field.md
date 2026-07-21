@@ -60,7 +60,7 @@ field's reference.
 | Setting          | What It Does                                                                                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Expression**   | A text area where you define the generated text using literals, operators, and field references in single-brace syntax (e.g., `{Site-Code} & '-' & {Plot}`). |
-| **Insert chips** | A chip for each referenceable field in the form. Clicking one inserts its braced reference into the expression at the end.                                   |
+| **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts its braced reference into the expression.                                 |
 
 The expression is typed and checked when the {{notebook}} is designed —
 mixing types is an error rather than a silent wrong answer. The overall
@@ -96,8 +96,8 @@ records — see
 
 ## Tips
 
-- **Use the field chips to build expressions** rather than typing Field
-  IDs by hand. Clicking a chip inserts the exact braced reference, so you
+- **Use the field picker to build expressions** rather than typing Field
+  IDs by hand. Clicking a field inserts the exact braced reference, so you
   avoid typos and do not need to remember a field's ID.
 - **Nest ternaries for classifications** — thresholds like
   Low/Medium/High are a natural fit, as in the example above.
@@ -107,3 +107,7 @@ records — see
 - **Computed Texts are read-only for data collectors.** They see the
   generated text but cannot edit it, keeping the value consistent with
   its inputs.
+- **String comparisons are exact, including case.** `{vegType} == 'hedge'`
+  will not match a value of `Hedge` — the expression takes the other branch
+  with no error. When comparing against fixed values, prefer a Choice field
+  for the input so the values are exact by construction.
