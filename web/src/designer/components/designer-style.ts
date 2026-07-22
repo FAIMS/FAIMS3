@@ -1,5 +1,4 @@
 import {SxProps, Theme} from '@mui/material';
-import {cyan, deepPurple} from '@mui/material/colors';
 import {alpha} from '@mui/material/styles';
 import {ConditionBooleanOperator} from '../types/condition';
 
@@ -274,13 +273,17 @@ export const designerConditionFrameSx: SxProps<Theme> = {
 /** Shared colour used to highlight an active condition drop target. */
 export const conditionDropBorderColour = 'success.main';
 
-/** Shared colours used to visually distinguish condition boolean operators. */
+/**
+ * Shared theme palette paths used to visually distinguish condition boolean
+ * operators. Values resolve via the active designer theme
+ * (`palette.conditionAnd` / `palette.conditionOr`).
+ */
 export const conditionBooleanOperatorColours: Record<
   ConditionBooleanOperator,
   string
 > = {
-  and: cyan[700],
-  or: deepPurple[700],
+  and: 'conditionAnd.main',
+  or: 'conditionOr.main',
 };
 
 /**

@@ -41,6 +41,10 @@ export type DesignerThemeTokens = {
   successMain: string;
   /** Info palette main colour */
   infoMain: string;
+  /** Colour used to distinguish AND operators in the condition editor */
+  conditionAndMain: string;
+  /** Colour used to distinguish OR operators in the condition editor */
+  conditionOrMain: string;
 
   /** Fuzzy-search match emphasis in autocomplete option text */
   searchMatchHighlight: string;
