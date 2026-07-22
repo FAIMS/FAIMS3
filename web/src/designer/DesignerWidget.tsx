@@ -44,6 +44,7 @@ import type {Notebook, NotebookWithHistory} from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
 import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
+import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 
@@ -57,6 +58,11 @@ export interface DesignerWidgetProps {
   notebook?: NotebookWithHistory;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
+  /**
+   * Records already collected for the survey being edited. Drives the warning
+   * shown when a field ID is changed. Omit for templates (no records).
+   */
+  existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
   /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
@@ -78,6 +84,7 @@ export interface DesignerWidgetProps {
 export function DesignerWidget({
   notebook,
   exportBaseName,
+  existingRecordCount,
   onClose,
   themeOverride,
   debug = false,
@@ -233,7 +240,8 @@ export function DesignerWidget({
 
   return (
     <ReduxProvider store={store}>
-      <ThemeProvider theme={mergedTheme}>
+      <DesignerEditingProvider value={{existingRecordCount}}>
+        <ThemeProvider theme={mergedTheme}>
         <ScopedCssBaseline />
         <Box
           data-testid="web-designer-shell"
@@ -301,8 +309,9 @@ export function DesignerWidget({
           <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
             <RouterProvider router={memoryRouterInstance} />
           </Box>
-        </Box>
-      </ThemeProvider>
+          </Box>
+        </ThemeProvider>
+      </DesignerEditingProvider>
     </ReduxProvider>
   );
 }
