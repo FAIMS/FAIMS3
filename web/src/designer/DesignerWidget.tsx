@@ -242,73 +242,73 @@ export function DesignerWidget({
     <ReduxProvider store={store}>
       <DesignerEditingProvider value={{existingRecordCount}}>
         <ThemeProvider theme={mergedTheme}>
-        <ScopedCssBaseline />
-        <Box
-          data-testid="web-designer-shell"
-          sx={{
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
-            transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-          }}
-        >
-          <AppBar position="static" color="default" elevation={1}>
-            <Toolbar sx={{justifyContent: 'space-between'}}>
-              <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-                Notebook Editor
-              </Typography>
-              <IconButton
-                aria-label="close designer"
-                data-testid="web-designer-close-button"
-                onClick={() => setCancelDialogOpen(true)}
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {color: 'text.primary'},
-                }}
-              >
-                <CloseRoundedIcon />
-              </IconButton>
-            </Toolbar>
-          </AppBar>
-
-          <Dialog
-            open={cancelDialogOpen}
-            onClose={() => setCancelDialogOpen(false)}
-            slots={{transition: Grow}}
-            transitionDuration={animationDuration}
-            aria-labelledby="cancel-dialog-title"
-            aria-describedby="cancel-dialog-description"
-            slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
+          <ScopedCssBaseline />
+          <Box
+            data-testid="web-designer-shell"
+            sx={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
+              transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+            }}
           >
-            <DialogTitle id="cancel-dialog-title">
-              Are you sure you want to cancel?
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="cancel-dialog-description">
-                Any changes you've made will be lost. If you're sure, hit "Yes,
-                cancel". Otherwise, choose "No, keep editing".
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button
-                variant="contained"
-                onClick={() => setCancelDialogOpen(false)}
-                autoFocus
-              >
-                No, keep editing
-              </Button>
-              <Button onClick={handleCancel} color="inherit">
-                Yes, cancel
-              </Button>
-            </DialogActions>
-          </Dialog>
+            <AppBar position="static" color="default" elevation={1}>
+              <Toolbar sx={{justifyContent: 'space-between'}}>
+                <Typography variant="h6" sx={{fontWeight: 'bold'}}>
+                  Notebook Editor
+                </Typography>
+                <IconButton
+                  aria-label="close designer"
+                  data-testid="web-designer-close-button"
+                  onClick={() => setCancelDialogOpen(true)}
+                  size="small"
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': {color: 'text.primary'},
+                  }}
+                >
+                  <CloseRoundedIcon />
+                </IconButton>
+              </Toolbar>
+            </AppBar>
 
-          <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
-            <RouterProvider router={memoryRouterInstance} />
-          </Box>
+            <Dialog
+              open={cancelDialogOpen}
+              onClose={() => setCancelDialogOpen(false)}
+              slots={{transition: Grow}}
+              transitionDuration={animationDuration}
+              aria-labelledby="cancel-dialog-title"
+              aria-describedby="cancel-dialog-description"
+              slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
+            >
+              <DialogTitle id="cancel-dialog-title">
+                Are you sure you want to cancel?
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText id="cancel-dialog-description">
+                  Any changes you've made will be lost. If you're sure, hit
+                  "Yes, cancel". Otherwise, choose "No, keep editing".
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  variant="contained"
+                  onClick={() => setCancelDialogOpen(false)}
+                  autoFocus
+                >
+                  No, keep editing
+                </Button>
+                <Button onClick={handleCancel} color="inherit">
+                  Yes, cancel
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
+              <RouterProvider router={memoryRouterInstance} />
+            </Box>
           </Box>
         </ThemeProvider>
       </DesignerEditingProvider>
