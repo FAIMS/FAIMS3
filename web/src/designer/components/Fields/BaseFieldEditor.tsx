@@ -207,25 +207,29 @@ export const BaseFieldEditor = ({
     setPendingFieldID({from: fieldName, to: desired});
   };
 
-  const syncFieldID = () => {
+  const applyFieldIDSync = (desired: string) => {
     // Manual sync is one-shot and should not re-enable continuous auto-sync.
     autoSyncFieldIdEnabled.current = false;
     initialAutoSyncDone.current = true;
+    commitFieldID(desired);
+  };
+
+  const syncFieldID = () => {
     const desired = slugify(state.label || '');
     if (!desired || desired === fieldName) return;
+    // Nothing is written — not even to the input — until the user confirms.
     if (hasExistingRecords) {
-      setLocalFieldName(desired);
       setPendingFieldID({from: fieldName, to: desired});
       return;
     }
-    commitFieldID(desired);
+    applyFieldIDSync(desired);
   };
 
   const confirmFieldIDChange = () => {
     const pending = pendingFieldID;
     setPendingFieldID(null);
     // Ignore a stale confirmation if the selected field changed underneath us.
-    if (pending && pending.from === fieldName) commitFieldID(pending.to);
+    if (pending && pending.from === fieldName) applyFieldIDSync(pending.to);
   };
 
   const cancelFieldIDChange = () => {
