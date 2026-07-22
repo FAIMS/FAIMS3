@@ -23,10 +23,10 @@ import {useAppSelector} from '../../state/hooks';
 import {
   allOperators,
   ConditionBooleanOperator,
-  conditionBooleanOperatorColours,
   RuleCondition,
   type ConditionType,
 } from '../../types/condition';
+import {conditionBooleanOperatorColours} from '../designer-style';
 
 /**
  * Renders a read-only preview of the current condition.
@@ -52,22 +52,9 @@ export const ConditionSummary = (props: ConditionSummaryProps) => {
   };
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 1,
-        backgroundColor: 'grey.50',
-        borderColor: 'grey.200',
-      }}
-    >
+    <Paper variant="outlined" sx={{p: 1}}>
       {!!props.showTitle && (
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 700,
-            mb: 1,
-          }}
-        >
+        <Typography variant="subtitle2">
           Your conditions will be updated here in sentence form
         </Typography>
       )}
@@ -79,7 +66,7 @@ export const ConditionSummary = (props: ConditionSummaryProps) => {
           depth={0}
         />
       ) : (
-        <Typography variant="body2" color="text.secondary">
+        <Typography component="span" variant="body2" color="text.secondary">
           Empty condition
         </Typography>
       )}
@@ -138,14 +125,12 @@ const ConditionExpression = (props: {
         whiteSpace: 'normal',
         overflowWrap: 'anywhere',
         alignItems: 'center',
-        px: isNestedGroup ? 0.65 : 0,
-        py: isNestedGroup ? 0.25 : 0,
+        m: isNestedGroup ? 0.25 : 0,
+        p: isNestedGroup ? 0.25 : 0,
         borderRadius: 1,
-        gap: 0.25,
         border: isNestedGroup ? '1px solid' : 'none',
         borderWidth: isNestedGroup ? 1 : 0,
         borderColor: conditionBooleanOperatorColours[condition.operator],
-        borderStyle: 'dotted',
       }}
     >
       {children.map((child, index) => (
@@ -154,11 +139,10 @@ const ConditionExpression = (props: {
           component="span"
           sx={{
             display: 'inline-flex',
+            alignItems: 'baseline',
             flexWrap: 'wrap',
             whiteSpace: 'normal',
             overflowWrap: 'anywhere',
-            alignItems: 'center',
-            gap: 0.2,
           }}
         >
           {index > 0 && <OperatorChip operator={condition.operator} />}
@@ -182,21 +166,18 @@ const ConditionExpression = (props: {
  */
 const OperatorChip = (props: {operator: ConditionBooleanOperator}) => {
   return (
-    <Typography
+    <Box
       component="span"
       sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         fontWeight: 800,
         fontSize: 'small',
         color: conditionBooleanOperatorColours[props.operator],
         whiteSpace: 'nowrap',
-        lineHeight: '1rem',
+        px: 0.25,
       }}
     >
       {props.operator.toUpperCase()}
-    </Typography>
+    </Box>
   );
 };
 
@@ -223,14 +204,9 @@ const ConditionLeaf = (props: {
       sx={{
         display: 'inline-flex',
         flexWrap: 'wrap',
-        alignItems: 'center',
+        alignItems: 'baseline',
         gap: 0.5,
-        px: 0.65,
-        py: 0.25,
-        borderRadius: 1,
-        border: '1px solid',
-        borderColor: 'grey.200',
-        backgroundColor: 'background.paper',
+        px: 0.25,
         whiteSpace: 'normal',
         overflowWrap: 'anywhere',
       }}

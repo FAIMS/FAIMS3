@@ -187,8 +187,9 @@ const ValueEditor = (props: {
   value: unknown;
   valueMismatch: boolean;
   onChange: (patch: Partial<RuleCondition>) => void;
+  showLabels?: boolean;
 }) => {
-  const {fieldDef, value, valueMismatch, onChange} = props;
+  const {fieldDef, value, valueMismatch, onChange, showLabels = false} = props;
 
   const componentName = fieldDef['component-name'];
   const params = (fieldDef['component-parameters'] || {}) as {
@@ -218,10 +219,10 @@ const ValueEditor = (props: {
           sx={{minWidth: 0, width: '100%'}}
           error={hasValue && !isValidOption}
         >
-          <InputLabel>Value</InputLabel>
+          {showLabels && <InputLabel>Value</InputLabel>}
           <Select
             data-testid="value-input"
-            label="Value"
+            label={showLabels ? 'Value' : undefined}
             value={isValidOption ? value : (value ?? '')}
             onChange={event => updateValue(event.target.value)}
           >
@@ -247,11 +248,11 @@ const ValueEditor = (props: {
 
       return (
         <FormControl sx={{minWidth: 0, width: '100%'}} error={valueMismatch}>
-          <InputLabel>Value</InputLabel>
+          {showLabels && <InputLabel>Value</InputLabel>}
           <Select
             multiple
             data-testid="value-input"
-            label="Value"
+            label={showLabels ? 'Value' : undefined}
             value={selectedValues}
             onChange={event => {
               const nextValue = event.target.value;
@@ -300,10 +301,10 @@ const ValueEditor = (props: {
 
       return (
         <FormControl sx={{minWidth: 0, width: '100%'}}>
-          <InputLabel>Value</InputLabel>
+          {showLabels && <InputLabel>Value</InputLabel>}
           <Select
-            label="Value"
             data-testid="value-input"
+            label={showLabels ? 'Value' : undefined}
             value={booleanValue ? 'true' : 'false'}
             onChange={event => updateValue(event.target.value === 'true')}
           >
@@ -323,7 +324,8 @@ const ValueEditor = (props: {
           <TextField
             variant="outlined"
             data-testid="value-input"
-            label="Value"
+            label={showLabels ? 'Value' : undefined}
+            placeholder="Value"
             value={value ?? ''}
             onChange={event => updateValue(event.target.value)}
             sx={{minWidth: 0, width: '100%'}}
@@ -339,7 +341,8 @@ const ValueEditor = (props: {
       return (
         <TextField
           variant="outlined"
-          label="Value"
+          label={showLabels ? 'Value' : undefined}
+          placeholder="Value"
           data-testid="value-input"
           value={value ?? ''}
           onChange={event => updateValue(event.target.value)}
@@ -373,10 +376,11 @@ export type ConditionRuleInputsProps = {
   onChange: (patch: Partial<RuleCondition>) => void;
   field?: string;
   view?: string;
+  showLabels?: boolean;
 };
 
 export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
-  const {rule, onChange, field, view} = props;
+  const {rule, onChange, field, view, showLabels} = props;
 
   const {allFields, fieldSearchScope} = useConditionRuleFieldContext({
     field,
@@ -426,7 +430,8 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
           onChange={fieldId => updateField(fieldId || '')}
           scope={fieldSearchScope}
           data-testid="field-input"
-          label="Field"
+          label={showLabels ? 'Field' : undefined}
+          placeholder="Field"
         />
       </Box>
 
@@ -434,32 +439,44 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
       <FormControl
         sx={{minWidth: 0, width: '100%'}}
         data-testid="operator-input"
-        disabled={allowedOperators.length <= 1}
+        disabled={allowedOperators.length === 0}
       >
-        <InputLabel id={`operator-${rule.editorId}`}>
-          <Box
-            component="span"
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-            }}
-          >
-            Operator
-            {allowedOperators.length > 1 && (
-              <RuleOperatorTooltip
-                operator={
-                  allowedOperators.includes(rule.operator)
-                    ? rule.operator
-                    : undefined
-                }
-              />
-            )}
-          </Box>
-        </InputLabel>
+        {showLabels && allowedOperators.length > 0 && (
+          <InputLabel id={`operator-${rule.editorId}`}>
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              Operator
+              <RuleOperatorTooltip />
+            </Box>
+          </InputLabel>
+        )}
         <Select
-          labelId={`operator-${rule.editorId}`}
-          label="Operator"
+          displayEmpty
+          labelId={
+            showLabels && allowedOperators.length > 0
+              ? `operator-${rule.editorId}`
+              : undefined
+          }
+          label={
+            showLabels && allowedOperators.length > 0 ? 'Operator' : undefined
+          }
           value={allowedOperators.includes(rule.operator) ? rule.operator : ''}
+          renderValue={selected => {
+            if (!selected) {
+              return (
+                <Box component="span" sx={{color: 'text.disabled'}}>
+                  Operator
+                </Box>
+              );
+            }
+
+            return allOperators.get(selected)?.toLowerCase() ?? selected;
+          }}
           onChange={event =>
             onChange({
               operator: event.target.value as ConditionRuleNode['operator'],
@@ -481,9 +498,15 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
           value={rule.value}
           valueMismatch={valueMismatch}
           onChange={onChange}
+          showLabels={showLabels}
         />
       ) : (
-        <TextField disabled label="Value" sx={{minWidth: 0, width: '100%'}} />
+        <TextField
+          disabled
+          label={showLabels ? 'Value' : undefined}
+          placeholder="Value"
+          sx={{minWidth: 0, width: '100%'}}
+        />
       )}
     </Box>
   );

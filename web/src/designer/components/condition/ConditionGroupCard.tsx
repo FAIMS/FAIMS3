@@ -19,7 +19,6 @@
 
 import {
   ConditionBooleanOperator,
-  conditionBooleanOperatorColours,
   ConditionEditorActions,
   ConditionGroupNode,
 } from '@/designer/types/condition';
@@ -42,9 +41,14 @@ import {
 } from '@mui/material';
 import {Fragment} from 'react';
 import {
+  getFirstRuleEditorId,
   isActiveGroupDropTarget,
   isNoOpDropIndex,
 } from '../../../lib/conditionUtils';
+import {
+  conditionBooleanOperatorColours,
+  conditionDropBorderColour,
+} from '../designer-style';
 import {ConditionDropZone} from './ConditionDropZone';
 import {ConditionRuleRow} from './ConditionRuleRow';
 import {BooleanOperatorTooltip} from './ConditionTooltips';
@@ -69,6 +73,8 @@ export type ConditionGroupCardProps = {
   // Disables drop zones inside this group.
   // Used when this group or one of its parent groups is being dragged.
   disableDropZones?: boolean;
+  // the first condition rule in display order.
+  firstRuleEditorId?: string | null;
 };
 
 export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
@@ -81,6 +87,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
     field,
     view,
     disableDropZones = false,
+    firstRuleEditorId,
   } = props;
 
   const {
@@ -110,23 +117,34 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
     ? group.children.findIndex(child => child.editorId === activeDragId)
     : -1;
 
+  // Only show input labels and tooltips for the first row.
+  // show group operator tooltip
+  const showBoolenOperatorTooltip = isRoot;
+  // Resolve the first visible rule once, then pass it through nested groups.
+  const firstRuleId =
+    firstRuleEditorId !== undefined
+      ? firstRuleEditorId
+      : isRoot
+        ? getFirstRuleEditorId(group)
+        : null;
+
   return (
     <Paper
       ref={isGroupDraggable ? draggableRef : undefined}
       variant={'outlined'}
       elevation={0}
       sx={{
-        p: 2,
+        p: 1.5,
         width: '100%',
         boxSizing: 'border-box',
         overflow: 'visible',
+        borderStyle: 'solid',
         // dragging styles
         opacity: isThisGroupDragging ? 0.4 : 1,
         borderColor: isGroupTarget
-          ? 'success.main'
+          ? conditionDropBorderColour
           : conditionBooleanOperatorColours[group.operator],
         borderWidth: isGroupTarget ? 2 : 1,
-        borderStyle: isGroupTarget ? 'solid' : 'dotted',
         boxShadow: isThisGroupDragging || isGroupTarget ? 2 : 0,
       }}
       data-testid={
@@ -145,25 +163,20 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
         >
           {/* Group operator selection */}
           <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
-            <Typography variant="subtitle2">
-              {isRoot ? 'Root group' : 'Group'}
+            <Typography
+              variant="subtitle2"
+              component="div"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              {isRoot ? 'Base group' : 'Group'}
+              {showBoolenOperatorTooltip && <BooleanOperatorTooltip />}
             </Typography>
 
             <FormControl size="small" sx={{minWidth: 90}}>
-              <InputLabel id={`operator-${group.editorId}`}>
-                <Box
-                  component="span"
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  Operator
-                  <BooleanOperatorTooltip />
-                </Box>
-              </InputLabel>
               <Select
-                label="Operator"
                 value={group.operator}
                 onChange={event =>
                   actions.updateGroupOperator(
@@ -246,20 +259,6 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
 
         {group.children.map((child, index) => (
           <Fragment key={child.editorId}>
-            {index > 0 && (
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  pl: 1,
-                  color: conditionBooleanOperatorColours[group.operator],
-                  fontWeight: 800,
-                }}
-              >
-                {group.operator.toUpperCase()}
-              </Typography>
-            )}
-
             {child.type === 'group' ? (
               <ConditionGroupCard
                 group={child}
@@ -269,6 +268,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                 activeDragId={activeDragId}
                 activeDropTargetId={activeDropTargetId}
                 disableDropZones={disabledInsideThisGroup}
+                firstRuleEditorId={firstRuleId}
               />
             ) : (
               <ConditionRuleRow
@@ -279,6 +279,7 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
                 activeDragId={activeDragId}
                 activeDropTargetId={activeDropTargetId}
                 disableDropZones={disabledInsideThisGroup}
+                showLabels={child.editorId === firstRuleId}
               />
             )}
 
@@ -306,7 +307,6 @@ export const ConditionGroupCard = (props: ConditionGroupCardProps) => {
             onClick={() => actions.addRule(group.editorId)}
             sx={{
               py: 1,
-              borderStyle: 'dashed',
               justifyContent: 'center',
             }}
             data-testid="add-condition-button"

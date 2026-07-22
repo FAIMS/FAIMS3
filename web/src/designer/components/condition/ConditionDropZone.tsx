@@ -22,7 +22,10 @@
 import {useDroppable} from '@dnd-kit/react';
 import {Box, Typography} from '@mui/material';
 import {makeIndexedDropId} from '../../../lib/conditionUtils';
-import {designerConditionDropFeedbackSx} from '../designer-style';
+import {
+  conditionDropBorderColour,
+  designerConditionDropFeedbackSx,
+} from '../designer-style';
 
 /**
  * Renders an indexed drop slot inside a condition group.
@@ -70,7 +73,7 @@ export const ConditionDropZone = (props: ConditionDropZoneProps) => {
             top: '50%',
             transform: 'translateY(-50%)',
             borderTop: '2px dashed',
-            borderColor: isActive ? 'success.main' : 'transparent',
+            borderColor: isActive ? conditionDropBorderColour : 'transparent',
           }}
         >
           {/* Show a feedback chip for the active drop target. */}

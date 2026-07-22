@@ -2,18 +2,8 @@
  * @file Condition AST types shared by reducers, the condition builder UI, and domain helpers.
  */
 
-import {cyan, deepPurple} from '@mui/material/colors';
-
 // AND/OR operator
 export type ConditionBooleanOperator = 'and' | 'or';
-// UI colours
-export const conditionBooleanOperatorColours: Record<
-  ConditionBooleanOperator,
-  string
-> = {
-  and: cyan[800],
-  or: deepPurple[800],
-};
 
 export type ConditionRuleOperator =
   | 'equal'
@@ -58,10 +48,12 @@ export const allOperators = new Map<ConditionRuleOperator, string>([
   ['does-not-contain-all-of', 'List does not contain all of these values'],
 ]);
 
+export type OperatorTooltipInfo = {description: string; example?: string};
+
 // Tooltip descriptions for rule operators
 export const operatorTooltipDescriptions = new Map<
   ConditionRuleOperator,
-  {description: string; example?: string}
+  OperatorTooltipInfo
 >([
   [
     'equal',

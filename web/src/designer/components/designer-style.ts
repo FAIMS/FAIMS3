@@ -1,5 +1,7 @@
 import {SxProps, Theme} from '@mui/material';
+import {cyan, deepPurple} from '@mui/material/colors';
 import {alpha} from '@mui/material/styles';
+import {ConditionBooleanOperator} from '../types/condition';
 
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
@@ -269,6 +271,18 @@ export const designerConditionFrameSx: SxProps<Theme> = {
   p: 1.25,
 };
 
+/** Shared colour used to highlight an active condition drop target. */
+export const conditionDropBorderColour = 'success.main';
+
+/** Shared colours used to visually distinguish condition boolean operators. */
+export const conditionBooleanOperatorColours: Record<
+  ConditionBooleanOperator,
+  string
+> = {
+  and: cyan[700],
+  or: deepPurple[700],
+};
+
 /**
  * Shared styles for the feedback label shown above an active condition drop
  * target.
@@ -286,7 +300,7 @@ export const designerConditionDropFeedbackSx: SxProps<Theme> = {
   color: 'success.dark',
   backgroundColor: 'background.paper',
   border: '1px solid',
-  borderColor: 'success.light',
+  borderColor: conditionDropBorderColour,
   whiteSpace: 'nowrap',
   boxShadow: 1,
 };

@@ -1,14 +1,14 @@
 import {
   allOperators,
   ConditionBooleanOperator,
-  conditionBooleanOperatorColours,
   ConditionRuleOperator,
   operatorTooltipDescriptions,
+  OperatorTooltipInfo,
 } from '@/designer/types/condition';
-import {Info} from '@mui/icons-material';
-import AddBoxIcon from '@mui/icons-material/AddBox';
+import {AddBoxOutlined, Info} from '@mui/icons-material';
 import {Box, Stack, Tooltip, Typography} from '@mui/material';
 import type {ReactNode} from 'react';
+import {conditionBooleanOperatorColours} from '../designer-style';
 
 /**
  * Small titled section used inside tooltip content.
@@ -55,62 +55,79 @@ const Emphasis = (props: {children: React.ReactNode}) => (
   </Box>
 );
 
+type OperatorTooltipItem = OperatorTooltipInfo & {
+  operator: ConditionRuleOperator;
+  label: string;
+};
+
 /**
- * Shows an explanation for the selected rule operator.
+ * Builds the operator entries shown in the tooltip.
  *
- * Falls back to a general operator explanation if no specific description is
- * provided for the selected operator.
+ * @param operator - Selected operator, or undefined to include all operators.
+ * @returns Operator labels, descriptions, and examples in display order.
+ */
+const getOperatorTooltipItems = (
+  operator?: ConditionRuleOperator
+): OperatorTooltipItem[] => {
+  const operators = operator ? [operator] : Array.from(allOperators.keys());
+
+  return operators.map(currentOperator => {
+    const tooltipInfo = operatorTooltipDescriptions.get(currentOperator);
+
+    return {
+      operator: currentOperator,
+      label: allOperators.get(currentOperator) ?? currentOperator,
+      description:
+        tooltipInfo?.description ??
+        'No tooltip information has been provided for this operator.',
+      ...(tooltipInfo?.example ? {example: tooltipInfo.example} : {}),
+    };
+  });
+};
+
+/**
+ * Shows help for the selected rule operator.
+ *
+ * When no operator is provided, all available rule operators are shown.
  */
 export const RuleOperatorTooltip = (props: {
   operator?: ConditionRuleOperator;
 }) => {
-  const operatorLabel = props.operator
-    ? (allOperators.get(props.operator) ?? props.operator)
-    : 'Operator';
-
-  const operatorDescription = props.operator
-    ? operatorTooltipDescriptions.get(props.operator)
-    : undefined;
+  const tooltipItems = getOperatorTooltipItems(props.operator);
 
   return (
     <Tooltip
       arrow
       placement="top"
       title={
-        <Box
-          sx={{
-            maxHeight: '50vh',
-            overflow: 'auto',
-          }}
-        >
-          <HelperBox title={operatorLabel}>
-            {operatorDescription ? (
-              <>
-                {operatorDescription.description && (
-                  <Typography variant="body2">
-                    {operatorDescription.description}
-                  </Typography>
-                )}
+        <Box sx={{maxHeight: '45vh', overflow: 'auto'}}>
+          {tooltipItems.map(item => (
+            <HelperBox key={item.operator} title={item.label}>
+              {item.description ? (
+                <Typography variant="body2">{item.description}</Typography>
+              ) : (
+                <Typography variant="body2">
+                  No tooltip information has been provided for this operator.
+                </Typography>
+              )}
 
-                {operatorDescription?.example && (
-                  <Typography variant="body2">
-                    {operatorDescription.example}
-                  </Typography>
-                )}
-              </>
-            ) : (
-              <Typography variant="body2">
-                No tooltip information has been provided for this operator.
-              </Typography>
-            )}
-          </HelperBox>
+              {item.example && (
+                <Typography variant="body2">
+                  <Box component="span" sx={{fontWeight: 700}}>
+                    Example:{' '}
+                  </Box>
+                  {item.example}
+                </Typography>
+              )}
+            </HelperBox>
+          ))}
         </Box>
       }
     >
       <Box
         component="span"
         tabIndex={0}
-        aria-label="Operator help"
+        aria-label="Rule operator help"
         sx={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -135,12 +152,7 @@ export const BooleanOperatorTooltip = () => (
     arrow
     placement="top"
     title={
-      <Box
-        sx={{
-          maxHeight: '50vh',
-          overflow: 'auto',
-        }}
-      >
+      <Box sx={{maxHeight: '45vh', overflow: 'auto'}}>
         <HelperBox title="AND or OR group">
           <Typography variant="body2">
             The <BooleanOperatorText operator="and" /> and{' '}
@@ -187,8 +199,7 @@ export const BooleanOperatorTooltip = () => (
                 verticalAlign: 'text-bottom',
               }}
             >
-              <AddBoxIcon
-                color="success"
+              <AddBoxOutlined
                 sx={{
                   fontSize: '1rem',
                   display: 'block',
@@ -220,7 +231,7 @@ export const BooleanOperatorTooltip = () => (
     <Box
       component="span"
       tabIndex={0}
-      aria-label="Operator help"
+      aria-label="Group operator help"
       sx={{
         display: 'inline-flex',
         alignItems: 'center',

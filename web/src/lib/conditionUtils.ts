@@ -65,6 +65,30 @@ const createEditorId = (prefix: 'rule' | 'group') => {
 };
 
 /**
+ * Finds the first condition rule in display order.
+ *
+ * @param group - Group to search, including its nested groups.
+ * @returns The first rule editor ID, or null if no rule exists.
+ */
+export const getFirstRuleEditorId = (
+  group: ConditionGroupNode
+): string | null => {
+  for (const child of group.children) {
+    if (child.type === 'rule') {
+      return child.editorId;
+    }
+
+    const nestedRuleId = getFirstRuleEditorId(child);
+
+    if (nestedRuleId) {
+      return nestedRuleId;
+    }
+  }
+
+  return null;
+};
+
+/**
  * Creates a blank condition rule row.
  *
  * @returns A new empty rule node with a unique editor ID.

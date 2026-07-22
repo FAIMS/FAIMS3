@@ -26,7 +26,10 @@ import {AddBoxOutlined} from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import {Box, IconButton, Paper, Tooltip, Typography} from '@mui/material';
-import {designerConditionDropFeedbackSx} from '../designer-style';
+import {
+  conditionDropBorderColour,
+  designerConditionDropFeedbackSx,
+} from '../designer-style';
 import {ConditionRuleInputs} from './ConditionRuleInputs';
 
 /**
@@ -45,6 +48,7 @@ export type ConditionRuleRowProps = {
   // Disables this rule as a drop target.
   // Used when this rule is inside a group currently being dragged.
   disableDropZones?: boolean;
+  showLabels?: boolean;
 };
 
 export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
@@ -56,6 +60,7 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
     field,
     view,
     disableDropZones = false,
+    showLabels = false,
   } = props;
 
   /**
@@ -94,10 +99,13 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
           width: '100%',
           boxSizing: 'border-box',
           borderStyle: 'solid',
+          backgroundColor: 'grey.100',
           // dragging styles
           opacity: isDragging ? 0.4 : 1,
-          borderColor: isGroupDropTarget ? 'success.main' : undefined,
-          borderWidth: isGroupDropTarget ? 2 : 1,
+          borderColor: isGroupDropTarget
+            ? conditionDropBorderColour
+            : undefined,
+          borderWidth: isGroupDropTarget ? 2 : 0,
           boxShadow: isDragging || isGroupDropTarget ? 2 : 0,
         }}
       >
@@ -124,6 +132,7 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
               field={field}
               view={view}
               onChange={patch => actions.updateRule(rule.editorId, patch)}
+              showLabels={showLabels}
             />
           </Box>
 
@@ -131,7 +140,6 @@ export const ConditionRuleRow = (props: ConditionRuleRowProps) => {
           <Tooltip title="Create an AND or OR group from this condition">
             <IconButton
               size="small"
-              color="success"
               sx={{width: 32, height: 32}}
               onPointerDown={event => event.stopPropagation()}
               onClick={event => {
