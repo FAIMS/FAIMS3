@@ -25,16 +25,17 @@ import {
   Select,
   TextField,
 } from '@mui/material';
+import {useRef, useState} from 'react';
 import type {FieldType} from '../../state/initial';
 import {
   allOperators,
   ConditionRuleOperator,
+  operatorDetails,
   RuleCondition,
   type ConditionRuleNode,
   type SelectableConditionOption,
 } from '../../types/condition';
 import {FieldSearchAutocomplete} from '../field-selector';
-import {RuleOperatorTooltip} from './ConditionTooltips';
 
 // helper functions for condition rule inputs:
 
@@ -184,12 +185,20 @@ const isValueValidForField = (
  */
 const ValueEditor = (props: {
   fieldDef: FieldType;
+  editorId: string;
   value: unknown;
   valueMismatch: boolean;
   onChange: (patch: Partial<RuleCondition>) => void;
   showLabels?: boolean;
 }) => {
-  const {fieldDef, value, valueMismatch, onChange, showLabels = false} = props;
+  const {
+    fieldDef,
+    editorId,
+    value,
+    valueMismatch,
+    onChange,
+    showLabels = false,
+  } = props;
 
   const componentName = fieldDef['component-name'];
   const params = (fieldDef['component-parameters'] || {}) as {
@@ -202,6 +211,8 @@ const ValueEditor = (props: {
   const updateValue = (nextValue: RuleCondition['value']) => {
     onChange({value: nextValue});
   };
+
+  const valueLabelId = `condition-value-label-${editorId}`;
 
   switch (componentName) {
     /**
@@ -219,9 +230,10 @@ const ValueEditor = (props: {
           sx={{minWidth: 0, width: '100%'}}
           error={hasValue && !isValidOption}
         >
-          {showLabels && <InputLabel>Value</InputLabel>}
+          {showLabels && <InputLabel id={valueLabelId}>Value</InputLabel>}
           <Select
             data-testid="value-input"
+            labelId={showLabels ? valueLabelId : undefined}
             label={showLabels ? 'Value' : undefined}
             value={isValidOption ? value : (value ?? '')}
             onChange={event => updateValue(event.target.value)}
@@ -248,10 +260,11 @@ const ValueEditor = (props: {
 
       return (
         <FormControl sx={{minWidth: 0, width: '100%'}} error={valueMismatch}>
-          {showLabels && <InputLabel>Value</InputLabel>}
+          {showLabels && <InputLabel id={valueLabelId}>Value</InputLabel>}
           <Select
             multiple
             data-testid="value-input"
+            labelId={showLabels ? valueLabelId : undefined}
             label={showLabels ? 'Value' : undefined}
             value={selectedValues}
             onChange={event => {
@@ -301,9 +314,10 @@ const ValueEditor = (props: {
 
       return (
         <FormControl sx={{minWidth: 0, width: '100%'}}>
-          {showLabels && <InputLabel>Value</InputLabel>}
+          {showLabels && <InputLabel id={valueLabelId}>Value</InputLabel>}
           <Select
             data-testid="value-input"
+            labelId={showLabels ? valueLabelId : undefined}
             label={showLabels ? 'Value' : undefined}
             value={booleanValue ? 'true' : 'false'}
             onChange={event => updateValue(event.target.value === 'true')}
@@ -387,9 +401,32 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
     view,
   });
 
+  // Reference the operator input so the dropdown can match its width.
+  const operatorControlRef = useRef<HTMLDivElement>(null);
+  // Stores the current width of the operator input.
+  const [operatorMenuWidth, setOperatorMenuWidth] = useState<
+    number | undefined
+  >(undefined);
+
+  // Measure the operator input each time the dropdown opens.
+  const updateOperatorMenuWidth = () => {
+    setOperatorMenuWidth(
+      operatorControlRef.current?.getBoundingClientRect().width
+    );
+  };
+
   const targetFieldDef = rule.field ? (allFields[rule.field] ?? null) : null;
   const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
   const valueMismatch = !isValueValidForField(targetFieldDef, rule.value);
+
+  const operatorOptions = allowedOperators.map(operator => ({
+    value: operator,
+    label: allOperators.get(operator) ?? operator,
+    description: operatorDetails[operator]?.description,
+    example: operatorDetails[operator]?.example,
+  }));
+
+  const showOperatorLabel = showLabels && allowedOperators.length > 0;
 
   /**
    * When the field changes, also reset operator/value to something valid for
@@ -435,36 +472,27 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
         />
       </Box>
 
-      {/* Operator selecter */}
+      {/* Operator selector */}
       <FormControl
+        // Used to measure the operator input width.
+        ref={operatorControlRef}
         sx={{minWidth: 0, width: '100%'}}
         data-testid="operator-input"
         disabled={allowedOperators.length === 0}
       >
-        {showLabels && allowedOperators.length > 0 && (
-          <InputLabel id={`operator-${rule.editorId}`}>
-            <Box
-              component="span"
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-              }}
-            >
-              Operator
-              <RuleOperatorTooltip />
-            </Box>
+        {showOperatorLabel && (
+          <InputLabel id={`condition-rule-operator-label-${rule.editorId}`}>
+            Operator
           </InputLabel>
         )}
         <Select
           displayEmpty
           labelId={
-            showLabels && allowedOperators.length > 0
-              ? `operator-${rule.editorId}`
+            showOperatorLabel
+              ? `condition-rule-operator-label-${rule.editorId}`
               : undefined
           }
-          label={
-            showLabels && allowedOperators.length > 0 ? 'Operator' : undefined
-          }
+          label={showOperatorLabel ? 'Operator' : undefined}
           value={allowedOperators.includes(rule.operator) ? rule.operator : ''}
           renderValue={selected => {
             if (!selected) {
@@ -482,10 +510,53 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
               operator: event.target.value as ConditionRuleNode['operator'],
             })
           }
+          onOpen={updateOperatorMenuWidth}
+          MenuProps={{
+            slotProps: {
+              paper: {
+                sx: {
+                  // Keep the dropdown the same width as the operator input.
+                  width: operatorMenuWidth,
+                  maxWidth: operatorMenuWidth,
+                },
+              },
+            },
+          }}
         >
-          {allowedOperators.map(operator => (
-            <MenuItem key={operator} value={operator}>
-              {allOperators.get(operator)?.toLowerCase() ?? operator}
+          {operatorOptions.map(option => (
+            <MenuItem key={option.value} value={option.value}>
+              <ListItemText
+                primary={option.label}
+                secondary={
+                  <>
+                    <Box component="span">{option.description}</Box>
+
+                    {option.example && (
+                      <Box component="span" sx={{display: 'block'}}>
+                        <Box component="span" sx={{fontWeight: 700}}>
+                          Example:{' '}
+                        </Box>
+                        {option.example}
+                      </Box>
+                    )}
+                  </>
+                }
+                slotProps={{
+                  primary: {
+                    sx: {
+                      whiteSpace: 'normal',
+                      overflowWrap: 'anywhere',
+                    },
+                  },
+                  secondary: {
+                    component: 'div',
+                    sx: {
+                      whiteSpace: 'normal',
+                      overflowWrap: 'anywhere',
+                    },
+                  },
+                }}
+              />
             </MenuItem>
           ))}
         </Select>
@@ -495,6 +566,7 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
       {targetFieldDef ? (
         <ValueEditor
           fieldDef={targetFieldDef}
+          editorId={rule.editorId}
           value={rule.value}
           valueMismatch={valueMismatch}
           onChange={onChange}

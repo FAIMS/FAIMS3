@@ -1,10 +1,4 @@
-import {
-  allOperators,
-  ConditionBooleanOperator,
-  ConditionRuleOperator,
-  operatorTooltipDescriptions,
-  OperatorTooltipInfo,
-} from '@/designer/types/condition';
+import {ConditionBooleanOperator} from '@/designer/types/condition';
 import {AddBoxOutlined, Info} from '@mui/icons-material';
 import {Box, Stack, Tooltip, Typography} from '@mui/material';
 import type {ReactNode} from 'react';
@@ -54,95 +48,6 @@ const Emphasis = (props: {children: React.ReactNode}) => (
     {props.children}
   </Box>
 );
-
-type OperatorTooltipItem = OperatorTooltipInfo & {
-  operator: ConditionRuleOperator;
-  label: string;
-};
-
-/**
- * Builds the operator entries shown in the tooltip.
- *
- * @param operator - Selected operator, or undefined to include all operators.
- * @returns Operator labels, descriptions, and examples in display order.
- */
-const getOperatorTooltipItems = (
-  operator?: ConditionRuleOperator
-): OperatorTooltipItem[] => {
-  const operators = operator ? [operator] : Array.from(allOperators.keys());
-
-  return operators.map(currentOperator => {
-    const tooltipInfo = operatorTooltipDescriptions.get(currentOperator);
-
-    return {
-      operator: currentOperator,
-      label: allOperators.get(currentOperator) ?? currentOperator,
-      description:
-        tooltipInfo?.description ??
-        'No tooltip information has been provided for this operator.',
-      ...(tooltipInfo?.example ? {example: tooltipInfo.example} : {}),
-    };
-  });
-};
-
-/**
- * Shows help for the selected rule operator.
- *
- * When no operator is provided, all available rule operators are shown.
- */
-export const RuleOperatorTooltip = (props: {
-  operator?: ConditionRuleOperator;
-}) => {
-  const tooltipItems = getOperatorTooltipItems(props.operator);
-
-  return (
-    <Tooltip
-      arrow
-      placement="top"
-      title={
-        <Box sx={{maxHeight: '45vh', overflow: 'auto'}}>
-          {tooltipItems.map(item => (
-            <HelperBox key={item.operator} title={item.label}>
-              {item.description ? (
-                <Typography variant="body2">{item.description}</Typography>
-              ) : (
-                <Typography variant="body2">
-                  No tooltip information has been provided for this operator.
-                </Typography>
-              )}
-
-              {item.example && (
-                <Typography variant="body2">
-                  <Box component="span" sx={{fontWeight: 700}}>
-                    Example:{' '}
-                  </Box>
-                  {item.example}
-                </Typography>
-              )}
-            </HelperBox>
-          ))}
-        </Box>
-      }
-    >
-      <Box
-        component="span"
-        tabIndex={0}
-        aria-label="Rule operator help"
-        sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          ml: 0.5,
-          color: 'text.secondary',
-          cursor: 'help',
-        }}
-        onMouseDown={event => event.stopPropagation()}
-        onClick={event => event.stopPropagation()}
-      >
-        <Info sx={{fontSize: 20, color: 'info.main'}} />
-      </Box>
-    </Tooltip>
-  );
-};
 
 /**
  * Explains how AND/OR groups work in the condition editor.

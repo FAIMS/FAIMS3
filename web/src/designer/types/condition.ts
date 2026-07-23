@@ -48,122 +48,67 @@ export const allOperators = new Map<ConditionRuleOperator, string>([
   ['does-not-contain-all-of', 'List does not contain all of these values'],
 ]);
 
-export type OperatorTooltipInfo = {description: string; example?: string};
+export type OperatorInfo = {description: string; example?: string};
 
-// Tooltip descriptions for rule operators
-export const operatorTooltipDescriptions = new Map<
-  ConditionRuleOperator,
-  OperatorTooltipInfo
->([
-  [
-    'equal',
-    {
-      description:
-        'The field value must be exactly the same as the value you enter.',
-    },
-  ],
-  [
-    'not-equal',
-    {
-      description:
-        'The field value must be different from the value you enter.',
-    },
-  ],
-  [
-    'greater',
-    {
-      description: 'The field value must be greater than the value you enter.',
-    },
-  ],
-  [
-    'greater-equal',
-    {
-      description:
-        'The field value must be greater than or equal to the value you enter.',
-    },
-  ],
-  [
-    'less',
-    {
-      description: 'The field value must be less than the value you enter.',
-    },
-  ],
-  [
-    'less-equal',
-    {
-      description:
-        'The field value must be less than or equal to the value you enter.',
-    },
-  ],
-  [
-    'regex',
-    {
-      description: 'The field value must match a regular expression pattern.',
-    },
-  ],
-  [
-    'string-contains',
-    {
-      description: 'The field value must contain the text you enter.',
-    },
-  ],
-  [
-    'string-does-not-contain',
-    {
-      description: 'The field value must not contain the text you enter.',
-    },
-  ],
-  [
-    'contains',
-    {
-      description: 'The list field must contain the selected value.',
-    },
-  ],
-  [
-    'does-not-contain',
-    {
-      description: 'The list field must not contain the selected value.',
-    },
-  ],
-  [
-    'contains-regex',
-    {
-      description:
-        'At least one value in the list must match the regular expression.',
-    },
-  ],
-  [
-    'does-not-contain-regex',
-    {
-      description: 'No value in the list can match the regular expression.',
-    },
-  ],
-  [
-    'contains-one-of',
-    {
-      description: 'The list must contain at least one of the selected values.',
-    },
-  ],
-  [
-    'does-not-contain-any-of',
-    {
-      description: 'The list must not contain any of the selected values.',
-    },
-  ],
-  [
-    'contains-all-of',
-    {
-      description: 'The list must contain all selected values.',
-    },
-  ],
-  [
-    'does-not-contain-all-of',
-    {
-      description:
-        'The list must not contain all selected values at the same time.',
-    },
-  ],
-]);
+/** Additional UI details for condition operators. */
+export const operatorDetails: Record<ConditionRuleOperator, OperatorInfo> = {
+  equal: {
+    description:
+      'The field value must be exactly the same as the value you enter.',
+  },
+  'not-equal': {
+    description: 'The field value must be different from the value you enter.',
+  },
+  greater: {
+    description: 'The field value must be greater than the value you enter.',
+  },
+  'greater-equal': {
+    description:
+      'The field value must be greater than or equal to the value you enter.',
+  },
+  less: {
+    description: 'The field value must be less than the value you enter.',
+  },
+  'less-equal': {
+    description:
+      'The field value must be less than or equal to the value you enter.',
+  },
+  regex: {
+    description: 'The field value must match a regular expression pattern.',
+  },
+  'string-contains': {
+    description: 'The field value must contain the text you enter.',
+  },
+  'string-does-not-contain': {
+    description: 'The field value must not contain the text you enter.',
+  },
+  contains: {
+    description: 'The list field must contain the selected value.',
+  },
+  'does-not-contain': {
+    description: 'The list field must not contain the selected value.',
+  },
+  'contains-regex': {
+    description:
+      'At least one value in the list must match the regular expression.',
+  },
+  'does-not-contain-regex': {
+    description: 'No value in the list can match the regular expression.',
+  },
+  'contains-one-of': {
+    description: 'The list must contain at least one of the selected values.',
+  },
+  'does-not-contain-any-of': {
+    description: 'The list must not contain any of the selected values.',
+  },
+  'contains-all-of': {
+    description: 'The list must contain all selected values.',
+  },
+  'does-not-contain-all-of': {
+    description:
+      'The list must not contain all selected values at the same time.',
+  },
+};
 
 ///
 /// types for JSON consition data
