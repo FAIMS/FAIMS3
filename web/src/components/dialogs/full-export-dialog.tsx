@@ -21,9 +21,9 @@ export const FullExportDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild className="w-fit">
-        <Button>Full Export</Button>
+        <Button data-testid="web-export-full-button">Full Export</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" data-testid="web-export-full-dialog">
         <DialogHeader>
           <DialogTitle>Full Export</DialogTitle>
           <DialogDescription>

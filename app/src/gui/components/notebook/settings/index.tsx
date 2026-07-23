@@ -227,6 +227,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
                 variant={'outlined'}
                 color={'error'}
                 onClick={handleDeactivateClick}
+                data-testid="app-notebook-deactivate-button"
               >
                 {DE_ACTIVATE_VERB} {config.notebookNameCapitalized}
               </Button>
@@ -260,6 +261,7 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
                     setDeactivateSyncAcknowledged(checked)
                   }
                   color="primary"
+                  data-testid="app-notebook-deactivate-ack"
                 />
               }
               label={
@@ -271,11 +273,17 @@ export default function NotebookSettings(props: {uiSpec: UiSpecModel}) {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeactivateCancel}>Cancel</Button>
+          <Button
+            onClick={handleDeactivateCancel}
+            data-testid="app-notebook-deactivate-cancel"
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleDeactivateConfirm}
             color="error"
             disabled={!deactivateSyncAcknowledged}
+            data-testid="app-notebook-deactivate-confirm"
           >
             {DE_ACTIVATE_VERB}
           </Button>

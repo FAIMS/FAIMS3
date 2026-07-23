@@ -87,7 +87,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">User Profile</h1>
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-profile-heading"
+      >
+        User Profile
+      </h1>
       <div className="flex lg:flex-row flex-col gap-4">
         <Card className="flex-1">
           <List>
@@ -115,6 +120,7 @@ function RouteComponent() {
               variant="outline"
               onClick={handleChangePassword}
               className="mt-2"
+              data-testid="web-profile-change-password-button"
             >
               Change Password
             </Button>
@@ -130,7 +136,10 @@ function RouteComponent() {
               Click below to manage your long-lived API tokens. A long-lived
               token can be used for programmatic access to the system APIs.
             </ListDescription>
-            <Link to="/profile/long-lived-tokens">
+            <Link
+              to="/profile/long-lived-tokens"
+              data-testid="web-profile-tokens-link"
+            >
               <Button variant="outline" className="mt-2">
                 Manage Long-Lived Tokens
               </Button>

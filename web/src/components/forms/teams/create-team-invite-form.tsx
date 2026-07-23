@@ -73,12 +73,14 @@ export function CreateTeamInviteForm({
           message: `Invite title must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`,
         }),
       maxLength: INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
+      testId: 'web-team-invite-create-name',
     },
     {
       name: 'role',
       label: 'Role',
       options: roleOptions,
       schema: z.nativeEnum(Role),
+      testId: 'web-team-invite-create-role',
     },
     {
       name: 'uses',
@@ -158,6 +160,7 @@ export function CreateTeamInviteForm({
       fields={fields}
       onSubmit={onSubmit}
       submitButtonText={'Create Invite'}
+      submitButtonTestId="web-team-invite-create-submit"
       footer={
         <ExpirySelector
           hints={config.inviteTokenHints}

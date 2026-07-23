@@ -119,6 +119,7 @@ export const useUsersColumns = ({
                     <Button
                       variant="outline"
                       size="icon"
+                      data-testid="web-users-reset-button"
                       onClick={() => {
                         onReset(row.original._id);
                       }}

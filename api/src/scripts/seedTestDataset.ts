@@ -2,16 +2,16 @@
 /**
  * seedTestDataset.ts
  *
- * Destructive test-data seed script.
+ * Idempotent test-data seed script.
  *
- * Creates a deterministic, permission-testing dataset in the configured
- * CouchDB instance.  The script:
+ * Creates (or restores) a deterministic, permission-testing dataset in the
+ * configured CouchDB instance.  The script:
  *
- *   1. Re-initialises all databases (force=true) so every run starts clean.
- *   2. Creates two teams: Red Team and Blue Team.
- *   3. Creates one template and one notebook (survey) owned by each team,
+ *   1. Ensures databases / design docs are initialised (does not wipe data).
+ *   2. Upserts two teams: Red Team and Blue Team (stable IDs).
+ *   3. Upserts one template and one notebook (survey) owned by each team,
  *      sourced from the JSON files under api/notebooks/.
- *   4. Creates a set of deterministic users that collectively cover every
+ *   4. Upserts a set of deterministic users that collectively cover every
  *      role defined in roleDetails, with cross-team memberships designed to
  *      exercise permission-visibility scenarios.
  *
@@ -22,38 +22,76 @@
  *   TEST_SEED_PASSWORD   Shared password for all seeded users.
  *                        Defaults to "TestPassword123!".
  *   TEST_SEED_NOTEBOOKS  Comma-separated paths to notebook JSON files.
- *                        Defaults to "./notebooks/Field-Sampler.json,
+ *                        Defaults to "./notebooks/e2e-minimal.json,
  *                        ./notebooks/sample_notebook.json"
+ *                        (Red = minimal one-field notebook for app record
+ *                        CRUD e2e; Blue = sample survey).
  *
- * WARNING: This is a destructive operation.  All existing data in the
- * configured CouchDB will be wiped and replaced with seed data.
+ * Safe to re-run: seeded entities are restored to the intended state via
+ * stable document IDs. Only those canonical seed documents and seed persona
+ * emails are created or updated; nothing is deleted.
  */
 
 import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
+  addTemplateRole,
+  ExistingPeopleDBDocument,
+  ExistingProjectDocument,
+  ExistingTeamsDBDocument,
+  ExistingTemplateDocument,
   PeopleDBDocument,
+  ProjectDocument,
+  ProjectStatus,
   Role,
   roleDetails,
   ROOT_DESCRIPTION_MAX_LENGTH,
+  normalizeRootDescriptionForStore,
+  safeWriteDocument,
+  TemplateDocument,
 } from '@faims3/data-model';
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
-import {initialiseAndMigrateDBs} from '../couchdb';
-import {createNotebook} from '../couchdb/notebooks';
-import {createTeamDocument} from '../couchdb/teams';
-import {createTemplate} from '../couchdb/templates';
-import {createUser, saveCouchUser} from '../couchdb/users';
+import {
+  getTeamsDB,
+  getTemplatesDb,
+  initialiseAndMigrateDBs,
+  initialiseDataDb,
+  localGetProjectsDb,
+} from '../couchdb';
+import {
+  getProjectById,
+  normalizeUiSpecificationOrThrow,
+} from '../couchdb/notebooks';
+import {getTemplate} from '../couchdb/templates';
+import {
+  createUser,
+  getCouchUserFromEmailOrUserId,
+  saveCouchUser,
+} from '../couchdb/users';
+import * as Exceptions from '../exceptions';
+import {nowIso} from '../time';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Configuration
 // ──────────────────────────────────────────────────────────────────────────────
 
 const SEED_PASSWORD = process.env.TEST_SEED_PASSWORD || 'TestPassword123!';
+const SEED_CREATED_BY = 'seed-script';
+
+/** Stable document IDs so re-runs update in place instead of minting duplicates. */
+const SEED_IDS = {
+  redTeam: 'team_seed_red',
+  blueTeam: 'team_seed_blue',
+  redTemplate: 'template_seed_red',
+  blueTemplate: 'template_seed_blue',
+  redNotebook: 'notebook_seed_red',
+  blueNotebook: 'notebook_seed_blue',
+} as const;
 
 const DEFAULT_NOTEBOOK_PATHS = [
-  './notebooks/Field-Sampler.json',
+  './notebooks/e2e-minimal.json',
   './notebooks/sample_notebook.json',
 ];
 
@@ -106,19 +144,55 @@ const USER_SPECS: UserSpec[] = [
     tag: 'OPERATIONS_ADMIN',
     name: 'Seed Administrator',
     globalRoles: [Role.OPERATIONS_ADMIN],
-    // no resource roles, purely admin role
-    assignResourceRoles() {},
+    // TEMPLATE_ADMIN on Red so e2e can exercise visibility/archive Actions
+    // (ops global roles alone do not grant READ on private team templates).
+    assignResourceRoles(user, ctx) {
+      addTemplateRole({
+        user,
+        role: Role.TEMPLATE_ADMIN,
+        templateId: ctx.redTemplateId,
+      });
+      addProjectRole({
+        user,
+        role: Role.PROJECT_ADMIN,
+        projectId: ctx.blueNotebookId,
+      });
+    },
   },
 
-  // ── seed-manager-cross ────────────────────────────────────────────────────
+  // ── seed-manager-blue ────────────────────────────────────────────────────
   // TEAM_MANAGER on Blue
-  // Exercises visibility differences across teams for the same user.
+  // Manager for the blue team
   {
     email: 'seed-manager-blue@faims.test',
     tag: 'MANAGER_BLUE',
     name: 'Blue Team Manager',
     assignResourceRoles(user, ctx) {
       addTeamRole({user, role: Role.TEAM_MANAGER, teamId: ctx.blueTeamId});
+    },
+  },
+
+  // ── seed-manager-red ────────────────────────────────────────────────────
+  // TEAM_MANAGER on Red
+  // Manager for the red team
+  {
+    email: 'seed-manager-red@faims.test',
+    tag: 'MANAGER_RED',
+    name: 'Red Team Manager',
+    assignResourceRoles(user, ctx) {
+      addTeamRole({user, role: Role.TEAM_MANAGER, teamId: ctx.redTeamId});
+    },
+  },
+
+  // ── seed-admin-red ────────────────────────────────────────────────────
+  // TEAM_ADMIN on Red
+  // Admin for the red team
+  {
+    email: 'seed-admin-red@faims.test',
+    tag: 'ADMIN_RED',
+    name: 'Red Team Admin',
+    assignResourceRoles(user, ctx) {
+      addTeamRole({user, role: Role.TEAM_ADMIN, teamId: ctx.redTeamId});
     },
   },
 
@@ -240,6 +314,243 @@ function clampDescription(description?: string): string | undefined {
     : trimmed;
 }
 
+function seedDescription(description?: string): string | undefined {
+  return normalizeRootDescriptionForStore(clampDescription(description));
+}
+
+function isNotFoundError(error: unknown): boolean {
+  if (error instanceof Exceptions.ItemNotFoundException) {
+    return true;
+  }
+  const status = (error as {status?: number} | null)?.status;
+  const name = (error as {name?: string} | null)?.name;
+  return status === 404 || name === 'not_found';
+}
+
+async function upsertSeedTeam({
+  id,
+  name,
+  description,
+  now,
+}: {
+  id: string;
+  name: string;
+  description: string;
+  now: number;
+}): Promise<ExistingTeamsDBDocument> {
+  const teamsDb = getTeamsDB();
+  try {
+    const existing = await teamsDb.get(id);
+    const updated = {
+      ...existing,
+      name,
+      description,
+      createdBy: SEED_CREATED_BY,
+      updatedAt: now,
+    };
+    await safeWriteDocument({db: teamsDb, data: updated});
+    console.log(`  ✓ Updated team ${name} : ${id}`);
+    return await teamsDb.get(id);
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+    await teamsDb.put({
+      _id: id,
+      name,
+      description,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: SEED_CREATED_BY,
+    });
+    console.log(`  ✓ Created team ${name} : ${id}`);
+    return await teamsDb.get(id);
+  }
+}
+
+async function upsertSeedTemplate({
+  id,
+  name,
+  description,
+  uiSpecification,
+  teamId,
+}: {
+  id: string;
+  name: string;
+  description?: string;
+  uiSpecification: Record<string, unknown>;
+  teamId: string;
+}): Promise<ExistingTemplateDocument> {
+  const templatesDb = getTemplatesDb();
+  const normalizedUiSpecification =
+    normalizeUiSpecificationOrThrow(uiSpecification);
+  const now = nowIso();
+
+  try {
+    const existing = await getTemplate(id);
+    const updated: ExistingTemplateDocument = {
+      ...existing,
+      name,
+      description,
+      uiSpecification: normalizedUiSpecification,
+      ownedByTeamId: teamId,
+      createdBy: SEED_CREATED_BY,
+      archived: false,
+      isPublic: false,
+      version: existing.version + 1,
+      updatedAt: now,
+    };
+    await safeWriteDocument({db: templatesDb, data: updated});
+    console.log(`  ✓ Updated template ${name} : ${id}`);
+    return await getTemplate(id);
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+    const templateDoc: TemplateDocument = {
+      _id: id,
+      version: 1,
+      archived: false,
+      isPublic: false,
+      uiSpecification: normalizedUiSpecification,
+      ownedByTeamId: teamId,
+      name,
+      description,
+      createdBy: SEED_CREATED_BY,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await templatesDb.put(templateDoc);
+    console.log(`  ✓ Created template ${name} : ${id}`);
+    return await getTemplate(id);
+  }
+}
+
+async function upsertSeedNotebook({
+  id,
+  projectName,
+  description,
+  uiSpecification,
+  templateId,
+  teamId,
+}: {
+  id: string;
+  projectName: string;
+  description?: string;
+  uiSpecification: Record<string, unknown>;
+  templateId: string;
+  teamId: string;
+}): Promise<string> {
+  const projectsDb = localGetProjectsDb();
+  const normalizedUiSpecification =
+    normalizeUiSpecificationOrThrow(uiSpecification);
+  const now = nowIso();
+  const dataDBName = `data-${id}`;
+
+  let existing: ExistingProjectDocument | undefined;
+  try {
+    existing = await getProjectById(id);
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error;
+    }
+  }
+
+  if (existing) {
+    const updated: ProjectDocument = {
+      ...existing,
+      name: projectName.trim(),
+      templateId,
+      ownedByTeamId: teamId,
+      createdBy: SEED_CREATED_BY,
+      status: ProjectStatus.OPEN,
+      uiSpecification: normalizedUiSpecification,
+      updatedAt: now,
+      dataDb: existing.dataDb ?? {db_name: dataDBName},
+    };
+    if (description !== undefined) {
+      updated.description = description;
+    } else {
+      delete updated.description;
+    }
+    await safeWriteDocument({db: projectsDb, data: updated});
+    await initialiseDataDb({projectId: id, force: true});
+    console.log(`  ✓ Updated notebook ${projectName} : ${id}`);
+    return id;
+  }
+
+  const projectDoc: ProjectDocument = {
+    _id: id,
+    name: projectName.trim(),
+    ...(description !== undefined ? {description} : {}),
+    templateId,
+    dataDb: {
+      db_name: dataDBName,
+    },
+    status: ProjectStatus.OPEN,
+    ownedByTeamId: teamId,
+    createdBy: SEED_CREATED_BY,
+    createdAt: now,
+    updatedAt: now,
+    uiSpecification: normalizedUiSpecification,
+  };
+  await projectsDb.put(projectDoc);
+  await initialiseDataDb({projectId: id, force: true});
+  console.log(`  ✓ Created notebook ${projectName} : ${id}`);
+  return id;
+}
+
+/**
+ * Reset a seed persona to the intended baseline (name, verified email, empty
+ * resource roles, GENERAL_USER only) before applying UserSpec grants.
+ */
+function resetSeedUserBaseline(
+  user: ExistingPeopleDBDocument | PeopleDBDocument,
+  spec: UserSpec
+): PeopleDBDocument {
+  user.name = spec.name;
+  user.disabled = false;
+  user.emails = [{email: spec.email.toLowerCase(), verified: true}];
+  user.globalRoles = [Role.GENERAL_USER];
+  user.teamRoles = [];
+  user.projectRoles = [];
+  user.templateRoles = [];
+  return user;
+}
+
+async function upsertSeedUser(
+  spec: UserSpec,
+  ctx: SeedContext
+): Promise<PeopleDBDocument> {
+  const existing = await getCouchUserFromEmailOrUserId(spec.email);
+  let user: PeopleDBDocument;
+
+  if (existing) {
+    user = resetSeedUserBaseline(existing, spec);
+    console.log(`  ✓ Updated ${spec.email} (${spec.name})`);
+  } else {
+    const [created, error] = await createUser({
+      email: spec.email,
+      name: spec.name,
+      verified: true,
+    });
+    if (!created) {
+      throw new Error(`Failed to create user ${spec.email}: ${error}`);
+    }
+    user = created;
+    console.log(`  ✓ Created ${spec.email} (${spec.name})`);
+  }
+
+  for (const role of spec.globalRoles ?? []) {
+    addGlobalRole({user, role});
+  }
+  spec.assignResourceRoles?.(user, ctx);
+
+  await saveCouchUser(user);
+  await addLocalPasswordForUser(user, SEED_PASSWORD);
+  return user;
+}
+
 function printSummary(
   ctx: SeedContext,
   users: Array<{user: PeopleDBDocument; spec: UserSpec}>
@@ -294,34 +605,31 @@ function printSummary(
 
 const main = async () => {
   try {
-    // ── Phase 1: Reset/init databases ────────────────────────────────────────
-    console.log('Phase 1: Initialising databases (force reset)...');
+    // ── Phase 1: Ensure databases / design docs ───────────────────────────────
+    console.log(
+      'Phase 1: Initialising databases (design docs; data preserved)...'
+    );
     await initialiseAndMigrateDBs({force: true, pushKeys: false});
     console.log('✓ Databases initialised');
 
     // ── Phase 2: Teams ────────────────────────────────────────────────────────
-    console.log('\nPhase 2: Creating teams...');
+    console.log('\nPhase 2: Upserting teams...');
     const now = Date.now();
-    const seedBot = 'seed-script';
-    const redTeam = await createTeamDocument({
+    const redTeam = await upsertSeedTeam({
+      id: SEED_IDS.redTeam,
       name: 'Red Team',
       description: 'Seed test team Red — exercises manager/member visibility',
-      createdAt: now,
-      updatedAt: now,
-      createdBy: seedBot,
+      now,
     });
-    const blueTeam = await createTeamDocument({
+    const blueTeam = await upsertSeedTeam({
+      id: SEED_IDS.blueTeam,
       name: 'Blue Team',
       description: 'Seed test team Blue — exercises cross-team visibility',
-      createdAt: now,
-      updatedAt: now,
-      createdBy: seedBot,
+      now,
     });
-    console.log(`✓ Created Red Team  : ${redTeam._id}`);
-    console.log(`✓ Created Blue Team : ${blueTeam._id}`);
 
     // ── Phase 3: Templates ────────────────────────────────────────────────────
-    console.log('\nPhase 3: Creating templates...');
+    console.log('\nPhase 3: Upserting templates...');
 
     const notebookFiles = NOTEBOOK_PATHS.map(loadNotebookJson);
     if (notebookFiles.length < 2) {
@@ -334,56 +642,42 @@ const main = async () => {
     const redTemplateSpec = notebookFiles[0];
     const blueTemplateSpec = notebookFiles[1];
 
-    const redTemplate = await createTemplate({
-      createdBy: seedBot,
-      payload: {
-        name: `Red Team Template — ${redTemplateSpec.name}`,
-        description: clampDescription(redTemplateSpec.description),
-        uiSpecification: redTemplateSpec.uiSpecification,
-        teamId: redTeam._id,
-      },
+    const redTemplate = await upsertSeedTemplate({
+      id: SEED_IDS.redTemplate,
+      name: `Red Team Template — ${redTemplateSpec.name}`,
+      description: seedDescription(redTemplateSpec.description),
+      uiSpecification: redTemplateSpec.uiSpecification,
+      teamId: redTeam._id,
     });
 
-    const blueTemplate = await createTemplate({
-      createdBy: seedBot,
-      payload: {
-        name: `Blue Team Template — ${blueTemplateSpec.name}`,
-        description: clampDescription(blueTemplateSpec.description),
-        uiSpecification: blueTemplateSpec.uiSpecification,
-        teamId: blueTeam._id,
-      },
+    const blueTemplate = await upsertSeedTemplate({
+      id: SEED_IDS.blueTemplate,
+      name: `Blue Team Template — ${blueTemplateSpec.name}`,
+      description: seedDescription(blueTemplateSpec.description),
+      uiSpecification: blueTemplateSpec.uiSpecification,
+      teamId: blueTeam._id,
     });
-
-    console.log(`✓ Created Red Template  : ${redTemplate._id}`);
-    console.log(`✓ Created Blue Template : ${blueTemplate._id}`);
 
     // ── Phase 4: Notebooks ────────────────────────────────────────────────────
-    console.log('\nPhase 4: Creating notebooks...');
+    console.log('\nPhase 4: Upserting notebooks...');
 
-    const redNotebookId = await createNotebook({
+    const redNotebookId = await upsertSeedNotebook({
+      id: SEED_IDS.redNotebook,
       projectName: `Red Team Notebook — ${redTemplateSpec.name}`,
-      uiSpecification: redTemplateSpec.uiSpecification as never,
-      description: clampDescription(redTemplateSpec.description),
+      uiSpecification: redTemplateSpec.uiSpecification,
+      description: seedDescription(redTemplateSpec.description),
       templateId: redTemplate._id,
       teamId: redTeam._id,
-      createdBy: seedBot,
     });
 
-    const blueNotebookId = await createNotebook({
+    const blueNotebookId = await upsertSeedNotebook({
+      id: SEED_IDS.blueNotebook,
       projectName: `Blue Team Notebook — ${blueTemplateSpec.name}`,
-      uiSpecification: blueTemplateSpec.uiSpecification as never,
-      description: clampDescription(blueTemplateSpec.description),
+      uiSpecification: blueTemplateSpec.uiSpecification,
+      description: seedDescription(blueTemplateSpec.description),
       templateId: blueTemplate._id,
       teamId: blueTeam._id,
-      createdBy: seedBot,
     });
-
-    if (!redNotebookId || !blueNotebookId) {
-      throw new Error('Failed to create one or more notebooks');
-    }
-
-    console.log(`✓ Created Red Notebook  : ${redNotebookId}`);
-    console.log(`✓ Created Blue Notebook : ${blueNotebookId}`);
 
     const ctx: SeedContext = {
       redTeamId: redTeam._id,
@@ -395,37 +689,13 @@ const main = async () => {
     };
 
     // ── Phase 5: Users + roles ────────────────────────────────────────────────
-    console.log('\nPhase 5: Creating users and assigning roles...');
+    console.log('\nPhase 5: Upserting users and assigning roles...');
 
     const createdUsers: Array<{user: PeopleDBDocument; spec: UserSpec}> = [];
 
     for (const spec of USER_SPECS) {
-      const [user, error] = await createUser({
-        email: spec.email,
-        name: spec.name,
-        verified: true,
-      });
-
-      if (!user) {
-        throw new Error(`Failed to create user ${spec.email}: ${error}`);
-      }
-
-      // Assign additional global roles
-      for (const role of spec.globalRoles ?? []) {
-        addGlobalRole({user, role});
-      }
-
-      // Assign resource-scoped roles
-      spec.assignResourceRoles?.(user, ctx);
-
-      // Persist user (without password first so the doc exists)
-      await saveCouchUser(user);
-
-      // Set shared local password — this re-saves the document internally
-      await addLocalPasswordForUser(user, SEED_PASSWORD);
-
+      const user = await upsertSeedUser(spec, ctx);
       createdUsers.push({user, spec});
-      console.log(`  ✓ ${spec.email} (${spec.name})`);
     }
 
     // ── Summary ───────────────────────────────────────────────────────────────

@@ -76,7 +76,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-templates-heading"
+      >
+        Templates
+      </h1>
       {/* CreateTemplateDialog returns null when the user lacks create permission */}
       <DataTable
         columns={columns as ColumnDef<TemplateListRow, unknown>[]}

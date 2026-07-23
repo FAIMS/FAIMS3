@@ -118,6 +118,7 @@ function OfflineMapStatusBox({
   return (
     <div
       role="status"
+      data-testid="web-offline-map-status"
       className={cn(
         'flex gap-3 rounded-lg border p-4 text-sm',
         variant === 'success' &&
@@ -341,6 +342,7 @@ export default function ProjectOfflineMap({
                 variant="default"
                 onClick={() => clearMutation.mutate()}
                 disabled={!canSetOfflineMapRegion || clearMutation.isPending}
+                data-testid="web-offline-map-clear-saved-button"
               >
                 {clearMutation.isPending ? 'Clearing…' : 'Clear Saved Area'}
               </Button>
@@ -357,6 +359,7 @@ export default function ProjectOfflineMap({
                 variant="default"
                 onClick={() => void handleSave()}
                 disabled={saveMutation.isPending}
+                data-testid="web-offline-map-save-button"
               >
                 {saveMutation.isPending ? 'Saving…' : 'Save'}
               </Button>
@@ -389,6 +392,7 @@ export default function ProjectOfflineMap({
                 variant="default"
                 onClick={handleDrawArea}
                 disabled={!canSetOfflineMapRegion}
+                data-testid="web-offline-map-draw-button"
               >
                 Draw Area
               </Button>

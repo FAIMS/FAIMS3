@@ -46,6 +46,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
+              data-testid="web-nav-user-menu"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
@@ -86,7 +87,11 @@ export function NavUser({
                 className="cursor-pointer"
               ></DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link to="/profile" className="flex items-center gap-2">
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2"
+                  data-testid="web-nav-profile"
+                >
                   <UserCircle />
                   Profile
                 </Link>
@@ -96,6 +101,7 @@ export function NavUser({
             <DropdownMenuItem
               onClick={() => auth.logout()}
               className="cursor-pointer"
+              data-testid="web-nav-logout"
             >
               <LogOut />
               Log out
