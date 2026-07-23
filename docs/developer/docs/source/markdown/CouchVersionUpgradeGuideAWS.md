@@ -32,7 +32,7 @@ Not covered: notebook JSON migrations.
 From `infrastructure/aws-cdk`:
 
 ```bash
-./config.sh pull <env>
+./config.sh pull <env> # note you may need --config_repo <git clone string> if first time running on a stage
 export CONFIG_FILE_NAME=<env>.json
 pnpm run validate-config
 ```
@@ -96,11 +96,23 @@ From `infrastructure/aws-cdk` (separate from `api/.env`):
 
 ```bash
 cp scripts/.env.dist scripts/.env
-# fill COUCH_URL, COUCHDB_PASSWORD, MARKER_DBS, EC2_INSTANCE_ID
-pnpm run couch-upgrade-baseline     # save the JSON output
 ```
 
-With `CONFIG_FILE_NAME` set, the script also prints a short config summary.
+Then use the values from `api/.env` to fill out the first fields (db url,
+username, password) in `scripts/.env`, and set `STACK_NAME` to the CloudFormation
+stack name from `configs/<env>.json` (same as `stackName`).
+
+When ready, run (from `infrastructure/aws-cdk`, with **AWS credentials active**):
+
+```bash
+pnpm run couch-upgrade-baseline --instance-id   # resolve EC2_INSTANCE_ID into scripts/.env, then baseline
+# or without lookup if EC2_INSTANCE_ID is already correct:
+pnpm run couch-upgrade-baseline                    # save the JSON output
+```
+
+`--instance-id` looks up the Couch EC2 instance from `STACK_NAME` via
+CloudFormation and writes `EC2_INSTANCE_ID` into `scripts/.env`. With
+`CONFIG_FILE_NAME` set, the script also prints a short config summary.
 
 ## 2. Backup
 
@@ -131,16 +143,24 @@ Then diff CDK to see what is changing (should expect only the instance, volume s
 pnpm cdk diff            # expect instance replace; volume retained — stop if not
 ```
 
+**Note**: It's not unusual for CDKBucketDeployments to get churn here. This is due to the local build environment typically being very slightly different to remote, and how it hashes files etc.
+
 Before deploy, stop the instance and detach the data volume. CFN cannot move
-`VolumeAttachment` to the new instance while the volume is still attached:
+`VolumeAttachment` to the new instance while the volume is still attached.
+
+**WARNING**: This will initiate hard down-time. The couchDB will be unavailable from now until the updated CDK deployment, re-run of the user data script, and the migration. Ensure you are ready to follow through the below steps.
 
 ```bash
 ./scripts/ec2PrepareReplace.sh
 pnpm cdk deploy
 ```
 
-Watch CloudFormation events and ALB Couch target health until healthy. Update
-`EC2_INSTANCE_ID` in `scripts/.env` to the new instance id.
+Watch CloudFormation events and ALB Couch target health until healthy. Refresh
+`EC2_INSTANCE_ID` in `scripts/.env` for the new instance:
+
+```bash
+pnpm run couch-upgrade-baseline -- --instance-id
+```
 
 ## 4. Re-init keys and migrate
 
@@ -157,12 +177,11 @@ Expect `JWT public key configured in CouchDB` and a successful migration.
 
 ## 5. Verify
 
-Update `EC2_INSTANCE_ID` in `infrastructure/aws-cdk/scripts/.env` if you have
-not already, then from `infrastructure/aws-cdk` re-run the baseline and compare
-to the pre-upgrade output (version, markers):
+From `infrastructure/aws-cdk`, refresh the instance id if needed and re-run the
+baseline; compare to the pre-upgrade output (version, markers):
 
 ```bash
-pnpm run couch-upgrade-baseline
+pnpm run couch-upgrade-baseline -- --instance-id
 ```
 
 Smoke-test Conductor login, Control Centre, and the collection app.

@@ -5,7 +5,8 @@
 #   ./scripts/ec2PrepareReplace.sh
 #
 # Prerequisites: stack idle (e.g. UPDATE_ROLLBACK_COMPLETE), snapshot taken.
-# After this: pnpm cdk deploy, then update EC2_INSTANCE_ID in scripts/.env.
+# After this: pnpm cdk deploy, then refresh EC2_INSTANCE_ID via
+#   pnpm run couch-upgrade-baseline -- --instance-id
 #
 set -euo pipefail
 
@@ -210,7 +211,9 @@ Ready for instance replace. Next:
 
   pnpm cdk deploy
 
-Then update EC2_INSTANCE_ID in scripts/.env to the new instance id.
+Then refresh EC2_INSTANCE_ID:
+
+  pnpm run couch-upgrade-baseline -- --instance-id
 EOF
 }
 

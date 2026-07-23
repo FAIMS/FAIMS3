@@ -1,0 +1,77 @@
+{
+  "recordedAt": "2026-07-23T05:27:12.081Z",
+  "couchUrl": "https://couchdb.bss.nbic.cloud",
+  "version": "3.3.3",
+  "welcome": {
+    "couchdb": "Welcome",
+    "version": "3.3.3",
+    "git_sha": "40afbcfc7",
+    "uuid": "adf990d5dd21b735f65d4140ad1f10c2",
+    "features": [
+      "access-ready",
+      "partitioned",
+      "pluggable-storage-engines",
+      "reshard",
+      "scheduler"
+    ],
+    "vendor": {
+      "name": "The Apache Software Foundation"
+    }
+  },
+  "dbCount": 38,
+  "allDbs": [
+    "_replicator",
+    "_users",
+    "auth",
+    "data-1759979983849-rapid-test",
+    "data-1760503511116-tests",
+    "data-1762748536440-testing-engine",
+    "data-1763938765280-relations",
+    "data-1765935946788-test-survey",
+    "data-1766014788460-blue-mtn-old",
+    "data-1766377940027-detailed-ux-test",
+    "data-1768365479637-14-01-26-elana-bug",
+    "data-1768449133847-new-rapid-testing-for-elana",
+    "data-1780369530736-testing-blank",
+    "data-1780544113233-load-test-survey",
+    "data-1782436028079-detailed-new-26-6",
+    "data-1783045973804-rapid-impact-assessment-pen-testing",
+    "data-1783045996144-detailed-assessment-pen-testing",
+    "data-1783470498486-testsurvey01",
+    "data-1783911101006-testsurvey2",
+    "data-1783916683005-xsstests-01",
+    "directory",
+    "invites",
+    "metadata-1759979983849-rapid-test",
+    "metadata-1760503511116-tests",
+    "metadata-1762748536440-testing-engine",
+    "metadata-1763938765280-relations",
+    "metadata-1765935946788-test-survey",
+    "metadata-1766014788460-blue-mtn-old",
+    "metadata-1766377940027-detailed-ux-test",
+    "metadata-1768365479637-14-01-26-elana-bug",
+    "metadata-1768449133847-new-rapid-testing-for-elana",
+    "metadata-1780369530736-testing-blank",
+    "metadata-1780544113233-load-test-survey",
+    "migrations",
+    "people",
+    "projects",
+    "teams",
+    "templates"
+  ],
+  "markers": {},
+  "config": {
+    "stackName": "DASS-dev",
+    "volumeSize": 100,
+    "backup": {
+      "vaultArn": "arn:aws:backup:ap-southeast-2:448049801356:backup-vault:faims-dev-backup-vault",
+      "retentionDays": 5,
+      "scheduleExpression": "cron(0 3 * * ? *)"
+    },
+    "couchHost": "couchdb.bss.nbic.cloud"
+  },
+  "ec2": {
+    "instanceId": "i-0123456789abcdef0",
+    "dataDevice": "/dev/xvdf"
+  }
+}
