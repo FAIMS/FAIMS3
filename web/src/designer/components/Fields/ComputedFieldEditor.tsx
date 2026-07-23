@@ -1,5 +1,11 @@
 import {Alert, Box, FormHelperText, Typography} from '@mui/material';
 import {useMemo} from 'react';
+import {
+  compileComputedExpression,
+  ExpressionError,
+  ExprType,
+  FAIMS_TYPE_TO_EXPR_TYPE,
+} from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
@@ -22,29 +28,28 @@ type PropType = {
   viewsetId: string;
 };
 
-// Component names whose fields return a number and so make sense as inputs to a
-// computed expression.
-const NUMERIC_COMPONENT_NAMES = [
-  'NumberField',
-  'ControlledNumber',
-  'BasicAutoIncrementer',
-  'PercentageSlider',
-  'ComputedField',
+// Component names whose values are derived and so cannot feed an expression.
+const DERIVED_COMPONENT_NAMES = [
+  'ComputedNumber',
+  'ComputedText',
+  'TemplatedStringField',
 ];
 
-// True if the field returns a numeric value (by return type or, failing that,
-// by being a known numeric component).
-const isNumericField = (field: {
+// True if the field can be referenced from an expression: its type maps onto
+// an expression value type and it is not itself derived.
+const isReferenceableField = (field: {
   'type-returned'?: string;
   'component-name'?: string;
 }) =>
-  field['type-returned'] === 'faims-core::Number' ||
-  NUMERIC_COMPONENT_NAMES.includes(field['component-name'] ?? '');
+  FAIMS_TYPE_TO_EXPR_TYPE[field['type-returned'] ?? ''] !== undefined &&
+  !DERIVED_COMPONENT_NAMES.includes(field['component-name'] ?? '');
 
 /**
- * Property editor for ComputedField. Uses BaseFieldEditor for the standard
- * field settings and adds the arithmetic expression below. Field references in
- * the expression are wrapped in braces, e.g. {Width} * {Height}.
+ * Property editor shared by ComputedNumber and ComputedText. Uses
+ * BaseFieldEditor for the standard field settings and adds the typed
+ * expression below. Field references are wrapped in braces, e.g.
+ * {Width} * {Height}; the field picker inserts a reference. The expression is
+ * compiled as it changes and compile errors are shown inline.
  */
 export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const field = useAppSelector(
@@ -57,25 +62,45 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
 
   const expression =
     (field['component-parameters'].expression as string | undefined) || '';
+  const isText = field['component-name'] === 'ComputedText';
+  const requiredType: ExprType = isText ? 'string' : 'number';
 
-  const numericFieldFilters = useMemo(
+  const referenceableFieldFilters = useMemo(
     () => ({
       excludeFieldIds: [fieldName],
       predicate: (_id: string, f: (typeof allFields)[string]) =>
-        isNumericField(f),
+        isReferenceableField(f),
     }),
     [fieldName]
   );
 
-  const numericFieldCount = useMemo(
+  const referenceableFieldCount = useMemo(
     () =>
       applyFieldFilters(
         getViewsetFieldIds(viewsetId, views, viewsets),
         allFields,
-        numericFieldFilters
+        referenceableFieldFilters
       ).length,
-    [viewsetId, views, viewsets, allFields, numericFieldFilters]
+    [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
   );
+
+  // Compile the expression against the current field types, mirroring the
+  // notebook-load compile. Runs when the (debounced) expression or the spec
+  // changes; returns the compile error message, or null when valid/empty.
+  const validationError = useMemo(() => {
+    if (expression.trim() === '') return null;
+    const fieldTypes = new Map<string, ExprType>();
+    for (const [id, f] of Object.entries(allFields)) {
+      const t = FAIMS_TYPE_TO_EXPR_TYPE[f['type-returned'] ?? ''];
+      if (t) fieldTypes.set(id, t);
+    }
+    try {
+      compileComputedExpression(expression, fieldTypes, requiredType);
+      return null;
+    } catch (e) {
+      return e instanceof ExpressionError ? e.message : 'Invalid expression';
+    }
+  }, [expression, allFields, requiredType]);
 
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -104,9 +129,19 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
           rows={3}
           value={expression}
           onChange={e => updateExpression(e.target.value)}
-          helperText="Arithmetic over other fields, e.g. {Width} * {Height}"
+          error={validationError !== null}
+          helperText={
+            isText
+              ? "Text expression over other fields, e.g. {Site-Code} & '-' & {Plot}"
+              : 'Numeric expression over other fields, e.g. {Width} * {Height}'
+          }
         />
-        {numericFieldCount > 0 ? (
+        {validationError && (
+          <Alert severity="error" sx={{mt: 1}} data-testid="expression-error">
+            {validationError}
+          </Alert>
+        )}
+        {referenceableFieldCount > 0 ? (
           <Box sx={{mt: 2, maxWidth: 400}}>
             <FieldSearchAutocomplete
               value={null}
@@ -114,25 +149,24 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                 if (fieldId) insertFieldRef(fieldId);
               }}
               scope={{kind: 'viewset', viewsetId}}
-              filters={numericFieldFilters}
+              filters={referenceableFieldFilters}
               label="Insert field"
-              placeholder="Search numeric fields…"
+              placeholder="Search fields…"
               size="small"
               clearOnSelect
-              noOptionsText="No numeric field search results"
+              noOptionsText="No field search results"
               data-testid="computed-field-insert"
             />
           </Box>
         ) : (
           <Alert severity="info" sx={{mt: 2}}>
-            No suitable numerical fields for computation in this form. Add
-            number, percentage, or other numeric fields to reference them in the
-            expression.
+            No referenceable fields in this form. Add number, text, or checkbox
+            fields to reference them in the expression.
           </Alert>
         )}
         <FormHelperText>
-          Reference other numeric fields by wrapping their ID in braces.
-          {numericFieldCount > 0 &&
+          Reference other fields by wrapping their ID in braces.
+          {referenceableFieldCount > 0 &&
             ' Use the field picker above to insert a reference.'}
         </FormHelperText>
       </Box>

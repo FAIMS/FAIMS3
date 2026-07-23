@@ -98,7 +98,11 @@ describe('migrateNotebook chains through current schema', () => {
     const v5 = migrateToV5(
       migrateToV4(migrateToV3(migrateToV2(sampleNotebook)))
     );
-    const {migrated, changed} = migrateNotebook(v5);
+    // 5.0 is no longer terminal; a first pass migrates it to the current
+    // schema, and a second pass is a no-op.
+    const first = migrateNotebook(v5);
+    expect(first.changed).toBe(true);
+    const {migrated, changed} = migrateNotebook(first.migrated);
     expect(changed).toBe(false);
     expect(migrated.uiSpec.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
