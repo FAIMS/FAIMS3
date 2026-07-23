@@ -32,7 +32,7 @@ export function EditProjectDetailsForm({
     {
       name: 'name',
       label: 'Name',
-      schema: resourceNameSchema(1, 'Name'),
+      schema: resourceNameSchema(INPUT_LIMITS.RESOURCE_NAME_MIN_LENGTH, 'Name'),
       maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField(),
