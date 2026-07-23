@@ -123,6 +123,22 @@ all json files in the `notebooks` folder:
 pnpm run load-templates
 ```
 
+## Dump user emails (ops)
+
+For maintenance notices, dump addresses from the people DB (requires `.env`
+pointing at the target Couch, e.g. via `./scripts/env-from-cdk-stack.sh`):
+
+```bash
+pnpm run dump-user-emails                 # one email per line (stdout)
+pnpm run dump-user-emails --format=bcc # comma-separated BCC field
+pnpm run dump-user-emails --format=csv > users.csv
+```
+
+By default skips addresses matching `test` or `demo` (anywhere) or
+`example.com`. Override with `--skip=pat1,pat2` (comma-separated regexes) or
+`--no-skip`. Disabled accounts are omitted unless `--include-disabled`. Counts
+go to stderr.
+
 ## Development
 
 There is an alternate docker compose file for development that mounts the
