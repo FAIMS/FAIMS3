@@ -18,12 +18,16 @@ Not covered: notebook JSON migrations.
   Changing `couchVersionTag` changes user data, so CloudFormation **replaces the
   instance**. The data EBS volume is separate and should be retained and
   reattached. The first deploy after enabling that flag also replaces once.
-- Expect Couch downtime during replacement.
+- **This procedure incurs Couch (and therefore app) downtime** while the
+  instance is stopped/replaced and until keys are re-pushed. The sysadmin
+  should notify users ahead of the maintenance window.
 - Prefer a specific 3.x patch tag.
 - After replace, re-push JWT public keys into Couch (`migrate-with-keys`); user
   data regenerates `local.ini` but does not restore signing-key config.
 
 ## Setup
+
+### CDK config
 
 From `infrastructure/aws-cdk`:
 
@@ -33,9 +37,62 @@ export CONFIG_FILE_NAME=<env>.json
 pnpm run validate-config
 ```
 
-Keep `CONFIG_FILE_NAME` set for the whole window.
+Keep `CONFIG_FILE_NAME` set for the whole window. `stackName` / region are in
+`configs/<env>.json`.
+
+### Repo revision and build
+
+**Use the same whole-repo revision as the deployed FAIMS stack** (e.g. `main`
+pulled up to date if that is what is deployed, or the git SHA/tag matching the
+deployed Conductor/app image tags). A newer or older local tree can apply schema
+changes early/late, regress the env, or leave design docs / shared packages out
+of sync.
+
+From the repo root:
+
+```bash
+pnpm install
+pnpm build   # or npx turbo build
+```
+
+### API env from the deployed stack
+
+With **AWS credentials active**, build `api/.env` from the Conductor task
+(Secrets Manager values included). Later steps reuse this file.
+
+From `api`:
+
+```bash
+./scripts/env-from-cdk-stack.sh <stack-name> -o .env --region <region>
+# e.g. ./scripts/env-from-cdk-stack.sh DASS-stage -o .env -r ap-southeast-2
+```
+
+Confirm `api/.env` includes the region (needed for Secrets Manager / JWT key
+load). The export script writes this when you pass `--region`; if missing, add:
+
+```bash
+# api/.env
+AWS_DEFAULT_REGION=ap-southeast-2
+```
+
+### Notify users
+
+Dump active user emails (uses `api/.env` above) and send a maintenance notice
+**before** you stop Couch:
+
+```bash
+cd api
+pnpm run dump-user-emails                 # one address per line (stdout)
+pnpm run dump-user-emails -- --format=bcc # comma-separated for a BCC field
+pnpm run dump-user-emails -- --format=csv > users.csv
+```
+
+Default skip filters drop addresses matching `test`, `demo`, or `example.com`;
+see `api/README.md` (`--skip` / `--no-skip`).
 
 ## 1. Baseline
+
+From `infrastructure/aws-cdk` (separate from `api/.env`):
 
 ```bash
 cp scripts/.env.dist scripts/.env
@@ -87,15 +144,12 @@ Watch CloudFormation events and ALB Couch target health until healthy. Update
 
 ## 4. Re-init keys and migrate
 
-Build `api/.env` from the deployed Conductor task (Secrets Manager values
-included), then re-run DB init + JWT key push against the new Couch instance.
-`stackName` / region are in `configs/<env>.json`.
-
-From `api` (AWS credentials active):
+Using the `api/.env` from Setup (re-run `env-from-cdk-stack.sh` only if you need
+a fresh export). With **AWS credentials active** in this terminal
+(`migrate-with-keys` loads signing keys from Secrets Manager):
 
 ```bash
-./scripts/env-from-cdk-stack.sh <stack-name> -o .env --region <region>
-# e.g. ./scripts/env-from-cdk-stack.sh DASS-stage -o .env -r ap-southeast-2
+cd api
 pnpm run migrate-with-keys
 ```
 
@@ -103,9 +157,9 @@ Expect `JWT public key configured in CouchDB` and a successful migration.
 
 ## 5. Verify
 
-Update `EC2_INSTANCE_ID` in `scripts/.env` if you have not already, then from
-`infrastructure/aws-cdk` re-run the baseline and compare to the pre-upgrade
-output (version, markers):
+Update `EC2_INSTANCE_ID` in `infrastructure/aws-cdk/scripts/.env` if you have
+not already, then from `infrastructure/aws-cdk` re-run the baseline and compare
+to the pre-upgrade output (version, markers):
 
 ```bash
 pnpm run couch-upgrade-baseline
@@ -113,7 +167,7 @@ pnpm run couch-upgrade-baseline
 
 Smoke-test Conductor login, Control Centre, and the collection app.
 
-## 6. Rollback
+## 6. Rollback (optional, if errors)
 
 **Version only** (data looks intact): set `couchVersionTag` back, prepare-replace,
 `cdk diff`, `cdk deploy`, re-run keys/migrate, re-verify. Some upgrades mutate
@@ -123,8 +177,3 @@ on-disk state; if auth breaks, use snapshot restore instead.
 [Recovering couch data volume from EBS Snapshot](../../../../../infrastructure/aws-cdk/README.md#recovering-couch-data-volume-from-ebs-snapshot)
 (`ebsRecoverySnapshotId`). Remove that field from config after a successful
 restore.
-
-## 7. Close out
-
-Push final config (no `ebsRecoverySnapshotId`). Promote the same steps to DEV,
-then PROD, only after stage sign-off.
