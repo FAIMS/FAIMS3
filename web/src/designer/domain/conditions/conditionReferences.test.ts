@@ -10,7 +10,8 @@ import {
   updateConditionReferences,
 } from './conditionReferences';
 import type {FieldType} from '../../state/initial';
-import type {ConditionType} from '../../types/condition';
+import type {ConditionType, RuleCondition} from '../../types/condition';
+import {isBooleanCondition} from '@/lib/conditionUtils';
 
 describe('conditionReferences — field usage and rename', () => {
   it('detects field usage in nested boolean conditions', () => {
@@ -117,7 +118,36 @@ describe('conditionReferences — option value references', () => {
 
     const updated = updateConditionReferences(condition, 'choice', 'A', 'AA');
 
-    expect(updated.conditions?.[0].value).toBe('AA');
-    expect(updated.conditions?.[1].value).toBe('A');
+    expect(isBooleanCondition(updated)).toBe(true);
+    if (!isBooleanCondition(updated)) {
+      throw new Error(
+        'Expected the root condition to be a boolean condition with an operator of "and" or "or"'
+      );
+    }
+
+    expect(
+      Array.isArray(updated.conditions) && updated.conditions.length === 2
+    ).toBe(true);
+    if (!Array.isArray(updated.conditions) || updated.conditions.length !== 2) {
+      throw new Error(
+        'Expected the updated condition to contain exactly two child conditions'
+      );
+    }
+
+    const [firstCondition, secondCondition] = updated.conditions ?? [];
+
+    expect(isBooleanCondition(firstCondition)).toBe(false);
+    expect(isBooleanCondition(secondCondition)).toBe(false);
+    if (
+      isBooleanCondition(firstCondition) ||
+      isBooleanCondition(secondCondition)
+    ) {
+      throw new Error(
+        'Expected child conditions to be rule conditions, not boolean conditions'
+      );
+    }
+
+    expect((firstCondition as RuleCondition).value).toBe('AA');
+    expect((secondCondition as RuleCondition).value).toBe('A');
   });
 });

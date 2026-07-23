@@ -13,718 +13,125 @@
 // limitations under the License.
 
 /**
- * @file Recursive condition builder UI (boolean groups + leaf comparisons).
+ * @file Entry point for the condition editor.
  */
 
 import {
-  Button,
-  Checkbox,
-  Divider,
-  FormControl,
-  FormHelperText,
-  Grid,
-  IconButton,
-  InputLabel,
-  ListItemText,
-  MenuItem,
-  Select,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import {ChoiceElementProps} from '@faims3/forms';
-import {designerHtmlInput} from '../../lib/input-limits';
-import {useMemo, useState} from 'react';
-import {useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
-import {FieldSearchAutocomplete} from '../field-selector';
-import {
-  allOperators,
-  EMPTY_BOOLEAN_CONDITION,
-  EMPTY_FIELD_CONDITION,
-} from './constants';
-import {
-  ConditionProps,
+  addRuleToGroup,
+  conditionToEditorTree,
+  deleteNodeFromTree,
+  editorTreeToCondition,
+  groupNodeWithRuleInTree,
+  moveNodeInTree,
+  ROOT_CONDITION_GROUP_ID,
+  ungroupNode,
+  updateGroupOperator,
+  updateRuleNode,
+  wrapRuleInGroup,
+} from '@/lib/conditionUtils';
+import {Stack, Typography} from '@mui/material';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import type {
+  ConditionBooleanOperator,
+  ConditionEditorActions,
+  ConditionGroupNode,
   ConditionType,
-  SelectableConditionOption,
+  RuleCondition,
 } from '../../types/condition';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
-import SplitscreenIcon from '@mui/icons-material/Splitscreen';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import type {FieldSearchScope} from '../../features/field-search';
-import {resolveFieldIdsInScope} from '../../features/field-search';
-import {selectUiViews, selectUiViewSets} from '../../store/selectors';
-import {designerConditionFrameSx} from '../designer-style';
+import {ConditionSummary} from './ConditionSummary';
+import {DraggableConditionEditor} from './DraggableConditionEditor';
 
-/** Options from a Select/Radio/Multi field usable as condition RHS values. */
-const getSelectableOptions = (
-  fieldDef: FieldType
-): SelectableConditionOption[] =>
-  ((fieldDef['component-parameters'] as {ElementProps?: ChoiceElementProps})
-    .ElementProps?.options ?? []) as SelectableConditionOption[];
-
-/** Root condition editor: boolean group (and/or) or single field comparison. */
-export const ConditionControl = (props: ConditionProps) => {
-  const initial = props.initial || EMPTY_FIELD_CONDITION;
-
-  const [condition, setCondition] = useState<ConditionType | null>(initial);
-
-  const conditionChanged = (condition: ConditionType | null) => {
-    setCondition(condition);
-    if (props.onChange !== undefined) props.onChange(condition);
-  };
-
-  if (condition === null) return <p>Empty Condition</p>;
-  else {
-    const isBoolean =
-      condition.operator === 'and' || condition.operator === 'or';
-    return (
-      <Stack direction="row" spacing={2} sx={designerConditionFrameSx}>
-        {isBoolean ? (
-          <BooleanConditionControl
-            onChange={conditionChanged}
-            onDuplicate={props.onDuplicate}
-            initial={condition}
-            field={props.field}
-            view={props.view}
-          />
-        ) : (
-          <FieldConditionControl
-            onChange={conditionChanged}
-            onDuplicate={props.onDuplicate}
-            initial={condition}
-            field={props.field}
-            view={props.view}
-          />
-        )}
-      </Stack>
-    );
-  }
+/**
+ * Main condition editor used by ConditionModal.
+ */
+export type ConditionControlProps = {
+  onChange?: (condition: ConditionType | null) => void;
+  initial?: ConditionType | null;
+  /** When set, restricts which fields can be chosen (e.g. same-section rules). */
+  field?: string;
+  view?: string;
 };
 
-/** Nested editor for AND/OR groups; each child is a recursive {@link ConditionControl}. */
-const BooleanConditionControl = (props: ConditionProps) => {
-  const initial: ConditionType = useMemo(
-    () => props.initial || EMPTY_BOOLEAN_CONDITION,
-    [props]
+export const ConditionControl = (props: ConditionControlProps) => {
+  // Editor tree used by the draggable condition UI.
+  const [root, setRoot] = useState<ConditionGroupNode>(() =>
+    conditionToEditorTree(props.initial ?? null)
   );
 
-  const [condition, setCondition] = useState<ConditionType | null>(initial);
+  // Persisted condition generated from the editor tree.
+  const condition = useMemo(() => editorTreeToCondition(root), [root]);
 
-  const updateOperator = (value: string) => {
-    updateCondition({...condition, operator: value});
-  };
+  useEffect(() => {
+    // Notify parent component when the editor tree produces a new condition.
+    props.onChange?.(condition);
+  }, [condition]);
 
-  const updateCondition = (cond: ConditionType | null) => {
-    const newCond = cond === null ? EMPTY_FIELD_CONDITION : cond;
-    setCondition(newCond);
-    if (newCond && props.onChange) {
-      props.onChange(newCond);
-    }
-  };
-
-  // callback for each condition inside the boolean
-  const conditionCallback = (index: number) => {
-    return (value: ConditionType | null) => {
-      if (condition && condition.conditions) {
-        if (value === null) {
-          const newConditions = condition.conditions.filter(
-            (_v: ConditionType, i: number) => {
-              return i !== index;
-            }
-          );
-          if (newConditions.length === 0)
-            updateCondition(EMPTY_FIELD_CONDITION);
-          else updateCondition({...condition, conditions: newConditions});
-        } else {
-          const newConditions = condition.conditions.map(
-            (v: ConditionType, i: number) => {
-              if (i === index) return value;
-              else return v;
-            }
-          );
-          updateCondition({...condition, conditions: newConditions});
-        }
-      } else if (condition) {
-        if (value) updateCondition({...condition, conditions: [value]});
-        else updateCondition(EMPTY_FIELD_CONDITION);
-      }
-    };
-  };
-
-  const addCondition = () => {
-    if (condition) {
-      const existing = condition.conditions || [];
-      // Duplicate the first existing condition (or use empty condition if none)
-      const template =
-        existing.length > 0
-          ? JSON.parse(JSON.stringify(existing[0]))
-          : {...EMPTY_FIELD_CONDITION};
-
-      const newCondition = {
-        ...condition,
-        conditions: [...existing, template],
-      };
-      updateCondition(newCondition);
-    }
-  };
-
-  const deleteCondition = () => {
-    updateCondition(EMPTY_FIELD_CONDITION);
-  };
-
-  const duplicateCondition = (index: number) => {
-    if (condition && condition.conditions) {
-      const copy = JSON.parse(
-        JSON.stringify(condition.conditions[index])
-      ) as ConditionType;
-      updateCondition({
-        ...condition,
-        conditions: [...condition.conditions, copy],
-      });
-    }
-  };
-
-  if (condition)
-    return (
-      <Stack direction="row" spacing={2}>
-        <Stack direction="column" spacing={2}>
-          {condition.conditions ? (
-            condition.conditions.map((cond: ConditionType, index: number) => (
-              <ConditionControl
-                key={index}
-                onChange={conditionCallback(index)}
-                onDuplicate={() => duplicateCondition(index)}
-                initial={cond}
-                field={props.field}
-                view={props.view}
-              />
-            ))
-          ) : (
-            <div></div>
-          )}
-          <Tooltip describeChild title="Add another condition">
-            <Button variant="outlined" color="primary" onClick={addCondition}>
-              Add another condition
-            </Button>
-          </Tooltip>
-        </Stack>
-        <Stack direction="column" spacing={2}>
-          <FormControl sx={{minWidth: 100}}>
-            <InputLabel id="operator">Operator</InputLabel>
-            <Select
-              labelId="operator"
-              label="Operator"
-              onChange={e => updateOperator(e.target.value)}
-              value={condition.operator}
-            >
-              <MenuItem key="and" value="and">
-                and
-              </MenuItem>
-              <MenuItem key="or" value="or">
-                or
-              </MenuItem>
-            </Select>
-          </FormControl>
-
-          <Tooltip describeChild title="Remove this boolean condition">
-            <IconButton color="secondary" onClick={deleteCondition}>
-              <RemoveCircleIcon />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Stack>
-    );
-  else return <div></div>;
-};
-
-/** Leaf editor: pick compared field, operator, and value (with type-specific inputs). */
-export const FieldConditionControl = (props: ConditionProps) => {
-  const initialValue = useMemo(
-    () =>
-      props.initial || {
-        field: '',
-        operator: 'equal',
-        value: '',
-      },
-    [props]
-  );
-  const [condition, setCondition] = useState(initialValue);
-
-  const allFields = useAppSelector(
-    state => state.notebook.uiSpec.present.fields
+  const commitRoot = useCallback(
+    (updater: (current: ConditionGroupNode) => ConditionGroupNode) => {
+      setRoot(current => updater(current));
+    },
+    []
   );
 
-  const views = useAppSelector(selectUiViews);
-  const viewsets = useAppSelector(selectUiViewSets);
+  const conditionEditorActions = useMemo<ConditionEditorActions>(
+    () => ({
+      updateRule: (nodeId: string, patch: Partial<RuleCondition>) =>
+        commitRoot(current => updateRuleNode(current, nodeId, patch)),
 
-  // Work out which fields to show in the field selector. Conditions can only
-  // reference fields within the same form, so scope the list to the current
-  // form (viewset): resolve the entry context (props.field or props.view) to
-  // its containing form, then gather every field across that form's sections
-  // (mirrors TemplatedStringFieldEditor's viewSetFields). If the form can't be
-  // resolved, show nothing rather than leaking other forms' fields. Then remove
-  // either the current field or the fields in the current view.
-  const fieldSearchScope = useMemo((): FieldSearchScope => {
-    // Which section's condition are we editing?
-    if (props.view) {
-      return {kind: 'context', sectionId: props.view};
-    }
-    if (props.field) {
-      return {kind: 'context', fieldId: props.field};
-    }
-    // Standalone use, no context: nothing to scope to, show all fields.
-    return {kind: 'all'};
-  }, [props.view, props.field]);
+      addRule: (groupId: string) =>
+        commitRoot(current => addRuleToGroup(current, groupId)),
 
-  const selectableFieldCount = useMemo(
-    () =>
-      resolveFieldIdsInScope(allFields, views, viewsets, fieldSearchScope)
-        .length,
-    [allFields, views, viewsets, fieldSearchScope]
+      updateRootOperator: (operator: ConditionBooleanOperator) =>
+        commitRoot(current =>
+          updateGroupOperator(current, ROOT_CONDITION_GROUP_ID, operator)
+        ),
+
+      updateGroupOperator: (
+        groupId: string,
+        operator: ConditionBooleanOperator
+      ) =>
+        commitRoot(current => updateGroupOperator(current, groupId, operator)),
+
+      deleteNode: (nodeId: string) =>
+        commitRoot(current => deleteNodeFromTree(current, nodeId)),
+
+      moveNode: (nodeId: string, targetGroupId: string, targetIndex: number) =>
+        commitRoot(current =>
+          moveNodeInTree(current, nodeId, targetGroupId, targetIndex)
+        ),
+
+      groupNodeWithRule: (
+        nodeId: string,
+        targetRuleId: string,
+        operator: ConditionBooleanOperator = 'and'
+      ) =>
+        commitRoot(current =>
+          groupNodeWithRuleInTree(current, nodeId, targetRuleId, operator)
+        ),
+
+      wrapRuleInGroup: (
+        nodeId: string,
+        operator: ConditionBooleanOperator = 'and'
+      ) => commitRoot(current => wrapRuleInGroup(current, nodeId, operator)),
+
+      ungroup: (groupId: string) =>
+        commitRoot(current => ungroupNode(current, groupId)),
+    }),
+    [commitRoot]
   );
-
-  const targetFieldDef = condition.field ? allFields[condition.field] : null;
-
-  /* Checks if a field has predefined options */
-  const isPredefinedOptions = (fieldDef: FieldType | null): boolean => {
-    if (!fieldDef) return false;
-    return ['Select', 'RadioGroup', 'MultiSelect', 'Checkbox'].includes(
-      fieldDef['component-name']
-    );
-  };
-
-  const isNumberOrDateField = (fieldDef: FieldType | null): boolean => {
-    if (!fieldDef) return false;
-    // list our current number/date fields
-    // note that dates are stored as strings but we can still do greater/less comparisons on them
-    return [
-      'NumberField',
-      'PercentageSlider',
-      'DateTimePicker',
-      'DatePicker',
-      'MonthPicker',
-      'DateTimeNow',
-    ].includes(fieldDef['component-name']);
-  };
-
-  // Get the allowed operators for a field based on its type and parameters
-  const getAllowedOperatorsForField = (
-    fieldDef: FieldType | null
-  ): string[] => {
-    return fieldDef
-      ? (() => {
-          const cName = fieldDef['component-name'];
-          if (cName === 'MultiSelect')
-            // these are the array operators
-            return [
-              'contains-one-of',
-              'does-not-contain-any-of',
-              'contains-all-of',
-              'does-not-contain-all-of',
-              'contains-regex',
-              'does-not-contain-regex',
-            ];
-          // Checkbox is true/false so only equal makes sense
-          if (cName === 'Checkbox') return ['equal'];
-          // String valued fields with options, only equality comparisons make sense
-          if (isPredefinedOptions(fieldDef)) return ['equal', 'not-equal'];
-          // Fields we can compare order for (numbers, dates) get greater/less as well
-          if (isNumberOrDateField(fieldDef))
-            return ['equal', 'not-equal', 'greater', 'less'];
-          // otherwise use all string valued operators
-          return [
-            'equal',
-            'not-equal',
-            'greater',
-            'less',
-            'string-contains',
-            'string-does-not-contain',
-            'regex',
-          ];
-        })()
-      : [];
-  };
-
-  const updateField = (value: string) => {
-    const newFieldDef = allFields[value] ?? null;
-
-    const allowedOperators = getAllowedOperatorsForField(newFieldDef);
-
-    let newOperator = condition.operator;
-    if (
-      allowedOperators.length > 0 &&
-      !allowedOperators.includes(newOperator)
-    ) {
-      newOperator = allowedOperators[0];
-    }
-
-    let newValue: unknown = '';
-    if (newFieldDef) {
-      if (newFieldDef['component-name'] === 'Checkbox') {
-        newValue = true;
-      } else if (isPredefinedOptions(newFieldDef)) {
-        const options = getSelectableOptions(newFieldDef);
-        if (options.length > 0) {
-          if (newFieldDef['component-name'] === 'MultiSelect') {
-            newValue = [options[0].value];
-          } else {
-            newValue = options[0].value;
-          }
-        }
-      }
-    }
-
-    updateCondition({
-      field: value,
-      operator: newOperator,
-      value: newValue,
-    });
-  };
-
-  const updateOperator = (value: string) => {
-    updateCondition({...condition, operator: value});
-  };
-
-  const updateValue = (value: unknown) => {
-    updateCondition({...condition, value: value});
-  };
-
-  const updateCondition = (condition: ConditionType) => {
-    setCondition(condition);
-    if (
-      props.onChange &&
-      condition.field &&
-      condition.operator &&
-      condition.value !== undefined
-    ) {
-      props.onChange(condition);
-    }
-  };
-
-  const renderValueEditor = (fieldDef: FieldType) => {
-    const cName = fieldDef['component-name'];
-    const params = (fieldDef['component-parameters'] || {}) as {
-      ElementProps?: ChoiceElementProps;
-    };
-    const possibleOptions =
-      (params.ElementProps?.options as
-        | SelectableConditionOption[]
-        | undefined) ?? [];
-
-    if (
-      cName !== 'Select' &&
-      cName !== 'RadioGroup' &&
-      cName !== 'MultiSelect' &&
-      cName !== 'Checkbox'
-    ) {
-      return (
-        <TextField
-          variant="outlined"
-          label="Value"
-          data-testid="value-input"
-          value={condition.value ?? ''}
-          onChange={e => updateValue(e.target.value)}
-          sx={{minWidth: 200}}
-          slotProps={{htmlInput: designerHtmlInput()}}
-        />
-      );
-    }
-
-    switch (cName) {
-      case 'Select':
-      case 'RadioGroup': {
-        const isValidOption = possibleOptions.some(
-          opt => opt.value === condition.value
-        );
-        return (
-          <FormControl sx={{minWidth: 200}} error={!isValidOption}>
-            <InputLabel>Value</InputLabel>
-            <Select
-              data-testid="value-input"
-              label="Value"
-              value={isValidOption ? condition.value : (condition.value ?? '')}
-              onChange={e => updateValue(e.target.value)}
-            >
-              {possibleOptions.map(opt => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-            {!isValidOption && condition.value !== '' && (
-              <FormHelperText error sx={{mx: 0}}>
-                Invalid value: "{String(condition.value)}"
-              </FormHelperText>
-            )}
-          </FormControl>
-        );
-      }
-      case 'MultiSelect': {
-        const selectedValues = Array.isArray(condition.value)
-          ? (condition.value as string[])
-          : [];
-        const areAllValid = selectedValues.every(v =>
-          possibleOptions.some(opt => opt.value === v)
-        );
-        return (
-          <FormControl sx={{minWidth: 200}} error={!areAllValid}>
-            <InputLabel>Value</InputLabel>
-            <Select
-              multiple
-              data-testid="value-input"
-              label="Value"
-              value={selectedValues}
-              onChange={e => updateValue(e.target.value as string[])}
-              // Render selected values as labels
-              renderValue={selected => {
-                const selectedLabels = (selected as string[]).map(value => {
-                  const option = possibleOptions.find(
-                    opt => opt.value === value
-                  );
-                  return option ? option.label : value;
-                });
-                return selectedLabels.join(', ');
-              }}
-            >
-              {possibleOptions.map(opt => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  <Checkbox checked={selectedValues.indexOf(opt.value) > -1} />
-                  <ListItemText primary={opt.label} />
-                </MenuItem>
-              ))}
-            </Select>
-            {selectedValues.some(
-              v => !possibleOptions.some(opt => opt.value === v)
-            ) && (
-              <FormHelperText error sx={{mx: 0}}>
-                Invalid values: "
-                {selectedValues
-                  .filter(v => !possibleOptions.some(opt => opt.value === v))
-                  .join(', ')}
-                "
-              </FormHelperText>
-            )}
-          </FormControl>
-        );
-      }
-      case 'Checkbox': {
-        let booleanValue = condition.value;
-        if (typeof booleanValue !== 'boolean') {
-          booleanValue = true;
-        }
-        return (
-          <FormControl sx={{minWidth: 200}}>
-            <InputLabel>Value</InputLabel>
-            <Select
-              label="Value"
-              data-testid="value-input"
-              value={booleanValue ? 'true' : 'false'}
-              onChange={e => updateValue(e.target.value === 'true')}
-            >
-              <MenuItem value="true">Checked</MenuItem>
-              <MenuItem value="false">Not Checked</MenuItem>
-            </Select>
-          </FormControl>
-        );
-      }
-      default: {
-        if (possibleOptions.length === 0) {
-          return (
-            <TextField
-              variant="outlined"
-              data-testid="value-input"
-              label="Value"
-              value={condition.value ?? ''}
-              onChange={e => updateValue(e.target.value)}
-              sx={{minWidth: 200}}
-              slotProps={{htmlInput: designerHtmlInput()}}
-            />
-          );
-        } else {
-          const isValidOption = possibleOptions.some(
-            opt => opt.value === condition.value
-          );
-          return (
-            <TextField
-              variant="outlined"
-              label="Value"
-              data-testid="value-input"
-              value={condition.value ?? ''}
-              onChange={e => updateValue(e.target.value)}
-              sx={{minWidth: 200}}
-              error={!isValidOption}
-              slotProps={{htmlInput: designerHtmlInput()}}
-              helperText={
-                !isValidOption ? `Invalid value: "${condition.value}"` : ''
-              }
-            />
-          );
-        }
-      }
-    }
-  };
-
-  const isValueValidForField = (): boolean => {
-    if (!targetFieldDef) return true;
-    const cName = targetFieldDef['component-name'];
-    const params = (targetFieldDef['component-parameters'] || {}) as {
-      ElementProps?: ChoiceElementProps;
-    };
-    const possibleOptions =
-      (params.ElementProps?.options as
-        | SelectableConditionOption[]
-        | undefined) ?? [];
-    const enableOtherOption = params.ElementProps?.enableOtherOption ?? false;
-
-    if (
-      enableOtherOption &&
-      (cName === 'Select' || cName === 'MultiSelect' || cName === 'RadioGroup')
-    ) {
-      return true;
-    }
-
-    if (cName === 'Select' || cName === 'RadioGroup') {
-      return possibleOptions.some(o => o.value === condition.value);
-    }
-    if (cName === 'MultiSelect') {
-      if (!Array.isArray(condition.value)) return false;
-      if (enableOtherOption) return true;
-      return (condition.value as string[]).every(val =>
-        possibleOptions.some(o => o.value === val)
-      );
-    }
-    if (cName === 'Checkbox') {
-      return condition.value === true || condition.value === false;
-    }
-    return true;
-  };
-
-  const handleSplitCondition = () => {
-    if (props.onChange) {
-      // turns the single condition into an AND group with a duplicate,
-      props.onChange({
-        operator: 'and',
-        conditions: [condition, JSON.parse(JSON.stringify(condition))],
-      });
-    }
-  };
-
-  const deleteCondition = () => {
-    if (props.onChange) {
-      props.onChange(null);
-    }
-  };
-
-  const valueMismatch = !isValueValidForField();
-  const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
-
-  // If there are no fields to select, show a message instead of the editor.
-  if (selectableFieldCount === 0) {
-    return (
-      <Typography variant="body2" color="error">
-        {props.view ? (
-          <>
-            This form has only one section. Adding conditions for a section
-            requires more than one section so that fields from other sections
-            can be referenced.
-          </>
-        ) : (
-          <>
-            This form only has one field. Please add fields to this form to
-            enable adding conditions.
-          </>
-        )}
-      </Typography>
-    );
-  }
 
   return (
-    <Grid container>
-      <Stack
-        direction="row"
-        spacing={2}
-        divider={<Divider orientation="vertical" flexItem />}
-      >
-        <FieldSearchAutocomplete
-          value={condition.field || null}
-          onChange={fieldId => updateField(fieldId || '')}
-          scope={fieldSearchScope}
-          data-testid="field-input"
-          label="Field"
-        />
+    <Stack direction="column" spacing={2}>
+      <Typography variant="h6">Condition editor</Typography>
 
-        <FormControl
-          sx={{minWidth: 200}}
-          data-testid="operator-input"
-          disabled={allowedOperators.length === 1}
-        >
-          <InputLabel id="operator">Operator</InputLabel>
-          <Select
-            labelId="operator"
-            label="Operator"
-            onChange={e => updateOperator(e.target.value)}
-            value={
-              allowedOperators.includes(condition.operator)
-                ? condition.operator
-                : ''
-            }
-          >
-            {allowedOperators.map(op => (
-              <MenuItem key={op} value={op}>
-                {allOperators.get(op)?.toLowerCase() ?? op}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <ConditionSummary condition={condition} showTitle={true} />
 
-        {targetFieldDef ? (
-          renderValueEditor(targetFieldDef)
-        ) : (
-          <TextField
-            label="Value"
-            sx={{minWidth: 200}}
-            onChange={() => {}}
-            slotProps={{htmlInput: designerHtmlInput()}}
-          />
-        )}
-
-        {props.onDuplicate && (
-          <Tooltip describeChild title="Copy this condition">
-            <IconButton
-              color="primary"
-              onClick={props.onDuplicate}
-              data-testid="duplicate-button"
-            >
-              <ContentCopyIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-        <Tooltip describeChild title="Make this an 'and' or 'or' condition">
-          <IconButton
-            color="primary"
-            onClick={handleSplitCondition}
-            data-testid="split-button"
-          >
-            <SplitscreenIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip describeChild title="Remove this condition">
-          <IconButton
-            color="secondary"
-            onClick={deleteCondition}
-            data-testid="delete-button"
-          >
-            <RemoveCircleIcon />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-      {valueMismatch && (
-        <FormHelperText error sx={{mt: 0.5, mx: 0}}>
-          Invalid value!
-        </FormHelperText>
-      )}
-    </Grid>
+      <DraggableConditionEditor
+        root={root}
+        field={props.field}
+        view={props.view}
+        actions={conditionEditorActions}
+      />
+    </Stack>
   );
 };

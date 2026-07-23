@@ -16,6 +16,7 @@
  * @file Pure helpers for walking and rewriting visibility conditions (field + option refs).
  */
 
+import {isBooleanCondition} from '@/lib/conditionUtils';
 import type {FieldType} from '../../state/initial';
 import type {ConditionType} from '../../types/condition';
 
@@ -32,18 +33,15 @@ export const isFieldUsedInCondition = (
 ): boolean => {
   if (!condition) return false;
 
-  if (condition.field === fieldName) {
-    return true;
-  }
-
   // Composite: true if any child references the field.
-  if (
-    (condition.operator === 'and' || condition.operator === 'or') &&
-    condition.conditions
-  ) {
+  if (isBooleanCondition(condition) && condition.conditions) {
     return condition.conditions.some(subCondition =>
       isFieldUsedInCondition(subCondition, fieldName)
     );
+  }
+
+  if ('field' in condition && condition.field === fieldName) {
+    return true;
   }
 
   return false;
@@ -64,20 +62,17 @@ export const replaceFieldInCondition = (
 ): ConditionType | null | undefined => {
   if (!condition) return condition;
 
-  if (condition.field === oldFieldName) {
-    return {...condition, field: newFieldName};
-  }
-
-  if (
-    (condition.operator === 'and' || condition.operator === 'or') &&
-    condition.conditions
-  ) {
+  if (isBooleanCondition(condition) && condition.conditions) {
     return {
       ...condition,
       conditions: condition.conditions.map(subCondition =>
         replaceFieldInCondition(subCondition, oldFieldName, newFieldName)
       ) as ConditionType[],
     };
+  }
+
+  if ('field' in condition && condition.field === oldFieldName) {
+    return {...condition, field: newFieldName};
   }
 
   return condition;
@@ -105,24 +100,21 @@ const doesConditionContainValue = (
   expectedValue: string
 ): boolean => {
   // AND/OR groups: any branch may contain the value.
-  if (
-    (condition.operator === 'and' || condition.operator === 'or') &&
-    condition.conditions
-  ) {
+  if (isBooleanCondition(condition) && condition.conditions) {
     return condition.conditions.some(subCondition =>
       doesConditionContainValue(subCondition, fieldName, expectedValue)
     );
   }
 
-  if (condition.field !== fieldName) {
+  if ('field' in condition && condition.field !== fieldName) {
     return false;
   }
 
-  if (Array.isArray(condition.value)) {
+  if ('value' in condition && Array.isArray(condition.value)) {
     return condition.value.includes(expectedValue);
   }
 
-  return condition.value === expectedValue;
+  return 'value' in condition && condition.value === expectedValue;
 };
 
 /**
@@ -188,10 +180,7 @@ export const updateConditionReferences = (
   newValue: string
 ): ConditionType => {
   // Recurse into AND/OR groups.
-  if (
-    (condition.operator === 'and' || condition.operator === 'or') &&
-    condition.conditions
-  ) {
+  if (isBooleanCondition(condition) && condition.conditions) {
     return {
       ...condition,
       conditions: condition.conditions.map(subCondition =>
@@ -200,11 +189,11 @@ export const updateConditionReferences = (
     };
   }
 
-  if (condition.field !== fieldName) {
+  if ('field' in condition && condition.field !== fieldName) {
     return condition;
   }
 
-  if (Array.isArray(condition.value)) {
+  if ('value' in condition && Array.isArray(condition.value)) {
     return {
       ...condition,
       value: condition.value.map(value =>
@@ -213,7 +202,7 @@ export const updateConditionReferences = (
     };
   }
 
-  if (condition.value === oldValue) {
+  if ('value' in condition && condition.value === oldValue) {
     return {
       ...condition,
       value: newValue,
