@@ -53,9 +53,10 @@ Field ID, and add any desired Helper Text.
 The Computed Text's key feature is the **Expression** text area, which
 defines the generated text. Each referenced field is written by wrapping
 its Field ID in braces, and text is joined with the `&` operator, e.g.
-`{Site-Code} & '-' & {Plot}`. Below the expression, a chip is shown for
-each referenceable field in the form; clicking a chip inserts that
-field's reference.
+`{Site-Code} & '-' & {Plot}`. Below the expression,
+a searchable field picker lists the referenceable
+fields in the form; selecting one inserts that field's reference, which
+avoids typing the Field ID by hand.
 
 | Setting          | What It Does                                                                                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -63,7 +64,7 @@ field's reference.
 | **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts its braced reference into the expression.                                 |
 
 The expression is typed and checked when the {{notebook}} is designed —
-mixing types is an error rather than a silent wrong answer. The overall
+mixing types is reported as an error in the Editor. The overall
 expression must produce **text**. The operators are:
 
 - **Concatenation** (`&`) — joins text, e.g. `{Site-Code} & '-A'`.
@@ -97,8 +98,8 @@ records — see
 ## Tips
 
 - **Use the field picker to build expressions** rather than typing Field
-  IDs by hand. Clicking a field inserts the exact braced reference, so you
-  avoid typos and do not need to remember a field's ID.
+  IDs by hand. Selecting a field inserts the exact braced reference, so
+  you avoid typos and do not need to remember a field's ID.
 - **Nest ternaries for classifications** — thresholds like
   Low/Medium/High are a natural fit, as in the example above.
 - **The result stays blank until all referenced fields have values.**

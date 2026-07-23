@@ -52,10 +52,10 @@ Field ID, and add any desired Helper Text.
 The Computed Number's key feature is the **Expression** text area, which
 defines the calculated value. Each referenced field is written by
 wrapping its Field ID in braces, e.g.
-`{Wet-Soil-Mass-g} * {Number-of-Samples}`. Below the expression, a chip
-is shown for each referenceable field in the form; clicking a chip
-inserts that field's reference, which avoids typing the Field ID by
-hand.
+`{Wet-Soil-Mass-g} * {Number-of-Samples}`. Below the expression,
+a searchable field picker lists the referenceable
+fields in the form; selecting one inserts that field's reference, which
+avoids typing the Field ID by hand.
 
 | Setting          | What It Does                                                                                                                                      |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -63,7 +63,7 @@ hand.
 | **Insert field** | A searchable picker of the referenceable fields in the form. Selecting one inserts its braced reference into the expression.                      |
 
 The expression is typed and checked when the {{notebook}} is designed —
-mixing types is an error rather than a silent wrong answer. The overall
+mixing types is reported as an error in the Editor. The overall
 expression must produce a **number**. The operators are:
 
 - **Arithmetic** (`+ - * / %`) — numbers only, with parentheses and a
@@ -96,14 +96,13 @@ records — see
 ## Tips
 
 - **Use the field picker to build expressions** rather than typing Field
-  IDs by hand. Clicking a field inserts the exact braced reference, so you
-  avoid typos and do not need to remember a field's ID.
+  IDs by hand. Selecting a field inserts the exact braced reference, so
+  you avoid typos and do not need to remember a field's ID.
 - **The result stays blank until all referenced fields have values.**
   This is intentional — a partially complete record shows no value rather
   than a misleading partial calculation.
-- **Type mismatches are reported when the {{notebook}} is designed**, not
-  hidden at data-collection time — if an expression mixes types (e.g.
-  multiplying a text field), fix it in the Editor before publishing.
+- **Type mismatches are reported in the Editor** — if an expression mixes
+  types (e.g. multiplying a text field), fix it before publishing.
 - **Computed Numbers are read-only for data collectors.** They see the
   calculated result but cannot edit it, keeping the value consistent with
   its inputs.
