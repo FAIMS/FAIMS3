@@ -385,6 +385,9 @@ EOL`,
       }),
       */
       userData,
+      // UserData (incl. couchVersionTag) only runs on first boot. Without this,
+      // CFN updates UserData in place and the running instance never applies it.
+      userDataCausesReplacement: true,
       vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
       securityGroup: couchSecurityGroup,
       instanceType: new ec2.InstanceType(props.instanceType),
