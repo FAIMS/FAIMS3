@@ -49,7 +49,7 @@ import {
 } from '../../store/slices/uiSpec';
 import {ConditionType} from '../../types/condition';
 import {ConditionModal} from '../condition/ConditionModal';
-import {ConditionTranslation} from '../condition/ConditionTranslation';
+import {ConditionSummary} from '../condition/ConditionSummary';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
@@ -775,7 +775,7 @@ export const BaseFieldEditor = ({
                       Show this field if{' '}
                     </Typography>
                     <Typography variant="caption" color="text.primary">
-                      <ConditionTranslation condition={state.condition} />
+                      <ConditionSummary condition={state.condition} />
                     </Typography>
                   </Box>
                 )}

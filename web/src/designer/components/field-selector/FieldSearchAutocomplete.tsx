@@ -98,7 +98,7 @@ export const FieldSearchAutocomplete = ({
   onChange,
   scope,
   filters,
-  label = 'Field',
+  label,
   placeholder,
   disabled = false,
   limit = 50,
