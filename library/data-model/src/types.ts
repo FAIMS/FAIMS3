@@ -127,6 +127,8 @@ export type EncodedRecord = PouchDB.Core.Document<{
   record_format_version: number;
   created: string;
   created_by: string;
+  /** couch-auth-proxy ACL owner (r/w/d); optional until DATA v1→v2. */
+  creator?: string;
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
@@ -145,6 +147,13 @@ export interface Revision {
   parents: RevisionID[];
   created: string;
   created_by: string;
+  /** couch-auth-proxy ACL creator for this revision node. */
+  creator?: string;
+  /**
+   * couch-auth-proxy ACL parent (record doc id). Distinct from `parents`
+   * (revision DAG) and `relationship.parent` (form links).
+   */
+  parent?: string;
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;
@@ -167,6 +176,10 @@ export interface AttributeValuePair {
   annotations: Annotations;
   created: string;
   created_by: string;
+  /** couch-auth-proxy ACL creator for this AVP node. */
+  creator?: string;
+  /** couch-auth-proxy ACL parent (record doc id). */
+  parent?: string;
   faims_attachments?: FAIMSAttachmentReference[];
 }
 
@@ -190,6 +203,10 @@ export interface FAIMSAttachment {
   record_id: RecordID;
   created: string;
   created_by: string;
+  /** couch-auth-proxy ACL creator for this attachment document. */
+  creator?: string;
+  /** couch-auth-proxy ACL parent (record doc id). */
+  parent?: string;
 }
 
 /**

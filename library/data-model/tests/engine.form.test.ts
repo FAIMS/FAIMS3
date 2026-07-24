@@ -56,12 +56,15 @@ describe('Form Operations', () => {
       expect(result.record._rev).toBeDefined();
       expect(result.record.type).toBe('A');
       expect(result.record.created_by).toBe('test-user');
+      expect(result.record.creator).toBe('test-user');
       expect(result.record.created).toBeDefined();
 
       expect(result.revision._id).toBeDefined();
       expect(result.revision._rev).toBeDefined();
       expect(result.revision.type).toBe('A');
       expect(result.revision.created_by).toBe('test-user');
+      expect(result.revision.creator).toBe('test-user');
+      expect(result.revision.parent).toBe(result.record._id);
       expect(result.revision.record_id).toBe(result.record._id);
     });
 

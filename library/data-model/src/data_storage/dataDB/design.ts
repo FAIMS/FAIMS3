@@ -3,6 +3,11 @@
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
 import {convertToCouchDBString} from '../utils';
+import {buildDataDbAclDesignDoc} from './acl';
+
+/** `_design/acl` for couch-auth-proxy (map/VDU + project-scoped `dbacl`). */
+export const aclDocument = (projectId: string) =>
+  buildDataDbAclDesignDoc(projectId);
 
 /**
  * Design document for filtering attachments
@@ -266,4 +271,6 @@ export const dataDbDesignDocuments = {
   permissionsDocument,
   indexDocument,
   recordAuditDocument,
+  /** Per-project `_design/acl` — see {@link aclDocument}. */
+  aclDocument,
 };

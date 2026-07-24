@@ -61,6 +61,7 @@ describe('DataEngine', () => {
           record_format_version: 1,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
           revisions: [revisionId],
           heads: [revisionId],
           type: 'A',
@@ -82,6 +83,7 @@ describe('DataEngine', () => {
           record_format_version: 1,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
           revisions: [revisionId],
           heads: [revisionId],
           type: 'A',
@@ -103,6 +105,7 @@ describe('DataEngine', () => {
           record_format_version: 1,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
           revisions: [revisionId],
           heads: [revisionId],
           type: 'A',
@@ -131,6 +134,7 @@ describe('DataEngine', () => {
           record_format_version: 1,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
           revisions: [revisionId],
           heads: [revisionId],
           type: 'A',
@@ -156,6 +160,8 @@ describe('DataEngine', () => {
           parents: [],
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           type: 'A',
           relationship: {},
         };
@@ -179,6 +185,8 @@ describe('DataEngine', () => {
           parents: [],
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           type: 'A',
           relationship: {},
         };
@@ -206,6 +214,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
         };
 
         const created = await engine.core.createAvp(newAvp);
@@ -229,6 +239,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
         };
 
         await engine.core.createAvp(newAvp);
@@ -252,6 +264,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
         };
 
         const created = await engine.core.createAvp(newAvp);
@@ -281,6 +295,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
         };
 
         const created = await engine.core.createAvp(newAvp);
@@ -303,6 +319,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           annotations: {
             annotation: 'This is a test annotation',
             uncertainty: true,
@@ -338,6 +356,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
         };
 
         const created = await engine.core.createAvp(newAvp);
@@ -363,6 +383,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           filename: 'test.txt',
           _attachments: {
             'test.txt': {
@@ -396,6 +418,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           filename: 'test.txt',
           _attachments: {
             'test.txt': {
@@ -430,6 +454,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           filename: 'test.txt',
           _attachments: {
             'test.txt': {
@@ -468,6 +494,8 @@ describe('DataEngine', () => {
           record_id: recordId,
           created: new Date().toISOString(),
           created_by: 'test-user',
+          creator: 'test-user',
+          parent: recordId,
           filename: 'test.txt',
           _attachments: {
             'test.txt': {
@@ -495,6 +523,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
@@ -510,6 +539,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {
           parent: {
@@ -555,6 +586,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
@@ -571,6 +603,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       };
       await engine.core.createAvp(avp1);
 
@@ -583,6 +617,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       };
       await engine.core.createAvp(avp2);
 
@@ -598,6 +634,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       };
@@ -626,6 +664,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revision1Id, revision2Id],
         heads: [revision1Id, revision2Id], // Multiple heads = conflict
         type: 'A',
@@ -641,6 +680,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       };
@@ -654,6 +695,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       };
@@ -682,6 +725,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId1],
         heads: [revisionId1],
         type: 'A',
@@ -696,6 +740,8 @@ describe('DataEngine', () => {
         record_id: recordId1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId1,
       });
 
       await engine.core.createRevision({
@@ -706,6 +752,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId1,
         type: 'A',
         relationship: {},
       });
@@ -716,6 +764,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId2],
         heads: [revisionId2],
         type: 'B',
@@ -730,6 +779,8 @@ describe('DataEngine', () => {
         record_id: recordId2,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId2,
       });
 
       await engine.core.createRevision({
@@ -740,6 +791,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId2,
         type: 'B',
         relationship: {},
       });
@@ -778,6 +831,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revision1Id, revision2Id],
         heads: [revision2Id], // revision2 is the head
         type: 'A',
@@ -793,6 +847,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       });
 
       await engine.core.createRevision({
@@ -803,6 +859,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       });
@@ -817,6 +875,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       });
 
       await engine.core.createRevision({
@@ -827,6 +887,8 @@ describe('DataEngine', () => {
         parents: [revision1Id],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       });
@@ -865,6 +927,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         filename: 'test.txt',
         _attachments: {
           'test.txt': {
@@ -880,6 +944,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
@@ -895,6 +960,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         faims_attachments: [
           {
             attachment_id: attachmentId,
@@ -912,6 +979,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       });
@@ -942,6 +1011,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
@@ -957,6 +1027,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       });
 
       // Create revision without relationship
@@ -968,6 +1040,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       });
@@ -1024,6 +1098,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
@@ -1039,6 +1114,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       });
 
       // Create revision without relationship
@@ -1050,6 +1127,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {},
       });
@@ -1105,6 +1184,7 @@ describe('DataEngine', () => {
         record_format_version: 1,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
@@ -1120,6 +1200,8 @@ describe('DataEngine', () => {
         record_id: recordId,
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
       });
 
       // Create revision with existing parent relationship
@@ -1131,6 +1213,8 @@ describe('DataEngine', () => {
         parents: [],
         created: new Date().toISOString(),
         created_by: 'test-user',
+        creator: 'test-user',
+        parent: recordId,
         type: 'A',
         relationship: {
           parent: {

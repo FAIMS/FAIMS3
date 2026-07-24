@@ -82,7 +82,53 @@ services:
         source: couchdb_data
         target: /opt/couchdb/data
     ports:
+      # Direct Couch for Conductor admin / local debugging. App sync should use
+      # couch-auth-proxy (COUCHDB_PUBLIC_URL), not this port.
       - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Per-document ACL reverse proxy for Pouch↔Couch sync (guest my/all reads).
+  # Pin must match vendored `_design/acl` map/VDU in @faims3/data-model (2.3.0).
+  couch-auth-proxy:
+    # Upstream release v1.2.1 (ddoc 2.3.0); GHCR publishes sha-* tags.
+    image: ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091
+    environment:
+      COUCH_URL: http://couchdb:5984
+      # Must match Couch admin (api/.env COUCHDB_USER / COUCHDB_PASSWORD).
+      # Compose interpolates from the project `.env` / shell; defaults match
+      # api/.env.dist for local-dev.
+      COUCH_ADMIN_USER: ${COUCHDB_USER:-admin}
+      COUCH_ADMIN_PASSWORD: ${COUCHDB_PASSWORD:-aSecretPasswordThatCantBeGuessed}
+      ACL_DB_INCLUDE: '/^data-/'
+      ACL_ROUTE_INCLUDE: pouch-sync,session
+      # FAIMS provisions `_design/acl` via initDataDB / DATA migration
+      ACL_AUTO_INSTALL: 'false'
+      AUTH_RESOLVE_VIA_COUCH_SESSION: 'true'
+      CORS_ORIGINS: ${COUCH_AUTH_PROXY_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      PORT: '8000'
+      HOST: '0.0.0.0'
+    ports:
+      - '0.0.0.0:${COUCH_AUTH_PROXY_EXTERNAL_PORT:-5985}:8000'
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '-qO-',
+          'http://127.0.0.1:8000/_couch-auth-proxy/health',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   couchdb_data:

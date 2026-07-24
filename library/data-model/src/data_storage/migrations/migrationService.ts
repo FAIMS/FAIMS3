@@ -7,7 +7,11 @@ import {
   MigrationsDBFields,
 } from '../migrationsDB';
 import {buildMigrationContext, DEFAULT_MIGRATION_CREATED_BY} from './hooks';
-import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
+import {
+  DB_MIGRATIONS,
+  DB_TARGET_VERSIONS,
+  dataV1toV2Migration,
+} from './migrations';
 import {
   DATABASE_TYPE,
   DatabaseType,
@@ -182,6 +186,8 @@ export async function performMigration({
   const context: MigrationContext = buildMigrationContext({
     getDbById,
     migrationCreatedBy,
+    db,
+    dbName: db.name,
   });
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
@@ -190,6 +196,25 @@ export async function performMigration({
   const batchSize = 100; // Number of documents to process in each batch
   let startKey = null;
   let hasMoreDocs = true;
+
+  // DATA ACL migration installs `_design/acl`; design docs are skipped in the
+  // document loop, and empty DBs would otherwise never run the migrator.
+  if (migrationFunc === dataV1toV2Migration) {
+    try {
+      await Promise.resolve(
+        migrationFunc(
+          {_id: '_local/faims-migration-prelude', _rev: '0-0'} as any,
+          context
+        )
+      );
+    } catch (error) {
+      issues.push(
+        `Error during DATA ACL migration prelude: ${
+          error instanceof Error ? error.message : String(error)
+        }.`
+      );
+    }
+  }
 
   // Process documents in batches to avoid memory issues with large databases
   while (hasMoreDocs) {

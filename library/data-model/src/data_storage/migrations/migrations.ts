@@ -53,6 +53,82 @@ import {
   LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
   resolveMigrationCreatedBy,
 } from './hooks';
+import {
+  ensureDataDbAclDesignDoc,
+  projectIdFromDataDbName,
+} from '../dataDB/acl';
+
+/** Tracks data DBs that already had `_design/acl` ensured in this process. */
+const ensuredDataAclDesignDocs = new Set<string>();
+
+/**
+ * DATA DB v1 → v2: stamp couch-auth-proxy ACL fields and ensure `_design/acl`.
+ *
+ * - `rec-*`: `creator = created_by` when missing
+ * - docs with `record_id` (frev/avp/att): `creator` + `parent = record_id`
+ * - Idempotent for already-stamped docs
+ * - Installs/repairs `_design/acl` + `dbacl` once per DB via migration context
+ */
+export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
+  // Ensure control-plane design doc once per data DB (design docs are skipped
+  // by performMigration's document loop).
+  if (context?.db && context.dbName) {
+    const projectId = projectIdFromDataDbName(context.dbName);
+    if (projectId && !ensuredDataAclDesignDocs.has(context.dbName)) {
+      await ensureDataDbAclDesignDoc({db: context.db, projectId});
+      ensuredDataAclDesignDocs.add(context.dbName);
+    }
+  }
+
+  // Skip design docs if somehow invoked directly
+  if (typeof doc._id === 'string' && doc._id.startsWith('_design/')) {
+    return {action: 'none'};
+  }
+
+  const createdBy =
+    typeof doc.created_by === 'string' && doc.created_by.length > 0
+      ? doc.created_by
+      : undefined;
+
+  let needsUpdate = false;
+  const updated: Record<string, unknown> = {...doc};
+
+  const isRecord =
+    typeof doc._id === 'string' &&
+    (doc._id.startsWith('rec-') || doc.record_format_version !== undefined);
+
+  if (isRecord) {
+    if (
+      createdBy &&
+      (typeof doc.creator !== 'string' || doc.creator.length === 0)
+    ) {
+      updated.creator = createdBy;
+      needsUpdate = true;
+    }
+  } else if (typeof doc.record_id === 'string' && doc.record_id.length > 0) {
+    if (
+      createdBy &&
+      (typeof doc.creator !== 'string' || doc.creator.length === 0)
+    ) {
+      updated.creator = createdBy;
+      needsUpdate = true;
+    }
+    // Repair missing or incorrect ACL parent (not FAIMS relationship.parent)
+    if (typeof doc.parent !== 'string' || doc.parent !== doc.record_id) {
+      updated.parent = doc.record_id;
+      needsUpdate = true;
+    }
+  }
+
+  if (!needsUpdate) {
+    return {action: 'none'};
+  }
+
+  return {
+    action: 'update',
+    updatedRecord: updated as PouchDB.Core.ExistingDocument<any>,
+  };
+};
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -634,7 +710,9 @@ export const authV4toV5Migration: MigrationFunc = doc => {
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
-  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
+  // v2 = ACL fields on clean path + `_design/acl` (couch-auth-proxy). New DBs
+  // are initialised at v2 via initDataDB; existing DBs migrate 1→2.
+  [DatabaseType.DATA]: {defaultVersion: 2, targetVersion: 2},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
@@ -644,6 +722,14 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
 };
 
 export const DB_MIGRATIONS: MigrationDetails[] = [
+  {
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    description:
+      'Stamps couch-auth-proxy ACL fields (creator/parent) and ensures _design/acl with dbacl',
+    migrationFunction: dataV1toV2Migration,
+  },
   {
     dbType: DatabaseType.PEOPLE,
     from: 1,

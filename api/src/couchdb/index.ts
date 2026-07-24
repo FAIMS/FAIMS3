@@ -659,13 +659,11 @@ export const initialiseAndMigrateDBs = async ({
     // Project ID
     const projectId = project._id;
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-    dbs.concat([
-      {
-        db: dataDb,
-        dbType: DatabaseType.DATA,
-        dbName: dataDb.name,
-      },
-    ]);
+    dbs.push({
+      db: dataDb,
+      dbType: DatabaseType.DATA,
+      dbName: dataDb.name,
+    });
   }
   await migrateDbs({
     dbs,

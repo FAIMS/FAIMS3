@@ -38,6 +38,8 @@ describe('attachments', () => {
         record_id: 'test',
         created: '2021-01-01T00:00:00.000Z',
         created_by: 'test',
+        creator: 'test',
+        parent: 'test',
         data: [
           {
             name: 'test.txt',
@@ -120,6 +122,8 @@ describe('attachments', () => {
         record_id: 'test',
         created: '2021-01-01T00:00:00.000Z',
         created_by: 'test',
+        creator: 'test',
+        parent: 'test',
         data: [],
         faims_attachments: [
           {
@@ -138,6 +142,7 @@ describe('attachments', () => {
           record_id: avp.record_id,
           created: avp.created,
           created_by: avp.created_by,
+          creator: avp.created_by,
           filename: 'test.txt',
           _attachments: {
             attachment1: {
