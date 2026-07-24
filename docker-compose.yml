@@ -95,7 +95,8 @@ services:
   # Per-document ACL reverse proxy for Pouch↔Couch sync (guest my/all reads).
   # Pin must match vendored `_design/acl` map/VDU in @faims3/data-model (2.3.0).
   couch-auth-proxy:
-    image: ghcr.io/peterbaker0/couch-auth-proxy:v1.2.1
+    # Upstream release v1.2.1 (ddoc 2.3.0); GHCR publishes sha-* tags.
+    image: ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091
     environment:
       COUCH_URL: http://couchdb:5984
       # Must match Couch admin (api/.env COUCHDB_USER / COUCHDB_PASSWORD).

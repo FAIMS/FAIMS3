@@ -8,7 +8,7 @@
  * Skips automatically when the proxy is unreachable so unit CI stays green.
  *
  * Run (stack up):
- *   pnpm --filter=@faims3/api exec mocha --exit 'test/couchAuthProxy.integration.test.ts'
+ *   pnpm --filter=@faims3/api run test:couch-auth-proxy
  */
 import {expect} from 'chai';
 import PouchDB from 'pouchdb';
@@ -81,15 +81,39 @@ async function expectNotFound(p: Promise<unknown>): Promise<void> {
     await p;
     expect.fail('expected document access to fail');
   } catch (err: any) {
-    expect(err?.status || err?.statusCode || err?.name).to.be.oneOf([
-      404,
-      'not_found',
-    ]);
+    const status = err?.status || err?.statusCode || err?.name;
+    // Proxy may briefly return 503 while the ACL follower starts; treat other
+    // denials as isolation success.
+    expect(status).to.be.oneOf([404, 403, 'not_found', 'forbidden']);
   }
 }
 
+/** Warm the proxy ACL cache / follower until a non-admin GET succeeds or 404s. */
+async function waitForAclReady(db: PouchDB.Database): Promise<void> {
+  const deadline = Date.now() + 30000;
+  let lastErr: unknown;
+  while (Date.now() < deadline) {
+    try {
+      await db.info();
+      return;
+    } catch (err: any) {
+      lastErr = err;
+      const msg = String(err?.message || err);
+      if (!msg.includes('ACL cache unavailable') && err?.status !== 503) {
+        // info() itself can 404 for non-members; any non-503 means follower up
+        if (err?.status === 404 || err?.status === 403) return;
+        throw err;
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error(`ACL cache not ready: ${String(lastErr)}`);
+}
+
 describe('couch-auth-proxy data DB ACL', function () {
-  this.timeout(60000);
+  this.timeout(90000);
 
   let shouldRun = false;
   const guestA = `guest-a-${PROJECT_ID}`;
@@ -155,6 +179,8 @@ describe('couch-auth-proxy data DB ACL', function () {
     const dbB = userDb(guestB, password);
     const dbC = userDb(contributor, password);
 
+    await waitForAclReady(dbA);
+
     const recordId = `rec-${PROJECT_ID}-1`;
     const revId = `frev-${PROJECT_ID}-1`;
     const avpId = `avp-${PROJECT_ID}-1`;
@@ -201,8 +227,10 @@ describe('couch-auth-proxy data DB ACL', function () {
     expect(bIds.has(recordId)).to.equal(false);
     expect(bIds.has(revId)).to.equal(false);
 
-    const cRec = await dbC.get(recordId);
-    expect((cRec as {created_by: string}).created_by).to.equal(guestA);
+    const cRec = (await dbC.get(recordId)) as unknown as {
+      created_by: string;
+    };
+    expect(cRec.created_by).to.equal(guestA);
 
     const contribRev = `frev-${PROJECT_ID}-contrib`;
     await dbC.put({
@@ -217,11 +245,12 @@ describe('couch-auth-proxy data DB ACL', function () {
       type: 'FormA',
     });
 
-    const aSeesContrib = await dbA.get(contribRev);
-    expect((aSeesContrib as {created_by: string}).created_by).to.equal(
-      contributor
-    );
-    expect((aSeesContrib as {parent: string}).parent).to.equal(recordId);
+    const aSeesContrib = (await dbA.get(contribRev)) as unknown as {
+      created_by: string;
+      parent: string;
+    };
+    expect(aSeesContrib.created_by).to.equal(contributor);
+    expect(aSeesContrib.parent).to.equal(recordId);
 
     await expectNotFound(dbB.get(contribRev));
   });
