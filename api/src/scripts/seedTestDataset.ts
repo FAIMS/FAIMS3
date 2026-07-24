@@ -53,7 +53,6 @@ import {
 } from '@faims3/data-model';
 import {readFileSync} from 'fs';
 import {addLocalPasswordForUser} from '../auth/helpers';
-import {createRecordWithMergeRevision} from '../couchdb/devtools';
 import {
   getTeamsDB,
   getTemplatesDb,
