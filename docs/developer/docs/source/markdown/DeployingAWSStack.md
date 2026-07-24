@@ -755,6 +755,9 @@ Then add the following values to the bottom of the .env file:
 COUCHDB_USER=admin
 COUCHDB_PASSWORD="<YOUR DB PASSWORD>"
 COUCHDB_EXTERNAL_PORT=443
+# Today both may still point at the public Couch hostname. After
+# couch-auth-proxy cutover: PUBLIC_URL → proxy (same hostname), INTERNAL_URL →
+# VPC-only Couch. See Authorisation/CouchAuthProxyAwsCdk.md.
 COUCHDB_INTERNAL_URL=https://db.<your domain>:443/
 COUCHDB_PUBLIC_URL=https://db.<your domain>:443/
 AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
@@ -809,6 +812,20 @@ I don't recommend using the CouchDB admin user/password to manage the system. In
 5. logout of the CouchDB admin account, and sign in with your personal account
 
 You can now manage the deployment with your personal login.
+
+## couch-auth-proxy (per-document sync ACL)
+
+Public Pouch↔Couch sync should not hit CouchDB directly once guest my/all
+reads are enforced. The intended AWS shape is:
+
+- public `couch.*` / `db.*` hostname on the shared ALB → **couch-auth-proxy**
+- Conductor admin traffic → Couch on a **VPC-internal** URL
+- Couch `:5984` not registered on the internet-facing ALB
+
+Design, CDK construct sketch, security groups, config schema, and cutover
+order: [CouchAuthProxyAwsCdk](Authorisation/CouchAuthProxyAwsCdk.md).
+Application cutover (migrations before flipping the public URL):
+[CouchAuthProxyHandover](Authorisation/CouchAuthProxyHandover.md) §13.
 
 ## Additional configurations
 

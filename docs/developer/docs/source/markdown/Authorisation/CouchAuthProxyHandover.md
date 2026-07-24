@@ -328,7 +328,7 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 | Area                              | Change                                                        |
 | --------------------------------- | ------------------------------------------------------------- |
 | `docker-compose.yml` (+ overlays) | Add proxy service; wire public URL; optional hide Couch port. |
-| AWS CDK / DigitalOcean            | Public hostname → proxy; Couch SG/internal only.              |
+| AWS CDK / DigitalOcean            | Public hostname → proxy; Couch SG/internal only. See [CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). |
 | Pin proxy image version           | Match vendored `_design/acl` map/VDU version.                 |
 
 ### 5.5 Migrations only (legacy)
@@ -416,7 +416,8 @@ matrix; public Couch is locked down.
 6. **Docs**: `PermissionModel.md`, user sync/permissions notes, compose/README
    startup steps, this handover marked “implemented” sections as you go.
 7. **Infra** CDK/DO follow-up if out of band — at least leave compose reference
-   shape complete.
+   shape complete. AWS design:
+   [CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md).
 
 **Phase B exit criteria.**
 
@@ -426,7 +427,9 @@ matrix; public Couch is locked down.
 - [x] Ops repair script for `_design/acl` / `dbacl` (`pnpm --filter=@faims3/api run repair-data-db-acl`).
 - [x] Client local data DB rebuild on ACL cutover (`openLocalDataDbWithAclCutover`).
 - [ ] Focused e2e guest isolation spec (optional follow-up).
-- [ ] Infra CDK/DO public hostname → proxy (compose reference is complete).
+- [x] Infra CDK/DO design: public hostname → proxy; Couch internal-only
+      ([CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md); compose reference complete).
+- [ ] Infra CDK/DO implementation (coding follow-on from design doc).
 
 ---
 
@@ -549,7 +552,8 @@ Keep PRs reviewable; each should leave main green.
 [x] Phase A: run unit + integration ACL proof (guest/contributor/parent)
 [x] Commit/push; Phase B migration included once proof helpers landed
 [x] Phase B: DATA migration; hardening env; docs; repair script; client cutover
-[ ] Optional: focused e2e guest isolation + CDK/DO proxy wiring
+[x] CDK/DO design doc (CouchAuthProxyAwsCdk) — implementation still open
+[ ] Optional: focused e2e guest isolation + CDK/DO proxy coding
 ```
 
 ### Commands (FAIMS repo)
