@@ -163,7 +163,7 @@ wait_for_couchdb() {
   start_time=$(date +%s)
   end_time=$((start_time + 30))
 
-  COUCHDB_PORT=5984
+  COUCHDB_PORT="${COUCHDB_EXTERNAL_PORT:-5984}"
 
   echo "Waiting for CouchDB on port ${COUCHDB_PORT}..."
 

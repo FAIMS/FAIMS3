@@ -94,6 +94,7 @@ function wireMinimalStack(): Template {
       memory: 1024,
       localhostWhitelist: false,
       migrateNotebooksOnStartup: true,
+      couchAclClientSchemaVersion: 1,
       autoScaling: {
         desiredCapacity: 1,
         minCapacity: 1,
@@ -204,6 +205,7 @@ describe('couch-auth-proxy CDK wiring (always on)', () => {
     const byName = Object.fromEntries(env.map(e => [e.Name, e.Value]));
     expect(byName.COUCHDB_PUBLIC_URL).toBe('https://couch.example.com:443');
     expect(byName.COUCHDB_INTERNAL_URL).not.toBe(byName.COUCHDB_PUBLIC_URL);
+    expect(byName.COUCH_ACL_CLIENT_SCHEMA_VERSION).toBe('1');
     const internal = JSON.stringify(byName.COUCHDB_INTERNAL_URL);
     expect(internal).toContain('http://');
     expect(internal).toContain(':5984');

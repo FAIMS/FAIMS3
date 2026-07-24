@@ -37,14 +37,28 @@ Already wired in `docker-compose.yml`:
 `./localdev.sh` starts Couch + proxy and waits on
 `/_couch-auth-proxy/health` before migrate/dev.
 
-### Production (AWS CDK / DigitalOcean / custom)
+### Production (AWS CDK)
 
-Today’s CDK/DO stacks may still set `COUCHDB_PUBLIC_URL` to raw Couch — treat
-proxy wiring as a **required follow-up** for this feature. AWS design:
-[CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). You need:
+AWS CDK **always** deploys couch-auth-proxy on the shared ALB
+(`couch.*` / `db.*` → proxy; Couch VPC-only). See
+[CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). There is no `enabled` flag —
+migrate every `data-*` DB to version **2** (and run `repair-data-db-acl`)
+**before** sending production sync traffic at a new or upgraded stack.
+
+Conductor env set by CDK:
+
+- `COUCHDB_PUBLIC_URL` → `https://couch.<base>` (proxy)
+- `COUCHDB_INTERNAL_URL` → `http://<couch-private-ip>:5984`
+- `COUCH_ACL_CLIENT_SCHEMA_VERSION` → from
+  `conductor.couchAclClientSchemaVersion` (default `1`)
+
+### Production (DigitalOcean / custom)
+
+DigitalOcean still sketches a raw Couch target — treat proxy wiring as a
+**required follow-up**. You need:
 
 1. Run `ghcr.io/peterbaker0/couch-auth-proxy` (pin the image tag that matches
-   vendored ddoc **2.3.0** — see `docker-compose.yml`).
+   vendored ddoc map **2.3.0** — see `docker-compose.yml`).
 2. Proxy env (minimum):
 
    ```bash
@@ -63,6 +77,7 @@ proxy wiring as a **required follow-up** for this feature. AWS design:
 5. Conductor env:
    - `COUCHDB_INTERNAL_URL` → Couch (admin Basic)
    - `COUCHDB_PUBLIC_URL` → proxy base URL (**no trailing slash**)
+   - `COUCH_ACL_CLIENT_SCHEMA_VERSION` → bump on same-hostname cutovers
 
 ---
 
@@ -125,8 +140,13 @@ Do **not** flip the public URL until every project you care about is green.
 
 1. Ensure proxy health: `GET {proxy}/_couch-auth-proxy/health` → 200.
 2. Set `COUCHDB_PUBLIC_URL` to the proxy base URL (no trailing slash).
-3. Restart Conductor so notebook listings advertise the new `dataDb.base_url`.
-4. Leave `COUCHDB_INTERNAL_URL` on Couch.
+3. **Same-hostname cutovers (AWS):** bump `COUCH_ACL_CLIENT_SCHEMA_VERSION`
+   (or CDK `conductor.couchAclClientSchemaVersion`) **at flip time**. The
+   public hostname does not change when the ALB target switches Couch → proxy,
+   so a URL mismatch alone will not wipe client IndexedDB.
+4. Restart Conductor so notebook listings advertise the new `dataDb.base_url`
+   and `dataDb.acl_client_schema_version`.
+5. Leave `COUCHDB_INTERNAL_URL` on Couch.
 
 After this, new app sessions sync through the proxy. Guests only receive their
 own record graphs.
@@ -136,18 +156,17 @@ own record graphs.
 The field app rebuilds local project data IndexedDB databases when:
 
 - the local ACL marker is missing on a non-empty DB, or
-- the marker version is behind, or
+- the marker version is behind
+  `max(app LOCAL_DATA_ACL_SCHEMA_VERSION, server acl_client_schema_version)`, or
 - the marker was sealed against a **different** public base URL than Conductor
-  now advertises (this covers “app opened while URL still pointed at open
-  Couch, then proxy flipped”).
+  now advertises (local compose `:5984` → `:5985`).
 
-Operators do not need a manual “wipe local data” step for normal cutover.
-Users may see a one-time re-sync after the flip.
+**AWS same-hostname:** rely on the Phase 3 schema-generation bump (step 3), not
+URL mismatch. Operators do not need a manual “wipe local data” step when that
+generation is bumped with the flip. Users may see a one-time re-sync.
 
 Ship / enable the app build that contains `openLocalDataDbWithAclCutover`
-**with or after** Phase 3. Shipping the cutover-aware app _before_ Phase 1 is
-fine; shipping it long before Phase 3 is also fine because the marker records
-the remote URL and will invalidate on flip.
+**with or after** Phase 3.
 
 ### Phase 5 — Validate
 

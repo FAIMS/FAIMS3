@@ -59,6 +59,9 @@ The `FaimsConductor` construct sets up the API service:
 - **Task Definition**: Configures the container with environment variables and secrets.
 - **Couch URLs**: `COUCHDB_PUBLIC_URL` (apps / sync → proxy) vs
   `COUCHDB_INTERNAL_URL` (admin → VPC Couch).
+- **ACL client schema**: `COUCH_ACL_CLIENT_SCHEMA_VERSION` from
+  `conductor.couchAclClientSchemaVersion` (bump on brownfield same-hostname
+  proxy cutover so field apps rebuild IndexedDB).
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
 - **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.

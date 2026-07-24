@@ -188,9 +188,10 @@ Implementation guidance:
 
 - Prefer **reusing** the map + VDU source from couch-auth-proxy
   (`src/acl/ddoc.ts` — currently versioned ~`2.3.0`) rather than rewriting it.
-  Either vendor a thin copy into `@faims3/data-model` with a clear comment +
-  upstream version pin, or fetch/embed the published design body. Keep it in
-  sync with the proxy image version you deploy.
+  FAIMS vendors the map as-is and ships a **fail-closed VDU extension**
+  (`2.3.0-faims1`): non-admin creates must include `creator`, and children with
+  `record_id` must set `parent === record_id` (upstream alone allows omitting
+  `creator`, which grants `r-*`). Keep the map in sync with the proxy image.
 - Set `dbacl` lists via `necessaryActionToCouchRoleList` (include `_admin` as
   that helper already does).
 - Leave other design docs readable by default (`r-*` read-only) so clients can
@@ -311,7 +312,7 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Notebook/data DB creation | Ensure init installs `_design/acl` (via data-model init).                                                  |
 | `.env.dist` / compose     | Document `COUCHDB_PUBLIC_URL` → proxy; internal URL → Couch.                                               |
-| Optional readiness        | Health check that proxy `/_couch-auth-proxy/ready` is up in dev scripts.                                   |
+| Optional readiness        | Health check that proxy `/_couch-auth-proxy/health` is up in dev scripts.                                  |
 | Records CRUD / export     | Keep using admin internal Couch (bypass proxy). No ACL stamping duplication if they go through the engine. |
 
 ### 5.3 `app` — sync client
@@ -325,11 +326,11 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 
 ### 5.4 Infra
 
-| Area                              | Change                                                        |
-| --------------------------------- | ------------------------------------------------------------- |
-| `docker-compose.yml` (+ overlays) | Add proxy service; wire public URL; optional hide Couch port. |
+| Area                              | Change                                                                                                |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `docker-compose.yml` (+ overlays) | Add proxy service; wire public URL; optional hide Couch port.                                         |
 | AWS CDK / DigitalOcean            | Public hostname → proxy; Couch SG/internal only. See [CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). |
-| Pin proxy image version           | Match vendored `_design/acl` map/VDU version.                 |
+| Pin proxy image version           | Match vendored `_design/acl` map/VDU version.                                                         |
 
 ### 5.5 Migrations only (legacy)
 
@@ -434,9 +435,9 @@ matrix; public Couch is locked down.
 - [x] Ops repair script for `_design/acl` / `dbacl` (`pnpm --filter=@faims3/api run repair-data-db-acl`).
 - [x] Client local data DB rebuild on ACL cutover (`openLocalDataDbWithAclCutover`).
 - [ ] Focused e2e guest isolation spec (optional follow-up).
-- [x] Infra CDK/DO design: public hostname → proxy; Couch internal-only
-      ([CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md); compose reference complete).
-- [ ] Infra CDK/DO implementation (coding follow-on from design doc).
+- [x] Infra AWS CDK: public hostname → proxy; Couch internal-only
+      ([CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md); always-on on shared ALB).
+- [ ] Infra DigitalOcean implementation (still open; compose reference complete).
 
 ---
 
@@ -559,8 +560,8 @@ Keep PRs reviewable; each should leave main green.
 [x] Phase A: run unit + integration ACL proof (guest/contributor/parent)
 [x] Commit/push; Phase B migration included once proof helpers landed
 [x] Phase B: DATA migration; hardening env; docs; repair script; client cutover
-[x] CDK/DO design doc (CouchAuthProxyAwsCdk) — implementation still open
-[ ] Optional: focused e2e guest isolation + CDK/DO proxy coding
+[x] AWS CDK always-on proxy (CouchAuthProxyAwsCdk) — DigitalOcean still open
+[ ] Optional: focused e2e guest isolation + DigitalOcean proxy coding
 ```
 
 ### Commands (FAIMS repo)
@@ -656,7 +657,9 @@ DB members (`r-*`).
 5. **Clients rebuild local project data DBs** via
    `openLocalDataDbWithAclCutover` (marker `_local/faims-acl-schema` records
    schema version **and** the public base URL). A marker sealed against open
-   Couch is invalidated when Conductor advertises the proxy URL.
+   Couch is invalidated when Conductor advertises a different proxy URL **or**
+   a higher `dataDb.acl_client_schema_version` (required for AWS same-hostname
+   ALB flips — bump `COUCH_ACL_CLIENT_SCHEMA_VERSION` at flip time).
 6. **Validate**: guest A/B isolation + contributor read-all
    (`pnpm --filter=@faims3/api run test:couch-auth-proxy` locally, or manual
    sync probe).
@@ -670,8 +673,9 @@ DB members (`r-*`).
 - Docs missing `created_by` are stamped with synthetic creator
   `__faims_acl_orphan__` (fail-closed for guests; ALL roles retain access via
   `dbacl`).
+- Backup restore stamps missing ACL fields on data-DB corpus so pre-ACL
+  backups cannot reintroduce `r-*` docs after migrations are already at v2.
 - Proxy health endpoint: `/_couch-auth-proxy/health` (compose +
-  `localdev.sh` wait on this).
-- Infra follow-up: AWS CDK / DigitalOcean must split internal Couch vs public
-  proxy hostname (compose reference is complete; cloud stacks may still point
-  `COUCHDB_PUBLIC_URL` at raw Couch until updated).
+  `localdev.sh` wait on this). Prefer this over any `/ready` alias.
+- AWS CDK always-on proxy is implemented; DigitalOcean still needs the public
+  → proxy / Couch internal split.

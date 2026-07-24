@@ -17,9 +17,24 @@
  * Description:
  *    Functions to backup and restore databases
  */
-import {batchWriteDocuments} from '@faims3/data-model';
+import {
+  batchWriteDocuments,
+  stampDataDocumentAclFields,
+} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
 import {initialiseDataDb, localGetProjectsDb} from '.';
+
+/**
+ * Stamp missing couch-auth-proxy ACL fields on restored data docs.
+ * Backups taken before DATA v1→v2 (or from open Couch) may lack `creator` /
+ * `parent`; if the migrations doc is already at v2, migrate will not re-run.
+ */
+function prepareRestoredDataDoc(
+  doc: Record<string, unknown>
+): Record<string, unknown> {
+  const stamped = stampDataDocumentAclFields(doc);
+  return stamped ?? doc;
+}
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -42,6 +57,7 @@ export const restoreFromBackup = async ({
 
   let dbName: string;
   let db: any;
+  let restoringDataDb = false;
   let line_number = 1;
   let processedCount = 0;
   const GC_INTERVAL = 1000; // Force GC every 1000 records
@@ -98,6 +114,7 @@ export const restoreFromBackup = async ({
           } else {
             console.log(`Processing database ${dbName}`);
           }
+          restoringDataDb = false;
           if (dbName.startsWith('projects')) {
             // name will be eg. 'projects_default', where 'default' is the
             // conductor instance id
@@ -110,6 +127,7 @@ export const restoreFromBackup = async ({
               projectId: projectName,
               force: true,
             });
+            restoringDataDb = true;
           } else {
             // don't try to restore anything we don't know about
             db = undefined;
@@ -118,10 +136,15 @@ export const restoreFromBackup = async ({
           // don't try to restore design documents as these will have been
           // created on the database initialisation
           // Minimal document copy
-          const docToWrite = {
+          const rawDoc = {
             _id: doc.doc._id,
             ...doc.doc,
           };
+          // Stamp ACL on data-DB corpus so pre-ACL backups cannot reintroduce
+          // unstamped docs after DATA migrations are already at v2.
+          const docToWrite = restoringDataDb
+            ? prepareRestoredDataDoc(rawDoc)
+            : rawDoc;
           // delete the _rev attribute so that we can put it into an empty db
           // if we were restoring into an existing db, we would need to be more
           // careful and check whether this _rev is present in the db already

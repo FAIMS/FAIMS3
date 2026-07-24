@@ -57,34 +57,11 @@ import {
   ACL_ORPHAN_CREATOR,
   ensureDataDbAclDesignDoc,
   projectIdFromDataDbName,
+  stampDataDocumentAclFields,
 } from '../dataDB/acl';
 
 /** Tracks data DBs that already had `_design/acl` ensured in this process. */
 const ensuredDataAclDesignDocs = new Set<string>();
-
-/**
- * Resolve the ACL `creator` to stamp during DATA v1→v2.
- *
- * Prefer FAIMS `created_by`. When it is missing, assign
- * {@link ACL_ORPHAN_CREATOR} so the doc is not left unstamped (unstamped docs
- * are world-readable to DB members under couch-auth-proxy). Orphans remain
- * readable/writable to ALL-capable roles via `dbacl`.
- */
-function resolveMigrationCreator(doc: {_id?: string; created_by?: unknown}): {
-  creator: string;
-  usedOrphanFallback: boolean;
-} {
-  if (typeof doc.created_by === 'string' && doc.created_by.length > 0) {
-    return {creator: doc.created_by, usedOrphanFallback: false};
-  }
-  if (!IS_TESTING) {
-    console.warn(
-      `[dataV1toV2Migration] Doc ${doc._id ?? '<unknown>'} has no created_by; ` +
-        `stamping creator=${ACL_ORPHAN_CREATOR} (fail-closed for guests).`
-    );
-  }
-  return {creator: ACL_ORPHAN_CREATOR, usedOrphanFallback: true};
-}
 
 /**
  * DATA DB v1 → v2: stamp couch-auth-proxy ACL fields and ensure `_design/acl`.
@@ -106,37 +83,20 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
     }
   }
 
-  // Skip design docs if somehow invoked directly
-  if (typeof doc._id === 'string' && doc._id.startsWith('_design/')) {
+  const updated = stampDataDocumentAclFields(doc as Record<string, unknown>);
+  if (!updated) {
     return {action: 'none'};
   }
 
-  let needsUpdate = false;
-  const updated: Record<string, unknown> = {...doc};
-
-  const isRecord =
-    typeof doc._id === 'string' &&
-    (doc._id.startsWith('rec-') || doc.record_format_version !== undefined);
-
-  if (isRecord) {
-    if (typeof doc.creator !== 'string' || doc.creator.length === 0) {
-      updated.creator = resolveMigrationCreator(doc).creator;
-      needsUpdate = true;
-    }
-  } else if (typeof doc.record_id === 'string' && doc.record_id.length > 0) {
-    if (typeof doc.creator !== 'string' || doc.creator.length === 0) {
-      updated.creator = resolveMigrationCreator(doc).creator;
-      needsUpdate = true;
-    }
-    // Repair missing or incorrect ACL parent (not FAIMS relationship.parent)
-    if (typeof doc.parent !== 'string' || doc.parent !== doc.record_id) {
-      updated.parent = doc.record_id;
-      needsUpdate = true;
-    }
-  }
-
-  if (!needsUpdate) {
-    return {action: 'none'};
+  if (
+    updated.creator === ACL_ORPHAN_CREATOR &&
+    !(typeof doc.created_by === 'string' && doc.created_by.length > 0) &&
+    !IS_TESTING
+  ) {
+    console.warn(
+      `[dataV1toV2Migration] Doc ${String(doc._id ?? '<unknown>')} has no created_by; ` +
+        `stamping creator=${ACL_ORPHAN_CREATOR} (fail-closed for guests).`
+    );
   }
 
   return {

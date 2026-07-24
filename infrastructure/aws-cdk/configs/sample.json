@@ -118,7 +118,8 @@
       "scaleOutCooldown": 60
     },
     "localhostWhitelist": false,
-    "migrateNotebooksOnStartup": true
+    "migrateNotebooksOnStartup": true,
+    "couchAclClientSchemaVersion": 1
   },
   "authProviders": {
     "disableLocalLogin": false,

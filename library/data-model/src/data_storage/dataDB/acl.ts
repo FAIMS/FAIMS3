@@ -5,15 +5,23 @@
  * are derived from {@link necessaryActionToCouchRoleList} so sync enforcement
  * tracks the FAIMS permission model.
  *
- * Vendored map + VDU source must stay aligned with the deployed
+ * Vendored map source must stay aligned with the deployed
  * `ghcr.io/peterbaker0/couch-auth-proxy` image. Upstream pin:
  * couch-auth-proxy `src/acl/ddoc.ts` version **2.3.0** (package release v1.2.1).
+ *
+ * The VDU is FAIMS-extended (`2.3.0-faims1`): non-admin creates must include a
+ * non-empty `creator`, and child docs with `record_id` must set
+ * `parent === record_id`. Upstream alone allows omitting `creator`, which
+ * grants `r-*` (world-readable to DB members) — unacceptable after cutover.
  */
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
 
-/** Upstream `_design/acl` `version` field from couch-auth-proxy ddoc.ts. */
-export const COUCH_AUTH_PROXY_ACL_DDOC_VERSION = '2.3.0';
+/**
+ * `_design/acl` `version` field. Map body matches upstream 2.3.0; suffix marks
+ * the FAIMS fail-closed VDU extension so ensure/repair rewrites older ddocs.
+ */
+export const COUCH_AUTH_PROXY_ACL_DDOC_VERSION = '2.3.0-faims1';
 
 /**
  * Synthetic ACL creator stamped by DATA v1→v2 when a legacy doc has no
@@ -73,8 +81,8 @@ export const ACL_MAP_SOURCE = `function (doc) {
 }`;
 
 /**
- * Couch `validate_doc_update` from couch-auth-proxy 2.3.0.
- * Non-admins cannot forge creator or illegally mutate owners/acl/parent.
+ * Couch `validate_doc_update` based on couch-auth-proxy 2.3.0, with FAIMS
+ * fail-closed extensions (see module header).
  */
 export const ACL_VALIDATE_DOC_UPDATE_SOURCE = `function (nd, od, userCtx, secObj) {
   var roles = userCtx.roles || [];
@@ -90,6 +98,15 @@ export const ACL_VALIDATE_DOC_UPDATE_SOURCE = `function (nd, od, userCtx, secObj
   };
 
   if (!adm) {
+    // FAIMS: non-design docs must always carry creator (unstamped ⇒ r-*).
+    if (!/^_design/.test(nd._id || "")) {
+      if (typeof nd.creator != S || !nd.creator)
+        throw { forbidden: "Document must have a creator." };
+      if (typeof nd.record_id == S && nd.record_id) {
+        if (typeof nd.parent != S || nd.parent != nd.record_id)
+          throw { forbidden: "Child document parent must equal record_id." };
+      }
+    }
     if (!od) {
       if (nd.creator && nd.creator != u && nd.creator != uu)
         throw { forbidden: "Can't create doc on behalf of other user." };
@@ -271,9 +288,80 @@ function dbAclListsEqual(a: unknown, b: DbAclOverlay): boolean {
 }
 
 /**
+ * Apply DATA ACL stamp fields to a document (pure). Used by DATA v1→v2
+ * migration and backup restore so unstamped corpus cannot re-enter after
+ * cutover.
+ *
+ * Returns a shallow-cloned updated doc, or `null` when already correct.
+ */
+export function stampDataDocumentAclFields(
+  doc: Record<string, unknown>
+): Record<string, unknown> | null {
+  if (typeof doc._id === 'string' && doc._id.startsWith('_design/')) {
+    return null;
+  }
+
+  let needsUpdate = false;
+  const updated: Record<string, unknown> = {...doc};
+
+  const isRecord =
+    typeof doc._id === 'string' &&
+    (doc._id.startsWith('rec-') || doc.record_format_version !== undefined);
+
+  const resolveCreator = (): string => {
+    if (typeof doc.created_by === 'string' && doc.created_by.length > 0) {
+      return doc.created_by;
+    }
+    return ACL_ORPHAN_CREATOR;
+  };
+
+  if (isRecord) {
+    if (typeof doc.creator !== 'string' || doc.creator.length === 0) {
+      updated.creator = resolveCreator();
+      needsUpdate = true;
+    }
+  } else if (typeof doc.record_id === 'string' && doc.record_id.length > 0) {
+    if (typeof doc.creator !== 'string' || doc.creator.length === 0) {
+      updated.creator = resolveCreator();
+      needsUpdate = true;
+    }
+    if (typeof doc.parent !== 'string' || doc.parent !== doc.record_id) {
+      updated.parent = doc.record_id;
+      needsUpdate = true;
+    }
+  }
+
+  return needsUpdate ? updated : null;
+}
+
+function isNotFoundError(err: unknown): boolean {
+  const status =
+    err && typeof err === 'object' && 'status' in err
+      ? (err as {status?: number}).status
+      : undefined;
+  const name =
+    err && typeof err === 'object' && 'name' in err
+      ? (err as {name?: string}).name
+      : undefined;
+  return status === 404 || name === 'not_found';
+}
+
+function isConflictError(err: unknown): boolean {
+  const status =
+    err && typeof err === 'object' && 'status' in err
+      ? (err as {status?: number}).status
+      : undefined;
+  const name =
+    err && typeof err === 'object' && 'name' in err
+      ? (err as {name?: string}).name
+      : undefined;
+  return status === 409 || name === 'conflict';
+}
+
+/**
  * Ensure `_design/acl` exists (or is repaired) on a database with the correct
  * `dbacl` for `projectId`. Idempotent: skips rewrite when version + `dbacl`
- * already match (avoids stamp churn).
+ * already match (avoids stamp churn). Retries once on 409.
  */
 export async function ensureDataDbAclDesignDoc({
   db,
@@ -286,34 +374,41 @@ export async function ensureDataDbAclDesignDoc({
   projectId: string;
 }): Promise<void> {
   const fresh = buildDataDbAclDesignDoc(projectId);
-  try {
-    const existing = await db.get('_design/acl');
-    if (
-      existing.version === fresh.version &&
-      dbAclListsEqual(existing.dbacl, fresh.dbacl) &&
-      existing.validate_doc_update === fresh.validate_doc_update &&
-      (existing.views as {acl?: {map?: string}} | undefined)?.acl?.map ===
-        fresh.views.acl.map
-    ) {
+  const maxAttempts = 3;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const existing = await db.get('_design/acl');
+      if (
+        existing.version === fresh.version &&
+        dbAclListsEqual(existing.dbacl, fresh.dbacl) &&
+        existing.validate_doc_update === fresh.validate_doc_update &&
+        (existing.views as {acl?: {map?: string}} | undefined)?.acl?.map ===
+          fresh.views.acl.map
+      ) {
+        return;
+      }
+      await db.put({
+        ...fresh,
+        _rev: existing._rev,
+      });
       return;
+    } catch (err: unknown) {
+      if (isNotFoundError(err)) {
+        try {
+          await db.put(fresh);
+          return;
+        } catch (putErr: unknown) {
+          if (isConflictError(putErr) && attempt < maxAttempts - 1) {
+            continue;
+          }
+          throw putErr;
+        }
+      }
+      if (isConflictError(err) && attempt < maxAttempts - 1) {
+        continue;
+      }
+      throw err;
     }
-    await db.put({
-      ...fresh,
-      _rev: existing._rev,
-    });
-  } catch (err: unknown) {
-    const status =
-      err && typeof err === 'object' && 'status' in err
-        ? (err as {status?: number}).status
-        : undefined;
-    const name =
-      err && typeof err === 'object' && 'name' in err
-        ? (err as {name?: string}).name
-        : undefined;
-    if (status === 404 || name === 'not_found') {
-      await db.put(fresh);
-      return;
-    }
-    throw err;
   }
 }

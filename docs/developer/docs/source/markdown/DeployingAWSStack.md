@@ -758,11 +758,14 @@ COUCHDB_EXTERNAL_PORT=443
 # The CDK stack always sets these on Conductor:
 #   PUBLIC  → https://<couch subdomain>.<domain>:443  (ALB → proxy)
 #   INTERNAL → http://<couch-private-ip>:5984         (VPC, admin Basic)
-# For local migrate against a deployed stack, use admin creds + INTERNAL URL.
+# For local migrate against a deployed stack, INTERNAL must reach Couch
+# directly (SSM port-forward / VPN / ssh -L) — never the public proxy URL.
 # See Authorisation/CouchAuthProxyAwsCdk.md and CouchAuthProxyCutover.md.
-COUCHDB_INTERNAL_URL=https://db.<your domain>:443
+COUCHDB_INTERNAL_URL=http://<couch-private-ip>:5984
 # Public sync URL advertised to the app as dataDb.base_url (proxy hostname).
-COUCHDB_PUBLIC_URL=https://db.<your domain>:443
+COUCHDB_PUBLIC_URL=https://couch.<your domain>:443
+# Bump on brownfield same-hostname proxy cutover so field apps rebuild IndexedDB.
+# COUCH_ACL_CLIENT_SCHEMA_VERSION=2
 AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
 KEY_SOURCE=AWS_SM
 AWS_SECRET_KEY_ARN=<secret ARN of the private key in AWS SM>

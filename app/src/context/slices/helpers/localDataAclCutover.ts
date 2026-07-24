@@ -4,6 +4,7 @@
 
 import {PouchDBWrapper} from './pouchDBWrapper';
 import {
+  effectiveAclClientSchemaVersion,
   LOCAL_DATA_ACL_SCHEMA_DOC_ID,
   LOCAL_DATA_ACL_SCHEMA_VERSION,
   LocalAclSchemaDoc,
@@ -11,6 +12,7 @@ import {
 } from './localDataAclCutoverPolicy';
 
 export {
+  effectiveAclClientSchemaVersion,
   LOCAL_DATA_ACL_SCHEMA_DOC_ID,
   LOCAL_DATA_ACL_SCHEMA_VERSION,
   shouldRebuildLocalDataDbForAclCutover,
@@ -23,20 +25,26 @@ export type {LocalAclSchemaDoc} from './localDataAclCutoverPolicy';
  *
  * Pass {@link remoteBaseUrl} (Conductor's advertised `dataDb.base_url`) so a
  * marker sealed while public URL still pointed at open Couch is invalidated
- * when the URL flips to couch-auth-proxy.
+ * when the URL flips to couch-auth-proxy. Pass {@link aclClientSchemaVersion}
+ * (Conductor's `dataDb.acl_client_schema_version`) so same-hostname AWS
+ * cutovers can force a wipe by bumping the server generation.
  */
 export async function openLocalDataDbWithAclCutover<Content extends {}>({
   id,
   remoteBaseUrl,
+  aclClientSchemaVersion,
   createDb = (dbId: string) => new PouchDBWrapper<Content>(dbId),
 }: {
   id: string;
   /** Public Couch/proxy base URL currently advertised for this project. */
   remoteBaseUrl?: string;
+  /** Conductor-advertised ACL client schema generation (optional). */
+  aclClientSchemaVersion?: number;
   createDb?: (id: string) => PouchDBWrapper<Content>;
 }): Promise<{db: PouchDBWrapper<Content>; rebuilt: boolean}> {
   let db = createDb(id);
   let rebuilt = false;
+  const sealVersion = effectiveAclClientSchemaVersion(aclClientSchemaVersion);
 
   let marker: LocalAclSchemaDoc | undefined;
   try {
@@ -50,6 +58,7 @@ export async function openLocalDataDbWithAclCutover<Content extends {}>({
     markerVersion: marker?.version,
     markerRemoteBaseUrl: marker?.remoteBaseUrl,
     docCount: info.doc_count ?? 0,
+    serverAdvertisedVersion: aclClientSchemaVersion,
     currentRemoteBaseUrl: remoteBaseUrl,
   });
 
@@ -70,7 +79,7 @@ export async function openLocalDataDbWithAclCutover<Content extends {}>({
     await db.put({
       _id: LOCAL_DATA_ACL_SCHEMA_DOC_ID,
       ...(existing?._rev ? {_rev: existing._rev} : {}),
-      version: LOCAL_DATA_ACL_SCHEMA_VERSION,
+      version: sealVersion,
       ...(remoteBaseUrl ? {remoteBaseUrl} : {}),
     } as PouchDB.Core.PutDocument<Content & LocalAclSchemaDoc>);
   } catch {

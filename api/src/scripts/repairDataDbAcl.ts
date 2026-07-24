@@ -11,6 +11,7 @@
  *   pnpm run repair-data-db-acl -- --dry-run
  */
 import {
+  buildDataDbAclDesignDoc,
   buildDbAclOverlay,
   DATA_DB_NAME_PREFIX,
   ensureDataDbAclDesignDoc,
@@ -83,14 +84,30 @@ const main = async () => {
         const db = await getDataDb(projectId);
         try {
           const existing = (await db.get('_design/acl')) as {
-            dbacl?: {_r?: string[]};
+            dbacl?: {_r?: string[]; _w?: string[]; _d?: string[]};
             version?: string;
+            validate_doc_update?: string;
+            views?: {acl?: {map?: string}};
           };
-          const rCount = existing.dbacl?._r?.length ?? 0;
+          const fresh = buildDataDbAclDesignDoc(projectId);
+          const listsMatch =
+            JSON.stringify(existing.dbacl?._r ?? []) ===
+              JSON.stringify(fresh.dbacl._r) &&
+            JSON.stringify(existing.dbacl?._w ?? []) ===
+              JSON.stringify(fresh.dbacl._w) &&
+            JSON.stringify(existing.dbacl?._d ?? []) ===
+              JSON.stringify(fresh.dbacl._d);
+          const bodyMatch =
+            existing.version === fresh.version &&
+            existing.validate_doc_update === fresh.validate_doc_update &&
+            existing.views?.acl?.map === fresh.views.acl.map &&
+            listsMatch;
           console.log(
             `[dry-run] ${dbName} (${source}): has _design/acl version=${
               existing.version ?? '?'
-            }, dbacl._r=${rCount} (expected ${expected._r.length})`
+            }, dbacl._r=${existing.dbacl?._r?.length ?? 0} (expected ${
+              expected._r.length
+            }), ${bodyMatch ? 'UP_TO_DATE' : 'WOULD_REPAIR'}`
           );
         } catch {
           console.log(

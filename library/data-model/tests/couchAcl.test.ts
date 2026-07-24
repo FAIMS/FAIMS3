@@ -9,6 +9,7 @@ import {
 } from '../src';
 import {
   ACL_ORPHAN_CREATOR,
+  ACL_VALIDATE_DOC_UPDATE_SOURCE,
   buildDataDbAclDesignDoc,
   buildDbAclOverlay,
   COUCH_AUTH_PROXY_ACL_DDOC_VERSION,
@@ -16,6 +17,7 @@ import {
   ensureDataDbAclDesignDoc,
   projectIdFromDataDbName,
   stampChildAcl,
+  stampDataDocumentAclFields,
   stampRecordAcl,
   toProxyRoleGrant,
 } from '../src/data_storage/dataDB/acl';
@@ -71,14 +73,65 @@ describe('couch-auth-proxy ACL helpers', () => {
     );
   });
 
-  test('buildDataDbAclDesignDoc matches upstream version and carries dbacl', () => {
+  test('buildDataDbAclDesignDoc matches FAIMS-extended version and carries dbacl', () => {
     const ddoc = buildDataDbAclDesignDoc(projectId);
     expect(ddoc._id).toBe('_design/acl');
     expect(ddoc.version).toBe(COUCH_AUTH_PROXY_ACL_DDOC_VERSION);
+    expect(ddoc.version).toContain('faims');
     expect(ddoc.acl).toEqual([]);
     expect(ddoc.dbacl).toEqual(buildDbAclOverlay(projectId));
     expect(ddoc.views.acl.map).toContain('emit(doc._id');
     expect(ddoc.validate_doc_update).toContain('Creator can not be changed');
+    expect(ddoc.validate_doc_update).toContain('Document must have a creator');
+    expect(ddoc.validate_doc_update).toContain(
+      'Child document parent must equal record_id'
+    );
+  });
+
+  test('fail-closed VDU source requires creator and child parent', () => {
+    expect(ACL_VALIDATE_DOC_UPDATE_SOURCE).toContain(
+      'Document must have a creator'
+    );
+    expect(ACL_VALIDATE_DOC_UPDATE_SOURCE).toContain(
+      'Child document parent must equal record_id'
+    );
+  });
+
+  test('stampDataDocumentAclFields stamps records, children, and orphans', () => {
+    expect(
+      stampDataDocumentAclFields({
+        _id: 'rec-1',
+        created_by: 'alice',
+        record_format_version: 1,
+      })
+    ).toEqual(expect.objectContaining({_id: 'rec-1', creator: 'alice'}));
+    expect(
+      stampDataDocumentAclFields({
+        _id: 'frev-1',
+        record_id: 'rec-1',
+        created_by: 'bob',
+      })
+    ).toEqual(
+      expect.objectContaining({
+        creator: 'bob',
+        parent: 'rec-1',
+      })
+    );
+    expect(
+      stampDataDocumentAclFields({
+        _id: 'rec-orphan',
+        record_format_version: 1,
+      })
+    ).toEqual(expect.objectContaining({creator: ACL_ORPHAN_CREATOR}));
+    expect(
+      stampDataDocumentAclFields({
+        _id: 'frev-ok',
+        record_id: 'rec-1',
+        created_by: 'bob',
+        creator: 'bob',
+        parent: 'rec-1',
+      })
+    ).toBeNull();
   });
 
   test('initDataDB includes _design/acl with project dbacl', () => {

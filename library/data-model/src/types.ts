@@ -112,6 +112,12 @@ export type PossibleConnectionInfo = {
     password: string;
   };
   jwt_token?: string;
+  /**
+   * Conductor-advertised ACL client schema generation. Apps rebuild local
+   * project data DBs when their marker version is behind this value (used for
+   * same-hostname couch-auth-proxy cutovers where `base_url` is unchanged).
+   */
+  acl_client_schema_version?: number;
 };
 
 // ============================================================================

@@ -211,7 +211,11 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
       // delete rev so that we don't include in the result
       delete project._rev;
       // add database connection details
-      if (project.dataDb) project.dataDb.base_url = config.couchdbPublicUrl;
+      if (project.dataDb) {
+        project.dataDb.base_url = config.couchdbPublicUrl;
+        project.dataDb.acl_client_schema_version =
+          config.couchAclClientSchemaVersion;
+      }
       projects.push(project);
     }
   });

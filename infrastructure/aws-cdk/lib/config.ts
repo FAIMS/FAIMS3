@@ -461,6 +461,12 @@ const ConductorConfigSchema = z.object({
   /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
    * migrations on startup. */
   migrateNotebooksOnStartup: z.boolean().default(true),
+  /**
+   * Advertised as Conductor `COUCH_ACL_CLIENT_SCHEMA_VERSION` /
+   * `dataDb.acl_client_schema_version`. Bump on brownfield same-hostname
+   * proxy cutovers so field apps rebuild local IndexedDB.
+   */
+  couchAclClientSchemaVersion: z.number().int().positive().default(1),
 });
 
 const WebConfigSchema = z.object({

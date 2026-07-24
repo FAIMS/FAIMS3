@@ -53,13 +53,13 @@ Conductor env today:
 
 Relevant code:
 
-| Piece | Path | Today |
-| ----- | ---- | ----- |
-| Stack wiring | `infrastructure/aws-cdk/lib/faims-infra-stack.ts` | Couch + Conductor share ALB |
-| Couch EC2 + ALB TG | `…/components/couch-db.ts` | ALB → instance:5984 |
-| Conductor env | `…/components/conductor.ts` | Public == Internal URL |
-| App CSP | `…/components/front-end.ts` | `connect-src` includes `https://couch.*` |
-| Networking | `…/components/networking.ts` | Public VPC, shared ALB, no NAT |
+| Piece              | Path                                              | Today                                    |
+| ------------------ | ------------------------------------------------- | ---------------------------------------- |
+| Stack wiring       | `infrastructure/aws-cdk/lib/faims-infra-stack.ts` | Couch + Conductor share ALB              |
+| Couch EC2 + ALB TG | `…/components/couch-db.ts`                        | ALB → instance:5984                      |
+| Conductor env      | `…/components/conductor.ts`                       | Public == Internal URL                   |
+| App CSP            | `…/components/front-end.ts`                       | `connect-src` includes `https://couch.*` |
+| Networking         | `…/components/networking.ts`                      | Public VPC, shared ALB, no NAT           |
 
 Local compose already matches the **target** split (`COUCHDB_PUBLIC_URL` →
 proxy `:5985`, Conductor → Couch). AWS does not.
@@ -84,10 +84,10 @@ Shared ALB (HTTPS :443)
                          ECS Conductor (admin Basic)
 ```
 
-| Config | Value after cutover |
-| ------ | ------------------- |
-| `COUCHDB_PUBLIC_URL` | `https://couch.<baseDomain>` (unchanged hostname → **proxy**) |
-| `COUCHDB_INTERNAL_URL` | `http://<couch-private-dns-or-ip>:5984` (Conductor only) |
+| Config                 | Value after cutover                                           |
+| ---------------------- | ------------------------------------------------------------- |
+| `COUCHDB_PUBLIC_URL`   | `https://couch.<baseDomain>` (unchanged hostname → **proxy**) |
+| `COUCHDB_INTERNAL_URL` | `http://<couch-private-dns-or-ip>:5984` (Conductor only)      |
 
 Keeping the **same public hostname** avoids mobile/web rebuilds for Couch URL
 and keeps the existing CloudFront CSP `connect-src` entry valid.
@@ -98,11 +98,11 @@ and keeps the existing CloudFront CSP `connect-src` entry valid.
 
 ### Options considered
 
-| Option | Idea | Pros | Cons |
-| ------ | ---- | ---- | ---- |
-| **A. Sidecar on Couch EC2** | Second Docker unit next to Couch (compose-like) | Lowest latency; mirrors local compose; no extra Fargate $ | User-data / AMI churn replaces EC2; couples proxy deploys to DB host; harder independent rollback |
-| **B. ECS Fargate service** | New service like Conductor on shared ALB | Independent image pin/rollback; matches Conductor CDK patterns; no Couch instance replacement to ship proxy | Extra task cost; needs SG path proxy→Couch |
-| **C. Proxy on Conductor task** | Sidecar container in Conductor task def | Shared deploy | Wrong blast radius; scales with API not sync; couples secrets/lifecycle |
+| Option                         | Idea                                            | Pros                                                                                                        | Cons                                                                                              |
+| ------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **A. Sidecar on Couch EC2**    | Second Docker unit next to Couch (compose-like) | Lowest latency; mirrors local compose; no extra Fargate $                                                   | User-data / AMI churn replaces EC2; couples proxy deploys to DB host; harder independent rollback |
+| **B. ECS Fargate service**     | New service like Conductor on shared ALB        | Independent image pin/rollback; matches Conductor CDK patterns; no Couch instance replacement to ship proxy | Extra task cost; needs SG path proxy→Couch                                                        |
+| **C. Proxy on Conductor task** | Sidecar container in Conductor task def         | Shared deploy                                                                                               | Wrong blast radius; scales with API not sync; couples secrets/lifecycle                           |
 
 **Recommendation: Option B — `CouchAuthProxy` ECS Fargate construct.**
 
@@ -125,14 +125,14 @@ must be zero; do not use it as the production default.
 
 ### 4.1 Network
 
-| Flow | Allow? | Mechanism |
-| ---- | ------ | --------- |
-| Internet → ALB :443 → proxy :8000 | Yes | Existing shared ALB host rule on `couch.*` |
-| Internet → ALB → Couch :5984 | **No** | Remove / stop registering Couch TG on public listener |
-| Proxy tasks → Couch :5984 | Yes | SG: Couch ingress from proxy SG only (plus Conductor) |
-| Conductor tasks → Couch :5984 | Yes | SG: Couch ingress from Conductor SG |
-| Internet → Couch :5984 directly | **No** | No public IP listener on 5984; instance SG deny world |
-| SSM to Couch EC2 (ops) | Optional | Keep existing SSM; do not open 5984 to `0.0.0.0/0` |
+| Flow                              | Allow?   | Mechanism                                             |
+| --------------------------------- | -------- | ----------------------------------------------------- |
+| Internet → ALB :443 → proxy :8000 | Yes      | Existing shared ALB host rule on `couch.*`            |
+| Internet → ALB → Couch :5984      | **No**   | Remove / stop registering Couch TG on public listener |
+| Proxy tasks → Couch :5984         | Yes      | SG: Couch ingress from proxy SG only (plus Conductor) |
+| Conductor tasks → Couch :5984     | Yes      | SG: Couch ingress from Conductor SG                   |
+| Internet → Couch :5984 directly   | **No**   | No public IP listener on 5984; instance SG deny world |
+| SSM to Couch EC2 (ops)            | Optional | Keep existing SSM; do not open 5984 to `0.0.0.0/0`    |
 
 Couch should listen on `0.0.0.0:5984` **inside** the instance/docker network
 as today, but **security groups** are the boundary (current stack already
@@ -140,11 +140,11 @@ relies on SG + ALB rather than binding localhost-only).
 
 ### 4.2 Credentials
 
-| Secret | Consumer | Notes |
-| ------ | -------- | ----- |
-| Couch admin user/password | Conductor + **proxy** | Existing `EC2CouchDB.passwordSecret`; grant proxy task `secretsmanager:GetSecretValue` |
-| JWT signing keys | Conductor (issue) / Couch (`jwt_keys`) | Unchanged; proxy uses `AUTH_RESOLVE_VIA_COUCH_SESSION=true` |
-| Proxy-specific secrets | None in v1 | No separate HMAC if session resolve stays Couch-native |
+| Secret                    | Consumer                               | Notes                                                                                  |
+| ------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- |
+| Couch admin user/password | Conductor + **proxy**                  | Existing `EC2CouchDB.passwordSecret`; grant proxy task `secretsmanager:GetSecretValue` |
+| JWT signing keys          | Conductor (issue) / Couch (`jwt_keys`) | Unchanged; proxy uses `AUTH_RESOLVE_VIA_COUCH_SESSION=true`                            |
+| Proxy-specific secrets    | None in v1                             | No separate HMAC if session resolve stays Couch-native                                 |
 
 Never put Couch admin credentials in plaintext task env; use
 `ecs.Secret.fromSecretsManager` like Conductor.
@@ -350,9 +350,12 @@ Align with handover §13; infra-specific steps:
      `api/test/couchAuthProxy.integration.test.ts`)
 5. **Flip** ALB `couch.*` rule to proxy TG; set Conductor
    `COUCHDB_PUBLIC_URL` → proxy; `COUCHDB_INTERNAL_URL` → internal Couch;
-   remove ALB→Couch registration; tighten SGs.
-6. **Clients** rebuild local data DBs via `openLocalDataDbWithAclCutover` on
-   next activate (app change already on proxy integration branch).
+   **bump** `conductor.couchAclClientSchemaVersion` /
+   `COUCH_ACL_CLIENT_SCHEMA_VERSION` (same hostname will not invalidate URL
+   markers alone); remove ALB→Couch registration; tighten SGs.
+6. **Clients** rebuild local data DBs via `openLocalDataDbWithAclCutover` when
+   the advertised `dataDb.acl_client_schema_version` advances (or on app
+   upgrade past the bundled marker minimum).
 
 Rollback is no longer a config flag (proxy is always on). Emergency
 recovery means a CDK change to re-attach a Couch TG / bypass the proxy
@@ -362,13 +365,13 @@ recovery means a CDK change to re-attach a Couch TG / bypass the proxy
 
 ## 7. Observability
 
-| Signal | Source |
-| ------ | ------ |
-| Proxy healthy hosts | ALB `HealthyHostCount` on proxy TG |
-| Proxy 5xx | ALB `HTTPCode_Target_5XX_Count` on proxy TG |
-| Proxy logs | CloudWatch Logs `/ecs/couch-auth-proxy` (or stream prefix) |
-| Couch host metrics | Existing EC2 / CWAgent dashboard |
-| Conductor→Couch failures | Conductor app logs (internal URL errors) |
+| Signal                   | Source                                                     |
+| ------------------------ | ---------------------------------------------------------- |
+| Proxy healthy hosts      | ALB `HealthyHostCount` on proxy TG                         |
+| Proxy 5xx                | ALB `HTTPCode_Target_5XX_Count` on proxy TG                |
+| Proxy logs               | CloudWatch Logs `/ecs/couch-auth-proxy` (or stream prefix) |
+| Couch host metrics       | Existing EC2 / CWAgent dashboard                           |
+| Conductor→Couch failures | Conductor app logs (internal URL errors)                   |
 
 Alarms: reuse the Couch HTTP 5xx pattern against the **proxy** target group;
 add “healthy host &lt; 1” on the proxy TG.
@@ -379,8 +382,9 @@ add “healthy host &lt; 1” on the proxy TG.
 
 - Pin by **digest or immutable `sha-*` tag** (compose already uses
   `sha-3004091`).
-- Document that tag must match vendored map/VDU in
-  `library/data-model/src/data_storage/dataDB/acl.ts` (upstream ddoc **2.3.0**).
+- Document that tag must match vendored map in
+  `library/data-model/src/data_storage/dataDB/acl.ts` (upstream ddoc map
+  **2.3.0**; FAIMS VDU extension `2.3.0-faims1`).
 - GHCR pull: if the image is public, Fargate can pull without auth; if private,
   add a Secrets Manager GHCR token and `repositoryCredentials` on the
   container definition.
@@ -416,13 +420,13 @@ clients use the public hostname — see
 
 Same security invariants; different primitives:
 
-| AWS | DigitalOcean analogue |
-| --- | --------------------- |
-| ALB host `couch.*` → proxy :8000 | LB `forwarding_rule` `target_port = 8000` |
-| ECS proxy service | Second Docker container on Couch droplet **or** small droplet |
-| SG to :5984 | Droplet firewall / VPC firewall: 5984 only from proxy + Conductor |
-| Secrets Manager | DO secure env / injected `conductor.env` |
-| `COUCHDB_INTERNAL_URL` | `http://<private-vpc-ip>:5984` or docker bridge |
+| AWS                              | DigitalOcean analogue                                             |
+| -------------------------------- | ----------------------------------------------------------------- |
+| ALB host `couch.*` → proxy :8000 | LB `forwarding_rule` `target_port = 8000`                         |
+| ECS proxy service                | Second Docker container on Couch droplet **or** small droplet     |
+| SG to :5984                      | Droplet firewall / VPC firewall: 5984 only from proxy + Conductor |
+| Secrets Manager                  | DO secure env / injected `conductor.env`                          |
+| `COUCHDB_INTERNAL_URL`           | `http://<private-vpc-ip>:5984` or docker bridge                   |
 
 Today `infrastructure/digital-ocean/couchdb/loadbalancer.tf` forwards **443 →
 5984**. Change target to the proxy port and stop publishing Couch on the LB.
@@ -433,27 +437,27 @@ Conductor env must gain an internal Couch URL (currently only
 
 ## 11. Decision summary
 
-| Decision | Choice |
-| -------- | ------ |
-| Proxy runtime | ECS Fargate on shared ALB |
-| Public hostname | Keep `couch.<baseDomain>` (CSP/URL stable) |
-| Couch public ALB | Remove after cutover |
-| Conductor→Couch | VPC SG + internal HTTP URL |
-| Admin creds | Existing Secrets Manager secret |
-| ACL scope | `ACL_DB_INCLUDE=/^data-/`, `ACL_AUTO_INSTALL=false` |
-| Cutover gate | DATA v2 migration before ALB flip |
-| Rollback | Code change to re-attach Couch TG (no `enabled` flag; reopens read gap) |
+| Decision         | Choice                                                                  |
+| ---------------- | ----------------------------------------------------------------------- |
+| Proxy runtime    | ECS Fargate on shared ALB                                               |
+| Public hostname  | Keep `couch.<baseDomain>` (CSP/URL stable)                              |
+| Couch public ALB | Remove after cutover                                                    |
+| Conductor→Couch  | VPC SG + internal HTTP URL                                              |
+| Admin creds      | Existing Secrets Manager secret                                         |
+| ACL scope        | `ACL_DB_INCLUDE=/^data-/`, `ACL_AUTO_INSTALL=false`                     |
+| Cutover gate     | DATA v2 migration before ALB flip                                       |
+| Rollback         | Code change to re-attach Couch TG (no `enabled` flag; reopens read gap) |
 
 ---
 
 ## 12. References
 
-| Path | Why |
-| ---- | --- |
-| [CouchAuthProxyHandover](CouchAuthProxyHandover.md) | App ACL model + cutover order |
-| `docker-compose.yml` (`couch-auth-proxy` service) | Reference env + healthcheck |
-| `infrastructure/aws-cdk/lib/components/couch-db.ts` | Current public Couch exposure |
-| `infrastructure/aws-cdk/lib/components/conductor.ts` | URL env wiring to split |
-| `infrastructure/aws-cdk/lib/components/networking.ts` | Shared ALB helpers |
-| [DeployingAWSStack](../DeployingAWSStack.md) | Operator deploy guide (update when implementing) |
-| Upstream [USER-GUIDE](https://github.com/PeterBaker0/couch-auth-proxy) | Proxy ops / ACL semantics |
+| Path                                                                   | Why                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------ |
+| [CouchAuthProxyHandover](CouchAuthProxyHandover.md)                    | App ACL model + cutover order                    |
+| `docker-compose.yml` (`couch-auth-proxy` service)                      | Reference env + healthcheck                      |
+| `infrastructure/aws-cdk/lib/components/couch-db.ts`                    | Current public Couch exposure                    |
+| `infrastructure/aws-cdk/lib/components/conductor.ts`                   | URL env wiring to split                          |
+| `infrastructure/aws-cdk/lib/components/networking.ts`                  | Shared ALB helpers                               |
+| [DeployingAWSStack](../DeployingAWSStack.md)                           | Operator deploy guide (update when implementing) |
+| Upstream [USER-GUIDE](https://github.com/PeterBaker0/couch-auth-proxy) | Proxy ops / ACL semantics                        |

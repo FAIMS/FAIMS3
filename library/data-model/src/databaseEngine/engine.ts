@@ -961,9 +961,11 @@ class HydratedOperations {
       created: revision.created,
       deleted: revision.deleted,
       created_by: revision.createdBy,
-      // ACL fields are not part of the hydrated API; preserve or backfill.
-      creator: existing.creator ?? revision.createdBy,
-      parent: existing.parent ?? revision.recordId,
+      // Always stamp ACL on the clean write path (do not preserve missing/wrong).
+      ...stampChildAcl({
+        createdBy: revision.createdBy,
+        recordId: revision.recordId,
+      }),
       parents: revision.parents,
       record_id: revision.recordId,
       revision_format_version: 1,
@@ -1375,8 +1377,11 @@ class FormOperations {
         parents: currentRevision.parents,
         created: currentRevision.created,
         created_by: currentRevision.created_by,
-        creator: currentRevision.creator,
-        parent: currentRevision.parent,
+        // Re-stamp ACL so restore/legacy orphans cannot linger on update.
+        ...stampChildAcl({
+          createdBy: currentRevision.created_by,
+          recordId: currentRevision.record_id,
+        }),
         type: currentRevision.type,
         ugc_comment: currentRevision.ugc_comment,
         relationship: currentRevision.relationship,
@@ -1852,6 +1857,11 @@ class FormOperations {
 
     return {
       ...currentAvp,
+      // Re-stamp ACL on in-place AVP updates (clean path; repairs orphans).
+      ...stampChildAcl({
+        createdBy: currentAvp.created_by,
+        recordId: currentAvp.record_id,
+      }),
       annotations: newData.annotation,
       data: newData.data,
       faims_attachments: newData.attachments?.map(a => ({

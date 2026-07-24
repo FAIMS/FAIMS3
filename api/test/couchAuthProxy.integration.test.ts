@@ -383,6 +383,39 @@ describe('couch-auth-proxy data DB ACL', function () {
     );
   });
 
+  it('denies creates without creator (fail-closed VDU)', async function () {
+    const dbA = userDb(guestA, password);
+    await waitForAclReady(dbA);
+    await expectForbidden(
+      dbA.put({
+        _id: `rec-${PROJECT_ID}-nostamp`,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: guestA,
+        revisions: [],
+        heads: [],
+        type: 'FormA',
+      })
+    );
+  });
+
+  it('denies forging creator on create (ACL VDU)', async function () {
+    const dbB = userDb(guestB, password);
+    await waitForAclReady(dbB);
+    await expectForbidden(
+      dbB.put({
+        _id: `rec-${PROJECT_ID}-forged-creator`,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: guestA,
+        ...stampRecordAcl(guestA),
+        revisions: [],
+        heads: [],
+        type: 'FormA',
+      })
+    );
+  });
+
   it('allows guests to read sync design docs (attachment_filter)', async function () {
     const dbB = userDb(guestB, password);
     await waitForAclReady(dbB);
