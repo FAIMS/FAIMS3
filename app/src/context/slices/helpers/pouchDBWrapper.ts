@@ -29,7 +29,7 @@
  */
 
 import {DatabaseInterface} from '@faims3/data-model';
-import {RUNNING_UNDER_TEST} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {logError} from '../../../logging';
 import PouchDB from 'pouchdb-browser';
 
@@ -40,7 +40,7 @@ type LocalDatabaseOptions = PouchDB.Configuration.DatabaseConfiguration;
 export const LOCAL_POUCH_OPTIONS: LocalDatabaseOptions = {};
 
 // enable memory adapter for testing
-if (RUNNING_UNDER_TEST) {
+if (config.runningUnderTest) {
   LOCAL_POUCH_OPTIONS['adapter'] = 'memory';
 }
 

@@ -1,5 +1,5 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {createLongLivedToken} from '@/hooks/queries';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -7,11 +7,7 @@ import {useState, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Copy, CheckCircle, AlertTriangle} from 'lucide-react';
-import {
-  LONG_LIVED_TOKEN_HELP_LINK,
-  MAXIMUM_LONG_LIVED_DURATION_DAYS,
-  LONG_LIVED_TOKEN_DURATION_HINTS,
-} from '@/constants';
+import {config} from '@/constants';
 import {ExpirySelector} from '@/components/expiry-selector';
 
 interface CreateLongLivedTokenFormProps {
@@ -26,7 +22,7 @@ export function CreateLongLivedTokenForm({
   setDialogOpen,
   onInterceptClose,
 }: CreateLongLivedTokenFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [createdToken, setCreatedToken] = useState<string | undefined>(
     undefined
@@ -47,16 +43,30 @@ export function CreateLongLivedTokenForm({
     {
       name: 'title',
       label: 'Title',
-      schema: z.string().min(5, {
-        message: 'Title must be at least 5 characters',
-      }),
+      schema: z
+        .string()
+        .min(5, {
+          message: 'Title must be at least 5 characters',
+        })
+        .max(100, {
+          message: 'Title must be at most 100 characters',
+        }),
+      maxLength: 100,
+      testId: 'web-profile-tokens-create-title',
     },
     {
       name: 'description',
       label: 'Description',
-      schema: z.string().min(10, {
-        message: 'Description must be at least 10 characters',
-      }),
+      schema: z
+        .string()
+        .min(10, {
+          message: 'Description must be at least 10 characters',
+        })
+        .max(500, {
+          message: 'Description must be at most 500 characters',
+        }),
+      maxLength: 500,
+      testId: 'web-profile-tokens-create-description',
     },
   ];
 
@@ -93,8 +103,6 @@ export function CreateLongLivedTokenForm({
    * Handles the form submission
    */
   const onSubmit = async ({title, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     // Validate expiry selection
     if (!selectedDateTime) {
       return {type: 'submit', message: 'Please select an expiry date'};
@@ -115,14 +123,14 @@ export function CreateLongLivedTokenForm({
       }
 
       // Additional validation for maximum duration
-      if (MAXIMUM_LONG_LIVED_DURATION_DAYS) {
+      if (config.maximumLongLivedDurationDays) {
         const now = new Date();
         const daysDiff =
           (expiryTimestampMs - now.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysDiff > MAXIMUM_LONG_LIVED_DURATION_DAYS) {
+        if (daysDiff > config.maximumLongLivedDurationDays) {
           return {
             type: 'submit',
-            message: `Token expiry cannot be more than ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days from now`,
+            message: `Token expiry cannot be more than ${config.maximumLongLivedDurationDays} days from now`,
           };
         }
       }
@@ -166,7 +174,10 @@ export function CreateLongLivedTokenForm({
         <div className="space-y-2">
           <label className="text-sm font-medium">Your API Token:</label>
           <div className="flex gap-2">
-            <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm break-all border overflow-hidden">
+            <div
+              className="flex-1 p-3 bg-muted rounded-md font-mono text-sm break-all border overflow-hidden"
+              data-testid="web-profile-tokens-created-value"
+            >
               <div className="whitespace-pre-wrap break-all">
                 {createdToken}
               </div>
@@ -212,7 +223,7 @@ export function CreateLongLivedTokenForm({
               Authorization: Bearer &lt;access_token&gt;
             </code>
             <a
-              href={LONG_LIVED_TOKEN_HELP_LINK}
+              href={config.longLivedTokenHelpLink}
               className="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
               target="_blank"
               rel="noopener noreferrer"
@@ -225,6 +236,7 @@ export function CreateLongLivedTokenForm({
           onClick={handleConfirmedClose}
           variant="destructive"
           className="w-full"
+          data-testid="web-profile-tokens-created-close"
         >
           I've Saved My Token - Close
         </Button>
@@ -241,10 +253,11 @@ export function CreateLongLivedTokenForm({
         onSubmit={onSubmit}
         submitButtonText="Create Long-Lived Token"
         submitButtonVariant="outline"
+        submitButtonTestId="web-profile-tokens-create-submit"
         footer={
           <ExpirySelector
-            hints={LONG_LIVED_TOKEN_DURATION_HINTS}
-            maxDurationDays={MAXIMUM_LONG_LIVED_DURATION_DAYS}
+            hints={config.longLivedTokenDurationHints}
+            maxDurationDays={config.maximumLongLivedDurationDays}
             selectedDateTime={selectedDateTime}
             setSelectedDateTime={setSelectedDateTime}
             title="Token Duration"

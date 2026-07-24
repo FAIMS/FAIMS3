@@ -56,6 +56,7 @@ export default function ImpersonationBanner() {
       severity="warning"
       variant="filled"
       square
+      data-testid="app-impersonation-banner"
       sx={{
         alignItems: 'center',
         marginTop: {xs: 2, sm: 1},
@@ -65,6 +66,7 @@ export default function ImpersonationBanner() {
           color="inherit"
           size="small"
           variant="outlined"
+          data-testid="app-impersonation-return-button"
           onClick={handleReturn}
         >
           Return to your account

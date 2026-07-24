@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useState} from 'react';
 import {CreateTeamForm} from '../../forms/teams/create-team-form';
 import {Button} from '../../ui/button';
@@ -21,17 +21,18 @@ export const CreateTeamDialog = () => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-teams-create-button"
         >
           <Plus />
           Create Team
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-teams-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
             Create a new team to help manage users and share access to{' '}
-            {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and Templates.
+            {config.notebookNamePluralCapitalized} and Templates.
           </DialogDescription>
         </DialogHeader>
         <CreateTeamForm setDialogOpen={setOpen} />

@@ -123,6 +123,8 @@ export class FaimsInfraStack extends cdk.Stack {
       hz: hz,
       maximumLongLivedDurationDays:
         config.security.maximumLongLivedTokenDurationDays,
+      rateLimiterEnabled: config.security.rateLimiterEnabled,
+      authAttemptLimiterEnabled: config.security.authAttemptLimiterEnabled,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,

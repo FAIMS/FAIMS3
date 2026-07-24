@@ -1,10 +1,10 @@
 import {PostCreateNotebookResponse} from '@faims3/data-model';
 import {
+  QueryClient,
   QueryFunctionContext,
   useMutation,
   UseMutationOptions,
   useQuery,
-  useQueryClient,
 } from '@tanstack/react-query';
 import {createNotebookFromTemplate} from '../apiOperations/notebooks';
 import {tryLocalGetDataDb} from '../database';
@@ -103,23 +103,21 @@ export const useRecordAudit = ({
 
 /**
  * Invalidate the record audit cache to force a re-fetch
- * of the record audit status
- * Needs to be called from inside a functional component
- * so not easy to use just now
+ * of the record audit status.
+ * Pass a QueryClient from `useQueryClient()` at the call site.
  * TODO find where to call this when we save a record
  */
 export const invalidateRecordAudit = ({
+  queryClient,
   projectId,
   listingId,
   username,
 }: {
+  queryClient: QueryClient;
   projectId: string;
   listingId: string;
   username: string;
 }) => {
-  // Get QueryClient from the context
-  const queryClient = useQueryClient();
-
   const queryKey = ['record-audit', projectId, listingId, username];
   return queryClient.invalidateQueries({queryKey});
 };

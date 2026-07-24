@@ -1,5 +1,15 @@
 import {z} from 'zod';
 import {
+  boundedString,
+  CodeInputSchema,
+  EmailInputSchema,
+  IdInputSchema,
+  INPUT_LIMITS,
+  PasswordInputSchema,
+  RedirectInputSchema,
+  TokenInputSchema,
+} from './inputLimits';
+import {
   formRelationshipSchema,
   formUpdateDataSchema,
   hydratedRecordDocumentSchema,
@@ -43,20 +53,20 @@ export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
 // ==================
 
 // logout
-export const PutLogoutInputSchema = z.object({refreshToken: z.string()});
+export const PutLogoutInputSchema = z.object({refreshToken: TokenInputSchema});
 export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
 
 // Change Password
 export const PostChangePasswordInputSchema = z
   .object({
-    username: z.string().trim(),
-    currentPassword: z.string().trim(),
-    newPassword: z
-      .string()
-      .trim()
-      .min(10, 'New password must be at least 10 characters in length.'),
-    confirmPassword: z.string().trim(),
-    redirect: z.string().trim().optional(),
+    username: IdInputSchema,
+    currentPassword: PasswordInputSchema,
+    newPassword: PasswordInputSchema.min(
+      10,
+      'New password must be at least 10 characters in length.'
+    ),
+    confirmPassword: PasswordInputSchema,
+    redirect: RedirectInputSchema.optional(),
   })
   .refine(data => data.newPassword === data.confirmPassword, {
     message: 'New passwords do not match',
@@ -69,8 +79,8 @@ export type PostChangePasswordInput = z.infer<
 
 // Forgot password
 export const PostForgotPasswordInputSchema = z.object({
-  email: z.string().trim().email('Please enter a valid email address.'),
-  redirect: z.string().trim().optional(),
+  email: EmailInputSchema,
+  redirect: RedirectInputSchema.optional(),
 });
 
 export type PostForgotPasswordInput = z.infer<
@@ -80,13 +90,13 @@ export type PostForgotPasswordInput = z.infer<
 // Reset Password
 export const PostResetPasswordInputSchema = z
   .object({
-    code: z.string().trim(),
-    newPassword: z
-      .string()
-      .trim()
-      .min(10, 'Password must be at least 10 characters in length.'),
-    confirmPassword: z.string().trim(),
-    redirect: z.string().trim().optional(),
+    code: CodeInputSchema,
+    newPassword: PasswordInputSchema.min(
+      10,
+      'Password must be at least 10 characters in length.'
+    ),
+    confirmPassword: PasswordInputSchema,
+    redirect: RedirectInputSchema.optional(),
   })
   .refine(data => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -185,34 +195,45 @@ export const AuthContextSchema = z.object({
   // what action are we taking?
   action: z.enum(['register', 'login']),
   // Do we we want to redirect back somewhere once finished?
-  redirect: z.string().trim().optional(),
+  redirect: RedirectInputSchema.optional(),
   // What is the invite ID (required if action is register)
-  inviteId: z.string().trim().optional(),
+  inviteId: IdInputSchema.optional(),
 });
 export type AuthContext = z.infer<typeof AuthContextSchema>;
 
 export const PostLoginInputSchema = AuthContextSchema.extend({
-  email: z.string().trim(),
-  password: z.string().trim().min(1),
+  email: z
+    .string()
+    .trim()
+    .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, 'Email address is too long'),
+  password: PasswordInputSchema.min(1),
 });
 export type PostLoginInput = z.infer<typeof PostLoginInputSchema>;
 export const PostRegisterInputSchema = AuthContextSchema.extend({
   // Baseline email and password (always required)
-  email: z.string().trim().email('Email address must be a valid email.'),
-  password: z
+  email: z
     .string()
     .trim()
-    .min(10, 'Password must be of at least 10 characters in length.'),
-  repeat: z.string(),
+    .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, 'Email address is too long')
+    .email('Email address must be a valid email.'),
+  password: PasswordInputSchema.min(
+    10,
+    'Password must be of at least 10 characters in length.'
+  ),
+  repeat: PasswordInputSchema,
   name: z
     .string()
     .trim()
-    .min(5, 'Name must be of at least 5 characters in length.'),
+    .min(5, 'Name must be of at least 5 characters in length.')
+    .max(
+      INPUT_LIMITS.PERSON_NAME_MAX_LENGTH,
+      `Name must be at most ${INPUT_LIMITS.PERSON_NAME_MAX_LENGTH} characters`
+    ),
 });
 export type PostRegisterInput = z.infer<typeof PostRegisterInputSchema>;
 
 export const PostRefreshTokenInputSchema = z.object({
-  refreshToken: z.string(),
+  refreshToken: TokenInputSchema,
 });
 export type PostRefreshTokenInput = z.infer<typeof PostRefreshTokenInputSchema>;
 export const PostRefreshTokenResponseSchema = z.object({
@@ -225,7 +246,10 @@ export type PostRefreshTokenResponse = z.infer<
 
 // Token exchange
 export const PostExchangeTokenInputSchema = z.object({
-  exchangeToken: z.string().min(1),
+  exchangeToken: z
+    .string()
+    .min(1)
+    .max(INPUT_LIMITS.TOKEN_MAX_LENGTH, 'Token is too long'),
 });
 export type PostExchangeTokenInput = z.infer<
   typeof PostExchangeTokenInputSchema
@@ -279,20 +303,20 @@ export type GetNotebookListResponse = z.infer<
 >;
 
 export const CreateNotebookFromTemplateSchema = z.object({
-  name: z.string(),
+  name: boundedString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH, 'Name'),
   description: CreateRootDescriptionSchema,
-  template_id: z.string(),
-  teamId: z.string().min(1).optional(),
+  template_id: IdInputSchema,
+  teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 export type CreateNotebookFromTemplate = z.infer<
   typeof CreateNotebookFromTemplateSchema
 >;
 
 export const CreateNotebookFromScratchSchema = z.object({
-  name: z.string(),
+  name: boundedString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH, 'Name'),
   description: CreateRootDescriptionSchema,
   uiSpecification: NotebookUiSpecificationInputSchema,
-  teamId: z.string().min(1).optional(),
+  teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
 });
 export type CreateNotebookFromScratch = z.infer<
   typeof CreateNotebookFromScratchSchema
@@ -318,7 +342,10 @@ export type PutChangeNotebookStatusInput = z.infer<
 
 // PUT :/id change project team
 export const PutChangeNotebookTeamInputSchema = z.object({
-  teamId: z.string().min(1, 'Team ID is required'),
+  teamId: z
+    .string()
+    .min(1, 'Team ID is required')
+    .max(INPUT_LIMITS.ID_MAX_LENGTH),
 });
 
 export type PutChangeNotebookTeamInput = z.infer<
@@ -327,7 +354,7 @@ export type PutChangeNotebookTeamInput = z.infer<
 
 /** Body for POST /api/notebooks/:id/delete — must match project name exactly. */
 export const PostDestroyNotebookInputSchema = z.object({
-  confirmName: z.string().min(1),
+  confirmName: z.string().min(1).max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
 });
 export type PostDestroyNotebookInput = z.infer<
   typeof PostDestroyNotebookInputSchema
@@ -354,7 +381,15 @@ export type GetNotebookUsersResponse = z.infer<
 export const PutUpdateNotebookMetadataInputSchema = ProjectDBFieldsSchema.pick({
   name: true,
   description: true,
-}).partial();
+})
+  .partial()
+  .extend({
+    // Bound the incoming name length (persisted schema is not retro-capped)
+    name: boundedString(
+      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      'Name'
+    ).optional(),
+  });
 export type PutUpdateNotebookMetadataInput = z.infer<
   typeof PutUpdateNotebookMetadataInputSchema
 >;
@@ -395,7 +430,7 @@ export type PutUpdateNotebookOfflineMapRegionInput = z.infer<
 // POST modify user for notebook
 export const PostAddNotebookUserInputSchema = z.object({
   // The username to add to the notebook roles
-  username: z.string(),
+  username: IdInputSchema,
   // The role to add
   role: z.nativeEnum(Role),
   // Addrole:= true means add, false means remove
@@ -408,8 +443,16 @@ export type PostAddNotebookUserInput = z.infer<
 
 // POST check record sync status
 export const PostRecordStatusInputSchema = z.object({
-  // a map from record ids to hashes
-  record_map: z.record(z.string(), z.string()),
+  // a map from record ids to hashes (bounded to prevent oversized payloads)
+  record_map: z
+    .record(
+      z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
+      z.string().max(INPUT_LIMITS.ID_MAX_LENGTH)
+    )
+    .refine(
+      map => Object.keys(map).length <= INPUT_LIMITS.RECORD_MAP_MAX_ENTRIES,
+      `record_map must contain at most ${INPUT_LIMITS.RECORD_MAP_MAX_ENTRIES} entries`
+    ),
 });
 export type PostRecordStatusInput = z.infer<typeof PostRecordStatusInputSchema>;
 
@@ -455,10 +498,12 @@ export type GetExportNotebookResponse = z.infer<
 export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   name: true,
 }).extend({
+  // Bound the incoming name length (persisted schema is not retro-capped)
+  name: boundedString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH, 'Name'),
   description: CreateRootDescriptionSchema,
   uiSpecification: NotebookUiSpecificationInputSchema,
   // prefer to use a nicer team ID input field
-  teamId: z.string().trim().min(1).optional(),
+  teamId: z.string().trim().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
   /** When true, template is visible in the public list for all users */
   isPublic: z.boolean().optional(),
 });
@@ -474,14 +519,26 @@ export type PostCreateTemplateResponse = z.infer<
 export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   name: true,
   description: true,
-}).partial();
+})
+  .partial()
+  .extend({
+    // Bound the incoming name length (persisted schema is not retro-capped)
+    name: boundedString(
+      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      'Name'
+    ).optional(),
+  });
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;
 
 /** PUT /api/templates/:id/team — change owning team only. */
 export const PutChangeTemplateTeamInputSchema = z.object({
-  teamId: z.string().trim().min(1, 'Team ID is required'),
+  teamId: z
+    .string()
+    .trim()
+    .min(1, 'Team ID is required')
+    .max(INPUT_LIMITS.ID_MAX_LENGTH),
 });
 export type PutChangeTemplateTeamInput = z.infer<
   typeof PutChangeTemplateTeamInputSchema
@@ -560,8 +617,8 @@ export type GetTemplateSurveyReferencesResponse = z.infer<
 
 // POST /reset request schema
 export const PostRequestPasswordResetRequestSchema = z.object({
-  email: z.string(),
-  redirect: z.string().optional(),
+  email: z.string().max(INPUT_LIMITS.EMAIL_MAX_LENGTH, 'Email is too long'),
+  redirect: RedirectInputSchema.optional(),
 });
 export type PostRequestPasswordResetRequest = z.infer<
   typeof PostRequestPasswordResetRequestSchema
@@ -580,8 +637,8 @@ export type PostRequestPasswordResetResponse = z.infer<
 
 // PUT /reset request schema
 export const PutRequestPasswordResetRequestSchema = z.object({
-  code: z.string(),
-  newPassword: z.string().min(10),
+  code: CodeInputSchema,
+  newPassword: PasswordInputSchema.min(10),
 });
 export type PutRequestPasswordResetRequest = z.infer<
   typeof PutRequestPasswordResetRequestSchema
@@ -602,8 +659,19 @@ export type PutRequestPasswordResetResponse = z.infer<
  * Schema for creating a new team
  */
 export const PostCreateTeamInputSchema = z.object({
-  name: z.string().min(5, 'Team name is required, minimum length 5.'),
-  description: z.string(),
+  name: z
+    .string()
+    .min(5, 'Team name is required, minimum length 5.')
+    .max(
+      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      `Team name must be at most ${INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH} characters.`
+    ),
+  description: z
+    .string()
+    .max(
+      INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH,
+      `Team description must be at most ${INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH} characters.`
+    ),
 });
 
 /**
@@ -613,8 +681,18 @@ export const PutUpdateTeamInputSchema = z.object({
   name: z
     .string()
     .min(5, 'Team name is required, minimum length 5.')
+    .max(
+      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      `Team name must be at most ${INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH} characters.`
+    )
     .optional(),
-  description: z.string().optional(),
+  description: z
+    .string()
+    .max(
+      INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH,
+      `Team description must be at most ${INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH} characters.`
+    )
+    .optional(),
 });
 
 /**
@@ -667,10 +745,13 @@ export type PutUpdateTeamResponse = z.infer<typeof PutUpdateTeamResponseSchema>;
  */
 export const TeamMembershipInputSchema = z
   .object({
-    username: z.string().min(1, 'Username is required'),
+    username: z
+      .string()
+      .min(1, 'Username is required')
+      .max(INPUT_LIMITS.ID_MAX_LENGTH),
     role: z
-      .nativeEnum(Role, {
-        errorMap: () => ({message: 'Must be a valid role'}),
+      .enum(Role, {
+        error: 'Must be a valid role',
       })
       .optional(),
     action: z.enum(['ADD_ROLE', 'REMOVE_ROLE', 'REMOVE_USER']),
@@ -746,8 +827,22 @@ export const PostCreateResourceInviteInputSchema = z.object({
     const roleDetail = roleDetails[r];
     return roleDetail.scope === RoleScope.RESOURCE_SPECIFIC;
   }, 'Role must be a resource specific role to create a resource specific invite'),
-  name: z.string().min(1, 'Invite name is required'),
-  uses: z.number().min(1, 'Uses must be at least 1').optional(),
+  name: z
+    .string()
+    .min(1, 'Invite name is required')
+    .max(
+      INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
+      `Invite name must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`
+    ),
+  uses: z
+    .number()
+    .int()
+    .min(1, 'Uses must be at least 1')
+    .max(
+      INPUT_LIMITS.INVITE_MAX_USES,
+      `Uses must be at most ${INPUT_LIMITS.INVITE_MAX_USES}`
+    )
+    .optional(),
   expiry: z.number().optional(),
 });
 
@@ -759,8 +854,22 @@ export const PostCreateGlobalInviteInputSchema = z.object({
     const roleDetail = roleDetails[r];
     return roleDetail.scope === RoleScope.GLOBAL;
   }, 'Role must be a global role to create a global invite'),
-  name: z.string().min(1, 'Invite name is required'),
-  uses: z.number().min(1, 'Uses must be at least 1').optional(),
+  name: z
+    .string()
+    .min(1, 'Invite name is required')
+    .max(
+      INPUT_LIMITS.INVITE_NAME_MAX_LENGTH,
+      `Invite name must be at most ${INPUT_LIMITS.INVITE_NAME_MAX_LENGTH} characters`
+    ),
+  uses: z
+    .number()
+    .int()
+    .min(1, 'Uses must be at least 1')
+    .max(
+      INPUT_LIMITS.INVITE_MAX_USES,
+      `Uses must be at most ${INPUT_LIMITS.INVITE_MAX_USES}`
+    )
+    .optional(),
   expiry: z.number().optional(),
 });
 
@@ -882,7 +991,10 @@ export type PostUseInviteResponse = z.infer<typeof PostUseInviteResponseSchema>;
 
 // POST /verify request schema
 export const PostRequestEmailVerificationRequestSchema = z.object({
-  email: z.string().email('Must be a valid email address'),
+  email: z
+    .string()
+    .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, 'Email is too long')
+    .email('Must be a valid email address'),
 });
 export type PostRequestEmailVerificationRequest = z.infer<
   typeof PostRequestEmailVerificationRequestSchema
@@ -900,7 +1012,7 @@ export type PostRequestEmailVerificationResponse = z.infer<
 
 // PUT /verify request schema
 export const PutConfirmEmailVerificationRequestSchema = z.object({
-  code: z.string(),
+  code: CodeInputSchema,
 });
 export type PutConfirmEmailVerificationRequest = z.infer<
   typeof PutConfirmEmailVerificationRequestSchema
@@ -938,9 +1050,9 @@ export type PostCreateRecordResponse = z.infer<
 /** GET list records query (all values are strings from query string) */
 export const GetListRecordsQuerySchema = z
   .object({
-    formId: z.string().optional(),
-    limit: z.string().optional(),
-    startKey: z.string().optional(),
+    formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
+    limit: z.string().max(16).optional(),
+    startKey: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
     filterDeleted: z.enum(['true', 'false']).optional(),
   })
   .refine(
@@ -1090,7 +1202,10 @@ export const GetLongLivedTokensResponseSchema = z.object({
 });
 
 export const PostLongLivedTokenExchangeInputSchema = z.object({
-  token: z.string().min(1, 'Token is required'),
+  token: z
+    .string()
+    .min(1, 'Token is required')
+    .max(INPUT_LIMITS.TOKEN_MAX_LENGTH, 'Token is too long'),
 });
 
 export const PostLongLivedTokenExchangeResponseSchema = z.object({

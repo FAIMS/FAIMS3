@@ -16,7 +16,7 @@ import {
   GetLongLivedTokensResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {
   createNewLongLivedToken,
   updateLongLivedToken,
@@ -32,7 +32,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../buildconfig';
+import {config} from '../buildconfig';
 import {z} from 'zod';
 
 export const api: express.Router = express.Router();
@@ -52,12 +52,12 @@ export const api: express.Router = express.Router();
  */
 api.post(
   '/',
-  processRequest({
-    body: PostCreateLongLivedTokenRequestSchema,
-  }),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.CREATE_LONG_LIVED_TOKEN,
+  }),
+  validate({
+    body: PostCreateLongLivedTokenRequestSchema,
   }),
   async (req, res: Response<PostCreateLongLivedTokenResponse>) => {
     if (!req.user) {
@@ -110,13 +110,14 @@ api.post(
  */
 api.get(
   '/',
-  processRequest({
+  requireAuthenticationAPI,
+  // Validate query before permission middleware reads `all`.
+  validate({
     query: z.object({
       // get all of the tokens, not just current user's - for admins
       all: z.string().optional(),
     }),
   }),
-  requireAuthenticationAPI,
   isAllowedToMiddleware({
     getAction(req) {
       // If the query parameter 'all' is set to 'true', require reading any
@@ -161,7 +162,7 @@ api.get(
       res.json({
         tokens: tokenList,
         maxAllowedExpiryTimestamp: getMaxAllowedExpiryTimestamp(),
-        maxDurationDays: MAXIMUM_LONG_LIVED_DURATION_DAYS,
+        maxDurationDays: config.maximumLongLivedDurationDays,
       });
     } catch (error) {
       throw new Exceptions.InternalSystemError(
@@ -187,13 +188,13 @@ api.get(
  */
 api.put(
   '/:tokenId',
-  processRequest({
-    body: PutUpdateLongLivedTokenRequestSchema,
-  }),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     // they at least need to be able to edit their own tokens
     action: Action.EDIT_MY_LONG_LIVED_TOKEN,
+  }),
+  validate({
+    body: PutUpdateLongLivedTokenRequestSchema,
   }),
   async (req, res: Response<PutUpdateLongLivedTokenResponse>) => {
     if (!req.user) {
@@ -262,13 +263,13 @@ api.put(
  */
 api.delete(
   '/:tokenId',
-  processRequest({
-    body: PutRevokeLongLivedTokenRequestSchema,
-  }),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     // they at least need to be able to edit their own tokens
     action: Action.REVOKE_MY_LONG_LIVED_TOKEN,
+  }),
+  validate({
+    body: PutRevokeLongLivedTokenRequestSchema,
   }),
   async (req, res: Response<PutRevokeLongLivedTokenResponse>) => {
     if (!req.user) {

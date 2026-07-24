@@ -7,6 +7,7 @@ FAIMS3 Developer Documentation
 
    markdown/Drafts.md
    markdown/Knip.md
+   markdown/RulesOfHooks.md
    markdown/CouchMigrations.md
    markdown/PermissionModel.md
    markdown/NotebookDefinition.md

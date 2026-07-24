@@ -1,5 +1,5 @@
 import {Box} from '@mui/material';
-import {NOTEBOOK_NAME, SYNC_PUSH_ONLY_RECORD_THRESHOLD} from '../buildconfig';
+import {config} from '../buildconfig';
 import type {SyncMode} from './syncMode';
 
 /** Modes shown in sync mode help and change confirmations. */
@@ -7,7 +7,8 @@ export const SYNC_MODE_HELP_MODES: SyncMode[] = ['none', 'push', 'both'];
 
 export function showsLargeRecordNote(recordCount?: number): boolean {
   return (
-    recordCount !== undefined && recordCount > SYNC_PUSH_ONLY_RECORD_THRESHOLD
+    recordCount !== undefined &&
+    recordCount > config.syncPushOnlyRecordThreshold
   );
 }
 
@@ -43,7 +44,7 @@ export function SyncModeHelpContent({
           records will be available on this device.
           {showsLargeRecordNote(recordCount) ? (
             <Box component="span" sx={{display: 'block', mt: 1}}>
-              <strong>Note:</strong> this {NOTEBOOK_NAME} has{' '}
+              <strong>Note:</strong> this {config.notebookName} has{' '}
               {recordCount!.toLocaleString()} records. Downloading a large
               number of records may consume a large amount of bandwidth, storage
               and battery.

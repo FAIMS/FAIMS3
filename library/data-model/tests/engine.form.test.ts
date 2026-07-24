@@ -9,9 +9,6 @@ import {
   DataDocument,
   DataEngine,
   generateAttID,
-  generateAvpID,
-  initDataDB,
-  mergeHeads,
   NewFormRecord,
   NotebookDefinition,
 } from '../src';

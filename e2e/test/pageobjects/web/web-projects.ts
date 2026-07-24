@@ -1,31 +1,34 @@
 import {$, $$, browser} from '@wdio/globals';
 import {Page} from '../page.ts';
-
-const WEB_URL = process.env.WEB_URL || 'http://localhost:3001';
+import {getWebUrl} from '../../helpers/env.ts';
+import {byTestId} from '../../helpers/selectors.ts';
+import {waitForTestId} from '../../helpers/wait.ts';
 
 /**
- * Page object for the Projects list page (/_protected/projects/).
+ * Page object for the Projects list page (/projects).
  *
  * The page renders:
  *  - An <h1> heading whose text is derived from NOTEBOOK_NAME_PLURAL_CAPITALIZED
- *    (e.g. "Notebooks").
+ *    (e.g. "Notebooks") — selected via data-testid web-projects-heading.
  *  - A ShadCN DataTable that wraps a standard <table> element.
  *  - A "Create {NotebookName}" dialog-trigger button.
  */
 class WebProjectsPage extends Page {
   /**
    * Navigate to the projects page.
-   * Uses a root-relative URL so wdio prepends the configured baseUrl.
+   * Uses getWebUrl() so the absolute Control Centre origin is correct regardless
+   * of which WDIO conf / baseUrl is active.
    */
   public async open() {
-    await browser.url(`${WEB_URL}/projects`);
+    await browser.url(`${getWebUrl()}/projects`);
     await this.setBrowserSize();
     await this.waitForPageLoad();
     await this.waitForProjectsReady();
   }
 
+  /** Wait until the projects list heading has rendered (not login redirect). */
   async waitForProjectsReady() {
-    await this.heading.waitForDisplayed({
+    await waitForTestId('web-projects-heading', {
       timeout: 15000,
       timeoutMsg: 'Expected projects list heading on /projects',
     });
@@ -33,7 +36,7 @@ class WebProjectsPage extends Page {
 
   /** Page heading — text varies by deployment (e.g. "Notebooks"). */
   get heading() {
-    return $('h1');
+    return byTestId('web-projects-heading');
   }
 
   /**
@@ -46,14 +49,30 @@ class WebProjectsPage extends Page {
 
   /**
    * The "Create {NotebookName}" dialog-trigger button.
-   * Text starts with "Create " regardless of the configured notebook name.
+   * Label text starts with "Create " regardless of the configured notebook name;
+   * the stable selector is data-testid web-projects-create-button.
    */
   get createButton() {
-    return $('button*=Create');
+    return byTestId('web-projects-create-button');
+  }
+
+  /** Create-project dialog shell (opened by createButton). */
+  get createDialog() {
+    return byTestId('web-projects-create-dialog');
+  }
+
+  /** Name field inside the create-project dialog. */
+  get nameInput() {
+    return byTestId('web-projects-create-name');
+  }
+
+  /** Submit control inside the create-project dialog. */
+  get submitButton() {
+    return byTestId('web-projects-create-submit');
   }
 
   /**
-   * Returns true when the main content container is displayed, indicating
+   * Returns true when the projects heading is displayed, indicating
    * the page has loaded (regardless of whether any projects exist).
    */
   async isPageDisplayed(): Promise<boolean> {
@@ -65,6 +84,10 @@ class WebProjectsPage extends Page {
     }
   }
 
+  /**
+   * Wait for the create button to become visible (it is rendered after the data
+   * fetch resolves, even when the list is empty).
+   */
   async waitForCreateButton() {
     await this.createButton.scrollIntoView();
     await this.createButton.waitForDisplayed({timeout: 10000});
@@ -83,6 +106,13 @@ class WebProjectsPage extends Page {
     } catch {
       return false;
     }
+  }
+
+  /** Open the create-project dialog and wait for it to appear. */
+  async openCreateDialog() {
+    await this.waitForCreateButton();
+    await this.createButton.click();
+    await waitForTestId('web-projects-create-dialog');
   }
 }
 

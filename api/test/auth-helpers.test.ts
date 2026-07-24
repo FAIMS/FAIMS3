@@ -50,7 +50,7 @@ import {
 
 /** Override PROVISION_SSO_USERS_POLICY for the duration of a test */
 function setPolicy(policy: string) {
-  (buildconfig as any).PROVISION_SSO_USERS_POLICY = policy;
+  (buildconfig.config as any).provisionSSOUsersPolicy = policy;
 }
 
 /** Build a minimal ExistingPeopleDBDocument */

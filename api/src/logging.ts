@@ -1,6 +1,6 @@
 import Bugsnag from '@bugsnag/js';
 import Express from 'express';
-import {BUGSNAG_API_KEY, RUNNING_UNDER_TEST} from './buildconfig';
+import {config} from './buildconfig';
 import {nowIso} from './time';
 
 /**
@@ -11,7 +11,7 @@ import {nowIso} from './time';
  */
 export const logError = (error: unknown) => {
   console.error(error);
-  if (BUGSNAG_API_KEY) {
+  if (config.bugsnagApiKey) {
     const err = error instanceof Error ? error : new Error(String(error));
     Bugsnag.notify(err);
   }
@@ -23,7 +23,7 @@ export const logError = (error: unknown) => {
  */
 export function logImpersonatedRequest(req: Express.Request): void {
   const user = req.user;
-  if (!user?.impersonatingUserId || RUNNING_UNDER_TEST) {
+  if (!user?.impersonatingUserId || config.runningUnderTest) {
     return;
   }
 

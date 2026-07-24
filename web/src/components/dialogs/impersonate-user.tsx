@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useImpersonateUser} from '@/hooks/user-hooks';
 import {
   Dialog,
@@ -31,7 +30,7 @@ export function ImpersonateUserDialog({
   rowUser: GetListAllUsersItem;
 }) {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const impersonate = useImpersonateUser();
   const canImpersonate = useIsAuthorisedTo({
     action: Action.IMPERSONATE_USER,
@@ -39,7 +38,7 @@ export function ImpersonateUserDialog({
   });
 
   const blocked =
-    rowUser._id === user?.user.id ||
+    rowUser._id === user.user.id ||
     (rowUser.globalRoles ?? []).includes(Role.GENERAL_ADMIN);
 
   if (!canImpersonate || blocked) {

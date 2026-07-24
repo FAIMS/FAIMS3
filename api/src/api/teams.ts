@@ -38,7 +38,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {
   createTeamDocument,
   deleteTeam,
@@ -103,7 +103,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetTeamByIdResponse>) => {
@@ -122,7 +122,7 @@ api.post(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.CREATE_TEAM}),
-  processRequest({
+  validate({
     body: PostCreateTeamInputSchema,
   }),
   async (req, res: Response<PostCreateTeamResponse>) => {
@@ -161,7 +161,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateTeamInputSchema,
   }),
@@ -188,7 +188,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async (req, res) => {
@@ -216,7 +216,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetTeamMembersResponse>) => {
@@ -265,7 +265,7 @@ api.get(
 api.post(
   '/:id/members',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: TeamMembershipInputSchema,
   }),

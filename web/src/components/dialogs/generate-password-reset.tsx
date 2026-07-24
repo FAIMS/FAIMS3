@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useMutation} from '@tanstack/react-query';
 import {AlertCircle, LinkIcon, QrCode, RefreshCw} from 'lucide-react';
 import QRCode from 'qrcode';
@@ -16,6 +16,7 @@ import {Button} from '../ui/button';
 import {CopyButton} from '../ui/copy-button';
 import {Spinner} from '../ui/spinner';
 import {Card, CardContent} from '../ui/card';
+import {config} from '@/constants';
 
 /**
  * Displays a QR code in a clickable format that opens a larger view in a dialog.
@@ -62,7 +63,7 @@ const QRCodeViewDialog = ({qrData}: {qrData: string}) => {
  * @param userId - The ID of the user requesting password reset
  * @param open - Controls the visibility of the dialog
  * @param setOpen - Function to update dialog visibility
- * @returns Returns null if user is not authenticated or userId is missing
+ * @returns Returns null if userId is missing
  */
 export const GeneratePasswordReset = ({
   userId,
@@ -73,17 +74,17 @@ export const GeneratePasswordReset = ({
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const {data, isPending, mutate, error, isError, reset} = useMutation({
     mutationKey: ['resetpassword', userId],
     mutationFn: async ({id}: {id: string}) => {
-      return await fetch(`${import.meta.env.VITE_API_URL}/api/reset`, {
+      return await fetch(`${config.apiUrl}/api/reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user!.token}`,
+          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
           email: id,
@@ -115,13 +116,15 @@ export const GeneratePasswordReset = ({
     mutate({id: userId!});
   };
 
-  // early returns are here because we need the hooks above to always run in the same order.
-  if (!user) return null;
+  // early return is here because we need the hooks above to always run in the same order.
   if (!userId) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+        data-testid="web-users-reset-dialog"
+      >
         <DialogHeader>
           <DialogTitle>Reset User Password</DialogTitle>
           <DialogDescription>
@@ -165,8 +168,11 @@ export const GeneratePasswordReset = ({
                     <span>Reset Link</span>
                   </div>
                   <div className="flex flex-row items-center gap-3">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Copy
+                    <p
+                      className="text-sm font-medium text-muted-foreground break-all max-w-[220px]"
+                      data-testid="web-users-reset-url"
+                    >
+                      {data.url}
                     </p>
                     <CopyButton value={data.url} />
                   </div>
@@ -198,7 +204,10 @@ export const GeneratePasswordReset = ({
               <QrCode className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
               <p>Generate a secure password reset link with QR code</p>
             </div>
-            <Button onClick={() => mutate({id: userId})}>
+            <Button
+              onClick={() => mutate({id: userId})}
+              data-testid="web-users-reset-generate"
+            >
               Generate Reset Link
             </Button>
           </div>

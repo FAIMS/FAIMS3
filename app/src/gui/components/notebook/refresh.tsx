@@ -2,7 +2,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';
 import React from 'react';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
 import {useInterval} from '../../../utils/useInterval';
@@ -58,7 +58,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         setLastRefresh(moment().format(LAST_REFRESH_FORMAT));
         dispatch(
           addAlert({
-            message: `${props.project_name} ${NOTEBOOK_NAME_CAPITALIZED} refreshed`,
+            message: `${props.project_name} ${config.notebookNameCapitalized} refreshed`,
             severity: 'success',
           })
         );

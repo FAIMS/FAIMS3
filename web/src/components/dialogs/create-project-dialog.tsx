@@ -9,13 +9,11 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {Plus} from 'lucide-react';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
-import {ErrorComponent} from '@tanstack/react-router';
 
 export const CreateProjectDialog = ({
   defaultValues,
@@ -26,7 +24,7 @@ export const CreateProjectDialog = ({
 }) => {
   const [open, setOpen] = useState(false);
 
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {data: team} = useGetTeam({user, teamId: specifiedTeam});
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
   const canCreateInSpecifiedTeam = useIsAuthorisedTo({
@@ -35,16 +33,12 @@ export const CreateProjectDialog = ({
   });
   const canCreateInSomeTeam =
     getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
+      decodedToken: user.decodedToken,
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
   const canCreate =
     canCreateGlobally ||
     (specifiedTeam ? canCreateInSpecifiedTeam : canCreateInSomeTeam);
-
-  if (!user) {
-    return <ErrorComponent error="Unauthenticated" />;
-  }
 
   if (!canCreate) {
     return null;
@@ -56,21 +50,22 @@ export const CreateProjectDialog = ({
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-projects-create-button"
         >
           <Plus />
-          Create {NOTEBOOK_NAME_CAPITALIZED}
+          Create {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-projects-create-dialog">
         <DialogHeader>
           <DialogTitle>
-            Create {NOTEBOOK_NAME_CAPITALIZED}
+            Create {config.notebookNameCapitalized}
             {specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
           </DialogTitle>
           <DialogDescription>
-            Create a new {NOTEBOOK_NAME_CAPITALIZED} with a name. Start from an
-            existing template, upload a JSON {NOTEBOOK_NAME} design file, or
-            leave blank to start from scratch.
+            Create a new {config.notebookNameCapitalized} with a name. Start
+            from an existing template, upload a JSON {config.notebookName}{' '}
+            design file, or leave blank to start from scratch.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectForm

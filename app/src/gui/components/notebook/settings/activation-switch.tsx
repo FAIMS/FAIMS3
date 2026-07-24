@@ -1,10 +1,7 @@
 import InfoIcon from '@mui/icons-material/Info';
 import {Box, Button, Typography} from '@mui/material';
 import React from 'react';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '../../../../buildconfig';
+import {config} from '../../../../buildconfig';
 import {selectActiveUser} from '../../../../context/slices/authSlice';
 import {
   activateProject,
@@ -58,12 +55,13 @@ export default function NotebookActivationSwitch({
         size="small"
         variant="outlined"
         disableElevation
+        data-testid="app-notebook-activate-button"
       >
         {ACTIVATE_VERB_LABEL}
       </Button>
       <FaimsDialog
         open={open}
-        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`}
+        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${config.notebookNamePluralCapitalized}`}
         icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
         onPrimaryAction={handleActivationClick}
@@ -72,12 +70,14 @@ export default function NotebookActivationSwitch({
         primaryActionColor="primary"
         primaryActionVariant="contained"
         cancelButtonText="Cancel"
+        primaryActionTestId="app-notebook-activate-confirm"
+        cancelTestId="app-notebook-activate-cancel"
       >
         <Box sx={{mb: 2}}>
           <Typography variant="body2" sx={{mb: 2}}>
-            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
-            ensures that you are safe to work offline at any point by
-            downloading any existing records onto your device.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a{' '}
+            {config.notebookName} ensures that you are safe to work offline at
+            any point by downloading any existing records onto your device.
             <br />
             <strong>Please do this with a stable internet connection.</strong>
           </Typography>

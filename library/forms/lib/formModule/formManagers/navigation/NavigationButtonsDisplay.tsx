@@ -28,6 +28,7 @@ interface SingleButtonProps {
   loading?: boolean;
   statusText?: string;
   icon?: ReactNode;
+  testId?: string;
 }
 
 /**
@@ -41,6 +42,7 @@ const NavigationButton: React.FC<SingleButtonProps> = ({
   loading = false,
   statusText,
   icon,
+  testId,
 }) => {
   const showIcon = icon ?? <ArrowBackIcon fontSize="small" />;
 
@@ -49,6 +51,7 @@ const NavigationButton: React.FC<SingleButtonProps> = ({
       variant="outlined"
       disabled={disabled || loading}
       onClick={onClick}
+      data-testid={testId}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -150,6 +153,11 @@ export const NavigationButtonsDisplay: React.FC<
           loading={buttonConfig.loading}
           statusText={buttonConfig.statusText}
           icon={buttonConfig.icon}
+          testId={
+            buttonConfig.id.startsWith('finish')
+              ? 'app-record-finish-button'
+              : `app-record-nav-${buttonConfig.id}`
+          }
         />
       ))}
     </Box>

@@ -1,12 +1,7 @@
 import {GetNotebookResponse, ProjectStatus} from '@faims3/data-model';
 import {projectInformationFromGetNotebook} from './notebookDefinition';
 import PouchDB from 'pouchdb-browser';
-import {
-  DEBUG_APP,
-  POUCH_BATCH_SIZE,
-  POUCH_BATCHES_LIMIT,
-  RUNNING_UNDER_TEST,
-} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 import type {ReplicatingSyncMode} from '../../../sync/syncMode';
 import {DatabaseConnectionConfig, ProjectIdentity} from '../projectSlice';
 import {PouchDBWrapper} from './pouchDBWrapper';
@@ -30,7 +25,7 @@ type LocalDatabaseOptions = PouchDB.Configuration.DatabaseConfiguration;
 export const LOCAL_POUCH_OPTIONS: LocalDatabaseOptions = {};
 
 // enable memory adapter for testing
-if (RUNNING_UNDER_TEST) {
+if (config.runningUnderTest) {
   LOCAL_POUCH_OPTIONS['adapter'] = 'memory';
 }
 
@@ -230,7 +225,7 @@ export interface SyncEventHandlers {
 
 let DEFAULT_SYNC_HANDLERS: SyncEventHandlers = {};
 
-if (DEBUG_APP) {
+if (config.debugApp) {
   DEFAULT_SYNC_HANDLERS = {
     active: () => {
       console.log('🔄 Sync: Active - Replication resumed');
@@ -407,8 +402,8 @@ export function createPouchDbReplication<Content extends {}>({
     // Timeout after 15 seconds
     timeout: 15000,
     // Sync batch sizing options
-    batch_size: POUCH_BATCH_SIZE,
-    batches_limit: POUCH_BATCHES_LIMIT,
+    batch_size: config.pouchBatchSize,
+    batches_limit: config.pouchBatchesLimit,
   };
 
   let replication: PouchReplicationHandle;

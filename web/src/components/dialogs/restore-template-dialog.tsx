@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
 import {useRestoreTemplateFromArchive} from '@/hooks/archive-hooks';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 
 type RestoreTemplateDialogProps = {
   templateId: string;
@@ -37,7 +37,7 @@ export function RestoreTemplateDialog({
             <p className="text-sm leading-relaxed text-black">
               Restoring this template will unarchive it. You will be able to
               edit the template and create new{' '}
-              {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from it.
+              {config.notebookNamePluralCapitalized} from it.
             </p>
           </DialogDescription>
         </DialogHeader>

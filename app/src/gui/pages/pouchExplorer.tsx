@@ -1,3 +1,4 @@
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {
   Button,
   Container,
@@ -145,6 +146,9 @@ const DatabaseViewer = ({dbName}: {dbName: string}) => {
           value={filter}
           placeholder="Filter by ID"
           onChange={e => setFilter(e.target.value)}
+          slotProps={{
+            htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+          }}
         />
         <TableContainer component={Paper}>
           <Table>

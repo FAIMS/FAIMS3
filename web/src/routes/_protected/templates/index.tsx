@@ -2,7 +2,7 @@ import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import type {ColumnDef} from '@tanstack/react-table';
 import {DataTable} from '@/components/data-table/data-table';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTemplates} from '@/hooks/queries';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -32,7 +32,7 @@ export const Route = createFileRoute('/_protected/templates/')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {isPending, data} = useGetTemplates({user});
   const navigate = useNavigate();
   const [visibilityFilter, setVisibilityFilter] =
@@ -59,14 +59,14 @@ function RouteComponent() {
     () =>
       getTemplatesTableColumns({
         includeVisibility: globalRolesGrantAction(
-          user?.decodedToken ?? {
+          user.decodedToken ?? {
             globalRoles: [],
             resourceRoles: [],
           },
           Action.CHANGE_TEMPLATE_VISIBILITY
         ),
       }),
-    [user?.decodedToken]
+    [user.decodedToken]
   );
 
   const filteredTemplates = useMemo(
@@ -76,7 +76,12 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-templates-heading"
+      >
+        Templates
+      </h1>
       {/* CreateTemplateDialog returns null when the user lacks create permission */}
       <DataTable
         columns={columns as ColumnDef<TemplateListRow, unknown>[]}

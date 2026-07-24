@@ -3,6 +3,7 @@
  */
 
 import {TextField} from '@mui/material';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import Autocomplete, {AutocompleteProps} from '@mui/material/Autocomplete';
 import {useEffect, useMemo} from 'react';
 import {
@@ -97,7 +98,7 @@ export const FieldSearchAutocomplete = ({
   onChange,
   scope,
   filters,
-  label = 'Field',
+  label,
   placeholder,
   disabled = false,
   limit = 50,
@@ -205,6 +206,13 @@ export const FieldSearchAutocomplete = ({
           label={label}
           placeholder={placeholder}
           variant="outlined"
+          slotProps={{
+            ...params.slotProps,
+            htmlInput: {
+              ...(params.slotProps?.htmlInput as object | undefined),
+              ...designerHtmlInput(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
+            },
+          }}
         />
       )}
     />

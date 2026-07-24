@@ -37,7 +37,7 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
 import {validateToken} from '../src/auth/keySigning/read';
-import {KEY_SERVICE} from '../src/buildconfig';
+import {keyService} from '../src/buildconfig';
 import {
   createUser,
   getCouchUserFromEmailOrUserId,
@@ -48,7 +48,6 @@ import {
   adminToken,
   adminUserName,
   beforeApiTests,
-  localUserName,
   localUserToken,
 } from './utils';
 
@@ -68,7 +67,7 @@ const createUserWithRolesAndToken = async ({
   username: string;
   roles: Role[];
 }): Promise<string> => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
   const [dbUser, error] = await createUser({username, name: username});
   expect(dbUser, `Failed to create user ${username}: ${error}`).to.not.be.null;
   for (const role of roles) {

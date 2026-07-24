@@ -18,6 +18,7 @@ import {
   notebookListDataGridSx,
 } from '../workspace/notebooks';
 import {Project} from '../../../context/slices/projectSlice';
+import {sortProjectsByNewest} from '../../../lib/notebookListDisplay';
 
 /**
  * Renders a tabbed grid component.
@@ -41,8 +42,12 @@ export default function TabProjectGrid({
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
 }) {
-  const activatedProjects = projects.filter(({isActivated}) => isActivated);
-  const availableProjects = projects.filter(({isActivated}) => !isActivated);
+  const activatedProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => isActivated)
+  );
+  const availableProjects = sortProjectsByNewest(
+    projects.filter(({isActivated}) => !isActivated)
+  );
 
   // we need a state variable to track pagination model since we want to use a
   // controlled component style to force pagination to behave how we want
@@ -96,6 +101,11 @@ export default function TabProjectGrid({
                   : `${NOT_ACTIVATED_LABEL} (${availableProjects.length})`
               }
               value={tab}
+              data-testid={
+                tab === '1'
+                  ? 'app-notebooks-tab-active'
+                  : 'app-notebooks-tab-not-active'
+              }
               disabled={
                 !projects.filter(r => r.isActivated).length && tab === '1'
               }
@@ -121,6 +131,12 @@ export default function TabProjectGrid({
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
+              slotProps={{
+                row: {
+                  // Shared landmark for e2e; activated rows navigate on click.
+                  'data-testid': 'app-notebook-row',
+                },
+              }}
             />
           </div>
         </TabPanel>

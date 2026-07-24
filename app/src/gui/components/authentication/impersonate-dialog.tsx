@@ -18,7 +18,7 @@
  *   Dialog allowing an authorised admin to pick a user to impersonate.
  */
 
-import {GetListAllUsersItem, Role} from '@faims3/data-model';
+import {GetListAllUsersItem, INPUT_LIMITS, Role} from '@faims3/data-model';
 import {
   Alert,
   Box,
@@ -135,7 +135,7 @@ export default function ImpersonateDialog({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Impersonate a user</DialogTitle>
-      <DialogContent>
+      <DialogContent data-testid="app-impersonate-dialog">
         <Typography variant="body2" sx={{mb: 2}}>
           Choose a user to sign in as. You will see what they see, and actions
           you take will be performed as this user. Use “Return to your account”
@@ -149,6 +149,12 @@ export default function ImpersonateDialog({
           value={search}
           onChange={e => setSearch(e.target.value)}
           sx={{mb: 2}}
+          slotProps={{
+            htmlInput: {
+              maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
+              'data-testid': 'app-impersonate-search',
+            },
+          }}
         />
 
         {isLoading && (
@@ -175,6 +181,8 @@ export default function ImpersonateDialog({
                 key={user._id}
                 disabled={pendingId !== null}
                 onClick={() => handleImpersonate(user._id)}
+                data-testid="app-impersonate-user-row"
+                data-user-id={user._id}
               >
                 <ListItemText
                   primary={user.name || user._id}

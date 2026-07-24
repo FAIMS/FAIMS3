@@ -1,4 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Button} from '@/components/ui/button';
 import {VenetianMask} from 'lucide-react';
 
@@ -7,14 +8,14 @@ import {VenetianMask} from 'lucide-react';
  * session. Provides a clear way to return to the admin's own account.
  */
 export function ImpersonationBanner() {
-  const {isImpersonating, user, impersonatorName, stopImpersonation} =
-    useAuth();
+  const {isImpersonating, impersonatorName, stopImpersonation} = useAuth();
+  const user = useRequiredUser();
 
   if (!isImpersonating) {
     return null;
   }
 
-  const impersonatedName = user?.user.name ?? user?.user.email ?? 'this user';
+  const impersonatedName = user.user.name ?? user.user.email ?? 'this user';
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border-2 border-warning bg-warning-background px-4 py-2 text-sm text-foreground">

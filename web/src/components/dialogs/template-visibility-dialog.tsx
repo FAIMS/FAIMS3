@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTemplate} from '@/hooks/queries';
 import {putTemplateSetVisibility} from '@/hooks/template-hooks';
 import {useQueryClient} from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import {Button} from '../ui/button';
 import {List, ListItem, ListLabel} from '../ui/list';
 
 export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -24,7 +24,6 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   const isPublic = template?.isPublic === true;
 
   const onConfirmToggle = async () => {
-    if (!user) return;
     await putTemplateSetVisibility({
       user,
       templateId,
@@ -35,16 +34,17 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
     setOpen(false);
   };
 
-  if (!user) {
-    return null;
-  }
-
   const toggleVisibilityDialog = isPublic ? (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Make private</Button>
+        <Button variant="outline" data-testid="web-template-visibility-toggle">
+          Make private
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="web-template-visibility-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-foreground">
             Make template private
@@ -55,7 +55,11 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
             and system administrators) will still see it.
           </DialogDescription>
         </DialogHeader>
-        <Button variant="default" onClick={onConfirmToggle}>
+        <Button
+          variant="default"
+          onClick={onConfirmToggle}
+          data-testid="web-template-visibility-confirm"
+        >
           Yes, make private
         </Button>
       </DialogContent>
@@ -63,9 +67,14 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
   ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Make public</Button>
+        <Button variant="outline" data-testid="web-template-visibility-toggle">
+          Make public
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="web-template-visibility-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-foreground">
             Make template public
@@ -77,7 +86,11 @@ export function TemplateVisibilityDialog({templateId}: {templateId: string}) {
             </p>
           </DialogDescription>
         </DialogHeader>
-        <Button variant="default" onClick={onConfirmToggle}>
+        <Button
+          variant="default"
+          onClick={onConfirmToggle}
+          data-testid="web-template-visibility-confirm"
+        >
           Yes, make public
         </Button>
       </DialogContent>

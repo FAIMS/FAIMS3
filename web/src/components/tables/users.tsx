@@ -1,4 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   GetListAllUsersItem,
   Role,
@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {config} from '@/constants';
 
 /** Columns for the admin user list (GET /api/users); each row is a {@link GetListAllUsersItem}. */
 export const useUsersColumns = ({
@@ -28,7 +29,7 @@ export const useUsersColumns = ({
 }: {
   onReset: (id: string) => void;
 }): ColumnDef<GetListAllUsersItem>[] => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   return [
@@ -58,7 +59,7 @@ export const useUsersColumns = ({
         },
       }) => (
         <div className="flex flex-wrap gap-1 items-center">
-          {userId !== user?.user.id && (
+          {userId !== user.user.id && (
             <AddRolePopover
               roles={Object.entries(roleDetails)
                 .filter(([, {scope}]) => scope === RoleScope.GLOBAL)
@@ -70,17 +71,17 @@ export const useUsersColumns = ({
             <RoleCard
               key={role}
               onRemove={
-                userId === user?.user.id
+                userId === user.user.id
                   ? undefined
                   : async () => {
                       try {
                         const response = await fetch(
-                          `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                          `${config.apiUrl}/api/users/${userId}/admin`,
                           {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
-                              Authorization: `Bearer ${user?.token}`,
+                              Authorization: `Bearer ${user.token}`,
                             },
                             body: JSON.stringify({
                               addrole: false,
@@ -118,6 +119,7 @@ export const useUsersColumns = ({
                     <Button
                       variant="outline"
                       size="icon"
+                      data-testid="web-users-reset-button"
                       onClick={() => {
                         onReset(row.original._id);
                       }}

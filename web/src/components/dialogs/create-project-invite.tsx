@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 import {CreateProjectInviteForm} from '../forms/create-project-invite';
 import {useState} from 'react';
 import {Plus} from 'lucide-react';
@@ -25,16 +25,17 @@ export const CreateProjectInvite = () => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-project-invite-create-button"
         >
           <Plus />
           Create Invite
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-project-invite-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Invite</DialogTitle>
           <DialogDescription>
-            Create a new invitation for this {NOTEBOOK_NAME}.
+            Create a new invitation for this {config.notebookName}.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectInviteForm setDialogOpen={setOpen} />

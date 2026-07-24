@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import ExportFullForm from '../forms/export-full-form';
 
 /**
@@ -21,13 +21,13 @@ export const FullExportDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild className="w-fit">
-        <Button>Full Export</Button>
+        <Button data-testid="web-export-full-button">Full Export</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" data-testid="web-export-full-dialog">
         <DialogHeader>
           <DialogTitle>Full Export</DialogTitle>
           <DialogDescription>
-            Download a complete export of this {NOTEBOOK_NAME_CAPITALIZED}{' '}
+            Download a complete export of this {config.notebookNameCapitalized}{' '}
             including all data, photos, and spatial information in a single ZIP
             file. May take some time to download large datasets.
           </DialogDescription>

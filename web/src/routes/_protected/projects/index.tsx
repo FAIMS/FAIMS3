@@ -1,9 +1,8 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {config} from '@/constants';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
@@ -21,14 +20,14 @@ export const Route = createFileRoute('/_protected/projects/')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function ProjectsRouteComponent() {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const {isLoading, data} = useGetProjects({user});
   const pathname = useRouter().state.location.pathname;
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
   const canCreateInSomeTeam =
     getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
+      decodedToken: user.decodedToken,
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 
@@ -38,7 +37,7 @@ function ProjectsRouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+        label: config.notebookNamePluralCapitalized,
       },
     ],
     [pathname, isLoading]
@@ -53,8 +52,11 @@ function ProjectsRouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+      <h1
+        className="text-2xl font-semibold tracking-tight"
+        data-testid="web-projects-heading"
+      >
+        {config.notebookNamePluralCapitalized}
       </h1>
       <DataTable
         columns={columns}

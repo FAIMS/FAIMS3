@@ -33,6 +33,7 @@ export type UserServiceProfileLocked = z.infer<
 >;
 
 export const UserServiceProfilesSchema = z.record(
+  z.string(),
   UserServiceProfileLockedSchema
 );
 export type UserServiceProfiles = z.infer<typeof UserServiceProfilesSchema>;
@@ -52,7 +53,10 @@ export type Email = z.infer<typeof EmailSchema>;
 export const ConductorRoleSchema = z.string();
 export type ConductorRole = z.infer<typeof ConductorRoleSchema>;
 
-export const AllProjectRolesSchema = z.record(z.array(ConductorRoleSchema));
+export const AllProjectRolesSchema = z.record(
+  z.string(),
+  z.array(ConductorRoleSchema)
+);
 export type AllProjectRoles = z.infer<typeof AllProjectRolesSchema>;
 
 export const OtherRolesSchema = z.array(ConductorRoleSchema);
@@ -74,6 +78,7 @@ export type PeopleV1Document = PouchDB.Core.ExistingDocument<PeopleV1Fields>;
 
 // Resource Role Map schema
 export const ResourceRoleMapSchema = z.record(
+  z.string(),
   z
     .array(
       z.object({

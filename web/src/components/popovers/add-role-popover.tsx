@@ -1,5 +1,5 @@
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {RoleCard} from '@/components/ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import {RoleDetails} from '@faims3/data-model';
+import {config} from '@/constants';
 
 // Extend RoleDetails with the Id of the role so we can identify it
 type RoleDetailWithId = RoleDetails & {id: string};
@@ -29,7 +30,7 @@ export const AddRolePopover = ({
   roles: RoleDetailWithId[];
   userId: string;
 }) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -68,12 +69,12 @@ export const AddRolePopover = ({
             onClick={async () => {
               try {
                 const response = await fetch(
-                  `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                  `${config.apiUrl}/api/users/${userId}/admin`,
                   {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${user?.token}`,
+                      Authorization: `Bearer ${user.token}`,
                     },
                     body: JSON.stringify({
                       addrole: true,

@@ -13,7 +13,7 @@ import {
   PutConfirmEmailVerificationResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {
   checkCanCreateVerificationChallenge,
   createVerificationChallenge,
@@ -40,12 +40,12 @@ export const api: express.Router = express.Router();
  */
 api.post(
   '/',
-  processRequest({
-    body: PostRequestEmailVerificationRequestSchema,
-  }),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.VERIFY_EMAIL,
+  }),
+  validate({
+    body: PostRequestEmailVerificationRequestSchema,
   }),
   async (req, res: Response<PostRequestEmailVerificationResponse>) => {
     if (!req.user) {
@@ -171,7 +171,7 @@ export async function verifyEmailWithCode({code}: {code: string}): Promise<{
  */
 api.put(
   '/',
-  processRequest({
+  validate({
     body: PutConfirmEmailVerificationRequestSchema,
   }),
   async (req, res: Response<PutConfirmEmailVerificationResponse>) => {

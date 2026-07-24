@@ -37,7 +37,8 @@ import {
 import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import {config} from '../../buildconfig';
+import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -48,7 +49,7 @@ import {
 } from '../../store/slices/uiSpec';
 import {ConditionType} from '../../types/condition';
 import {ConditionModal} from '../condition/ConditionModal';
-import {ConditionTranslation} from '../condition/ConditionTranslation';
+import {ConditionSummary} from '../condition/ConditionSummary';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
@@ -408,6 +409,9 @@ export const BaseFieldEditor = ({
                         onChange={handleIdChange}
                         inputRef={idInputRef}
                         slotProps={{
+                          htmlInput: designerHtmlInput(
+                            INPUT_LIMITS.ID_MAX_LENGTH
+                          ),
                           input: {
                             endAdornment:
                               state.label &&
@@ -456,6 +460,9 @@ export const BaseFieldEditor = ({
                             onChange={handleIdChange}
                             inputRef={idInputRef}
                             slotProps={{
+                              htmlInput: designerHtmlInput(
+                                INPUT_LIMITS.ID_MAX_LENGTH
+                              ),
                               input: {
                                 endAdornment:
                                   state.label &&
@@ -497,6 +504,9 @@ export const BaseFieldEditor = ({
                           onChange={handleIdChange}
                           inputRef={idInputRef}
                           slotProps={{
+                            htmlInput: designerHtmlInput(
+                              INPUT_LIMITS.ID_MAX_LENGTH
+                            ),
                             input: {
                               endAdornment:
                                 state.label &&
@@ -765,7 +775,7 @@ export const BaseFieldEditor = ({
                       Show this field if{' '}
                     </Typography>
                     <Typography variant="caption" color="text.primary">
-                      <ConditionTranslation condition={state.condition} />
+                      <ConditionSummary condition={state.condition} />
                     </Typography>
                   </Box>
                 )}
@@ -1036,7 +1046,7 @@ export const BaseFieldEditor = ({
             </Grid>
 
             {/* Template protection — bottom strip (only when VITE_TEMPLATE_PROTECTIONS is on) */}
-            {VITE_TEMPLATE_PROTECTIONS && (
+            {config.templateProtections && (
               <Box sx={{px: 2, pb: 2, pt: 0}}>
                 <Divider sx={{mb: 1.5}} />
                 <Grid container spacing={1}>
