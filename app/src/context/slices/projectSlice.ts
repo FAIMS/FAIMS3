@@ -1586,6 +1586,7 @@ export const activateProject = createAsyncThunk<
   });
   const {db: localDb} = await openLocalDataDbWithAclCutover<ProjectDataObject>({
     id: localDatabaseId,
+    remoteBaseUrl: server.couchDbUrl,
   });
   await databaseService.registerLocalDatabase(localDatabaseId, localDb);
 
@@ -2332,10 +2333,15 @@ export const rebuildDbs = async (
           // here we already have stuff ready to go (config etc)
           const dbInfo = project.database;
 
-          // First - build the local DB (rebuild if pre-proxy corpus remains)
+          // First - build the local DB (rebuild if pre-proxy corpus remains,
+          // or if public URL flipped since the local marker was sealed)
+          const remoteBaseUrl =
+            dbInfo.remote?.connectionConfiguration.couchUrl ??
+            server.couchDbUrl;
           const {db: localDb} =
             await openLocalDataDbWithAclCutover<ProjectDataObject>({
               id: dbInfo.localDbId,
+              remoteBaseUrl,
             });
           // Setup design documents and permissions for local data DB
           await couchInitialiser({

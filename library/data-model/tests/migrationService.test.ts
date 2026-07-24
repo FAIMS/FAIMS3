@@ -19,6 +19,7 @@ import {
   initMigrationsDB,
   initPeopleDB,
   isDbUpToDate,
+  dataV1toV2Migration,
   migrateDbs,
   performMigration,
 } from '../src/data_storage';
@@ -1010,6 +1011,90 @@ describe('Migration System Tests', () => {
         );
         expect(migrationDocs.rows.length).toBe(1);
         expect(migrationDocs.rows[0].doc?.version).toBe(2);
+      } finally {
+        await testDataDb.destroy();
+      }
+    });
+
+    it('DATA v1→v2 installs _design/acl when Pouch db.name is a remote URL', async () => {
+      // Production remote Pouch handles expose a full URL as db.name. The
+      // migrator must still resolve projectId from the logical dbName arg.
+      const projectId = `mig-acl-url-${Date.now()}`;
+      const logicalDbName = `data-${projectId}`;
+      const testDataDb = new PouchDB(logicalDbName, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      // Simulate remote Pouch naming without needing a live Couch URL adapter.
+      Object.defineProperty(testDataDb, 'name', {
+        value: `http://localhost:5984/${logicalDbName}`,
+        configurable: true,
+      });
+
+      try {
+        // Truly empty user corpus — prelude must still install `_design/acl`.
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: logicalDbName,
+              db: testDataDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById: async () => testDataDb,
+        });
+
+        const acl = await testDataDb.get<{
+          dbacl: {_r: string[]};
+          version: string;
+        }>('_design/acl');
+        expect(acl.version).toBeTruthy();
+        expect(acl.dbacl._r.length).toBeGreaterThan(0);
+
+        const migrationDocs = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, logicalDbName],
+            include_docs: true,
+          }
+        );
+        expect(migrationDocs.rows.length).toBe(1);
+        expect(migrationDocs.rows[0].doc?.version).toBe(2);
+        // Must not have indexed under the URL form of db.name
+        const urlKeyed = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, testDataDb.name],
+            include_docs: true,
+          }
+        );
+        expect(urlKeyed.rows.length).toBe(0);
+      } finally {
+        await testDataDb.destroy();
+      }
+    });
+
+    it('performMigration resolves projectId from URL db.name fallback', async () => {
+      const projectId = `mig-acl-fallback-${Date.now()}`;
+      const logicalDbName = `data-${projectId}`;
+      const testDataDb = new PouchDB(`mem-${logicalDbName}`, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      Object.defineProperty(testDataDb, 'name', {
+        value: `http://couchdb:5984/${logicalDbName}`,
+        configurable: true,
+      });
+
+      try {
+        const result = await performMigration({
+          db: testDataDb,
+          migrationFunc: dataV1toV2Migration,
+          getDbById: async () => testDataDb,
+          // Omit dbName to exercise URL parsing of db.name
+        });
+        expect(result.issues).toEqual([]);
+        const acl = await testDataDb.get('_design/acl');
+        expect(acl).toBeDefined();
       } finally {
         await testDataDb.destroy();
       }

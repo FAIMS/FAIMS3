@@ -172,22 +172,31 @@ export async function performMigration({
   migrationFunc,
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
+  dbName,
 }: {
   db: DatabaseInterface;
   migrationFunc: MigrationFunc;
   getDbById: GetDbById;
   migrationCreatedBy?: string;
+  /**
+   * Logical Couch database name (e.g. `data-{projectId}`). Prefer this over
+   * `db.name`, which is a full URL for remote Pouch handles.
+   */
+  dbName?: string;
 }): Promise<{
   issues: string[];
   processedCount: number;
   writtenCount: number;
   deletedCount: number;
 }> {
+  // Prefer the caller-supplied logical name; fall back to parsing Pouch's
+  // `db.name` (URL or bare) so DATA ACL ensure still resolves projectId.
+  const resolvedDbName = dbName ?? db.name;
   const context: MigrationContext = buildMigrationContext({
     getDbById,
     migrationCreatedBy,
     db,
-    dbName: db.name,
+    dbName: resolvedDbName,
   });
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
@@ -413,12 +422,13 @@ export async function migrateDbs({
         }
         migrationLogEntry.notes += `\n- ${migrationDetail.description}`;
 
-        // Perform the migration
+        // Perform the migration (pass logical dbName — remote Pouch db.name is a URL)
         const result = await performMigration({
           db,
           migrationFunc: migrationDetail.migrationFunction,
           getDbById: migrationContext.getDbById,
           migrationCreatedBy: migrationContext.migrationCreatedBy,
+          dbName,
         });
 
         // Log stats about this migration step

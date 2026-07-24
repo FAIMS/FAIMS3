@@ -25,7 +25,10 @@ export type MigrationContext = {
    * Optional for unit tests that invoke migration functions directly.
    */
   db?: DatabaseInterface;
-  /** Fully qualified Couch database name for {@link db}. */
+  /**
+   * Logical Couch database name for {@link db} (e.g. `data-{projectId}`).
+   * Prefer this over Pouch `db.name`, which is a full URL for remote handles.
+   */
   dbName?: string;
 };
 

@@ -90,10 +90,19 @@ describe('couch-auth-proxy ACL helpers', () => {
     );
   });
 
-  test('projectIdFromDataDbName parses data- prefix', () => {
+  test('projectIdFromDataDbName parses data- prefix and remote URLs', () => {
     expect(projectIdFromDataDbName('data-abc')).toBe('abc');
     expect(projectIdFromDataDbName('people')).toBeUndefined();
     expect(projectIdFromDataDbName('data-')).toBeUndefined();
+    expect(projectIdFromDataDbName('http://localhost:5984/data-abc')).toBe(
+      'abc'
+    );
+    expect(projectIdFromDataDbName('http://couchdb:5984/data-abc/')).toBe(
+      'abc'
+    );
+    expect(
+      projectIdFromDataDbName('http://localhost:5984/people')
+    ).toBeUndefined();
   });
 
   test('ensureDataDbAclDesignDoc is idempotent when unchanged', async () => {

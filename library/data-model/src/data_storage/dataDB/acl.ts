@@ -229,14 +229,32 @@ export function buildDataDbAclDesignDoc(projectId: string): {
 }
 
 /**
+ * Normalise a Pouch/Couch database name to the bare Couch id.
+ *
+ * Remote Pouch handles expose `db.name` as a full URL
+ * (`http://host:5984/data-{id}`); migrations and ACL helpers need the logical
+ * name (`data-{id}`).
+ */
+export function logicalCouchDbName(dbName: string): string {
+  const trimmed = dbName.replace(/\/+$/, '');
+  const slash = trimmed.lastIndexOf('/');
+  const bare =
+    slash >= 0 ? decodeURIComponent(trimmed.slice(slash + 1)) : trimmed;
+  const query = bare.indexOf('?');
+  return query >= 0 ? bare.slice(0, query) : bare;
+}
+
+/**
  * Extract project id from a data DB name (`data-{projectId}`).
+ * Accepts bare names or remote Pouch URLs ending in `/data-{projectId}`.
  * Returns undefined when the name does not match.
  */
 export function projectIdFromDataDbName(dbName: string): string | undefined {
-  if (!dbName.startsWith(DATA_DB_NAME_PREFIX)) {
+  const name = logicalCouchDbName(dbName);
+  if (!name.startsWith(DATA_DB_NAME_PREFIX)) {
     return undefined;
   }
-  const projectId = dbName.slice(DATA_DB_NAME_PREFIX.length);
+  const projectId = name.slice(DATA_DB_NAME_PREFIX.length);
   return projectId.length > 0 ? projectId : undefined;
 }
 

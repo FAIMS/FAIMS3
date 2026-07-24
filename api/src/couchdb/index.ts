@@ -659,10 +659,14 @@ export const initialiseAndMigrateDBs = async ({
     // Project ID
     const projectId = project._id;
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
+    // Use the logical Couch name (`data-{projectId}`), not `dataDb.name`.
+    // Remote Pouch handles expose a full URL as `db.name`, which would break
+    // migrations-doc indexing and DATA ACL projectId resolution.
+    const dataDbName = project.dataDb?.db_name ?? `data-${projectId}`;
     dbs.push({
       db: dataDb,
       dbType: DatabaseType.DATA,
-      dbName: dataDb.name,
+      dbName: dataDbName,
     });
   }
   await migrateDbs({

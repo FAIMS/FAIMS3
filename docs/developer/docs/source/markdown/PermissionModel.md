@@ -49,9 +49,11 @@ filters `_changes` / docs / attachments using:
 | Read/edit/delete all | `_design/acl` `dbacl` lists from `necessaryActionToCouchRoleList` for `*_ALL_PROJECT_RECORDS` |
 | Write my/all rules   | Existing `_design/permissions` `validate_doc_update` (unchanged)                              |
 
-Conductor keeps using `COUCHDB_INTERNAL_URL` (admin, bypasses the proxy). See
-[CouchAuthProxyHandover](Authorisation/CouchAuthProxyHandover.md) for the full
-integration brief and cutover notes.
+Conductor keeps using `COUCHDB_INTERNAL_URL` (admin, bypasses the proxy).
+
+- Design brief: [CouchAuthProxyHandover](Authorisation/CouchAuthProxyHandover.md)
+- **Operator deploy / cutover:**
+  [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md)
 
 ## Usage Examples
 

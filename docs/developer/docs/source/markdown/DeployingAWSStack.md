@@ -756,7 +756,12 @@ COUCHDB_USER=admin
 COUCHDB_PASSWORD="<YOUR DB PASSWORD>"
 COUCHDB_EXTERNAL_PORT=443
 COUCHDB_INTERNAL_URL=https://db.<your domain>:443/
-COUCHDB_PUBLIC_URL=https://db.<your domain>:443/
+# Public sync URL advertised to the app as dataDb.base_url.
+# For per-document guest ACL this MUST be couch-auth-proxy, not raw Couch.
+# See docs/.../Authorisation/CouchAuthProxyCutover.md for the cutover sequence.
+# (AWS CDK may still wire this to the Couch endpoint today — update infra
+# before relying on sync isolation in production.)
+COUCHDB_PUBLIC_URL=https://db.<your domain>:443
 AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
 KEY_SOURCE=AWS_SM
 AWS_SECRET_KEY_ARN=<secret ARN of the private key in AWS SM>

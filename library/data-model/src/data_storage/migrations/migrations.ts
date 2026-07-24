@@ -96,7 +96,8 @@ function resolveMigrationCreator(doc: {_id?: string; created_by?: unknown}): {
  */
 export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
   // Ensure control-plane design doc once per data DB (design docs are skipped
-  // by performMigration's document loop).
+  // by performMigration's document loop). `projectIdFromDataDbName` accepts
+  // bare `data-{id}` or remote Pouch URL forms.
   if (context?.db && context.dbName) {
     const projectId = projectIdFromDataDbName(context.dbName);
     if (projectId && !ensuredDataAclDesignDocs.has(context.dbName)) {

@@ -38,6 +38,27 @@ Per-project **`metadata-{id}`** Couch databases are **not** migrated by this fra
 
 **Operator guide** for deploying that change: [Metadata migration guide](./MetadataMigrationGuide.md).
 
+### DATA DB v1 → v2 (couch-auth-proxy ACL)
+
+Project **`data-{projectId}`** databases target version **2**:
+
+- Stamp `creator` / `parent` for per-document sync ACL
+- Ensure `_design/acl` with `dbacl` from `necessaryActionToCouchRoleList`
+
+`defaultVersion` remains **1** so databases that never received a migrations
+document still run the idempotent backfill. Conductor must enqueue DATA
+migrations under the logical name `data-{projectId}` (not a remote Pouch URL).
+
+**Operator cutover** (migrate → repair → flip `COUCHDB_PUBLIC_URL` → client
+rebuild): [CouchAuthProxyCutover](./Authorisation/CouchAuthProxyCutover.md).
+
+Ops repair (idempotent):
+
+```bash
+pnpm --filter=@faims3/api run repair-data-db-acl -- --dry-run
+pnpm --filter=@faims3/api run repair-data-db-acl
+```
+
 ### Versioning
 
 Each database type has:

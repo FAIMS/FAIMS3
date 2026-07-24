@@ -333,18 +333,25 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 
 ### 5.5 Migrations only (legacy)
 
-DATA DB is currently `defaultVersion: 1, targetVersion: 1`
-(`library/data-model/src/data_storage/migrations/migrations.ts`).
+DATA DB is `defaultVersion: 1, targetVersion: 2`
+(`library/data-model/src/data_storage/migrations/migrations.ts`). Keeping
+`defaultVersion` at **1** (not 2) is intentional: data DBs that never received
+a migrations document still run the idempotent 1→2 backfill.
 
-Add **DATA v1 → v2** (name as appropriate) that:
+**DATA v1 → v2** (implemented):
 
 1. Ensures `_design/acl` exists with correct `dbacl` for `projectId`
-   (derive project id from DB name `data-{projectId}`).
-2. For each `rec-*`: if `creator` missing, set `creator = created_by`.
+   (derive project id from logical DB name `data-{projectId}`; parsers also
+   accept remote Pouch URL forms of `db.name`).
+2. For each `rec-*`: if `creator` missing, set `creator = created_by` (or
+   `__faims_acl_orphan__` when `created_by` is missing — fail-closed).
 3. For each doc with `record_id` (frev/avp/attachment): set
    `creator = created_by` if missing; set `parent = record_id` if missing.
 4. Never strip FAIMS fields; never rewrite role arrays onto every doc.
 5. Idempotent: already-stamped docs ⇒ `action: 'none'`.
+
+Conductor must enqueue DATA migrations with the **logical** Couch name
+(`data-{projectId}`), not `pouchDb.name` (a URL for remote handles).
 
 No production reader/writer should branch on “pre-ACL doc” outside this
 migration (+ tests for it).
@@ -623,23 +630,29 @@ External: [PeterBaker0/couch-auth-proxy](https://github.com/PeterBaker0/couch-au
 
 ## 13. Cutover runbook (production / existing deployments)
 
+**Operator-facing guide (preferred):**
+[CouchAuthProxyCutover.md](CouchAuthProxyCutover.md) — phased deploy, verify
+commands, rollback, and failure modes.
+
 **Order is mandatory.** Reversing steps leaves unstamped docs world-readable to
 DB members (`r-*`).
 
-1. **Deploy stamp-on-write + init + DATA v1→v2 migration** (this branch) while
+1. **Deploy stamp-on-write + init + DATA v1→v2 migration** while
    `COUCHDB_PUBLIC_URL` still points at Couch (or at least before relying on
    proxy isolation).
 2. **Migrate all data DBs** (`pnpm run migrate-with-keys` / normal Conductor
-   startup migration). Confirm every `data-*` migrations doc is at version **2**.
-3. **Repair `dbacl` if needed** (permission model token drift, or to force
-   refresh): `pnpm --filter=@faims3/api run repair-data-db-acl` (supports
-   `--dry-run`).
+   startup migration). Confirm every DATA migrations doc is keyed by
+   `data-{projectId}` at version **2**.
+3. **Repair / verify `_design/acl`** (mandatory before first proxy flip;
+   afterward use for permission-model token drift):
+   `pnpm --filter=@faims3/api run repair-data-db-acl` (`--dry-run` supported).
 4. **Point `COUCHDB_PUBLIC_URL` at couch-auth-proxy**; keep
-   `COUCHDB_INTERNAL_URL` on Couch for Conductor admin.
-5. **Clients rebuild local project data DBs** automatically via
-   `openLocalDataDbWithAclCutover` (marker `_local/faims-acl-schema`). Users who
-   synced before cutover lose leaked IndexedDB docs on next app start /
-   activate and re-sync through the proxy.
+   `COUCHDB_INTERNAL_URL` on Couch for Conductor admin. Do not publish Couch
+   publicly.
+5. **Clients rebuild local project data DBs** via
+   `openLocalDataDbWithAclCutover` (marker `_local/faims-acl-schema` records
+   schema version **and** the public base URL). A marker sealed against open
+   Couch is invalidated when Conductor advertises the proxy URL.
 6. **Validate**: guest A/B isolation + contributor read-all
    (`pnpm --filter=@faims3/api run test:couch-auth-proxy` locally, or manual
    sync probe).
@@ -655,3 +668,6 @@ DB members (`r-*`).
   `dbacl`).
 - Proxy health endpoint: `/_couch-auth-proxy/health` (compose +
   `localdev.sh` wait on this).
+- Infra follow-up: AWS CDK / DigitalOcean must split internal Couch vs public
+  proxy hostname (compose reference is complete; cloud stacks may still point
+  `COUCHDB_PUBLIC_URL` at raw Couch until updated).

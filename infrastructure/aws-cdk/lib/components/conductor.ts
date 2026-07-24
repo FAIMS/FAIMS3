@@ -258,6 +258,8 @@ export class FaimsConductor extends Construct {
         CONDUCTOR_INSTANCE_NAME: props.config.name,
         CONDUCTOR_DESCRIPTION: props.config.description,
         COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
+        // TODO(couch-auth-proxy): point at the proxy hostname, not raw Couch.
+        // See docs/developer/.../Authorisation/CouchAuthProxyCutover.md
         COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
         COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
         CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
