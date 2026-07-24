@@ -67,7 +67,7 @@ import RecordMeta from '../components/record/meta';
 import UGCReport from '../components/record/UGCReport';
 import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
-import { formatTimestamp } from '../../utils/formUtilities';
+import {formatTimestamp} from '../../utils/formUtilities';
 
 /**
  * Available tabs for the record view page
@@ -417,40 +417,65 @@ const HistoryTabContent: React.FC<{
     );
   }
 
-  const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(historyData.map(entry => [
-    entry.revisionId,
-    entry,
-  ]));
+  const revisionIdsRevision = new Map<string, RevisionHistoryEntry>(
+    historyData.map(entry => [entry.revisionId, entry])
+  );
 
   const formatRevisionMetadata = (entry?: RevisionHistoryEntry) => {
-    return entry ? `${entry.createdBy} at ${formatTimestamp(new Date(entry.created).getTime())}` : 'unknown';
-   }
+    return entry
+      ? `${entry.createdBy} at ${formatTimestamp(new Date(entry.created).getTime())}`
+      : 'unknown';
+  };
 
   return (
     <Stack spacing={4}>
       <Typography variant="h5">Revision History</Typography>
-      {historyData.slice().sort((a, b) => b.created.localeCompare(a.created)).map((entry, e, historyData) => {
-        const parentFields = Object.entries(entry.changedFields);
-        return (
-          <Stack key={entry.revisionId} spacing={2}>
-            <Typography variant="body1" id={entry.revisionId}>
-              {entry.deleted ? 'Record deleted by ' : 'Revision created by '}<span style={{textDecoration: 'underline'}}>{formatRevisionMetadata(entry)}</span>
-            </Typography>
-            <Stack sx={{pl: 2}}>
-              {parentFields.map(([parentId, fields]) => 
-                <Typography variant="body1" key={parentId}>
-                  Fields changed{revisionIdsRevision.has(parentId) && (parentFields.length > 1 || parentId !== historyData[e + 1]?.revisionId) ? <> compared to <Link href={`#${parentId}`}>{formatRevisionMetadata(revisionIdsRevision.get(parentId))}</Link></> : ''}: {fields.map(
-                    fieldId =>
-                      uiSpec.fields[fieldId]?.['component-parameters']?.label ??
-                      fieldId
-                  )
-                  .join(', ') || 'None'}
-                </Typography>
-              )}
+      {historyData
+        .slice()
+        .sort((a, b) => b.created.localeCompare(a.created))
+        .map((entry, e, historyData) => {
+          const parentFields = Object.entries(entry.changedFields);
+          return (
+            <Stack key={entry.revisionId} spacing={2}>
+              <Typography variant="body1" id={entry.revisionId}>
+                {entry.deleted ? 'Record deleted by ' : 'Revision created by '}
+                <span style={{textDecoration: 'underline'}}>
+                  {formatRevisionMetadata(entry)}
+                </span>
+              </Typography>
+              <Stack sx={{pl: 2}}>
+                {parentFields.map(([parentId, fields]) => (
+                  <Typography variant="body1" key={parentId}>
+                    Fields changed
+                    {revisionIdsRevision.has(parentId) &&
+                    (parentFields.length > 1 ||
+                      parentId !== historyData[e + 1]?.revisionId) ? (
+                      <>
+                        {' '}
+                        compared to{' '}
+                        <Link href={`#${parentId}`}>
+                          {formatRevisionMetadata(
+                            revisionIdsRevision.get(parentId)
+                          )}
+                        </Link>
+                      </>
+                    ) : (
+                      ''
+                    )}
+                    :{' '}
+                    {fields
+                      .map(
+                        fieldId =>
+                          uiSpec.fields[fieldId]?.['component-parameters']
+                            ?.label ?? fieldId
+                      )
+                      .join(', ') || 'None'}
+                  </Typography>
+                ))}
+              </Stack>
             </Stack>
-          </Stack>
-        );
-      })}
+          );
+        })}
     </Stack>
   );
 };

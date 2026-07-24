@@ -590,7 +590,11 @@ export async function createRecordWithMergeRevision({
   });
 
   // Automerge the two heads into a single revision with both as parents.
-  const fullyMerged = await mergeHeads({projectId, recordId: record._id, dataDb});
+  const fullyMerged = await mergeHeads({
+    projectId,
+    recordId: record._id,
+    dataDb,
+  });
   if (!fullyMerged) {
     throw new Error(
       `Automerge did not fully merge heads for seeded record ${record._id}`

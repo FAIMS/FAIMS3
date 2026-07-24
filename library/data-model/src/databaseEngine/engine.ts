@@ -1451,7 +1451,7 @@ class FormOperations {
   }): Promise<RevisionHistoryEntry[]> {
     const record = await this.core.getRecord(recordId);
     const revisions = await Promise.all(
-      record.revisions.map((revisionId) => this.core.getRevision(revisionId)),
+      record.revisions.map(revisionId => this.core.getRevision(revisionId))
     );
 
     // Index by revision ID so each revision can look up its parent's AVPs.
@@ -1465,9 +1465,9 @@ class FormOperations {
         deleted: revision.deleted,
         changedFields:
           revision.parents.length === 0
-            ? { root: Object.keys(revision.avps).sort() }
+            ? {root: Object.keys(revision.avps).sort()}
             : Object.fromEntries(
-                revision.parents.map((parentId) => {
+                revision.parents.map(parentId => {
                   const parent = revisionsById.get(parentId);
                   const parentAvps = parent?.avps ?? {};
 
@@ -1483,7 +1483,7 @@ class FormOperations {
                     }
                   }
                   return [parentId, Array.from(changed).sort()];
-                }),
+                })
               ),
       };
     });
