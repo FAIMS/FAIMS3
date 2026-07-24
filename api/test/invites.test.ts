@@ -36,7 +36,7 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
-import {LOCAL_LOGIN_ENABLED, WEBAPP_PUBLIC_URL} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 import {
   consumeInvite,
   createGlobalInvite,
@@ -877,7 +877,7 @@ describe('Registration', () => {
   });
 
   it('redirects with a token on registration', async () => {
-    if (!LOCAL_LOGIN_ENABLED) {
+    if (!config.localLoginEnabled) {
       return;
     }
 
@@ -888,7 +888,7 @@ describe('Registration', () => {
       name: 'Bob Bobalooba',
       // Need to be careful to use a valid whitelisted URL here - this one
       // should be!
-      redirect: WEBAPP_PUBLIC_URL + '/auth-return',
+      redirect: config.webAppPublicUrl + '/auth-return',
       action: 'register',
     };
 
@@ -924,7 +924,7 @@ describe('Registration', () => {
           expect(response.header.location[0]).not.to.equal('/');
           // check correct redirect
           const location = new URL(response.header.location);
-          expect(location.origin).to.equal(WEBAPP_PUBLIC_URL);
+          expect(location.origin).to.equal(config.webAppPublicUrl);
           expect(location.search).to.match(/exchangeToken/);
         });
     }

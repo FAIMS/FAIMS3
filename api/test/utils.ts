@@ -29,7 +29,7 @@ import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {KEY_SERVICE} from '../src/buildconfig';
+import {keyService} from '../src/buildconfig';
 import {
   createUser,
   getExpressUserFromEmailOrUserId,
@@ -66,7 +66,7 @@ export const beforeApiTests = async () => {
   // NOTE the admin user should exist at this point
 
   // Get the signing key to use to create JWTs
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
 
   // get the admin user - this should exist at this point
   const possibleAdminUser =

@@ -537,9 +537,9 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
 };
 
 /**
- * Props for the MobileNavigationStepper component.
+ * Props for the SectionNavigationStepper component.
  */
-interface MobileNavigationStepperProps {
+interface SectionNavigationStepperProps {
   /** Total number of steps/sections in the form */
   totalSteps: number;
   /** Zero-based index of the currently active step */
@@ -556,17 +556,17 @@ interface MobileNavigationStepperProps {
 }
 
 /**
- * Renders the mobile navigation stepper with Next/Back buttons.
+ * Renders the section navigation stepper with Next/Back buttons.
  *
- * This component is used in both the top and bottom positions
- * of the mobile view to provide convenient navigation controls.
+ * Used at the top of the mobile view, and at the bottom on every screen size
+ * so tablet/desktop users also get Back/Next navigation.
  *
  * @param totalSteps - The total number of sections in the form
  * @param activeStep - The current zero-based step index
  * @param onStep - Callback to handle navigation direction
  * @param theme - MUI theme for styling
  */
-const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
+const SectionNavigationStepper: React.FC<SectionNavigationStepperProps> = ({
   totalSteps,
   activeStep,
   onStep,
@@ -1097,7 +1097,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
               p: 0.75,
             }}
           >
-            <MobileNavigationStepper
+            <SectionNavigationStepper
               totalSteps={visibleSections.length}
               activeStep={activeIndex}
               onStep={handleStep}
@@ -1154,23 +1154,22 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         onNavigateToSection={handleNavigateToSection}
       />
 
-      {/* Mobile View - Bottom navigation bar */}
-      {showMobileView && (
-        <Box
-          sx={{
-            mt: ERROR_PANEL_VERTICAL_SPACING,
-            p: 0.75,
-          }}
-        >
-          <MobileNavigationStepper
-            totalSteps={visibleSections.length}
-            activeStep={activeIndex}
-            onStep={handleStep}
-            onCompleteHandler={onCompleteHandler}
-            navigationBlocked={isNavigationBlocked}
-          />
-        </Box>
-      )}
+      {/* Bottom navigation bar - rendered on all screen sizes so tablet and
+          desktop users get Back/Next without relying on the section tabs. */}
+      <Box
+        sx={{
+          mt: ERROR_PANEL_VERTICAL_SPACING,
+          p: 0.75,
+        }}
+      >
+        <SectionNavigationStepper
+          totalSteps={visibleSections.length}
+          activeStep={activeIndex}
+          onStep={handleStep}
+          onCompleteHandler={onCompleteHandler}
+          navigationBlocked={isNavigationBlocked}
+        />
+      </Box>
     </Box>
   );
 };

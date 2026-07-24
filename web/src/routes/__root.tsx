@@ -4,9 +4,9 @@ import {Button} from '@/components/ui/button';
 import Bugsnag from '@bugsnag/js';
 import {AlertCircle} from 'lucide-react';
 import {useEffect, useRef} from 'react';
-import {BUGSNAG_API_KEY} from '@/constants';
+import {config} from '@/constants';
 
-const bugsnagEnabled = BUGSNAG_API_KEY !== undefined;
+const bugsnagEnabled = config.bugsnagApiKey !== undefined;
 
 // Create a custom error component
 function CustomErrorComponent({error}: {error: Error}) {

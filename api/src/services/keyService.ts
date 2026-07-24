@@ -1,12 +1,6 @@
 import fs from 'fs/promises';
 import {importPKCS8, importSPKI, KeyLike} from 'jose';
-import {
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_KEY_ID,
-  AWS_SECRET_KEY_ARN,
-  private_key_path,
-  public_key_path,
-} from '../buildconfig';
+import {config, privateKeyPath, publicKeyPath} from '../buildconfig';
 import {SecretsManager} from 'aws-sdk';
 import NodeCache from 'node-cache';
 
@@ -340,29 +334,29 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
  * @throws Error if an unsupported key source is specified.
  */
 function createKeyService(keySource: KeySource = KeySource.FILE): IKeyService {
-  const config: KeyConfig = {
+  const keyConfig: KeyConfig = {
     signingAlgorithm: 'RS256',
-    instanceName: CONDUCTOR_INSTANCE_NAME,
-    keyId: CONDUCTOR_KEY_ID,
+    instanceName: config.conductorInstanceName,
+    keyId: config.conductorKeyId,
   };
 
   switch (keySource) {
     case KeySource.FILE:
-      return new FileKeyService(config, {
+      return new FileKeyService(keyConfig, {
         // This will error if the configuration is not setup properly
-        publicKeyFile: public_key_path(),
-        privateKeyFile: private_key_path(),
+        publicKeyFile: publicKeyPath(),
+        privateKeyFile: privateKeyPath(),
       });
     case KeySource.ENV:
-      return new EnvKeyService(config);
+      return new EnvKeyService(keyConfig);
     case KeySource.AWS_SM:
-      if (!AWS_SECRET_KEY_ARN) {
+      if (!config.awsSecretKeyArn) {
         throw new Error(
           'AWS_SECRET_KEY_ARN is not set but KEY_SOURCE is AWS_SM'
         );
       }
-      return new AWSSecretsManagerKeyService(config, {
-        secretArn: AWS_SECRET_KEY_ARN,
+      return new AWSSecretsManagerKeyService(keyConfig, {
+        secretArn: config.awsSecretKeyArn,
         cacheExpirySeconds: AWS_SM_CACHE_TIMEOUT_S,
       });
     default:

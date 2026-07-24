@@ -19,10 +19,15 @@
  *   which server to use and whether to include test data
  */
 
-import {AuthContext} from '@faims3/data-model';
+import {
+  AuthContext,
+  CodeInputSchema,
+  IdInputSchema,
+  RedirectInputSchema,
+} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
 import {DEFAULT_REDIRECT_URL} from './authRoutes';
@@ -35,7 +40,7 @@ import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
-import {LOCAL_LOGIN_ENABLED} from '../buildconfig';
+import {config} from '../buildconfig';
 
 // This must occur before express app is used
 patch();
@@ -60,10 +65,10 @@ export function addAuthPages(
   // providers if present
   app.get(
     '/login',
-    processRequest({
+    validate({
       query: z.object({
-        redirect: z.string().optional(),
-        inviteId: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
+        inviteId: IdInputSchema.optional(),
       }),
     }),
     (req, res) => {
@@ -98,7 +103,7 @@ export function addAuthPages(
           inviteId: inviteId,
           redirect: redirect,
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: config.localLoginEnabled,
         redirect,
         messages: messages,
       });
@@ -112,10 +117,10 @@ export function addAuthPages(
    */
   app.get(
     '/register',
-    processRequest({
+    validate({
       query: z.object({
-        redirect: z.string().optional(),
-        inviteId: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
+        inviteId: IdInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -171,7 +176,7 @@ export function addAuthPages(
           inviteId,
           action: 'register',
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: config.localLoginEnabled,
         messages: req.flash(),
       });
     }
@@ -182,12 +187,12 @@ export function addAuthPages(
    */
   app.get(
     '/change-password',
-    processRequest({
+    validate({
       query: z.object({
         // Where should we go once finished?
-        redirect: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
         // Require username as query param - this lets us know who the user is
-        username: z.string(),
+        username: IdInputSchema,
       }),
     }),
     (req, res) => {
@@ -223,10 +228,10 @@ export function addAuthPages(
    */
   app.get(
     '/verify-email',
-    processRequest({
+    validate({
       query: z.object({
-        code: z.string().optional(),
-        redirect: z.string().optional(),
+        code: CodeInputSchema.optional(),
+        redirect: RedirectInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -264,10 +269,10 @@ export function addAuthPages(
 
   app.post(
     '/verify-email',
-    processRequest({
+    validate({
       body: z.object({
-        code: z.string(),
-        redirect: z.string().optional(),
+        code: CodeInputSchema,
+        redirect: RedirectInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -310,9 +315,9 @@ export function addAuthPages(
    */
   app.get(
     '/forgot-password',
-    processRequest({
+    validate({
       query: z.object({
-        redirect: z.string().optional(),
+        redirect: RedirectInputSchema.optional(),
       }),
     }),
     async (req, res) => {
@@ -340,10 +345,10 @@ export function addAuthPages(
    */
   app.get(
     '/auth/reset-password',
-    processRequest({
+    validate({
       query: z.object({
-        code: z.string(),
-        redirect: z.string(),
+        code: CodeInputSchema,
+        redirect: RedirectInputSchema,
       }),
     }),
     async (req, res) => {

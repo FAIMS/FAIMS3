@@ -41,12 +41,13 @@ export const CreateLongLivedTokenDialog = () => {
         <Button
           variant="outline"
           className="bg-primary text-primary-foreground"
+          data-testid="web-profile-tokens-create-button"
         >
           <Plus />
           Create Long Lived Token
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="web-profile-tokens-create-dialog">
         <DialogHeader>
           <DialogTitle>Create Long Lived API Token</DialogTitle>
           <DialogDescription>

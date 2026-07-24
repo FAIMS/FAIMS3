@@ -1,9 +1,4 @@
 import {config as baseConfig} from './wdio.conf.ts';
-// Add these imports at the top
-import path from 'path';
-import {fileURLToPath} from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const platform = process.env.PLATFORM || 'android';
 

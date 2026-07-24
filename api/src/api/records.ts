@@ -49,7 +49,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {getDataDb} from '../couchdb';
 import {getCompiledUiSpecModel} from '../couchdb/notebooks';
 import * as Exceptions from '../exceptions';
@@ -129,7 +129,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       action: Action.CREATE_PROJECT_RECORD,
       getResourceId: req => req.params.id,
     }),
-    processRequest({
+    validate({
       params: z.object({id: z.string().min(1)}),
       body: PostCreateRecordInputSchema,
     }),
@@ -174,7 +174,7 @@ recordsRouter.get(
     action: Action.READ_MY_PROJECT_RECORDS,
     getResourceId: req => req.params.id,
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string().min(1)}),
     query: GetListRecordsQuerySchema,
   }),
@@ -244,7 +244,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       action: Action.EDIT_MY_PROJECT_RECORDS,
       getResourceId: req => req.params.id,
     }),
-    processRequest({
+    validate({
       params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
       body: PostCreateRevisionInputSchema,
     }),
@@ -301,7 +301,7 @@ recordsRouter.get(
     action: Action.READ_MY_PROJECT_RECORDS,
     getResourceId: req => req.params.id,
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
     query: GetRecordQuerySchema,
   }),
@@ -360,7 +360,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       action: Action.EDIT_MY_PROJECT_RECORDS,
       getResourceId: req => req.params.id,
     }),
-    processRequest({
+    validate({
       params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
       body: PatchUpdateRecordInputSchema,
     }),
@@ -416,7 +416,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       action: Action.DELETE_MY_PROJECT_RECORDS,
       getResourceId: req => req.params.id,
     }),
-    processRequest({
+    validate({
       params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
       query: DeleteRecordQuerySchema,
     }),

@@ -496,8 +496,6 @@ const fields: {[key: string]: FieldType} = {
       advancedHelperText: '',
       required: false,
       numberType: 'integer',
-      min: 0,
-      max: 100,
       InputProps: {
         type: 'number',
       },

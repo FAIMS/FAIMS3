@@ -46,11 +46,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-  OFFLINE_MAPS,
-} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {selectIsAuthenticated} from '../../context/slices/authSlice';
 import {
@@ -114,7 +110,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
     });
   });
   return {
-    title: `${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
+    title: `${config.notebookNamePluralCapitalized}`,
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.NOTEBOOK_LIST_ROUTE,
@@ -144,7 +140,7 @@ export default function MainAppBar() {
     },
     projectList === null
       ? {
-          title: `Loading ${NOTEBOOK_NAME_PLURAL}...`,
+          title: `Loading ${config.notebookNamePlural}...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
@@ -152,7 +148,7 @@ export default function MainAppBar() {
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-            title: `Active ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
+            title: `Active ${config.notebookNamePluralCapitalized}`,
             icon: <AccountTree />,
             to: '/',
             disabled: true,
@@ -167,7 +163,7 @@ export default function MainAppBar() {
       disabled: false,
     },
   ];
-  if (OFFLINE_MAPS)
+  if (config.offlineMaps)
     bottomMenuItems.push({
       title: 'Offline Maps',
       icon: <MapIcon />,

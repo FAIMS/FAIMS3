@@ -39,6 +39,7 @@ export default function AddRecordButtons({
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
+  const navigate = useNavigate();
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
@@ -55,8 +56,6 @@ export default function AddRecordButtons({
       uiSpec,
     });
   };
-
-  const navigate = useNavigate();
 
   const handleNewRecord = (viewsetName: string) => () => {
     console.log('Creating new record of type', viewsetName);
@@ -142,6 +141,7 @@ export default function AddRecordButtons({
               }}
               startIcon={<AddCircleSharpIcon />}
               key="newRecord"
+              data-testid={`${visibleTypes[0]}-app-record-add-button`}
               onClick={handleNewRecord(visibleTypes[0])}
             >
               Add new {recordLabel}
@@ -154,6 +154,7 @@ export default function AddRecordButtons({
                     key={viewset_name}
                     startIcon={<AddCircleSharpIcon />}
                     variant="contained"
+                    data-testid={`${viewset_name}-app-record-add-button`}
                     sx={{
                       borderRadius: '8px',
                       fontWeight: 'bold',

@@ -16,14 +16,14 @@ import {
   safeWriteDocument,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
-import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
+import {config} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {expiryMsFromNow} from '../time';
 import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in hours
-const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+const TOKEN_EXPIRY_MS = config.refreshTokenExpiryMinutes * 60 * 1000;
 // 5 minutes
 const EXCHANGE_EXPIRY_MS = 60 * 1000 * 5;
 
@@ -36,10 +36,12 @@ export const createNewRefreshToken = async ({
   userId,
   refreshExpiryMs = TOKEN_EXPIRY_MS,
   exchangeExpiryMs = EXCHANGE_EXPIRY_MS,
+  impersonatingUserId,
 }: {
   userId: string;
   refreshExpiryMs?: number;
   exchangeExpiryMs?: number;
+  impersonatingUserId?: string;
 }): Promise<{
   refresh: RefreshRecordExistingDocument;
   exchangeToken: string;
@@ -67,6 +69,7 @@ export const createNewRefreshToken = async ({
     exchangeTokenHash: hash,
     exchangeTokenUsed: false,
     exchangeTokenExpiryTimestampMs: exchangeExpiry,
+    ...(impersonatingUserId ? {impersonatingUserId} : {}),
   };
 
   // Create a new document in the database
@@ -194,6 +197,7 @@ export const validateRefreshToken = async (
   valid: boolean;
   user?: ExistingPeopleDBDocument;
   validationError?: string;
+  impersonatingUserId?: string;
 }> => {
   try {
     const tokenDoc = await getTokenByToken(refreshToken);
@@ -242,7 +246,11 @@ export const validateRefreshToken = async (
       };
     }
 
-    return {valid: true, user};
+    return {
+      valid: true,
+      user,
+      impersonatingUserId: tokenDoc.impersonatingUserId,
+    };
   } catch (error) {
     console.error(
       'Unhandled error validating refresh token. Token: ',

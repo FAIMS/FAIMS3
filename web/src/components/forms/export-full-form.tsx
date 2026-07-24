@@ -1,6 +1,6 @@
 import {Checkbox} from '@/components/ui/checkbox';
 import {Label} from '@/components/ui/label';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
@@ -8,6 +8,7 @@ import {
   isValidForSpatialExport,
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
+import {config} from '@/constants';
 
 interface ExportOptions {
   includeTabular: boolean;
@@ -32,7 +33,7 @@ const DEFAULT_OPTIONS: ExportOptions = {
  * It allows users to configure which components to include in the export ZIP.
  */
 const ExportFullForm = () => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
@@ -55,8 +56,6 @@ const ExportFullForm = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
-
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -72,7 +71,7 @@ const ExportFullForm = () => {
         includeMetadata: options.includeMetadata.toString(),
       });
 
-      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?${params.toString()}`;
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +317,11 @@ const ExportFullForm = () => {
         </p>
       )}
 
-      {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+      {submitError && (
+        <p className="min-w-0 max-w-full break-words text-sm text-destructive">
+          {submitError}
+        </p>
+      )}
     </div>
   );
 };

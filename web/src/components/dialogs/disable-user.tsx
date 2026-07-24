@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useDisableUserAccount} from '@/hooks/user-hooks';
 import {
   Dialog,
@@ -14,7 +13,7 @@ import {useState} from 'react';
 import {UserX} from 'lucide-react';
 import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {cn} from '@/lib/utils';
 
 /**
@@ -22,7 +21,7 @@ import {cn} from '@/lib/utils';
  */
 export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const disableUser = useDisableUserAccount();
   const canDisable = useIsAuthorisedTo({
     action: Action.DISABLE_USER_ACCOUNT,
@@ -30,7 +29,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   });
 
   const blocked =
-    rowUser._id === user?.user.id ||
+    rowUser._id === user.user.id ||
     (rowUser.globalRoles ?? []).includes(Role.GENERAL_ADMIN);
 
   if (!canDisable || blocked) {
@@ -40,11 +39,18 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" title="Disable user account">
+        <Button
+          variant="outline"
+          title="Disable user account"
+          data-testid="web-users-disable-button"
+        >
           <UserX className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="text-black">
+      <DialogContent
+        className="text-black"
+        data-testid="web-users-disable-dialog"
+      >
         <DialogHeader>
           <DialogTitle className="text-black">Disable User Account</DialogTitle>
           <DialogDescription asChild className="text-black">
@@ -61,7 +67,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
                   system.
                 </li>
                 <li>
-                  {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and records they
+                  {config.notebookNamePluralCapitalized} and records they
                   contributed will not be affected.
                 </li>
                 <li>The user will not be notified.</li>
@@ -73,6 +79,7 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
           className="w-full"
           variant="destructive"
           disabled={disableUser.isPending}
+          data-testid="web-users-disable-confirm"
           onClick={() =>
             disableUser.mutate(
               {targetUserId: rowUser._id},

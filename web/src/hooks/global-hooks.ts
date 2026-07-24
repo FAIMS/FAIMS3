@@ -1,4 +1,5 @@
 import {User} from '@/context/auth-provider';
+import {config} from '@/constants';
 
 export const removeGlobalInvite = async ({
   inviteId,
@@ -7,13 +8,10 @@ export const removeGlobalInvite = async ({
   inviteId: string;
   user: User;
 }) =>
-  await fetch(
-    `${import.meta.env.VITE_API_URL}/api/invites/global/${inviteId}`,
-    {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-    }
-  );
+  await fetch(`${config.apiUrl}/api/invites/global/${inviteId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.token}`,
+    },
+  });

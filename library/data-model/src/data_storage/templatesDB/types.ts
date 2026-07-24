@@ -17,9 +17,9 @@ import {NotebookDefinitionSchema} from '../../uiSpecification/types';
  */
 export const LegacyEncodedUISpecificationSchema = z
   .object({
-    fields: z.record(z.any()),
-    fviews: z.record(z.any()),
-    viewsets: z.record(z.any()),
+    fields: z.record(z.string(), z.any()),
+    fviews: z.record(z.string(), z.any()),
+    viewsets: z.record(z.string(), z.any()),
     visible_types: z.array(z.string()),
   })
   .passthrough();
@@ -38,7 +38,7 @@ export const TemplateV1FieldsSchema = z.object({
   // NOTE: For some reason importing this from ./types causes an undefined error
   // (maybe circular import issue?). Metadata for the notebook (not optional -
   // refine to enforce this)
-  metadata: z.record(z.any()).refine(val => !!val),
+  metadata: z.record(z.string(), z.any()).refine(val => !!val),
   // UI Spec of the template
   'ui-specification': LegacyEncodedUISpecificationSchema,
   // Which team owns this (optional)

@@ -178,7 +178,9 @@
     "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
   },
   "security": {
-    "maximumLongLivedTokenDurationDays": 90
+    "maximumLongLivedTokenDurationDays": 90,
+    "rateLimiterEnabled": true,
+    "authAttemptLimiterEnabled": true
   },
   "bugMonitoring": {
     "bugsnagKey": "1234-your-key"

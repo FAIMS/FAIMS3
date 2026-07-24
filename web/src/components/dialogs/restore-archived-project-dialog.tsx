@@ -8,15 +8,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
-import {useAuth} from '@/context/auth-provider';
 import {useRestoreArchivedProject} from '@/hooks/archive-hooks';
 import {useState} from 'react';
 import {toast} from 'sonner';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 
 type RestoreArchivedProjectDialogProps = {
   projectId: string;
@@ -30,7 +25,6 @@ export function RestoreArchivedProjectDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: RestoreArchivedProjectDialogProps) {
-  const {user} = useAuth();
   const {mutate, isPending} = useRestoreArchivedProject();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOnOpenChange !== undefined;
@@ -38,13 +32,12 @@ export function RestoreArchivedProjectDialog({
   const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
 
   const onRestore = () => {
-    if (!user) return;
     mutate(
       {projectId},
       {
         onSuccess: () => {
           toast.success(
-            `${NOTEBOOK_NAME_CAPITALIZED} restored (closed — not open for new records)`
+            `${config.notebookNameCapitalized} restored (closed — not open for new records)`
           );
           setOpen(false);
         },
@@ -68,14 +61,14 @@ export function RestoreArchivedProjectDialog({
       <DialogContent className="text-black dark:text-foreground">
         <DialogHeader>
           <DialogTitle className="text-black dark:text-foreground">
-            Restore this {NOTEBOOK_NAME_CAPITALIZED}?
+            Restore this {config.notebookNameCapitalized}?
           </DialogTitle>
           <DialogDescription asChild>
             <p className="text-left text-sm leading-relaxed !text-black dark:!text-foreground [&_strong]:text-inherit">
-              When restored, this {NOTEBOOK_NAME} will be{' '}
+              When restored, this {config.notebookName} will be{' '}
               <strong>&apos;closed&apos;</strong>. You can{' '}
-              <strong>&apos;reopen&apos;</strong> this {NOTEBOOK_NAME} by going
-              to the {NOTEBOOK_NAME_PLURAL_CAPITALIZED}/
+              <strong>&apos;reopen&apos;</strong> this {config.notebookName} by
+              going to the {config.notebookNamePluralCapitalized}/
               <strong>&apos;Actions&apos;</strong> tab.
             </p>
           </DialogDescription>

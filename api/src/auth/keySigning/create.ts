@@ -28,11 +28,7 @@ import {
   TokenPayload,
 } from '@faims3/data-model';
 import {SignJWT} from 'jose';
-import {
-  ACCESS_TOKEN_EXPIRY_MINUTES,
-  CONDUCTOR_PUBLIC_URL,
-  KEY_SERVICE,
-} from '../../buildconfig';
+import {config, keyService} from '../../buildconfig';
 import {getProjectIdsByTeamId} from '../../couchdb/notebooks';
 import {createNewRefreshToken} from '../../couchdb/refreshTokens';
 import {getTemplateIdsByTeamId} from '../../couchdb/templates';
@@ -135,9 +131,13 @@ export async function upgradeCouchUserToExpressUser({
 export async function generateJwtFromUser({
   user,
   signingKey,
+  impersonatingUserId,
 }: {
   user: Express.User;
   signingKey: SigningKey;
+  // When present, this token is an impersonation token issued by the given
+  // admin user id. Recorded in the payload for auditing.
+  impersonatingUserId?: string;
 }) {
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
@@ -151,8 +151,9 @@ export async function generateJwtFromUser({
     const completePayload: TokenPayload = {
       ...permissionsComponent,
       name: user.name,
-      server: CONDUCTOR_PUBLIC_URL,
+      server: config.conductorPublicUrl,
       username: user.user_id,
+      ...(impersonatingUserId ? {impersonatingUserId} : {}),
     };
 
     // Then there are other parts we wish to include
@@ -165,7 +166,7 @@ export async function generateJwtFromUser({
       .setIssuedAt()
       .setIssuer(signingKey.instanceName)
       // Expiry in minutes
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+      .setExpirationTime(config.accessTokenExpiryMinutes.toString() + 'm')
       .sign(signingKey.privateKey);
 
     return jwt;
@@ -182,19 +183,41 @@ export async function generateJwtFromUser({
  * @returns The generated token which is a payload containing the actual JWT +
  * refresh token + other information
  */
-export async function generateUserToken(user: Express.User, refresh = false) {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+export async function generateUserToken(
+  user: Express.User,
+  refresh = false,
+  options: {
+    // When present, tags the access token as an impersonation token issued by
+    // the given admin user id (for auditing).
+    impersonatingUserId?: string;
+    // When provided (and refresh === true), controls the lifetime of the
+    // generated refresh token. Used to keep impersonation sessions short.
+    refreshExpiryMs?: number;
+  } = {}
+) {
+  const {impersonatingUserId, refreshExpiryMs} = options;
+  const signingKey = await keyService.getSigningKey();
 
   if (signingKey === null || signingKey === undefined) {
     throw new Error('No signing key is available, check configuration');
   } else {
-    const token = await generateJwtFromUser({user, signingKey});
+    const token = await generateJwtFromUser({
+      user,
+      signingKey,
+      impersonatingUserId,
+    });
 
     return {
       token: token,
       // Provide a refresh token if necessary
       refreshToken: refresh
-        ? (await createNewRefreshToken({userId: user._id!})).refresh.token
+        ? (
+            await createNewRefreshToken({
+              userId: user._id!,
+              ...(refreshExpiryMs !== undefined ? {refreshExpiryMs} : {}),
+              ...(impersonatingUserId ? {impersonatingUserId} : {}),
+            })
+          ).refresh.token
         : undefined,
       pubkey: signingKey.publicKeyString,
       pubalg: signingKey.alg,

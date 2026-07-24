@@ -11,9 +11,12 @@ import {
   projectInviteToAction,
 } from '@faims3/data-model';
 import {displayDateTime} from '@/lib/time';
-import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
-import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {
+  useIsAuthorisedTo,
+  userCanDo,
+  useRequiredUser,
+} from '@/hooks/auth-hooks';
 import {Trash} from 'lucide-react';
 import {
   Tooltip,
@@ -23,7 +26,7 @@ import {
 } from '../ui/tooltip';
 import {Button} from '../ui/button';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME} from '@/constants';
+import {config} from '@/constants';
 
 export const useGetInviteColumns = ({
   projectId,
@@ -34,10 +37,7 @@ export const useGetInviteColumns = ({
 }): ColumnDef<
   GetProjectInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
-  const {user} = useAuth();
-  if (!user) {
-    return [];
-  }
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const canDeleteAdminInvite = useIsAuthorisedTo({
@@ -211,7 +211,7 @@ export const useGetInviteColumns = ({
                 <TooltipContent className="w-40 text-balance">
                   {!canRemove
                     ? 'You are not authorised to remove this invite'
-                    : `Removes this invite from the ${NOTEBOOK_NAME}.`}
+                    : `Removes this invite from the ${config.notebookName}.`}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

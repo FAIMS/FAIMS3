@@ -33,8 +33,8 @@ import {useAppSelector, useAppDispatch} from '../state/hooks';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+import {config} from '@/constants';
+import {config as designerConfig} from '../buildconfig';
 import {
   customFieldRemoved,
   customFieldUpdated,
@@ -60,7 +60,7 @@ export const InfoPanel = () => {
   const [alert, setAlert] = useState('');
 
   const derivedFrom =
-    VITE_TEMPLATE_PROTECTIONS && information.derivedFromTemplateId
+    designerConfig.templateProtections && information.derivedFromTemplateId
       ? information.derivedFromTemplateId
       : '';
 
@@ -90,8 +90,8 @@ export const InfoPanel = () => {
           sx={{mt: 1}}
           data-testid="derived-from-info"
         >
-          This {NOTEBOOK_NAME} is derived from <i>{derivedFrom}</i>. Some fields
-          may be protected.
+          This {config.notebookName} is derived from <i>{derivedFrom}</i>. Some
+          fields may be protected.
         </Typography>
       )}
 
@@ -128,8 +128,9 @@ export const InfoPanel = () => {
           <Grid size={12}>
             <Typography variant="h6">Notebook information</Typography>
             <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
-              Optional details about this {NOTEBOOK_NAME}, such as who leads the
-              project. Edit the title and description in Control Centre.
+              Optional details about this {config.notebookName}, such as who
+              leads the project. Edit the title and description in Control
+              Centre.
             </Typography>
           </Grid>
 
@@ -165,7 +166,7 @@ export const InfoPanel = () => {
             <Grid size={{xs: 12, sm: 4}}>
               <DebouncedTextField
                 fullWidth
-                label={`${NOTEBOOK_NAME_CAPITALIZED} version`}
+                label={`${config.notebookNameCapitalized} version`}
                 name="notebookVersion"
                 value={information.notebookVersion}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,7 +177,7 @@ export const InfoPanel = () => {
               />
               <FormHelperText>
                 Use this field to differentiate between versions of this{' '}
-                {NOTEBOOK_NAME}; e.g. 1.0, 1.1 and so on.
+                {config.notebookName}; e.g. 1.0, 1.1 and so on.
               </FormHelperText>
             </Grid>
           </Grid>

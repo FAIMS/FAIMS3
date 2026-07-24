@@ -1,4 +1,4 @@
-import {SIGNIN_PATH} from '@/constants';
+import {config} from '@/constants';
 import {Loader2} from 'lucide-react';
 import {useEffect} from 'react';
 
@@ -9,7 +9,7 @@ import {useEffect} from 'react';
  */
 export const SessionExpiredOverlay = () => {
   const handleLogin = () => {
-    window.location.href = SIGNIN_PATH;
+    window.location.href = config.signinPath;
   };
 
   useEffect(() => {

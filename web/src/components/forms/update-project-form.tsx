@@ -1,8 +1,8 @@
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
-import {z} from 'zod';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {designFileSchema} from '@/lib/input-limits';
+import {config} from '@/constants';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   errorMessageFromNotebookJsonBody,
@@ -14,7 +14,7 @@ const fields = [
   {
     name: 'file',
     type: 'file',
-    schema: z.instanceof(File).refine(file => file.type === 'application/json'),
+    schema: designFileSchema(),
   },
 ];
 
@@ -30,12 +30,10 @@ export function UpdateProjectForm({
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onSuccess: () => void;
 }) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {projectId} = Route.useParams();
 
   const onSubmit = async ({file}: {file: File}) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const jsonString = await readFileAsText(file);
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
@@ -75,7 +73,7 @@ export function UpdateProjectForm({
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText={`Replace ${NOTEBOOK_NAME_CAPITALIZED} JSON`}
+      submitButtonText={`Replace ${config.notebookNameCapitalized} JSON`}
       submitButtonVariant="destructive"
       warningMessage={
         "If the project's response format has changed, there will be inconsistences in responses."

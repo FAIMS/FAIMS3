@@ -224,7 +224,7 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
             value={getHintValueFromSelection()}
             onValueChange={handleHintChange}
           >
-            <SelectTrigger>
+            <SelectTrigger data-testid="web-expiry-select">
               <SelectValue placeholder={hintsPlaceholder} />
             </SelectTrigger>
             <SelectContent>

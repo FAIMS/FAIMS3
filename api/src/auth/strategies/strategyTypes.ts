@@ -181,7 +181,10 @@ export const AuthProviderSchema = z.discriminatedUnion('type', [
 ]);
 export type AuthProviderConfig = z.infer<typeof AuthProviderSchema>;
 
-export const AuthProviderConfigMapSchema = z.record(AuthProviderSchema);
+export const AuthProviderConfigMapSchema = z.record(
+  z.string(),
+  AuthProviderSchema
+);
 export type AuthProviderConfigMap = z.infer<typeof AuthProviderConfigMapSchema>;
 
 // Type guard functions for runtime type checking

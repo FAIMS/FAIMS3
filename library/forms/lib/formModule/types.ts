@@ -20,11 +20,11 @@ type ExtractFieldType<T> = T extends {
 
 // We don't actually use this - but it is a way to let Typescript infer the type
 // we need
-const myUseForm = () =>
+const useMyForm = () =>
   useForm({
     defaultValues: {} as FaimsFormData,
   });
-export type FaimsForm = ReturnType<typeof myUseForm>;
+export type FaimsForm = ReturnType<typeof useMyForm>;
 export type FaimsFormField = ExtractFieldType<FaimsForm>;
 export type FaimsFormFieldState = FaimsFormField['state'];
 

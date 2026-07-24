@@ -25,11 +25,7 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {registerClient} from '@faims3/data-model';
-import {
-  CONDUCTOR_INTERNAL_PORT,
-  CONDUCTOR_PUBLIC_URL,
-  COUCHDB_INTERNAL_URL,
-} from './buildconfig';
+import {config} from './buildconfig';
 import {getDataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 import {app} from './expressSetup';
@@ -51,11 +47,11 @@ process.on('unhandledRejection', error => {
 
 const startup = async () => {
   await validateDatabases().then(() => {
-    app.listen(CONDUCTOR_INTERNAL_PORT, '0.0.0.0', () => {
-      console.log('COUCHDB_INTERNAL_URL', COUCHDB_INTERNAL_URL);
-      console.log('CONDUCTOR_PUBLIC_URL', CONDUCTOR_PUBLIC_URL);
+    app.listen(config.conductorInternalPort, '0.0.0.0', () => {
+      console.log('COUCHDB_INTERNAL_URL', config.couchdbInternalUrl);
+      console.log('CONDUCTOR_PUBLIC_URL', config.conductorPublicUrl);
       console.log(
-        `Conductor is listening on port http://0.0.0.0:${CONDUCTOR_INTERNAL_PORT}/`
+        `Conductor is listening on port http://0.0.0.0:${config.conductorInternalPort}/`
       );
     });
   });

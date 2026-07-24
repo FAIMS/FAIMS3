@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+import {INPUT_LIMITS} from '@faims3/data-model';
 import z from 'zod';
+
+// Bounded address part — stops maliciously long free-text entries
+const addressPart = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
 
 /**
  * Address schema based on GeocodeJSON, an extension to GeoJSON for storing
@@ -23,15 +27,15 @@ import z from 'zod';
  * AddressField and address autosuggest services.
  */
 export const AddressSchema = z.object({
-  house_number: z.string().optional(),
-  road: z.string().optional(),
-  suburb: z.string().optional(),
-  town: z.string().optional(),
-  municipality: z.string().optional(),
-  state: z.string().optional(),
-  postcode: z.string().optional(),
-  country: z.string().optional(),
-  country_code: z.string().optional(),
+  house_number: addressPart.optional(),
+  road: addressPart.optional(),
+  suburb: addressPart.optional(),
+  town: addressPart.optional(),
+  municipality: addressPart.optional(),
+  state: addressPart.optional(),
+  postcode: addressPart.optional(),
+  country: addressPart.optional(),
+  country_code: addressPart.optional(),
 });
 
 export type AddressType = z.infer<typeof AddressSchema>;
@@ -44,9 +48,12 @@ export type AddressType = z.infer<typeof AddressSchema>;
  */
 export const AddressValueSchema = z
   .object({
-    display_name: z.string(),
+    display_name: z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH),
     address: AddressSchema.optional(),
-    manuallyEnteredAddress: z.string().optional(),
+    manuallyEnteredAddress: z
+      .string()
+      .max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH)
+      .optional(),
   })
   .refine(
     val => {

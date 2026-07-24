@@ -18,6 +18,7 @@
  *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
+import {INPUT_LIMITS} from '@faims3/data-model';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import {IconButton, InputAdornment, TextField} from '@mui/material';
@@ -123,6 +124,7 @@ export function GridToolbarSearchRecordDataButton({
       }}
       slotProps={{
         htmlInput: {
+          maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
           startAdornment: (
             <InputAdornment position="start">
               <IconButton

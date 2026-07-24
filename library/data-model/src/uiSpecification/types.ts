@@ -289,7 +289,7 @@ export const NotebookMetadataSchema = z.object({
   /** Non-functional information about the notebook. */
   information: NotebookInformationSchema,
   /** Optional key/value bag for org-specific tagging; not for settings or user ids. */
-  custom: z.record(z.any()).optional(),
+  custom: z.record(z.string(), z.any()).optional(),
 });
 export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 

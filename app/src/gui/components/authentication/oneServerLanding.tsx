@@ -9,7 +9,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Stack, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
-import {APP_ID, APP_NAME, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {getSelectedServer, Server} from '../../../context/slices/projectSlice';
 import {useIsOnline} from '../../../utils/customHooks';
 import {QRCodeButtonOnly, ShortCodeOnlyComponent} from './shortCodeOnly';
@@ -95,7 +95,7 @@ const OnboardingComponent = ({
               marginBottom: 1,
             }}
           >
-            {APP_NAME}
+            {config.appName}
           </Typography>
 
           {/* Sign In Section */}
@@ -113,6 +113,7 @@ const OnboardingComponent = ({
             <Button
               variant="outlined"
               fullWidth
+              data-testid="app-signin-button"
               startIcon={
                 <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
               }
@@ -123,7 +124,7 @@ const OnboardingComponent = ({
                     selectedServer.serverUrl + '/login?redirect=' + redirect;
                 } else {
                   await Browser.open({
-                    url: `${selectedServer.serverUrl}/login?redirect=${APP_ID}://auth-return`,
+                    url: `${selectedServer.serverUrl}/login?redirect=${config.appId}://auth-return`,
                   });
                 }
               }}
@@ -177,6 +178,7 @@ const OnboardingComponent = ({
               <Button
                 variant="outlined"
                 fullWidth
+                data-testid="app-signin-enter-code-button"
                 onClick={() => setShowCodeInput(true)}
                 startIcon={
                   <LockOpenIcon sx={{color: theme.palette.primary.main}} />

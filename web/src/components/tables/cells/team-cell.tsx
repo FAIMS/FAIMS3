@@ -1,5 +1,5 @@
 import {Skeleton} from '@/components/ui/skeleton';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
 import {Link} from '@tanstack/react-router';
 
@@ -20,7 +20,7 @@ export const TeamCellComponent = ({
   teamId,
   teamDisplayName,
 }: TeamCellComponentProps) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const hasInjectedName =
     teamDisplayName !== undefined && teamDisplayName.length > 0;
 
@@ -33,10 +33,6 @@ export const TeamCellComponent = ({
     teamId,
     enabled: !hasInjectedName,
   });
-
-  if (!user) {
-    return <p>Unauthenticated</p>;
-  }
 
   const displayLabel = hasInjectedName
     ? teamDisplayName

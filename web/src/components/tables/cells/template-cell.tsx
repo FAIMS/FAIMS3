@@ -1,5 +1,5 @@
 import {Skeleton} from '@/components/ui/skeleton';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTemplate} from '@/hooks/queries';
 import {Link} from '@tanstack/react-router';
 
@@ -14,11 +14,7 @@ interface TemplateCellComponentProps {
 export const TemplateCellComponent = ({
   templateId,
 }: TemplateCellComponentProps) => {
-  const {user} = useAuth();
-
-  if (!user) {
-    return <p>Unauthenticated</p>;
-  }
+  const user = useRequiredUser();
 
   const {
     data: template,

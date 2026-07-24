@@ -360,7 +360,9 @@ export const FormValidation = {
 
     const modelGenerator = fieldInfo?.fieldDataSchemaFunction;
     if (!modelGenerator) {
-      return z.unknown();
+      // Display-only / unknown components: accept any value or absence.
+      // Zod 4 treats bare `z.unknown()` as required in objects (`nonoptional`).
+      return z.unknown().optional().nullable();
     }
 
     // Make spec optional if needed

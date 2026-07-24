@@ -53,13 +53,7 @@ import {
 } from '@faims3/data-model';
 import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
-import {
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  COUCHDB_INTERNAL_URL,
-  LOCAL_COUCHDB_AUTH,
-} from '../buildconfig';
+import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
@@ -89,8 +83,8 @@ const pouchOptions = () => {
     options.adapter = 'memory';
   }
 
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    options.auth = LOCAL_COUCHDB_AUTH;
+  if (config.localCouchdbAuth !== undefined) {
+    options.auth = config.localCouchdbAuth;
   }
   return options;
 };
@@ -111,7 +105,7 @@ export const databaseValidityReport: CouchDBConnectionResult = {
 
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
-  const url = COUCHDB_INTERNAL_URL;
+  const url = config.couchdbInternalUrl;
 
   // can we reach the couchdb server?
   const response = await fetch(url, {
@@ -143,7 +137,7 @@ export const verifyCouchDBConnection = async () => {
 
   for (let i = 0; i < required.length; i++) {
     const db = required[i];
-    const dbName = COUCHDB_INTERNAL_URL + '/' + db;
+    const dbName = config.couchdbInternalUrl + '/' + db;
     try {
       const dbInstance = new PouchDB(dbName, pouch_options);
       const info = (await dbInstance.info()) as any; // type does not include error
@@ -166,7 +160,7 @@ export const getDirectoryDB = (): DatabaseInterface => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
 
-    const directorydb = COUCHDB_INTERNAL_URL + '/' + DIRECTORY_DB_NAME;
+    const directorydb = config.couchdbInternalUrl + '/' + DIRECTORY_DB_NAME;
     try {
       _directoryDB = new PouchDB(directorydb, pouch_options);
     } catch (error) {
@@ -181,7 +175,7 @@ export const getDirectoryDB = (): DatabaseInterface => {
 export const getAuthDB = (): AuthDatabase => {
   if (!_authDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + AUTH_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + AUTH_DB_NAME;
     try {
       _authDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
@@ -196,7 +190,7 @@ export const getAuthDB = (): AuthDatabase => {
 export const getUsersDB = (): PeopleDB => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + PEOPLE_DB_NAME;
     try {
       _usersDB = new PouchDB<PeopleDBFields>(dbName, pouch_options);
     } catch {
@@ -212,7 +206,7 @@ export const getUsersDB = (): PeopleDB => {
 export const localGetProjectsDb = (): DatabaseInterface<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + PROJECTS_DB_NAME;
     try {
       _projectsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
@@ -227,7 +221,7 @@ export const localGetProjectsDb = (): DatabaseInterface<ProjectDocument> => {
 export const getTemplatesDb = (): TemplateDB => {
   if (!_templatesDb) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + TEMPLATES_DB_NAME;
     try {
       _templatesDb = new PouchDB(dbName, pouch_options);
     } catch (error) {
@@ -242,7 +236,7 @@ export const getTemplatesDb = (): TemplateDB => {
 export const getMigrationDb = (): MigrationsDB => {
   if (!_migrationsDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + MIGRATIONS_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + MIGRATIONS_DB_NAME;
     try {
       _migrationsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
@@ -257,7 +251,7 @@ export const getMigrationDb = (): MigrationsDB => {
 export const getInvitesDB = (): DatabaseInterface => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + INVITE_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + INVITE_DB_NAME;
     try {
       _invitesDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
@@ -272,7 +266,7 @@ export const getInvitesDB = (): DatabaseInterface => {
 export const getTeamsDB = (): TeamsDB => {
   if (!_teamsDB) {
     const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + TEAMS_DB_NAME;
+    const dbName = config.couchdbInternalUrl + '/' + TEAMS_DB_NAME;
     try {
       _teamsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
@@ -324,20 +318,20 @@ export const getDataDb = async (
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
+  const dbUrl = config.couchdbInternalUrl + '/' + db.db_name;
   const pouch_options = pouchOptions();
   // Authorize against this DB
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  if (config.localCouchdbAuth !== undefined) {
+    pouch_options.auth = config.localCouchdbAuth;
   }
   return new PouchDB(dbUrl, pouch_options);
 };
 
 const openCouchDatabaseByName = (dbName: string): DatabaseInterface => {
   const pouch_options = pouchOptions();
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + dbName;
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  const dbUrl = config.couchdbInternalUrl + '/' + dbName;
+  if (config.localCouchdbAuth !== undefined) {
+    pouch_options.auth = config.localCouchdbAuth;
   }
   return new PouchDB(dbUrl, pouch_options);
 };
@@ -489,9 +483,9 @@ export const initialiseDbAndKeys = async ({
       db: directoryDB,
       content: initDirectoryDB({
         defaultConfig: {
-          conductorInstanceName: CONDUCTOR_INSTANCE_NAME,
-          conductorUrl: CONDUCTOR_PUBLIC_URL,
-          description: CONDUCTOR_DESCRIPTION,
+          conductorInstanceName: config.conductorInstanceName,
+          conductorUrl: config.conductorPublicUrl,
+          description: config.instanceDescription,
           peopleDbName: PEOPLE_DB_NAME,
           projectsDbName: PROJECTS_DB_NAME,
         },
@@ -691,16 +685,16 @@ let _nanoInstance: Nano.ServerScope | undefined;
 const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   if (!_nanoInstance) {
     // Create nano instance without auth in the URL
-    _nanoInstance = Nano(COUCHDB_INTERNAL_URL);
+    _nanoInstance = Nano(config.couchdbInternalUrl);
   }
 
   // Authenticate if we have credentials - if we haven't then this isn't going to work anyway...
   // note that we do this every time even though we get a cookie and could use that
   // cookie expires every 600s so to be safe we re-authenticate each time
-  if (LOCAL_COUCHDB_AUTH) {
+  if (config.localCouchdbAuth) {
     await _nanoInstance.auth(
-      LOCAL_COUCHDB_AUTH.username,
-      LOCAL_COUCHDB_AUTH.password
+      config.localCouchdbAuth.username,
+      config.localCouchdbAuth.password
     );
   } else {
     console.error("No local CouchDB auth configured - can't talk to CouchDB!");

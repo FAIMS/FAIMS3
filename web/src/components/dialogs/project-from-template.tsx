@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {CreateProjectFromTemplateForm} from '../forms/create-project-from-template';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/_protected/templates/$templateId';
@@ -42,11 +42,11 @@ export const ProjectFromTemplateDialog = () => {
             disabled={true}
           >
             <Plus />
-            Create {NOTEBOOK_NAME_CAPITALIZED}
+            Create {config.notebookNameCapitalized}
           </Button>
         </TooltipTrigger>
         <TooltipContent className="w-32 text-balance">
-          Unable to create a {NOTEBOOK_NAME_CAPITALIZED} from an archived
+          Unable to create a {config.notebookNameCapitalized} from an archived
           template.
         </TooltipContent>
       </Tooltip>
@@ -59,15 +59,15 @@ export const ProjectFromTemplateDialog = () => {
           className="bg-primary text-primary-foreground"
         >
           <Plus />
-          Create {NOTEBOOK_NAME_CAPITALIZED}
+          Create {config.notebookNameCapitalized}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
+          <DialogTitle>Create {config.notebookNameCapitalized}</DialogTitle>
           <DialogDescription>
-            Create a new {NOTEBOOK_NAME} based on this template. Enter a name
-            and optional description.
+            Create a new {config.notebookName} based on this template. Enter a
+            name and optional description.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectFromTemplateForm setDialogOpen={setOpen} />

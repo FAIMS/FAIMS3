@@ -11,7 +11,8 @@ import {useState} from 'react';
 import {Trash} from 'lucide-react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Alert, AlertDescription, AlertTitle} from '../ui/alert';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
+import {config} from '@/constants';
 
 /**
  * RemoveUserDialog component renders a dialog for removing a user.
@@ -29,7 +30,7 @@ export const RemoveUserDialog = ({
   disabled?: boolean;
 }) => {
   const [open, setOpen] = useState(false);
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
 
   return (
@@ -56,16 +57,13 @@ export const RemoveUserDialog = ({
           className="w-full"
           onClick={async () => {
             try {
-              await fetch(
-                `${import.meta.env.VITE_API_URL}/api/users/${userId}`,
-                {
-                  method: 'DELETE',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user?.token}`,
-                  },
-                }
-              );
+              await fetch(`${config.apiUrl}/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${user.token}`,
+                },
+              });
 
               QueryClient.invalidateQueries({queryKey: ['users']});
               QueryClient.invalidateQueries({queryKey: ['projectusers']});

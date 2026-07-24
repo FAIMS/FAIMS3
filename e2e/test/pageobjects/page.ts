@@ -1,19 +1,9 @@
-import {browser} from '@wdio/globals';
-import {mkdirSync} from 'fs';
-const baseURL = 'http://localhost:3000/';
+import {browser, $, $$} from '@wdio/globals';
+import {getAppUrl, loadE2eEnv} from '../helpers/env.ts';
+import {captureDocs} from '../helpers/screenshot.ts';
+import {applyViewport, getViewportConfig} from '../helpers/viewport.ts';
 
-/**
- * Common viewport sizes for testing
- */
-const VIEWPORTS = {
-  mobile: {width: 430, height: 932}, // iPhone 14 Pro Max
-  tablet: {width: 1024, height: 768}, // iPad
-  desktop: {width: 1280, height: 720}, // Desktop
-  wide: {width: 1920, height: 1080}, // Full HD
-};
-
-// write screenshots to a configurable location
-const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || './screenshots';
+loadE2eEnv();
 
 /**
  * Base page object class
@@ -53,40 +43,10 @@ export class Page {
       );
     }
   }
-  /**
-   * Get viewport configuration from environment
-   */
-  private getViewportConfig() {
-    // Mobile platforms don't need viewport setting
-    if (this.isMobilePlatform()) {
-      return {width: 0, height: 0, name: process.env.PLATFORM || 'mobile'};
-    }
-
-    const viewportName = process.env.VIEWPORT || 'desktop';
-    const customWidth = process.env.SCREEN_WIDTH;
-    const customHeight = process.env.SCREEN_HEIGHT;
-
-    // Use custom dimensions if provided
-    if (customWidth && customHeight) {
-      return {
-        width: parseInt(customWidth),
-        height: parseInt(customHeight),
-        name: 'custom',
-      };
-    }
-
-    // Use predefined viewport
-    const viewport = VIEWPORTS[viewportName as keyof typeof VIEWPORTS];
-    if (!viewport) {
-      console.warn(`Unknown viewport: ${viewportName}, using desktop`);
-      return {...VIEWPORTS.desktop, name: 'desktop'};
-    }
-
-    return {...viewport, name: viewportName};
-  }
 
   /**
-   * Set browser window size based on environment configuration
+   * Set browser viewport based on environment configuration.
+   * Uses devicePixelRatio=1 so screenshots are not horizontally stretched.
    */
   public async setBrowserSize() {
     if (this.isMobilePlatform()) {
@@ -94,23 +54,24 @@ export class Page {
       return;
     }
 
-    const {width, height, name} = this.getViewportConfig();
-    console.log(`Setting browser size to ${width}x${height} (${name})`);
-    await browser.setWindowSize(width, height);
+    await applyViewport(getViewportConfig());
   }
 
   /**
-   * Open a sub page of the root page
+   * Open a sub page of the Fieldmark app root (WEB_APP_PUBLIC_URL).
    * @param path path of the sub page (e.g. /signin)
    */
   public async open(path = '') {
     if (this.isMobilePlatform()) {
-      await browser.pause(3000); // Give app time to initialize
-      await this.switchToWebviewContext(); // Add this line
+      // Documented: Capacitor app needs settle time before webview switch.
+      await browser.pause(3000);
+      await this.switchToWebviewContext();
       console.log(`Mobile app should navigate to: ${path}`);
       await this.waitForPageLoad();
     } else {
-      await browser.url(`${baseURL}${path}`); // Keep your baseURL usage
+      const base = getAppUrl();
+      const suffix = path.replace(/^\//, '');
+      await browser.url(suffix ? `${base}/${suffix}` : `${base}/`);
       await this.setBrowserSize();
       await this.waitForPageLoad();
     }
@@ -127,7 +88,7 @@ export class Page {
           try {
             const body = await $('body');
             return await body.isExisting();
-          } catch (error) {
+          } catch {
             return false;
           }
         },
@@ -137,8 +98,8 @@ export class Page {
         }
       );
 
-      // Debug: log current page info
       try {
+        // Debug: log current page info
         const url = await browser.getUrl();
         const title = await browser.getTitle();
         const bodyText = await $('body').getText();
@@ -173,18 +134,13 @@ export class Page {
   }
 
   /**
-   * Take a screenshot with environment-configured naming
+   * Take a docs-oriented screenshot (delegates to captureDocs helper).
    */
   public async takeScreenshot(category: string, baseName: string) {
-    const {name} = this.getViewportConfig();
-    const filename = `${baseName}-${name}`;
-
-    const theme = process.env.VITE_THEME || 'default';
-    const dirName = `${SCREENSHOT_DIR}/${theme}/${category}`;
-    mkdirSync(dirName, {recursive: true});
-    console.log(`Taking screenshot: ${filename}.png`);
-    await browser.saveScreenshot(`${dirName}/${filename}.png`);
-
-    return filename;
+    const filename = await captureDocs({category, baseName});
+    console.log(
+      `Taking screenshot: ${baseName}-${process.env.VIEWPORT || 'desktop'}.png`
+    );
+    return filename ?? `${baseName}-${process.env.VIEWPORT || 'desktop'}`;
   }
 }

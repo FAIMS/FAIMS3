@@ -11,7 +11,7 @@ import {useEffect, useRef, useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
 import {useAppSelector} from '../context/store';
 import {useIsOnline} from '../utils/customHooks';
-import {LOGIN_BANNER_GRACE_MS} from '../buildconfig';
+import {config} from '../buildconfig';
 import * as ROUTES from './routes';
 
 interface PrivateRouteProps {
@@ -251,7 +251,7 @@ export const TolerantPrivateRoute = (
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setIsGracePeriodOver(true);
-    }, LOGIN_BANNER_GRACE_MS);
+    }, config.loginBannerGraceMs);
 
     return () => {
       window.clearTimeout(timeoutId);

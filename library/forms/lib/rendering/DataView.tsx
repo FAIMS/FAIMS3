@@ -15,7 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
-import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry/registry';
+import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry/registryApi';
 import {formDataExtractor} from '../utils';
 import {DefaultRenderer} from './fields/fallback';
 import {EmptyResponsePlaceholder} from './fields/view';

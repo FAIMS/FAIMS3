@@ -37,7 +37,7 @@ import {
   RouterProvider,
 } from 'react-router-dom';
 import './App.css';
-import {OFFLINE_MAPS} from './buildconfig';
+import {config} from './buildconfig';
 import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
 import {getEditRecordRoute} from './constants/routes';
@@ -205,7 +205,7 @@ const routes: RouteObject[] = [
         element: <AboutBuild />,
       },
       // Offline maps route (conditionally included based on build config)
-      ...(OFFLINE_MAPS
+      ...(config.offlineMaps
         ? [
             {
               path: ROUTES.OFFLINE_MAPS,

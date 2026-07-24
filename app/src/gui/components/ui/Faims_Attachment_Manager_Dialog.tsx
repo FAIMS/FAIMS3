@@ -29,7 +29,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
 import CircularProgress from '@mui/material/CircularProgress';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 
 type DiagProps = {
   open?: boolean;
@@ -108,7 +108,7 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
         ) : (
           <DialogContentText id="alert-dialog-description">
             To download existing photos, please go to the{' '}
-            {NOTEBOOK_NAME_CAPITALIZED} Settings Tab and enable attachment
+            {config.notebookNameCapitalized} Settings Tab and enable attachment
             download.
           </DialogContentText>
         )}

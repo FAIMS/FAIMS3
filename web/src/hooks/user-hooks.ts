@@ -1,5 +1,7 @@
 import {useAuth, type User} from '@/context/auth-provider';
+import {PostImpersonateUserResponseSchema} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {config} from '@/constants';
 
 function errorMessageFromUserJsonBody(
   json: unknown,
@@ -28,7 +30,7 @@ export const postDisableUserAccount = async ({
   targetUserId: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(targetUserId)}/disable`,
+    `${config.apiUrl}/api/users/${encodeURIComponent(targetUserId)}/disable`,
     {
       method: 'POST',
       headers: {
@@ -54,7 +56,7 @@ export const postEnableUserAccount = async ({
   targetUserId: string;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(targetUserId)}/enable`,
+    `${config.apiUrl}/api/users/${encodeURIComponent(targetUserId)}/enable`,
     {
       method: 'POST',
       headers: {
@@ -68,6 +70,61 @@ export const postEnableUserAccount = async ({
   const json: unknown = await response.json().catch(() => undefined);
   throw new Error(errorMessageFromUserJsonBody(json, response.statusText));
 };
+
+/**
+ * POST /api/users/:targetUserId/impersonate — obtain an impersonation token
+ * pair authenticating as the target user.
+ */
+export const postImpersonateUser = async ({
+  user,
+  targetUserId,
+}: {
+  user: User;
+  targetUserId: string;
+}) => {
+  const response = await fetch(
+    `${config.apiUrl}/api/users/${encodeURIComponent(targetUserId)}/impersonate`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    const json: unknown = await response.json().catch(() => undefined);
+    throw new Error(errorMessageFromUserJsonBody(json, response.statusText));
+  }
+  return PostImpersonateUserResponseSchema.parse(await response.json());
+};
+
+/**
+ * Mutation which starts impersonating the given user: fetches the impersonation
+ * token pair and swaps the active session (stashing the admin session so it can
+ * be restored).
+ */
+export function useImpersonateUser() {
+  const {user, startImpersonation} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({targetUserId}: {targetUserId: string}) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      const {accessToken, refreshToken} = await postImpersonateUser({
+        user,
+        targetUserId,
+      });
+      const {status, message} = await startImpersonation(
+        accessToken,
+        refreshToken
+      );
+      if (status !== 'success') {
+        throw new Error(message || 'Failed to start impersonation');
+      }
+    },
+  });
+}
 
 export function useDisableUserAccount() {
   const queryClient = useQueryClient();

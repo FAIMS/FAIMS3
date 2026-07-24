@@ -23,7 +23,7 @@ import {
   isPeopleUserAccountDisabled,
 } from '@faims3/data-model';
 import {jwtVerify, errors as joseErrors} from 'jose';
-import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../../buildconfig';
+import {config, keyService} from '../../buildconfig';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
 /**
@@ -34,7 +34,7 @@ import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 export const validateToken = async (
   token: string
 ): Promise<Express.User | undefined> => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
+  const signingKey = await keyService.getSigningKey();
   try {
     const {payload} = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
@@ -42,7 +42,7 @@ export const validateToken = async (
       issuer: signingKey.instanceName,
     });
 
-    if (payload.server !== CONDUCTOR_PUBLIC_URL) {
+    if (payload.server !== config.conductorPublicUrl) {
       throw Error('Invalid server claim.');
     }
 
@@ -68,8 +68,15 @@ export const validateToken = async (
     // TODO consider if we want a more sophisticated permission merge, for
     // example in the case of blacklisting
 
+    // If this is an impersonation token, surface the acting admin's user id so
+    // it can be used for auditing/logging of downstream actions.
+    const impersonatingUserId =
+      typeof (payload as any).impersonatingUserId === 'string'
+        ? ((payload as any).impersonatingUserId as string)
+        : undefined;
+
     // overwrite user details with the token permissions!
-    return {...user, ...validatedToken};
+    return {...user, ...validatedToken, impersonatingUserId};
   } catch (error) {
     // expired token is ok, we just return undefined
     if (

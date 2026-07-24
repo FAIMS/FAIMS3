@@ -1,4 +1,5 @@
 import {NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH} from '../buildconfig';
+import type {Project} from '../context/slices/projectSlice';
 
 /** Text for the notebook listing grid, or null when absent. */
 export function formatNotebookListDescription(
@@ -17,4 +18,10 @@ export function isNotebookListDescriptionTruncated(
 ): boolean {
   const trimmed = description?.trim();
   return !!trimmed && trimmed.length > NOTEBOOK_LIST_DESCRIPTION_MAX_LENGTH;
+}
+
+export function sortProjectsByNewest(projects: Project[]): Project[] {
+  return [...projects].sort((a, b) =>
+    (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
+  );
 }

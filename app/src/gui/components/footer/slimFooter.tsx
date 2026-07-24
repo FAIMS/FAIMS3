@@ -3,7 +3,7 @@ import {useTheme} from '@mui/material/styles';
 import React from 'react';
 
 import SupportEmail from './supportEmail';
-import {CONTACT_URL, PRIVACY_POLICY_URL} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 
 const SlimFooter = () => {
   /**
@@ -41,19 +41,19 @@ const SlimFooter = () => {
               variant="subtitle2"
               color={theme.palette.grey[900]}
               component={Link}
-              href={PRIVACY_POLICY_URL}
+              href={config.privacyPolicyUrl}
               target="_blank"
               underline="none"
             >
               Privacy Policy
             </Typography>
             <SupportEmail />
-            {CONTACT_URL && (
+            {config.contactUrl && (
               <Typography
                 variant="subtitle2"
                 color={theme.palette.grey[900]}
                 component={Link}
-                href={CONTACT_URL}
+                href={config.contactUrl}
                 target="_blank"
                 underline="none"
               >

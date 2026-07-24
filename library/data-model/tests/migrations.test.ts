@@ -1939,7 +1939,7 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       userId: 'user123',
       code: 'hashed_code_abc',
       used: false,
-      expiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+      expiryTimestampMs,
     } satisfies EmailCodeV3ExistingDocument,
     expectedResult: {
       action: 'update',
@@ -1950,8 +1950,9 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         userId: 'user123',
         code: 'hashed_code_abc',
         used: false,
-        expiryTimestampMs: Date.now() + 3600000,
-        createdTimestampMs: Date.now(),
+        expiryTimestampMs,
+        // Placeholder only — equalityFunction checks presence, not exact value
+        createdTimestampMs: createdAt,
       } satisfies Partial<EmailCodeV4ExistingDocument>,
     },
     equalityFunction: (a, b) => {

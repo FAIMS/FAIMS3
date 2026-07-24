@@ -1,6 +1,6 @@
 import {Field, Form} from '@/components/form';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {AlertTriangle} from 'lucide-react';
 import {toast} from 'sonner';
@@ -18,7 +18,7 @@ export function GenerateTestRecordsForm({
   setDialogOpen,
   projectId,
 }: GenerateTestRecordsFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const fields: Field[] = [
     {
@@ -29,7 +29,7 @@ export function GenerateTestRecordsForm({
       min: 1,
       max: 1000,
       schema: z
-        .number({invalid_type_error: 'Enter a number of records'})
+        .number({error: 'Enter a number of records'})
         .int()
         .min(1, 'At least 1 record is required')
         .max(1000, 'Maximum 1000 records per batch'),
@@ -43,7 +43,7 @@ export function GenerateTestRecordsForm({
       min: 1,
       max: 50,
       schema: z
-        .number({invalid_type_error: 'Enter a concurrency value'})
+        .number({error: 'Enter a concurrency value'})
         .int()
         .min(1, 'Concurrency must be at least 1')
         .max(50, 'Maximum concurrency is 50'),
@@ -68,10 +68,6 @@ export function GenerateTestRecordsForm({
     parallelism: number;
     includeAttachments: boolean;
   }) => {
-    if (!user) {
-      return {type: 'submit', message: 'User not authenticated'};
-    }
-
     try {
       const result = await generateTestRecordsForProject({
         projectId,

@@ -55,6 +55,16 @@ declare module '@mui/material/styles' {
       tokens?: DesignerThemeTokens;
     };
   }
+  interface Palette {
+    /** AND operator colour in the condition editor. */
+    conditionAnd: Palette['primary'];
+    /** OR operator colour in the condition editor. */
+    conditionOr: Palette['primary'];
+  }
+  interface PaletteOptions {
+    conditionAnd?: PaletteOptions['primary'];
+    conditionOr?: PaletteOptions['primary'];
+  }
 }
 
 // ── Theme name union — matches VITE_THEME values in lib/theme.ts ─────────
@@ -99,6 +109,12 @@ export const createDesignerTheme = (
       },
       info: {
         main: tokens.infoMain,
+      },
+      conditionAnd: {
+        main: tokens.conditionAndMain,
+      },
+      conditionOr: {
+        main: tokens.conditionOrMain,
       },
       text: {
         primary: colors.blueGrey[900],

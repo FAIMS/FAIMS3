@@ -405,10 +405,6 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   // Validate and normalize input value
   const relatedRecords = normalizeRecordReferences(props.value);
 
-  if (relatedRecords === null) {
-    return <TextWrapper content={INVALID_REFERENCES_MESSAGE} />;
-  }
-
   // 1. CYCLE DETECTION SETUP
   // Create a Set of all ancestor IDs to detect cycles
   // We also add the current record ID to prevent immediate self-referencing
@@ -426,7 +422,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   // detect soft-deleted targets and omit them, and so mobile still gets HRID and EditButton
   // even though we do not nest the full form on small screens.
   const relatedRecordQueries = useQueries({
-    queries: relatedRecords.map(({record_id}) => ({
+    queries: (relatedRecords ?? []).map(({record_id}) => ({
       queryKey: [
         'related-hydration',
         record_id,
@@ -499,6 +495,10 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
       networkMode: 'always' as const,
     })),
   });
+
+  if (relatedRecords === null) {
+    return <TextWrapper content={INVALID_REFERENCES_MESSAGE} />;
+  }
 
   if (relatedRecords.length === 0) {
     return <EmptyState />;

@@ -9,7 +9,7 @@ import {Link as RouterLink} from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {NAVIGATION_STYLE} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 
 type BreadcrumbProps = {
   data: Array<{title: string; link?: string}>;
@@ -28,7 +28,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
     return title;
   };
 
-  if (NAVIGATION_STYLE === 'breadcrumbs')
+  if (config.navigationStyle === 'breadcrumbs')
     return (
       <Box sx={{display: 'flex', flexDirection: 'row-reverse', p: 1, m: 1}}>
         <MuiBreadcrumbs

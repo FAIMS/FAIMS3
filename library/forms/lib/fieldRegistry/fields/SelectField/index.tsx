@@ -42,7 +42,7 @@ import {
 import {useTheme} from '@mui/material/styles';
 import {useState, useEffect, useRef} from 'react';
 import {z} from 'zod';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema} from '../choiceFieldParams';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -69,13 +69,17 @@ const valueSchema = (props: SelectFieldProps) => {
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
     if (props.required) {
-      return z.string().min(1, {message: 'Please select an option'});
+      return z
+        .string()
+        .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+        .min(1, {message: 'Please select an option'});
     }
-    return z.string();
+    return z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
   }
 
   if (enableOtherOption) {
-    const baseSchema = z.string();
+    // Bounded to stop maliciously long "Other" values
+    const baseSchema = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
 
     if (props.required) {
       return baseSchema
@@ -250,6 +254,11 @@ export const Select = (props: FieldProps) => {
                   variant="standard"
                   multiline
                   fullWidth
+                  slotProps={{
+                    htmlInput: {
+                      maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
+                    },
+                  }}
                   sx={{
                     ...otherTextFieldSx,
                     '& .MuiInput-input': {

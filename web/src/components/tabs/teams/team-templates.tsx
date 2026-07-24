@@ -2,8 +2,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import type {ColumnDef} from '@tanstack/react-table';
 import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {getTemplatesTableColumns} from '@/components/tables/templates';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTemplatesForTeam} from '@/hooks/queries';
 import {
   Action,
@@ -22,7 +21,7 @@ import {
 type TemplateListRow = GetListTemplatesResponse['templates'][number];
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {isPending, data} = useGetTemplatesForTeam({user, teamId});
   const [visibilityFilter, setVisibilityFilter] =
     useState<TemplateVisibilityFilterValue>('all');
@@ -41,14 +40,14 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       getTemplatesTableColumns({
         hideTeamColumn: true,
         includeVisibility: globalRolesGrantAction(
-          user?.decodedToken ?? {
+          user.decodedToken ?? {
             globalRoles: [],
             resourceRoles: [],
           },
           Action.CHANGE_TEMPLATE_VISIBILITY
         ),
       }),
-    [user?.decodedToken]
+    [user.decodedToken]
   );
 
   const filteredTemplates = useMemo(

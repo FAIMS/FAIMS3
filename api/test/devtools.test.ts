@@ -24,7 +24,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {registerClient} from '@faims3/data-model';
 import {expect} from 'chai';
-import {DEVELOPER_MODE} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 import {initialiseDbAndKeys} from '../src/couchdb';
 import {createRandomRecord} from '../src/couchdb/devtools';
 import {callbackObject} from './mocks';
@@ -33,7 +33,7 @@ import {createNotebookFromSampleFile} from './sampleNotebook';
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
-if (DEVELOPER_MODE) {
+if (config.developerMode) {
   it('createRecords', async () => {
     await initialiseDbAndKeys({});
 

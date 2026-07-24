@@ -3,6 +3,7 @@ import {useTheme} from '@mui/material/styles';
 import React from 'react';
 import {ErrorBoundary, ErrorPage} from '../../logging';
 import {PossibleToken} from '../../types/misc';
+import ImpersonationBanner from '../components/authentication/impersonation-banner';
 import Footer from '../components/footer';
 import MainAppBar from './appBar';
 
@@ -20,6 +21,7 @@ const MainLayout = (props: MainLayoutProps) => {
   return (
     <React.Fragment>
       <MainAppBar />
+      <ImpersonationBanner />
       <Box
         component="main"
         sx={{

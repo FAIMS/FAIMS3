@@ -1,11 +1,12 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {
   errorMessageFromNotebookJsonBody,
   updateNotebookMetadataRequest,
 } from '@/hooks/project-hooks';
 import {useQueryClient} from '@tanstack/react-query';
-import {z} from 'zod';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {optionalRootDescriptionField} from '@/lib/rootDescriptionField';
 
 interface EditProjectDetailsFormProps {
@@ -24,14 +25,15 @@ export function EditProjectDetailsForm({
   name,
   description,
 }: EditProjectDetailsFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const queryClient = useQueryClient();
 
   const fields = [
     {
       name: 'name',
       label: 'Name',
-      schema: z.string().trim().min(1, {message: 'Name is required'}),
+      schema: resourceNameSchema(1, 'Name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     optionalRootDescriptionField(),
   ];
@@ -43,8 +45,6 @@ export function EditProjectDetailsForm({
     name: string;
     description: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await updateNotebookMetadataRequest({
       user,
       projectId,

@@ -1137,7 +1137,18 @@ class FormOperations {
     };
 
     // Create the new revision
-    const rev = await this.core.createRevision(revisionDoc);
+    let rev = await this.core.createRevision(revisionDoc);
+
+    // If there is initial data, insert it at this point
+    if (validated.initial) {
+      rev = await this.updateRevision({
+        revisionId: rev._id,
+        recordId: rec._id,
+        update: validated.initial,
+        mode: 'new',
+        updatedBy: validated.createdBy,
+      });
+    }
 
     // Return all the new data
     return {record: rec, revision: rev};

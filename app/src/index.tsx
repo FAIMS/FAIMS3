@@ -20,7 +20,7 @@ import {registerClient} from '@faims3/data-model';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import {APP_NAME} from './buildconfig';
+import {config} from './buildconfig';
 import './index.css';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
@@ -39,11 +39,11 @@ registerClient({
 
 // Change the page title to configured app name
 if (document.getElementsByTagName('title')[0])
-  document.getElementsByTagName('title')[0].innerText = APP_NAME;
+  document.getElementsByTagName('title')[0].innerText = config.appName;
 // and the meta description tag
 document
   .querySelector('meta[name=description]')
-  ?.setAttribute('content', `${APP_NAME} app`);
+  ?.setAttribute('content', `${config.appName} app`);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

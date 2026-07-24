@@ -193,9 +193,9 @@ Test implementation that records sent emails for verification. Use by setting `E
 #### Basic Email
 
 ```typescript
-import {EMAIL_SERVICE} from '../buildconfig';
+import {emailService} from '../buildconfig';
 
-await EMAIL_SERVICE.sendEmail({
+await emailService.sendEmail({
   options: {
     to: 'recipient@example.com',
     subject: 'Email Subject',
@@ -208,7 +208,7 @@ await EMAIL_SERVICE.sendEmail({
 #### With Attachments
 
 ```typescript
-await EMAIL_SERVICE.sendEmail({
+await emailService.sendEmail({
   options: {
     to: 'recipient@example.com',
     subject: 'Email with Attachment',
@@ -241,6 +241,6 @@ Requires cluster admin authentication. Returns detailed diagnostics including ti
 Use the Mock implementation with `EMAIL_SERVICE_TYPE=MOCK` for testing. Access sent emails for verification:
 
 ```typescript
-const mockEmailService = EMAIL_SERVICE as MockEmailService;
+const mockEmailService = emailService as MockEmailService;
 const sentEmails = mockEmailService.getSentEmails();
 ```

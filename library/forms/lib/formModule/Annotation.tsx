@@ -1,4 +1,4 @@
-import {FieldMeta, FormAnnotation} from '@faims3/data-model';
+import {FieldMeta, FormAnnotation, INPUT_LIMITS} from '@faims3/data-model';
 import NoteIcon from '@mui/icons-material/Note';
 import {
   Box,
@@ -71,6 +71,9 @@ export const FieldAnnotation = (props: FieldAnnotationProps) => {
               fullWidth
               multiline
               minRows={3}
+              slotProps={{
+                htmlInput: {maxLength: INPUT_LIMITS.LONG_TEXT_MAX_LENGTH},
+              }}
             />
           )}
           {config.uncertainty.include && (

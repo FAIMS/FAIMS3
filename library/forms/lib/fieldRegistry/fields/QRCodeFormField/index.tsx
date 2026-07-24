@@ -13,7 +13,7 @@ import {Box, Typography} from '@mui/material';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import QRCodeButton from '../../../components/qrCodes/QRCodeButton';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
@@ -172,7 +172,8 @@ const QRCodeFieldRenderer: DataViewFieldRender = props => {
 // =============================================================================
 
 const qrCodeDataSchemaFunction = (props: QRCodeFieldProps) => {
-  let schema = z.string();
+  // Bounded to stop maliciously long scanned payloads
+  let schema = z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH);
 
   if (props.required) {
     schema = schema.min(1, {message: 'This field is required'});

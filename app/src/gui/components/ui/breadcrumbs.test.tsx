@@ -22,18 +22,18 @@ import {render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Breadcrumbs from './breadcrumbs';
 import {describe, it, expect} from 'vitest';
-import {
-  NAVIGATION_STYLE,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '../../../buildconfig';
+import {config} from '../../../buildconfig';
 
 const testData1 = [{title: 'Workspace'}];
-const testData2 = [{title: 'Workspace'}, {title: NOTEBOOK_NAME_CAPITALIZED}];
+const testData2 = [
+  {title: 'Workspace'},
+  {title: config.notebookNameCapitalized},
+];
 
 // Can only check this if breadcrumbs are enabled
 describe('Check breadcrumbs component', () => {
   it('Check with one element in array', async () => {
-    if (NAVIGATION_STYLE === 'breadcrumbs') {
+    if (config.navigationStyle === 'breadcrumbs') {
       render(
         <Router>
           <Breadcrumbs data={testData1} />
@@ -43,7 +43,7 @@ describe('Check breadcrumbs component', () => {
     }
   });
   it('Check with two elements in array', async () => {
-    if (NAVIGATION_STYLE === 'breadcrumbs') {
+    if (config.navigationStyle === 'breadcrumbs') {
       render(
         <Router>
           <Breadcrumbs data={testData2} />

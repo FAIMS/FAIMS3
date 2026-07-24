@@ -528,7 +528,9 @@ To add a new authentication provider:
 
 1. Create a new strategy in `strategies/`
 2. Add the provider to `AUTH_PROVIDER_DETAILS` in `applyStrategies.ts`
-3. Add the provider to `CONDUCTOR_AUTH_PROVIDERS` in `buildconfig.ts`
+3. Configure the provider via `AUTH_{PROVIDER}_{PROPERTY}` environment variables
+   (see `api/.env.dist` for Google / OIDC / SAML examples). Providers are
+   discovered dynamically at startup — they are not listed in `buildconfig.ts`.
 
 ## Development Notes
 

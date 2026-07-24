@@ -186,7 +186,7 @@ function validateDocument(doc: any, stats: Statistics): void {
 
     let errorMessage = 'Unknown error';
     if (error instanceof ZodError) {
-      errorMessage = JSON.stringify(error.errors, null, 2);
+      errorMessage = JSON.stringify(error.issues, null, 2);
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
@@ -228,7 +228,7 @@ async function testHydration(
       stats.hydrationErrors.push({
         recordId,
         error: 'Hydrated record failed schema validation',
-        details: error instanceof ZodError ? error.errors : error,
+        details: error instanceof ZodError ? error.issues : error,
       });
       return;
     }

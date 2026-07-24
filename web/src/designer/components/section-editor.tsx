@@ -49,8 +49,8 @@ import {sectionDuplicated} from '../store/slices/uiSpec';
 import {sectionConditionChanged, sectionRenamed} from '../store/slices/uiSpec';
 
 import {ConditionModal} from './condition/ConditionModal';
-import {ConditionTranslation} from './condition/ConditionTranslation';
-import {findSectionExternalUsage} from './condition/utils';
+import {ConditionSummary} from './condition/ConditionSummary';
+import {findSectionExternalUsage} from '@/lib/conditionUtils';
 import {ConditionType} from '../types/condition';
 
 import DebouncedTextField from './debounced-text-field';
@@ -700,7 +700,7 @@ export const SectionEditor = ({
         {fView.condition ? (
           <Alert severity="info" sx={designerInfoCalloutSx}>
             <strong>Section Condition:</strong> Show this section if&nbsp;
-            <ConditionTranslation condition={fView.condition} />
+            <ConditionSummary condition={fView.condition} />
           </Alert>
         ) : (
           <></>

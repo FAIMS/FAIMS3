@@ -19,13 +19,13 @@
  */
 
 import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
-import {NOTEBOOK_NAME_PLURAL} from '../buildconfig';
+import {config} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
 export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
-export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME_PLURAL}/`;
+export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${config.notebookNamePlural}/`;
 export const INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q = 'tab';
 export const NOTEBOOK_LIST_ROUTE = '/';
 export const RECORD_LIST = '/records';

@@ -46,13 +46,13 @@ import {
   useTheme,
 } from '@mui/material';
 import {useState} from 'react';
-import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
+import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {
   isTokenValid,
   removeServerConnection,
   selectActiveUser,
   selectAllServerUsers,
-  setActiveUser,
+  setActiveUserAndRefreshProjects,
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import MainCard from '../ui/main-card';
@@ -109,7 +109,7 @@ export default function ClusterCard(props: ClusterCardProps) {
     handleActionMenuClose();
     const identity = usernames.find(user => user.username === username);
     if (identity) {
-      dispatch(setActiveUser(identity));
+      dispatch(setActiveUserAndRefreshProjects(identity));
     }
   };
 
@@ -142,7 +142,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         props.conductor_url + '/login?redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${props.conductor_url}/login?redirect=${APP_ID}://auth-return`,
+        url: `${props.conductor_url}/login?redirect=${config.appId}://auth-return`,
       });
     }
   };

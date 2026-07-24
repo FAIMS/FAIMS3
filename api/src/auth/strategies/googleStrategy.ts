@@ -25,7 +25,7 @@ import {
   VerifyCallback,
 } from 'passport-google-oauth20';
 
-import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {providerAuthReturnUrl} from '../authRoutes';
 import {ssoVerify} from '../helpers';
 
@@ -92,7 +92,7 @@ export const googleStrategyGenerator = ({
     {
       clientID: clientID,
       clientSecret: clientSecret,
-      callbackURL: CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl('google'),
+      callbackURL: config.conductorPublicUrl + providerAuthReturnUrl('google'),
       passReqToCallback: true,
       scope,
       state: true,

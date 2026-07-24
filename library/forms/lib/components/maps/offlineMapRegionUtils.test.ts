@@ -81,7 +81,7 @@ describe('tileSetDownloadProgress', () => {
   it('returns the fraction of tiles downloaded so far', () => {
     expect(
       tileSetDownloadProgress(
-        makeTileSet({expectedTileCount: 10, tileKeys: new Array(3)})
+        makeTileSet({expectedTileCount: 10, tileKeys: Array.from({length: 3})})
       )
     ).toBe(0.3);
   });
@@ -97,7 +97,7 @@ describe('deriveTileSetDownloadStatus', () => {
   it('reports downloading while tiles remain', () => {
     expect(
       deriveTileSetDownloadStatus(
-        makeTileSet({expectedTileCount: 10, tileKeys: new Array(4)})
+        makeTileSet({expectedTileCount: 10, tileKeys: Array.from({length: 4})})
       )
     ).toEqual({state: 'downloading', progress: 0.4});
   });
@@ -107,7 +107,7 @@ describe('deriveTileSetDownloadStatus', () => {
       deriveTileSetDownloadStatus(
         makeTileSet({
           expectedTileCount: 10,
-          tileKeys: new Array(10),
+          tileKeys: Array.from({length: 10}),
           size: 1_500_000,
         })
       )

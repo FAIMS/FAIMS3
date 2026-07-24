@@ -38,7 +38,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
@@ -75,7 +75,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
-  processRequest({
+  validate({
     query: z.object({
       teamId: z.string().min(1).optional(),
       // Query strings only: omit (default) or includeArchived=true|false
@@ -118,7 +118,7 @@ api.get(
 api.get(
   '/:id/references',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
@@ -151,7 +151,7 @@ api.get(
 api.get(
   '/:id',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetTemplateByIdResponse>) => {
@@ -187,7 +187,7 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  processRequest({
+  validate({
     body: PostCreateTemplateInputSchema,
   }),
   isAllowedToMiddleware({
@@ -261,7 +261,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutTemplateSetVisibilityInputSchema,
   }),
@@ -286,7 +286,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutChangeTemplateTeamInputSchema,
   }),
@@ -308,7 +308,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateTemplateInputSchema,
   }),
@@ -331,7 +331,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PutUpdateTemplateUiSpecificationInputSchema,
   }),
@@ -359,7 +359,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async (req, res: Response<PutUpdateTemplateResponse>) => {
@@ -384,7 +384,7 @@ api.put(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: z.object({archive: z.boolean()}),
   }),

@@ -20,7 +20,7 @@ import {
   type StoredTileSet,
 } from '@faims3/forms';
 import {useEffect, useState} from 'react';
-import {getMapConfig, NOTEBOOK_NAME} from '../../../buildconfig';
+import {config, getMapConfig} from '../../../buildconfig';
 import {
   clearPendingOfflineMapDownloadPrompt,
   selectPendingOfflineMapDownloadPrompt,
@@ -226,8 +226,8 @@ export function NotebookOfflineMapPrompt() {
             }}
           >
             {isAreaUpdate
-              ? `The recommended offline map area for this ${NOTEBOOK_NAME} has changed. Please download it now to ensure that maps are available during offline data collection.`
-              : `This ${NOTEBOOK_NAME} has a recommended offline map area configured. Please download it now to ensure that maps are available during offline data collection.`}
+              ? `The recommended offline map area for this ${config.notebookName} has changed. Please download it now to ensure that maps are available during offline data collection.`
+              : `This ${config.notebookName} has a recommended offline map area configured. Please download it now to ensure that maps are available during offline data collection.`}
           </Typography>
           {sizeLabel && (
             <Alert

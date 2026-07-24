@@ -7,7 +7,7 @@ import {
   type StoredTileSet,
 } from '@faims3/forms';
 import {useCallback, useEffect, useState} from 'react';
-import {NOTEBOOK_NAME} from '../../../../buildconfig';
+import {config} from '../../../../buildconfig';
 import {
   Project,
   setPendingOfflineMapDownloadPrompt,
@@ -152,7 +152,8 @@ export default function NotebookOfflineMapSettings({
         <Box>
           <Alert severity="warning" sx={{mb: 2}}>
             A recommended offline map area is configured for this{' '}
-            {NOTEBOOK_NAME}, but it has not been downloaded to this device yet.
+            {config.notebookName}, but it has not been downloaded to this device
+            yet.
           </Alert>
           <Button variant="contained" onClick={handleDownloadClick}>
             Download offline map

@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {displayDateTime, nowMs} from '@/lib/time';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
@@ -22,11 +21,7 @@ export const useGetLongLivedTokensColumns = ({
   revokeTokenHandler?: (tokenId: string) => Promise<void>;
   editTokenHandler?: (tokenId: string) => void;
 }): ColumnDef<GetLongLivedTokensResponse['tokens'][number]>[] => {
-  const {user} = useAuth();
-
-  if (!user) {
-    return [];
-  }
+  const user = useRequiredUser();
 
   // Check permissions
   const canEditMyTokens = useIsAuthorisedTo({
@@ -202,6 +197,7 @@ export const useGetLongLivedTokensColumns = ({
                   <TooltipTrigger asChild>
                     <Button
                       disabled={!canRevoke}
+                      data-testid="web-profile-tokens-revoke-button"
                       onClick={async () => {
                         try {
                           await revokeTokenHandler(id);

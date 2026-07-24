@@ -430,7 +430,8 @@ export const useRecordList = ({
   projectId: string;
   filterDeleted: boolean;
   metadataRefreshIntervalMs?: number | undefined | false;
-  uiSpecification: CompiledNotebookUiSpec;
+  /** Required when `enabled` is true; may be undefined while the compiled spec loads. */
+  uiSpecification: CompiledNotebookUiSpec | undefined;
   enableProfiling?: boolean;
   /** When false, or when the project has no local Pouch DB yet, skips the query. */
   enabled?: boolean;
@@ -452,7 +453,7 @@ export const useRecordList = ({
   const activeUser = useAppSelector(selectActiveUser);
   const token = activeUser?.parsedToken;
   const dataDb = tryLocalGetDataDb(projectId);
-  const canQueryRecords = enabled && !!dataDb && !!token;
+  const canQueryRecords = enabled && !!dataDb && !!token && !!uiSpec;
 
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
@@ -481,10 +482,10 @@ export const useRecordList = ({
       const queryFnStart = performance.now();
       profile('queryFn started');
 
-      if (!token || !dataDb) {
-        // Trying to run without token or before notebook activation.
+      if (!token || !dataDb || !uiSpec) {
+        // Trying to run without token, local DB, or compiled UI spec.
         console.warn(
-          'Trying to fetch record list without user token or local DB.'
+          'Trying to fetch record list without user token, local DB, or UI spec.'
         );
         return [];
       }
@@ -769,19 +770,17 @@ export const useIsAuthorisedTo = ({
   resourceId?: string;
 }): boolean => {
   const activeUser = useAppSelector(selectActiveUser);
-  if (!activeUser) {
-    return false;
-  }
 
-  return useMemo(
-    () =>
-      isAuthorized({
-        decodedToken: activeUser.parsedToken,
-        action,
-        resourceId,
-      }),
-    [action, resourceId, activeUser.token]
-  );
+  return useMemo(() => {
+    if (!activeUser) {
+      return false;
+    }
+    return isAuthorized({
+      decodedToken: activeUser.parsedToken,
+      action,
+      resourceId,
+    });
+  }, [action, resourceId, activeUser, activeUser?.parsedToken]);
 };
 
 /** For a given record, determines the form type, then fetches the layout from

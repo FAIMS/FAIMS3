@@ -1,0 +1,90 @@
+{
+  "name": "E2E Minimal",
+  "description": "Minimal one-field notebook for headless e2e record create/edit smoke tests.",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {
+        "hridMain": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Record ID",
+            "fullWidth": true,
+            "name": "hridMain",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{notes}}",
+            "InputProps": {
+              "type": "text"
+            },
+            "InputLabelProps": {
+              "label": "Record ID"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "notes": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Notes",
+            "name": "notes",
+            "helperText": "Enter a short note",
+            "required": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false,
+          "displayParent": false
+        }
+      },
+      "views": {
+        "Main-Section": {
+          "label": "Details",
+          "fields": ["hridMain", "notes"]
+        }
+      },
+      "viewsets": {
+        "Main": {
+          "label": "Main",
+          "views": ["Main-Section"],
+          "hridField": "hridMain"
+        }
+      },
+      "visible_types": ["Main"],
+      "settings": {
+        "showQrCodeButton": false
+      },
+      "schemaVersion": "5.0"
+    },
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0.0",
+        "purposeMarkdown": "E2E smoke notebook",
+        "projectLeadLabel": "",
+        "leadInstitution": ""
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import {Field, Form} from '@/components/form';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {Action, PostCreateNotebookInput} from '@faims3/data-model';
@@ -12,7 +12,8 @@ import {
 import {ROOT_DESCRIPTION_MAX_LENGTH} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
-import {z} from 'zod';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {TemplateOwnerCallout} from './template-owner-callout';
 import {
   buildTeamField,
@@ -35,22 +36,17 @@ interface CreateProjectFromTemplateFormProps {
  * create outside any team.
  *
  * @param {CreateProjectFromTemplateFormProps} props - The props for the form.
- * @returns {JSX.Element | null} The rendered form, or null if unauthenticated.
+ * @returns {JSX.Element} The rendered form.
  */
 export function CreateProjectFromTemplateForm({
   setDialogOpen,
 }: CreateProjectFromTemplateFormProps) {
-  const {user, refreshToken} = useAuth();
-  if (!user) return null;
-
+  const user = useRequiredUser();
+  const {refreshToken} = useAuth();
   const {templateId} = Route.useParams();
-
   const queryClient = useQueryClient();
-
   const {data: teamsData} = useGetTeams({user});
   const {data: template} = useGetTemplate({user, templateId});
-
-  /** `CREATE_PROJECT` — may omit teamId on POST /api/notebooks. */
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const possibleTeams = getPossibleTeamsForAction({
@@ -71,27 +67,26 @@ export function CreateProjectFromTemplateForm({
     possibleTeams,
   });
 
-  const teamLabel = `Create ${NOTEBOOK_NAME} in this team${
+  const teamLabel = `Create ${config.notebookName} in this team${
     canCreateGlobally ? ' (optional)' : ''
   }`;
 
   const teamDescription = canCreateGlobally
     ? defaultTeamId
       ? `Defaults to the template's team. Clear the selection to create outside any team.`
-      : `Choose a team for this ${NOTEBOOK_NAME}, or leave blank to create outside any team.`
+      : `Choose a team for this ${config.notebookName}, or leave blank to create outside any team.`
     : undefined;
 
   const fields = useMemo(() => {
     const result: Field[] = [
       {
         name: 'name',
-        label: `${NOTEBOOK_NAME_CAPITALIZED} Name`,
-        schema: z.string().min(5, {
-          message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 5 characters.`,
-        }),
+        label: `${config.notebookNameCapitalized} Name`,
+        schema: resourceNameSchema(5, `${config.notebookNameCapitalized} name`),
+        maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
       },
       optionalRootDescriptionField({
-        helperText: `Optional summary of this ${NOTEBOOK_NAME} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
+        helperText: `Optional summary of this ${config.notebookName} (up to ${ROOT_DESCRIPTION_MAX_LENGTH} characters)`,
       }),
     ];
 
@@ -130,32 +125,32 @@ export function CreateProjectFromTemplateForm({
       team,
     });
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          template_id: templateId,
-          name,
-          ...rootDescriptionForApi(description),
-          ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
-        } satisfies PostCreateNotebookInput),
-      }
-    );
+    const response = await fetch(`${config.apiUrl}/api/notebooks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        template_id: templateId,
+        name,
+        ...rootDescriptionForApi(description),
+        ...(chosenTeamId ? {teamId: chosenTeamId} : {}),
+      } satisfies PostCreateNotebookInput),
+    });
 
     if (!response.ok)
-      return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
+      return {
+        type: 'submit',
+        message: `Error creating ${config.notebookName}.`,
+      };
 
     // Creator is granted PROJECT_ADMIN server-side; refresh JWT so list APIs
     // include the new notebook (same as CreateProjectForm).
     const {message, status} = await refreshToken();
     if (status === 'error') {
       console.error(
-        `${NOTEBOOK_NAME_CAPITALIZED} created but failed to refresh user token:`,
+        `${config.notebookNameCapitalized} created but failed to refresh user token:`,
         message
       );
     }
@@ -174,14 +169,14 @@ export function CreateProjectFromTemplateForm({
     <div className="flex flex-col gap-4">
       {showTeamCallout && calloutTeamName ? (
         <TemplateOwnerCallout
-          heading={`${NOTEBOOK_NAME_CAPITALIZED} will be created in`}
+          heading={`${config.notebookNameCapitalized} will be created in`}
           teamName={calloutTeamName}
         />
       ) : null}
       <Form
         fields={fields}
         onSubmit={onSubmit}
-        submitButtonText={`Create ${NOTEBOOK_NAME_CAPITALIZED}`}
+        submitButtonText={`Create ${config.notebookNameCapitalized}`}
         defaultValues={defaultTeamId ? {team: defaultTeamId} : undefined}
       />
     </div>

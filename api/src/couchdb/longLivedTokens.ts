@@ -16,7 +16,7 @@ import {
   safeWriteDocument,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
-import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../buildconfig';
+import {config} from '../buildconfig';
 import {
   InternalSystemError,
   ItemNotFoundException,
@@ -40,17 +40,17 @@ const LONG_LIVED_TOKEN_LENGTH = 64;
 export function isValidExpiry(expiryTimestampMs: number | undefined): boolean {
   // If no expiry specified (infinite), check if unlimited duration is allowed
   if (expiryTimestampMs === undefined) {
-    return MAXIMUM_LONG_LIVED_DURATION_DAYS === undefined;
+    return config.maximumLongLivedDurationDays === undefined;
   }
 
   // If unlimited duration is allowed, any future date is valid
-  if (MAXIMUM_LONG_LIVED_DURATION_DAYS === undefined) {
+  if (config.maximumLongLivedDurationDays === undefined) {
     return expiryTimestampMs > nowMs();
   }
 
   // Check if the expiry date is within the maximum allowed duration
   const maxAllowedTimestamp = expiryMsFromNow(
-    MAXIMUM_LONG_LIVED_DURATION_DAYS * DAY_IN_MS
+    config.maximumLongLivedDurationDays * DAY_IN_MS
   );
   return (
     expiryTimestampMs > nowMs() && expiryTimestampMs <= maxAllowedTimestamp
@@ -62,10 +62,10 @@ export function isValidExpiry(expiryTimestampMs: number | undefined): boolean {
  * @returns The maximum allowed expiry timestamp, or undefined if unlimited
  */
 export function getMaxAllowedExpiryTimestamp(): number | undefined {
-  if (MAXIMUM_LONG_LIVED_DURATION_DAYS === undefined) {
+  if (config.maximumLongLivedDurationDays === undefined) {
     return undefined;
   }
-  return expiryMsFromNow(MAXIMUM_LONG_LIVED_DURATION_DAYS * DAY_IN_MS);
+  return expiryMsFromNow(config.maximumLongLivedDurationDays * DAY_IN_MS);
 }
 
 /**

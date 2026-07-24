@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
 import {GenerateTestRecordsForm} from '@/components/forms/generate-test-records-form';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useState} from 'react';
 
@@ -34,7 +34,7 @@ export function GenerateTestRecordsDialog({
           <DialogTitle>Generate test records</DialogTitle>
           <DialogDescription>
             Developer-mode tool that creates random records in this{' '}
-            {NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}. Each record picks a
+            {config.notebookNameCapitalized.toLowerCase()}. Each record picks a
             random form and fills every field with sample values, including map
             geometries placed within Australia when map fields are present.
           </DialogDescription>

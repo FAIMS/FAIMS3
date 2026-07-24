@@ -23,7 +23,7 @@ import {Capacitor} from '@capacitor/core';
 import {Alert, AlertTitle, Snackbar} from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import {useSelector} from 'react-redux';
-import {APP_VERSION} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import {selectActiveServerId} from '../../context/slices/authSlice';
 import {selectActiveServerVersion} from '../../context/slices/projectSlice';
 
@@ -116,7 +116,7 @@ export const VersionWarning = () => {
     }
 
     // Check if versions differ at major.minor level
-    if (hasMinorOrGreaterDifference(APP_VERSION, activeServerVersion)) {
+    if (hasMinorOrGreaterDifference(config.appVersion, activeServerVersion)) {
       // Versions don't match - show warning
       setOpen(true);
     } else {
@@ -152,7 +152,7 @@ export const VersionWarning = () => {
     >
       <Alert onClose={handleClose} severity="warning" sx={{width: '100%'}}>
         <AlertTitle>Version Mismatch - Update Required</AlertTitle>
-        App version <b>({APP_VERSION})</b> doesn't match server version{' '}
+        App version <b>({config.appVersion})</b> doesn't match server version{' '}
         <b>({activeServerVersion})</b>.{' '}
         <strong>You may experience instability or issues.</strong>
         <br />

@@ -10,19 +10,32 @@ import {useGetProject} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo} from 'react';
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 import {ProjectStatus} from '@faims3/data-model';
 
 const tabs = [
-  {name: 'Details', Component: ProjectDetails},
-  {name: 'Invites', Component: ProjectInvites},
-  {name: 'Users', Component: ProjectUsers},
-  {name: 'Export', Component: ProjectExport},
-  {name: 'Offline Map', Component: ProjectOfflineMap},
-  {name: 'Actions', Component: ProjectActions},
+  {
+    name: 'Details',
+    Component: ProjectDetails,
+    testId: 'web-project-tab-details',
+  },
+  {
+    name: 'Invites',
+    Component: ProjectInvites,
+    testId: 'web-project-tab-invites',
+  },
+  {name: 'Users', Component: ProjectUsers, testId: 'web-project-tab-users'},
+  {name: 'Export', Component: ProjectExport, testId: 'web-project-tab-export'},
+  {
+    name: 'Offline Map',
+    Component: ProjectOfflineMap,
+    testId: 'web-project-tab-offline-map',
+  },
+  {
+    name: 'Actions',
+    Component: ProjectActions,
+    testId: 'web-project-tab-actions',
+  },
 ];
 
 /**
@@ -47,7 +60,7 @@ function RouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+        label: config.notebookNamePluralCapitalized,
       },
       // project name
       {
@@ -65,15 +78,19 @@ function RouteComponent() {
 
   if (!isLoading && project?.status === ProjectStatus.ARCHIVED) {
     return (
-      <Navigate to="/archive" search={{tab: NOTEBOOK_NAME_PLURAL}} replace />
+      <Navigate
+        to="/archive"
+        search={{tab: config.notebookNamePlural}}
+        replace
+      />
     );
   }
 
   return (
     <Tabs defaultValue={tabs[0].name}>
       <TabsList>
-        {tabs.map(({name}) => (
-          <TabsTrigger key={name} value={name}>
+        {tabs.map(({name, testId}) => (
+          <TabsTrigger key={name} value={name} data-testid={testId}>
             {name}
           </TabsTrigger>
         ))}

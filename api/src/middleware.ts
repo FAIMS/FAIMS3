@@ -23,6 +23,7 @@ import {Action, isAuthorized} from '@faims3/data-model';
 import Express from 'express';
 import {validateToken} from './auth/keySigning/read';
 import * as Exceptions from './exceptions';
+import {logImpersonatedRequest} from './logging';
 
 /**
  * Middleware helper which maps the express user object -> the isAuthorised
@@ -96,6 +97,20 @@ export async function requireAuthenticationAPI(
 
   // insert user into the request
   req.user = user;
+  logImpersonatedRequest(req);
+  next();
+}
+
+/**
+ * Logs when an authenticated request uses an impersonation token. Intended to
+ * run after {@link requireAuthenticationAPI} or {@link optionalAuthenticationJWT}.
+ */
+export function logImpersonatedRequestMiddleware(
+  req: Express.Request,
+  res: Express.Response,
+  next: Express.NextFunction
+) {
+  logImpersonatedRequest(req);
   next();
 }
 
@@ -208,6 +223,7 @@ export async function optionalAuthenticationJWT(
 
     // insert user into the request
     req.user = user;
+    logImpersonatedRequest(req);
     next();
   }
 }

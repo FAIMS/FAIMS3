@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {INPUT_LIMITS} from '../inputLimits';
 
 // ============================================================================
 // Common Schemas
@@ -523,11 +524,11 @@ export function validateExistingDataDocument(
 export const faimsAttachmentSchema = z.object({
   /** Unique identifier for the attachment document - corresponds to
    * an att- prefixed attachment document */
-  attachmentId: z.string(),
+  attachmentId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** Original filename of the attachment */
-  filename: z.string(),
+  filename: z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
   /** MIME type of the file */
-  fileType: z.string(),
+  fileType: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
 });
 export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
 
@@ -541,7 +542,7 @@ export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
  */
 export const formAnnotationSchema = z.object({
   /** Human-readable annotation text describing the field value */
-  annotation: z.string(),
+  annotation: z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH),
   /** Flag indicating if there is uncertainty about this field's value */
   uncertainty: z.boolean(),
 });
@@ -552,7 +553,11 @@ export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
 
 // Form data
 export const formDataEntrySchema = z.object({
-  data: z.unknown(),
+  // Optional: an empty `{}` entry is valid (field present but not yet set).
+  // Prefer `.optional()` over `.nullable()` so the key may be absent; callers
+  // that store an explicit empty still use `undefined`/`null` in `data` itself
+  // (see completion checks). `.nullish()` would also allow `data: null`.
+  data: z.unknown().optional(),
   // NOTE: do we want to use the internal representation
   annotation: formAnnotationSchema.optional(),
   // NOTE: do we want to use the internal representation?
@@ -592,13 +597,11 @@ export type FormRelationship = z.infer<typeof formRelationshipSchema>;
  */
 const baseFormRecordSchema = z.object({
   /** The ID of the form/viewset this record is an instance of */
-  formId: z.string(),
-  /** The actual form data as a map of field IDs to their values */
-  // data: z.record(z.string(), z.unknown()).optional(),
-  /** Annotations for each field, mapped by field ID */
-  // annotations: z.record(z.string(), formAnnotationSchema.optional()).optional(),
+  formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
+  /** An initial form update, can contain data/annotations/attachments for the initial record */
+  initial: formUpdateDataSchema.optional(),
   /** Username of the user who created this record */
-  createdBy: z.string(),
+  createdBy: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** Optional relationship information if this is a related/child record */
   relationship: formRelationshipSchema.optional(),
 });

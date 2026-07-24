@@ -34,12 +34,10 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import {
-  APP_NAME,
+  config,
   CAPACITOR_PLATFORM,
-  DEBUG_APP,
   getAddressAutosuggestService,
   getMapConfig,
-  NOTEBOOK_NAME,
 } from '../../buildconfig';
 import {
   getEditRecordRoute,
@@ -73,7 +71,7 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
     return result.data;
   }
 
-  if (DEBUG_APP && location.state !== null) {
+  if (config.debugApp && location.state !== null) {
     console.warn(
       'Invalid navigation state detected, falling back to root:',
       result.error
@@ -262,7 +260,7 @@ export const EditRecordPage = () => {
     return {
       mode: 'full' as const,
       platform: CAPACITOR_PLATFORM,
-      appName: APP_NAME,
+      appName: config.appName,
       recordId: recordId!,
       projectId: projectId!,
       decodedToken: activeUser!.parsedToken,
@@ -459,7 +457,7 @@ export const EditRecordPage = () => {
               variant="text"
               onClick={() => navigate(getNotebookRoute({serverId, projectId}))}
             >
-              {`Back to ${NOTEBOOK_NAME}`}
+              {`Back to ${config.notebookName}`}
             </Button>
           </Stack>
         ) : (
@@ -492,7 +490,7 @@ export const EditRecordPage = () => {
               recordId={recordId}
               config={formConfig}
               navigationContext={navigationContext}
-              debugMode={DEBUG_APP}
+              debugMode={config.debugApp}
               // This is a callback to set parent state from the component
               onReady={setFormHandle}
             />

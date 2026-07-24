@@ -16,22 +16,34 @@
  * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration for the designer, specifically
- *   managing template protections.
+ *   managing template protections. Configuration is parsed from Vite's
+ *   `import.meta.env` with a single zod schema (coerce + rename) and exposed
+ *   via the `config` singleton. Document env keys on the schema; the transform
+ *   is rename-only.
  */
 
-const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
+import {configHelpers} from '@faims3/data-model';
+import {z} from 'zod';
+
+const EnvSchema = z
+  .object({
+    /**
+     * Enables template edit protections in the designer. Defaults to false
+     * when unset.
+     */
+    VITE_TEMPLATE_PROTECTIONS: configHelpers.truthyBool(false),
+  })
+  .strip()
+  .transform(({VITE_TEMPLATE_PROTECTIONS}) => ({
+    /** Whether template protections are enabled. */
+    templateProtections: VITE_TEMPLATE_PROTECTIONS,
+  }));
 
 /**
- * Checks if VITE_TEMPLATE_PROTECTIONS is enabled from environment variables.
- * Defaults to false if not set.
+ * The singleton designer configuration object. Prefer reading values from here.
  *
- * @returns Boolean indicating if template protections are enabled
+ * Pass the whole `import.meta.env` — `.strip()` drops undeclared keys.
  */
-function templateProtectionsEnabled(): boolean {
-  const protectionEnabled = import.meta.env.VITE_TEMPLATE_PROTECTIONS;
-  return protectionEnabled
-    ? TRUTHY_STRINGS.includes(protectionEnabled.toLowerCase())
-    : false;
-}
+export const config = EnvSchema.parse(import.meta.env);
 
-export const VITE_TEMPLATE_PROTECTIONS = templateProtectionsEnabled();
+export type DesignerConfig = typeof config;

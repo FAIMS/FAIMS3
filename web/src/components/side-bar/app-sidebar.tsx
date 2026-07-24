@@ -11,12 +11,8 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {config} from '@/constants';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
@@ -35,14 +31,12 @@ import Logo from '../logo';
  * based on the authenticated user's data, including projects and templates.
  *
  * @param {React.ComponentProps<typeof Sidebar>} props - The properties to pass to the Sidebar component.
- * @returns {JSX.Element} The rendered sidebar component, or an empty fragment if no user is authenticated.
+ * @returns {JSX.Element} The rendered sidebar component.
  */
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
 
   const {pathname} = useLocation();
-
-  if (!user) return <></>;
 
   // Can see different bits
   const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
@@ -61,9 +55,10 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (canSeeProjects) {
     topSectionNavItems.push({
-      title: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+      title: config.notebookNamePluralCapitalized,
       url: '/projects',
       icon: LetterText,
+      testId: 'web-nav-projects',
       isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
         projects && projects?.length > 0
@@ -72,7 +67,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: name,
               url: `/projects/${_id}`,
             }))
-          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME_PLURAL}...`}],
+          : [{id: 'no-projects', title: `No ${config.notebookNamePlural}...`}],
     });
   }
 
@@ -81,6 +76,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Templates',
       url: '/templates',
       icon: LayoutTemplate,
+      testId: 'web-nav-templates',
       isActive: pathname.startsWith('/templates'),
       items:
         templates && templates?.length > 0
@@ -100,6 +96,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Users',
       url: '/users',
       icon: Users,
+      testId: 'web-nav-users',
     });
   }
 
@@ -108,6 +105,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Teams',
       url: '/teams',
       icon: House,
+      testId: 'web-nav-teams',
       isActive: pathname.startsWith('/teams'),
       items:
         teams && teams.teams.length > 0
@@ -140,6 +138,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: 'Archive',
       url: '/archive',
       icon: ArchiveRestore,
+      testId: 'web-nav-archive',
       isActive: pathname.startsWith('/archive'),
       linkSearch: {tab: defaultArchiveTab},
       items: archiveSubItems,
@@ -147,7 +146,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" data-testid="web-sidebar" {...props}>
       <SidebarHeader>
         <Link to="/">
           <Logo />

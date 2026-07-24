@@ -8,8 +8,6 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {useState} from 'react';
-import {useAuth} from '@/context/auth-provider';
-import {ErrorComponent} from '@tanstack/react-router';
 import {AddTemplateToTeamForm} from '../forms/add-template-to-team-form';
 import {
   Tooltip,
@@ -27,12 +25,6 @@ export const AddTemplateToTeamDialog = ({
   disabled?: boolean;
 }) => {
   const [open, setOpen] = useState(false);
-
-  const {user} = useAuth();
-
-  if (!user) {
-    return <ErrorComponent error="Unauthenticated" />;
-  }
 
   if (disabled) {
     return (

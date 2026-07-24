@@ -13,11 +13,7 @@ import {
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
-import {
-  CONDUCTOR_SERVER_ID,
-  PROVISION_SSO_USERS_POLICY,
-  REDIRECT_WHITELIST,
-} from '../buildconfig';
+import {config} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {
@@ -61,7 +57,7 @@ export const handleZodErrors = ({
     // Convert ZodError format to match express-validator's errors.mapped()
     const formattedErrors: Record<string, {msg: string}> = {};
 
-    error.errors.forEach(err => {
+    error.issues.forEach(err => {
       // Get the last part of the path as the field name
       const field = err.path[err.path.length - 1] as string;
       formattedErrors[field] = {msg: err.message};
@@ -100,7 +96,7 @@ export const handleZodErrors = ({
  */
 export function validateRedirect(
   redirect: string,
-  whitelist: string[] = REDIRECT_WHITELIST
+  whitelist: string[] = config.redirectWhitelist
 ): {valid: boolean; redirect: string} {
   const fail = () => ({valid: false, redirect: '/'});
   try {
@@ -175,7 +171,7 @@ export const redirectWithToken = async ({
 
   // Append the token to the redirect URL with exchange token and server ID
   // (this helps multi server clients know who is redirecting back)
-  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}&serverId=${CONDUCTOR_SERVER_ID}`;
+  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}&serverId=${config.conductorServerId}`;
 
   // Redirect to the app with the token
   return res.redirect(redirectUrlWithToken);
@@ -815,7 +811,7 @@ export async function applyProvisionPolicy({
   userDisplayName: (profile: any) => string;
 }) {
   // default option is to reject the login, throw an error to indicate this
-  if (PROVISION_SSO_USERS_POLICY === 'reject') {
+  if (config.provisionSSOUsersPolicy === 'reject') {
     throw new Error(
       'This account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.'
     );
@@ -828,7 +824,7 @@ export async function applyProvisionPolicy({
     userDisplayName,
   });
 
-  if (PROVISION_SSO_USERS_POLICY === 'own-team') {
+  if (config.provisionSSOUsersPolicy === 'own-team') {
     // Create a new team
     // Give the user the team manager role on the team
 
@@ -848,7 +844,7 @@ export async function applyProvisionPolicy({
       teamId: newTeam._id,
       role: Role.TEAM_MANAGER,
     });
-  } else if (PROVISION_SSO_USERS_POLICY === 'general-user') {
+  } else if (config.provisionSSOUsersPolicy === 'general-user') {
     // Give the user a general user role
     addGlobalRole({
       user: newDbUser,

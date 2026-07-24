@@ -42,7 +42,7 @@ import {
 import {expect} from 'chai';
 import request from 'supertest';
 import {generateJwtFromUser} from '../src/auth/keySigning/create';
-import {KEY_SERVICE} from '../src/buildconfig';
+import {keyService} from '../src/buildconfig';
 import {
   getCouchUserFromEmailOrUserId,
   getExpressUserFromEmailOrUserId,
@@ -820,7 +820,7 @@ describe('Records CRUD API', () => {
         const expressUser =
           await getExpressUserFromEmailOrUserId(localUserName);
         if (!expressUser) throw new Error('Local user not found');
-        const signingKey = await KEY_SERVICE.getSigningKey();
+        const signingKey = await keyService.getSigningKey();
         const guestToken = await generateJwtFromUser({
           user: expressUser,
           signingKey,
@@ -858,7 +858,7 @@ describe('Records CRUD API', () => {
           const expressUser =
             await getExpressUserFromEmailOrUserId(localUserName);
           if (!expressUser) throw new Error('Local user not found');
-          const signingKey = await KEY_SERVICE.getSigningKey();
+          const signingKey = await keyService.getSigningKey();
           const guestToken = await generateJwtFromUser({
             user: expressUser,
             signingKey,
@@ -899,7 +899,7 @@ describe('Records CRUD API', () => {
           const expressUser =
             await getExpressUserFromEmailOrUserId(localUserName);
           if (!expressUser) throw new Error('Local user not found');
-          const signingKey = await KEY_SERVICE.getSigningKey();
+          const signingKey = await keyService.getSigningKey();
           const guestToken = await generateJwtFromUser({
             user: expressUser,
             signingKey,
@@ -939,7 +939,7 @@ describe('Records CRUD API', () => {
           const expressUser =
             await getExpressUserFromEmailOrUserId(localUserName);
           if (!expressUser) throw new Error('Local user not found');
-          const signingKey = await KEY_SERVICE.getSigningKey();
+          const signingKey = await keyService.getSigningKey();
           const guestToken = await generateJwtFromUser({
             user: expressUser,
             signingKey,

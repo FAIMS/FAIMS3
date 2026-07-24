@@ -4,7 +4,7 @@ import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import TemplateDetails from '@/components/tabs/templates/details';
 import TemplateProjects from '@/components/tabs/templates/projects';
 import TemplateActions from '@/components/tabs/templates/actions';
-import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {useGetTemplate} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -16,7 +16,7 @@ const tabs = [
     Component: TemplateDetails,
   },
   {
-    name: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+    name: config.notebookNamePluralCapitalized,
     Component: TemplateProjects,
   },
   {
@@ -74,8 +74,8 @@ function RouteComponent() {
           <AlertDescription className="mt-2 space-y-2 text-amber-900/90 dark:text-amber-50/90">
             <p>
               It is hidden from active template lists and cannot be used to
-              create new {NOTEBOOK_NAME_PLURAL_CAPITALIZED} until you restore it
-              from the Archive.
+              create new {config.notebookNamePluralCapitalized} until you
+              restore it from the Archive.
             </p>
             <p>
               <Link

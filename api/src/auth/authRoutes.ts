@@ -36,8 +36,8 @@ import {
 import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
 import {Strategy as SamlStrategy} from 'passport-saml';
-import {processRequest} from 'zod-express-middleware';
-import {LOCAL_LOGIN_ENABLED, WEBAPP_PUBLIC_URL} from '../buildconfig';
+import validate from '../middleware/validate';
+import {config} from '../buildconfig';
 import {
   createNewEmailCode,
   markCodeAsUsed,
@@ -86,7 +86,7 @@ patch();
 
 // This is the place to go if all else fails - it will have a token!
 // note that this auth-return is not in this API but in the webapp
-export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
+export const DEFAULT_REDIRECT_URL = config.webAppPublicUrl + '/auth-return';
 
 // Generate the URLs for auth and auth return for different auth providers
 export const providerAuthUrl = (provider: string) => {
@@ -226,7 +226,7 @@ export function addAuthRoutes(
     });
   });
 
-  if (LOCAL_LOGIN_ENABLED) {
+  if (config.localLoginEnabled) {
     /**
      * Handle local login OR register request with username and password
      */
@@ -666,7 +666,7 @@ export function addAuthRoutes(
   app.put(
     '/auth/logout',
     requireAuthenticationAPI,
-    processRequest({
+    validate({
       body: PutLogoutInputSchema,
     }),
     async ({user, body: {refreshToken}}, res) => {
@@ -710,7 +710,7 @@ export function addAuthRoutes(
    */
   app.post(
     '/auth/forgotPassword',
-    processRequest({
+    validate({
       body: PostForgotPasswordInputSchema,
     }),
     async (req, res) => {
@@ -928,7 +928,7 @@ export function addAuthRoutes(
             samlConfig.ssoErrorPageLead ??
             `We had a problem while signing you in with ${displayName}.`,
           detailMarkdown: samlConfig.ssoErrorPageDetailMarkdown,
-          returnUrl: samlConfig.ssoErrorPageReturnURL ?? WEBAPP_PUBLIC_URL,
+          returnUrl: samlConfig.ssoErrorPageReturnURL ?? config.webAppPublicUrl,
           returnLabel: samlConfig.ssoErrorPageReturnLabel ?? 'Return to app',
           providerId: provider,
           displayName,
@@ -980,7 +980,7 @@ export function addAuthRoutes(
     // configured callback (see below)
     app.get(
       providerAuthUrl(provider),
-      processRequest({
+      validate({
         query: AuthContextSchema,
       }),
 

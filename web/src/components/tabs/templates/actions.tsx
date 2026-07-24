@@ -2,11 +2,10 @@ import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {TemplateVisibilityDialog} from '@/components/dialogs/template-visibility-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
-import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
@@ -15,7 +14,7 @@ import type {NotebookWithHistory} from '@/designer/state/initial';
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {EditTemplateDetailsDialog} from '@/components/dialogs/edit-template-details-dialog';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
 import {
   Tooltip,
@@ -36,7 +35,7 @@ import {
  * @returns {JSX.Element} The rendered TemplateActions component.
  */
 const TemplateActions = () => {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const {templateId} = Route.useParams();
   const {data, isLoading} = useGetTemplate({user, templateId});
   const queryClient = useQueryClient();
@@ -47,7 +46,7 @@ const TemplateActions = () => {
     resourceType: 'templates',
     apiResourceType: 'templates',
     resourceId: templateId,
-    token: user?.token,
+    token: user.token,
   });
 
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
@@ -102,7 +101,7 @@ const TemplateActions = () => {
   const canCreateProjectFromTemplate =
     canCreateProject ||
     getUserResourcesForAction({
-      decodedToken: user?.decodedToken,
+      decodedToken: user.decodedToken,
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 
@@ -133,7 +132,8 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Edit Template</ListLabel>
                 <ListDescription>
-                  Edit this template in the {NOTEBOOK_NAME_CAPITALIZED} Editor.
+                  Edit this template in the {config.notebookNameCapitalized}{' '}
+                  Editor.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -230,9 +230,9 @@ const TemplateActions = () => {
           <Card>
             <List>
               <ListItem>
-                <ListLabel>Create {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                <ListLabel>Create {config.notebookNameCapitalized}</ListLabel>
                 <ListDescription>
-                  Create a new {NOTEBOOK_NAME} based on this template.
+                  Create a new {config.notebookName} based on this template.
                 </ListDescription>
               </ListItem>
               <ListItem>

@@ -17,6 +17,7 @@
  * Description:
  *   UGCReport
  */
+import {INPUT_LIMITS} from '@faims3/data-model';
 import React from 'react';
 
 import {
@@ -77,6 +78,9 @@ export default function UGCReport(props: UGCReportProps) {
                 rows={3}
                 fullWidth
                 variant="standard"
+                slotProps={{
+                  htmlInput: {maxLength: INPUT_LIMITS.LONG_TEXT_MAX_LENGTH},
+                }}
                 helperText="If you are concerned about the content of this record, let us know why. Reporting content is anonymous, so other users can't tell who made the report."
                 onChange={handleChange}
                 value={value}

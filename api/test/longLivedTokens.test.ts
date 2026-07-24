@@ -31,7 +31,7 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
-import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../src/buildconfig';
+import {config} from '../src/buildconfig';
 import {getAuthDB} from '../src/couchdb';
 import {
   createNewLongLivedToken,
@@ -87,7 +87,7 @@ describe('Long-Lived Token Tests', () => {
     it('enforces expiry limits', async () => {
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
 
-      if (MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined) {
+      if (config.maximumLongLivedDurationDays !== undefined) {
         const tooFarInFuture =
           getMaxAllowedExpiryTimestamp()! + 24 * 60 * 60 * 1000;
 
@@ -510,7 +510,7 @@ describe('Long-Lived Token Tests', () => {
     });
 
     it('rejects expiry beyond configured limits', async () => {
-      if (MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined) {
+      if (config.maximumLongLivedDurationDays !== undefined) {
         const tooFarInFuture =
           getMaxAllowedExpiryTimestamp()! + 24 * 60 * 60 * 1000;
 

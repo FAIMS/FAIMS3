@@ -21,7 +21,7 @@ import {
   AddressValueSchema,
 } from '../../../addressTypes';
 import type {FullFormConfig} from '../../../formModule/formManagers/types';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {DataViewFieldRender} from '../../../rendering/types';
@@ -311,7 +311,12 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
             variant="outlined"
             disabled={disabled}
             onBlur={handleBlur}
-            slotProps={{htmlInput: {'aria-label': label ?? 'Address'}}}
+            slotProps={{
+              htmlInput: {
+                'aria-label': label ?? 'Address',
+                maxLength: INPUT_LIMITS.LONG_TEXT_MAX_LENGTH,
+              },
+            }}
             onChange={e => {
               const v = e.target.value;
               setFieldData({
@@ -411,6 +416,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                     htmlInput: {
                       ...(params.slotProps?.htmlInput ?? {}),
                       'aria-label': 'Search for an address',
+                      maxLength: INPUT_LIMITS.LONG_TEXT_MAX_LENGTH,
                     },
                     input: {
                       ...(params.slotProps?.input ?? {}),
@@ -502,6 +508,9 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   onChange={updateAddressPart('house_number')}
                   onBlur={handleBlur}
                   disabled={disabled}
+                  slotProps={{
+                    htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+                  }}
                 />
                 <TextField
                   label="Street Name"
@@ -511,6 +520,9 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   onChange={updateAddressPart('road')}
                   onBlur={handleBlur}
                   disabled={disabled}
+                  slotProps={{
+                    htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+                  }}
                 />
                 <TextField
                   label="Suburb"
@@ -520,6 +532,9 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   onChange={updateAddressPart('suburb')}
                   onBlur={handleBlur}
                   disabled={disabled}
+                  slotProps={{
+                    htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+                  }}
                 />
                 <TextField
                   label="State"
@@ -529,6 +544,9 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   onChange={updateAddressPart('state')}
                   onBlur={handleBlur}
                   disabled={disabled}
+                  slotProps={{
+                    htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+                  }}
                 />
                 <TextField
                   label="Postcode"
@@ -538,6 +556,9 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   onChange={updateAddressPart('postcode')}
                   onBlur={handleBlur}
                   disabled={disabled}
+                  slotProps={{
+                    htmlInput: {maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH},
+                  }}
                 />
               </>
             ) : (
@@ -556,6 +577,9 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                   });
                 }}
                 disabled={disabled}
+                slotProps={{
+                  htmlInput: {maxLength: INPUT_LIMITS.LONG_TEXT_MAX_LENGTH},
+                }}
               />
             )}
           </Stack>

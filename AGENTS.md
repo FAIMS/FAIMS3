@@ -14,6 +14,33 @@ monorepo (Node 22, `pnpm@10.7.0`). The relevant runnable services are:
 
 Shared libraries: `library/data-model` (`@faims3/data-model`) and
 `library/forms` (`@faims3/forms`).
+monorepo (Node 24, `pnpm@10.7.0`). The relevant runnable services are:
+
+| Service                   | Package               | Dev URL                       | Notes                            |
+| ------------------------- | --------------------- | ----------------------------- | -------------------------------- |
+| Conductor API             | `api` (`@faims3/api`) | http://localhost:8080         | Express server, talks to CouchDB |
+| Data-collection app       | `app` (`@faims3/app`) | http://localhost:3000         | Vite PWA                         |
+| Control Centre / Designer | `web` (`@faims3/web`) | http://localhost:3001         | Vite web app (admin UI)          |
+| CouchDB                   | docker                | http://localhost:5984/\_utils | Runs in Docker, not Node         |
+
+Shared libraries: `library/data-model` (`@faims3/data-model`) and
+`library/forms` (`@faims3/forms`). Browser e2e: `e2e` (`@faims3/e2e`).
+
+### Runtime configuration
+
+Each runnable package exposes a typed `config` singleton parsed once from env
+via Zod (shared helpers live in `@faims3/data-model` as `configHelpers`):
+
+| Package  | Module                            | Env source               |
+| -------- | --------------------------------- | ------------------------ |
+| `api`    | `api/src/buildconfig.ts`          | `process.env`            |
+| `app`    | `app/src/buildconfig.ts`          | `import.meta.env.VITE_*` |
+| `web`    | `web/src/constants.ts`            | `import.meta.env.VITE_*` |
+| designer | `web/src/designer/buildconfig.ts` | `import.meta.env.VITE_*` |
+
+Prefer `import {config} from '…'` and `config.<field>`. See each package's
+`.env.dist` for documented variables. E2e reads `e2e/.env` (from
+`e2e/.env.dist`) for URLs and seed persona credentials.
 
 ### Startup (services are NOT started by the update script)
 
@@ -26,7 +53,7 @@ session:
 2. Generate signing keys + CouchDB `local.ini` (idempotent; `keys/` and
    `.env` files are gitignored so they may be missing on a fresh VM):
    `pnpm run generate-local-keys`. Then create env files if missing:
-   `cp ./.env.dist ./.env; for d in api web app; do [ -f ./$d/.env ] || cp ./$d/.env.dist ./$d/.env; done`
+   `cp ./.env.dist ./.env; for d in api web app e2e; do [ -f ./$d/.env ] || cp ./$d/.env.dist ./$d/.env; done`
 3. Start CouchDB only: `sudo docker compose up -d --build couchdb`, then wait
    for `curl http://localhost:5984/_up` to return 200.
 4. Initialise the database (creates the `admin` user): `pnpm run migrate-with-keys`.
@@ -56,7 +83,11 @@ for code work.
   templates."
 - The database starts empty. To load sample data, follow the README
   ("Loading sample notebooks and templates") which needs a bearer token, or run
-  `cd api && pnpm seed-test-dataset` against an empty DB.
+  `cd api && pnpm seed-test-dataset` (idempotent; safe to re-run).
+- For repeated e2e auth (password reset / invites), set
+  `RATE_LIMITER_ENABLED=false` and `AUTH_ATTEMPT_LIMITER_ENABLED=false` in
+  `api/.env` and restart the API. The former is the Express HTTP IP limiter;
+  the latter gates CouchDB-backed email-code / verification-challenge limits.
 
 ### Lint / test / build (standard commands, see `package.json`)
 
@@ -70,3 +101,7 @@ for code work.
   needed), `pnpm --filter=@faims3/app test` (vitest).
   Note `web` and `forms` use bare `vitest`, which watches in a TTY — pass
   `--run` (e.g. `pnpm --filter=@faims3/web exec vitest --run`) for one-shot runs.
+- Browser e2e (stack must be up + seeded):
+  `pnpm --filter=@faims3/e2e test:e2e:headless:ci` (smoke → web → app).
+  See `e2e/README.md` and `e2e/SUITE.md`. CI:
+  `.github/workflows/e2e.yml`.

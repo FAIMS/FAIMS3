@@ -3,6 +3,7 @@ import z from 'zod';
 import {
   BaseFieldParameters,
   BaseFieldParametersSchema,
+  INPUT_LIMITS,
 } from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -79,10 +80,13 @@ const TextField: React.FC<TextFieldProps & FormFieldContextProps> = ({
  * Adds minimum length constraint when field is required.
  */
 const textFieldValueSchema = (props: BaseFieldParameters) => {
+  const maxLength = z.string().max(INPUT_LIMITS.LONG_TEXT_MAX_LENGTH, {
+    message: `Must be at most ${INPUT_LIMITS.LONG_TEXT_MAX_LENGTH} characters`,
+  });
   if (props.required) {
-    return z.string().min(1, {message: 'This field is required'});
+    return maxLength.min(1, {message: 'This field is required'});
   }
-  return z.string();
+  return maxLength;
 };
 
 /**
@@ -123,6 +127,7 @@ const EmailField: React.FC<TextFieldProps & FormFieldContextProps> = ({
       inputType="email"
       enableSpeech={enableSpeech}
       speechAppendMode={speechAppendMode ?? false}
+      maxLength={INPUT_LIMITS.EMAIL_MAX_LENGTH}
     />
   );
 };
@@ -132,18 +137,16 @@ const EmailField: React.FC<TextFieldProps & FormFieldContextProps> = ({
  * Includes email format validation and optional required constraint.
  */
 const emailValueSchema = (props: BaseFieldParameters) => {
+  const boundedEmail = z
+    .string()
+    .max(INPUT_LIMITS.EMAIL_MAX_LENGTH, {message: 'Email address is too long'})
+    .email({message: 'Enter a valid email address'});
   // If not required, allow empty string
   if (!props.required) {
     // Use a union to allow either valid email or empty string
-    return z.union([
-      z.literal(''),
-      z.string().email({message: 'Enter a valid email address'}),
-    ]);
+    return z.union([z.literal(''), boundedEmail]);
   }
-  return z
-    .string()
-    .min(1, {message: 'This field is required'})
-    .email({message: 'Enter a valid email address'});
+  return boundedEmail.min(1, {message: 'This field is required'});
 };
 
 /**

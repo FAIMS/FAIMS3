@@ -6,7 +6,7 @@ import {
   PutRequestPasswordResetResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
 import {DEFAULT_REDIRECT_URL} from '../auth/authRoutes';
 import {validateRedirect} from '../auth/helpers';
 import {
@@ -41,10 +41,11 @@ export const api: express.Router = express.Router();
  */
 api.post(
   '/',
-  processRequest({
+  requireAuthenticationAPI,
+  // Validate before permission middleware reads `req.body.email`.
+  validate({
     body: PostRequestPasswordResetRequestSchema,
   }),
-  requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.RESET_USER_PASSWORD,
     getResourceId(req) {
@@ -105,7 +106,7 @@ api.post(
  */
 api.put(
   '/',
-  processRequest({
+  validate({
     body: PutRequestPasswordResetRequestSchema,
   }),
   async (req, res: Response<PutRequestPasswordResetResponse>) => {

@@ -15,6 +15,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    setupFiles: './src/setupTests.ts',
     browser: {
       enabled: true,
       headless: true,

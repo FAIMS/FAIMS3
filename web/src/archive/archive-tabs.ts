@@ -1,7 +1,4 @@
-import {
-  NOTEBOOK_NAME_PLURAL,
-  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-} from '@/constants';
+import {config} from '@/constants';
 
 /**
  * URL/search keys and values for /archive — keep in sync with sidebar + route validateSearch.
@@ -12,7 +9,7 @@ import {
  * see `archived-templates.tsx` and `template-delete-warnings.ts` in this folder.
  */
 export const ARCHIVE_TAB_VALUES = [
-  NOTEBOOK_NAME_PLURAL,
+  config.notebookNamePlural,
   'templates',
   'users',
 ] as const;
@@ -20,10 +17,11 @@ export const ARCHIVE_TAB_VALUES = [
 export type ArchiveTab = (typeof ARCHIVE_TAB_VALUES)[number];
 
 export const DEFAULT_ARCHIVE_TAB: ArchiveTab =
-  NOTEBOOK_NAME_PLURAL as ArchiveTab;
+  config.notebookNamePlural as ArchiveTab;
 
 export const ARCHIVE_TAB_LABELS: Record<ArchiveTab, string> = {
-  [NOTEBOOK_NAME_PLURAL as ArchiveTab]: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+  [config.notebookNamePlural as ArchiveTab]:
+    config.notebookNamePluralCapitalized,
   templates: 'Templates',
   users: 'Users',
 };
@@ -35,7 +33,7 @@ export function getVisibleArchiveTabs(flags: {
   canSeeUsers: boolean;
 }): ArchiveTab[] {
   const tabs: ArchiveTab[] = [];
-  if (flags.canSeeProjects) tabs.push(NOTEBOOK_NAME_PLURAL as ArchiveTab);
+  if (flags.canSeeProjects) tabs.push(config.notebookNamePlural as ArchiveTab);
   if (flags.canSeeTemplates) tabs.push('templates');
   if (flags.canSeeUsers) tabs.push('users');
   return tabs;

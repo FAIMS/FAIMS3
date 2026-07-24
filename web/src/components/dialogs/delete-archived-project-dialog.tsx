@@ -16,7 +16,8 @@ import {useDeleteArchivedProject} from '@/hooks/archive-hooks';
 import {useNavigate, useRouterState} from '@tanstack/react-router';
 import {useState} from 'react';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {config} from '@/constants';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {AlertTriangle, Skull} from 'lucide-react';
 
 type DeleteArchivedProjectDialogProps = {
@@ -54,7 +55,9 @@ export function DeleteArchivedProjectDialog({
       {projectId, confirmName: projectDisplayName.trim()},
       {
         onSuccess: () => {
-          toast.success(`${NOTEBOOK_NAME_CAPITALIZED} permanently deleted`);
+          toast.success(
+            `${config.notebookNameCapitalized} permanently deleted`
+          );
           setOpen(false);
           setConfirmText('');
           if (isOnProjectDetailPage) {
@@ -80,7 +83,7 @@ export function DeleteArchivedProjectDialog({
       {!isControlled ? (
         <DialogTrigger asChild>
           <Button variant="destructive" className="w-fit">
-            Permanently delete {NOTEBOOK_NAME_CAPITALIZED}
+            Permanently delete {config.notebookNameCapitalized}
           </Button>
         </DialogTrigger>
       ) : null}
@@ -94,8 +97,8 @@ export function DeleteArchivedProjectDialog({
             <div className="space-y-4 text-left text-sm text-black dark:text-foreground">
               <p className="text-black dark:text-foreground">
                 <span className="font-semibold">WARNING:</span> You are about to
-                permanently delete all records in this {NOTEBOOK_NAME}. This
-                action cannot be undone.
+                permanently delete all records in this {config.notebookName}.
+                This action cannot be undone.
               </p>
               <Alert
                 variant="destructive"
@@ -116,7 +119,7 @@ export function DeleteArchivedProjectDialog({
             htmlFor="confirm-project-display-name"
             className="text-black dark:text-foreground"
           >
-            Type the {NOTEBOOK_NAME} name exactly to confirm deletion:{' '}
+            Type the {config.notebookName} name exactly to confirm deletion:{' '}
             <span className="font-mono font-medium text-black dark:text-foreground">
               {projectDisplayName}
             </span>
@@ -126,7 +129,8 @@ export function DeleteArchivedProjectDialog({
             autoComplete="off"
             value={confirmText}
             onChange={e => setConfirmText(e.target.value)}
-            placeholder={`${NOTEBOOK_NAME_CAPITALIZED} name`}
+            placeholder={`${config.notebookNameCapitalized} name`}
+            maxLength={INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH}
           />
         </div>
         <DialogFooter className="gap-2 sm:gap-0">

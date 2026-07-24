@@ -122,6 +122,7 @@ jobs:
           cd app
           ./bin/bugsnag-sourcemaps.sh ANDROID
       - run: pnpm --filter=@faims3/app run app-update android
+      # Capacitor resolves config from app/capacitor.config.ts using env vars.
       - run: pnpm --filter=@faims3/app run webapp-sync -- --deployment android
       - name: Fastlane
         run: |

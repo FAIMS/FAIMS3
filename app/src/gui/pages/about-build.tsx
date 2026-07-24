@@ -44,15 +44,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
-import {
-  RUNNING_UNDER_TEST,
-  SHOW_POUCHDB_BROWSER,
-  SHOW_WIPE,
-  NOTEBOOK_NAME_PLURAL,
-  CONDUCTOR_URLS,
-  APP_VERSION,
-  COMMIT_HASH,
-} from '../../buildconfig';
+import {config} from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
@@ -145,19 +137,21 @@ export default function AboutBuild() {
           <table>
             <tbody>
               <tr>
-                <td>{CONDUCTOR_URLS.length > 1 ? 'Servers' : 'Server'}:</td>
-                <td>{CONDUCTOR_URLS.join(', ')}</td>
+                <td>
+                  {config.conductorUrls.length > 1 ? 'Servers' : 'Server'}:
+                </td>
+                <td>{config.conductorUrls.join(', ')}</td>
               </tr>
               <tr>
                 <td>Release version:</td>
-                <td>{APP_VERSION}</td>
+                <td>{config.appVersion}</td>
               </tr>
               <tr>
                 <td>Version:</td>
-                <td>{COMMIT_HASH ?? 'Not provided.'}</td>
+                <td>{config.commitHash ?? 'Not provided.'}</td>
               </tr>
               <tr>
-                <td>{RUNNING_UNDER_TEST ? 'Running under test' : ''}</td>
+                <td>{config.runningUnderTest ? 'Running under test' : ''}</td>
                 <td></td>
               </tr>
             </tbody>
@@ -233,9 +227,9 @@ export default function AboutBuild() {
             </Typography>
 
             <Typography variant={'body2'}>
-              Share or save a file containing all {NOTEBOOK_NAME_PLURAL} and
-              records stored on this device. Data download functionality is not
-              well-supported by all device+browser combinations.
+              Share or save a file containing all {config.notebookNamePlural}{' '}
+              and records stored on this device. Data download functionality is
+              not well-supported by all device+browser combinations.
             </Typography>
           </Grid>
           <Grid size={{md: 8, sm: 6, xs: 12}}>
@@ -278,7 +272,7 @@ export default function AboutBuild() {
               </Grid>
             </>
           )}
-          {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
+          {(config.showWipe || config.showPouchdbBrowser) && (
             <React.Fragment>
               <Grid size={{xs: 12}}>
                 <Divider />
@@ -298,7 +292,7 @@ export default function AboutBuild() {
               </Grid>
               <Grid size={{md: 8, sm: 6, xs: 12}}>
                 <Grid container spacing={2} sx={{alignItems: 'center'}}>
-                  {SHOW_WIPE && (
+                  {config.showWipe && (
                     <Grid>
                       <Button
                         onClick={() => setWipeDialogOpen(true)}
@@ -350,7 +344,7 @@ export default function AboutBuild() {
                       </Dialog>
                     </Grid>
                   )}
-                  {SHOW_POUCHDB_BROWSER && (
+                  {config.showPouchdbBrowser && (
                     <>
                       <Grid>
                         <Button

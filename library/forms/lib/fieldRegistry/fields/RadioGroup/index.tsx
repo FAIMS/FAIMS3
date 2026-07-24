@@ -45,7 +45,7 @@ import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {alpha} from '@mui/material/styles';
 import {z} from 'zod';
-import {BaseFieldParametersSchema} from '@faims3/data-model';
+import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
 import {FullFieldProps} from '../../../formModule/types';
 import {ChoiceElementPropsSchema, ChoiceOption} from '../choiceFieldParams';
 import {
@@ -196,6 +196,11 @@ export const RadioGroup = (props: FieldProps) => {
                     disabled={disabled}
                     variant="standard"
                     multiline
+                    slotProps={{
+                      htmlInput: {
+                        maxLength: INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH,
+                      },
+                    }}
                     sx={{
                       minWidth: '200px',
                       marginTop: '2px',
@@ -356,15 +361,22 @@ const valueSchema = (props: RadioGroupFieldProps) => {
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
     if (props.required) {
-      return z.string().min(1, {message: 'Please select an option'});
+      return z
+        .string()
+        .max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH)
+        .min(1, {message: 'Please select an option'});
     }
-    return z.union([z.string(), z.null()]);
+    return z.union([
+      z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH),
+      z.null(),
+    ]);
   }
 
   const optionsSchema = z.enum(optionValues as [string, ...string[]]);
 
   if (enableOtherOption) {
-    const baseSchema = z.string();
+    // Bounded to stop maliciously long "Other" values
+    const baseSchema = z.string().max(INPUT_LIMITS.SHORT_TEXT_MAX_LENGTH);
 
     if (props.required) {
       return baseSchema.min(1, {message: 'Please select an option'}).refine(

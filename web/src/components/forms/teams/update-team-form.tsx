@@ -1,6 +1,8 @@
 import {Form} from '@/components/form';
-import {useAuth} from '@/context/auth-provider';
+import {useRequiredUser} from '@/hooks/auth-hooks';
 import {updateTeam} from '@/hooks/teams-hooks';
+import {resourceNameSchema} from '@/lib/input-limits';
+import {INPUT_LIMITS} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 
@@ -24,23 +26,28 @@ export function UpdateTeamForm({
   teamId,
   description,
 }: UpdateTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
 
   const fields = [
     {
       name: 'name',
       label: 'Name',
-      schema: z.string().min(5, {
-        message: 'Team name must be at least 5 characters',
-      }),
+      schema: resourceNameSchema(5, 'Team name'),
+      maxLength: INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
     },
     {
       name: 'description',
       label: 'Description',
-      schema: z.string().min(10, {
-        message: 'Description must be at least 10 characters',
-      }),
+      schema: z
+        .string()
+        .min(10, {
+          message: 'Description must be at least 10 characters',
+        })
+        .max(INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH, {
+          message: `Description must be at most ${INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH} characters`,
+        }),
+      maxLength: INPUT_LIMITS.TEAM_DESCRIPTION_MAX_LENGTH,
     },
   ];
 
@@ -53,8 +60,6 @@ export function UpdateTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({name, description}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await updateTeam({description, name, user, teamId});
 
     if (!response.ok) return {type: 'submit', message: 'Error updating team'};

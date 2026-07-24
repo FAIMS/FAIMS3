@@ -6,6 +6,7 @@ import {
 import {ProjectStatus} from '@faims3/data-model';
 import {postDeleteArchivedTemplate} from '@/hooks/template-hooks';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {config} from '@/constants';
 
 type RestoreTemplateArgs = {
   templateId: string;
@@ -19,7 +20,7 @@ async function putUnarchiveTemplateRequest({
   token: string;
 }): Promise<void> {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
+    `${config.apiUrl}/api/templates/${templateId}/archive`,
     {
       method: 'PUT',
       headers: {

@@ -24,6 +24,7 @@ import {
   GetListAllUsersResponse,
   GetListAllUsersResponseSchema,
   isPeopleUserAccountDisabled,
+  PostImpersonateUserResponse,
   PostUpdateUserInputSchema,
   removeGlobalRole,
   Role,
@@ -33,7 +34,12 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import validate from '../middleware/validate';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from '../auth/keySigning/create';
+import {config} from '../buildconfig';
 import {
   filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
@@ -43,6 +49,7 @@ import {
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {nowIso} from '../time';
 
 import patch from '../utils/patchExpressAsync';
 
@@ -61,7 +68,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
@@ -141,7 +148,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  processRequest({
+  validate({
     query: z.object({
       includeArchived: z.enum(['true', 'false']).optional(),
     }),
@@ -177,7 +184,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}, user}, res) => {
@@ -219,7 +226,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}}, res) => {
@@ -236,6 +243,77 @@ api.post(
   }
 );
 
+/**
+ * Impersonate a user - trade a target user id for a token pair that
+ * authenticates as that user. Restricted to system operations administrators
+ * (Action.IMPERSONATE_USER).
+ *
+ * The returned tokens are a normal access + refresh token pair for the target
+ * user, so all downstream authorization treats the caller as the target. The
+ * access token is tagged with the acting admin's user id for auditing, and the
+ * refresh token is given a short lifetime so the impersonation session cannot
+ * linger.
+ */
+api.post(
+  '/:id/impersonate',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.IMPERSONATE_USER,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: z.string()}),
+  }),
+  async ({params: {id}, user}, res: Response<PostImpersonateUserResponse>) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const target = await getCouchUserFromEmailOrUserId(id);
+    if (!target) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+
+    if (target.user_id === user.user_id) {
+      throw new Exceptions.ForbiddenException(
+        'You cannot impersonate yourself.'
+      );
+    }
+
+    if (isPeopleUserAccountDisabled(target)) {
+      throw new Exceptions.ForbiddenException(
+        'You cannot impersonate a disabled account.'
+      );
+    }
+
+    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: target})) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to impersonate cluster admins.'
+      );
+    }
+
+    // Build a token as the target user, tagged with the acting admin id and
+    // given a short-lived refresh token.
+    const expressTarget = await upgradeCouchUserToExpressUser({dbUser: target});
+    const {token, refreshToken} = await generateUserToken(expressTarget, true, {
+      impersonatingUserId: user.user_id,
+      refreshExpiryMs: config.impersonationSessionExpiryMinutes * 60 * 1000,
+    });
+
+    if (!config.runningUnderTest) {
+      console.log(
+        `[Impersonation] ${user.user_id} started impersonating ${target.user_id} at ${nowIso()}`
+      );
+    }
+
+    res.json({accessToken: token, refreshToken: refreshToken!});
+  }
+);
+
 // REMOVE a user
 api.delete(
   '/:id',
@@ -246,7 +324,7 @@ api.delete(
       return req.params.id;
     },
   }),
-  processRequest({
+  validate({
     params: z.object({id: z.string()}),
   }),
   async ({params: {id}}, res) => {

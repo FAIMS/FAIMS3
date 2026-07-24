@@ -31,6 +31,18 @@ describe('Web Dashboard - Projects Team Member', () => {
       'projects-list-team-member'
     );
   });
+});
+
+describe('Web Dashboard - Projects - Member Creator', () => {
+  const TEST_USERNAME =
+    process.env.TEST_RED_MEMBER_CREATOR_USERNAME || 'test@example.com';
+  const TEST_PASSWORD =
+    process.env.TEST_RED_MEMBER_CREATOR_PASSWORD || 'testpassword123';
+
+  before(async () => {
+    await browser.reloadSession();
+    await WebAuth.login(TEST_USERNAME, TEST_PASSWORD);
+  });
 
   it('should show a create project button', async () => {
     await WebProjectsPage.open();

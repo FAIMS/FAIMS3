@@ -38,6 +38,7 @@ function RouteComponent() {
   const canSeeUsers = useIsAuthorisedTo({
     action: Action.VIEW_USER_LIST,
   });
+  const [, setActiveTab] = useState<TabLabel>('Users');
 
   if (!canSeeGlobalInvites && !canSeeUsers) {
     return <p>You do not have access to view this page.</p>;
@@ -53,8 +54,6 @@ function RouteComponent() {
   if (canSeeGlobalInvites) {
     tabs.push({id: 'Invites', Component: GlobalInvites});
   }
-
-  const [, setActiveTab] = useState<TabLabel>(tabs[0].id);
 
   return (
     <div className="flex flex-col gap-6">

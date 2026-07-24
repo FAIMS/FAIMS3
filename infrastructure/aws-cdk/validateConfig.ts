@@ -15,7 +15,7 @@ function validateConfig(configPath: string): boolean {
   } catch (error) {
     if (error instanceof ZodError) {
       console.error('Configuration validation failed:');
-      error.errors.forEach(err => {
+      error.issues.forEach(err => {
         console.error(`- ${err.path.join('.')}: ${err.message}`);
       });
     } else if (error instanceof Error) {

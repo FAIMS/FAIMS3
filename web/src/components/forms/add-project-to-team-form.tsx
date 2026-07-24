@@ -1,7 +1,6 @@
 import {Field, Form} from '@/components/form';
-import {NOTEBOOK_NAME} from '@/constants';
-import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {config} from '@/constants';
+import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
@@ -23,7 +22,7 @@ export function AddProjectToTeamForm({
   setDialogOpen,
   projectId,
 }: AddProjectToTeamFormProps) {
-  const {user} = useAuth();
+  const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const teams = useGetTeams({user});
   const {data: project} = useGetProject({user, projectId});
@@ -40,7 +39,7 @@ export function AddProjectToTeamForm({
     return (
       <>
         You do not have permission to change the ownership of this{' '}
-        {NOTEBOOK_NAME}
+        {config.notebookName}
       </>
     );
   }
@@ -50,7 +49,7 @@ export function AddProjectToTeamForm({
   }
 
   if (!teams.isLoading && !teamsAvailable) {
-    return <>No teams available to assign this {NOTEBOOK_NAME} to.</>;
+    return <>No teams available to assign this {config.notebookName} to.</>;
   }
 
   const fields: Field[] = [
@@ -73,8 +72,6 @@ export function AddProjectToTeamForm({
    * Handles the form submission
    */
   const onSubmit = async ({teamId}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
-
     const response = await modifyTeamForProject({
       projectId,
       teamId,
