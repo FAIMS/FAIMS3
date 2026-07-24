@@ -184,25 +184,24 @@ function minimalStackConfig(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ConfigSchema couchAuthProxy', () => {
-  it('defaults to disabled when couchAuthProxy is omitted', () => {
+  it('applies defaults when couchAuthProxy is omitted', () => {
     const parsed = ConfigSchema.parse(minimalStackConfig());
-    expect(parsed.couchAuthProxy.enabled).toBe(false);
     expect(parsed.couchAuthProxy.imageTag).toBe('sha-3004091');
     expect(parsed.couchAuthProxy.image).toBe(
       'ghcr.io/peterbaker0/couch-auth-proxy'
     );
-  });
-
-  it('accepts enabled proxy config with defaults for cpu/memory/count', () => {
-    const parsed = ConfigSchema.parse(
-      minimalStackConfig({
-        couchAuthProxy: {enabled: true},
-      })
-    );
-    expect(parsed.couchAuthProxy.enabled).toBe(true);
     expect(parsed.couchAuthProxy.cpu).toBe(512);
     expect(parsed.couchAuthProxy.memory).toBe(1024);
     expect(parsed.couchAuthProxy.desiredCount).toBe(2);
+  });
+
+  it('accepts an empty object and fills image/cpu defaults', () => {
+    const parsed = ConfigSchema.parse(
+      minimalStackConfig({
+        couchAuthProxy: {},
+      })
+    );
+    expect(parsed.couchAuthProxy.cpu).toBe(512);
     expect(parsed.couchAuthProxy.imageTag).toBe('sha-3004091');
   });
 
@@ -210,7 +209,6 @@ describe('ConfigSchema couchAuthProxy', () => {
     const parsed = ConfigSchema.parse(
       minimalStackConfig({
         couchAuthProxy: {
-          enabled: true,
           image: 'ghcr.io/peterbaker0/couch-auth-proxy',
           imageTag: 'sha-deadbeef',
           cpu: 256,
@@ -227,7 +225,17 @@ describe('ConfigSchema couchAuthProxy', () => {
     expect(() =>
       ConfigSchema.parse(
         minimalStackConfig({
-          couchAuthProxy: {enabled: true, cpu: 0},
+          couchAuthProxy: {cpu: 0},
+        })
+      )
+    ).toThrow(ZodError);
+  });
+
+  it('rejects unknown enabled flag (proxy is always on)', () => {
+    expect(() =>
+      ConfigSchema.parse(
+        minimalStackConfig({
+          couchAuthProxy: {enabled: false},
         })
       )
     ).toThrow(ZodError);

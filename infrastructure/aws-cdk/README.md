@@ -24,13 +24,13 @@ The `EC2CouchDB` construct deploys CouchDB:
 - **Cloud Watch**: Includes a set of monitoring alarms triggering SNS topics, subscribed to an email address. Cloudwatch agent is installed and configured on instance. Logs collected and reported to /ec2/couchdb log stream.
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
-- **Load Balancer Integration**: When `couchAuthProxy.enabled` is **false** (legacy/rollback), registers the instance on the shared ALB for `couch.*`. When the proxy is **enabled**, Couch is **not** on the public ALB; only proxy + Conductor security groups may reach `:5984`.
-- **DNS**: Creates a custom domain alias to the shared ALB (hostname unchanged for CSP/clients).
+- **Load Balancer Integration**: Couch is **not** on the public ALB; only proxy + Conductor security groups may reach `:5984`.
+- **DNS**: Creates a custom domain alias to the shared ALB (hostname unchanged for CSP/clients; traffic terminates on couch-auth-proxy).
 - **Internal endpoint**: Exposes `internalEndpoint` (`http://<private-ip>:5984`) for Conductor admin and the proxy.
 
-### couch-auth-proxy (public sync ACL)
+### couch-auth-proxy (public sync ACL — always on)
 
-The `CouchAuthProxy` construct (gated by `couchAuthProxy.enabled`) deploys
+The `CouchAuthProxy` construct always deploys
 [`couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy) as ECS
 Fargate on the shared ALB:
 
@@ -45,8 +45,9 @@ Fargate on the shared ALB:
   (must match vendored `_design/acl` ddoc **2.3.0** in `@faims3/data-model` /
   `docker-compose.yml`).
 
-**Cutover gate:** Do not set `enabled: true` on a live environment until every
-`data-*` DB is at migration version **2**. Order and rollback:
+**First-deploy gate:** ensure every `data-*` DB is at migration version **2**
+before pointing production traffic at a new stack (unstamped docs are
+world-readable to members under the proxy). See
 [CouchAuthProxyCutover](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyCutover.md),
 [CouchAuthProxyAwsCdk](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyAwsCdk.md).
 
@@ -56,9 +57,8 @@ The `FaimsConductor` construct sets up the API service:
 
 - **ECS Fargate**: Runs the Conductor API as a containerized service. Can either be built using CDK with a debug flag in the code, or preferably use a docker hub image (name and tag).
 - **Task Definition**: Configures the container with environment variables and secrets.
-- **Couch URLs**: `COUCHDB_PUBLIC_URL` (apps / sync — proxy when enabled) vs
-  `COUCHDB_INTERNAL_URL` (admin — VPC Couch when proxy enabled; same public
-  hostname in legacy mode).
+- **Couch URLs**: `COUCHDB_PUBLIC_URL` (apps / sync → proxy) vs
+  `COUCHDB_INTERNAL_URL` (admin → VPC Couch).
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
 - **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
@@ -392,12 +392,10 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
-- `couchAuthProxy`: (Optional) Public Pouch sync ACL proxy. Defaults to
-  `{ "enabled": false }` (legacy ALB → Couch). **Do not enable in production
-  until DATA v2 migration completes** — see CouchAuthProxyCutover.md.
-  - `enabled`: When `true`, ALB `couch.*` → ECS proxy; Conductor
-    `COUCHDB_INTERNAL_URL` → VPC Couch; Couch SG allows proxy + Conductor only.
-    When `false`, preserves legacy ALB→Couch (rollback; reopens guest read gap).
+- `couchAuthProxy`: Public Pouch sync ACL proxy (**always deployed**). Section
+  is optional in JSON only because image/cpu defaults apply when omitted.
+  Complete DATA v2 migration before first production deploy — see
+  CouchAuthProxyCutover.md.
   - `image`: (default `ghcr.io/peterbaker0/couch-auth-proxy`) Image repository
   - `imageTag`: (default `sha-3004091`) Immutable pin matching data-model ACL
     ddoc **2.3.0** / compose

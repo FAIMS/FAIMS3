@@ -318,7 +318,6 @@ Frontend CSP can keep `https://${domains.couch}` — hostname unchanged.
 
 ```json
 "couchAuthProxy": {
-  "enabled": true,
   "image": "ghcr.io/peterbaker0/couch-auth-proxy",
   "imageTag": "sha-3004091",
   "cpu": 512,
@@ -327,11 +326,9 @@ Frontend CSP can keep `https://${domains.couch}` — hostname unchanged.
 }
 ```
 
-Zod: required when present; pin `imageTag` in README next to data-model ACL
-ddoc version **2.3.0**.
-
-`enabled: false` preserves legacy “ALB → Couch” for emergency rollback only.
-Document that rollback re-opens the read gap.
+Zod: section optional only because field defaults apply when omitted; the
+proxy is **always deployed** (no `enabled` flag). Pin `imageTag` in README
+next to data-model ACL ddoc version **2.3.0**.
 
 ---
 
@@ -339,9 +336,9 @@ Document that rollback re-opens the read gap.
 
 Align with handover §13; infra-specific steps:
 
-1. **Deploy application build** that stamps ACL + DATA v1→v2 migration while
-   `couchAuthProxy.enabled` is still `false` (public URL still raw Couch) **or**
-   deploy code first with proxy not yet receiving traffic.
+1. **Deploy application build** that stamps ACL + DATA v1→v2 migration, and
+   run migrations against **internal** Couch **before** (or as part of)
+   directing production sync clients at the always-on proxy hostname.
 2. **Run migrations** (`MIGRATE_NOTEBOOKS_ON_STARTUP` / initialise) until every
    `data-*` is at version **2**. Optionally
    `pnpm --filter=@faims3/api run repair-data-db-acl`.
@@ -396,26 +393,21 @@ add “healthy host &lt; 1” on the proxy TG.
 [x] Add CouchAuthProxyConfig to config Zod schema + sample.json
 [x] Implement CouchAuthProxy ECS construct
 [x] Export couch SG + internalEndpoint from EC2CouchDB
-[x] Stop public ALB targeting Couch when proxy enabled
+[x] Stop public ALB targeting Couch (proxy always owns couch.*)
 [x] Split COUCHDB_PUBLIC_URL / COUCHDB_INTERNAL_URL in FaimsConductor
 [x] Wire SGs: proxy→5984, conductor→5984; deny ALB→5984
 [x] Health check on /_couch-auth-proxy/health
 [x] README + DeployingAWSStack.md cutover notes
-[x] cdk synth against sample config (enabled true/false)
+[x] Synth-level tests for always-on proxy wiring
+[x] Remove couchAuthProxy.enabled (proxy mandatory)
 [ ] cdk diff on a non-prod account (operator)
-[ ] Soak on staging hostname, then flip couch.* (operator)
+[ ] Soak on staging, then cut over production sync clients
 ```
 
-**CDK construct work is done.** Live cutover still requires DATA v2 migration
-on every `data-*` DB **before** setting `couchAuthProxy.enabled: true` — see
-[CouchAuthProxyCutover](CouchAuthProxyCutover.md). Do not flip a production
-account without that backfill.
-
-Suggested commit split (historical):
-
-1. Construct + config (proxy enabled but optional; no prod flip).
-2. Stack wiring + Conductor URL split behind `couchAuthProxy.enabled`.
-3. Docs / runbook only if not already covered here.
+**CDK construct work is done; proxy is always on.** Live cutover still
+requires DATA v2 migration on every `data-*` DB **before** production sync
+clients use the public hostname — see
+[CouchAuthProxyCutover](CouchAuthProxyCutover.md).
 
 ---
 

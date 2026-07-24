@@ -381,28 +381,26 @@ const CouchConfigSchema = z.object({
 });
 
 /**
- * couch-auth-proxy (public Pouch sync ACL). Pin imageTag to the tag that
- * matches vendored `_design/acl` in @faims3/data-model (ddoc 2.3.0) and
+ * couch-auth-proxy (mandatory public Pouch sync ACL). Always deployed: ALB
+ * couch.* → proxy; Conductor INTERNAL → VPC Couch. Pin imageTag to the tag
+ * that matches vendored `_design/acl` in @faims3/data-model (ddoc 2.3.0) and
  * docker-compose.yml. See CouchAuthProxyAwsCdk.md / CouchAuthProxyCutover.md.
- *
- * `enabled: false` keeps legacy ALB → Couch (rollback only; reopens the
- * guest sync read gap). Do not enable in a live env until DATA DBs are at
- * migration v2.
  */
-const CouchAuthProxyConfigSchema = z.object({
-  /** When true, ALB couch.* → proxy; Conductor INTERNAL → VPC Couch */
-  enabled: z.boolean().default(false),
-  /** Container image repository (no tag) */
-  image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
-  /** Immutable tag / digest pin (must match data-model ACL ddoc 2.3.0) */
-  imageTag: z.string().default('sha-3004091'),
-  /** Fargate CPU units */
-  cpu: z.number().int().positive().default(512),
-  /** Fargate memory in MiB */
-  memory: z.number().int().positive().default(1024),
-  /** Desired task count */
-  desiredCount: z.number().int().positive().default(2),
-});
+const CouchAuthProxyConfigSchema = z
+  .object({
+    /** Container image repository (no tag) */
+    image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
+    /** Immutable tag / digest pin (must match data-model ACL ddoc 2.3.0) */
+    imageTag: z.string().default('sha-3004091'),
+    /** Fargate CPU units */
+    cpu: z.number().int().positive().default(512),
+    /** Fargate memory in MiB */
+    memory: z.number().int().positive().default(1024),
+    /** Desired task count */
+    desiredCount: z.number().int().positive().default(2),
+  })
+  // Reject legacy `enabled` and other unknown keys — proxy is always on
+  .strict();
 
 const DomainsConfigSchema = z.object({
   /** The base domain for all services. Note: Apex domains are not currently supported. */
@@ -623,11 +621,10 @@ export const ConfigSchema = z.object({
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /**
-   * Public sync ACL proxy. Optional; defaults to disabled (legacy ALB→Couch).
-   * Enable only after DATA v2 migration — see CouchAuthProxyCutover.md.
+   * Public sync ACL proxy (always deployed). Tuning/image pin only —
+   * see CouchAuthProxyCutover.md before first deploy to a live env.
    */
   couchAuthProxy: CouchAuthProxyConfigSchema.optional().default({
-    enabled: false,
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
     imageTag: 'sha-3004091',
     cpu: 512,

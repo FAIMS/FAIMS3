@@ -1,7 +1,6 @@
 /**
- * Synth-level assertions for couch-auth-proxy cutover wiring.
- * Uses a minimal stack (no frontend bundling) so CI can verify ALB / env / SG
- * behaviour with couchAuthProxy.enabled true and false.
+ * Synth-level assertions for mandatory couch-auth-proxy wiring.
+ * Uses a minimal stack (no frontend bundling) so CI can verify ALB / env / SG.
  */
 import * as cdk from 'aws-cdk-lib';
 import {Match, Template} from 'aws-cdk-lib/assertions';
@@ -14,9 +13,9 @@ import {FaimsConductor} from '../lib/components/conductor';
 import {FaimsNetworking} from '../lib/components/networking';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
-function wireMinimalStack(proxyEnabled: boolean): Template {
+function wireMinimalStack(): Template {
   const app = new cdk.App();
-  const stack = new cdk.Stack(app, proxyEnabled ? 'ProxyOn' : 'ProxyOff', {
+  const stack = new cdk.Stack(app, 'ProxyStack', {
     env: {account: '123456789012', region: 'ap-southeast-2'},
   });
 
@@ -49,31 +48,24 @@ function wireMinimalStack(proxyEnabled: boolean): Template {
     dataVolumeSize: 20,
     couchVersionTag: '3.3.3',
     cookieSecret,
-    attachToPublicAlb: !proxyEnabled,
   });
 
-  let couchPublicEndpoint = couchDb.couchEndpoint;
-  if (proxyEnabled) {
-    const proxy = new CouchAuthProxy(stack, 'couch-auth-proxy', {
-      vpc: networking.vpc,
-      sharedBalancer: networking.sharedBalancer,
-      domainName: domainCouch,
-      certificate: cert,
-      couchInternalUrl: couchDb.internalEndpoint,
-      couchAdminSecret: couchDb.passwordSecret,
-      couchSecurityGroup: couchDb.securityGroup,
-      corsOrigins: ['https://faims.example.com', 'https://web.example.com'],
-      image: 'ghcr.io/peterbaker0/couch-auth-proxy',
-      imageTag: 'sha-3004091',
-      cpu: 512,
-      memory: 1024,
-      desiredCount: 2,
-      couchInternalPort: couchDb.couchInternalPort,
-    });
-    couchPublicEndpoint = proxy.publicEndpoint;
-
-    // Conductor SG wired below after construct exists
-  }
+  const proxy = new CouchAuthProxy(stack, 'couch-auth-proxy', {
+    vpc: networking.vpc,
+    sharedBalancer: networking.sharedBalancer,
+    domainName: domainCouch,
+    certificate: cert,
+    couchInternalUrl: couchDb.internalEndpoint,
+    couchAdminSecret: couchDb.passwordSecret,
+    couchSecurityGroup: couchDb.securityGroup,
+    corsOrigins: ['https://faims.example.com', 'https://web.example.com'],
+    image: 'ghcr.io/peterbaker0/couch-auth-proxy',
+    imageTag: 'sha-3004091',
+    cpu: 512,
+    memory: 1024,
+    desiredCount: 2,
+    couchInternalPort: couchDb.couchInternalPort,
+  });
 
   const conductor = new FaimsConductor(stack, 'conductor', {
     vpc: networking.vpc,
@@ -83,10 +75,8 @@ function wireMinimalStack(proxyEnabled: boolean): Template {
       'arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:pk-AbCdEf',
     hz,
     couchDbAdminSecret: couchDb.passwordSecret,
-    couchDBPublicEndpoint: couchPublicEndpoint,
-    couchDBInternalEndpoint: proxyEnabled
-      ? couchDb.internalEndpoint
-      : couchDb.couchEndpoint,
+    couchDBPublicEndpoint: proxy.publicEndpoint,
+    couchDBInternalEndpoint: couchDb.internalEndpoint,
     couchDBPort: couchDb.exposedPort,
     webAppPublicUrl: 'https://faims.example.com',
     androidAppPublicUrl: 'https://play.google.com/store/apps/details?id=x',
@@ -127,156 +117,96 @@ function wireMinimalStack(proxyEnabled: boolean): Template {
     localhostWhitelist: false,
   });
 
-  if (proxyEnabled) {
-    couchDb.securityGroup.connections.allowFrom(
-      conductor.serviceSecurityGroup,
-      ec2.Port.tcp(couchDb.couchInternalPort),
-      'Allow Conductor to CouchDB (internal)'
-    );
-  }
+  couchDb.securityGroup.connections.allowFrom(
+    conductor.serviceSecurityGroup,
+    ec2.Port.tcp(couchDb.couchInternalPort),
+    'Allow Conductor to CouchDB (internal)'
+  );
 
   return Template.fromStack(stack);
 }
 
-describe('couch-auth-proxy CDK wiring', () => {
-  describe('enabled: true', () => {
-    const template = wireMinimalStack(true);
+describe('couch-auth-proxy CDK wiring (always on)', () => {
+  const template = wireMinimalStack();
 
-    it('registers ALB host rule to proxy TG health path, not Couch :5984', () => {
-      // Proxy target group health check
-      template.hasResourceProperties(
-        'AWS::ElasticLoadBalancingV2::TargetGroup',
-        {
-          Port: 8000,
-          HealthCheckPath: '/_couch-auth-proxy/health',
-          Matcher: {HttpCode: '200'},
-        }
-      );
-
-      // No instance TG on Couch :5984 when proxy owns the host
-      const tgs = template.findResources(
-        'AWS::ElasticLoadBalancingV2::TargetGroup'
-      );
-      const couchInstanceTg = Object.values(tgs).filter(
-        (tg: {Properties?: {Port?: number; TargetType?: string}}) =>
-          tg.Properties?.Port === 5984 &&
-          tg.Properties?.TargetType === 'instance'
-      );
-      expect(couchInstanceTg).toHaveLength(0);
+  it('registers ALB host rule to proxy TG health path, not Couch :5984', () => {
+    template.hasResourceProperties('AWS::ElasticLoadBalancingV2::TargetGroup', {
+      Port: 8000,
+      HealthCheckPath: '/_couch-auth-proxy/health',
+      Matcher: {HttpCode: '200'},
     });
 
-    it('runs proxy Fargate task with hardened ACL env and Secrets Manager admin', () => {
-      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
-        ContainerDefinitions: Match.arrayWith([
-          Match.objectLike({
-            Image: 'ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091',
-            Environment: Match.arrayWith([
-              {Name: 'ACL_DB_INCLUDE', Value: '/^data-/'},
-              {
-                Name: 'ACL_ROUTE_INCLUDE',
-                Value: 'pouch-sync,session',
-              },
-              {Name: 'ACL_AUTO_INSTALL', Value: 'false'},
-              {
-                Name: 'AUTH_RESOLVE_VIA_COUCH_SESSION',
-                Value: 'true',
-              },
-              {
-                Name: 'CORS_ORIGINS',
-                Value: 'https://faims.example.com,https://web.example.com',
-              },
-            ]),
-            Secrets: Match.arrayWith([
-              Match.objectLike({Name: 'COUCH_ADMIN_USER'}),
-              Match.objectLike({Name: 'COUCH_ADMIN_PASSWORD'}),
-            ]),
-          }),
-        ]),
-      });
-    });
+    const tgs = template.findResources(
+      'AWS::ElasticLoadBalancingV2::TargetGroup'
+    );
+    const couchInstanceTg = Object.values(tgs).filter(
+      (tg: {Properties?: {Port?: number; TargetType?: string}}) =>
+        tg.Properties?.Port === 5984 && tg.Properties?.TargetType === 'instance'
+    );
+    expect(couchInstanceTg).toHaveLength(0);
+  });
 
-    it('sets Conductor PUBLIC vs INTERNAL Couch URLs distinctly', () => {
-      const tasks = template.findResources('AWS::ECS::TaskDefinition');
-      const conductor = Object.values(tasks).find(
-        (td: {
-          Properties?: {
-            ContainerDefinitions?: Array<{
-              Image?: string;
-              Environment?: Array<{Name: string; Value: unknown}>;
-            }>;
-          };
-        }) =>
-          td.Properties?.ContainerDefinitions?.some(c =>
-            c.Image?.includes('faims3-api')
-          )
-      ) as {
-        Properties: {
-          ContainerDefinitions: Array<{
+  it('runs proxy Fargate task with hardened ACL env and Secrets Manager admin', () => {
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Image: 'ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091',
+          Environment: Match.arrayWith([
+            {Name: 'ACL_DB_INCLUDE', Value: '/^data-/'},
+            {
+              Name: 'ACL_ROUTE_INCLUDE',
+              Value: 'pouch-sync,session',
+            },
+            {Name: 'ACL_AUTO_INSTALL', Value: 'false'},
+            {
+              Name: 'AUTH_RESOLVE_VIA_COUCH_SESSION',
+              Value: 'true',
+            },
+            {
+              Name: 'CORS_ORIGINS',
+              Value: 'https://faims.example.com,https://web.example.com',
+            },
+          ]),
+          Secrets: Match.arrayWith([
+            Match.objectLike({Name: 'COUCH_ADMIN_USER'}),
+            Match.objectLike({Name: 'COUCH_ADMIN_PASSWORD'}),
+          ]),
+        }),
+      ]),
+    });
+  });
+
+  it('sets Conductor PUBLIC vs INTERNAL Couch URLs distinctly', () => {
+    const tasks = template.findResources('AWS::ECS::TaskDefinition');
+    const conductor = Object.values(tasks).find(
+      (td: {
+        Properties?: {
+          ContainerDefinitions?: Array<{
             Image?: string;
             Environment?: Array<{Name: string; Value: unknown}>;
           }>;
         };
+      }) =>
+        td.Properties?.ContainerDefinitions?.some(c =>
+          c.Image?.includes('faims3-api')
+        )
+    ) as {
+      Properties: {
+        ContainerDefinitions: Array<{
+          Image?: string;
+          Environment?: Array<{Name: string; Value: unknown}>;
+        }>;
       };
-      const env = conductor.Properties.ContainerDefinitions.find(c =>
-        c.Image?.includes('faims3-api')
-      )!.Environment!;
-      const byName = Object.fromEntries(env.map(e => [e.Name, e.Value]));
-      expect(byName.COUCHDB_PUBLIC_URL).toBe('https://couch.example.com:443');
-      // INTERNAL must be VPC HTTP :5984 (CFN Fn::Join over private IP), not public HTTPS
-      expect(byName.COUCHDB_INTERNAL_URL).not.toBe(byName.COUCHDB_PUBLIC_URL);
-      const internal = JSON.stringify(byName.COUCHDB_INTERNAL_URL);
-      expect(internal).toContain('http://');
-      expect(internal).toContain(':5984');
-      expect(internal).not.toContain('https://');
-    });
-  });
-
-  describe('enabled: false (legacy rollback)', () => {
-    const template = wireMinimalStack(false);
-
-    it('keeps ALB → Couch instance TG on :5984', () => {
-      template.hasResourceProperties(
-        'AWS::ElasticLoadBalancingV2::TargetGroup',
-        {
-          Port: 5984,
-          TargetType: 'instance',
-        }
-      );
-    });
-
-    it('does not create a couch-auth-proxy task definition', () => {
-      const tasks = template.findResources('AWS::ECS::TaskDefinition');
-      const proxyTasks = Object.values(tasks).filter(
-        (td: {
-          Properties?: {
-            ContainerDefinitions?: Array<{Image?: string}>;
-          };
-        }) =>
-          td.Properties?.ContainerDefinitions?.some(c =>
-            c.Image?.includes('couch-auth-proxy')
-          )
-      );
-      expect(proxyTasks).toHaveLength(0);
-    });
-
-    it('keeps Conductor PUBLIC and INTERNAL on the same public Couch URL', () => {
-      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
-        ContainerDefinitions: Match.arrayWith([
-          Match.objectLike({
-            Image: Match.stringLikeRegexp('faims3-api'),
-            Environment: Match.arrayWith([
-              {
-                Name: 'COUCHDB_PUBLIC_URL',
-                Value: 'https://couch.example.com:443',
-              },
-              {
-                Name: 'COUCHDB_INTERNAL_URL',
-                Value: 'https://couch.example.com:443',
-              },
-            ]),
-          }),
-        ]),
-      });
-    });
+    };
+    const env = conductor.Properties.ContainerDefinitions.find(c =>
+      c.Image?.includes('faims3-api')
+    )!.Environment!;
+    const byName = Object.fromEntries(env.map(e => [e.Name, e.Value]));
+    expect(byName.COUCHDB_PUBLIC_URL).toBe('https://couch.example.com:443');
+    expect(byName.COUCHDB_INTERNAL_URL).not.toBe(byName.COUCHDB_PUBLIC_URL);
+    const internal = JSON.stringify(byName.COUCHDB_INTERNAL_URL);
+    expect(internal).toContain('http://');
+    expect(internal).toContain(':5984');
+    expect(internal).not.toContain('https://');
   });
 });

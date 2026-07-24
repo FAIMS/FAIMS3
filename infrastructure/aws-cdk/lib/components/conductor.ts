@@ -270,8 +270,7 @@ export class FaimsConductor extends Construct {
         CONDUCTOR_INSTANCE_NAME: props.config.name,
         CONDUCTOR_DESCRIPTION: props.config.description,
         COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-        // PUBLIC → proxy (or legacy Couch when couchAuthProxy.enabled=false)
-        // INTERNAL → VPC Couch for admin / migrations (bypass proxy)
+        // PUBLIC → couch-auth-proxy; INTERNAL → VPC Couch (admin / migrations)
         // See docs/.../Authorisation/CouchAuthProxyCutover.md
         COUCHDB_PUBLIC_URL: props.couchDBPublicEndpoint,
         COUCHDB_INTERNAL_URL: props.couchDBInternalEndpoint,
