@@ -49,6 +49,8 @@ import {
   recordDocumentSchema,
   RecordQueryResult,
   RecordSearchResult,
+  revisionHistoryEntry,
+  RevisionHistoryEntry,
   RevisionMetadataQueryResult,
   toMinimalRevisionMetadata,
 } from './types';
@@ -1427,6 +1429,66 @@ class FormOperations {
         hrid: hydrated.hrid,
       },
     };
+  }
+
+  /**
+   * Given a record ID, return its revision history: who created each revision,
+   * when, and which fields changed in each revision. Useful for showing an
+   * audit trail of changes to a record.
+   *
+   * The changed fields are computed by diffing each revision's AVP map against
+   * its parent's: unchanged fields reuse the parent's AVP ID, so any field
+   * whose AVP ID differs (or which was added or removed) is a changed field.
+   *
+   * @param recordId The record ID to query
+   * @returns Array of revision history entries (revisionId, created,
+   * createdBy, changedFields)
+   */
+  async getHistoryData({
+    recordId,
+  }: {
+    recordId: string;
+  }): Promise<RevisionHistoryEntry[]> {
+    const record = await this.core.getRecord(recordId);
+    const revisions = await Promise.all(
+      record.revisions.map(revisionId => this.core.getRevision(revisionId))
+    );
+
+    // Index by revision ID so each revision can look up its parent's AVPs.
+    const revisionsById = new Map(revisions.map(rev => [rev._id, rev]));
+
+    const history = revisions.map((revision): RevisionHistoryEntry => {
+      return {
+        revisionId: revision._id,
+        created: revision.created,
+        createdBy: revision.created_by,
+        deleted: revision.deleted,
+        changedFields:
+          revision.parents.length === 0
+            ? {root: Object.keys(revision.avps).sort()}
+            : Object.fromEntries(
+                revision.parents.map(parentId => {
+                  const parent = revisionsById.get(parentId);
+                  const parentAvps = parent?.avps ?? {};
+
+                  const changed = new Set<string>();
+                  for (const [field, avpId] of Object.entries(revision.avps)) {
+                    if (parentAvps[field] !== avpId) {
+                      changed.add(field);
+                    }
+                  }
+                  for (const field of Object.keys(parentAvps)) {
+                    if (!(field in revision.avps)) {
+                      changed.add(field);
+                    }
+                  }
+                  return [parentId, Array.from(changed).sort()];
+                })
+              ),
+      };
+    });
+
+    return revisionHistoryEntry.array().parse(history);
   }
 
   /**
