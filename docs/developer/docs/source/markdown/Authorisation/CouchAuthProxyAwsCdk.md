@@ -354,8 +354,9 @@ Align with handover §13; infra-specific steps:
 6. **Clients** rebuild local data DBs via `openLocalDataDbWithAclCutover` on
    next activate (app change already on proxy integration branch).
 
-Rollback: point ALB + `COUCHDB_PUBLIC_URL` back at Couch (accept read-gap
-regression) or scale proxy to 0 only after restoring Couch TG.
+Rollback is no longer a config flag (proxy is always on). Emergency
+recovery means a CDK change to re-attach a Couch TG / bypass the proxy
+(accept read-gap regression) — not an operator `enabled: false` toggle.
 
 ---
 
@@ -441,7 +442,7 @@ Conductor env must gain an internal Couch URL (currently only
 | Admin creds | Existing Secrets Manager secret |
 | ACL scope | `ACL_DB_INCLUDE=/^data-/`, `ACL_AUTO_INSTALL=false` |
 | Cutover gate | DATA v2 migration before ALB flip |
-| Rollback | Re-attach Couch TG (reopens read gap) |
+| Rollback | Code change to re-attach Couch TG (no `enabled` flag; reopens read gap) |
 
 ---
 
