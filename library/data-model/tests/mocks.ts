@@ -166,6 +166,8 @@ export const createRecord = async (
     type: viewID,
     data: data,
     created_by: userID,
+    creator: userID,
+    parent: generateFAIMSDataID(),
     updated_by: userID,
     created: new Date(),
     updated: new Date(),

@@ -36,6 +36,23 @@ Authorization is managed through tokens that encode:
 
 CouchDB uses these roles in the `validate_doc_update` design document function and `member` array of the security document to enforce permissions.
 
+### Sync enforcement (couch-auth-proxy)
+
+CouchDB `_security` membership alone cannot enforce per-document reads (e.g.
+guest = own records only). The public sync URL (`COUCHDB_PUBLIC_URL`) points at
+[`couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy), which
+filters `_changes` / docs / attachments using:
+
+| Grant | Source |
+| --- | --- |
+| Own record graph | Doc field `creator` on `rec-*`; child docs (`frev`/`avp`/`att`) set `parent` to the record id |
+| Read/edit/delete all | `_design/acl` `dbacl` lists from `necessaryActionToCouchRoleList` for `*_ALL_PROJECT_RECORDS` |
+| Write my/all rules | Existing `_design/permissions` `validate_doc_update` (unchanged) |
+
+Conductor keeps using `COUCHDB_INTERNAL_URL` (admin, bypasses the proxy). See
+[CouchAuthProxyHandover](Authorisation/CouchAuthProxyHandover.md) for the full
+integration brief and cutover notes.
+
 ## Usage Examples
 
 ### Checking User Permissions

@@ -18,6 +18,7 @@
     "load-projects": "env-cmd ts-node src/scripts/loadProjects.ts ./notebooks/*.json",
     "load-templates": "env-cmd ts-node src/scripts/loadTemplates.ts ./notebooks/*.json",
     "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha --exit",
+    "test:couch-auth-proxy": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha --exit 'test/couchAuthProxy.integration.test.ts'",
     "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
     "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
     "migrate": "env-cmd ts-node src/scripts/migrate.ts",

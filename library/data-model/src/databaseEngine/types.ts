@@ -31,6 +31,8 @@ export const v1RecordDBFieldsSchema = z
     record_format_version: z.number(),
     created: z.string().datetime(),
     created_by: z.string(),
+    /** couch-auth-proxy ACL owner (r/w/d); set with created_by on create. */
+    creator: z.string(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
@@ -133,6 +135,13 @@ export const v1RevisionDBFieldsSchema = z
     parents: z.array(z.string()),
     created: z.string().datetime(),
     created_by: z.string(),
+    /** couch-auth-proxy ACL creator for this revision node. */
+    creator: z.string(),
+    /**
+     * couch-auth-proxy ACL parent (record doc id). Distinct from `parents`
+     * (revision DAG) and `relationship.parent` (form links).
+     */
+    parent: z.string(),
     type: z.string(),
     ugc_comment: z.string().optional(),
     relationship: relationshipSchema.optional(),
@@ -188,6 +197,10 @@ export const v1AvpDBFieldsSchema = z
     annotations: annotationsSchema.optional(),
     created: z.string().datetime(),
     created_by: z.string(),
+    /** couch-auth-proxy ACL creator for this AVP node. */
+    creator: z.string(),
+    /** couch-auth-proxy ACL parent (record doc id). */
+    parent: z.string(),
     faims_attachments: z.array(attachmentSchema).optional(),
   })
   .strict();
@@ -246,6 +259,10 @@ const v1AttachmentDBFieldsBaseSchema = z.object({
   record_id: z.string(),
   created: z.string().datetime(),
   created_by: z.string(),
+  /** couch-auth-proxy ACL creator for this attachment document. */
+  creator: z.string(),
+  /** couch-auth-proxy ACL parent (record doc id). */
+  parent: z.string(),
   filename: z.string(),
 });
 

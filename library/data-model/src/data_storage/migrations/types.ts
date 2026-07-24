@@ -20,6 +20,13 @@ export type MigrationContext = {
    * no creator. Defaults to {@link DEFAULT_MIGRATION_CREATED_BY}.
    */
   migrationCreatedBy?: string;
+  /**
+   * Database currently being migrated (when running via {@link performMigration}).
+   * Optional for unit tests that invoke migration functions directly.
+   */
+  db?: DatabaseInterface;
+  /** Fully qualified Couch database name for {@link db}. */
+  dbName?: string;
 };
 
 // Check if we are testing
