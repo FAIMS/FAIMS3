@@ -126,7 +126,8 @@ manage_docker_volumes() {
   if [ "$ALL_SERVICES" = true ]; then
     ${docker_prefix} up ${BUILD_FLAG} -d
   else
-    ${docker_prefix} up ${BUILD_FLAG} -d couchdb
+    # CouchDB + couch-auth-proxy (app sync ACL). Conductor uses Couch directly.
+    ${docker_prefix} up ${BUILD_FLAG} -d couchdb couch-auth-proxy
   fi
 }
 
@@ -179,6 +180,35 @@ wait_for_couchdb() {
       fi
     fi
     echo "CouchDB not yet available. Retrying in 2 seconds..."
+    sleep 2
+  done
+}
+
+wait_for_couch_auth_proxy() {
+  local start_time
+  local end_time
+  local current_time
+  local response
+  start_time=$(date +%s)
+  end_time=$((start_time + 45))
+
+  PROXY_PORT="${COUCH_AUTH_PROXY_EXTERNAL_PORT:-5985}"
+
+  echo "Waiting for couch-auth-proxy on port ${PROXY_PORT}..."
+
+  while true; do
+    current_time=$(date +%s)
+    if [ $current_time -ge $end_time ]; then
+      echo "Global timeout reached. couch-auth-proxy did not become available within 45 seconds."
+      return 1
+    fi
+    if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${PROXY_PORT}/_couch-auth-proxy/health"); then
+      if [ "$response" -eq 200 ]; then
+        echo "couch-auth-proxy is now available!"
+        return 0
+      fi
+    fi
+    echo "couch-auth-proxy not yet available. Retrying in 2 seconds..."
     sleep 2
   done
 }
@@ -252,16 +282,25 @@ if [ "$ALL_SERVICES" = false ]; then
   echo "Waiting for CouchDB to become available..."
   if wait_for_couchdb; then
     echo "CouchDB is ready!"
-    COUCHDB_PORT=5984
-    echo ""
-    echo "=========================================="
-    echo "CouchDB is running:"
-    echo "CouchDB Admin UI: http://localhost:${COUCHDB_PORT}/_utils"
-    echo "=========================================="
-    echo ""
-    echo "Note: Only CouchDB is running. To start all services, run with --all flag."
   else
     echo "Failed to connect to CouchDB. Exiting."
+    exit 1
+  fi
+  echo "Waiting for couch-auth-proxy to become available..."
+  if wait_for_couch_auth_proxy; then
+    COUCHDB_PORT=5984
+    PROXY_PORT="${COUCH_AUTH_PROXY_EXTERNAL_PORT:-5985}"
+    echo ""
+    echo "=========================================="
+    echo "CouchDB + couch-auth-proxy are running:"
+    echo "CouchDB Admin UI: http://localhost:${COUCHDB_PORT}/_utils"
+    echo "couch-auth-proxy (app sync): http://localhost:${PROXY_PORT}"
+    echo "Point COUCHDB_PUBLIC_URL at the proxy; COUCHDB_INTERNAL_URL at Couch."
+    echo "=========================================="
+    echo ""
+    echo "Note: Only CouchDB + proxy are running. To start all services, run with --all flag."
+  else
+    echo "Failed to connect to couch-auth-proxy. Exiting."
     exit 1
   fi
 else

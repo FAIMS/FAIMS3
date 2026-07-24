@@ -22,7 +22,6 @@ import {
   buildCompiledSpecId,
   buildPouchIdentifier,
   buildSyncId,
-  createLocalPouchDatabase,
   createPouchDbReplication,
   createRemotePouchDbFromConnectionInfo,
   fetchNotebookDetails,
@@ -30,6 +29,7 @@ import {
   probeNotebookServerLifecycle,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
+import {openLocalDataDbWithAclCutover} from './helpers/localDataAclCutover';
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
 import {replaceProjectReplication} from './helpers/replicationLifecycle';
@@ -1579,12 +1579,12 @@ export const activateProject = createAsyncThunk<
     }),
   };
 
-  // creates and/or links to the local data database
+  // creates and/or links to the local data database (wipes pre-ACL leaked docs)
   const localDatabaseId = buildPouchIdentifier({
     projectId: payload.projectId,
     serverId: payload.serverId,
   });
-  const localDb = createLocalPouchDatabase<ProjectDataObject>({
+  const {db: localDb} = await openLocalDataDbWithAclCutover<ProjectDataObject>({
     id: localDatabaseId,
   });
   await databaseService.registerLocalDatabase(localDatabaseId, localDb);
@@ -2332,10 +2332,11 @@ export const rebuildDbs = async (
           // here we already have stuff ready to go (config etc)
           const dbInfo = project.database;
 
-          // First - build the local DB
-          const localDb = createLocalPouchDatabase<ProjectDataObject>({
-            id: dbInfo.localDbId,
-          });
+          // First - build the local DB (rebuild if pre-proxy corpus remains)
+          const {db: localDb} =
+            await openLocalDataDbWithAclCutover<ProjectDataObject>({
+              id: dbInfo.localDbId,
+            });
           // Setup design documents and permissions for local data DB
           await couchInitialiser({
             content: initDataDB({projectId: project.projectId}),

@@ -27,11 +27,9 @@ import {DatabaseInterface} from '../src';
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
 
-
 const peopleV1toV2MigrationEntry = () => {
   const entry = DB_MIGRATIONS.find(
-    m =>
-      m.dbType === DatabaseType.PEOPLE && m.from === 1 && m.to === 2
+    m => m.dbType === DatabaseType.PEOPLE && m.from === 1 && m.to === 2
   );
   if (!entry) {
     throw new Error('PEOPLE v1→v2 migration not registered');
@@ -532,7 +530,8 @@ describe('Migration System Tests', () => {
 
     it('should handle new database without existing migration document', async () => {
       // Mock the peopleV1toV2Migration for this test
-      const originalMigrationFunc = peopleV1toV2MigrationEntry().migrationFunction;
+      const originalMigrationFunc =
+        peopleV1toV2MigrationEntry().migrationFunction;
       const originalDefaultVersion =
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
       const originalTargetVersion =
@@ -809,7 +808,8 @@ describe('Migration System Tests', () => {
       await testMigrationDb.post(existingMigrationDoc);
 
       // Mock the peopleV1toV2Migration to throw an error
-      const originalMigrationFunc = peopleV1toV2MigrationEntry().migrationFunction;
+      const originalMigrationFunc =
+        peopleV1toV2MigrationEntry().migrationFunction;
       peopleV1toV2MigrationEntry().migrationFunction = record => {
         if (record._id === 'person1') {
           throw new Error('Test migration error');
@@ -864,7 +864,8 @@ describe('Migration System Tests', () => {
 
       try {
         // For this test, we'll mock the peopleV1toV2Migration to work properly
-        const originalMigrationFunc = peopleV1toV2MigrationEntry().migrationFunction;
+        const originalMigrationFunc =
+          peopleV1toV2MigrationEntry().migrationFunction;
         const originalDefaultVersion =
           DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
         const originalTargetVersion =
@@ -944,6 +945,73 @@ describe('Migration System Tests', () => {
       } finally {
         // Clean up
         await testProjectsDb.destroy();
+      }
+    });
+
+    it('DATA v1→v2 installs _design/acl on empty DB and stamps unstamped docs', async () => {
+      const projectId = `mig-acl-${Date.now()}`;
+      const dataDbName = `data-${projectId}`;
+      const testDataDb = new PouchDB(dataDbName, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      try {
+        await testDataDb.put({
+          _id: 'rec-legacy',
+          record_format_version: 1,
+          created_by: 'alice',
+          created: new Date().toISOString(),
+          revisions: [],
+          heads: [],
+          type: 'FormA',
+        });
+        await testDataDb.put({
+          _id: 'frev-legacy',
+          revision_format_version: 1,
+          record_id: 'rec-legacy',
+          created_by: 'alice',
+          parents: [],
+          avps: {},
+          type: 'FormA',
+          created: new Date().toISOString(),
+        });
+
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: dataDbName,
+              db: testDataDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById: async () => testDataDb,
+        });
+
+        const acl = await testDataDb.get<{dbacl: {_r: string[]}}>(
+          '_design/acl'
+        );
+        expect(acl.dbacl._r.length).toBeGreaterThan(0);
+
+        const record = await testDataDb.get<{creator: string}>('rec-legacy');
+        expect(record.creator).toBe('alice');
+        const rev = await testDataDb.get<{creator: string; parent: string}>(
+          'frev-legacy'
+        );
+        expect(rev.creator).toBe('alice');
+        expect(rev.parent).toBe('rec-legacy');
+
+        const migrationDocs = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, dataDbName],
+            include_docs: true,
+          }
+        );
+        expect(migrationDocs.rows.length).toBe(1);
+        expect(migrationDocs.rows[0].doc?.version).toBe(2);
+      } finally {
+        await testDataDb.destroy();
       }
     });
   });

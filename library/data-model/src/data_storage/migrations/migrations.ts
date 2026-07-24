@@ -54,6 +54,7 @@ import {
   resolveMigrationCreatedBy,
 } from './hooks';
 import {
+  ACL_ORPHAN_CREATOR,
   ensureDataDbAclDesignDoc,
   projectIdFromDataDbName,
 } from '../dataDB/acl';
@@ -62,9 +63,33 @@ import {
 const ensuredDataAclDesignDocs = new Set<string>();
 
 /**
+ * Resolve the ACL `creator` to stamp during DATA v1→v2.
+ *
+ * Prefer FAIMS `created_by`. When it is missing, assign
+ * {@link ACL_ORPHAN_CREATOR} so the doc is not left unstamped (unstamped docs
+ * are world-readable to DB members under couch-auth-proxy). Orphans remain
+ * readable/writable to ALL-capable roles via `dbacl`.
+ */
+function resolveMigrationCreator(doc: {_id?: string; created_by?: unknown}): {
+  creator: string;
+  usedOrphanFallback: boolean;
+} {
+  if (typeof doc.created_by === 'string' && doc.created_by.length > 0) {
+    return {creator: doc.created_by, usedOrphanFallback: false};
+  }
+  if (!IS_TESTING) {
+    console.warn(
+      `[dataV1toV2Migration] Doc ${doc._id ?? '<unknown>'} has no created_by; ` +
+        `stamping creator=${ACL_ORPHAN_CREATOR} (fail-closed for guests).`
+    );
+  }
+  return {creator: ACL_ORPHAN_CREATOR, usedOrphanFallback: true};
+}
+
+/**
  * DATA DB v1 → v2: stamp couch-auth-proxy ACL fields and ensure `_design/acl`.
  *
- * - `rec-*`: `creator = created_by` when missing
+ * - `rec-*`: `creator = created_by` when missing (orphan fallback if needed)
  * - docs with `record_id` (frev/avp/att): `creator` + `parent = record_id`
  * - Idempotent for already-stamped docs
  * - Installs/repairs `_design/acl` + `dbacl` once per DB via migration context
@@ -85,11 +110,6 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
     return {action: 'none'};
   }
 
-  const createdBy =
-    typeof doc.created_by === 'string' && doc.created_by.length > 0
-      ? doc.created_by
-      : undefined;
-
   let needsUpdate = false;
   const updated: Record<string, unknown> = {...doc};
 
@@ -98,19 +118,13 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
     (doc._id.startsWith('rec-') || doc.record_format_version !== undefined);
 
   if (isRecord) {
-    if (
-      createdBy &&
-      (typeof doc.creator !== 'string' || doc.creator.length === 0)
-    ) {
-      updated.creator = createdBy;
+    if (typeof doc.creator !== 'string' || doc.creator.length === 0) {
+      updated.creator = resolveMigrationCreator(doc).creator;
       needsUpdate = true;
     }
   } else if (typeof doc.record_id === 'string' && doc.record_id.length > 0) {
-    if (
-      createdBy &&
-      (typeof doc.creator !== 'string' || doc.creator.length === 0)
-    ) {
-      updated.creator = createdBy;
+    if (typeof doc.creator !== 'string' || doc.creator.length === 0) {
+      updated.creator = resolveMigrationCreator(doc).creator;
       needsUpdate = true;
     }
     // Repair missing or incorrect ACL parent (not FAIMS relationship.parent)
@@ -710,9 +724,12 @@ export const authV4toV5Migration: MigrationFunc = doc => {
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
-  // v2 = ACL fields on clean path + `_design/acl` (couch-auth-proxy). New DBs
-  // are initialised at v2 via initDataDB; existing DBs migrate 1→2.
-  [DatabaseType.DATA]: {defaultVersion: 2, targetVersion: 2},
+  // v2 = ACL fields on clean path + `_design/acl` (couch-auth-proxy).
+  // defaultVersion stays 1 so any data DB without a migrations doc (including
+  // DBs that were never queued before the data-migration enqueue fix) still
+  // runs the idempotent 1→2 backfill. New DBs already stamp via init/writes;
+  // the migrator is a no-op on already-stamped docs and still ensures ddoc.
+  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},

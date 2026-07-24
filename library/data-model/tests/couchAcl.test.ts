@@ -8,9 +8,11 @@ import {
   necessaryActionToCouchRoleList,
 } from '../src';
 import {
+  ACL_ORPHAN_CREATOR,
   buildDataDbAclDesignDoc,
   buildDbAclOverlay,
   COUCH_AUTH_PROXY_ACL_DDOC_VERSION,
+  DbAclOverlay,
   ensureDataDbAclDesignDoc,
   projectIdFromDataDbName,
   stampChildAcl,
@@ -29,9 +31,10 @@ describe('couch-auth-proxy ACL helpers', () => {
   });
 
   test('stampChildAcl sets creator and parent record id', () => {
-    expect(
-      stampChildAcl({createdBy: 'bob', recordId: 'rec-123'})
-    ).toEqual({creator: 'bob', parent: 'rec-123'});
+    expect(stampChildAcl({createdBy: 'bob', recordId: 'rec-123'})).toEqual({
+      creator: 'bob',
+      parent: 'rec-123',
+    });
   });
 
   test('toProxyRoleGrant prefixes roles with r-', () => {
@@ -93,16 +96,35 @@ describe('couch-auth-proxy ACL helpers', () => {
     expect(projectIdFromDataDbName('data-')).toBeUndefined();
   });
 
-  test('ensureDataDbAclDesignDoc is idempotent', async () => {
+  test('ensureDataDbAclDesignDoc is idempotent when unchanged', async () => {
     const db = new PouchDB(`acl-ensure-${Date.now()}`, {adapter: 'memory'});
     await ensureDataDbAclDesignDoc({db: db as any, projectId});
-    const first = await db.get<{dbacl: { _r: string[] }; _rev: string}>(
+    const first = await db.get<{dbacl: {_r: string[]}; _rev: string}>(
       '_design/acl'
     );
     expect(first.dbacl._r.length).toBeGreaterThan(0);
     await ensureDataDbAclDesignDoc({db: db as any, projectId});
-    const second = await db.get('_design/acl');
-    expect(second._rev).not.toBe(first._rev);
+    const second = await db.get<{_rev: string}>('_design/acl');
+    expect(second._rev).toBe(first._rev);
+    await db.destroy();
+  });
+
+  test('ensureDataDbAclDesignDoc repairs mismatched dbacl', async () => {
+    const db = new PouchDB(`acl-repair-${Date.now()}`, {adapter: 'memory'});
+    await ensureDataDbAclDesignDoc({db: db as any, projectId});
+    const first = await db.get<{dbacl: DbAclOverlay; _rev: string}>(
+      '_design/acl'
+    );
+    await db.put({
+      ...first,
+      dbacl: {_r: ['r-stale'], _w: ['r-stale'], _d: ['r-stale']},
+    });
+    await ensureDataDbAclDesignDoc({db: db as any, projectId});
+    const repaired = await db.get<{dbacl: {_r: string[]}; _rev: string}>(
+      '_design/acl'
+    );
+    expect(repaired.dbacl).toEqual(buildDbAclOverlay(projectId));
+    expect(repaired._rev).not.toBe(first._rev);
     await db.destroy();
   });
 });
@@ -179,6 +201,22 @@ describe('dataV1toV2Migration', () => {
     if (result.action === 'update') {
       expect(result.updatedRecord.parent).toBe('rec-9');
       expect(result.updatedRecord.creator).toBe('carol');
+    }
+  });
+
+  test('fail-closed orphan creator when created_by missing', async () => {
+    const result = await dataV1toV2Migration({
+      _id: 'rec-orphan',
+      _rev: '1-abc',
+      record_format_version: 1,
+      created: new Date().toISOString(),
+      revisions: [],
+      heads: [],
+      type: 'FormA',
+    });
+    expect(result.action).toBe('update');
+    if (result.action === 'update') {
+      expect(result.updatedRecord.creator).toBe(ACL_ORPHAN_CREATOR);
     }
   });
 });

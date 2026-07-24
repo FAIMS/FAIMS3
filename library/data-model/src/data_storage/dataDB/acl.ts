@@ -16,6 +16,13 @@ import {Action, necessaryActionToCouchRoleList} from '../../permission';
 export const COUCH_AUTH_PROXY_ACL_DDOC_VERSION = '2.3.0';
 
 /**
+ * Synthetic ACL creator stamped by DATA v1→v2 when a legacy doc has no
+ * `created_by`. Ensures the document is not left open (`r-*`) after cutover;
+ * ALL-capable roles still reach it via `dbacl`.
+ */
+export const ACL_ORPHAN_CREATOR = '__faims_acl_orphan__';
+
+/**
  * Couch map function source from couch-auth-proxy 2.3.0.
  * Emits `{ s, p, _r, _w, _d }` per document keyed by doc id.
  */
@@ -233,9 +240,22 @@ export function projectIdFromDataDbName(dbName: string): string | undefined {
   return projectId.length > 0 ? projectId : undefined;
 }
 
+function dbAclListsEqual(a: unknown, b: DbAclOverlay): boolean {
+  if (!a || typeof a !== 'object') return false;
+  const overlay = a as Partial<DbAclOverlay>;
+  const same = (left: unknown, right: string[]) =>
+    Array.isArray(left) &&
+    left.length === right.length &&
+    left.every((v, i) => v === right[i]);
+  return (
+    same(overlay._r, b._r) && same(overlay._w, b._w) && same(overlay._d, b._d)
+  );
+}
+
 /**
  * Ensure `_design/acl` exists (or is repaired) on a database with the correct
- * `dbacl` for `projectId`. Idempotent: updates in place when `_rev` is present.
+ * `dbacl` for `projectId`. Idempotent: skips rewrite when version + `dbacl`
+ * already match (avoids stamp churn).
  */
 export async function ensureDataDbAclDesignDoc({
   db,
@@ -250,6 +270,15 @@ export async function ensureDataDbAclDesignDoc({
   const fresh = buildDataDbAclDesignDoc(projectId);
   try {
     const existing = await db.get('_design/acl');
+    if (
+      existing.version === fresh.version &&
+      dbAclListsEqual(existing.dbacl, fresh.dbacl) &&
+      existing.validate_doc_update === fresh.validate_doc_update &&
+      (existing.views as {acl?: {map?: string}} | undefined)?.acl?.map ===
+        fresh.views.acl.map
+    ) {
+      return;
+    }
     await db.put({
       ...fresh,
       _rev: existing._rev,

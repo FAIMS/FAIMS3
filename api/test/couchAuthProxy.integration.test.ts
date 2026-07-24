@@ -7,6 +7,10 @@
  *
  * Skips automatically when the proxy is unreachable so unit CI stays green.
  *
+ * Auth uses Couch `_users` + Basic through the proxy with FAIMS-encoded role
+ * tokens (`projectId||ROLE`). That matches production JWT `_couchdb.roles`
+ * after Couch session resolution.
+ *
  * Run (stack up):
  *   pnpm --filter=@faims3/api run test:couch-auth-proxy
  */
@@ -47,6 +51,14 @@ function adminDbUrl(dbName: string): string {
   return `${u.toString().replace(/\/$/, '')}/${dbName}`;
 }
 
+function publicAuthedUrl(name: string, password: string, path = ''): string {
+  const u = new URL(PUBLIC_URL);
+  u.username = name;
+  u.password = password;
+  const base = u.toString().replace(/\/$/, '');
+  return path ? `${base}/${path.replace(/^\//, '')}` : base;
+}
+
 async function ensureCouchUser(args: {
   name: string;
   password: string;
@@ -70,10 +82,7 @@ async function ensureCouchUser(args: {
 }
 
 function userDb(name: string, password: string): PouchDB.Database {
-  const u = new URL(PUBLIC_URL);
-  u.username = name;
-  u.password = password;
-  return new PouchDB(`${u.toString().replace(/\/$/, '')}/${DATA_DB}`);
+  return new PouchDB(`${publicAuthedUrl(name, password)}/${DATA_DB}`);
 }
 
 async function expectNotFound(p: Promise<unknown>): Promise<void> {
@@ -85,6 +94,16 @@ async function expectNotFound(p: Promise<unknown>): Promise<void> {
     // Proxy may briefly return 503 while the ACL follower starts; treat other
     // denials as isolation success.
     expect(status).to.be.oneOf([404, 403, 'not_found', 'forbidden']);
+  }
+}
+
+async function expectForbidden(p: Promise<unknown>): Promise<void> {
+  try {
+    await p;
+    expect.fail('expected write to be forbidden');
+  } catch (err: any) {
+    const status = err?.status || err?.statusCode || err?.name;
+    expect(status).to.be.oneOf([403, 404, 'forbidden', 'not_found']);
   }
 }
 
@@ -130,6 +149,10 @@ describe('couch-auth-proxy data DB ACL', function () {
     claim: Role.PROJECT_CONTRIBUTOR,
   });
 
+  const recordId = `rec-${PROJECT_ID}-1`;
+  const revId = `frev-${PROJECT_ID}-1`;
+  const avpId = `avp-${PROJECT_ID}-1`;
+
   before(async function () {
     shouldRun = await proxyReady();
     if (!shouldRun) {
@@ -138,6 +161,13 @@ describe('couch-auth-proxy data DB ACL', function () {
         `Skipping couch-auth-proxy integration tests (proxy not reachable at ${PUBLIC_URL})`
       );
       this.skip();
+    }
+
+    // Fresh DB each run (ignore missing)
+    try {
+      await new PouchDB(adminDbUrl(DATA_DB)).destroy();
+    } catch {
+      /* ignore */
     }
 
     const adminData = new PouchDB(adminDbUrl(DATA_DB));
@@ -162,28 +192,9 @@ describe('couch-auth-proxy data DB ACL', function () {
       password,
       roles: [contributorRole],
     });
-  });
 
-  after(async function () {
-    if (!shouldRun) return;
-    try {
-      const adminData = new PouchDB(adminDbUrl(DATA_DB));
-      await adminData.destroy();
-    } catch {
-      /* ignore */
-    }
-  });
-
-  it('isolates guest records and allows contributor + parent inheritance', async function () {
     const dbA = userDb(guestA, password);
-    const dbB = userDb(guestB, password);
-    const dbC = userDb(contributor, password);
-
     await waitForAclReady(dbA);
-
-    const recordId = `rec-${PROJECT_ID}-1`;
-    const revId = `frev-${PROJECT_ID}-1`;
-    const avpId = `avp-${PROJECT_ID}-1`;
 
     await dbA.put({
       _id: recordId,
@@ -218,6 +229,31 @@ describe('couch-auth-proxy data DB ACL', function () {
       ...stampChildAcl({createdBy: guestA, recordId}),
     });
 
+    // Attachment on the revision doc (JSON doc + putAttachment path)
+    const revDoc = await dbA.get<{_rev: string}>(revId);
+    await dbA.putAttachment(
+      revId,
+      'photo.txt',
+      revDoc._rev,
+      Buffer.from('private-bytes'),
+      'text/plain'
+    );
+  });
+
+  after(async function () {
+    if (!shouldRun) return;
+    try {
+      const adminData = new PouchDB(adminDbUrl(DATA_DB));
+      await adminData.destroy();
+    } catch {
+      /* ignore */
+    }
+  });
+
+  it('isolates guest records from another guest (get / allDocs / changes)', async function () {
+    const dbB = userDb(guestB, password);
+    await waitForAclReady(dbB);
+
     await expectNotFound(dbB.get(recordId));
     await expectNotFound(dbB.get(revId));
     await expectNotFound(dbB.get(avpId));
@@ -226,6 +262,79 @@ describe('couch-auth-proxy data DB ACL', function () {
     const bIds = new Set(bAll.rows.map(r => r.id));
     expect(bIds.has(recordId)).to.equal(false);
     expect(bIds.has(revId)).to.equal(false);
+    expect(bIds.has(avpId)).to.equal(false);
+
+    // Keyed lists may return placeholders — assert no document body leak
+    const keyed = await dbB.allDocs({
+      keys: [recordId, revId, avpId],
+      include_docs: true,
+    });
+    for (const row of keyed.rows as Array<{
+      id?: string;
+      doc?: unknown;
+      error?: string;
+      value?: {deleted?: boolean};
+    }>) {
+      expect(row.doc == null || (row as {error?: string}).error).to.satisfy(
+        () => row.doc == null || Boolean(row.error)
+      );
+      if (row.doc) {
+        expect.fail('keyed allDocs must not return denied document bodies');
+      }
+    }
+
+    const changes = await dbB.changes({include_docs: true, since: 0});
+    const changeIds = new Set(changes.results.map(r => r.id));
+    expect(changeIds.has(recordId)).to.equal(false);
+    expect(changeIds.has(revId)).to.equal(false);
+    expect(changeIds.has(avpId)).to.equal(false);
+  });
+
+  it('denies guest B attachment GET and bulk_get body leak', async function () {
+    const auth = Buffer.from(`${guestB}:${password}`).toString('base64');
+    const attUrl = `${PUBLIC_URL.replace(/\/$/, '')}/${DATA_DB}/${revId}/photo.txt`;
+    const attRes = await fetch(attUrl, {
+      headers: {Authorization: `Basic ${auth}`},
+    });
+    expect(attRes.status).to.be.oneOf([404, 403]);
+    const attText = await attRes.text();
+    expect(attText).to.not.include('private-bytes');
+
+    const bulkUrl = `${PUBLIC_URL.replace(/\/$/, '')}/${DATA_DB}/_bulk_get`;
+    const bulkRes = await fetch(bulkUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({docs: [{id: recordId}, {id: revId}, {id: avpId}]}),
+    });
+    expect(bulkRes.ok).to.equal(true);
+    const bulkJson = (await bulkRes.json()) as {
+      results: Array<{
+        id: string;
+        docs: Array<{
+          ok?: {data?: string; created_by?: string};
+          error?: unknown;
+        }>;
+      }>;
+    };
+    for (const result of bulkJson.results) {
+      for (const docEntry of result.docs) {
+        if (docEntry.ok) {
+          expect.fail(
+            `_bulk_get leaked body for ${result.id}: ${JSON.stringify(docEntry.ok)}`
+          );
+        }
+      }
+    }
+  });
+
+  it('allows contributor read-all and parent inheritance after edit', async function () {
+    const dbA = userDb(guestA, password);
+    const dbB = userDb(guestB, password);
+    const dbC = userDb(contributor, password);
+    await waitForAclReady(dbC);
 
     const cRec = (await dbC.get(recordId)) as unknown as {
       created_by: string;
@@ -253,5 +362,41 @@ describe('couch-auth-proxy data DB ACL', function () {
     expect(aSeesContrib.parent).to.equal(recordId);
 
     await expectNotFound(dbB.get(contribRev));
+  });
+
+  it('denies guest B updating guest A record', async function () {
+    const dbB = userDb(guestB, password);
+    await waitForAclReady(dbB);
+    // Even with a guessed body, B must not update A's record
+    await expectForbidden(
+      dbB.put({
+        _id: recordId,
+        _rev: '1-forged',
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: guestA,
+        ...stampRecordAcl(guestA),
+        revisions: [revId],
+        heads: [revId],
+        type: 'FormA',
+      })
+    );
+  });
+
+  it('allows guests to read sync design docs (attachment_filter)', async function () {
+    const dbB = userDb(guestB, password);
+    await waitForAclReady(dbB);
+    const ddoc = await dbB.get('_design/attachment_filter');
+    expect(ddoc._id).to.equal('_design/attachment_filter');
+  });
+
+  it('admin internal URL still sees all records (API bypass)', async function () {
+    const adminData = new PouchDB(adminDbUrl(DATA_DB));
+    const rec = await adminData.get(recordId);
+    expect((rec as {_id: string})._id).to.equal(recordId);
+    const all = await adminData.allDocs({include_docs: false});
+    const ids = new Set(all.rows.map(r => r.id));
+    expect(ids.has(recordId)).to.equal(true);
+    expect(ids.has(revId)).to.equal(true);
   });
 });
