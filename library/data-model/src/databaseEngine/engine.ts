@@ -961,6 +961,9 @@ class HydratedOperations {
       created: revision.created,
       deleted: revision.deleted,
       created_by: revision.createdBy,
+      // ACL fields are not part of the hydrated API; preserve from existing doc.
+      creator: existing.creator,
+      parent: existing.parent,
       parents: revision.parents,
       record_id: revision.recordId,
       revision_format_version: 1,

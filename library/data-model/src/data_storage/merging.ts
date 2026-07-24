@@ -35,6 +35,7 @@ import {
   RevisionMap,
   UserMergeResult,
 } from '../types';
+import {stampChildAcl} from './dataDB/acl';
 import {
   generateFAIMSRevisionID,
   generateFAIMSAttributeValuePairID,
@@ -361,6 +362,7 @@ async function do3WayMerge({
       parents: parents,
       created: creation_time.toISOString(),
       created_by: creator,
+      ...stampChildAcl({createdBy: creator, recordId: us.record_id}),
       deleted: us.deleted && them.deleted ? true : false,
       // TODO: Work out how to handle changing types if that's going to be a
       // thing
@@ -684,6 +686,10 @@ async function getAVPMapFromMergeResult(
         annotations: null,
         created: merge_result.updated.toISOString(),
         created_by: merge_result.updated_by,
+        ...stampChildAcl({
+          createdBy: merge_result.updated_by,
+          recordId: merge_result.record_id,
+        }),
       };
       await dataDB.put(new_avp);
       avp_map[field_name] = new_avp_id;
@@ -716,6 +722,7 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
     parents: parents,
     created: updated.toISOString(),
     created_by: updated_by,
+    ...stampChildAcl({createdBy: updated_by, recordId: record_id}),
     deleted: false,
     type: type,
     relationship: merge_result.relationship,

@@ -27,6 +27,7 @@ import {
   getEqualityFunctionForType,
 } from '../datamodel/typesystem';
 import {logError} from '../logging';
+import {stampChildAcl, stampRecordAcl} from './dataDB/acl';
 import {
   Annotations,
   AttachmentDbType,
@@ -1160,6 +1161,10 @@ export async function addNewRevisionFromForm({
     parents: parents,
     created: record.updated.toISOString(),
     created_by: record.updated_by,
+    ...stampChildAcl({
+      createdBy: record.updated_by,
+      recordId: record.record_id,
+    }),
     type: record.type,
     ugc_comment: record.ugc_comment,
     relationship: record.relationship,
@@ -1248,6 +1253,10 @@ async function addNewAttributeValuePairs({
         annotations: record.annotations[fieldName],
         created: record.updated.toISOString(),
         created_by: record.updated_by,
+        ...stampChildAcl({
+          createdBy: record.updated_by,
+          recordId: record.record_id,
+        }),
       };
       // Dump out attachment if present and add AVP to docs
       documentsToWrite.push(...dumpAttributeValuePair(newAvp));
@@ -1296,6 +1305,7 @@ export async function initialiseRecordForNewRevision({
     record_format_version: 1,
     created: record.updated.toISOString(),
     created_by: record.updated_by,
+    ...stampRecordAcl(record.updated_by),
     revisions: [revision_id],
     heads: [revision_id],
     type: record.type,

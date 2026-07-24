@@ -27,6 +27,18 @@ import {DatabaseInterface} from '../src';
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
 
+
+const peopleV1toV2MigrationEntry = () => {
+  const entry = DB_MIGRATIONS.find(
+    m =>
+      m.dbType === DatabaseType.PEOPLE && m.from === 1 && m.to === 2
+  );
+  if (!entry) {
+    throw new Error('PEOPLE v1→v2 migration not registered');
+  }
+  return entry;
+};
+
 describe('Migration System Tests', () => {
   /**
    * Test that the migration system is complete
@@ -520,7 +532,7 @@ describe('Migration System Tests', () => {
 
     it('should handle new database without existing migration document', async () => {
       // Mock the peopleV1toV2Migration for this test
-      const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
+      const originalMigrationFunc = peopleV1toV2MigrationEntry().migrationFunction;
       const originalDefaultVersion =
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
       const originalTargetVersion =
@@ -528,7 +540,7 @@ describe('Migration System Tests', () => {
       // Set to 1
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = 1;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 2;
-      DB_MIGRATIONS[0].migrationFunction = record => {
+      peopleV1toV2MigrationEntry().migrationFunction = record => {
         return {
           action: 'update',
           updatedRecord: {
@@ -586,7 +598,7 @@ describe('Migration System Tests', () => {
       expect(person2.permissions.canEdit).toBe(true);
 
       // Restore original migration function
-      DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+      peopleV1toV2MigrationEntry().migrationFunction = originalMigrationFunc;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
         originalDefaultVersion;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
@@ -797,8 +809,8 @@ describe('Migration System Tests', () => {
       await testMigrationDb.post(existingMigrationDoc);
 
       // Mock the peopleV1toV2Migration to throw an error
-      const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
-      DB_MIGRATIONS[0].migrationFunction = record => {
+      const originalMigrationFunc = peopleV1toV2MigrationEntry().migrationFunction;
+      peopleV1toV2MigrationEntry().migrationFunction = record => {
         if (record._id === 'person1') {
           throw new Error('Test migration error');
         }
@@ -840,7 +852,7 @@ describe('Migration System Tests', () => {
       );
 
       // Restore original migration function
-      DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+      peopleV1toV2MigrationEntry().migrationFunction = originalMigrationFunc;
     });
 
     it('should migrate multiple databases in sequence', async () => {
@@ -852,7 +864,7 @@ describe('Migration System Tests', () => {
 
       try {
         // For this test, we'll mock the peopleV1toV2Migration to work properly
-        const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
+        const originalMigrationFunc = peopleV1toV2MigrationEntry().migrationFunction;
         const originalDefaultVersion =
           DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
         const originalTargetVersion =
@@ -865,7 +877,7 @@ describe('Migration System Tests', () => {
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 2;
         DB_TARGET_VERSIONS[DatabaseType.PROJECTS].defaultVersion = 1;
         DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion = 1;
-        DB_MIGRATIONS[0].migrationFunction = record => {
+        peopleV1toV2MigrationEntry().migrationFunction = record => {
           return {
             action: 'update',
             updatedRecord: {...record, migrated: true},
@@ -920,7 +932,7 @@ describe('Migration System Tests', () => {
         expect(person1.migrated).toBe(true);
 
         // Restore original migration function
-        DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+        peopleV1toV2MigrationEntry().migrationFunction = originalMigrationFunc;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
           originalDefaultVersion;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
