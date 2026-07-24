@@ -2339,10 +2339,7 @@ export const setSyncMode = createAsyncThunk<
  * alone (pre-proxy leftover docs may linger until the user refreshes /
  * reactivates).
  */
-export const reconcileRemoteCouchUrlAfterListing = createAsyncThunk<
-  void,
-  void
->(
+export const reconcileRemoteCouchUrlAfterListing = createAsyncThunk<void, void>(
   'projects/reconcileRemoteCouchUrlAfterListing',
   async (_, {getState, dispatch}) => {
     const state = (getState() as RootState).projects;

@@ -317,12 +317,12 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 
 ### 5.3 `app` — sync client
 
-| Area                  | Change                                                                                                                                                                                                                      |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Remote Pouch URL      | Already uses `dataDb.base_url` from Conductor — should “just work” when public URL is the proxy.                                                                                                                            |
-| Token fetch           | Keep Bearer JWT; ensure CORS allows app origin on proxy.                                                                                                                                                                    |
+| Area                  | Change                                                                                                                                                                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Remote Pouch URL      | Already uses `dataDb.base_url` from Conductor — should “just work” when public URL is the proxy.                                                                                                                                        |
+| Token fetch           | Keep Bearer JWT; ensure CORS allows app origin on proxy.                                                                                                                                                                                |
 | Post-cutover hygiene  | No automatic local wipe. Accept that pre-proxy leftover docs may linger in IndexedDB until the user refreshes / reactivates; wire isolation is enforced by the proxy. Optional manual “wipe local data” remains a developer affordance. |
-| `shouldDisplayRecord` | Keep as UX; do not treat it as security.                                                                                                                                                                                    |
+| `shouldDisplayRecord` | Keep as UX; do not treat it as security.                                                                                                                                                                                                |
 
 ### 5.4 Infra
 

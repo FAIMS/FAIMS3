@@ -13,13 +13,13 @@ world-readable to DB members (`r-*`).
 
 ## What changes at cutover
 
-| Concern                             | Before                       | After                                        |
-| ----------------------------------- | ---------------------------- | -------------------------------------------- |
-| App sync URL (`COUCHDB_PUBLIC_URL`) | Direct Couch                 | couch-auth-proxy                             |
-| Conductor (`COUCHDB_INTERNAL_URL`)  | Direct Couch (admin)         | Unchanged — still direct Couch               |
-| Guest sync reads                    | Entire project data DB       | Own record graph only (`creator` / `parent`) |
-| Contributor+ sync reads             | Entire DB                    | Entire DB via `_design/acl` `dbacl`          |
-| Client IndexedDB                    | May hold pre-proxy corpus    | Left as-is; leftover docs may linger until refresh / re-activate |
+| Concern                             | Before                    | After                                                            |
+| ----------------------------------- | ------------------------- | ---------------------------------------------------------------- |
+| App sync URL (`COUCHDB_PUBLIC_URL`) | Direct Couch              | couch-auth-proxy                                                 |
+| Conductor (`COUCHDB_INTERNAL_URL`)  | Direct Couch (admin)      | Unchanged — still direct Couch                                   |
+| Guest sync reads                    | Entire project data DB    | Own record graph only (`creator` / `parent`)                     |
+| Contributor+ sync reads             | Entire DB                 | Entire DB via `_design/acl` `dbacl`                              |
+| Client IndexedDB                    | May hold pre-proxy corpus | Left as-is; leftover docs may linger until refresh / re-activate |
 
 ---
 
