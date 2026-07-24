@@ -25,17 +25,16 @@ export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 // ============================================================================
 // Record Document
 // ============================================================================
+// Schema versions track the DATA ACL cutover (DATA DB migration v1→v2).
+// On-disk `record_format_version` remains a numeric format marker; ACL fields
+// are added by DATA v1→v2 + clean write stamps.
 
+/** Pre-ACL record fields (no couch-auth-proxy `creator`). */
 export const v1RecordDBFieldsSchema = z
   .object({
     record_format_version: z.number(),
     created: z.string().datetime(),
     created_by: z.string(),
-    /**
-     * couch-auth-proxy ACL owner (r/w/d). Always set on the clean write path;
-     * optional so pre-migration / fixture docs still parse until DATA v1→v2.
-     */
-    creator: z.string().optional(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
@@ -43,18 +42,30 @@ export const v1RecordDBFieldsSchema = z
   .strict();
 
 export type V1RecordDBFields = z.infer<typeof v1RecordDBFieldsSchema>;
-export type RecordDBFields = V1RecordDBFields;
+
+/**
+ * Post-ACL record fields. Keep in sync with DATA v1→v2 migration /
+ * `stampRecordAcl`.
+ */
+export const v2RecordDBFieldsSchema = v1RecordDBFieldsSchema.extend({
+  /** couch-auth-proxy ACL owner (r/w/d). */
+  creator: z.string().min(1),
+});
+
+export type V2RecordDBFields = z.infer<typeof v2RecordDBFieldsSchema>;
+export type RecordDBFields = V2RecordDBFields;
+export const recordDBFieldsSchema = v2RecordDBFieldsSchema;
 
 export const newRecordDocumentSchema = newPouchDBDocumentSchema.merge(
-  v1RecordDBFieldsSchema
+  v2RecordDBFieldsSchema
 );
 
 export const recordDocumentSchema = pouchDBDocumentSchema.merge(
-  v1RecordDBFieldsSchema
+  v2RecordDBFieldsSchema
 );
 
 export const existingRecordDocumentSchema = existingPouchDBDocumentSchema.merge(
-  v1RecordDBFieldsSchema
+  v2RecordDBFieldsSchema
 );
 
 export type NewRecordDBDocument = z.infer<typeof newRecordDocumentSchema>;
@@ -130,6 +141,7 @@ export const relationshipSchema = z.object({
 });
 export type RecordRelationship = z.infer<typeof relationshipSchema>;
 
+/** Pre-ACL revision fields (no couch-auth-proxy `creator` / ACL `parent`). */
 export const v1RevisionDBFieldsSchema = z
   .object({
     revision_format_version: z.number(),
@@ -138,13 +150,6 @@ export const v1RevisionDBFieldsSchema = z
     parents: z.array(z.string()),
     created: z.string().datetime(),
     created_by: z.string(),
-    /** couch-auth-proxy ACL creator for this revision node (clean write path). */
-    creator: z.string().optional(),
-    /**
-     * couch-auth-proxy ACL parent (record doc id). Distinct from `parents`
-     * (revision DAG) and `relationship.parent` (form links).
-     */
-    parent: z.string().optional(),
     type: z.string(),
     ugc_comment: z.string().optional(),
     relationship: relationshipSchema.optional(),
@@ -153,18 +158,35 @@ export const v1RevisionDBFieldsSchema = z
   .strict();
 
 export type V1RevisionDBFields = z.infer<typeof v1RevisionDBFieldsSchema>;
-export type RevisionDBFields = V1RevisionDBFields;
+
+/**
+ * Post-ACL revision fields. Keep in sync with DATA v1→v2 migration /
+ * `stampChildAcl`.
+ */
+export const v2RevisionDBFieldsSchema = v1RevisionDBFieldsSchema.extend({
+  /** couch-auth-proxy ACL creator for this revision node. */
+  creator: z.string().min(1),
+  /**
+   * couch-auth-proxy ACL parent (record doc id). Distinct from `parents`
+   * (revision DAG) and `relationship.parent` (form links).
+   */
+  parent: z.string().min(1),
+});
+
+export type V2RevisionDBFields = z.infer<typeof v2RevisionDBFieldsSchema>;
+export type RevisionDBFields = V2RevisionDBFields;
+export const revisionDBFieldsSchema = v2RevisionDBFieldsSchema;
 
 export const newRevisionDocumentSchema = newPouchDBDocumentSchema.merge(
-  v1RevisionDBFieldsSchema
+  v2RevisionDBFieldsSchema
 );
 
 export const revisionDocumentSchema = pouchDBDocumentSchema.merge(
-  v1RevisionDBFieldsSchema
+  v2RevisionDBFieldsSchema
 );
 
 export const existingRevisionDocumentSchema =
-  existingPouchDBDocumentSchema.merge(v1RevisionDBFieldsSchema);
+  existingPouchDBDocumentSchema.merge(v2RevisionDBFieldsSchema);
 
 export type NewRevisionDBDocument = z.infer<typeof newRevisionDocumentSchema>;
 export type RevisionDBDocument = z.infer<typeof revisionDocumentSchema>;
@@ -190,6 +212,7 @@ export const attachmentSchema = z.object({
 });
 export type Attachment = z.infer<typeof attachmentSchema>;
 
+/** Pre-ACL AVP fields (no couch-auth-proxy `creator` / ACL `parent`). */
 export const v1AvpDBFieldsSchema = z
   .object({
     avp_format_version: z.number(),
@@ -200,25 +223,35 @@ export const v1AvpDBFieldsSchema = z
     annotations: annotationsSchema.optional(),
     created: z.string().datetime(),
     created_by: z.string(),
-    /** couch-auth-proxy ACL creator for this AVP node (clean write path). */
-    creator: z.string().optional(),
-    /** couch-auth-proxy ACL parent (record doc id). */
-    parent: z.string().optional(),
     faims_attachments: z.array(attachmentSchema).optional(),
   })
   .strict();
 
 export type V1AvpDBFields = z.infer<typeof v1AvpDBFieldsSchema>;
-export type AvpDBFields = V1AvpDBFields;
+
+/**
+ * Post-ACL AVP fields. Keep in sync with DATA v1→v2 migration /
+ * `stampChildAcl`.
+ */
+export const v2AvpDBFieldsSchema = v1AvpDBFieldsSchema.extend({
+  /** couch-auth-proxy ACL creator for this AVP node. */
+  creator: z.string().min(1),
+  /** couch-auth-proxy ACL parent (record doc id). */
+  parent: z.string().min(1),
+});
+
+export type V2AvpDBFields = z.infer<typeof v2AvpDBFieldsSchema>;
+export type AvpDBFields = V2AvpDBFields;
+export const avpDBFieldsSchema = v2AvpDBFieldsSchema;
 
 export const newAvpDocumentSchema =
-  newPouchDBDocumentSchema.merge(v1AvpDBFieldsSchema);
+  newPouchDBDocumentSchema.merge(v2AvpDBFieldsSchema);
 
 export const avpDocumentSchema =
-  pouchDBDocumentSchema.merge(v1AvpDBFieldsSchema);
+  pouchDBDocumentSchema.merge(v2AvpDBFieldsSchema);
 
 export const existingAvpDocumentSchema =
-  existingPouchDBDocumentSchema.merge(v1AvpDBFieldsSchema);
+  existingPouchDBDocumentSchema.merge(v2AvpDBFieldsSchema);
 
 export type NewAvpDBDocument = z.infer<typeof newAvpDocumentSchema>;
 export type AvpDBDocument = z.infer<typeof avpDocumentSchema>;
@@ -250,7 +283,7 @@ export type PendingAttachment = z.infer<typeof pendingAttachmentSchema>;
 // Attachment Document Base
 // ============================================================================
 
-// Base fields shared by all attachment documents
+/** Pre-ACL attachment base fields (no couch-auth-proxy ACL stamps). */
 const v1AttachmentDBFieldsBaseSchema = z.object({
   attach_format_version: z.number(),
   // This is optional - old records know this, but new ones don't need to. It's
@@ -262,23 +295,39 @@ const v1AttachmentDBFieldsBaseSchema = z.object({
   record_id: z.string(),
   created: z.string().datetime(),
   created_by: z.string(),
-  /** couch-auth-proxy ACL creator for this attachment document (clean write). */
-  creator: z.string().optional(),
-  /** couch-auth-proxy ACL parent (record doc id). */
-  parent: z.string().optional(),
   filename: z.string(),
 });
 
-// Encoded attachment document fields
+/**
+ * Post-ACL attachment base. Keep in sync with DATA v1→v2 migration /
+ * `stampChildAcl`.
+ */
+const v2AttachmentDBFieldsBaseSchema = v1AttachmentDBFieldsBaseSchema.extend({
+  /** couch-auth-proxy ACL creator for this attachment document. */
+  creator: z.string().min(1),
+  /** couch-auth-proxy ACL parent (record doc id). */
+  parent: z.string().min(1),
+});
+
+/** Pre-ACL encoded attachment document fields. */
 export const v1AttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
   .extend({
     _attachments: z.record(z.string(), encodedAttachmentSchema),
   })
   .strict();
 export type V1AttachmentDBFields = z.infer<typeof v1AttachmentDBFieldsSchema>;
-export type AttachmentDBFields = V1AttachmentDBFields;
 
-// Pending attachment document fields
+/** Post-ACL encoded attachment document fields. */
+export const v2AttachmentDBFieldsSchema = v2AttachmentDBFieldsBaseSchema
+  .extend({
+    _attachments: z.record(z.string(), encodedAttachmentSchema),
+  })
+  .strict();
+export type V2AttachmentDBFields = z.infer<typeof v2AttachmentDBFieldsSchema>;
+export type AttachmentDBFields = V2AttachmentDBFields;
+export const attachmentDBFieldsSchema = v2AttachmentDBFieldsSchema;
+
+/** Pre-ACL pending attachment document fields. */
 export const v1PendingAttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
   .extend({
     _attachments: z.record(z.string(), pendingAttachmentSchema),
@@ -287,21 +336,33 @@ export const v1PendingAttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
 export type V1PendingAttachmentDBFields = z.infer<
   typeof v1PendingAttachmentDBFieldsSchema
 >;
-export type PendingAttachmentDBFields = V1PendingAttachmentDBFields;
 
-// New attachments are pending
+/** Post-ACL pending attachment document fields. */
+export const v2PendingAttachmentDBFieldsSchema = v2AttachmentDBFieldsBaseSchema
+  .extend({
+    _attachments: z.record(z.string(), pendingAttachmentSchema),
+  })
+  .strict();
+export type V2PendingAttachmentDBFields = z.infer<
+  typeof v2PendingAttachmentDBFieldsSchema
+>;
+export type PendingAttachmentDBFields = V2PendingAttachmentDBFields;
+export const pendingAttachmentDBFieldsSchema =
+  v2PendingAttachmentDBFieldsSchema;
+
+// New attachments are pending (current = v2)
 export const newAttachmentDocumentSchema = newPouchDBDocumentSchema.merge(
-  v1PendingAttachmentDBFieldsSchema
+  v2PendingAttachmentDBFieldsSchema
 );
 
-// Documents are generally already encoded
+// Documents are generally already encoded (current = v2)
 export const attachmentDocumentSchema = pouchDBDocumentSchema.merge(
-  v1AttachmentDBFieldsSchema
+  v2AttachmentDBFieldsSchema
 );
 
-// Existing attachments are encoded
+// Existing attachments are encoded (current = v2)
 export const existingAttachmentDocumentSchema =
-  existingPouchDBDocumentSchema.merge(v1AttachmentDBFieldsSchema);
+  existingPouchDBDocumentSchema.merge(v2AttachmentDBFieldsSchema);
 
 export type NewAttachmentDBDocument = z.infer<
   typeof newAttachmentDocumentSchema
@@ -311,14 +372,14 @@ export type ExistingAttachmentDBDocument = z.infer<
   typeof existingAttachmentDocumentSchema
 >;
 
-// Pending attachment documents (for PUT operations)
+// Pending attachment documents (for PUT operations) — current = v2
 export const newPendingAttachmentDocumentSchema =
-  newPouchDBDocumentSchema.merge(v1PendingAttachmentDBFieldsSchema);
+  newPouchDBDocumentSchema.merge(v2PendingAttachmentDBFieldsSchema);
 export const pendingAttachmentDocumentSchema = pouchDBDocumentSchema.merge(
-  v1PendingAttachmentDBFieldsSchema
+  v2PendingAttachmentDBFieldsSchema
 );
 export const existingPendingAttachmentDocumentSchema =
-  existingPouchDBDocumentSchema.merge(v1PendingAttachmentDBFieldsSchema);
+  existingPouchDBDocumentSchema.merge(v2PendingAttachmentDBFieldsSchema);
 
 export type NewPendingAttachmentDBDocument = z.infer<
   typeof newPendingAttachmentDocumentSchema

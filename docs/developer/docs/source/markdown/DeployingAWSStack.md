@@ -826,22 +826,22 @@ stack. Tune the image/size via `couchAuthProxy` in your config JSON (see
 ```json
 "couchAuthProxy": {
   "image": "ghcr.io/peterbaker0/couch-auth-proxy",
-  "imageTag": "sha-3004091",
+  "imageTag": "1.4.0",
   "cpu": 512,
   "memory": 1024,
   "desiredCount": 2
 }
 ```
 
-Always-on topology:
+Always-on topology (immediate cutover on deploy):
 
 - public `couch.*` / `db.*` hostname on the shared ALB → **couch-auth-proxy** ECS
 - Conductor `COUCHDB_PUBLIC_URL` → that hostname; `COUCHDB_INTERNAL_URL` → VPC Couch
 - Couch `:5984` is **not** registered on the internet-facing ALB (SG: proxy + Conductor only)
 
-**First-deploy order:** migrate every `data-*` DB to version **2** (stamp ACL +
-`_design/acl`) **before** sending production sync traffic at the proxy.
-Unstamped docs are world-readable to members under the proxy.
+**After deploy:** run DATA v1→v2 migrate + `repair-data-db-acl` promptly.
+Unstamped legacy docs stay member-readable (`r-*`) until then — the same
+effective access as today’s public Couch, not a new regression.
 
 Design / CDK details: [CouchAuthProxyAwsCdk](Authorisation/CouchAuthProxyAwsCdk.md).  
 Operator runbook: [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md).

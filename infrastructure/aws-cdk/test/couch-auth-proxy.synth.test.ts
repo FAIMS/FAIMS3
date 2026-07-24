@@ -60,7 +60,7 @@ function wireMinimalStack(): Template {
     couchSecurityGroup: couchDb.securityGroup,
     corsOrigins: ['https://faims.example.com', 'https://web.example.com'],
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
-    imageTag: 'sha-3004091',
+    imageTag: '1.4.0',
     cpu: 512,
     memory: 1024,
     desiredCount: 2,
@@ -150,7 +150,7 @@ describe('couch-auth-proxy CDK wiring (always on)', () => {
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
       ContainerDefinitions: Match.arrayWith([
         Match.objectLike({
-          Image: 'ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091',
+          Image: 'ghcr.io/peterbaker0/couch-auth-proxy:1.4.0',
           Environment: Match.arrayWith([
             {Name: 'ACL_DB_INCLUDE', Value: '/^data-/'},
             {

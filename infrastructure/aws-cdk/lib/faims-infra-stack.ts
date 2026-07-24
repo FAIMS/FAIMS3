@@ -127,7 +127,14 @@ export class FaimsInfraStack extends cdk.Stack {
       couchInternalUrl: couchDb.internalEndpoint,
       couchAdminSecret: couchDb.passwordSecret,
       couchSecurityGroup: couchDb.securityGroup,
-      corsOrigins: [`https://${domains.faims}`, `https://${domains.web}`],
+      // Browser PWA + Control Centre + Capacitor WebView origins (native sync
+      // uses Pouch fetch subject to CORS when CapacitorHttp is disabled).
+      corsOrigins: [
+        `https://${domains.faims}`,
+        `https://${domains.web}`,
+        'https://localhost',
+        'capacitor://localhost',
+      ],
       image: config.couchAuthProxy.image,
       imageTag: config.couchAuthProxy.imageTag,
       cpu: config.couchAuthProxy.cpu,

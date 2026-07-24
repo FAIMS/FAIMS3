@@ -5,9 +5,27 @@ Practical runbook for enabling per-document sync ACL via
 background see [CouchAuthProxyHandover](CouchAuthProxyHandover.md) and
 [PermissionModel — Sync enforcement](../PermissionModel.md).
 
-**Order is mandatory.** Pointing `COUCHDB_PUBLIC_URL` at the proxy before every
-`data-*` DB has `_design/acl` and stamped docs leaves unstamped documents
-world-readable to DB members (`r-*`).
+## Immediate cutover (intentional)
+
+This is a **deploy-then-migrate** cutover, not a staged “proxy idle then flip”
+sequence.
+
+Production deployments today already expose project data DBs as member-readable
+on the public Couch hostname (the gap this change closes). Putting the proxy in
+front immediately is therefore not a privacy regression for unstamped legacy
+docs: until DATA v1→v2 finishes, those docs still map to `r-*` (world-readable
+to DB members) — the same effective access as direct Couch. As migrate/repair
+completes, guests lose access to other users’ graphs.
+
+Prefer a simple cutover over a multi-phase flip so code and ops stay clear.
+
+**Recommended order**
+
+1. **Deploy** the FAIMS build + infra that always routes public sync through
+   couch-auth-proxy (compose already does; AWS CDK always-on).
+2. **Migrate / repair** every `data-*` DB as soon as Conductor is up
+   (`migrate-with-keys`, startup migrate, then `repair-data-db-acl`).
+3. **Validate** guest isolation once migrations are healthy.
 
 ---
 
@@ -17,9 +35,9 @@ world-readable to DB members (`r-*`).
 | ----------------------------------- | ------------------------- | ---------------------------------------------------------------- |
 | App sync URL (`COUCHDB_PUBLIC_URL`) | Direct Couch              | couch-auth-proxy                                                 |
 | Conductor (`COUCHDB_INTERNAL_URL`)  | Direct Couch (admin)      | Unchanged — still direct Couch                                   |
-| Guest sync reads                    | Entire project data DB    | Own record graph only (`creator` / `parent`)                     |
+| Guest sync reads                    | Entire project data DB    | Own record graph only (`creator` / `parent`), after migrate      |
 | Contributor+ sync reads             | Entire DB                 | Entire DB via `_design/acl` `dbacl`                              |
-| Client IndexedDB                    | May hold pre-proxy corpus | Left as-is; leftover docs may linger until refresh / re-activate |
+| Client IndexedDB                    | May hold pre-proxy corpus | Left as-is (accepted — see [Local leftovers](#local-leftovers))  |
 
 ---
 
@@ -30,7 +48,8 @@ world-readable to DB members (`r-*`).
 Already wired in `docker-compose.yml`:
 
 1. `couchdb` on host port `COUCHDB_EXTERNAL_PORT` (default **5984**)
-2. `couch-auth-proxy` on `COUCH_AUTH_PROXY_EXTERNAL_PORT` (default **5985**)
+2. `couch-auth-proxy` on `COUCH_AUTH_PROXY_EXTERNAL_PORT` (default **5985**),
+   image **`ghcr.io/peterbaker0/couch-auth-proxy:1.4.0`** (same pin as CDK)
 3. `api/.env`: `COUCHDB_INTERNAL_URL=http://localhost:5984`,
    `COUCHDB_PUBLIC_URL=http://localhost:5985`
 
@@ -40,23 +59,25 @@ Already wired in `docker-compose.yml`:
 ### Production (AWS CDK)
 
 AWS CDK **always** deploys couch-auth-proxy on the shared ALB
-(`couch.*` / `db.*` → proxy; Couch VPC-only). See
-[CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). There is no `enabled` flag —
-migrate every `data-*` DB to version **2** (and run `repair-data-db-acl`)
-**before** sending production sync traffic at a new or upgraded stack.
+(`couch.*` / `db.*` → proxy; Couch VPC-only). There is no `enabled` flag and no
+idle proxy mode — deploy **is** the cutover. See
+[CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md).
 
 Conductor env set by CDK:
 
 - `COUCHDB_PUBLIC_URL` → `https://couch.<base>` (proxy)
 - `COUCHDB_INTERNAL_URL` → `http://<couch-private-ip>:5984`
 
+After deploy, run DATA v1→v2 + `repair-data-db-acl` promptly (Conductor startup
+migrate may already cover most of this).
+
 ### Production (DigitalOcean / custom)
 
 DigitalOcean still sketches a raw Couch target — treat proxy wiring as a
 **required follow-up**. You need:
 
-1. Run `ghcr.io/peterbaker0/couch-auth-proxy` (pin the image tag that matches
-   vendored ddoc map **2.3.0** — see `docker-compose.yml`).
+1. Run `ghcr.io/peterbaker0/couch-auth-proxy:1.4.0` (match compose / CDK pin;
+   vendored ddoc map **2.3.0**).
 2. Proxy env (minimum):
 
    ```bash
@@ -75,46 +96,43 @@ DigitalOcean still sketches a raw Couch target — treat proxy wiring as a
 5. Conductor env:
    - `COUCHDB_INTERNAL_URL` → Couch (admin Basic)
    - `COUCHDB_PUBLIC_URL` → proxy base URL (**no trailing slash**)
+6. Migrate + repair immediately after the public URL points at the proxy.
 
 ---
 
-## Recommended production sequence
+## Production sequence
 
-### Phase 0 — Preconditions
+### 1 — Deploy
 
-- [ ] Deploy FAIMS build that includes stamp-on-write, DATA v1→v2 migration,
-      and `repair-data-db-acl`.
-- [ ] Keep `COUCHDB_PUBLIC_URL` on **direct Couch** for this phase (or accept
-      that sync is still DB-wide until Phase 3).
-- [ ] Proxy container can be deployed idle / not yet advertised.
+Deploy the FAIMS application build (stamp-on-write, DATA v1→v2, repair script)
+and infra so public sync already hits the proxy.
 
-### Phase 1 — Backfill ACL on every data DB
+- AWS: `cdk deploy` with always-on proxy (this stack).
+- Confirm proxy health: `GET {proxy}/_couch-auth-proxy/health` → 200.
+- Confirm Conductor `COUCHDB_PUBLIC_URL` is the proxy and
+  `COUCHDB_INTERNAL_URL` is VPC Couch.
 
-Conductor migrate (startup or explicit):
+### 2 — Migrate and repair
 
 ```bash
 pnpm run migrate-with-keys
-# or, inside the api container / process you already use for migrate
+# or rely on Conductor startup migrate, then:
+
+pnpm --filter=@faims3/api run repair-data-db-acl -- --dry-run
+pnpm --filter=@faims3/api run repair-data-db-acl
 ```
 
-This runs DATA **v1→v2** for each project data DB:
+DATA **v1→v2** for each project data DB:
 
 - Stamps `creator` / `parent` on legacy docs (orphan docs without `created_by`
   get synthetic creator `__faims_acl_orphan__` — fail-closed for guests).
 - Ensures `_design/acl` + project-scoped `dbacl`.
 
-Then **verify / repair** control-plane ddocs (idempotent; safe anytime):
-
-```bash
-pnpm --filter=@faims3/api run repair-data-db-acl -- --dry-run
-pnpm --filter=@faims3/api run repair-data-db-acl
-```
-
 Dry-run should show every `data-*` DB with `_design/acl` present and
 `dbacl._r` counts matching the permission model. Fix any `MISSING` / failed
-rows before continuing.
+rows.
 
-### Phase 2 — Confirm migration inventory
+### 3 — Confirm migration inventory
 
 In the Couch `migrations` database, each DATA entry keyed by logical name
 `data-{projectId}` should be at **version 2** with `status: healthy`.
@@ -122,67 +140,54 @@ In the Couch `migrations` database, each DATA entry keyed by logical name
 Quick checks (admin against **internal** Couch):
 
 ```bash
-# List data DBs
 curl -s -u "$COUCHDB_USER:$COUCHDB_PASSWORD" \
   "$COUCHDB_INTERNAL_URL/_all_dbs" | jq '.[] | select(startswith("data-"))'
 
-# Spot-check one design doc
 curl -s -u "$COUCHDB_USER:$COUCHDB_PASSWORD" \
   "$COUCHDB_INTERNAL_URL/data-<projectId>/_design/acl" | jq '{version, dbacl}'
 ```
 
-Do **not** flip the public URL until every project you care about is green.
-
-### Phase 3 — Flip public URL to the proxy
-
-1. Ensure proxy health: `GET {proxy}/_couch-auth-proxy/health` → 200.
-2. Set `COUCHDB_PUBLIC_URL` to the proxy base URL (no trailing slash).
-3. Restart Conductor so notebook listings advertise the new `dataDb.base_url`.
-4. Leave `COUCHDB_INTERNAL_URL` on Couch.
-
-After this, new app sessions sync through the proxy. Guests only receive their
-own record graphs on the wire. When the advertised public URL string changes,
-the field app re-points remotes (`reconcileRemoteCouchUrlAfterListing`); it
-does **not** wipe local IndexedDB.
-
-### Phase 4 — Local leftover data (accepted)
-
-Pre-proxy sync may leave other users’ docs in a guest’s local project DB.
-There is **no** automatic local wipe / schema-generation bump. Isolation is
-enforced on the wire by the proxy; leftover local records may linger until the
-user refreshes, reactivates the notebook, or clears local data. That trade-off
-is intentional — automatic IndexedDB rebuild was judged not worth the
-complexity for the minor security uplift.
-
-### Phase 5 — Validate
-
-Local / staging (stack with Couch + proxy):
+### 4 — Validate
 
 ```bash
 pnpm --filter=@faims3/api run test:couch-auth-proxy
 ```
 
-Manual probe:
+Manual probe (clean clients after migrate):
 
 1. Invite Guest A + Guest B + Contributor on one notebook.
 2. Guest A creates a record (ideally with an attachment); sync.
-3. Guest B syncs — must not see A’s record in UI **and** must not hold A’s
-   `rec-*` in the local data DB.
+3. Guest B syncs — must not receive A’s record on the wire / in a fresh local DB.
 4. Contributor syncs — sees A’s record; can edit; Guest A still sees the
    updated graph.
 
 ---
 
+## Local leftovers
+
+Pre-proxy sync may leave other users’ docs in a guest’s local project DB.
+There is **no** automatic local wipe / schema-generation bump. Isolation is
+enforced on the wire by the proxy; leftover local records may linger until the
+user refreshes, reactivates the notebook, or clears local data.
+
+That trade-off is intentional: it keeps client cutover simple (re-point remotes
+only) and avoids IndexedDB rebuild complexity. On AWS same-hostname flips the
+advertised URL string may not change, so leftovers are especially expected on
+already-activated devices.
+
+---
+
 ## Rollback
 
-| Situation                                 | Action                                                                                                                                                                                       |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Proxy misconfigured / outage              | Point `COUCHDB_PUBLIC_URL` back to Couch and restart Conductor. Sync reads become DB-wide again (old behaviour). ACL fields / `_design/acl` can remain — they are harmless for direct Couch. |
-| Bad `dbacl` after permission-model change | `pnpm --filter=@faims3/api run repair-data-db-acl`                                                                                                                                           |
-| One DB missing stamps                     | Re-run migrate (idempotent) and/or repair; do not flip public URL for that environment until fixed                                                                                           |
+| Situation                                 | Action                                                                                                                                                                                                                              |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Proxy misconfigured / outage (AWS)        | Redeploy / code-change to re-attach ALB `couch.*` to Couch (or bypass proxy). There is no `enabled: false` flag. This **re-opens** the pre-proxy read gap. ACL fields / `_design/acl` can remain — harmless for direct Couch.       |
+| Proxy misconfigured (compose / custom)    | Point `COUCHDB_PUBLIC_URL` back at a reachable Couch URL and restart Conductor. Same read-gap regression.                                                                                                                           |
+| Bad `dbacl` after permission-model change | `pnpm --filter=@faims3/api run repair-data-db-acl`                                                                                                                                                                                  |
+| One DB missing stamps                     | Re-run migrate (idempotent) and/or repair. Until fixed, that DB’s unstamped docs stay member-readable (`r-*`) — same as today’s public Couch.                                                                                       |
 
-Rolling back the public URL does **not** remove stamped `creator`/`parent`
-fields. Re-enabling the proxy later is safe if ddocs are still present.
+Rolling back does **not** remove stamped `creator`/`parent` fields. Returning
+to the proxy later is safe if ddocs are still present.
 
 ---
 
@@ -195,19 +200,20 @@ fields. Re-enabling the proxy later is safe if ddocs are still present.
 | Dry-run repair       | `pnpm --filter=@faims3/api run repair-data-db-acl -- --dry-run`                           |
 | Proxy health         | `curl -f "$COUCHDB_PUBLIC_URL/_couch-auth-proxy/health"`                                  |
 | Integration proof    | `pnpm --filter=@faims3/api run test:couch-auth-proxy`                                     |
-| Image / ddoc pin     | compose image tag ↔ `COUCH_AUTH_PROXY_ACL_DDOC_VERSION` (`2.3.0`) in `@faims3/data-model` |
+| Image / ddoc pin     | compose + CDK `1.4.0` ↔ vendored map `2.3.0` (`COUCH_AUTH_PROXY_ACL_DDOC_VERSION`)        |
 
 ---
 
 ## Common failure modes
 
-1. **Public URL flipped before migrate/repair** — guests (and all members) can
-   read unstamped legacy docs. Fix: restore public URL to Couch, migrate +
-   repair, then flip again.
+1. **Migrate never run after deploy** — unstamped legacy docs stay `r-*`
+   (member-readable). Same as pre-proxy public Couch; fix by running migrate +
+   repair.
 2. **Couch still published on the internet** — proxy is bypassable. Lock Couch
-   to internal networks only.
-3. **CORS missing app origin** — sync fails in the browser; add origins to
-   proxy `CORS_ORIGINS`.
+   to internal networks only (AWS CDK does this; DO/custom must match).
+3. **CORS missing app origin** — browser / Capacitor WebView sync fails; add
+   origins to proxy `CORS_ORIGINS` (PWA host, Control Centre, and typically
+   `https://localhost` / `capacitor://localhost` for native).
 4. **Wrong logical migrations `dbName`** — migrations docs must be keyed by
    `data-{projectId}`, not a full Couch URL. Current Conductor enqueue does
    this; if you see URL-shaped keys in `migrations`, treat as a bug / re-run
@@ -215,3 +221,5 @@ fields. Re-enabling the proxy later is safe if ddocs are still present.
 5. **Orphan docs** (`creator === __faims_acl_orphan__`) — invisible to guests;
    visible to ALL roles via `dbacl`. Investigate source docs missing
    `created_by` if that is unexpected.
+6. **Compose vs CDK image drift** — both must pin **`1.4.0`** (or the same
+   replacement tag) so the vendored `_design/acl` map stays aligned.

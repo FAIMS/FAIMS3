@@ -88,7 +88,7 @@
   },
   "couchAuthProxy": {
     "image": "ghcr.io/peterbaker0/couch-auth-proxy",
-    "imageTag": "sha-3004091",
+    "imageTag": "1.4.0",
     "cpu": 512,
     "memory": 1024,
     "desiredCount": 2

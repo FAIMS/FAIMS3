@@ -391,7 +391,7 @@ const CouchAuthProxyConfigSchema = z
     /** Container image repository (no tag) */
     image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
     /** Immutable tag / digest pin (must match data-model ACL ddoc 2.3.0) */
-    imageTag: z.string().default('sha-3004091'),
+    imageTag: z.string().default('1.4.0'),
     /** Fargate CPU units */
     cpu: z.number().int().positive().default(512),
     /** Fargate memory in MiB */
@@ -621,12 +621,12 @@ export const ConfigSchema = z.object({
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /**
-   * Public sync ACL proxy (always deployed). Tuning/image pin only —
-   * see CouchAuthProxyCutover.md before first deploy to a live env.
+   * Public sync ACL proxy (always deployed; immediate cutover). Tuning/image
+   * pin only — migrate DATA v2 promptly after deploy (CouchAuthProxyCutover.md).
    */
   couchAuthProxy: CouchAuthProxyConfigSchema.optional().default({
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
-    imageTag: 'sha-3004091',
+    imageTag: '1.4.0',
     cpu: 512,
     memory: 1024,
     desiredCount: 2,

@@ -23,8 +23,8 @@ local `docker-compose.yml` (reference topology). This document is the
    (bypass proxy).
 3. CouchDB port `5984` is **not** on the internet-facing ALB and is reachable
    only from the proxy and Conductor security groups.
-4. Cutover is gated: DATA DBs at migration v2 **before** public traffic flips
-   to the proxy (same order as handover §13).
+4. Cutover is immediate on deploy; migrate DATA DBs to v2 promptly afterward
+   (see handover §13 / CouchAuthProxyCutover).
 
 **Non-goals (v1).**
 
@@ -161,7 +161,7 @@ ACL_DB_INCLUDE=/^data-/       # mandatory — never ACL people/projects/auth
 ACL_ROUTE_INCLUDE=pouch-sync,session
 ACL_AUTO_INSTALL=false        # FAIMS provisions _design/acl
 AUTH_RESOLVE_VIA_COUCH_SESSION=true
-CORS_ORIGINS=https://faims.<base>,https://web.<base>   # from config
+CORS_ORIGINS=https://faims.<base>,https://web.<base>,https://localhost,capacitor://localhost
 PORT=8000
 HOST=0.0.0.0
 ```
@@ -177,9 +177,9 @@ Proxy is the **sync read boundary**. Keep:
 - API `canReadRecord`
 - App `shouldDisplayRecord` (UX only)
 
-Fail closed: do not flip the ALB target until DATA migration v2 has completed
-on all `data-*` DBs (unstamped docs are world-readable to members under the
-proxy).
+Deploy puts the proxy on immediately; migrate DATA v2 promptly afterward.
+Unstamped docs stay member-readable (`r-*`) until migrate — same as today’s
+public Couch.
 
 ### 4.5 Optional extras (not required for v1)
 
@@ -290,6 +290,8 @@ const proxy = new CouchAuthProxy(this, 'couch-auth-proxy', {
   corsOrigins: [
     `https://${domains.faims}`,
     `https://${domains.web}`,
+    'https://localhost',
+    'capacitor://localhost',
   ],
   image: config.couchAuthProxy.image,
   imageTag: config.couchAuthProxy.imageTag,
@@ -319,7 +321,7 @@ Frontend CSP can keep `https://${domains.couch}` — hostname unchanged.
 ```json
 "couchAuthProxy": {
   "image": "ghcr.io/peterbaker0/couch-auth-proxy",
-  "imageTag": "sha-3004091",
+  "imageTag": "1.4.0",
   "cpu": 512,
   "memory": 1024,
   "desiredCount": 2
@@ -327,38 +329,41 @@ Frontend CSP can keep `https://${domains.couch}` — hostname unchanged.
 ```
 
 Zod: section optional only because field defaults apply when omitted; the
-proxy is **always deployed** (no `enabled` flag). Pin `imageTag` in README
-next to data-model ACL ddoc version **2.3.0**.
+proxy is **always deployed** (no `enabled` flag). Pin `imageTag` to **1.4.0**
+(same as `docker-compose.yml`) next to data-model ACL ddoc map **2.3.0**.
+
+`CORS_ORIGINS` includes `https://faims.<base>`, `https://web.<base>`, plus
+Capacitor WebView origins `https://localhost` and `capacitor://localhost`
+(native Pouch sync is CORS-checked when `CapacitorHttp` is disabled).
 
 ---
 
 ## 6. Cutover procedure (AWS)
 
-Align with handover §13; infra-specific steps:
+**Immediate cutover.** Deploying this stack puts proxy on `couch.*` at once.
+That is intentional: today’s public Couch already exposes member-readable data
+DBs, so a brief window of `r-*` on unstamped docs is not worse than current
+behaviour. Prefer deploy-then-migrate over a staged ALB flip.
 
-1. **Deploy application build** that stamps ACL + DATA v1→v2 migration, and
-   run migrations against **internal** Couch **before** (or as part of)
-   directing production sync clients at the always-on proxy hostname.
-2. **Run migrations** (`MIGRATE_NOTEBOOKS_ON_STARTUP` / initialise) until every
-   `data-*` is at version **2**. Optionally
+Align with [CouchAuthProxyCutover](CouchAuthProxyCutover.md):
+
+1. **Deploy CDK + application build** (stamp-on-write, DATA v1→v2, repair
+   script). ALB `couch.*` → proxy; Conductor gets PUBLIC=proxy /
+   INTERNAL=VPC Couch; Couch leaves the public ALB.
+2. **Migrate promptly** (`MIGRATE_NOTEBOOKS_ON_STARTUP` / `migrate-with-keys`)
+   until every `data-*` is at version **2**, then
    `pnpm --filter=@faims3/api run repair-data-db-acl`.
-3. **Deploy CDK** with proxy service up, but keep ALB host rule on Couch **or**
-   use a temporary hostname `couch-proxy.*` for soak tests.
-4. **Validate** through proxy hostname:
+3. **Validate** through the proxy hostname:
    - `GET /_couch-auth-proxy/health` → 200
    - guest A/B isolation (same cases as
      `api/test/couchAuthProxy.integration.test.ts`)
-5. **Flip** ALB `couch.*` rule to proxy TG; set Conductor
-   `COUCHDB_PUBLIC_URL` → proxy; `COUCHDB_INTERNAL_URL` → internal Couch;
-   remove ALB→Couch registration; tighten SGs.
-6. **Clients** re-point remotes when the advertised public URL string changes.
-   Local IndexedDB is not wiped — pre-proxy leftover docs may linger until
-   refresh / re-activate (accepted trade-off; see
-   [CouchAuthProxyCutover](CouchAuthProxyCutover.md) Phase 4).
+4. **Clients** re-point remotes when the advertised public URL string changes
+   (same-hostname AWS flips may leave the string unchanged). Local IndexedDB
+   is not wiped — pre-proxy leftover docs may linger until refresh /
+   re-activate (accepted; see Cutover “Local leftovers”).
 
-Rollback is no longer a config flag (proxy is always on). Emergency
-recovery means a CDK change to re-attach a Couch TG / bypass the proxy
-(accept read-gap regression) — not an operator `enabled: false` toggle.
+Rollback is not a config flag. Emergency recovery means a CDK/code change to
+re-attach a Couch TG / bypass the proxy (accept read-gap regression).
 
 ---
 
@@ -379,11 +384,11 @@ add “healthy host &lt; 1” on the proxy TG.
 
 ## 8. Image supply chain
 
-- Pin by **digest or immutable `sha-*` tag** (compose already uses
-  `sha-3004091`).
-- Document that tag must match vendored map in
-  `library/data-model/src/data_storage/dataDB/acl.ts` (upstream ddoc map
-  **2.3.0**; FAIMS VDU extension `2.3.0-faims1`).
+- Pin compose + CDK to the same release tag: **`1.4.0`** (upstream ddoc map
+  **2.3.0**; FAIMS VDU extension `2.3.0-faims1` in
+  `library/data-model/src/data_storage/dataDB/acl.ts`).
+- When bumping the proxy, update `docker-compose.yml`, CDK default/sample, and
+  confirm the vendored map source still matches.
 - GHCR pull: if the image is public, Fargate can pull without auth; if private,
   add a Secrets Manager GHCR token and `repositoryCredentials` on the
   container definition.
@@ -408,9 +413,8 @@ add “healthy host &lt; 1” on the proxy TG.
 [ ] Soak on staging, then cut over production sync clients
 ```
 
-**CDK construct work is done; proxy is always on.** Live cutover still
-requires DATA v2 migration on every `data-*` DB **before** production sync
-clients use the public hostname — see
+**CDK construct work is done; proxy is always on.** After deploy, migrate every
+`data-*` DB to version **2** promptly — see
 [CouchAuthProxyCutover](CouchAuthProxyCutover.md).
 
 ---
@@ -444,7 +448,7 @@ Conductor env must gain an internal Couch URL (currently only
 | Conductor→Couch  | VPC SG + internal HTTP URL                                              |
 | Admin creds      | Existing Secrets Manager secret                                         |
 | ACL scope        | `ACL_DB_INCLUDE=/^data-/`, `ACL_AUTO_INSTALL=false`                     |
-| Cutover gate     | DATA v2 migration before ALB flip                                       |
+| Cutover          | Immediate on deploy; migrate DATA v2 promptly afterward                 |
 | Rollback         | Code change to re-attach Couch TG (no `enabled` flag; reopens read gap) |
 
 ---

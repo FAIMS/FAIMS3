@@ -6,8 +6,8 @@
  * tracks the FAIMS permission model.
  *
  * Vendored map source must stay aligned with the deployed
- * `ghcr.io/peterbaker0/couch-auth-proxy` image. Upstream pin:
- * couch-auth-proxy `src/acl/ddoc.ts` version **2.3.0** (package release v1.2.1).
+ * `ghcr.io/peterbaker0/couch-auth-proxy` image. Pin (compose + CDK):
+ * **1.4.0** — upstream `src/acl/ddoc.ts` map version **2.3.0**.
  *
  * The VDU is FAIMS-extended (`2.3.0-faims1`): non-admin creates must include a
  * non-empty `creator`, and child docs with `record_id` must set

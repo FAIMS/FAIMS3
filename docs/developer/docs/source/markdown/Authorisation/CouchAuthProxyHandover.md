@@ -512,8 +512,10 @@ users. Document env in `e2e/.env.dist`.
 
 ## 8. Implementation notes and pitfalls
 
-1. **Cutover order:** stamp-on-write → backfill migration → point
-   `COUCHDB_PUBLIC_URL` at proxy. Reversing this opens `r-*` on legacy docs.
+1. **Cutover order:** deploy proxy immediately, then migrate/repair promptly.
+   Unstamped legacy docs stay `r-*` until migrate — same effective access as
+   today’s public Couch (not a new regression). See
+   [CouchAuthProxyCutover](CouchAuthProxyCutover.md).
 2. **Local leftover data:** clients that synced before ACL may retain other
    users’ docs offline until refresh / re-activate. Isolation is enforced on
    the wire; automatic local wipe was deliberately not implemented.
@@ -638,24 +640,22 @@ External: [PeterBaker0/couch-auth-proxy](https://github.com/PeterBaker0/couch-au
 ## 13. Cutover runbook (production / existing deployments)
 
 **Operator-facing guide (preferred):**
-[CouchAuthProxyCutover.md](CouchAuthProxyCutover.md) — phased deploy, verify
-commands, rollback, and failure modes.
+[CouchAuthProxyCutover.md](CouchAuthProxyCutover.md) — immediate deploy-then-migrate,
+verify commands, truthful AWS rollback, and failure modes.
 
-**Order is mandatory.** Reversing steps leaves unstamped docs world-readable to
-DB members (`r-*`).
+**Immediate cutover (intentional).** Deploy the proxy-facing stack, then migrate
+promptly. Existing public Couch already exposes member-readable data DBs; a
+brief `r-*` window on unstamped docs is not worse than today.
 
-1. **Deploy stamp-on-write + init + DATA v1→v2 migration** while
-   `COUCHDB_PUBLIC_URL` still points at Couch (or at least before relying on
-   proxy isolation).
-2. **Migrate all data DBs** (`pnpm run migrate-with-keys` / normal Conductor
-   startup migration). Confirm every DATA migrations doc is keyed by
-   `data-{projectId}` at version **2**.
-3. **Repair / verify `_design/acl`** (mandatory before first proxy flip;
-   afterward use for permission-model token drift):
+1. **Deploy** stamp-on-write + init + DATA v1→v2 + always-on proxy (compose /
+   AWS CDK). Public sync hits the proxy as soon as the deploy lands.
+2. **Migrate all data DBs** (`pnpm run migrate-with-keys` / Conductor startup
+   migrate). Confirm every DATA migrations doc is keyed by `data-{projectId}`
+   at version **2**.
+3. **Repair / verify `_design/acl`**:
    `pnpm --filter=@faims3/api run repair-data-db-acl` (`--dry-run` supported).
-4. **Point `COUCHDB_PUBLIC_URL` at couch-auth-proxy**; keep
-   `COUCHDB_INTERNAL_URL` on Couch for Conductor admin. Do not publish Couch
-   publicly.
+4. Keep `COUCHDB_INTERNAL_URL` on Couch for Conductor admin. Do not publish
+   Couch publicly (AWS CDK enforces this).
 5. **Clients re-point remotes** when Conductor advertises a new
    `dataDb.base_url` (`reconcileRemoteCouchUrlAfterListing`). Local IndexedDB
    is not wiped — leftover pre-proxy docs may linger until refresh /

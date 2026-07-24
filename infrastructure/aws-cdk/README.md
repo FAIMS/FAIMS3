@@ -40,14 +40,16 @@ Fargate on the shared ALB:
 - **Upstream**: VPC HTTP to Couch `internalEndpoint`; admin creds via Secrets Manager.
 - **Hardened env**: `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session`,
   `ACL_AUTO_INSTALL=false`, `AUTH_RESOLVE_VIA_COUCH_SESSION=true`,
-  `CORS_ORIGINS` from faims+web domains.
-- **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091`
-  (must match vendored `_design/acl` ddoc **2.3.0** in `@faims3/data-model` /
-  `docker-compose.yml`).
+  `CORS_ORIGINS` from faims + web HTTPS hosts plus Capacitor WebView origins
+  (`https://localhost`, `capacitor://localhost`).
+- **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:1.4.0`
+  (must match `docker-compose.yml` and vendored `_design/acl` map **2.3.0** in
+  `@faims3/data-model`).
 
-**First-deploy gate:** ensure every `data-*` DB is at migration version **2**
-before pointing production traffic at a new stack (unstamped docs are
-world-readable to members under the proxy). See
+**Deploy-then-migrate:** CDK deploy puts the proxy on immediately (intentional
+immediate cutover). Run DATA v1→v2 + `repair-data-db-acl` as soon as Conductor
+is up. Unstamped legacy docs remain member-readable (`r-*`) until migrate —
+same effective access as today’s public Couch. See
 [CouchAuthProxyCutover](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyCutover.md),
 [CouchAuthProxyAwsCdk](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyAwsCdk.md).
 
@@ -394,11 +396,11 @@ Note that this validation is at a schema level, it might not catch improperly fo
       - `emailAddress`: Email address to send alarm notifications
 - `couchAuthProxy`: Public Pouch sync ACL proxy (**always deployed**). Section
   is optional in JSON only because image/cpu defaults apply when omitted.
-  Complete DATA v2 migration before first production deploy — see
-  CouchAuthProxyCutover.md.
+  Deploy is an immediate cutover; migrate DATA DBs to v2 promptly afterward —
+  see CouchAuthProxyCutover.md.
   - `image`: (default `ghcr.io/peterbaker0/couch-auth-proxy`) Image repository
-  - `imageTag`: (default `sha-3004091`) Immutable pin matching data-model ACL
-    ddoc **2.3.0** / compose
+  - `imageTag`: (default `1.4.0`) Pin matching data-model ACL ddoc map **2.3.0**
+    / `docker-compose.yml`
   - `cpu`: (default `512`) Fargate CPU units
   - `memory`: (default `1024`) Fargate memory MiB
   - `desiredCount`: (default `2`) Desired task count

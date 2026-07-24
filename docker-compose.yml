@@ -93,10 +93,9 @@ services:
       start_period: 20s
 
   # Per-document ACL reverse proxy for Pouch↔Couch sync (guest my/all reads).
-  # Pin must match vendored `_design/acl` map in @faims3/data-model (upstream
-  # 2.3.0; FAIMS ships VDU extension 2.3.0-faims1).
+  # Pin must match CDK `couchAuthProxy.imageTag` and vendored `_design/acl`
+  # map in @faims3/data-model (upstream ddoc map 2.3.0; FAIMS VDU 2.3.0-faims1).
   couch-auth-proxy:
-    # Upstream release v1.2.1 (ddoc map 2.3.0); GHCR publishes sha-* tags.
     image: ghcr.io/peterbaker0/couch-auth-proxy:1.4.0
     environment:
       COUCH_URL: http://couchdb:5984
@@ -110,7 +109,9 @@ services:
       # FAIMS provisions `_design/acl` via initDataDB / DATA migration
       ACL_AUTO_INSTALL: 'false'
       AUTH_RESOLVE_VIA_COUCH_SESSION: 'true'
-      CORS_ORIGINS: ${COUCH_AUTH_PROXY_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      # Browser PWA + Control Centre. Capacitor native WebViews typically use
+      # https://localhost / capacitor://localhost — add those if testing native.
+      CORS_ORIGINS: ${COUCH_AUTH_PROXY_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,https://localhost,capacitor://localhost}
       PORT: '8000'
       HOST: '0.0.0.0'
     ports:
