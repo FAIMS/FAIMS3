@@ -147,15 +147,15 @@ export const DesignPanel = () => {
       borderBottom: 'none',
       borderTopLeftRadius: '10px',
       borderTopRightRadius: '10px',
-      marginRight: '0.5em',
-      minHeight: 48,
-      minWidth: {xs: 110, sm: 130, md: 150},
-      maxWidth: {xs: 200, sm: 220, md: 260},
-      paddingX: {xs: 1, sm: 1.5},
-      paddingY: 1,
+      marginRight: '0.35em',
+      minHeight: 24,
+      minWidth: {xs: 90, sm: 105, md: 120},
+      maxWidth: {xs: 170, sm: 185, md: 205},
+      paddingX: {xs: 0.75, sm: 1.15},
+      paddingY: 0.25,
       textTransform: 'uppercase',
       fontWeight: 600,
-      fontSize: '0.72rem',
+      fontSize: '0.68rem',
       lineHeight: 1.2,
       whiteSpace: 'normal',
       textAlign: 'center',
@@ -337,8 +337,8 @@ export const DesignPanel = () => {
       <TabContext value={tabIndex}>
         <Box
           sx={{
-            mb: 1.25,
-            mt: 1,
+            mb: 0,
+            mt: 0.25,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
@@ -404,7 +404,7 @@ export const DesignPanel = () => {
           ref={setFormToolbarSlot}
           sx={{
             minHeight: 0,
-            '&:not(:empty)': {mb: 0.5},
+            '&:not(:empty)': {mb: 0.25},
           }}
         />
 
@@ -417,7 +417,7 @@ export const DesignPanel = () => {
             variant="scrollable"
             scrollButtons={false}
             sx={{
-              minHeight: 48,
+              minHeight: 24,
               ml: 0,
               pl: 0,
               '& .MuiTabs-scroller': {

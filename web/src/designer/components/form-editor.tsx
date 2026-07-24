@@ -516,7 +516,7 @@ export const FormEditor = ({
       >
         <Grid size={12}>
           {renderFormToolbar(
-            <Stack spacing={1.5} sx={{py: 0.75}}>
+            <Stack spacing={1.5} sx={{py: 0}}>
               <Stack
                 direction="row"
                 spacing={1}
@@ -638,7 +638,10 @@ export const FormEditor = ({
                       spacing={1}
                       sx={{alignItems: 'center'}}
                     >
-                      <Typography variant="body2" sx={{fontWeight: 700}}>
+                      <Typography
+                        variant="body2"
+                        sx={{fontWeight: 700, fontSize: 'inherit'}}
+                      >
                         Include "Add New Record" button
                       </Typography>
                       <Tooltip title='Controls whether users can create records from this form via "Add New Record".'>
@@ -883,7 +886,7 @@ export const FormEditor = ({
             </DialogActions>
           </Dialog>
 
-          <Box sx={{mt: 2, mb: 1.25}}>
+          <Box sx={{mt: 1, mb: 0.25}}>
             <Box
               sx={{
                 display: 'flex',
@@ -911,12 +914,12 @@ export const FormEditor = ({
             ref={setSectionToolbarSlot}
             sx={{
               minHeight: 0,
-              '&:not(:empty)': {mb: 0.5},
+              '&:not(:empty)': {mb: 0.25},
             }}
           />
         </Grid>
         <Grid size={12}>
-          <Box sx={{px: 0, pt: 1.5, pb: 2}}>
+          <Box sx={{px: 0, pt: 0.75, pb: 1}}>
             <Grid container spacing={2} sx={{p: 0}}>
               <Grid size={12}>
                 <Box
