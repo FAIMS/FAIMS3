@@ -213,8 +213,6 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
       // add database connection details
       if (project.dataDb) {
         project.dataDb.base_url = config.couchdbPublicUrl;
-        project.dataDb.acl_client_schema_version =
-          config.couchAclClientSchemaVersion;
       }
       projects.push(project);
     }

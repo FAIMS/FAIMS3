@@ -274,10 +274,6 @@ export class FaimsConductor extends Construct {
         // See docs/.../Authorisation/CouchAuthProxyCutover.md
         COUCHDB_PUBLIC_URL: props.couchDBPublicEndpoint,
         COUCHDB_INTERNAL_URL: props.couchDBInternalEndpoint,
-        // Bump on brownfield same-hostname proxy cutover (see CouchAuthProxyCutover).
-        COUCH_ACL_CLIENT_SCHEMA_VERSION: String(
-          props.config.couchAclClientSchemaVersion
-        ),
         CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
         // Conductor API URLs
         CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,

@@ -350,12 +350,11 @@ Align with handover §13; infra-specific steps:
      `api/test/couchAuthProxy.integration.test.ts`)
 5. **Flip** ALB `couch.*` rule to proxy TG; set Conductor
    `COUCHDB_PUBLIC_URL` → proxy; `COUCHDB_INTERNAL_URL` → internal Couch;
-   **bump** `conductor.couchAclClientSchemaVersion` /
-   `COUCH_ACL_CLIENT_SCHEMA_VERSION` (same hostname will not invalidate URL
-   markers alone); remove ALB→Couch registration; tighten SGs.
-6. **Clients** rebuild local data DBs via `openLocalDataDbWithAclCutover` when
-   the advertised `dataDb.acl_client_schema_version` advances (or on app
-   upgrade past the bundled marker minimum).
+   remove ALB→Couch registration; tighten SGs.
+6. **Clients** re-point remotes when the advertised public URL string changes.
+   Local IndexedDB is not wiped — pre-proxy leftover docs may linger until
+   refresh / re-activate (accepted trade-off; see
+   [CouchAuthProxyCutover](CouchAuthProxyCutover.md) Phase 4).
 
 Rollback is no longer a config flag (proxy is always on). Emergency
 recovery means a CDK change to re-attach a Couch TG / bypass the proxy

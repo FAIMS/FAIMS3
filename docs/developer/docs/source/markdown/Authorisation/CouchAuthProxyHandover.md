@@ -321,7 +321,7 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Remote Pouch URL      | Already uses `dataDb.base_url` from Conductor — should “just work” when public URL is the proxy.                                                                                                                            |
 | Token fetch           | Keep Bearer JWT; ensure CORS allows app origin on proxy.                                                                                                                                                                    |
-| Post-cutover hygiene  | When enabling proxy against DBs that previously synced fully, force local project DB rebuild / re-activate so leaked docs leave IndexedDB. Prefer a small, explicit “reset local data DB” path over silent partial deletes. |
+| Post-cutover hygiene  | No automatic local wipe. Accept that pre-proxy leftover docs may linger in IndexedDB until the user refreshes / reactivates; wire isolation is enforced by the proxy. Optional manual “wipe local data” remains a developer affordance. |
 | `shouldDisplayRecord` | Keep as UX; do not treat it as security.                                                                                                                                                                                    |
 
 ### 5.4 Infra
@@ -418,8 +418,9 @@ matrix; public Couch is locked down.
    - CORS allowlist
    - Do not publish Couch publicly
    - Proxy readiness in deploy checks
-4. **Client hygiene** after cutover: document + implement local data DB reset
-   when server advertises ACL sync (or always on activate if acceptable).
+4. **Client changeover** after public URL flip: re-point remotes at the new
+   `dataDb.base_url`; do **not** auto-wipe local IndexedDB (leftover pre-proxy
+   docs are an accepted trade-off until refresh / re-activate).
 5. **Test pyramid expansion** (below).
 6. **Docs**: `PermissionModel.md`, user sync/permissions notes, compose/README
    startup steps, this handover marked “implemented” sections as you go.
@@ -431,9 +432,9 @@ matrix; public Couch is locked down.
 
 - [x] Migration upgrades a fixture DB of unstamped docs to enforced ACL (DATA v1→v2).
 - [x] Unit + integration coverage for guest/contributor matrix (e2e focused spec optional follow-up).
-- [x] Cutover runbook: backfill → flip public URL → rebuild client DBs (see §13).
+- [x] Cutover runbook: backfill → flip public URL → re-point client remotes (see §13).
 - [x] Ops repair script for `_design/acl` / `dbacl` (`pnpm --filter=@faims3/api run repair-data-db-acl`).
-- [x] Client local data DB rebuild on ACL cutover (`openLocalDataDbWithAclCutover`).
+- [x] Client remote re-point on public URL changeover (`reconcileRemoteCouchUrlAfterListing`); no local wipe.
 - [ ] Focused e2e guest isolation spec (optional follow-up).
 - [x] Infra AWS CDK: public hostname → proxy; Couch internal-only
       ([CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md); always-on on shared ALB).
@@ -513,8 +514,9 @@ users. Document env in `e2e/.env.dist`.
 
 1. **Cutover order:** stamp-on-write → backfill migration → point
    `COUCHDB_PUBLIC_URL` at proxy. Reversing this opens `r-*` on legacy docs.
-2. **Local leaked data:** clients that synced before ACL must rebuild local
-   project DBs; otherwise isolation is only on the wire.
+2. **Local leftover data:** clients that synced before ACL may retain other
+   users’ docs offline until refresh / re-activate. Isolation is enforced on
+   the wire; automatic local wipe was deliberately not implemented.
 3. **Do not use doc `acl`/`owners` arrays for project roles** on every record —
    role changes would require rewriting the corpus. `dbacl` is the idiomatic
    FAIMS mapping.
@@ -654,12 +656,10 @@ DB members (`r-*`).
 4. **Point `COUCHDB_PUBLIC_URL` at couch-auth-proxy**; keep
    `COUCHDB_INTERNAL_URL` on Couch for Conductor admin. Do not publish Couch
    publicly.
-5. **Clients rebuild local project data DBs** via
-   `openLocalDataDbWithAclCutover` (marker `_local/faims-acl-schema` records
-   schema version **and** the public base URL). A marker sealed against open
-   Couch is invalidated when Conductor advertises a different proxy URL **or**
-   a higher `dataDb.acl_client_schema_version` (required for AWS same-hostname
-   ALB flips — bump `COUCH_ACL_CLIENT_SCHEMA_VERSION` at flip time).
+5. **Clients re-point remotes** when Conductor advertises a new
+   `dataDb.base_url` (`reconcileRemoteCouchUrlAfterListing`). Local IndexedDB
+   is not wiped — leftover pre-proxy docs may linger until refresh /
+   re-activate (accepted). Same-hostname AWS ALB flips need no schema bump.
 6. **Validate**: guest A/B isolation + contributor read-all
    (`pnpm --filter=@faims3/api run test:couch-auth-proxy` locally, or manual
    sync probe).

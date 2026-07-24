@@ -109,16 +109,6 @@ const EnvSchema = z
       'COUCHDB_PUBLIC_URL'
     ),
     /**
-     * ACL client schema generation advertised on `dataDb.acl_client_schema_version`.
-     * Bump when flipping public sync to couch-auth-proxy on an unchanged
-     * hostname (AWS) so field apps rebuild local IndexedDB even though the
-     * URL string did not change. Default 1; apps also enforce a bundled minimum.
-     */
-    COUCH_ACL_CLIENT_SCHEMA_VERSION: configHelpers.intDefault(
-      1,
-      'COUCH_ACL_CLIENT_SCHEMA_VERSION'
-    ),
-    /**
      * CouchDB admin username used by the server (paired with COUCHDB_PASSWORD).
      * Distinct from client-facing directory credentials.
      */
@@ -469,7 +459,6 @@ const EnvSchema = z
       designerUrl: env.DESIGNER_URL,
       couchdbInternalUrl: env.COUCHDB_INTERNAL_URL,
       couchdbPublicUrl: env.COUCHDB_PUBLIC_URL,
-      couchAclClientSchemaVersion: env.COUCH_ACL_CLIENT_SCHEMA_VERSION,
       conductorKeyId,
       keyFilePath: env.KEY_FILE_PATH,
       shortCodePrefix: env.CONDUCTOR_SHORT_CODE_PREFIX,

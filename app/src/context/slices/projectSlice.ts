@@ -22,6 +22,7 @@ import {
   buildCompiledSpecId,
   buildPouchIdentifier,
   buildSyncId,
+  createLocalPouchDatabase,
   createPouchDbReplication,
   createRemotePouchDbFromConnectionInfo,
   fetchNotebookDetails,
@@ -29,7 +30,6 @@ import {
   probeNotebookServerLifecycle,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
-import {openLocalDataDbWithAclCutover} from './helpers/localDataAclCutover';
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
 import {replaceProjectReplication} from './helpers/replicationLifecycle';
@@ -50,16 +50,6 @@ import {
 } from '../../utils/remoteProjectRemoval';
 
 export type {SyncMode};
-
-/** Read Conductor-advertised ACL client schema generation from dataDb. */
-function readAclClientSchemaVersion(
-  dataDb: {acl_client_schema_version?: unknown} | undefined
-): number | undefined {
-  const raw = dataDb?.acl_client_schema_version;
-  return typeof raw === 'number' && Number.isFinite(raw)
-    ? Math.floor(raw)
-    : undefined;
-}
 
 /**
  * Per server+project: consecutive directory polls where an id is absent from the
@@ -262,14 +252,6 @@ export interface Server {
   // What is the URL of the couch database for this server?
   couchDbUrl?: string;
 
-  /**
-   * Conductor-advertised ACL client schema generation
-   * (`dataDb.acl_client_schema_version`). Bumped on same-hostname proxy
-   * cutovers so local IndexedDB rebuilds even when the public URL string is
-   * unchanged.
-   */
-  aclClientSchemaVersion?: number;
-
   // Short code prefix
   shortCodePrefix: string;
 
@@ -400,7 +382,6 @@ const projectsSlice = createSlice({
         serverTitle: string;
         serverUrl: string;
         couchDbUrl?: string;
-        aclClientSchemaVersion?: number;
         description: string;
         shortCodePrefix: string;
       }>
@@ -412,7 +393,6 @@ const projectsSlice = createSlice({
         serverTitle,
         serverUrl,
         couchDbUrl,
-        aclClientSchemaVersion,
         serverVersion,
       } = action.payload;
       // Create a new server with no projects
@@ -420,7 +400,6 @@ const projectsSlice = createSlice({
         projects: {},
         serverVersion,
         couchDbUrl,
-        aclClientSchemaVersion,
         serverId,
         description,
         serverTitle,
@@ -488,7 +467,6 @@ const projectsSlice = createSlice({
         ProjectInformation &
           ProjectIdentity & {
             couchDbUrl: string;
-            aclClientSchemaVersion?: number;
           }
       >
     ) => {
@@ -523,9 +501,6 @@ const projectsSlice = createSlice({
       // update/accurate)
       // TODO handle couch DB URLs on a per project basis
       server.couchDbUrl = payload.couchDbUrl;
-      if (typeof payload.aclClientSchemaVersion === 'number') {
-        server.aclClientSchemaVersion = payload.aclClientSchemaVersion;
-      }
 
       // Now we can add one
       server.projects[payload.projectId] = {
@@ -679,7 +654,6 @@ const projectsSlice = createSlice({
         ProjectInformation &
           ProjectIdentity & {
             couchDbUrl: string;
-            aclClientSchemaVersion?: number;
           }
       >
     ) => {
@@ -711,14 +685,12 @@ const projectsSlice = createSlice({
       );
 
       server.couchDbUrl = payload.couchDbUrl;
-      if (typeof payload.aclClientSchemaVersion === 'number') {
-        server.aclClientSchemaVersion = payload.aclClientSchemaVersion;
-      }
 
       const existingProject = server.projects[payload.projectId];
 
       // Keep remote connection config in sync with Conductor's advertised
-      // public URL so cutover / rebuildDbs do not prefer a stale couchUrl.
+      // public URL so rebuildDbs / credential refresh do not prefer a stale
+      // couchUrl after COUCHDB_PUBLIC_URL flips (e.g. Couch → proxy).
       if (existingProject.database?.remote) {
         existingProject.database.remote.connectionConfiguration = {
           ...existingProject.database.remote.connectionConfiguration,
@@ -1478,19 +1450,15 @@ export const updateDatabaseCredentials = createAsyncThunk<
         const oldRemoteId = project.database.remote.remoteDbId;
         await databaseService.closeAndRemoveRemoteDatabase(oldRemoteId);
 
-        // Step 2: Re-open local DB with ACL cutover (URL / schema generation may
-        // have changed since activate; credential refresh is a natural checkpoint).
-        const {db: localDb} =
-          await openLocalDataDbWithAclCutover<ProjectDataObject>({
-            id: project.database.localDbId,
-            remoteBaseUrl: server.couchDbUrl,
-            aclClientSchemaVersion: server.aclClientSchemaVersion,
-          });
-        await databaseService.registerLocalDatabase(
-          project.database.localDbId,
-          localDb,
-          {tolerant: true}
+        // Step 2: Get local DB reference
+        const localDb = databaseService.getLocalDatabase(
+          project.database.localDbId
         );
+        if (!localDb) {
+          throw new Error(
+            `The local DB with ID ${project.database.localDbId} does not exist for project ${project.projectId}`
+          );
+        }
 
         // Step 3: Create new connection configuration
         const connectionConfiguration: DatabaseConnectionConfig = {
@@ -1627,15 +1595,13 @@ export const activateProject = createAsyncThunk<
     }),
   };
 
-  // creates and/or links to the local data database (wipes pre-ACL leaked docs)
+  // creates and/or links to the local data database
   const localDatabaseId = buildPouchIdentifier({
     projectId: payload.projectId,
     serverId: payload.serverId,
   });
-  const {db: localDb} = await openLocalDataDbWithAclCutover<ProjectDataObject>({
+  const localDb = createLocalPouchDatabase<ProjectDataObject>({
     id: localDatabaseId,
-    remoteBaseUrl: server.couchDbUrl,
-    aclClientSchemaVersion: server.aclClientSchemaVersion,
   });
   await databaseService.registerLocalDatabase(localDatabaseId, localDb);
 
@@ -1956,9 +1922,6 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
                 projectId: value.projectId,
                 serverId,
                 couchDbUrl: value.details.dataDb.base_url,
-                aclClientSchemaVersion: readAclClientSchemaVersion(
-                  value.details.dataDb
-                ),
                 status: value.details.status ?? existingProject.status,
                 name: value.details.name ?? existingProject.name,
                 description:
@@ -1978,9 +1941,6 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           projectId,
           serverId,
         });
-        const aclClientSchemaVersion = readAclClientSchemaVersion(
-          details.dataDb
-        );
 
         if (!existingProject) {
           actions.push(
@@ -1993,7 +1953,6 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url!,
-              aclClientSchemaVersion,
               status: meta.status,
               offlineMapRegion: meta.offlineMapRegion,
             })
@@ -2026,7 +1985,6 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
               projectId,
               serverId,
               couchDbUrl: details.dataDb.base_url!,
-              aclClientSchemaVersion,
               status: meta.status ?? existingProject.status,
               recordCount: mergeRecordCount(
                 meta.recordCount,
@@ -2372,61 +2330,51 @@ export const setSyncMode = createAsyncThunk<
 });
 
 /**
- * After Conductor listing refresh, re-check ACL cutover for activated local
- * data DBs. Cold-start {@link rebuildDbs} may have sealed markers against a
- * stale public URL; this runs once `couchDbUrl` /
- * `aclClientSchemaVersion` are current.
+ * After Conductor listing refresh, re-point activated remotes at the
+ * advertised public Couch/proxy URL when it changed.
  *
- * When a DB is rebuilt, remote + sync are re-registered and Redux is updated
- * so replication does not keep a handle to the destroyed IndexedDB.
+ * Cold-start {@link rebuildDbs} may open remotes against a stale persisted
+ * `couchUrl`; listing updates `server.couchDbUrl` and the stored connection
+ * config. This recreates remote + sync handles only — local IndexedDB is left
+ * alone (pre-proxy leftover docs may linger until the user refreshes /
+ * reactivates).
  */
-export const reconcileLocalDataAclCutoverAfterListing = createAsyncThunk<
+export const reconcileRemoteCouchUrlAfterListing = createAsyncThunk<
   void,
   void
 >(
-  'projects/reconcileLocalDataAclCutoverAfterListing',
+  'projects/reconcileRemoteCouchUrlAfterListing',
   async (_, {getState, dispatch}) => {
     const state = (getState() as RootState).projects;
     const appDispatch = dispatch as AppDispatch;
 
     for (const server of Object.values(state.servers)) {
+      if (!server.couchDbUrl) continue;
+
       for (const project of Object.values(server.projects)) {
-        if (!project.isActivated || !project.database) continue;
+        if (!project.isActivated || !project.database?.remote) continue;
         const dbInfo = project.database;
-        const remoteBaseUrl =
-          server.couchDbUrl ?? dbInfo.remote?.connectionConfiguration.couchUrl;
-
-        const {db: localDb, rebuilt} =
-          await openLocalDataDbWithAclCutover<ProjectDataObject>({
-            id: dbInfo.localDbId,
-            remoteBaseUrl,
-            aclClientSchemaVersion: server.aclClientSchemaVersion,
-          });
-
-        if (!rebuilt) continue;
-
-        await couchInitialiser({
-          content: initDataDB({projectId: project.projectId}),
-          db: localDb,
-          config: {applyPermissions: false, forceWrite: true},
-        });
-        databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
-          tolerant: true,
-        });
-
-        if (!dbInfo.remote) continue;
-
+        const remote = dbInfo.remote!;
         const connectionConfiguration: DatabaseConnectionConfig = {
-          ...dbInfo.remote.connectionConfiguration,
-          ...(server.couchDbUrl ? {couchUrl: server.couchDbUrl} : {}),
+          ...remote.connectionConfiguration,
+          couchUrl: server.couchDbUrl,
         };
+        // remoteDbId is the opened connection string; listing may already have
+        // updated connectionConfiguration.couchUrl in Redux without recreating
+        // the live Pouch handle.
+        const expectedRemoteId = connectionConfiguration.couchUrl.endsWith('/')
+          ? connectionConfiguration.couchUrl +
+            connectionConfiguration.databaseName
+          : `${connectionConfiguration.couchUrl}/${connectionConfiguration.databaseName}`;
+        if (remote.remoteDbId === expectedRemoteId) continue;
 
-        if (dbInfo.remote.syncId) {
-          await databaseService.closeAndRemoveSync(dbInfo.remote.syncId);
+        const localDb = databaseService.getLocalDatabase(dbInfo.localDbId);
+        if (!localDb) continue;
+
+        if (remote.syncId) {
+          await databaseService.closeAndRemoveSync(remote.syncId);
         }
-        await databaseService.closeAndRemoveRemoteDatabase(
-          dbInfo.remote.remoteDbId
-        );
+        await databaseService.closeAndRemoveRemoteDatabase(remote.remoteDbId);
 
         const {db: remoteDb, id: remoteDbId} =
           createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
@@ -2494,19 +2442,9 @@ export const rebuildDbs = async (
           // here we already have stuff ready to go (config etc)
           const dbInfo = project.database;
 
-          // Prefer Conductor's advertised public URL over a possibly stale
-          // remote connection config (listing refresh updates server.couchDbUrl
-          // first). Fall back to the persisted remote URL when listing has not
-          // run yet (cold start before initialiseAllProjects).
-          const remoteBaseUrl =
-            server.couchDbUrl ??
-            dbInfo.remote?.connectionConfiguration.couchUrl;
-          const {db: localDb} =
-            await openLocalDataDbWithAclCutover<ProjectDataObject>({
-              id: dbInfo.localDbId,
-              remoteBaseUrl,
-              aclClientSchemaVersion: server.aclClientSchemaVersion,
-            });
+          const localDb = createLocalPouchDatabase<ProjectDataObject>({
+            id: dbInfo.localDbId,
+          });
           // Setup design documents and permissions for local data DB
           await couchInitialiser({
             content: initDataDB({projectId: project.projectId}),
@@ -2519,10 +2457,17 @@ export const rebuildDbs = async (
 
           // Next - setup the remote if we need it
           if (dbInfo.remote) {
+            // Prefer Conductor's advertised public URL over a possibly stale
+            // persisted remote connection config (listing refresh updates
+            // server.couchDbUrl). Fall back when listing has not run yet.
+            const connectionConfiguration: DatabaseConnectionConfig = {
+              ...dbInfo.remote.connectionConfiguration,
+              ...(server.couchDbUrl ? {couchUrl: server.couchDbUrl} : {}),
+            };
             // creates the remote database (pouch remote)
             const {db: remoteDb, id: remoteDbId} =
               createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-                dbInfo.remote.connectionConfiguration
+                connectionConfiguration
               );
             databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
               tolerant: true,

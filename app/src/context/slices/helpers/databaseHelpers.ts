@@ -105,13 +105,6 @@ export function createLocalPouchDatabase<Content extends {}>({
   return new PouchDBWrapper<Content>(id);
 }
 
-export {
-  LOCAL_DATA_ACL_SCHEMA_DOC_ID,
-  LOCAL_DATA_ACL_SCHEMA_VERSION,
-  openLocalDataDbWithAclCutover,
-  shouldRebuildLocalDataDbForAclCutover,
-} from './localDataAclCutover';
-
 /**
  * Creates a PouchDBWrapper used to access a remote Couch/Pouch instance
  *

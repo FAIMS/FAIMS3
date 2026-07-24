@@ -50,7 +50,7 @@ document still run the idempotent backfill. Conductor must enqueue DATA
 migrations under the logical name `data-{projectId}` (not a remote Pouch URL).
 
 **Operator cutover** (migrate → repair → flip `COUCHDB_PUBLIC_URL` → client
-rebuild): [CouchAuthProxyCutover](./Authorisation/CouchAuthProxyCutover.md).
+remote re-point): [CouchAuthProxyCutover](./Authorisation/CouchAuthProxyCutover.md).
 
 Ops repair (idempotent):
 

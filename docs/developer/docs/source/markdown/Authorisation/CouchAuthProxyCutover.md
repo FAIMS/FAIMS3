@@ -19,7 +19,7 @@ world-readable to DB members (`r-*`).
 | Conductor (`COUCHDB_INTERNAL_URL`)  | Direct Couch (admin)         | Unchanged — still direct Couch               |
 | Guest sync reads                    | Entire project data DB       | Own record graph only (`creator` / `parent`) |
 | Contributor+ sync reads             | Entire DB                    | Entire DB via `_design/acl` `dbacl`          |
-| Client IndexedDB                    | May hold leaked guest corpus | Rebuilt when public URL / ACL marker changes |
+| Client IndexedDB                    | May hold pre-proxy corpus    | Left as-is; leftover docs may linger until refresh / re-activate |
 
 ---
 
@@ -49,8 +49,6 @@ Conductor env set by CDK:
 
 - `COUCHDB_PUBLIC_URL` → `https://couch.<base>` (proxy)
 - `COUCHDB_INTERNAL_URL` → `http://<couch-private-ip>:5984`
-- `COUCH_ACL_CLIENT_SCHEMA_VERSION` → from
-  `conductor.couchAclClientSchemaVersion` (default `1`)
 
 ### Production (DigitalOcean / custom)
 
@@ -77,7 +75,6 @@ DigitalOcean still sketches a raw Couch target — treat proxy wiring as a
 5. Conductor env:
    - `COUCHDB_INTERNAL_URL` → Couch (admin Basic)
    - `COUCHDB_PUBLIC_URL` → proxy base URL (**no trailing slash**)
-   - `COUCH_ACL_CLIENT_SCHEMA_VERSION` → bump on same-hostname cutovers
 
 ---
 
@@ -86,7 +83,7 @@ DigitalOcean still sketches a raw Couch target — treat proxy wiring as a
 ### Phase 0 — Preconditions
 
 - [ ] Deploy FAIMS build that includes stamp-on-write, DATA v1→v2 migration,
-      `repair-data-db-acl`, and client cutover (`openLocalDataDbWithAclCutover`).
+      and `repair-data-db-acl`.
 - [ ] Keep `COUCHDB_PUBLIC_URL` on **direct Couch** for this phase (or accept
       that sync is still DB-wide until Phase 3).
 - [ ] Proxy container can be deployed idle / not yet advertised.
@@ -140,33 +137,22 @@ Do **not** flip the public URL until every project you care about is green.
 
 1. Ensure proxy health: `GET {proxy}/_couch-auth-proxy/health` → 200.
 2. Set `COUCHDB_PUBLIC_URL` to the proxy base URL (no trailing slash).
-3. **Same-hostname cutovers (AWS):** bump `COUCH_ACL_CLIENT_SCHEMA_VERSION`
-   (or CDK `conductor.couchAclClientSchemaVersion`) **at flip time**. The
-   public hostname does not change when the ALB target switches Couch → proxy,
-   so a URL mismatch alone will not wipe client IndexedDB.
-4. Restart Conductor so notebook listings advertise the new `dataDb.base_url`
-   and `dataDb.acl_client_schema_version`.
-5. Leave `COUCHDB_INTERNAL_URL` on Couch.
+3. Restart Conductor so notebook listings advertise the new `dataDb.base_url`.
+4. Leave `COUCHDB_INTERNAL_URL` on Couch.
 
 After this, new app sessions sync through the proxy. Guests only receive their
-own record graphs.
+own record graphs on the wire. When the advertised public URL string changes,
+the field app re-points remotes (`reconcileRemoteCouchUrlAfterListing`); it
+does **not** wipe local IndexedDB.
 
-### Phase 4 — Client hygiene
+### Phase 4 — Local leftover data (accepted)
 
-The field app rebuilds local project data IndexedDB databases when:
-
-- the local ACL marker is missing on a non-empty DB, or
-- the marker version is behind
-  `max(app LOCAL_DATA_ACL_SCHEMA_VERSION, server acl_client_schema_version)`, or
-- the marker was sealed against a **different** public base URL than Conductor
-  now advertises (local compose `:5984` → `:5985`).
-
-**AWS same-hostname:** rely on the Phase 3 schema-generation bump (step 3), not
-URL mismatch. Operators do not need a manual “wipe local data” step when that
-generation is bumped with the flip. Users may see a one-time re-sync.
-
-Ship / enable the app build that contains `openLocalDataDbWithAclCutover`
-**with or after** Phase 3.
+Pre-proxy sync may leave other users’ docs in a guest’s local project DB.
+There is **no** automatic local wipe / schema-generation bump. Isolation is
+enforced on the wire by the proxy; leftover local records may linger until the
+user refreshes, reactivates the notebook, or clears local data. That trade-off
+is intentional — automatic IndexedDB rebuild was judged not worth the
+complexity for the minor security uplift.
 
 ### Phase 5 — Validate
 

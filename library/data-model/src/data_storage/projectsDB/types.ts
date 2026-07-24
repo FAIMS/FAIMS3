@@ -20,7 +20,6 @@ export const PossibleConnectionInfoSchema: z.ZodType<PossibleConnectionInfo> =
       })
       .optional(),
     jwt_token: z.string().optional(),
-    acl_client_schema_version: z.number().int().positive().optional(),
   });
 
 // =============

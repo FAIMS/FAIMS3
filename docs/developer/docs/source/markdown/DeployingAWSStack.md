@@ -764,8 +764,6 @@ COUCHDB_EXTERNAL_PORT=443
 COUCHDB_INTERNAL_URL=http://<couch-private-ip>:5984
 # Public sync URL advertised to the app as dataDb.base_url (proxy hostname).
 COUCHDB_PUBLIC_URL=https://couch.<your domain>:443
-# Bump on brownfield same-hostname proxy cutover so field apps rebuild IndexedDB.
-# COUCH_ACL_CLIENT_SCHEMA_VERSION=2
 AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
 KEY_SOURCE=AWS_SM
 AWS_SECRET_KEY_ARN=<secret ARN of the private key in AWS SM>

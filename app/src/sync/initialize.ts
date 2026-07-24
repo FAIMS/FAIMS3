@@ -26,7 +26,7 @@ import {
   initialiseServers,
   markInitialised,
   rebuildDbs,
-  reconcileLocalDataAclCutoverAfterListing,
+  reconcileRemoteCouchUrlAfterListing,
 } from '../context/slices/projectSlice';
 import pouchdbDebug from 'pouchdb-debug';
 import {logError} from '../logging';
@@ -108,9 +108,9 @@ export async function initialise() {
 
   // Get current state/dispatch const state = store.getState();
 
-  // Rebuild all of the databases (synchronously). Cutover may use a stale
-  // public URL here (listing refresh has not run yet); we reconcile again
-  // after initialiseAllProjects updates couchDbUrl / aclClientSchemaVersion.
+  // Rebuild all of the databases (synchronously). Remotes may open against a
+  // stale persisted public URL here (listing refresh has not run yet); we
+  // re-point them after initialiseAllProjects updates couchDbUrl.
   await rebuildDbs(store.getState().projects);
 
   // Compile all ui specs (synchronously)
@@ -123,9 +123,9 @@ export async function initialise() {
   // Then we want to initialise all the projects too
   await store.dispatch(initialiseAllProjects());
 
-  // Re-check ACL cutover now that Conductor has advertised the current public
-  // URL + schema generation (same-hostname AWS flips; cold-start listing).
-  await store.dispatch(reconcileLocalDataAclCutoverAfterListing());
+  // Re-point remotes at Conductor's advertised public URL when it changed
+  // (Couch → proxy flip). Local IndexedDB is not wiped.
+  await store.dispatch(reconcileRemoteCouchUrlAfterListing());
 
   // Once this is done - mark initialisation complete
   store.dispatch(markInitialised());
