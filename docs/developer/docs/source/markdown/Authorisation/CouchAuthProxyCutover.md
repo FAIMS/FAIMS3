@@ -40,7 +40,8 @@ Already wired in `docker-compose.yml`:
 ### Production (AWS CDK / DigitalOcean / custom)
 
 Today’s CDK/DO stacks may still set `COUCHDB_PUBLIC_URL` to raw Couch — treat
-proxy wiring as a **required follow-up** for this feature. You need:
+proxy wiring as a **required follow-up** for this feature. AWS design:
+[CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). You need:
 
 1. Run `ghcr.io/peterbaker0/couch-auth-proxy` (pin the image tag that matches
    vendored ddoc **2.3.0** — see `docker-compose.yml`).
