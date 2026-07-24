@@ -39,6 +39,7 @@ FAIMS3 Developer Documentation
    markdown/Authorisation/RefreshTokens.md
    markdown/Authorisation/CouchAuthProxyHandover.md
    markdown/Authorisation/CouchAuthProxyCutover.md
+   markdown/Authorisation/CouchAuthProxyAwsCdk.md
    markdown/forms/08-special-fields/take-photo.md
    markdown/forms/08-special-fields/related-record.md
    markdown/forms/08-special-fields/file-uploader.md
