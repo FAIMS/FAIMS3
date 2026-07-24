@@ -393,19 +393,25 @@ add “healthy host &lt; 1” on the proxy TG.
 ## 9. Implementation checklist (follow-on coding PR)
 
 ```text
-[ ] Add CouchAuthProxyConfig to config Zod schema + sample.json
-[ ] Implement CouchAuthProxy ECS construct
-[ ] Export couch SG + internalEndpoint from EC2CouchDB
-[ ] Stop public ALB targeting Couch when proxy enabled
-[ ] Split COUCHDB_PUBLIC_URL / COUCHDB_INTERNAL_URL in FaimsConductor
-[ ] Wire SGs: proxy→5984, conductor→5984; deny ALB→5984
-[ ] Health check on /_couch-auth-proxy/health
-[ ] README + DeployingAWSStack.md cutover notes
-[ ] cdk synth against sample config; cdk diff on a non-prod account
-[ ] Soak on staging hostname, then flip couch.* 
+[x] Add CouchAuthProxyConfig to config Zod schema + sample.json
+[x] Implement CouchAuthProxy ECS construct
+[x] Export couch SG + internalEndpoint from EC2CouchDB
+[x] Stop public ALB targeting Couch when proxy enabled
+[x] Split COUCHDB_PUBLIC_URL / COUCHDB_INTERNAL_URL in FaimsConductor
+[x] Wire SGs: proxy→5984, conductor→5984; deny ALB→5984
+[x] Health check on /_couch-auth-proxy/health
+[x] README + DeployingAWSStack.md cutover notes
+[x] cdk synth against sample config (enabled true/false)
+[ ] cdk diff on a non-prod account (operator)
+[ ] Soak on staging hostname, then flip couch.* (operator)
 ```
 
-Suggested commit split:
+**CDK construct work is done.** Live cutover still requires DATA v2 migration
+on every `data-*` DB **before** setting `couchAuthProxy.enabled: true` — see
+[CouchAuthProxyCutover](CouchAuthProxyCutover.md). Do not flip a production
+account without that backfill.
+
+Suggested commit split (historical):
 
 1. Construct + config (proxy enabled but optional; no prod flip).
 2. Stack wiring + Conductor URL split behind `couchAuthProxy.enabled`.

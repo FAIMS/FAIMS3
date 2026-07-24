@@ -86,6 +86,14 @@
       }
     }
   },
+  "couchAuthProxy": {
+    "enabled": true,
+    "image": "ghcr.io/peterbaker0/couch-auth-proxy",
+    "imageTag": "sha-3004091",
+    "cpu": 512,
+    "memory": 1024,
+    "desiredCount": 2
+  },
   "backup": {
     "vaultName": "faims-backup-vault",
     "retentionDays": 30,

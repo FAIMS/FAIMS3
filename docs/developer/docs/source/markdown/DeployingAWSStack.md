@@ -755,15 +755,15 @@ Then add the following values to the bottom of the .env file:
 COUCHDB_USER=admin
 COUCHDB_PASSWORD="<YOUR DB PASSWORD>"
 COUCHDB_EXTERNAL_PORT=443
-# Today both may still point at the public Couch hostname. After
-# couch-auth-proxy cutover: PUBLIC_URL → proxy (same hostname), INTERNAL_URL →
-# VPC-only Couch. See Authorisation/CouchAuthProxyAwsCdk.md.
-COUCHDB_INTERNAL_URL=https://db.<your domain>:443/
+# With couchAuthProxy.enabled=true the CDK stack sets these on Conductor:
+#   PUBLIC  → https://<couch subdomain>.<domain>:443  (ALB → proxy)
+#   INTERNAL → http://<couch-private-ip>:5984         (VPC, admin Basic)
+# For local migrate against a deployed stack, use admin creds + INTERNAL URL
+# (or the public hostname only while the proxy is still disabled).
+# See Authorisation/CouchAuthProxyAwsCdk.md and CouchAuthProxyCutover.md.
+COUCHDB_INTERNAL_URL=https://db.<your domain>:443
 # Public sync URL advertised to the app as dataDb.base_url.
-# For per-document guest ACL this MUST be couch-auth-proxy, not raw Couch.
-# See docs/.../Authorisation/CouchAuthProxyCutover.md for the cutover sequence.
-# (AWS CDK may still wire this to the Couch endpoint today — update infra
-# before relying on sync isolation in production.)
+# After cutover this is the same hostname, terminated on couch-auth-proxy.
 COUCHDB_PUBLIC_URL=https://db.<your domain>:443
 AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
 KEY_SOURCE=AWS_SM
@@ -821,16 +821,36 @@ You can now manage the deployment with your personal login.
 ## couch-auth-proxy (per-document sync ACL)
 
 Public Pouch↔Couch sync should not hit CouchDB directly once guest my/all
-reads are enforced. The intended AWS shape is:
+reads are enforced. The AWS CDK stack implements this behind
+`couchAuthProxy` in your config JSON (see
+[infrastructure/aws-cdk/README.md](../../../../infrastructure/aws-cdk/README.md)):
 
-- public `couch.*` / `db.*` hostname on the shared ALB → **couch-auth-proxy**
-- Conductor admin traffic → Couch on a **VPC-internal** URL
-- Couch `:5984` not registered on the internet-facing ALB
+```json
+"couchAuthProxy": {
+  "enabled": true,
+  "image": "ghcr.io/peterbaker0/couch-auth-proxy",
+  "imageTag": "sha-3004091",
+  "cpu": 512,
+  "memory": 1024,
+  "desiredCount": 2
+}
+```
 
-Design, CDK construct sketch, security groups, config schema, and infra
-cutover order: [CouchAuthProxyAwsCdk](Authorisation/CouchAuthProxyAwsCdk.md).
-Operator runbook (migrations before flipping the public URL):
-[CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md).
+When `enabled` is `true`:
+
+- public `couch.*` / `db.*` hostname on the shared ALB → **couch-auth-proxy** ECS
+- Conductor `COUCHDB_PUBLIC_URL` → that hostname; `COUCHDB_INTERNAL_URL` → VPC Couch
+- Couch `:5984` is **not** registered on the internet-facing ALB (SG: proxy + Conductor only)
+
+When `enabled` is `false`, legacy ALB→Couch is preserved (emergency rollback only;
+that reopens the guest sync read gap).
+
+**Mandatory order:** migrate every `data-*` DB to version **2** (stamp ACL +
+`_design/acl`) **before** setting `enabled: true` on a live environment.
+Flipping the public URL first leaves unstamped docs world-readable to members.
+
+Design / CDK details: [CouchAuthProxyAwsCdk](Authorisation/CouchAuthProxyAwsCdk.md).  
+Operator runbook: [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md).
 
 ## Additional configurations
 

@@ -77,10 +77,20 @@ export interface FaimsConductorProps {
   certificate: acm.ICertificate;
   /** CouchDB admin user/password secret */
   couchDbAdminSecret: sm.Secret;
-  /** CouchDB port (external) */
+  /** CouchDB port (external / ALB), used as COUCHDB_EXTERNAL_PORT */
   couchDBPort: number;
-  /** CouchDB endpoint (format: https://domain:port) */
-  couchDBEndpoint: string;
+  /**
+   * Public Couch URL advertised to apps as dataDb.base_url
+   * (`COUCHDB_PUBLIC_URL`). After cutover this is the couch-auth-proxy
+   * hostname (same public host as before).
+   */
+  couchDBPublicEndpoint: string;
+  /**
+   * VPC-internal Couch URL for Conductor admin traffic
+   * (`COUCHDB_INTERNAL_URL`). After cutover this is http://PRIVATE_IP:5984
+   * and must bypass the proxy.
+   */
+  couchDBInternalEndpoint: string;
   /** Public URL for the /web (new conductor) */
   webUrl: string;
   /** Public URL for web app */
@@ -137,6 +147,8 @@ export class FaimsConductor extends Construct {
   public readonly conductorEndpoint: string;
   /** The Fargate Service */
   public readonly fargateService: ecs.FargateService;
+  /** Security group attached to the service (for Couch ingress) */
+  public readonly serviceSecurityGroup: ec2.SecurityGroup;
 
   constructor(scope: Construct, id: string, props: FaimsConductorProps) {
     super(scope, id);
@@ -258,10 +270,11 @@ export class FaimsConductor extends Construct {
         CONDUCTOR_INSTANCE_NAME: props.config.name,
         CONDUCTOR_DESCRIPTION: props.config.description,
         COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-        // TODO(couch-auth-proxy): point at the proxy hostname, not raw Couch.
-        // See docs/developer/.../Authorisation/CouchAuthProxyCutover.md
-        COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
-        COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+        // PUBLIC → proxy (or legacy Couch when couchAuthProxy.enabled=false)
+        // INTERNAL → VPC Couch for admin / migrations (bypass proxy)
+        // See docs/.../Authorisation/CouchAuthProxyCutover.md
+        COUCHDB_PUBLIC_URL: props.couchDBPublicEndpoint,
+        COUCHDB_INTERNAL_URL: props.couchDBInternalEndpoint,
         CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
         // Conductor API URLs
         CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
@@ -367,7 +380,7 @@ export class FaimsConductor extends Construct {
     });
 
     // Create Security Group for the Fargate service
-    const serviceSecurityGroup = new ec2.SecurityGroup(
+    this.serviceSecurityGroup = new ec2.SecurityGroup(
       this,
       'ConductorServiceSG',
       {
@@ -383,7 +396,7 @@ export class FaimsConductor extends Construct {
       taskDefinition: conductorTaskDfn,
       // Target number of tasks to run
       desiredCount: props.config.autoScaling.desiredCapacity,
-      securityGroups: [serviceSecurityGroup],
+      securityGroups: [this.serviceSecurityGroup],
       assignPublicIp: true, // TODO Change this if using private subnets with NAT
     });
 
@@ -479,7 +492,7 @@ export class FaimsConductor extends Construct {
     // ================
 
     // Allow inbound traffic from the ALB
-    serviceSecurityGroup.connections.allowFrom(
+    this.serviceSecurityGroup.connections.allowFrom(
       props.sharedBalancer.alb,
       ec2.Port.tcp(this.internalPort),
       'Allow traffic from ALB to Conductor Fargate Service'

@@ -24,8 +24,31 @@ The `EC2CouchDB` construct deploys CouchDB:
 - **Cloud Watch**: Includes a set of monitoring alarms triggering SNS topics, subscribed to an email address. Cloudwatch agent is installed and configured on instance. Logs collected and reported to /ec2/couchdb log stream.
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
-- **Load Balancer Integration**: Uses the shared ALB with a dedicated target group. Will support clustering in the future and performs TLS termination.
-- **DNS**: Creates a custom domain for CouchDB access.
+- **Load Balancer Integration**: When `couchAuthProxy.enabled` is **false** (legacy/rollback), registers the instance on the shared ALB for `couch.*`. When the proxy is **enabled**, Couch is **not** on the public ALB; only proxy + Conductor security groups may reach `:5984`.
+- **DNS**: Creates a custom domain alias to the shared ALB (hostname unchanged for CSP/clients).
+- **Internal endpoint**: Exposes `internalEndpoint` (`http://<private-ip>:5984`) for Conductor admin and the proxy.
+
+### couch-auth-proxy (public sync ACL)
+
+The `CouchAuthProxy` construct (gated by `couchAuthProxy.enabled`) deploys
+[`couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy) as ECS
+Fargate on the shared ALB:
+
+- **Public hostname**: Same `couch.<baseDomain>` as before (no app/CSP rebuild).
+- **ALB**: Host rule → proxy target group on `:8000`; health check
+  `/_couch-auth-proxy/health`.
+- **Upstream**: VPC HTTP to Couch `internalEndpoint`; admin creds via Secrets Manager.
+- **Hardened env**: `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session`,
+  `ACL_AUTO_INSTALL=false`, `AUTH_RESOLVE_VIA_COUCH_SESSION=true`,
+  `CORS_ORIGINS` from faims+web domains.
+- **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:sha-3004091`
+  (must match vendored `_design/acl` ddoc **2.3.0** in `@faims3/data-model` /
+  `docker-compose.yml`).
+
+**Cutover gate:** Do not set `enabled: true` on a live environment until every
+`data-*` DB is at migration version **2**. Order and rollback:
+[CouchAuthProxyCutover](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyCutover.md),
+[CouchAuthProxyAwsCdk](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyAwsCdk.md).
 
 ### Conductor (API Service)
 
@@ -33,6 +56,9 @@ The `FaimsConductor` construct sets up the API service:
 
 - **ECS Fargate**: Runs the Conductor API as a containerized service. Can either be built using CDK with a debug flag in the code, or preferably use a docker hub image (name and tag).
 - **Task Definition**: Configures the container with environment variables and secrets.
+- **Couch URLs**: `COUCHDB_PUBLIC_URL` (apps / sync — proxy when enabled) vs
+  `COUCHDB_INTERNAL_URL` (admin — VPC Couch when proxy enabled; same public
+  hostname in legacy mode).
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
 - **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
@@ -366,6 +392,18 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
+- `couchAuthProxy`: (Optional) Public Pouch sync ACL proxy. Defaults to
+  `{ "enabled": false }` (legacy ALB → Couch). **Do not enable in production
+  until DATA v2 migration completes** — see CouchAuthProxyCutover.md.
+  - `enabled`: When `true`, ALB `couch.*` → ECS proxy; Conductor
+    `COUCHDB_INTERNAL_URL` → VPC Couch; Couch SG allows proxy + Conductor only.
+    When `false`, preserves legacy ALB→Couch (rollback; reopens guest read gap).
+  - `image`: (default `ghcr.io/peterbaker0/couch-auth-proxy`) Image repository
+  - `imageTag`: (default `sha-3004091`) Immutable pin matching data-model ACL
+    ddoc **2.3.0** / compose
+  - `cpu`: (default `512`) Fargate CPU units
+  - `memory`: (default `1024`) Fargate memory MiB
+  - `desiredCount`: (default `2`) Desired task count
 - `conductor`: Configuration for the Conductor API service.
   - `name`: Title for this conductor instance (e.g. shown on listings page)
   - `description`: Subheading or description for the instance

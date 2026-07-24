@@ -59,6 +59,12 @@ export interface EC2CouchDBProps {
   couchVersionTag: string;
   /** chttpd_auth.secret configuration value - injected into init file */
   cookieSecret: sm.Secret;
+  /**
+   * When true (default), register this instance on the shared ALB for
+   * `domainName` (legacy public Couch). Set false when couch-auth-proxy owns
+   * the public host rule — DNS alias to the ALB is still created here.
+   */
+  attachToPublicAlb?: boolean;
 }
 
 /**
@@ -67,18 +73,28 @@ export interface EC2CouchDBProps {
 export class EC2CouchDB extends Construct {
   /** The EC2 instance running CouchDB */
   public readonly instance: ec2.Instance;
-  /** The public endpoint for accessing CouchDB */
+  /**
+   * Public HTTPS endpoint for the couch hostname (ALB). After proxy cutover
+   * this hostname terminates on couch-auth-proxy, not this instance.
+   */
   public readonly couchEndpoint: string;
-  /** The exposed HTTPS port */
+  /**
+   * VPC-internal HTTP endpoint for Conductor / proxy → Couch
+   * (format: http://PRIVATE_IP:5984)
+   */
+  public readonly internalEndpoint: string;
+  /** Security group on the Couch EC2 instance */
+  public readonly securityGroup: ec2.SecurityGroup;
+  /** The exposed HTTPS port (ALB) */
   public readonly exposedPort: number = 443;
   /** The secret containing the CouchDB admin user/password */
   public readonly passwordSecret: sm.Secret;
   /** Shared ALB */
   private readonly sharedBalancer: SharedBalancer;
-  /** EC2 Target group */
-  private readonly targetGroup: elb.ApplicationTargetGroup;
+  /** EC2 Target group (only when attachToPublicAlb) */
+  private readonly targetGroup?: elb.ApplicationTargetGroup;
   /** The internal port CouchDB listens on */
-  private readonly couchInternalPort: number = 5984;
+  public readonly couchInternalPort: number = 5984;
   /** The path where CouchDB data will be stored */
   private readonly couchDataPath: string = '/opt/couchdb/data';
   /** The device name for the EBS data volume */
@@ -141,6 +157,7 @@ methods = GET, PUT, POST, HEAD, DELETE
     // Expose variables
     this.sharedBalancer = props.sharedBalancer;
     this.monitoringConfig = props.monitoring;
+    const attachToPublicAlb = props.attachToPublicAlb !== false;
 
     // AUXILIARY SETUP
     // ================
@@ -360,15 +377,11 @@ EOL`,
     // ================
 
     // Create a security group for the EC2 instance
-    const couchSecurityGroup = new ec2.SecurityGroup(
-      this,
-      'CouchDBSecurityGroup',
-      {
-        vpc: props.vpc,
-        allowAllOutbound: true,
-        description: 'Security group for CouchDB EC2 instances',
-      }
-    );
+    this.securityGroup = new ec2.SecurityGroup(this, 'CouchDBSecurityGroup', {
+      vpc: props.vpc,
+      allowAllOutbound: true,
+      description: 'Security group for CouchDB EC2 instances',
+    });
 
     // Create the EC2 instance
     this.instance = new ec2.Instance(this, 'CouchDBInstance' + debugIdPostfix, {
@@ -386,7 +399,7 @@ EOL`,
       */
       userData,
       vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
-      securityGroup: couchSecurityGroup,
+      securityGroup: this.securityGroup,
       instanceType: new ec2.InstanceType(props.instanceType),
     });
 
@@ -422,40 +435,51 @@ EOL`,
 
     // LOAD BALANCING SETUP
     // =========================
+    // When couch-auth-proxy is enabled, the proxy construct owns the public
+    // ALB host rule for domainName. We still publish DNS to the shared ALB.
 
-    // Create the target group for the CouchDB instances
-    this.targetGroup = new elb.ApplicationTargetGroup(this, 'CouchTG', {
-      port: this.couchInternalPort,
-      protocol: elb.ApplicationProtocol.HTTP,
-      targetType: elb.TargetType.INSTANCE,
-      healthCheck: {
-        enabled: true,
-        healthyHttpCodes: '200',
-        protocol: elb.Protocol.HTTP,
-        interval: Duration.seconds(30),
-        timeout: Duration.seconds(5),
-        port: this.couchInternalPort.toString(),
-        path: '/',
-      },
-      vpc: props.vpc,
-    });
+    if (attachToPublicAlb) {
+      // Create the target group for the CouchDB instances (legacy public path)
+      this.targetGroup = new elb.ApplicationTargetGroup(this, 'CouchTG', {
+        port: this.couchInternalPort,
+        protocol: elb.ApplicationProtocol.HTTP,
+        targetType: elb.TargetType.INSTANCE,
+        healthCheck: {
+          enabled: true,
+          healthyHttpCodes: '200',
+          protocol: elb.Protocol.HTTP,
+          interval: Duration.seconds(30),
+          timeout: Duration.seconds(5),
+          port: this.couchInternalPort.toString(),
+          path: '/',
+        },
+        vpc: props.vpc,
+      });
 
-    // Add the EC2 instance to the target group
-    this.targetGroup.addTarget(new elbTargets.InstanceTarget(this.instance));
+      // Add the EC2 instance to the target group
+      this.targetGroup.addTarget(new elbTargets.InstanceTarget(this.instance));
 
-    // Add HTTP redirected HTTPS service to ALB against target group
-    props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
-      'couch',
-      this.targetGroup,
-      [elb.ListenerCondition.hostHeaders([props.domainName])],
-      110, // TODO: Understand and consider priorities
-      110
-    );
+      // Add HTTP redirected HTTPS service to ALB against target group
+      props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
+        'couch',
+        this.targetGroup,
+        [elb.ListenerCondition.hostHeaders([props.domainName])],
+        110, // TODO: Understand and consider priorities
+        110
+      );
+
+      // Allow inbound traffic from the ALB to the CouchDB instances
+      this.securityGroup.connections.allowFrom(
+        props.sharedBalancer.alb,
+        ec2.Port.tcp(this.couchInternalPort),
+        'Allow traffic from ALB to CouchDB instances'
+      );
+    }
 
     // DNS ROUTES
     // ===========
 
-    // Create a DNS record for the CouchDB endpoint
+    // Create a DNS record for the CouchDB endpoint (ALB; proxy or instance TG)
     new route53.ARecord(this, 'CouchDBAliasRecord', {
       zone: props.hz,
       recordName: props.domainName,
@@ -472,7 +496,7 @@ EOL`,
 
     if (debugInstancePermissions) {
       // For debugging CouchDB instances - allow inbound traffic for SSM Instance Connect
-      couchSecurityGroup.addIngressRule(
+      this.securityGroup.addIngressRule(
         ec2.Peer.anyIpv4(),
         ec2.Port.tcp(443),
         'Allow SSM Instance Connect'
@@ -495,16 +519,6 @@ EOL`,
     // Add necessary permissions for CloudWatch agent
     this.instance.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy')
-    );
-
-    // NETWORK SECURITY
-    // ================
-
-    // Allow inbound traffic from the ALB to the CouchDB instances
-    couchSecurityGroup.connections.allowFrom(
-      props.sharedBalancer.alb,
-      ec2.Port.tcp(this.couchInternalPort),
-      'Allow traffic from ALB to CouchDB instances'
     );
 
     // MONITORING
@@ -533,8 +547,10 @@ EOL`,
     // OUTPUTS
     // ================
 
-    // Set the public endpoint for CouchDB
+    // Public hostname (ALB). With proxy enabled, traffic terminates on the
+    // proxy TG registered against the same host rule / DNS.
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
+    this.internalEndpoint = `http://${this.instance.instancePrivateIp}:${this.couchInternalPort}`;
     this.dataVolume = dataVolume;
   }
 
@@ -649,24 +665,29 @@ EOL`,
       alarmDescription: 'CouchDB instance network out is high',
     });
 
-    // HTTP 5xx Errors Alarm
-    this.createAlarm('CouchDBHttp5xxAlarm', {
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApplicationELB',
-        metricName: 'HTTPCode_Target_5XX_Count',
-        dimensionsMap: {
-          LoadBalancer: this.sharedBalancer.alb.loadBalancerFullName,
-          TargetGroup: this.targetGroup.targetGroupFullName,
-        },
-        statistic: 'Sum',
-        period: Duration.minutes(5),
-      }),
-      threshold: this.monitoringConfig?.http5xx?.threshold ?? 10,
-      evaluationPeriods: this.monitoringConfig?.http5xx?.evaluationPeriods ?? 5,
-      datapointsToAlarm: this.monitoringConfig?.http5xx?.datapointsToAlarm ?? 3,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: 'CouchDB is returning a high number of 5xx errors',
-    });
+    // HTTP 5xx Errors Alarm (only when this construct owns the public TG)
+    if (this.targetGroup) {
+      this.createAlarm('CouchDBHttp5xxAlarm', {
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/ApplicationELB',
+          metricName: 'HTTPCode_Target_5XX_Count',
+          dimensionsMap: {
+            LoadBalancer: this.sharedBalancer.alb.loadBalancerFullName,
+            TargetGroup: this.targetGroup.targetGroupFullName,
+          },
+          statistic: 'Sum',
+          period: Duration.minutes(5),
+        }),
+        threshold: this.monitoringConfig?.http5xx?.threshold ?? 10,
+        evaluationPeriods:
+          this.monitoringConfig?.http5xx?.evaluationPeriods ?? 5,
+        datapointsToAlarm:
+          this.monitoringConfig?.http5xx?.datapointsToAlarm ?? 3,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        alarmDescription: 'CouchDB is returning a high number of 5xx errors',
+      });
+    }
   }
 
   /**
@@ -690,7 +711,7 @@ EOL`,
 
     const instanceId = this.instance.instanceId;
     const albFullName = this.sharedBalancer.alb.loadBalancerFullName;
-    const targetGroupFullName = this.targetGroup.targetGroupFullName;
+    const targetGroupFullName = this.targetGroup?.targetGroupFullName;
 
     // Helper function to create a left annotation for alarm thresholds
     const createLeftAnnotation = (value: number, label: string) => ({
@@ -851,56 +872,6 @@ EOL`,
         height: 6,
       }),
       new GraphWidget({
-        title: 'ALB HTTP Error Codes',
-        left: [
-          new Metric({
-            namespace: 'AWS/ApplicationELB',
-            metricName: 'HTTPCode_Target_4XX_Count',
-            dimensionsMap: {
-              LoadBalancer: albFullName,
-              TargetGroup: targetGroupFullName,
-            },
-            statistic: 'Sum',
-            period: Duration.minutes(5),
-          }),
-          new Metric({
-            namespace: 'AWS/ApplicationELB',
-            metricName: 'HTTPCode_Target_5XX_Count',
-            dimensionsMap: {
-              LoadBalancer: albFullName,
-              TargetGroup: targetGroupFullName,
-            },
-            statistic: 'Sum',
-            period: Duration.minutes(5),
-          }),
-        ],
-        leftAnnotations: [
-          createLeftAnnotation(
-            this.monitoringConfig?.http5xx?.threshold ?? 10,
-            '5XX Error Alarm Threshold'
-          ),
-        ],
-        width: 8,
-        height: 6,
-      }),
-      new GraphWidget({
-        title: 'ALB Healthy Host Count',
-        left: [
-          new Metric({
-            namespace: 'AWS/ApplicationELB',
-            metricName: 'HealthyHostCount',
-            dimensionsMap: {
-              LoadBalancer: albFullName,
-              TargetGroup: targetGroupFullName,
-            },
-            statistic: 'Average',
-            period: Duration.minutes(5),
-          }),
-        ],
-        width: 12,
-        height: 6,
-      }),
-      new GraphWidget({
         title: 'ALB Processed Bytes',
         left: [
           new Metric({
@@ -911,9 +882,65 @@ EOL`,
             period: Duration.minutes(5),
           }),
         ],
-        width: 12,
+        width: 8,
         height: 6,
       })
     );
+
+    // Target-group widgets only when this construct owns the public Couch TG
+    if (targetGroupFullName) {
+      dashboard.addWidgets(
+        new GraphWidget({
+          title: 'ALB HTTP Error Codes',
+          left: [
+            new Metric({
+              namespace: 'AWS/ApplicationELB',
+              metricName: 'HTTPCode_Target_4XX_Count',
+              dimensionsMap: {
+                LoadBalancer: albFullName,
+                TargetGroup: targetGroupFullName,
+              },
+              statistic: 'Sum',
+              period: Duration.minutes(5),
+            }),
+            new Metric({
+              namespace: 'AWS/ApplicationELB',
+              metricName: 'HTTPCode_Target_5XX_Count',
+              dimensionsMap: {
+                LoadBalancer: albFullName,
+                TargetGroup: targetGroupFullName,
+              },
+              statistic: 'Sum',
+              period: Duration.minutes(5),
+            }),
+          ],
+          leftAnnotations: [
+            createLeftAnnotation(
+              this.monitoringConfig?.http5xx?.threshold ?? 10,
+              '5XX Error Alarm Threshold'
+            ),
+          ],
+          width: 8,
+          height: 6,
+        }),
+        new GraphWidget({
+          title: 'ALB Healthy Host Count',
+          left: [
+            new Metric({
+              namespace: 'AWS/ApplicationELB',
+              metricName: 'HealthyHostCount',
+              dimensionsMap: {
+                LoadBalancer: albFullName,
+                TargetGroup: targetGroupFullName,
+              },
+              statistic: 'Average',
+              period: Duration.minutes(5),
+            }),
+          ],
+          width: 12,
+          height: 6,
+        })
+      );
+    }
   }
 }

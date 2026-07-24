@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
@@ -8,6 +9,7 @@ import {FaimsConductor} from './components/conductor';
 import {FaimsFrontEnd} from './components/front-end';
 import {FaimsNetworking} from './components/networking';
 import {EC2CouchDB} from './components/couch-db';
+import {CouchAuthProxy} from './components/couch-auth-proxy';
 import {Config} from './config';
 
 /**
@@ -26,6 +28,7 @@ export class FaimsInfraStack extends cdk.Stack {
 
     // Pull out main config
     const config = props.config;
+    const couchAuthProxyEnabled = config.couchAuthProxy.enabled;
 
     // DNS SETUP
     // =========
@@ -96,7 +99,9 @@ export class FaimsInfraStack extends cdk.Stack {
     // COUCHDB
     // =======
 
-    // Create a single EC2 cluster which runs CouchDB
+    // Create a single EC2 cluster which runs CouchDB.
+    // When couch-auth-proxy is enabled, stop registering Couch on the public
+    // ALB (proxy owns couch.*). DNS to the ALB stays on this construct.
     const couchDb = new EC2CouchDB(this, 'couch-db', {
       vpc: networking.vpc,
       instanceType: config.couch.instanceType,
@@ -109,7 +114,37 @@ export class FaimsInfraStack extends cdk.Stack {
       monitoring: config.couch.monitoring,
       couchVersionTag: config.couch.couchVersionTag,
       cookieSecret: cookieSecret,
+      attachToPublicAlb: !couchAuthProxyEnabled,
     });
+
+    // COUCH-AUTH-PROXY (optional)
+    // ===========================
+    // Public Pouch sync ACL. Enable only after DATA v2 migration —
+    // see CouchAuthProxyCutover.md. Rollback: set enabled false (reopens
+    // the guest sync read gap).
+
+    let couchPublicEndpoint = couchDb.couchEndpoint;
+    let couchAuthProxy: CouchAuthProxy | undefined;
+
+    if (couchAuthProxyEnabled) {
+      couchAuthProxy = new CouchAuthProxy(this, 'couch-auth-proxy', {
+        vpc: networking.vpc,
+        sharedBalancer: networking.sharedBalancer,
+        domainName: domains.couch,
+        certificate: primaryCert,
+        couchInternalUrl: couchDb.internalEndpoint,
+        couchAdminSecret: couchDb.passwordSecret,
+        couchSecurityGroup: couchDb.securityGroup,
+        corsOrigins: [`https://${domains.faims}`, `https://${domains.web}`],
+        image: config.couchAuthProxy.image,
+        imageTag: config.couchAuthProxy.imageTag,
+        cpu: config.couchAuthProxy.cpu,
+        memory: config.couchAuthProxy.memory,
+        desiredCount: config.couchAuthProxy.desiredCount,
+        couchInternalPort: couchDb.couchInternalPort,
+      });
+      couchPublicEndpoint = couchAuthProxy.publicEndpoint;
+    }
 
     // CONDUCTOR
     // =========
@@ -126,7 +161,10 @@ export class FaimsInfraStack extends cdk.Stack {
       rateLimiterEnabled: config.security.rateLimiterEnabled,
       authAttemptLimiterEnabled: config.security.authAttemptLimiterEnabled,
       couchDbAdminSecret: couchDb.passwordSecret,
-      couchDBEndpoint: couchDb.couchEndpoint,
+      couchDBPublicEndpoint: couchPublicEndpoint,
+      couchDBInternalEndpoint: couchAuthProxyEnabled
+        ? couchDb.internalEndpoint
+        : couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,
       webAppPublicUrl: `https://${domains.faims}`,
       androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
@@ -151,10 +189,21 @@ export class FaimsInfraStack extends cdk.Stack {
       bugsnagApiKey: config.bugMonitoring.bugsnagKey,
     });
 
+    // Conductor → Couch :5984 when using the VPC-internal URL (proxy mode).
+    // Legacy mode talks to Couch via the public ALB hostname.
+    if (couchAuthProxyEnabled) {
+      couchDb.securityGroup.connections.allowFrom(
+        conductor.serviceSecurityGroup,
+        ec2.Port.tcp(couchDb.couchInternalPort),
+        'Allow Conductor to CouchDB (internal)'
+      );
+    }
+
     // FRONT-END
     // =========
 
     // Deploy the FAIMS 3 web front-end (app, web, docs) as S3 + CloudFront static websites
+    // CSP keep https://couch.* — hostname unchanged whether proxy or legacy.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _frontEnd = new FaimsFrontEnd(this, 'frontend', {
       couchDbDomainOnly: domains.couch,
