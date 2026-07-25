@@ -25,9 +25,18 @@ export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 // ============================================================================
 // Record Document
 // ============================================================================
-// Schema versions track the DATA ACL cutover (DATA DB migration v1→v2).
+// Schema versions track the DATA ACL cutover (migrations target v3).
 // On-disk `record_format_version` remains a numeric format marker; ACL fields
-// are added by DATA v1→v2 + clean write stamps.
+// are added by DATA v1→v2 + clean write stamps (`faims_acl_shape` on v3).
+//
+// `creator` / `parent` stay **optional on parse** even for the post-ACL shape.
+// Write paths always stamp via `stampRecordAcl` / `stampChildAcl`. With
+// `ACL_REQUIRE_CREATOR=true`, the proxy `_design/acl` VDU rejects unstamped
+// non-admin creates — but read schemas must still accept:
+//   - pre-migration fixtures and server docs mid-migrate
+//   - leftover IndexedDB docs after public-URL cutover (no automatic local wipe)
+// Making these required would throw in engine `.parse()` on those leftovers.
+// See Authorisation/AclValidationLayering.md.
 
 /** Pre-ACL record fields (no couch-auth-proxy `creator`). */
 export const v1RecordDBFieldsSchema = z
@@ -45,11 +54,11 @@ export type V1RecordDBFields = z.infer<typeof v1RecordDBFieldsSchema>;
 
 /**
  * Post-ACL record fields. Keep in sync with DATA v1→v2 migration /
- * `stampRecordAcl`.
+ * `stampRecordAcl`. `creator` optional on parse — see module note above.
  */
 export const v2RecordDBFieldsSchema = v1RecordDBFieldsSchema.extend({
-  /** couch-auth-proxy ACL owner (r/w/d). */
-  creator: z.string().min(1),
+  /** couch-auth-proxy ACL owner (r/w/d). Stamped on write; optional on read. */
+  creator: z.string().min(1).optional(),
 });
 
 export type V2RecordDBFields = z.infer<typeof v2RecordDBFieldsSchema>;
@@ -161,16 +170,16 @@ export type V1RevisionDBFields = z.infer<typeof v1RevisionDBFieldsSchema>;
 
 /**
  * Post-ACL revision fields. Keep in sync with DATA v1→v2 migration /
- * `stampChildAcl`.
+ * `stampChildAcl`. ACL fields optional on parse — see record schema note.
  */
 export const v2RevisionDBFieldsSchema = v1RevisionDBFieldsSchema.extend({
-  /** couch-auth-proxy ACL creator for this revision node. */
-  creator: z.string().min(1),
+  /** couch-auth-proxy ACL creator. Stamped on write; optional on read. */
+  creator: z.string().min(1).optional(),
   /**
    * couch-auth-proxy ACL parent (record doc id). Distinct from `parents`
-   * (revision DAG) and `relationship.parent` (form links).
+   * (revision DAG) and `relationship.parent` (form links). Optional on read.
    */
-  parent: z.string().min(1),
+  parent: z.string().min(1).optional(),
 });
 
 export type V2RevisionDBFields = z.infer<typeof v2RevisionDBFieldsSchema>;
@@ -231,13 +240,13 @@ export type V1AvpDBFields = z.infer<typeof v1AvpDBFieldsSchema>;
 
 /**
  * Post-ACL AVP fields. Keep in sync with DATA v1→v2 migration /
- * `stampChildAcl`.
+ * `stampChildAcl`. ACL fields optional on parse — see record schema note.
  */
 export const v2AvpDBFieldsSchema = v1AvpDBFieldsSchema.extend({
-  /** couch-auth-proxy ACL creator for this AVP node. */
-  creator: z.string().min(1),
-  /** couch-auth-proxy ACL parent (record doc id). */
-  parent: z.string().min(1),
+  /** couch-auth-proxy ACL creator. Stamped on write; optional on read. */
+  creator: z.string().min(1).optional(),
+  /** couch-auth-proxy ACL parent (record doc id). Optional on read. */
+  parent: z.string().min(1).optional(),
 });
 
 export type V2AvpDBFields = z.infer<typeof v2AvpDBFieldsSchema>;
@@ -300,13 +309,13 @@ const v1AttachmentDBFieldsBaseSchema = z.object({
 
 /**
  * Post-ACL attachment base. Keep in sync with DATA v1→v2 migration /
- * `stampChildAcl`.
+ * `stampChildAcl`. ACL fields optional on parse — see record schema note.
  */
 const v2AttachmentDBFieldsBaseSchema = v1AttachmentDBFieldsBaseSchema.extend({
-  /** couch-auth-proxy ACL creator for this attachment document. */
-  creator: z.string().min(1),
-  /** couch-auth-proxy ACL parent (record doc id). */
-  parent: z.string().min(1),
+  /** couch-auth-proxy ACL creator. Stamped on write; optional on read. */
+  creator: z.string().min(1).optional(),
+  /** couch-auth-proxy ACL parent (record doc id). Optional on read. */
+  parent: z.string().min(1).optional(),
 });
 
 /** Pre-ACL encoded attachment document fields. */

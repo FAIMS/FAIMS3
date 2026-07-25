@@ -60,7 +60,7 @@ function wireMinimalStack(): Template {
     couchSecurityGroup: couchDb.securityGroup,
     corsOrigins: ['https://faims.example.com', 'https://web.example.com'],
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
-    imageTag: '1.4.0',
+    imageTag: '1.6.0',
     cpu: 512,
     memory: 1024,
     desiredCount: 2,
@@ -150,14 +150,16 @@ describe('couch-auth-proxy CDK wiring (always on)', () => {
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {
       ContainerDefinitions: Match.arrayWith([
         Match.objectLike({
-          Image: 'ghcr.io/peterbaker0/couch-auth-proxy:1.4.0',
+          Image: 'ghcr.io/peterbaker0/couch-auth-proxy:1.6.0',
           Environment: Match.arrayWith([
             {Name: 'ACL_DB_INCLUDE', Value: '/^data-/'},
             {
               Name: 'ACL_ROUTE_INCLUDE',
               Value: 'pouch-sync,session',
             },
-            {Name: 'ACL_AUTO_INSTALL', Value: 'false'},
+            {Name: 'ACL_AUTO_INSTALL', Value: 'true'},
+            {Name: 'ACL_REQUIRE_CREATOR', Value: 'true'},
+            {Name: 'COUCH_PRELOAD_DB_INCLUDE', Value: '/^data-/'},
             {
               Name: 'AUTH_RESOLVE_VIA_COUCH_SESSION',
               Value: 'true',

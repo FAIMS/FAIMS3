@@ -98,8 +98,12 @@ export class CouchAuthProxy extends Construct {
         // Harden ACL scope — never ACL people/projects/auth DBs
         ACL_DB_INCLUDE: '/^data-/',
         ACL_ROUTE_INCLUDE: 'pouch-sync,session',
-        // FAIMS provisions `_design/acl` via init / DATA migration
-        ACL_AUTO_INSTALL: 'false',
+        // Proxy installs/migrates `_design/acl`; FAIMS patches `dbacl` only
+        ACL_AUTO_INSTALL: 'true',
+        // Fail-closed: non-admin creates must stamp creator
+        ACL_REQUIRE_CREATOR: 'true',
+        // Boot-warm data-* DBs (proxy 1.6.0+); still filtered by ACL_DB_*
+        COUCH_PRELOAD_DB_INCLUDE: '/^data-/',
         AUTH_RESOLVE_VIA_COUCH_SESSION: 'true',
         CORS_ORIGINS: props.corsOrigins.join(','),
         PORT: `${this.internalPort}`,

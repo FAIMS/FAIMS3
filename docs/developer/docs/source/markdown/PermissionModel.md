@@ -39,21 +39,30 @@ CouchDB uses these roles in the `validate_doc_update` design document function a
 ### Sync enforcement (couch-auth-proxy)
 
 CouchDB `_security` membership alone cannot enforce per-document reads (e.g.
-guest = own records only). The public sync URL (`COUCHDB_PUBLIC_URL`) points at
+guest = own records only). Membership still means “may talk to this DB”; the
+public sync URL (`COUCHDB_PUBLIC_URL`) points at
 [`couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy), which
-filters `_changes` / docs / attachments using:
+answers “which docs?”.
 
-| Grant                | Source                                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------- |
-| Own record graph     | Doc field `creator` on `rec-*`; child docs (`frev`/`avp`/`att`) set `parent` to the record id |
-| Read/edit/delete all | `_design/acl` `dbacl` lists from `necessaryActionToCouchRoleList` for `*_ALL_PROJECT_RECORDS` |
-| Write my/all rules   | Existing `_design/permissions` `validate_doc_update` (unchanged)                              |
+**FAIMS owns policy; the proxy owns the sync filter and ACL-field protocol.**
+Role/action lists stay in `@faims3/data-model`. FAIMS stamps docs and patches
+project `dbacl`; the proxy image owns `_design/acl` map/VDU. Full split:
+[AclValidationLayering](Authorisation/AclValidationLayering.md).
 
-Conductor keeps using `COUCHDB_INTERNAL_URL` (admin, bypasses the proxy).
+| Grant | Source |
+| ----- | ------ |
+| Own record graph | Doc `creator` on `rec-*`; children set ACL `parent` to the record id |
+| Read/edit/delete all | `_design/acl` `dbacl` from `necessaryActionToCouchRoleList` (`*_ALL_*`) — FAIMS patches; proxy owns map/VDU |
+| Write my/all on `created_by` | `_design/permissions` `validate_doc_update` |
+| Require `creator` on create | Proxy `_design/acl` VDU when `ACL_REQUIRE_CREATOR=true` |
+| Child stamp shape | `_design/faims_acl_shape` — `parent` must equal `record_id` when set |
 
-- Design brief: [CouchAuthProxyHandover](Authorisation/CouchAuthProxyHandover.md)
-- **Operator deploy / cutover:**
-  [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md)
+Conductor keeps `COUCHDB_INTERNAL_URL` (admin, bypasses the proxy). API
+`canReadRecord` and app `shouldDisplayRecord` remain defense-in-depth / UX.
+
+- **Layering / ownership:** [AclValidationLayering](Authorisation/AclValidationLayering.md)
+- Integration brief: [CouchAuthProxyHandover](Authorisation/CouchAuthProxyHandover.md)
+- Operator cutover: [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md)
 
 ## Usage Examples
 

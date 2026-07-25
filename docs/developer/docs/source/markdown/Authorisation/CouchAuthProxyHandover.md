@@ -4,8 +4,12 @@ This document is the implementation brief for closing FAIMS’s **per-document r
 gap** on CouchDB sync by integrating
 [`PeterBaker0/couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy).
 
-It is written for a follow-on coding agent. Prefer this document over chat
-history. Do not invent a second permission language — extend the existing
+**Canonical ownership / VDU layering (read first):**
+[AclValidationLayering](AclValidationLayering.md). This handover keeps the
+full design history, phased checklist, and cutover notes; prefer the layering
+doc when deciding where a new rule belongs.
+
+Do not invent a second permission language — extend the existing
 `@faims3/data-model` RBAC so sync enforcement matches API/UI semantics.
 
 ---
@@ -186,12 +190,12 @@ Provisioned at DB init (and by migration for existing DBs):
 
 Implementation guidance:
 
-- Prefer **reusing** the map + VDU source from couch-auth-proxy
-  (`src/acl/ddoc.ts` — currently versioned ~`2.3.0`) rather than rewriting it.
-  FAIMS vendors the map as-is and ships a **fail-closed VDU extension**
-  (`2.3.0-faims1`): non-admin creates must include `creator`, and children with
-  `record_id` must set `parent === record_id` (upstream alone allows omitting
-  `creator`, which grants `r-*`). Keep the map in sync with the proxy image.
+- **Do not vendor** proxy map/VDU into FAIMS. Enable `ACL_AUTO_INSTALL=true`;
+  the proxy installs/migrates `_design/acl`. FAIMS only patches `dbacl` after
+  warm ([CouchAuthProxyAclInstallBrief](CouchAuthProxyAclInstallBrief.md)).
+- Require-creator is proxy env `ACL_REQUIRE_CREATOR=true` (image **1.5.0+**).
+  FAIMS `record_id` ↔ `parent` lives in `_design/faims_acl_shape`
+  ([AclValidationLayering](AclValidationLayering.md)).
 - Set `dbacl` lists via `necessaryActionToCouchRoleList` (include `_admin` as
   that helper already does).
 - Leave other design docs readable by default (`r-*` read-only) so clients can
@@ -202,17 +206,20 @@ Implementation guidance:
 Keep members = roles granting `READ_MY_PROJECT_RECORDS`. Membership answers
 “may talk to this DB?”; the proxy answers “which docs?”.
 
-### 3.4 Dual `validate_doc_update`
+### 3.4 Multiple `validate_doc_update`s
 
-Couch runs VDUs from **all** design docs:
+Couch runs VDUs from **all** design docs. Full table and ownership rules:
+[AclValidationLayering](AclValidationLayering.md).
 
-| Design doc            | Responsibility                                                            |
-| --------------------- | ------------------------------------------------------------------------- |
-| `_design/permissions` | Existing my/all write rules on `created_by`; forbid changing `created_by` |
-| `_design/acl`         | Forbid forging `creator`; owners/acl mutation rules                       |
+| Design doc               | Responsibility                                                            |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `_design/permissions`     | Existing my/all write rules on `created_by`; forbid changing `created_by` |
+| `_design/acl`             | Proxy protocol: forge/immutable `creator` / owners / acl / parent; require-creator when env on |
+| `_design/faims_acl_shape` | FAIMS: `parent` must equal `record_id` when set                           |
 
 On create of `rec-*`, set `created_by` and `creator` to the **authenticated**
-user (proxy VDU rejects spoofed `creator`). Do not invent a third VDU.
+user (ACL VDU rejects spoofed `creator`). Do not put FAIMS field rules into
+the proxy product VDU.
 
 ### 3.5 Mapping cheat sheet
 
@@ -249,10 +256,12 @@ COUCH_ADMIN_USER=...
 COUCH_ADMIN_PASSWORD=...
 ACL_DB_INCLUDE=/^data-/
 ACL_ROUTE_INCLUDE=pouch-sync,session
-ACL_AUTO_INSTALL=false          # FAIMS provisions _design/acl
+ACL_AUTO_INSTALL=true           # proxy owns _design/acl; FAIMS patches dbacl
+ACL_REQUIRE_CREATOR=true        # fail-closed creates (proxy VDU; 1.5.0+)
+COUCH_PRELOAD_DB_INCLUDE=/^data-/  # boot-warm matching DBs (1.6.0+)
 AUTH_RESOLVE_VIA_COUCH_SESSION=true
 CORS_ORIGINS=http://localhost:3000,...
-COUCH_PRELOAD_DBS=              # optional; warm known data-* DBs
+COUCH_PRELOAD_DBS=              # optional explicit names; union with INCLUDE
 ```
 
 Local compose: add a `couch-auth-proxy` service; publish proxy port to the host;
@@ -268,8 +277,8 @@ still expose Couch for admin debugging).
 | Area                                                                                    | Change                                                                                                                                                                            |
 | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Types (`types.ts`, Zod engine schemas)                                                  | Add required `creator: string` on data-DB docs for the clean schema; add optional/required `parent?: string` on non-record docs. Do **not** overload FAIMS `relationship.parent`. |
-| ACL helpers (new module, e.g. `permission/couchAcl.ts` or `data_storage/dataDB/acl.ts`) | `buildDataDbAclDesignDoc(projectId)`, `stampRecordAcl({createdBy})`, `stampChildAcl({createdBy, recordId})`, `buildDbAclOverlay(projectId)`. Pure functions; unit-tested.         |
-| `initDataDB` / `dataDbDesignDocuments`                                                  | Install `_design/acl` with map/VDU + `dbacl` for the project.                                                                                                                     |
+| ACL helpers (`data_storage/dataDB/acl.ts`)                                              | `buildDbAclOverlay`, `ensureDataDbAclOverlay`, stamp helpers. Never vendor proxy map/VDU.                                                                                        |
+| `initDataDB` / `dataDbDesignDocuments`                                                  | FAIMS design docs only (`permissions`, `faims_acl_shape`, …). Conductor warms proxy + patches `dbacl`.                                                                           |
 | Database engine create paths                                                            | Every `createRecord` / `createRevision` / AVP write / attachment create calls stamp helpers. **No** “if missing creator” branches here.                                           |
 | Attachment service                                                                      | Stamp `creator` + `parent: recordId` on all attachment document constructors.                                                                                                     |
 | Permission docs                                                                         | Update `PermissionModel.md` with a short “Sync enforcement” section pointing here.                                                                                                |
@@ -310,19 +319,19 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 
 | Area                      | Change                                                                                                     |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Notebook/data DB creation | Ensure init installs `_design/acl` (via data-model init).                                                  |
+| Notebook/data DB creation | Warm proxy + patch `dbacl` via `ensureProjectDataDbAcl` after `initDataDB` (FAIMS ddocs only).             |
 | `.env.dist` / compose     | Document `COUCHDB_PUBLIC_URL` → proxy; internal URL → Couch.                                               |
 | Optional readiness        | Health check that proxy `/_couch-auth-proxy/health` is up in dev scripts.                                  |
 | Records CRUD / export     | Keep using admin internal Couch (bypass proxy). No ACL stamping duplication if they go through the engine. |
 
 ### 5.3 `app` — sync client
 
-| Area                  | Change                                                                                                                                                                                                                                  |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Remote Pouch URL      | Already uses `dataDb.base_url` from Conductor — should “just work” when public URL is the proxy.                                                                                                                                        |
-| Token fetch           | Keep Bearer JWT; ensure CORS allows app origin on proxy.                                                                                                                                                                                |
-| Post-cutover hygiene  | No automatic local wipe. Accept that pre-proxy leftover docs may linger in IndexedDB until the user refreshes / reactivates; wire isolation is enforced by the proxy. Optional manual “wipe local data” remains a developer affordance. |
-| `shouldDisplayRecord` | Keep as UX; do not treat it as security.                                                                                                                                                                                                |
+| Area                  | Change                                                                                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Remote Pouch URL      | Already uses `dataDb.base_url` from Conductor — should “just work” when public URL is the proxy.                                                                                                                               |
+| Token fetch           | Keep Bearer JWT; ensure CORS allows app origin on proxy.                                                                                                                                                                       |
+| Post-cutover hygiene  | No automatic local wipe (known limitation). Wire isolation is enforced by the proxy; already-activated devices may retain pre-cutover local docs until refresh / re-activate / clear site data. See Cutover “Local leftovers”. |
+| `shouldDisplayRecord` | Keep as UX; do not treat it as security.                                                                                                                                                                                       |
 
 ### 5.4 Infra
 
@@ -330,26 +339,31 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `docker-compose.yml` (+ overlays) | Add proxy service; wire public URL; optional hide Couch port.                                         |
 | AWS CDK / DigitalOcean            | Public hostname → proxy; Couch SG/internal only. See [CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md). |
-| Pin proxy image version           | Match vendored `_design/acl` map/VDU version.                                                         |
+| Pin proxy image version           | Match compose/CDK; image owns `_design/acl` map/VDU.                                                  |
 
 ### 5.5 Migrations only (legacy)
 
-DATA DB is `defaultVersion: 1, targetVersion: 2`
+DATA DB is `defaultVersion: 1, targetVersion: 3` (`_design/faims_acl_shape` on v3)
 (`library/data-model/src/data_storage/migrations/migrations.ts`). Keeping
 `defaultVersion` at **1** (not 2) is intentional: data DBs that never received
 a migrations document still run the idempotent 1→2 backfill.
 
-**DATA v1 → v2** (implemented):
+**DATA v1 → v2** (implemented): stamp corpus + patch `dbacl` when proxy ddoc
+exists; ensure `_design/faims_acl_shape`.
 
-1. Ensures `_design/acl` exists with correct `dbacl` for `projectId`
-   (derive project id from logical DB name `data-{projectId}`; parsers also
-   accept remote Pouch URL forms of `db.name`).
+1. Patch `dbacl` onto existing `_design/acl` for `projectId` (does **not**
+   install the proxy map/VDU — warm the proxy in ops / repair). Derive project
+   id from logical DB name `data-{projectId}`; parsers also accept remote
+   Pouch URL forms of `db.name`.
 2. For each `rec-*`: if `creator` missing, set `creator = created_by` (or
    `__faims_acl_orphan__` when `created_by` is missing — fail-closed).
 3. For each doc with `record_id` (frev/avp/attachment): set
    `creator = created_by` if missing; set `parent = record_id` if missing.
 4. Never strip FAIMS fields; never rewrite role arrays onto every doc.
 5. Idempotent: already-stamped docs ⇒ `action: 'none'`.
+
+**DATA v2 → v3** (implemented): ensure `_design/faims_acl_shape` for DBs that
+finished v2 before that ddoc existed (document loop is a no-op).
 
 Conductor must enqueue DATA migrations with the **logical** Couch name
 (`data-{projectId}`), not `pouchDb.name` (a URL for remote handles).
@@ -368,9 +382,9 @@ sync. No production migration yet; greenfield data DBs only.
 
 **Work order.**
 
-1. **Vendor ACL design doc builder** in data-model + `buildDbAclOverlay`.
+1. **`buildDbAclOverlay` + `ensureDataDbAclOverlay`** in data-model (no vendored map).
 2. **Stamp helpers** + wire into engine + attachment creates (clean path only).
-3. **`initDataDB`** installs `_design/acl` for new data DBs.
+3. **`initDataDB`** installs FAIMS ddocs; Conductor warms proxy + patches `dbacl`.
 4. **Compose**: run couch-auth-proxy; point `COUCHDB_PUBLIC_URL` at it for app
    sync; API keeps internal Couch.
 5. **Validation suite (required before Phase B):**
@@ -392,7 +406,7 @@ sync. No production migration yet; greenfield data DBs only.
 
 **Phase A exit criteria.**
 
-- [x] New data DB init includes `_design/acl` with project-scoped `dbacl`.
+- [x] New data DB init ensures FAIMS shape/permissions; proxy installs `_design/acl`; Conductor patches `dbacl`.
 - [x] Every new rec/frev/avp/att from the engine has correct ACL fields.
 - [x] Integration test proves guest isolation + contributor access + parent
       inheritance after third-party edit (`api/test/couchAuthProxy.integration.test.ts`).
@@ -408,13 +422,13 @@ matrix; public Couch is locked down.
 
 **Work order.**
 
-1. **DATA DB migration v1→v2** (backfill `creator`/`parent` + install/repair
-   `_design/acl` / `dbacl`).
-2. **Idempotent repair tool** (optional ops script) to re-apply `dbacl` if
-   permission model tokens change.
+1. **DATA DB migration v1→v3** (backfill `creator`/`parent`; patch `dbacl`
+   when proxy ddoc exists; ensure `_design/faims_acl_shape`).
+2. **Idempotent repair tool** (`repair-data-db-acl`) to warm proxy + re-apply
+   `dbacl` if permission model tokens change.
 3. **Hardening**
    - `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session`
-   - `ACL_AUTO_INSTALL=false` in prod
+   - `ACL_AUTO_INSTALL=true` in prod (proxy owns map/VDU)
    - CORS allowlist
    - Do not publish Couch publicly
    - Proxy readiness in deploy checks
@@ -430,7 +444,7 @@ matrix; public Couch is locked down.
 
 **Phase B exit criteria.**
 
-- [x] Migration upgrades a fixture DB of unstamped docs to enforced ACL (DATA v1→v2).
+- [x] Migration upgrades a fixture DB of unstamped docs to enforced ACL (DATA v1→v3).
 - [x] Unit + integration coverage for guest/contributor matrix (e2e focused spec optional follow-up).
 - [x] Cutover runbook: backfill → flip public URL → re-point client remotes (see §13).
 - [x] Ops repair script for `_design/acl` / `dbacl` (`pnpm --filter=@faims3/api run repair-data-db-acl`).
@@ -516,9 +530,10 @@ users. Document env in `e2e/.env.dist`.
    Unstamped legacy docs stay `r-*` until migrate — same effective access as
    today’s public Couch (not a new regression). See
    [CouchAuthProxyCutover](CouchAuthProxyCutover.md).
-2. **Local leftover data:** clients that synced before ACL may retain other
-   users’ docs offline until refresh / re-activate. Isolation is enforced on
-   the wire; automatic local wipe was deliberately not implemented.
+2. **Local leftover data (limitation):** clients that synced before ACL may
+   retain other users’ docs offline until refresh / re-activate / clear data.
+   Wire isolation is enforced; local wipe was deliberately not implemented.
+   Validate with a fresh client — see Cutover “Local leftovers”.
 3. **Do not use doc `acl`/`owners` arrays for project roles** on every record —
    role changes would require rewriting the corpus. `dbacl` is the idiomatic
    FAIMS mapping.
@@ -531,7 +546,7 @@ users. Document env in `e2e/.env.dist`.
    **no document body**, not merely “row absent”.
 7. **Two VDUs:** test creates with mismatched `creator` vs session user (must
    fail) and `created_by` changes on update (must fail).
-8. **Proxy version pin:** vendored map/VDU must match image; note the upstream
+8. **Proxy version pin:** compose/CDK image pin is source of truth for map/VDU; note the upstream
    version in a code comment.
 9. **System DBs:** never ACL-enable `people` / `projects` / `auth` for app
    users; `ACL_DB_INCLUDE=/^data-/` is mandatory for defense in depth.
@@ -544,13 +559,13 @@ users. Document env in `e2e/.env.dist`.
 
 Keep PRs reviewable; each should leave main green.
 
-| PR  | Scope                                                                                      | Phase |
-| --- | ------------------------------------------------------------------------------------------ | ----- |
-| 1   | ACL helpers + types + engine/attachment stamping + unit tests; init installs `_design/acl` | A     |
-| 2   | Compose proxy service + env wiring + integration tests (guest/contributor)                 | A     |
-| 3   | DATA migration v1→v2 + migration tests                                                     | B     |
-| 4   | E2E guest isolation + docs (`PermissionModel`, sync, README/compose)                       | B     |
-| 5   | Infra hardening (CDK/DO), client local DB reset UX if needed                               | B     |
+| PR  | Scope                                                                                                      | Phase |
+| --- | ---------------------------------------------------------------------------------------------------------- | ----- |
+| 1   | ACL helpers + types + engine/attachment stamping + unit tests; FAIMS ddocs (not vendored proxy map)        | A     |
+| 2   | Compose proxy (`ACL_AUTO_INSTALL`) + env wiring + integration tests (guest/contributor)                    | A     |
+| 3   | DATA migration v1→v3 + migration tests                                                                     | B     |
+| 4   | E2E guest isolation + docs (`PermissionModel`, layering, README/compose)                                   | B     |
+| 5   | Infra hardening (CDK/DO); client local wipe deliberately skipped (known limitation)                        | B     |
 
 ---
 
@@ -614,9 +629,13 @@ pnpm test && pnpm test:integration
 
 | Path                                                                  | Why                                                      |
 | --------------------------------------------------------------------- | -------------------------------------------------------- |
-| `library/data-model/src/data_storage/dataDB/security.ts`              | Current read gap comment                                 |
-| `library/data-model/src/data_storage/dataDB/design.ts`                | Permissions VDU + design docs                            |
-| `library/data-model/src/data_storage/dataDB/init.ts`                  | Data DB init hook                                        |
+| [AclValidationLayering](AclValidationLayering.md)                     | Ownership + VDU layering (canonical)                     |
+| `library/data-model/src/data_storage/dataDB/acl.ts`                   | `dbacl` overlay + stamp helpers                          |
+| `library/data-model/src/data_storage/dataDB/faimsAclShape.ts`         | FAIMS `record_id` ↔ `parent` VDU                         |
+| `library/data-model/src/data_storage/dataDB/security.ts`              | Membership vs per-doc read comment                       |
+| `library/data-model/src/data_storage/dataDB/design.ts`                | Permissions VDU + FAIMS design docs                      |
+| `library/data-model/src/data_storage/dataDB/init.ts`                  | Data DB init (no proxy `_design/acl`)                    |
+| `api/src/couchdb/couchAuthProxyAcl.ts`                                | Warm proxy + patch `dbacl`                               |
 | `library/data-model/src/permission/model.ts`                          | Roles/actions                                            |
 | `library/data-model/src/permission/functions.ts`                      | `canReadProjectRecord`, `necessaryActionToCouchRoleList` |
 | `library/data-model/src/databaseEngine/engine.ts`                     | Record/revision/AVP writes                               |
@@ -647,34 +666,34 @@ verify commands, truthful AWS rollback, and failure modes.
 promptly. Existing public Couch already exposes member-readable data DBs; a
 brief `r-*` window on unstamped docs is not worse than today.
 
-1. **Deploy** stamp-on-write + init + DATA v1→v2 + always-on proxy (compose /
+1. **Deploy** stamp-on-write + init + DATA v1→v3 + always-on proxy (compose /
    AWS CDK). Public sync hits the proxy as soon as the deploy lands.
 2. **Migrate all data DBs** (`pnpm run migrate-with-keys` / Conductor startup
    migrate). Confirm every DATA migrations doc is keyed by `data-{projectId}`
-   at version **2**.
-3. **Repair / verify `_design/acl`**:
+   at version **3**.
+3. **Repair / verify `_design/acl` + `dbacl`**:
    `pnpm --filter=@faims3/api run repair-data-db-acl` (`--dry-run` supported).
 4. Keep `COUCHDB_INTERNAL_URL` on Couch for Conductor admin. Do not publish
    Couch publicly (AWS CDK enforces this).
 5. **Clients re-point remotes** when Conductor advertises a new
    `dataDb.base_url` (`reconcileRemoteCouchUrlAfterListing`). Local IndexedDB
-   is not wiped — leftover pre-proxy docs may linger until refresh /
-   re-activate (accepted). Same-hostname AWS ALB flips need no schema bump.
-6. **Validate**: guest A/B isolation + contributor read-all
-   (`pnpm --filter=@faims3/api run test:couch-auth-proxy` locally, or manual
-   sync probe).
+   is not wiped (limitation — see Cutover). Same-hostname AWS ALB flips need
+   no schema bump.
+6. **Validate**: guest A/B isolation + contributor read-all via
+   `pnpm --filter=@faims3/api run test:couch-auth-proxy` (CI Build & Lint job
+   `Couch auth-proxy ACL`, or local stack + manual sync probe).
 
 ### Migration path notes
 
 - DATA `defaultVersion` is **1** (not 2) so databases that never received a
-  migrations document still run the idempotent 1→2 backfill. New DBs already
-  stamp on write; the migrator is a no-op on stamped docs and still ensures
-  `_design/acl`.
+  migrations document still run the idempotent 1→2 backfill (then 2→3). New
+  DBs already stamp on write; the migrator is a no-op on stamped docs and still
+  ensures FAIMS ddocs / patches `dbacl` when the proxy ddoc exists.
 - Docs missing `created_by` are stamped with synthetic creator
   `__faims_acl_orphan__` (fail-closed for guests; ALL roles retain access via
   `dbacl`).
 - Backup restore stamps missing ACL fields on data-DB corpus so pre-ACL
-  backups cannot reintroduce `r-*` docs after migrations are already at v2.
+  backups cannot reintroduce `r-*` docs after migrations are already at v3.
 - Proxy health endpoint: `/_couch-auth-proxy/health` (compose +
   `localdev.sh` wait on this). Prefer this over any `/ready` alias.
 - AWS CDK always-on proxy is implemented; DigitalOcean still needs the public

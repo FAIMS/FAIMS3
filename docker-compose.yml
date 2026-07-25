@@ -93,10 +93,11 @@ services:
       start_period: 20s
 
   # Per-document ACL reverse proxy for Pouch↔Couch sync (guest my/all reads).
-  # Pin must match CDK `couchAuthProxy.imageTag` and vendored `_design/acl`
-  # map in @faims3/data-model (upstream ddoc map 2.3.0; FAIMS VDU 2.3.0-faims1).
+  # Pin must match CDK `couchAuthProxy.imageTag` (image owns `_design/acl`
+  # map/VDU + ACL_REQUIRE_CREATOR). FAIMS patches `dbacl` only; stamp shape is
+  # `_design/faims_acl_shape` (record_id ↔ parent). Prefer digest pins in prod.
   couch-auth-proxy:
-    image: ghcr.io/peterbaker0/couch-auth-proxy:1.4.0
+    image: ghcr.io/peterbaker0/couch-auth-proxy:1.6.0
     environment:
       COUCH_URL: http://couchdb:5984
       # Must match Couch admin in api/.env (COUCHDB_USER / COUCHDB_PASSWORD).
@@ -106,8 +107,13 @@ services:
       COUCH_ADMIN_PASSWORD: ${COUCHDB_PASSWORD:-aSecretPasswordThatCantBeGuessed}
       ACL_DB_INCLUDE: '/^data-/'
       ACL_ROUTE_INCLUDE: pouch-sync,session
-      # FAIMS provisions `_design/acl` via initDataDB / DATA migration
-      ACL_AUTO_INSTALL: 'false'
+      # Proxy installs/migrates `_design/acl`; FAIMS only patches `dbacl`.
+      ACL_AUTO_INSTALL: 'true'
+      # Fail-closed: non-admin creates must stamp creator (VDU in _design/acl).
+      ACL_REQUIRE_CREATOR: 'true'
+      # Boot-warm matching DBs (1.6.0+): /_all_dbs → ensureDb (union with
+      # COUCH_PRELOAD_DBS). Still filtered by ACL_DB_INCLUDE / system-DB guards.
+      COUCH_PRELOAD_DB_INCLUDE: '/^data-/'
       AUTH_RESOLVE_VIA_COUCH_SESSION: 'true'
       # Browser PWA + Control Centre. Capacitor native WebViews typically use
       # https://localhost / capacitor://localhost — add those if testing native.

@@ -2335,9 +2335,10 @@ export const setSyncMode = createAsyncThunk<
  *
  * Cold-start {@link rebuildDbs} may open remotes against a stale persisted
  * `couchUrl`; listing updates `server.couchDbUrl` and the stored connection
- * config. This recreates remote + sync handles only — local IndexedDB is left
- * alone (pre-proxy leftover docs may linger until the user refreshes /
- * reactivates).
+ * config. This recreates remote + sync handles only — local IndexedDB is not
+ * wiped (known cutover limitation). Pre-proxy leftover docs may remain on
+ * already-activated devices until refresh / re-activate; wire isolation is
+ * still enforced by the proxy.
  */
 export const reconcileRemoteCouchUrlAfterListing = createAsyncThunk<void, void>(
   'projects/reconcileRemoteCouchUrlAfterListing',

@@ -11,6 +11,7 @@ import {
   DB_MIGRATIONS,
   DB_TARGET_VERSIONS,
   dataV1toV2Migration,
+  dataV2toV3Migration,
 } from './migrations';
 import {
   DATABASE_TYPE,
@@ -206,9 +207,12 @@ export async function performMigration({
   let startKey = null;
   let hasMoreDocs = true;
 
-  // DATA ACL migration installs `_design/acl`; design docs are skipped in the
-  // document loop, and empty DBs would otherwise never run the migrator.
-  if (migrationFunc === dataV1toV2Migration) {
+  // DATA ACL migrations install design docs; those are skipped in the document
+  // loop, and empty DBs would otherwise never run the migrator.
+  if (
+    migrationFunc === dataV1toV2Migration ||
+    migrationFunc === dataV2toV3Migration
+  ) {
     try {
       await Promise.resolve(
         migrationFunc(

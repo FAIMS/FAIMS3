@@ -9,21 +9,41 @@ import {
 } from '../src';
 import {
   ACL_ORPHAN_CREATOR,
-  ACL_VALIDATE_DOC_UPDATE_SOURCE,
-  buildDataDbAclDesignDoc,
   buildDbAclOverlay,
-  COUCH_AUTH_PROXY_ACL_DDOC_VERSION,
   DbAclOverlay,
-  ensureDataDbAclDesignDoc,
+  ensureDataDbAclOverlay,
   projectIdFromDataDbName,
   stampChildAcl,
   stampDataDocumentAclFields,
   stampRecordAcl,
   toProxyRoleGrant,
 } from '../src/data_storage/dataDB/acl';
+import {
+  FAIMS_ACL_SHAPE_DDOC_ID,
+  FAIMS_ACL_SHAPE_DDOC_VERSION,
+  FAIMS_ACL_SHAPE_VALIDATE_DOC_UPDATE_SOURCE,
+  buildFaimsAclShapeDesignDoc,
+} from '../src/data_storage/dataDB/faimsAclShape';
 import {dataV1toV2Migration, initDataDB} from '../src/data_storage';
 
 PouchDB.plugin(PouchDBMemoryAdapter);
+
+/** Minimal stand-in for a proxy-installed `_design/acl` (map/VDU omitted). */
+async function seedProxyAclStub(
+  db: PouchDB.Database,
+  dbacl?: DbAclOverlay
+): Promise<void> {
+  await db.put({
+    _id: '_design/acl',
+    language: 'javascript',
+    type: 'ddoc',
+    version: '2.3.0',
+    acl: [],
+    ...(dbacl ? {dbacl} : {}),
+    views: {acl: {map: 'function (doc) { emit(doc._id, {}); }'}},
+    validate_doc_update: 'function () {}',
+  });
+}
 
 describe('couch-auth-proxy ACL helpers', () => {
   const projectId = 'proj-acl-test';
@@ -64,7 +84,6 @@ describe('couch-auth-proxy ACL helpers', () => {
       expect(list).toContain(adminToken);
     }
 
-    // Align with permission helper source lists (plus r- prefix)
     expect(overlay._r).toEqual(
       necessaryActionToCouchRoleList({
         action: Action.READ_ALL_PROJECT_RECORDS,
@@ -73,27 +92,18 @@ describe('couch-auth-proxy ACL helpers', () => {
     );
   });
 
-  test('buildDataDbAclDesignDoc matches FAIMS-extended version and carries dbacl', () => {
-    const ddoc = buildDataDbAclDesignDoc(projectId);
-    expect(ddoc._id).toBe('_design/acl');
-    expect(ddoc.version).toBe(COUCH_AUTH_PROXY_ACL_DDOC_VERSION);
-    expect(ddoc.version).toContain('faims');
-    expect(ddoc.acl).toEqual([]);
-    expect(ddoc.dbacl).toEqual(buildDbAclOverlay(projectId));
-    expect(ddoc.views.acl.map).toContain('emit(doc._id');
-    expect(ddoc.validate_doc_update).toContain('Creator can not be changed');
-    expect(ddoc.validate_doc_update).toContain('Document must have a creator');
-    expect(ddoc.validate_doc_update).toContain(
-      'Child document parent must equal record_id'
-    );
-  });
-
-  test('fail-closed VDU source requires creator and child parent', () => {
-    expect(ACL_VALIDATE_DOC_UPDATE_SOURCE).toContain(
+  test('FAIMS shape VDU requires child parent only; require-creator is proxy env', () => {
+    expect(FAIMS_ACL_SHAPE_VALIDATE_DOC_UPDATE_SOURCE).not.toContain(
       'Document must have a creator'
     );
-    expect(ACL_VALIDATE_DOC_UPDATE_SOURCE).toContain(
+    expect(FAIMS_ACL_SHAPE_VALIDATE_DOC_UPDATE_SOURCE).toContain(
       'Child document parent must equal record_id'
+    );
+    const shape = buildFaimsAclShapeDesignDoc();
+    expect(shape._id).toBe(FAIMS_ACL_SHAPE_DDOC_ID);
+    expect(shape.version).toBe(FAIMS_ACL_SHAPE_DDOC_VERSION);
+    expect(shape.validate_doc_update).toBe(
+      FAIMS_ACL_SHAPE_VALIDATE_DOC_UPDATE_SOURCE
     );
   });
 
@@ -134,13 +144,20 @@ describe('couch-auth-proxy ACL helpers', () => {
     ).toBeNull();
   });
 
-  test('initDataDB includes _design/acl with project dbacl', () => {
+  test('initDataDB includes faims_acl_shape but not proxy _design/acl', () => {
     const init = initDataDB({projectId});
-    const aclDoc = init.designDocuments.find(d => d._id === '_design/acl');
-    expect(aclDoc).toBeDefined();
-    expect((aclDoc as {dbacl: unknown}).dbacl).toEqual(
-      buildDbAclOverlay(projectId)
+    expect(init.designDocuments.find(d => d._id === '_design/acl')).toBeUndefined();
+    const shapeDoc = init.designDocuments.find(
+      d => d._id === FAIMS_ACL_SHAPE_DDOC_ID
     );
+    expect(shapeDoc).toBeDefined();
+    expect((shapeDoc as {validate_doc_update?: string}).validate_doc_update).toContain(
+      'Child document parent must equal record_id'
+    );
+    expect(
+      (shapeDoc as {validate_doc_update?: string}).validate_doc_update
+    ).not.toContain('Document must have a creator');
+    expect(init.designDocuments.find(d => d._id === '_design/permissions')).toBeDefined();
   });
 
   test('projectIdFromDataDbName parses data- prefix and remote URLs', () => {
@@ -158,35 +175,64 @@ describe('couch-auth-proxy ACL helpers', () => {
     ).toBeUndefined();
   });
 
-  test('ensureDataDbAclDesignDoc is idempotent when unchanged', async () => {
+  test('ensureDataDbAclOverlay is idempotent when dbacl unchanged', async () => {
     const db = new PouchDB(`acl-ensure-${Date.now()}`, {adapter: 'memory'});
-    await ensureDataDbAclDesignDoc({db: db as any, projectId});
+    await seedProxyAclStub(db, buildDbAclOverlay(projectId));
+    const firstResult = await ensureDataDbAclOverlay({db: db as any, projectId});
+    expect(firstResult.status).toBe('unchanged');
     const first = await db.get<{dbacl: {_r: string[]}; _rev: string}>(
       '_design/acl'
     );
-    expect(first.dbacl._r.length).toBeGreaterThan(0);
-    await ensureDataDbAclDesignDoc({db: db as any, projectId});
+    const shapeFirst = await db.get<{_rev: string}>(FAIMS_ACL_SHAPE_DDOC_ID);
+    const secondResult = await ensureDataDbAclOverlay({
+      db: db as any,
+      projectId,
+    });
+    expect(secondResult.status).toBe('unchanged');
     const second = await db.get<{_rev: string}>('_design/acl');
     expect(second._rev).toBe(first._rev);
+    const shapeSecond = await db.get<{_rev: string}>(FAIMS_ACL_SHAPE_DDOC_ID);
+    expect(shapeSecond._rev).toBe(shapeFirst._rev);
     await db.destroy();
   });
 
-  test('ensureDataDbAclDesignDoc repairs mismatched dbacl', async () => {
+  test('ensureDataDbAclOverlay patches mismatched dbacl without rewriting map', async () => {
     const db = new PouchDB(`acl-repair-${Date.now()}`, {adapter: 'memory'});
-    await ensureDataDbAclDesignDoc({db: db as any, projectId});
-    const first = await db.get<{dbacl: DbAclOverlay; _rev: string}>(
-      '_design/acl'
-    );
-    await db.put({
-      ...first,
-      dbacl: {_r: ['r-stale'], _w: ['r-stale'], _d: ['r-stale']},
+    await seedProxyAclStub(db, {
+      _r: ['r-stale'],
+      _w: ['r-stale'],
+      _d: ['r-stale'],
     });
-    await ensureDataDbAclDesignDoc({db: db as any, projectId});
-    const repaired = await db.get<{dbacl: {_r: string[]}; _rev: string}>(
-      '_design/acl'
-    );
+    const before = await db.get<{
+      dbacl: DbAclOverlay;
+      _rev: string;
+      views: {acl: {map: string}};
+      validate_doc_update: string;
+      version: string;
+    }>('_design/acl');
+    const result = await ensureDataDbAclOverlay({db: db as any, projectId});
+    expect(result.status).toBe('updated');
+    const repaired = await db.get<{
+      dbacl: DbAclOverlay;
+      _rev: string;
+      views: {acl: {map: string}};
+      validate_doc_update: string;
+      version: string;
+    }>('_design/acl');
     expect(repaired.dbacl).toEqual(buildDbAclOverlay(projectId));
-    expect(repaired._rev).not.toBe(first._rev);
+    expect(repaired._rev).not.toBe(before._rev);
+    expect(repaired.views.acl.map).toBe(before.views.acl.map);
+    expect(repaired.validate_doc_update).toBe(before.validate_doc_update);
+    expect(repaired.version).toBe(before.version);
+    await db.destroy();
+  });
+
+  test('ensureDataDbAclOverlay reports missing_proxy_ddoc without inventing map', async () => {
+    const db = new PouchDB(`acl-missing-${Date.now()}`, {adapter: 'memory'});
+    const result = await ensureDataDbAclOverlay({db: db as any, projectId});
+    expect(result.status).toBe('missing_proxy_ddoc');
+    await expect(db.get('_design/acl')).rejects.toBeTruthy();
+    await db.get(FAIMS_ACL_SHAPE_DDOC_ID);
     await db.destroy();
   });
 });

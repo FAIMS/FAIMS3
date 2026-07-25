@@ -38,19 +38,27 @@ Per-project **`metadata-{id}`** Couch databases are **not** migrated by this fra
 
 **Operator guide** for deploying that change: [Metadata migration guide](./MetadataMigrationGuide.md).
 
-### DATA DB v1 → v2 (couch-auth-proxy ACL)
+### DATA DB v1 → v3 (couch-auth-proxy ACL)
 
-Project **`data-{projectId}`** databases target version **2**:
+Project **`data-{projectId}`** databases target version **3**. Ownership of
+design docs vs stamps:
+[AclValidationLayering](./Authorisation/AclValidationLayering.md).
 
-- Stamp `creator` / `parent` for per-document sync ACL
-- Ensure `_design/acl` with `dbacl` from `necessaryActionToCouchRoleList`
+- **v1 → v2:** Stamp `creator` / `parent` for per-document sync ACL; patch
+  `dbacl` onto an existing proxy-managed `_design/acl` when present (proxy
+  auto-install owns the map/VDU); ensure `_design/faims_acl_shape`.
+- **v2 → v3:** Ensure `_design/faims_acl_shape` on DBs that already completed
+  v2 before that design doc existed (FAIMS `record_id` ↔ `parent` VDU).
+  Require-creator is proxy env `ACL_REQUIRE_CREATOR` (image **1.5.0+**), not
+  this migration.
 
 `defaultVersion` remains **1** so databases that never received a migrations
 document still run the idempotent backfill. Conductor must enqueue DATA
 migrations under the logical name `data-{projectId}` (not a remote Pouch URL).
 
-**Operator cutover** (migrate → repair → flip `COUCHDB_PUBLIC_URL` → client
-remote re-point): [CouchAuthProxyCutover](./Authorisation/CouchAuthProxyCutover.md).
+**Operator cutover** is deploy-then-migrate (public URL already on the proxy;
+migrate + `repair-data-db-acl` promptly to version **3**):
+[CouchAuthProxyCutover](./Authorisation/CouchAuthProxyCutover.md).
 
 Ops repair (idempotent):
 

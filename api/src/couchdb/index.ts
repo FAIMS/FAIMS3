@@ -55,6 +55,7 @@ import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {ensureProjectDataDbAcl} from './couchAuthProxyAcl';
 import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
 
@@ -401,6 +402,26 @@ export const initialiseDataDb = async ({
     throw new Exceptions.InternalSystemError(
       `An error occurred while initialising the data DB for project ${projectId}!... ${e}`
     );
+  }
+
+  // Proxy owns `_design/acl` map/VDU; warm it then patch FAIMS `dbacl`.
+  // In unit tests there is usually no proxy — skip rather than fail init.
+  if (!isTesting) {
+    try {
+      await ensureProjectDataDbAcl({
+        projectId,
+        db: dataDb as unknown as {
+          get: (id: string) => Promise<Record<string, unknown>>;
+          put: (doc: Record<string, unknown>) => Promise<unknown>;
+        },
+        requireProxyDdoc: false,
+      });
+    } catch (e) {
+      console.warn(
+        `Warning: could not warm/patch proxy ACL for data-${projectId}:`,
+        e instanceof Error ? e.message : e
+      );
+    }
   }
 
   return dataDb;

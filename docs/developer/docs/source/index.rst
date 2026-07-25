@@ -37,6 +37,9 @@ FAIMS3 Developer Documentation
    markdown/forms/07-validation.md
    markdown/Authorisation/PassportAuth.md
    markdown/Authorisation/RefreshTokens.md
+   markdown/Authorisation/AclValidationLayering.md
+   markdown/Authorisation/CouchAuthProxyAclInstallBrief.md
+   markdown/Authorisation/CouchAuthProxyRequireCreatorHandover.md
    markdown/Authorisation/CouchAuthProxyHandover.md
    markdown/Authorisation/CouchAuthProxyCutover.md
    markdown/Authorisation/CouchAuthProxyAwsCdk.md

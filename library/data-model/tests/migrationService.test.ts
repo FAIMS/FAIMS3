@@ -949,7 +949,7 @@ describe('Migration System Tests', () => {
       }
     });
 
-    it('DATA v1→v2 installs _design/acl on empty DB and stamps unstamped docs', async () => {
+    it('DATA migrations stamp docs, ensure faims_acl_shape, and patch dbacl when proxy ddoc exists', async () => {
       const projectId = `mig-acl-${Date.now()}`;
       const dataDbName = `data-${projectId}`;
       const testDataDb = new PouchDB(dataDbName, {
@@ -957,6 +957,16 @@ describe('Migration System Tests', () => {
       }) as DatabaseInterface;
 
       try {
+        // Stand-in for couch-auth-proxy auto-install (FAIMS never vendors the map).
+        await testDataDb.put({
+          _id: '_design/acl',
+          language: 'javascript',
+          type: 'ddoc',
+          version: '2.3.0',
+          acl: [],
+          views: {acl: {map: 'function (doc) { emit(doc._id, {}); }'}},
+          validate_doc_update: 'function () {}',
+        });
         await testDataDb.put({
           _id: 'rec-legacy',
           record_format_version: 1,
@@ -989,10 +999,16 @@ describe('Migration System Tests', () => {
           getDbById: async () => testDataDb,
         });
 
-        const acl = await testDataDb.get<{dbacl: {_r: string[]}}>(
-          '_design/acl'
-        );
+        const acl = await testDataDb.get<{
+          dbacl: {_r: string[]};
+          version: string;
+          views: {acl: {map: string}};
+        }>('_design/acl');
+        expect(acl.version).toBe('2.3.0');
+        expect(acl.views.acl.map).toContain('emit(doc._id');
         expect(acl.dbacl._r.length).toBeGreaterThan(0);
+        const shape = await testDataDb.get('_design/faims_acl_shape');
+        expect(shape).toBeDefined();
 
         const record = await testDataDb.get<{creator: string}>('rec-legacy');
         expect(record.creator).toBe('alice');
@@ -1010,13 +1026,15 @@ describe('Migration System Tests', () => {
           }
         );
         expect(migrationDocs.rows.length).toBe(1);
-        expect(migrationDocs.rows[0].doc?.version).toBe(2);
+        expect(migrationDocs.rows[0].doc?.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+        );
       } finally {
         await testDataDb.destroy();
       }
     });
 
-    it('DATA v1→v2 installs _design/acl when Pouch db.name is a remote URL', async () => {
+    it('DATA migrations resolve projectId from remote Pouch db.name and ensure faims_acl_shape', async () => {
       // Production remote Pouch handles expose a full URL as db.name. The
       // migrator must still resolve projectId from the logical dbName arg.
       const projectId = `mig-acl-url-${Date.now()}`;
@@ -1031,7 +1049,8 @@ describe('Migration System Tests', () => {
       });
 
       try {
-        // Truly empty user corpus — prelude must still install `_design/acl`.
+        // Empty corpus + no proxy ddoc: FAIMS must not invent `_design/acl`,
+        // but still installs `_design/faims_acl_shape`.
         await migrateDbs({
           dbs: [
             {
@@ -1044,12 +1063,8 @@ describe('Migration System Tests', () => {
           getDbById: async () => testDataDb,
         });
 
-        const acl = await testDataDb.get<{
-          dbacl: {_r: string[]};
-          version: string;
-        }>('_design/acl');
-        expect(acl.version).toBeTruthy();
-        expect(acl.dbacl._r.length).toBeGreaterThan(0);
+        await expect(testDataDb.get('_design/acl')).rejects.toBeTruthy();
+        await testDataDb.get('_design/faims_acl_shape');
 
         const migrationDocs = await testMigrationDb.query<MigrationsDBFields>(
           MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -1059,7 +1074,9 @@ describe('Migration System Tests', () => {
           }
         );
         expect(migrationDocs.rows.length).toBe(1);
-        expect(migrationDocs.rows[0].doc?.version).toBe(2);
+        expect(migrationDocs.rows[0].doc?.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+        );
         // Must not have indexed under the URL form of db.name
         const urlKeyed = await testMigrationDb.query<MigrationsDBFields>(
           MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -1086,6 +1103,17 @@ describe('Migration System Tests', () => {
       });
 
       try {
+        // Proxy-owned stub; migration must resolve projectId from db.name URL
+        // and patch dbacl without inventing map/VDU.
+        await testDataDb.put({
+          _id: '_design/acl',
+          language: 'javascript',
+          type: 'ddoc',
+          version: '2.3.0',
+          acl: [],
+          views: {acl: {map: 'function (doc) { emit(doc._id, {}); }'}},
+          validate_doc_update: 'function () {}',
+        });
         const result = await performMigration({
           db: testDataDb,
           migrationFunc: dataV1toV2Migration,
@@ -1093,8 +1121,9 @@ describe('Migration System Tests', () => {
           // Omit dbName to exercise URL parsing of db.name
         });
         expect(result.issues).toEqual([]);
-        const acl = await testDataDb.get('_design/acl');
-        expect(acl).toBeDefined();
+        const acl = await testDataDb.get<{dbacl: {_r: string[]}}>('_design/acl');
+        expect(acl.dbacl._r.length).toBeGreaterThan(0);
+        await testDataDb.get('_design/faims_acl_shape');
       } finally {
         await testDataDb.destroy();
       }

@@ -382,16 +382,16 @@ const CouchConfigSchema = z.object({
 
 /**
  * couch-auth-proxy (mandatory public Pouch sync ACL). Always deployed: ALB
- * couch.* → proxy; Conductor INTERNAL → VPC Couch. Pin imageTag to the tag
- * that matches vendored `_design/acl` in @faims3/data-model (ddoc 2.3.0) and
- * docker-compose.yml. See CouchAuthProxyAwsCdk.md / CouchAuthProxyCutover.md.
+ * couch.* → proxy; Conductor INTERNAL → VPC Couch. Pin imageTag to the same
+ * tag as docker-compose.yml — the image owns `_design/acl` map/VDU (FAIMS
+ * only patches `dbacl`). See AclValidationLayering.md / CouchAuthProxyCutover.md.
  */
 const CouchAuthProxyConfigSchema = z
   .object({
     /** Container image repository (no tag) */
     image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
-    /** Immutable tag / digest pin (must match data-model ACL ddoc 2.3.0) */
-    imageTag: z.string().default('1.4.0'),
+    /** Immutable tag / digest pin (must match docker-compose.yml) */
+    imageTag: z.string().default('1.6.0'),
     /** Fargate CPU units */
     cpu: z.number().int().positive().default(512),
     /** Fargate memory in MiB */
@@ -622,11 +622,11 @@ export const ConfigSchema = z.object({
   couch: CouchConfigSchema,
   /**
    * Public sync ACL proxy (always deployed; immediate cutover). Tuning/image
-   * pin only — migrate DATA v2 promptly after deploy (CouchAuthProxyCutover.md).
+   * pin only — migrate DATA to v3 promptly after deploy (CouchAuthProxyCutover.md).
    */
   couchAuthProxy: CouchAuthProxyConfigSchema.optional().default({
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
-    imageTag: '1.4.0',
+    imageTag: '1.6.0',
     cpu: 512,
     memory: 1024,
     desiredCount: 2,

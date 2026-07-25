@@ -3,11 +3,15 @@
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
 import {convertToCouchDBString} from '../utils';
-import {buildDataDbAclDesignDoc} from './acl';
+import {buildFaimsAclShapeDesignDoc} from './faimsAclShape';
 
-/** `_design/acl` for couch-auth-proxy (map/VDU + project-scoped `dbacl`). */
-export const aclDocument = (projectId: string) =>
-  buildDataDbAclDesignDoc(projectId);
+/**
+ * FAIMS ACL stamp shape (`record_id` → `parent`).
+ * Proxy-owned `_design/acl` (map/protocol VDU + optional require-creator) is
+ * installed by couch-auth-proxy; FAIMS only patches `dbacl` onto it after warm
+ * (`ensureDataDbAclOverlay`). See AclValidationLayering.md.
+ */
+export const faimsAclShapeDocument = () => buildFaimsAclShapeDesignDoc();
 
 /**
  * Design document for filtering attachments
@@ -271,6 +275,6 @@ export const dataDbDesignDocuments = {
   permissionsDocument,
   indexDocument,
   recordAuditDocument,
-  /** Per-project `_design/acl` — see {@link aclDocument}. */
-  aclDocument,
+  /** FAIMS stamp VDU — see {@link faimsAclShapeDocument}. */
+  faimsAclShapeDocument,
 };

@@ -18,9 +18,10 @@ export const DataDBSecurityDocument = ({
     },
     members: {
       names: [],
-      // Membership = "may talk to this DB". Per-document my/all reads are
-      // enforced by couch-auth-proxy (`creator`/`parent` + `_design/acl` dbacl)
-      // on the public sync URL — see dataDB/acl.ts.
+      // Membership = "may talk to this DB". Per-document my/all sync reads are
+      // enforced by couch-auth-proxy (`creator`/`parent` + FAIMS-patched
+      // `dbacl` on proxy `_design/acl`). See AclValidationLayering.md /
+      // dataDB/acl.ts.
       roles: necessaryActionToCouchRoleList({
         action: Action.READ_MY_PROJECT_RECORDS,
         resourceId: projectId,

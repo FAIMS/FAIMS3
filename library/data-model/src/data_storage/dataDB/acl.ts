@@ -1,27 +1,17 @@
 /**
- * Couch-auth-proxy ACL helpers for project data DBs.
+ * FAIMS ↔ couch-auth-proxy ACL helpers for project data DBs.
  *
- * Clean write path always stamps `creator` / `parent`. Bucket overlays (`dbacl`)
- * are derived from {@link necessaryActionToCouchRoleList} so sync enforcement
- * tracks the FAIMS permission model.
+ * Ownership split (see Authorisation/AclValidationLayering.md):
+ * - couch-auth-proxy owns `_design/acl` map + protocol VDU (auto-install /
+ *   migrate when `ACL_AUTO_INSTALL` is enabled). FAIMS never vendors that body.
+ * - FAIMS owns project-scoped `dbacl` overlays on that ddoc, document stamps
+ *   (`creator` / `parent`), and `_design/faims_acl_shape`.
  *
- * Vendored map source must stay aligned with the deployed
- * `ghcr.io/peterbaker0/couch-auth-proxy` image. Pin (compose + CDK):
- * **1.4.0** — upstream `src/acl/ddoc.ts` map version **2.3.0**.
- *
- * The VDU is FAIMS-extended (`2.3.0-faims1`): non-admin creates must include a
- * non-empty `creator`, and child docs with `record_id` must set
- * `parent === record_id`. Upstream alone allows omitting `creator`, which
- * grants `r-*` (world-readable to DB members) — unacceptable after cutover.
+ * Pin the proxy image in compose / CDK; do not copy map/VDU source here.
  */
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
-
-/**
- * `_design/acl` `version` field. Map body matches upstream 2.3.0; suffix marks
- * the FAIMS fail-closed VDU extension so ensure/repair rewrites older ddocs.
- */
-export const COUCH_AUTH_PROXY_ACL_DDOC_VERSION = '2.3.0-faims1';
+import {ensureFaimsAclShapeDesignDoc} from './faimsAclShape';
 
 /**
  * Synthetic ACL creator stamped by DATA v1→v2 when a legacy doc has no
@@ -29,118 +19,6 @@ export const COUCH_AUTH_PROXY_ACL_DDOC_VERSION = '2.3.0-faims1';
  * ALL-capable roles still reach it via `dbacl`.
  */
 export const ACL_ORPHAN_CREATOR = '__faims_acl_orphan__';
-
-/**
- * Couch map function source from couch-auth-proxy 2.3.0.
- * Emits `{ s, p, _r, _w, _d }` per document keyed by doc id.
- */
-export const ACL_MAP_SOURCE = `function (doc) {
-  var r = { s: doc._rev || "", p: "", _r: {}, _w: {}, _d: {} };
-  var tmp = "", i, ctr = 0;
-  var cr = doc.creator, acl = doc.acl, ow = doc.owners;
-  var S = "string", O = "object", F = "function";
-  var rr = /^r-/, ru = /^u-/;
-
-  if (typeof cr == S && cr) {
-    tmp = cr;
-    if (!ru.test(tmp)) tmp = "u-" + tmp;
-    r._r[tmp] = r._w[tmp] = r._d[tmp] = 1;
-    ctr += 1;
-  }
-
-  if (acl != null && typeof acl == O && typeof acl.slice == F) {
-    for (i = 0; i < acl.length; i++) {
-      tmp = acl[i];
-      if (typeof tmp == S) {
-        if (rr.test(tmp) || ru.test(tmp)) r._r[tmp] = 1;
-        else r._r["u-" + tmp] = 1;
-      }
-    }
-    ctr += 1;
-  }
-
-  if (ow != null && typeof ow == O && typeof ow.slice == F) {
-    for (i = 0; i < ow.length; i++) {
-      tmp = ow[i];
-      if (typeof tmp == S) {
-        if (!rr.test(tmp) && !ru.test(tmp)) tmp = "u-" + tmp;
-        r._r[tmp] = r._w[tmp] = 1;
-      }
-    }
-    ctr += 1;
-  }
-
-  if (!ctr) {
-    tmp = "r-*";
-    if (/^_design/.test(doc._id)) r._r[tmp] = 1;
-    else r._r[tmp] = r._w[tmp] = r._d[tmp] = 1;
-  }
-
-  if (typeof doc.parent == S) r.p = doc.parent;
-  emit(doc._id, r);
-}`;
-
-/**
- * Couch `validate_doc_update` based on couch-auth-proxy 2.3.0, with FAIMS
- * fail-closed extensions (see module header).
- */
-export const ACL_VALIDATE_DOC_UPDATE_SOURCE = `function (nd, od, userCtx, secObj) {
-  var roles = userCtx.roles || [];
-  var adm = !!(roles.indexOf("_admin") >= 0);
-  var u = userCtx.name;
-  var uu = "u-" + u;
-  var O = "object";
-  var F = "function";
-  var S = "string";
-  var rr = /^r-/;
-  var isA = function (o) {
-    return typeof o == O && typeof o.slice == F;
-  };
-
-  if (!adm) {
-    // FAIMS: non-design docs must always carry creator (unstamped ⇒ r-*).
-    if (!/^_design/.test(nd._id || "")) {
-      if (typeof nd.creator != S || !nd.creator)
-        throw { forbidden: "Document must have a creator." };
-      if (typeof nd.record_id == S && nd.record_id) {
-        if (typeof nd.parent != S || nd.parent != nd.record_id)
-          throw { forbidden: "Child document parent must equal record_id." };
-      }
-    }
-    if (!od) {
-      if (nd.creator && nd.creator != u && nd.creator != uu)
-        throw { forbidden: "Can't create doc on behalf of other user." };
-    } else {
-      var odc = od.creator;
-      var odw = (isA(od.owners) ? od.owners : []).sort();
-      var oda = isA(od.acl) ? od.acl.sort() + "" : "";
-      var ndc = nd.creator;
-      var ndw = (isA(nd.owners) ? nd.owners : []).sort();
-      var nda = isA(nd.acl) ? nd.acl.sort() + "" : "";
-      var notCreator = odc != u && odc != uu;
-      var notOwner = notCreator && odw.indexOf(u) == -1 && odw.indexOf(uu) == -1;
-      var i, roleToken;
-      for (i = 0; notOwner && i < roles.length; i++) {
-        if (typeof roles[i] == S) {
-          roleToken = rr.test(roles[i]) ? roles[i] : "r-" + roles[i];
-          if (odw.indexOf(roleToken) >= 0) notOwner = false;
-        }
-      }
-      var odp = typeof od.parent == S ? od.parent : "";
-      var ndp = typeof nd.parent == S ? nd.parent : "";
-
-      if (!nd._deleted) {
-        if (odc != ndc) throw { forbidden: "Creator can not be changed." };
-        if (notCreator && odw + "" != ndw + "")
-          throw { forbidden: "Owners list can not be changed." };
-        if (notOwner && oda != nda)
-          throw { forbidden: "Readers list can not be changed." };
-        if (notCreator && odp != ndp)
-          throw { forbidden: "Parent can not be changed." };
-      }
-    }
-  }
-}`;
 
 /** Prefix for project data Couch databases (`data-{projectId}`). */
 export const DATA_DB_NAME_PREFIX = 'data-';
@@ -153,6 +31,14 @@ export type DbAclOverlay = {
 
 export type RecordAclStamp = {creator: string};
 export type ChildAclStamp = {creator: string; parent: string};
+
+export type EnsureDataDbAclOverlayResult =
+  | {status: 'unchanged'}
+  | {status: 'updated'}
+  | {
+      /** Proxy has not installed `_design/acl` yet — FAIMS will not invent it. */
+      status: 'missing_proxy_ddoc';
+    };
 
 /**
  * couch-auth-proxy normalizes bare grant strings to `u-…` unless they already
@@ -201,48 +87,6 @@ export function stampChildAcl(args: {
   recordId: string;
 }): ChildAclStamp {
   return {creator: args.createdBy, parent: args.recordId};
-}
-
-/**
- * Build a fresh `_design/acl` document for a project data DB (no `_rev`).
- * Leaves `acl: []` so non-admins cannot read the control-plane body.
- */
-export function buildDataDbAclDesignDoc(projectId: string): {
-  _id: '_design/acl';
-  language: 'javascript';
-  options: {
-    local_seq: true;
-    include_design: true;
-    partitioned: false;
-  };
-  type: 'ddoc';
-  version: string;
-  stamp: number;
-  acl: string[];
-  dbacl: DbAclOverlay;
-  views: {acl: {map: string}};
-  validate_doc_update: string;
-} {
-  return {
-    _id: '_design/acl',
-    language: 'javascript',
-    options: {
-      local_seq: true,
-      include_design: true,
-      partitioned: false,
-    },
-    type: 'ddoc',
-    version: COUCH_AUTH_PROXY_ACL_DDOC_VERSION,
-    stamp: Date.now(),
-    acl: [],
-    dbacl: buildDbAclOverlay(projectId),
-    views: {
-      acl: {
-        map: ACL_MAP_SOURCE,
-      },
-    },
-    validate_doc_update: ACL_VALIDATE_DOC_UPDATE_SOURCE,
-  };
 }
 
 /**
@@ -359,11 +203,15 @@ function isConflictError(err: unknown): boolean {
 }
 
 /**
- * Ensure `_design/acl` exists (or is repaired) on a database with the correct
- * `dbacl` for `projectId`. Idempotent: skips rewrite when version + `dbacl`
- * already match (avoids stamp churn). Retries once on 409.
+ * Patch project-scoped `dbacl` onto an existing proxy-managed `_design/acl`,
+ * then ensure FAIMS `_design/faims_acl_shape`.
+ *
+ * Never installs or rewrites the proxy map / protocol VDU / `version`. If the
+ * ddoc is absent, returns `missing_proxy_ddoc` after still ensuring the FAIMS
+ * shape doc — callers that need the proxy ddoc must warm couch-auth-proxy
+ * first (`ACL_AUTO_INSTALL`).
  */
-export async function ensureDataDbAclDesignDoc({
+export async function ensureDataDbAclOverlay({
   db,
   projectId,
 }: {
@@ -372,38 +220,28 @@ export async function ensureDataDbAclDesignDoc({
     put: (doc: Record<string, unknown>) => Promise<unknown>;
   };
   projectId: string;
-}): Promise<void> {
-  const fresh = buildDataDbAclDesignDoc(projectId);
+}): Promise<EnsureDataDbAclOverlayResult> {
+  const expected = buildDbAclOverlay(projectId);
   const maxAttempts = 3;
+  let result: EnsureDataDbAclOverlayResult = {status: 'missing_proxy_ddoc'};
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const existing = await db.get('_design/acl');
-      if (
-        existing.version === fresh.version &&
-        dbAclListsEqual(existing.dbacl, fresh.dbacl) &&
-        existing.validate_doc_update === fresh.validate_doc_update &&
-        (existing.views as {acl?: {map?: string}} | undefined)?.acl?.map ===
-          fresh.views.acl.map
-      ) {
-        return;
+      if (dbAclListsEqual(existing.dbacl, expected)) {
+        result = {status: 'unchanged'};
+        break;
       }
       await db.put({
-        ...fresh,
-        _rev: existing._rev,
+        ...existing,
+        dbacl: expected,
       });
-      return;
+      result = {status: 'updated'};
+      break;
     } catch (err: unknown) {
       if (isNotFoundError(err)) {
-        try {
-          await db.put(fresh);
-          return;
-        } catch (putErr: unknown) {
-          if (isConflictError(putErr) && attempt < maxAttempts - 1) {
-            continue;
-          }
-          throw putErr;
-        }
+        result = {status: 'missing_proxy_ddoc'};
+        break;
       }
       if (isConflictError(err) && attempt < maxAttempts - 1) {
         continue;
@@ -411,4 +249,13 @@ export async function ensureDataDbAclDesignDoc({
       throw err;
     }
   }
+
+  await ensureFaimsAclShapeDesignDoc({db});
+  return result;
 }
+
+/**
+ * @deprecated Use {@link ensureDataDbAclOverlay}. Kept as a stable alias while
+ * call sites migrate.
+ */
+export const ensureDataDbAclDesignDoc = ensureDataDbAclOverlay;

@@ -1,20 +1,19 @@
 /* eslint-disable n/no-process-exit */
 /**
- * Idempotent ops tool: ensure every project data DB has a correct
- * `_design/acl` (map/VDU + `dbacl` from the permission model).
+ * Idempotent ops tool: warm couch-auth-proxy `_design/acl` on every project
+ * data DB, patch FAIMS `dbacl` from the permission model, and ensure
+ * `_design/faims_acl_shape`.
  *
- * Use after permission-model token changes, or to repair DBs before pointing
- * COUCHDB_PUBLIC_URL at couch-auth-proxy.
+ * Use after permission-model token changes, or after cutover when proxy
+ * auto-install may not have run yet for idle DBs.
  *
  * Usage (from api/):
  *   pnpm run repair-data-db-acl
  *   pnpm run repair-data-db-acl -- --dry-run
  */
 import {
-  buildDataDbAclDesignDoc,
   buildDbAclOverlay,
   DATA_DB_NAME_PREFIX,
-  ensureDataDbAclDesignDoc,
   projectIdFromDataDbName,
 } from '@faims3/data-model';
 import {
@@ -22,6 +21,7 @@ import {
   listCouchDatabaseNames,
   verifyCouchDBConnection,
 } from '../couchdb';
+import {ensureProjectDataDbAcl} from '../couchdb/couchAuthProxyAcl';
 import {getAllProjectsDirectory} from '../couchdb/notebooks';
 
 const isDryRun = process.argv.includes('--dry-run');
@@ -86,32 +86,24 @@ const main = async () => {
           const existing = (await db.get('_design/acl')) as {
             dbacl?: {_r?: string[]; _w?: string[]; _d?: string[]};
             version?: string;
-            validate_doc_update?: string;
-            views?: {acl?: {map?: string}};
           };
-          const fresh = buildDataDbAclDesignDoc(projectId);
           const listsMatch =
             JSON.stringify(existing.dbacl?._r ?? []) ===
-              JSON.stringify(fresh.dbacl._r) &&
+              JSON.stringify(expected._r) &&
             JSON.stringify(existing.dbacl?._w ?? []) ===
-              JSON.stringify(fresh.dbacl._w) &&
+              JSON.stringify(expected._w) &&
             JSON.stringify(existing.dbacl?._d ?? []) ===
-              JSON.stringify(fresh.dbacl._d);
-          const bodyMatch =
-            existing.version === fresh.version &&
-            existing.validate_doc_update === fresh.validate_doc_update &&
-            existing.views?.acl?.map === fresh.views.acl.map &&
-            listsMatch;
+              JSON.stringify(expected._d);
           console.log(
             `[dry-run] ${dbName} (${source}): has _design/acl version=${
               existing.version ?? '?'
             }, dbacl._r=${existing.dbacl?._r?.length ?? 0} (expected ${
               expected._r.length
-            }), ${bodyMatch ? 'UP_TO_DATE' : 'WOULD_REPAIR'}`
+            }), ${listsMatch ? 'DBACL_OK' : 'WOULD_PATCH_DBACL'}`
           );
         } catch {
           console.log(
-            `[dry-run] ${dbName} (${source}): MISSING _design/acl (would install; expected dbacl._r=${expected._r.length})`
+            `[dry-run] ${dbName} (${source}): MISSING _design/acl (would warm proxy + patch dbacl; expected dbacl._r=${expected._r.length})`
           );
         }
         ok += 1;
@@ -119,8 +111,12 @@ const main = async () => {
       }
 
       const db = await getDataDb(projectId);
-      await ensureDataDbAclDesignDoc({db: db as any, projectId});
-      console.log(`Repaired ${dbName} (${source})`);
+      const result = await ensureProjectDataDbAcl({
+        projectId,
+        db: db as any,
+        requireProxyDdoc: true,
+      });
+      console.log(`Repaired ${dbName} (${source}): ${result.status}`);
       ok += 1;
     } catch (err) {
       failed += 1;
