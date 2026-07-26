@@ -11,7 +11,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
-  getFieldNamesForViewset,
+  DocumentNotFoundError,
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
@@ -29,8 +29,6 @@ export type RecordFeatureProps = {
   record_id: string;
   revision_id: string;
   form_id: string;
-  /** Whether the record has unresolved conflicts (for status styling). */
-  conflicts: boolean;
 };
 
 /** A GeoJSON feature extracted from a record's GIS field. */
@@ -49,6 +47,12 @@ export type RecordFeatureCollection = {
 /**
  * Get the names of all GIS fields in a UI Specification: the fields whose AVP
  * values hold record geometry.
+ *
+ * This is deliberately notebook-wide rather than per-form. A record's AVPs can
+ * hold any field it was ever saved with, and a field can be moved between forms
+ * (or dropped from every view) long after capture without touching the AVPs
+ * that already reference it. Scoping the read to the fields currently reachable
+ * from a record's own form would silently stop plotting those records.
  */
 export const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
   const fields = Object.getOwnPropertyNames(uiSpec.fields);
@@ -58,30 +62,16 @@ export const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
 };
 
 /**
- * Get each form's GIS field names, keyed by form (viewset) name. Hydration
- * reads a record through its own form's list, so records of forms with no GIS
- * field (mapped to an empty array here) skip the database entirely.
- */
-export const getGISFieldsByForm = (
-  uiSpec: NotebookUiSpec
-): Record<string, string[]> =>
-  Object.fromEntries(
-    Object.keys(uiSpec.viewsets).map(formName => [
-      formName,
-      getFieldNamesForViewset({
-        uiSpecification: uiSpec,
-        viewSetId: formName,
-      }).filter(field =>
-        SPATIAL_FIELDS.includes(uiSpec.fields[field]?.['component-name'])
-      ),
-    ])
-  );
-
-/**
- * Extract features from a single record for the given GIS fields. A malformed
- * or absent GIS value is skipped, not thrown, so one bad record does not blank
- * every record's geometry. An empty `fields` list (the record's form holds no
- * geometry) returns immediately, before any database read.
+ * Extract features from a single record for the given GIS fields.
+ *
+ * A revision that is simply missing skips its record, and a malformed or absent
+ * GIS value skips its field, so one bad record cannot blank every record's
+ * geometry. Any other failure to read the *revision* is rethrown, so a systemic
+ * fault there surfaces as an error rather than as an empty map.
+ *
+ * Failures reading an individual AVP are still swallowed per field, as they were
+ * before this module existed, so a systemic fault that only manifests on AVP
+ * reads can still present as "no geometry" rather than as an error.
  */
 export const extractFeaturesFromRecord = async (
   dataEngine: DataEngine,
@@ -93,7 +83,18 @@ export const extractFeaturesFromRecord = async (
   if (fields.length === 0) return features;
 
   // TODO this is not optimal for efficiency
-  const revision = await dataEngine.core.getRevision(record.revisionId);
+  const revision = await dataEngine.core
+    .getRevision(record.revisionId)
+    .catch(error => {
+      if (!(error instanceof DocumentNotFoundError)) throw error;
+      // This one record's revision is gone; keep plotting the rest
+      console.warn(
+        `Skipping record ${record.recordId}: revision ${record.revisionId} not found`
+      );
+      return undefined;
+    });
+
+  if (!revision) return features;
 
   await Promise.all(
     fields.map(async field => {
@@ -118,7 +119,6 @@ export const extractFeaturesFromRecord = async (
           record_id: record.recordId,
           revision_id: record.revisionId,
           form_id: record.type,
-          conflicts: record.conflicts,
         };
 
         if (geoJson.type === 'FeatureCollection') {
@@ -168,11 +168,10 @@ interface UseRecordFeaturesParams {
 /**
  * Extract the GIS features of a notebook's records, managed by React Query
  * (record hydration is async database work). Only records whose type is in
- * `recordTypes` are read, and each record is read through its own form's GIS
- * fields, so records of forms with no geometry cost no database reads. Returns
- * the query result (`data` is undefined while loading or disabled) extended
- * with the memoized `dataEngine` and the notebook-wide `gisFields` list, so
- * consumers share them without rebuilding their own.
+ * `recordTypes` are read, each through the notebook's GIS fields. Returns the
+ * query state (`data` is undefined while loading or disabled) alongside the
+ * memoized `dataEngine` and `gisFields`, so consumers share them without
+ * rebuilding their own.
  */
 export const useRecordFeatures = ({
   projectId,
@@ -189,10 +188,9 @@ export const useRecordFeatures = ({
     });
   }, [projectId, uiSpec]);
 
-  // Memoize GIS fields: the flat list gates and keys the query, the per-form
-  // map scopes each record's read to the fields its form can hold
+  // The notebook's GIS fields: this both gates and keys the query, and is the
+  // field list every record is read through
   const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);
-  const gisFieldsByForm = useMemo(() => getGISFieldsByForm(uiSpec), [uiSpec]);
 
   const mapRecords = useMemo(
     () => records?.filter(record => recordTypes.includes(record.type)) ?? [],
@@ -227,11 +225,7 @@ export const useRecordFeatures = ({
       const batch = mapRecords.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(
         batch.map(record =>
-          extractFeaturesFromRecord(
-            dataEngine,
-            record,
-            gisFieldsByForm[record.type] ?? []
-          )
+          extractFeaturesFromRecord(dataEngine, record, gisFields)
         )
       );
       allFeatures.push(...batchResults.flat());
@@ -260,5 +254,11 @@ export const useRecordFeatures = ({
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
-  return {...query, dataEngine, gisFields};
+  // Read only the props consumers use. Spreading `query` would touch every key
+  // on React Query's tracked-props proxy (including `promise`, which rejects
+  // the observer's internal thenable when prefetch-in-render is off), causing
+  // re-renders on unrelated state such as isFetching and dataUpdatedAt.
+  const {data, isLoading, isError, error} = query;
+
+  return {data, isLoading, isError, error, dataEngine, gisFields};
 };
