@@ -106,7 +106,8 @@ services:
       COUCH_ADMIN_USER: ${COUCHDB_USER:-admin}
       COUCH_ADMIN_PASSWORD: ${COUCHDB_PASSWORD:-aSecretPasswordThatCantBeGuessed}
       ACL_DB_INCLUDE: '/^data-/'
-      ACL_ROUTE_INCLUDE: pouch-sync,session
+      # `root` = GET / (PouchDB remote id() reads Couch uuid during sync).
+      ACL_ROUTE_INCLUDE: pouch-sync,session,root
       # Proxy installs/migrates `_design/acl`; FAIMS only patches `dbacl`.
       ACL_AUTO_INSTALL: 'true'
       # Fail-closed: non-admin creates must stamp creator (VDU in _design/acl).

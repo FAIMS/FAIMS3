@@ -97,7 +97,8 @@ export class CouchAuthProxy extends Construct {
         COUCH_URL: props.couchInternalUrl,
         // Harden ACL scope — never ACL people/projects/auth DBs
         ACL_DB_INCLUDE: '/^data-/',
-        ACL_ROUTE_INCLUDE: 'pouch-sync,session',
+        // `root` = GET / (PouchDB remote id() reads Couch uuid during sync).
+        ACL_ROUTE_INCLUDE: 'pouch-sync,session,root',
         // Proxy installs/migrates `_design/acl`; FAIMS patches `dbacl` only
         ACL_AUTO_INSTALL: 'true',
         // Fail-closed: non-admin creates must stamp creator

@@ -264,7 +264,8 @@ const USER_SPECS: UserSpec[] = [
   },
 
   // ── seed-project-guest ────────────────────────────────────────────────────
-  // Project guest on Blue Team notebook only — restricted visibility.
+  // Project guest on Blue (UI/permission e2e) and Red (auth-proxy sync isolation
+  // against e2e-minimal with Guest B + Contributor).
   {
     email: 'seed-project-guest@faims.test',
     tag: 'PROJECT_GUEST',
@@ -274,6 +275,27 @@ const USER_SPECS: UserSpec[] = [
         user,
         role: Role.PROJECT_GUEST,
         projectId: ctx.blueNotebookId,
+      });
+      addProjectRole({
+        user,
+        role: Role.PROJECT_GUEST,
+        projectId: ctx.redNotebookId,
+      });
+    },
+  },
+
+  // ── seed-project-guest-b ──────────────────────────────────────────────────
+  // Second guest on Red only — pair with seed-project-guest for my-only sync
+  // isolation e2e (Guest A must not pull Guest B’s corpus and vice versa).
+  {
+    email: 'seed-project-guest-b@faims.test',
+    tag: 'PROJECT_GUEST_B',
+    name: 'Project Guest B',
+    assignResourceRoles(user, ctx) {
+      addProjectRole({
+        user,
+        role: Role.PROJECT_GUEST,
+        projectId: ctx.redNotebookId,
       });
     },
   },

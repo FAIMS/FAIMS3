@@ -205,15 +205,27 @@ Notebook but cannot see the Blue Notebook.
 
 #### seed-project-guest@faims.test — Project Guest
 
-Read-limited guest on Blue Notebook only. Can only see their own
-contributions.
+Read-limited guest on Blue (UI/permission e2e) and Red (auth-proxy sync
+isolation against e2e-minimal with Guest B + Contributor).
 
 | Scope         | Role            |
 | ------------- | --------------- |
 | Blue Notebook | `PROJECT_GUEST` |
+| Red Notebook  | `PROJECT_GUEST` |
 
-**Test use:** Verify that this user can view only their own records in the
-Blue Notebook and is not shown any other projects.
+**Test use:** Blue — own-record UI limits / no other projects. Red — Guest A
+in `guest-record-isolation` e2e (creates a record that Guest B must not sync).
+
+#### seed-project-guest-b@faims.test — Project Guest B
+
+Second guest on Red Notebook only for my-only sync isolation.
+
+| Scope        | Role            |
+| ------------ | --------------- |
+| Red Notebook | `PROJECT_GUEST` |
+
+**Test use:** After Guest A syncs a distinctive record, Guest B’s local DB and
+proxy GET must not contain that `rec-*` id.
 
 ---
 
@@ -222,17 +234,17 @@ Blue Notebook and is not shown any other projects.
 The table below maps the roles currently assigned by the seed script to the
 seeded users.
 
-| Role                  | User(s)                                                 |
-| --------------------- | ------------------------------------------------------- |
-| `GENERAL_USER`        | All users (default)                                     |
-| `OPERATIONS_ADMIN`    | seed-admin                                              |
-| `TEMPLATE_ADMIN`      | seed-admin (Red)                                        |
-| `TEAM_MANAGER`        | seed-manager-blue (Blue), seed-manager-cross (Red)      |
-| `TEAM_MEMBER`         | seed-manager-cross (Blue), seed-member-both (Red, Blue) |
-| `TEAM_MEMBER_CREATOR` | seed-red-member-creator (Red)                           |
-| `PROJECT_ADMIN`       | seed-admin (Blue)                                       |
-| `PROJECT_CONTRIBUTOR` | seed-project-contributor (Red)                          |
-| `PROJECT_GUEST`       | seed-project-guest (Blue)                               |
+| Role                  | User(s)                                                     |
+| --------------------- | ----------------------------------------------------------- |
+| `GENERAL_USER`        | All users (default)                                         |
+| `OPERATIONS_ADMIN`    | seed-admin                                                  |
+| `TEMPLATE_ADMIN`      | seed-admin (Red)                                            |
+| `TEAM_MANAGER`        | seed-manager-blue (Blue), seed-manager-cross (Red)          |
+| `TEAM_MEMBER`         | seed-manager-cross (Blue), seed-member-both (Red, Blue)     |
+| `TEAM_MEMBER_CREATOR` | seed-red-member-creator (Red)                               |
+| `PROJECT_ADMIN`       | seed-admin (Blue)                                           |
+| `PROJECT_CONTRIBUTOR` | seed-project-contributor (Red)                              |
+| `PROJECT_GUEST`       | seed-project-guest (Blue + Red), seed-project-guest-b (Red) |
 
 ---
 

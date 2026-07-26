@@ -5,7 +5,11 @@ Fieldmark (`app`). Primary browser: Chromium (headed locally, headless in CI).
 
 ## Prerequisites
 
-1. Docker + CouchDB healthy (`curl http://localhost:5984/_up`).
+1. Docker + CouchDB + couch-auth-proxy healthy:
+   `docker compose up -d --build couchdb couch-auth-proxy`, then
+   `curl http://localhost:5984/_up` and
+   `curl http://localhost:5985/_couch-auth-proxy/health`
+   (app sync uses `COUCHDB_PUBLIC_URL`, default `:5985`).
 2. Keys/env: `pnpm run generate-local-keys`, copy `.env.dist` → `.env` for root /
    `api` / `web` / `app` / `e2e`.
 3. `pnpm run migrate-with-keys`, then seed:
@@ -101,14 +105,16 @@ Helpers live in `test/helpers/` (see `test/helpers/README.md`). Prefer
 
 ## Personas (seed)
 
-| Env prefix                        | Typical use                                                                                                      |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `TEST_OPERATIONS_ADMIN_*`         | Users admin, global ops; also seeded with Red `TEMPLATE_ADMIN` + Blue `PROJECT_ADMIN` for archive/visibility e2e |
-| `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                                                                          |
-| `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                                                                |
-| `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                                                                |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                                                              |
-| `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                                                                           |
+| Env prefix                           | Typical use                                                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `TEST_OPERATIONS_ADMIN_*`            | Users admin, global ops; also seeded with Red `TEMPLATE_ADMIN` + Blue `PROJECT_ADMIN` for archive/visibility e2e |
+| `TEST_MANAGER_BLUE_*` / `CROSS_*`    | Team/project management                                                                                          |
+| `TEST_MEMBER_BOTH_*`                 | Create within team; projects list                                                                                |
+| `TEST_RED_MEMBER_CREATOR_*`          | Template creation                                                                                                |
+| `TEST_PROJECT_CONTRIBUTOR_*`         | App record create/edit (Red `e2e-minimal` notebook)                                                              |
+| `TEST_PROJECT_GUEST_*`               | Guest A: Blue UI limits + Red auth-proxy sync isolation                                                          |
+| `TEST_PROJECT_GUEST_B_*`             | Guest B on Red — must not sync Guest A’s records                                                                 |
+| `TEST_MANAGER_RED_*` / `ADMIN_RED_*` | Red team virtual manager/admin — full corpus sync parity                                                         |
 
 Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =
 `api/notebooks/sample_notebook.json` (override via `TEST_SEED_NOTEBOOKS`).

@@ -255,7 +255,7 @@ COUCH_URL=http://couchdb:5984
 COUCH_ADMIN_USER=...
 COUCH_ADMIN_PASSWORD=...
 ACL_DB_INCLUDE=/^data-/
-ACL_ROUTE_INCLUDE=pouch-sync,session
+ACL_ROUTE_INCLUDE=pouch-sync,session,root
 ACL_AUTO_INSTALL=true           # proxy owns _design/acl; FAIMS patches dbacl
 ACL_REQUIRE_CREATOR=true        # fail-closed creates (proxy VDU; 1.5.0+)
 COUCH_PRELOAD_DB_INCLUDE=/^data-/  # boot-warm matching DBs (1.6.0+)
@@ -425,7 +425,7 @@ matrix; public Couch is locked down.
 2. **Idempotent repair tool** (`repair-data-db-acl`) to warm proxy + re-apply
    `dbacl` if permission model tokens change.
 3. **Hardening**
-   - `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session`
+   - `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session,root`
    - `ACL_AUTO_INSTALL=true` in prod (proxy owns map/VDU)
    - CORS allowlist
    - Do not publish Couch publicly
@@ -447,7 +447,7 @@ matrix; public Couch is locked down.
 - [x] Cutover runbook: backfill → flip public URL → re-point client remotes (see §13).
 - [x] Ops repair script for `_design/acl` / `dbacl` (`pnpm --filter=@faims3/api run repair-data-db-acl`).
 - [x] Client remote re-point on public URL changeover (`reconcileRemoteCouchUrlAfterListing`); no local wipe.
-- [ ] Focused e2e guest isolation spec (optional follow-up).
+- [x] Focused e2e guest isolation spec (`e2e/test/specs/app/guest-record-isolation.e2e.ts`).
 - [x] Infra AWS CDK: public hostname → proxy; Couch internal-only
       ([CouchAuthProxyAwsCdk](CouchAuthProxyAwsCdk.md); always-on on shared ALB).
 - [ ] Infra DigitalOcean implementation (still open; compose reference complete).
@@ -578,7 +578,8 @@ Keep PRs reviewable; each should leave main green.
 [x] Commit/push; Phase B migration included once proof helpers landed
 [x] Phase B: DATA migration; hardening env; docs; repair script; client cutover
 [x] AWS CDK always-on proxy (CouchAuthProxyAwsCdk) — DigitalOcean still open
-[ ] Optional: focused e2e guest isolation + DigitalOcean proxy coding
+[x] Focused e2e guest isolation (`guest-record-isolation.e2e.ts`)
+[ ] Optional: DigitalOcean proxy coding
 ```
 
 ### Commands (FAIMS repo)

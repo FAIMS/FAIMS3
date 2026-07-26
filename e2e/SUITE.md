@@ -63,14 +63,15 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 
 ### Tier 2 — Lifecycle & invites
 
-| Spec                                     | Covers                                                      |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                        |
-| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                  |
-| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user) |
-| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav          |
-| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav   |
-| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control |
+| Spec                                     | Covers                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                                                       |
+| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                                                 |
+| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user)                                |
+| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav                                         |
+| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav                                  |
+| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control                                |
+| `app/guest-record-isolation.e2e.ts`      | Auth-proxy: guest A/B isolation + contributor/manager/admin/team-member corpus sync on Red |
 
 ### Tier 3 — Admin, permissions, offline UI, exports
 
@@ -100,15 +101,17 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 Credentials live in `e2e/.env.dist` (copy to `e2e/.env`). Dataset:
 [Test Dataset Seeding](../docs/developer/docs/source/markdown/TestDatasetSeeding.md).
 
-| Env prefix                        | Typical use                                                          |
-| --------------------------------- | -------------------------------------------------------------------- |
-| `TEST_OPERATIONS_ADMIN_*`         | Users admin, global ops; Red `TEMPLATE_ADMIN` + Blue `PROJECT_ADMIN` |
-| `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                              |
-| `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                    |
-| `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                    |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                  |
-| `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                               |
-| `TEST_USER_*`                     | Generic member (`seed-user@faims.test`)                              |
+| Env prefix                           | Typical use                                                          |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| `TEST_OPERATIONS_ADMIN_*`            | Users admin, global ops; Red `TEMPLATE_ADMIN` + Blue `PROJECT_ADMIN` |
+| `TEST_MANAGER_BLUE_*` / `CROSS_*`    | Team/project management                                              |
+| `TEST_MEMBER_BOTH_*`                 | Create within team; projects list                                    |
+| `TEST_RED_MEMBER_CREATOR_*`          | Template creation                                                    |
+| `TEST_PROJECT_CONTRIBUTOR_*`         | App record create/edit (Red `e2e-minimal` notebook)                  |
+| `TEST_PROJECT_GUEST_*`               | Guest A: Blue UI limits + Red sync isolation                         |
+| `TEST_PROJECT_GUEST_B_*`             | Guest B on Red — auth-proxy my-only isolation                        |
+| `TEST_MANAGER_RED_*` / `ADMIN_RED_*` | Red team virtual manager/admin corpus sync                           |
+| `TEST_USER_*`                        | Generic member (`seed-user@faims.test`)                              |
 
 Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =
 `api/notebooks/sample_notebook.json` (`TEST_SEED_NOTEBOOKS` override).

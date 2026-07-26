@@ -88,7 +88,7 @@ DigitalOcean still sketches a raw Couch target — treat proxy wiring as a
    COUCH_ADMIN_USER=...
    COUCH_ADMIN_PASSWORD=...
    ACL_DB_INCLUDE=/^data-/
-   ACL_ROUTE_INCLUDE=pouch-sync,session
+   ACL_ROUTE_INCLUDE=pouch-sync,session,root
    ACL_AUTO_INSTALL=true
    ACL_REQUIRE_CREATOR=true
    COUCH_PRELOAD_DB_INCLUDE=/^data-/

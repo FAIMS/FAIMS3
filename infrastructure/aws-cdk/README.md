@@ -38,7 +38,7 @@ Fargate on the shared ALB:
 - **ALB**: Host rule → proxy target group on `:8000`; health check
   `/_couch-auth-proxy/health`.
 - **Upstream**: VPC HTTP to Couch `internalEndpoint`; admin creds via Secrets Manager.
-- **Hardened env**: `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session`,
+- **Hardened env**: `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session,root`,
   `ACL_AUTO_INSTALL=true` (proxy owns `_design/acl`; FAIMS patches `dbacl`),
   `ACL_REQUIRE_CREATOR=true`, `COUCH_PRELOAD_DB_INCLUDE=/^data-/` (boot warm),
   `AUTH_RESOLVE_VIA_COUCH_SESSION=true`,

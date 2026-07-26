@@ -155,7 +155,7 @@ describe('couch-auth-proxy CDK wiring (always on)', () => {
             {Name: 'ACL_DB_INCLUDE', Value: '/^data-/'},
             {
               Name: 'ACL_ROUTE_INCLUDE',
-              Value: 'pouch-sync,session',
+              Value: 'pouch-sync,session,root',
             },
             {Name: 'ACL_AUTO_INSTALL', Value: 'true'},
             {Name: 'ACL_REQUIRE_CREATOR', Value: 'true'},
