@@ -1121,7 +1121,9 @@ describe('Migration System Tests', () => {
           // Omit dbName to exercise URL parsing of db.name
         });
         expect(result.issues).toEqual([]);
-        const acl = await testDataDb.get<{dbacl: {_r: string[]}}>('_design/acl');
+        const acl = await testDataDb.get<{dbacl: {_r: string[]}}>(
+          '_design/acl'
+        );
         expect(acl.dbacl._r.length).toBeGreaterThan(0);
         await testDataDb.get('_design/faims_acl_shape');
       } finally {

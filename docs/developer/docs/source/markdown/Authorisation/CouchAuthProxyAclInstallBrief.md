@@ -40,15 +40,15 @@ proxy start
 
 ## Timing details
 
-| Event | Writes `_design/acl`? |
-| ----- | --------------------- |
-| Proxy process start (no preload env) | No |
-| `COUCH_PRELOAD_DBS=db1,db2` at boot | Yes for those names (ensure + follower) |
-| `COUCH_PRELOAD_DB_INCLUDE=/^data-/` at boot | Yes for matching `/_all_dbs` names (union with `COUCH_PRELOAD_DBS`) |
-| First app/Conductor request that hits that DB through the proxy | Yes if missing |
-| Later requests | No (cache hit); migrate only if stamp/version rules say so |
-| Conductor admin traffic on `COUCHDB_INTERNAL_URL` (bypasses proxy) | **Never** — proxy never sees it |
-| System DBs (`_users`, `_replicator`, `_global_changes`) | Never auto-mutated |
+| Event                                                              | Writes `_design/acl`?                                               |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Proxy process start (no preload env)                               | No                                                                  |
+| `COUCH_PRELOAD_DBS=db1,db2` at boot                                | Yes for those names (ensure + follower)                             |
+| `COUCH_PRELOAD_DB_INCLUDE=/^data-/` at boot                        | Yes for matching `/_all_dbs` names (union with `COUCH_PRELOAD_DBS`) |
+| First app/Conductor request that hits that DB through the proxy    | Yes if missing                                                      |
+| Later requests                                                     | No (cache hit); migrate only if stamp/version rules say so          |
+| Conductor admin traffic on `COUCHDB_INTERNAL_URL` (bypasses proxy) | **Never** — proxy never sees it                                     |
+| System DBs (`_users`, `_replicator`, `_global_changes`)            | Never auto-mutated                                                  |
 
 Idle `data-*` DBs created **after** proxy boot still need a proxy touch
 (Conductor warm / first sync) or a proxy restart with preload to pick them up.

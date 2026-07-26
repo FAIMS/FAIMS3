@@ -21,6 +21,12 @@ export type E2eHarnessProbe = {
   ): Promise<boolean>;
 };
 
+declare global {
+  interface Window {
+    __FAIMS_E2E__?: E2eHarnessProbe;
+  }
+}
+
 async function ensureHarness(): Promise<void> {
   await browser.waitUntil(
     async () =>

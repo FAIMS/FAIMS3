@@ -223,10 +223,9 @@ describe('couch-auth-proxy data DB ACL', function () {
     const warmAuth = Buffer.from(`${COUCH_USER}:${COUCH_PASSWORD}`).toString(
       'base64'
     );
-    const warmRes = await fetch(
-      `${PUBLIC_URL.replace(/\/$/, '')}/${DATA_DB}`,
-      {headers: {Authorization: `Basic ${warmAuth}`}}
-    );
+    const warmRes = await fetch(`${PUBLIC_URL.replace(/\/$/, '')}/${DATA_DB}`, {
+      headers: {Authorization: `Basic ${warmAuth}`},
+    });
     if (!warmRes.ok && warmRes.status !== 503) {
       throw new Error(
         `Failed to warm proxy ACL for ${DATA_DB}: HTTP ${warmRes.status}`
@@ -557,7 +556,14 @@ describe('couch-auth-proxy COUCH_PRELOAD_DB_INCLUDE', function () {
     const repoRoot = path.resolve(__dirname, '../..');
     await execFileAsync(
       'docker',
-      ['compose', 'up', '-d', '--force-recreate', '--no-deps', 'couch-auth-proxy'],
+      [
+        'compose',
+        'up',
+        '-d',
+        '--force-recreate',
+        '--no-deps',
+        'couch-auth-proxy',
+      ],
       {cwd: repoRoot, timeout: 90000}
     );
     for (let i = 0; i < 60; i++) {
@@ -569,8 +575,7 @@ describe('couch-auth-proxy COUCH_PRELOAD_DB_INCLUDE', function () {
 
   before(async function () {
     if (!(await proxyReady())) {
-      const msg =
-        `couch-auth-proxy not reachable at ${PUBLIC_URL}/_couch-auth-proxy/health`;
+      const msg = `couch-auth-proxy not reachable at ${PUBLIC_URL}/_couch-auth-proxy/health`;
       if (process.env.CI === 'true' || process.env.CI === '1') {
         throw new Error(msg);
       }
