@@ -111,6 +111,11 @@ jobs:
           # Pin URLs for the ACL suite (Conductor internal vs app sync proxy).
           sed -i 's|^COUCHDB_INTERNAL_URL=.*|COUCHDB_INTERNAL_URL=http://localhost:5984|' api/.env
           sed -i 's|^COUCHDB_PUBLIC_URL=.*|COUCHDB_PUBLIC_URL=http://localhost:5985|' api/.env
+          # .env.dist ships a placeholder; CouchDB local.ini needs a real secret.
+          COOKIE_SECRET="$(uuidgen | tr -d '-')"
+          sed -i "s|^FAIMS_COOKIE_SECRET=.*|FAIMS_COOKIE_SECRET=${COOKIE_SECRET}|" api/.env
+          # Generates api/couchdb/local.ini (gitignored) required by the CouchDB Dockerfile.
+          pnpm run generate-local-keys
 
       - name: Build shared libraries
         run: npx turbo run build --filter=@faims3/data-model --filter=@faims3/forms
@@ -118,7 +123,7 @@ jobs:
       - name: Start CouchDB + couch-auth-proxy
         run: |
           set -euo pipefail
-          docker compose up -d couchdb couch-auth-proxy
+          docker compose up -d --build couchdb couch-auth-proxy
           for i in $(seq 1 60); do
             if curl -sf http://localhost:5984/_up >/dev/null \
               && curl -sf http://localhost:5985/_couch-auth-proxy/health >/dev/null; then
