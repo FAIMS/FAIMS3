@@ -4,7 +4,8 @@ build
 .turbo
 out
 app/public/manifest.json
-.env
+.env*
+!.env.dist
 .pnpm-store
 __pycache__/
 *.py[cod]
