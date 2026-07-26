@@ -391,7 +391,7 @@ const CouchAuthProxyConfigSchema = z
     /** Container image repository (no tag) */
     image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
     /** Immutable tag / digest pin (must match docker-compose.yml) */
-    imageTag: z.string().default('1.6.0'),
+    imageTag: z.string().default('1.7.0'),
     /** Fargate CPU units */
     cpu: z.number().int().positive().default(512),
     /** Fargate memory in MiB */
@@ -622,11 +622,11 @@ export const ConfigSchema = z.object({
   couch: CouchConfigSchema,
   /**
    * Public sync ACL proxy (always deployed; immediate cutover). Tuning/image
-   * pin only — migrate DATA to v3 promptly after deploy (CouchAuthProxyCutover.md).
+   * pin only — migrate DATA to v2 promptly after deploy (CouchAuthProxyCutover.md).
    */
   couchAuthProxy: CouchAuthProxyConfigSchema.optional().default({
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
-    imageTag: '1.6.0',
+    imageTag: '1.7.0',
     cpu: 512,
     memory: 1024,
     desiredCount: 2,

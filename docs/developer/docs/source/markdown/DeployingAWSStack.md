@@ -826,7 +826,7 @@ stack. Tune the image/size via `couchAuthProxy` in your config JSON (see
 ```json
 "couchAuthProxy": {
   "image": "ghcr.io/peterbaker0/couch-auth-proxy",
-  "imageTag": "1.6.0",
+  "imageTag": "1.7.0",
   "cpu": 512,
   "memory": 1024,
   "desiredCount": 2
@@ -839,7 +839,7 @@ Always-on topology (immediate cutover on deploy):
 - Conductor `COUCHDB_PUBLIC_URL` → that hostname; `COUCHDB_INTERNAL_URL` → VPC Couch
 - Couch `:5984` is **not** registered on the internet-facing ALB (SG: proxy + Conductor only)
 
-**After deploy:** migrate DATA DBs to target version **3** + run
+**After deploy:** migrate DATA DBs to target version **2** + run
 `repair-data-db-acl` promptly (warm proxy `_design/acl`, patch `dbacl`, ensure
 `faims_acl_shape`). Unstamped legacy docs stay member-readable (`r-*`) until
 then — the same effective access as today’s public Couch, not a new regression.

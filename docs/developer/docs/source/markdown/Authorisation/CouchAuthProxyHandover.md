@@ -211,11 +211,11 @@ Keep members = roles granting `READ_MY_PROJECT_RECORDS`. Membership answers
 Couch runs VDUs from **all** design docs. Full table and ownership rules:
 [AclValidationLayering](AclValidationLayering.md).
 
-| Design doc               | Responsibility                                                            |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `_design/permissions`     | Existing my/all write rules on `created_by`; forbid changing `created_by` |
+| Design doc                | Responsibility                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `_design/permissions`     | Existing my/all write rules on `created_by`; forbid changing `created_by`                      |
 | `_design/acl`             | Proxy protocol: forge/immutable `creator` / owners / acl / parent; require-creator when env on |
-| `_design/faims_acl_shape` | FAIMS: `parent` must equal `record_id` when set                           |
+| `_design/faims_acl_shape` | FAIMS: `parent` must equal `record_id` when set                                                |
 
 On create of `rec-*`, set `created_by` and `creator` to the **authenticated**
 user (ACL VDU rejects spoofed `creator`). Do not put FAIMS field rules into
@@ -274,14 +274,14 @@ still expose Couch for admin debugging).
 
 ### 5.1 `@faims3/data-model` — first-class ACL
 
-| Area                                                                                    | Change                                                                                                                                                                            |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Types (`types.ts`, Zod engine schemas)                                                  | Add required `creator: string` on data-DB docs for the clean schema; add optional/required `parent?: string` on non-record docs. Do **not** overload FAIMS `relationship.parent`. |
-| ACL helpers (`data_storage/dataDB/acl.ts`)                                              | `buildDbAclOverlay`, `ensureDataDbAclOverlay`, stamp helpers. Never vendor proxy map/VDU.                                                                                        |
-| `initDataDB` / `dataDbDesignDocuments`                                                  | FAIMS design docs only (`permissions`, `faims_acl_shape`, …). Conductor warms proxy + patches `dbacl`.                                                                           |
-| Database engine create paths                                                            | Every `createRecord` / `createRevision` / AVP write / attachment create calls stamp helpers. **No** “if missing creator” branches here.                                           |
-| Attachment service                                                                      | Stamp `creator` + `parent: recordId` on all attachment document constructors.                                                                                                     |
-| Permission docs                                                                         | Update `PermissionModel.md` with a short “Sync enforcement” section pointing here.                                                                                                |
+| Area                                       | Change                                                                                                                                                                            |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Types (`types.ts`, Zod engine schemas)     | Add required `creator: string` on data-DB docs for the clean schema; add optional/required `parent?: string` on non-record docs. Do **not** overload FAIMS `relationship.parent`. |
+| ACL helpers (`data_storage/dataDB/acl.ts`) | `buildDbAclOverlay`, `ensureDataDbAclOverlay`, stamp helpers. Never vendor proxy map/VDU.                                                                                         |
+| `initDataDB` / `dataDbDesignDocuments`     | FAIMS design docs only (`permissions`, `faims_acl_shape`, …). Conductor warms proxy + patches `dbacl`.                                                                            |
+| Database engine create paths               | Every `createRecord` / `createRevision` / AVP write / attachment create calls stamp helpers. **No** “if missing creator” branches here.                                           |
+| Attachment service                         | Stamp `creator` + `parent: recordId` on all attachment document constructors.                                                                                                     |
+| Permission docs                            | Update `PermissionModel.md` with a short “Sync enforcement” section pointing here.                                                                                                |
 
 Recommended helper shapes (illustrative):
 
@@ -343,7 +343,7 @@ export function buildDbAclOverlay(projectId: string): DbAclOverlay {
 
 ### 5.5 Migrations only (legacy)
 
-DATA DB is `defaultVersion: 1, targetVersion: 3` (`_design/faims_acl_shape` on v3)
+DATA DB is `defaultVersion: 1, targetVersion: 2`
 (`library/data-model/src/data_storage/migrations/migrations.ts`). Keeping
 `defaultVersion` at **1** (not 2) is intentional: data DBs that never received
 a migrations document still run the idempotent 1→2 backfill.
@@ -359,11 +359,9 @@ exists; ensure `_design/faims_acl_shape`.
    `__faims_acl_orphan__` when `created_by` is missing — fail-closed).
 3. For each doc with `record_id` (frev/avp/attachment): set
    `creator = created_by` if missing; set `parent = record_id` if missing.
-4. Never strip FAIMS fields; never rewrite role arrays onto every doc.
-5. Idempotent: already-stamped docs ⇒ `action: 'none'`.
-
-**DATA v2 → v3** (implemented): ensure `_design/faims_acl_shape` for DBs that
-finished v2 before that ddoc existed (document loop is a no-op).
+4. Ensure `_design/faims_acl_shape` (FAIMS `record_id` ↔ `parent` VDU).
+5. Never strip FAIMS fields; never rewrite role arrays onto every doc.
+6. Idempotent: already-stamped docs ⇒ `action: 'none'`.
 
 Conductor must enqueue DATA migrations with the **logical** Couch name
 (`data-{projectId}`), not `pouchDb.name` (a URL for remote handles).
@@ -422,7 +420,7 @@ matrix; public Couch is locked down.
 
 **Work order.**
 
-1. **DATA DB migration v1→v3** (backfill `creator`/`parent`; patch `dbacl`
+1. **DATA DB migration v1→v2** (backfill `creator`/`parent`; patch `dbacl`
    when proxy ddoc exists; ensure `_design/faims_acl_shape`).
 2. **Idempotent repair tool** (`repair-data-db-acl`) to warm proxy + re-apply
    `dbacl` if permission model tokens change.
@@ -444,7 +442,7 @@ matrix; public Couch is locked down.
 
 **Phase B exit criteria.**
 
-- [x] Migration upgrades a fixture DB of unstamped docs to enforced ACL (DATA v1→v3).
+- [x] Migration upgrades a fixture DB of unstamped docs to enforced ACL (DATA v1→v2).
 - [x] Unit + integration coverage for guest/contributor matrix (e2e focused spec optional follow-up).
 - [x] Cutover runbook: backfill → flip public URL → re-point client remotes (see §13).
 - [x] Ops repair script for `_design/acl` / `dbacl` (`pnpm --filter=@faims3/api run repair-data-db-acl`).
@@ -559,13 +557,13 @@ users. Document env in `e2e/.env.dist`.
 
 Keep PRs reviewable; each should leave main green.
 
-| PR  | Scope                                                                                                      | Phase |
-| --- | ---------------------------------------------------------------------------------------------------------- | ----- |
-| 1   | ACL helpers + types + engine/attachment stamping + unit tests; FAIMS ddocs (not vendored proxy map)        | A     |
-| 2   | Compose proxy (`ACL_AUTO_INSTALL`) + env wiring + integration tests (guest/contributor)                    | A     |
-| 3   | DATA migration v1→v3 + migration tests                                                                     | B     |
-| 4   | E2E guest isolation + docs (`PermissionModel`, layering, README/compose)                                   | B     |
-| 5   | Infra hardening (CDK/DO); client local wipe deliberately skipped (known limitation)                        | B     |
+| PR  | Scope                                                                                               | Phase |
+| --- | --------------------------------------------------------------------------------------------------- | ----- |
+| 1   | ACL helpers + types + engine/attachment stamping + unit tests; FAIMS ddocs (not vendored proxy map) | A     |
+| 2   | Compose proxy (`ACL_AUTO_INSTALL`) + env wiring + integration tests (guest/contributor)             | A     |
+| 3   | DATA migration v1→v2 + migration tests                                                              | B     |
+| 4   | E2E guest isolation + docs (`PermissionModel`, layering, README/compose)                            | B     |
+| 5   | Infra hardening (CDK/DO); client local wipe deliberately skipped (known limitation)                 | B     |
 
 ---
 
@@ -666,11 +664,11 @@ verify commands, truthful AWS rollback, and failure modes.
 promptly. Existing public Couch already exposes member-readable data DBs; a
 brief `r-*` window on unstamped docs is not worse than today.
 
-1. **Deploy** stamp-on-write + init + DATA v1→v3 + always-on proxy (compose /
+1. **Deploy** stamp-on-write + init + DATA v1→v2 + always-on proxy (compose /
    AWS CDK). Public sync hits the proxy as soon as the deploy lands.
 2. **Migrate all data DBs** (`pnpm run migrate-with-keys` / Conductor startup
    migrate). Confirm every DATA migrations doc is keyed by `data-{projectId}`
-   at version **3**.
+   at version **2**.
 3. **Repair / verify `_design/acl` + `dbacl`**:
    `pnpm --filter=@faims3/api run repair-data-db-acl` (`--dry-run` supported).
 4. Keep `COUCHDB_INTERNAL_URL` on Couch for Conductor admin. Do not publish
@@ -693,7 +691,7 @@ brief `r-*` window on unstamped docs is not worse than today.
   `__faims_acl_orphan__` (fail-closed for guests; ALL roles retain access via
   `dbacl`).
 - Backup restore stamps missing ACL fields on data-DB corpus so pre-ACL
-  backups cannot reintroduce `r-*` docs after migrations are already at v3.
+  backups cannot reintroduce `r-*` docs after migrations are already at v2.
 - Proxy health endpoint: `/_couch-auth-proxy/health` (compose +
   `localdev.sh` wait on this). Prefer this over any `/ready` alias.
 - AWS CDK always-on proxy is implemented; DigitalOcean still needs the public

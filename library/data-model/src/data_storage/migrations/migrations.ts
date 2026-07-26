@@ -64,9 +64,9 @@ import {
 const ensuredDataAclDesignDocs = new Set<string>();
 
 /**
- * DATA DB v1 → v2: stamp couch-auth-proxy ACL fields and patch `dbacl` onto
- * an existing proxy-managed `_design/acl` (+ ensure FAIMS
- * `_design/faims_acl_shape`).
+ * DATA DB v1 → v2: stamp couch-auth-proxy ACL fields, patch `dbacl` onto an
+ * existing proxy-managed `_design/acl`, and ensure FAIMS
+ * `_design/faims_acl_shape`.
  *
  * - `rec-*`: `creator = created_by` when missing (orphan fallback if needed)
  * - docs with `record_id` (frev/avp/att): `creator` + `parent = record_id`
@@ -105,21 +105,6 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
     action: 'update',
     updatedRecord: updated as PouchDB.Core.ExistingDocument<any>,
   };
-};
-
-/**
- * DATA DB v2 → v3: ensure `_design/faims_acl_shape` on DBs that already ran
- * v1→v2 before that ddoc existed. Document loop is a no-op.
- */
-export const dataV2toV3Migration: MigrationFunc = async (_doc, context) => {
-  if (context?.db && context.dbName) {
-    const projectId = projectIdFromDataDbName(context.dbName);
-    if (projectId && !ensuredDataAclDesignDocs.has(context.dbName)) {
-      await ensureDataDbAclOverlay({db: context.db, projectId});
-      ensuredDataAclDesignDocs.add(context.dbName);
-    }
-  }
-  return {action: 'none'};
 };
 
 /**
@@ -702,13 +687,12 @@ export const authV4toV5Migration: MigrationFunc = doc => {
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
-  // v2 = ACL fields on clean path + patch `dbacl` when proxy `_design/acl` exists.
-  // v3 = ensure `_design/faims_acl_shape` (FAIMS parent↔record_id VDU).
-  // defaultVersion stays 1 so any data DB without a migrations doc (including
-  // DBs that were never queued before the data-migration enqueue fix) still
-  // runs the idempotent 1→2 backfill. New DBs already stamp via init/writes;
-  // the migrator is a no-op on already-stamped docs and still ensures FAIMS ddocs.
-  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 3},
+  // v2 = ACL stamps + patch `dbacl` when proxy `_design/acl` exists + ensure
+  // `_design/faims_acl_shape`. defaultVersion stays 1 so any data DB without a
+  // migrations doc still runs the idempotent 1→2 backfill. New DBs already
+  // stamp via init/writes; the migrator is a no-op on already-stamped docs and
+  // still ensures FAIMS ddocs.
+  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
@@ -723,16 +707,8 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     from: 1,
     to: 2,
     description:
-      'Stamps couch-auth-proxy ACL fields (creator/parent) and patches dbacl when proxy _design/acl exists',
+      'Stamps couch-auth-proxy ACL fields (creator/parent), patches dbacl when proxy _design/acl exists, ensures _design/faims_acl_shape',
     migrationFunction: dataV1toV2Migration,
-  },
-  {
-    dbType: DatabaseType.DATA,
-    from: 2,
-    to: 3,
-    description:
-      'Ensures _design/faims_acl_shape (FAIMS record_id ↔ parent VDU)',
-    migrationFunction: dataV2toV3Migration,
   },
   {
     dbType: DatabaseType.PEOPLE,

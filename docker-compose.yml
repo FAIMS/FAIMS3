@@ -97,7 +97,7 @@ services:
   # map/VDU + ACL_REQUIRE_CREATOR). FAIMS patches `dbacl` only; stamp shape is
   # `_design/faims_acl_shape` (record_id ↔ parent). Prefer digest pins in prod.
   couch-auth-proxy:
-    image: ghcr.io/peterbaker0/couch-auth-proxy:1.6.0
+    image: ghcr.io/peterbaker0/couch-auth-proxy:1.7.0
     environment:
       COUCH_URL: http://couchdb:5984
       # Must match Couch admin in api/.env (COUCHDB_USER / COUCHDB_PASSWORD).

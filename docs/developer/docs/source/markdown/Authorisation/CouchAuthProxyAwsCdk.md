@@ -24,7 +24,7 @@ local `docker-compose.yml` (reference topology). This document is the
    (bypass proxy).
 3. CouchDB port `5984` is **not** on the internet-facing ALB and is reachable
    only from the proxy and Conductor security groups.
-4. Cutover is immediate on deploy; migrate DATA DBs to target version **3**
+4. Cutover is immediate on deploy; migrate DATA DBs to target version **2**
    promptly afterward (see CouchAuthProxyCutover).
 
 **Non-goals (v1).**
@@ -176,7 +176,7 @@ Proxy is the **sync read boundary**. Keep:
 - API `canReadRecord`
 - App `shouldDisplayRecord` (UX only)
 
-Deploy puts the proxy on immediately; migrate DATA to v3 promptly afterward.
+Deploy puts the proxy on immediately; migrate DATA to v2 promptly afterward.
 Unstamped docs stay member-readable (`r-*`) until migrate — same as today’s
 public Couch.
 
@@ -209,7 +209,7 @@ export interface CouchAuthProxyProps {
   couchSecurityGroup: ec2.ISecurityGroup;
   corsOrigins: string[];
   image: string; // ghcr.io/peterbaker0/couch-auth-proxy
-  imageTag: string; // pin digest/tag matching docker-compose.yml (1.6.0+)
+  imageTag: string; // pin digest/tag matching docker-compose.yml (1.7.0+)
   cpu: number;
   memory: number;
   desiredCount: number;
@@ -320,7 +320,7 @@ Frontend CSP can keep `https://${domains.couch}` — hostname unchanged.
 ```json
 "couchAuthProxy": {
   "image": "ghcr.io/peterbaker0/couch-auth-proxy",
-  "imageTag": "1.6.0",
+  "imageTag": "1.7.0",
   "cpu": 512,
   "memory": 1024,
   "desiredCount": 2
@@ -328,7 +328,7 @@ Frontend CSP can keep `https://${domains.couch}` — hostname unchanged.
 ```
 
 Zod: section optional only because field defaults apply when omitted; the
-proxy is **always deployed** (no `enabled` flag). Pin `imageTag` to **1.6.0**
+proxy is **always deployed** (no `enabled` flag). Pin `imageTag` to **1.7.0**
 (same as `docker-compose.yml`).
 
 `CORS_ORIGINS` includes `https://faims.<base>`, `https://web.<base>`, plus
@@ -346,11 +346,11 @@ behaviour. Prefer deploy-then-migrate over a staged ALB flip.
 
 Align with [CouchAuthProxyCutover](CouchAuthProxyCutover.md):
 
-1. **Deploy CDK + application build** (stamp-on-write, DATA migrations to v3,
+1. **Deploy CDK + application build** (stamp-on-write, DATA migrations to v2,
    repair script). ALB `couch.*` → proxy; Conductor gets PUBLIC=proxy /
    INTERNAL=VPC Couch; Couch leaves the public ALB.
 2. **Migrate promptly** (`MIGRATE_NOTEBOOKS_ON_STARTUP` / `migrate-with-keys`)
-   until every `data-*` is at version **3**, then
+   until every `data-*` is at version **2**, then
    `pnpm --filter=@faims3/api run repair-data-db-acl`.
 3. **Validate** through the proxy hostname:
    - `GET /_couch-auth-proxy/health` → 200
@@ -383,7 +383,7 @@ add “healthy host &lt; 1” on the proxy TG.
 
 ## 8. Image supply chain
 
-- Pin compose + CDK to the same immutable tag: **`1.6.0`**, with
+- Pin compose + CDK to the same immutable tag: **`1.7.0`**, with
   `ACL_REQUIRE_CREATOR=true` and `COUCH_PRELOAD_DB_INCLUDE=/^data-/`. The image
   owns `_design/acl` map/VDU; FAIMS patches `dbacl` and installs
   `_design/faims_acl_shape` / `_design/permissions` — see
@@ -415,7 +415,7 @@ add “healthy host &lt; 1” on the proxy TG.
 ```
 
 **CDK construct work is done; proxy is always on.** After deploy, migrate every
-`data-*` DB to version **3** promptly — see
+`data-*` DB to version **2** promptly — see
 [CouchAuthProxyCutover](CouchAuthProxyCutover.md).
 
 ---
@@ -441,16 +441,16 @@ Conductor env must gain an internal Couch URL (currently only
 
 ## 11. Decision summary
 
-| Decision         | Choice                                                                  |
-| ---------------- | ----------------------------------------------------------------------- |
-| Proxy runtime    | ECS Fargate on shared ALB                                               |
-| Public hostname  | Keep `couch.<baseDomain>` (CSP/URL stable)                              |
-| Couch public ALB | Remove after cutover                                                    |
-| Conductor→Couch  | VPC SG + internal HTTP URL                                              |
-| Admin creds      | Existing Secrets Manager secret                                         |
+| Decision         | Choice                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Proxy runtime    | ECS Fargate on shared ALB                                                                                           |
+| Public hostname  | Keep `couch.<baseDomain>` (CSP/URL stable)                                                                          |
+| Couch public ALB | Remove after cutover                                                                                                |
+| Conductor→Couch  | VPC SG + internal HTTP URL                                                                                          |
+| Admin creds      | Existing Secrets Manager secret                                                                                     |
 | ACL scope        | `ACL_DB_INCLUDE=/^data-/`, `ACL_AUTO_INSTALL=true`, `ACL_REQUIRE_CREATOR=true`, `COUCH_PRELOAD_DB_INCLUDE=/^data-/` |
-| Cutover          | Immediate on deploy; migrate DATA to v3 promptly afterward              |
-| Rollback         | Code change to re-attach Couch TG (no `enabled` flag; reopens read gap) |
+| Cutover          | Immediate on deploy; migrate DATA to v2 promptly afterward                                                          |
+| Rollback         | Code change to re-attach Couch TG (no `enabled` flag; reopens read gap)                                             |
 
 ---
 

@@ -25,9 +25,9 @@ export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 // ============================================================================
 // Record Document
 // ============================================================================
-// Schema versions track the DATA ACL cutover (migrations target v3).
+// Schema versions track the DATA ACL cutover (migrations target v2).
 // On-disk `record_format_version` remains a numeric format marker; ACL fields
-// are added by DATA v1→v2 + clean write stamps (`faims_acl_shape` on v3).
+// are added by DATA v1→v2 + clean write stamps (`faims_acl_shape` in that step).
 //
 // `creator` / `parent` stay **optional on parse** even for the post-ACL shape.
 // Write paths always stamp via `stampRecordAcl` / `stampChildAcl`. With

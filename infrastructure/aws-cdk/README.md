@@ -44,11 +44,11 @@ Fargate on the shared ALB:
   `AUTH_RESOLVE_VIA_COUCH_SESSION=true`,
   `CORS_ORIGINS` from faims + web HTTPS hosts plus Capacitor WebView origins
   (`https://localhost`, `capacitor://localhost`).
-- **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:1.6.0`
+- **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:1.7.0`
   (must match `docker-compose.yml` — image is source of truth for ACL map/VDU).
 
 **Deploy-then-migrate:** CDK deploy puts the proxy on immediately (intentional
-immediate cutover). Migrate DATA DBs to version **3** + `repair-data-db-acl`
+immediate cutover). Migrate DATA DBs to version **2** + `repair-data-db-acl`
 as soon as Conductor is up. Unstamped legacy docs remain member-readable
 (`r-*`) until migrate — same effective access as today’s public Couch. See
 [AclValidationLayering](../../docs/developer/docs/source/markdown/Authorisation/AclValidationLayering.md),
@@ -398,10 +398,10 @@ Note that this validation is at a schema level, it might not catch improperly fo
       - `emailAddress`: Email address to send alarm notifications
 - `couchAuthProxy`: Public Pouch sync ACL proxy (**always deployed**). Section
   is optional in JSON only because image/cpu defaults apply when omitted.
-  Deploy is an immediate cutover; migrate DATA DBs to v3 promptly afterward —
+  Deploy is an immediate cutover; migrate DATA DBs to v2 promptly afterward —
   see CouchAuthProxyCutover.md.
   - `image`: (default `ghcr.io/peterbaker0/couch-auth-proxy`) Image repository
-  - `imageTag`: (default `1.6.0`) Pin matching `docker-compose.yml`
+  - `imageTag`: (default `1.7.0`) Pin matching `docker-compose.yml`
   - `cpu`: (default `512`) Fargate CPU units
   - `memory`: (default `1024`) Fargate memory MiB
   - `desiredCount`: (default `2`) Desired task count

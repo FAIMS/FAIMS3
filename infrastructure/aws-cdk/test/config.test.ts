@@ -186,7 +186,7 @@ function minimalStackConfig(overrides: Record<string, unknown> = {}) {
 describe('ConfigSchema couchAuthProxy', () => {
   it('applies defaults when couchAuthProxy is omitted', () => {
     const parsed = ConfigSchema.parse(minimalStackConfig());
-    expect(parsed.couchAuthProxy.imageTag).toBe('1.6.0');
+    expect(parsed.couchAuthProxy.imageTag).toBe('1.7.0');
     expect(parsed.couchAuthProxy.image).toBe(
       'ghcr.io/peterbaker0/couch-auth-proxy'
     );
@@ -202,7 +202,7 @@ describe('ConfigSchema couchAuthProxy', () => {
       })
     );
     expect(parsed.couchAuthProxy.cpu).toBe(512);
-    expect(parsed.couchAuthProxy.imageTag).toBe('1.6.0');
+    expect(parsed.couchAuthProxy.imageTag).toBe('1.7.0');
   });
 
   it('accepts a custom image pin', () => {

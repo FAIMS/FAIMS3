@@ -22,7 +22,7 @@ the VDU on next warm.
 ACL_REQUIRE_CREATOR=true
 ```
 
-Image pin: `ghcr.io/peterbaker0/couch-auth-proxy:1.6.0` (match compose + CDK;
+Image pin: `ghcr.io/peterbaker0/couch-auth-proxy:1.7.0` (match compose + CDK;
 require-creator itself landed in **1.5.0**).
 
 FAIMS `_design/faims_acl_shape` owns only `record_id` ↔ `parent`.
