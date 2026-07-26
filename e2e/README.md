@@ -107,7 +107,7 @@ Helpers live in `test/helpers/` (see `test/helpers/README.md`). Prefer
 | `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                                                                          |
 | `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                                                                |
 | `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                                                                |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                                                              |
+| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit and overview-map geometry (Red `e2e-minimal` notebook)                                    |
 | `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                                                                           |
 
 Default seed notebooks: Red = `api/notebooks/e2e-minimal.json`, Blue =

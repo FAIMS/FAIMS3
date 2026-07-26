@@ -57,12 +57,37 @@
           },
           "persistent": false,
           "displayParent": false
+        },
+        "location": {
+          "component-namespace": "faims-custom",
+          "component-name": "TakePoint",
+          "type-returned": "faims-pos::Location",
+          "component-parameters": {
+            "label": "Location",
+            "name": "location",
+            "buttonLabelText": "Take Point",
+            "helperText": "Capture the current location",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false,
+          "displayParent": false
         }
       },
       "views": {
         "Main-Section": {
           "label": "Details",
-          "fields": ["hridMain", "notes"]
+          "fields": ["hridMain", "notes", "location"]
         }
       },
       "viewsets": {
