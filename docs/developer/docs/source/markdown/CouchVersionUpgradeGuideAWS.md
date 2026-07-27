@@ -60,11 +60,11 @@ pnpm build   # or npx turbo build
 With **AWS credentials active**, build `api/.env` from the Conductor task
 (Secrets Manager values included). Later steps reuse this file.
 
-From `api`:
+From `infrastructure/aws-cdk`:
 
 ```bash
-./scripts/env-from-cdk-stack.sh <stack-name> -o .env --region <region>
-# e.g. ./scripts/env-from-cdk-stack.sh DASS-stage -o .env -r ap-southeast-2
+./scripts/env-from-cdk-stack.sh <stack-name> -o ../../api/.env --region <region>
+# e.g. ./scripts/env-from-cdk-stack.sh DASS-stage -o ../../api/.env -r ap-southeast-2
 ```
 
 Confirm `api/.env` includes the region (needed for Secrets Manager / JWT key

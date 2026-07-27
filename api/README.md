@@ -126,7 +126,8 @@ pnpm run load-templates
 ## Dump user emails (ops)
 
 For maintenance notices, dump addresses from the people DB (requires `.env`
-pointing at the target Couch, e.g. via `./scripts/env-from-cdk-stack.sh`):
+pointing at the target Couch, e.g. via
+`infrastructure/aws-cdk/scripts/env-from-cdk-stack.sh`):
 
 ```bash
 pnpm run dump-user-emails                 # one email per line (stdout)
