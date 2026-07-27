@@ -58,7 +58,11 @@ import {
   getTemplate,
   getTemplateIdsByTeamId,
 } from '../src/couchdb/templates';
-import {createUser, saveCouchUser} from '../src/couchdb/users';
+import {
+  createUser,
+  getExpressUserFromEmailOrUserId,
+  saveCouchUser,
+} from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
 import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
@@ -226,7 +230,7 @@ describe('Team integration with templates and projects', () => {
     expect(projectDocWithoutTeam.ownedByTeamId).to.be.undefined;
   });
 
-  it('allows team members to create resources in their team', async () => {
+  it('allows team members to create and retrieve resources in their team', async () => {
     // Create a team
     const team = await createTeam(app, {
       teamName: 'Permission Team',
@@ -334,7 +338,29 @@ describe('Team integration with templates and projects', () => {
         teamId: team._id,
       }),
       managerToken
-    ).expect(200);
+    )
+      .expect(200)
+      .then(async res => {
+        // And if we can create them, we should be able to fetch them as well
+        const projectId = res.body.notebook;
+
+        // need to update the token to get any new permissions
+        const updatedUser = await getExpressUserFromEmailOrUserId(user._id);
+        const updatedToken = await generateJwtFromUser({
+          user: updatedUser!,
+          signingKey,
+        });
+
+        await requestAuthAndType(
+          request(app).get(`${NOTEBOOKS_API_BASE}/${projectId}`),
+          updatedToken
+        )
+          .expect(200)
+          .expect(res => {
+            const project = res.body;
+            expect(project).to.not.be.null;
+          });
+      });
     // Try to create a template in the team using the API
     await requestAuthAndType(
       request(app)
@@ -345,6 +371,114 @@ describe('Team integration with templates and projects', () => {
           teamId: team._id,
         }),
       managerToken
+    )
+      .expect(200)
+      .then(async res => {
+        const template_id = res.body._id;
+        // need to update the token to get any new permissions
+        const updatedUser = await getExpressUserFromEmailOrUserId(user._id);
+        const updatedToken = await generateJwtFromUser({
+          user: updatedUser!,
+          signingKey,
+        });
+
+        await requestAuthAndType(
+          request(app).get(`${TEMPLATE_API_BASE}/${template_id}`),
+          updatedToken
+        )
+          .expect(200)
+          .expect(res => {
+            const templates = res.body;
+            expect(templates).to.not.be.null;
+          });
+      });
+  });
+
+  it('gives team managers template-manager access and team admins the extra delete permission', async () => {
+    const team = await createTeam(app, {
+      teamName: 'Template Permission Team',
+      description: 'A team for template permission tests',
+    });
+
+    const template = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...sampleCreateTemplatePayload('team-owned template'),
+          name: 'team-owned template',
+          teamId: team._id,
+        } satisfies PostCreateTemplateInput),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    const [user, err] = await createUser({
+      username: 'templatepermmanager',
+      name: 'Template Permission Manager',
+    });
+
+    expect(err).to.equal('');
+    expect(user).to.not.be.null;
+
+    if (!user) {
+      throw new Error('User creation failed ' + err);
+    }
+
+    addTeamRole({
+      user,
+      teamId: team._id,
+      role: Role.TEAM_MANAGER,
+    });
+    await saveCouchUser(user);
+
+    const signingKey = await keyService.getSigningKey();
+    const refreshedManagerUser = await getExpressUserFromEmailOrUserId(
+      user._id
+    );
+    const managerToken = await generateJwtFromUser({
+      user: refreshedManagerUser!,
+      signingKey,
+    });
+
+    await requestAuthAndType(
+      request(app).get(`${TEMPLATE_API_BASE}/${template._id}`),
+      managerToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}/archive`).send({
+        archive: true,
+      }),
+      managerToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app).post(`${TEMPLATE_API_BASE}/${template._id}/delete`),
+      managerToken
+    ).expect(401);
+
+    removeTeamRole({
+      user,
+      teamId: team._id,
+      role: Role.TEAM_MANAGER,
+    });
+    addTeamRole({
+      user,
+      teamId: team._id,
+      role: Role.TEAM_ADMIN,
+    });
+    await saveCouchUser(user);
+
+    const refreshedAdminUser = await getExpressUserFromEmailOrUserId(user._id);
+    const adminTokenForTemplate = await generateJwtFromUser({
+      user: refreshedAdminUser!,
+      signingKey,
+    });
+
+    await requestAuthAndType(
+      request(app).post(`${TEMPLATE_API_BASE}/${template._id}/delete`),
+      adminTokenForTemplate
     ).expect(200);
   });
 
@@ -671,6 +805,14 @@ describe('Team integration with templates and projects', () => {
     );
 
     expect(hasProjectManagerVirtual).to.be.true;
+
+    // Check that virtual roles include template manager role
+    const hasTemplateManagerVirtual = virtualRolesManager.some(
+      role =>
+        role.resourceId === template._id && role.role === Role.TEMPLATE_MANAGER
+    );
+
+    expect(hasTemplateManagerVirtual).to.be.true;
 
     // Test with team admin role (should grant PROJECT_ADMIN and TEMPLATE_ADMIN virtually)
     removeTeamRole({

@@ -971,6 +971,7 @@ export enum Role {
   // TEMPLATE ROLES
   // ================
   TEMPLATE_ADMIN = 'TEMPLATE_ADMIN',
+  TEMPLATE_MANAGER = 'TEMPLATE_MANAGER',
   TEMPLATE_GUEST = 'TEMPLATE_GUEST',
 
   // TEAM ROLES
@@ -1072,8 +1073,14 @@ export const roleDetails: Record<Role, RoleDetails> = {
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEMPLATE,
   },
-  [Role.TEMPLATE_GUEST]: {
+  [Role.TEMPLATE_MANAGER]: {
     name: 'Template Manager',
+    description: 'View, update and archive a template.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEMPLATE,
+  },
+  [Role.TEMPLATE_GUEST]: {
+    name: 'Template Guest',
     description: 'Guest access to a template.',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEMPLATE,
@@ -1207,15 +1214,18 @@ export const roleActions: Record<
   [Role.TEMPLATE_GUEST]: {
     actions: [Action.READ_TEMPLATE_DETAILS],
   },
-  [Role.TEMPLATE_ADMIN]: {
+  [Role.TEMPLATE_MANAGER]: {
     actions: [
       Action.UPDATE_TEMPLATE_DETAILS,
       Action.CHANGE_TEMPLATE_TEAM,
       Action.UPDATE_TEMPLATE_UISPEC,
       Action.CHANGE_TEMPLATE_STATUS,
-      Action.DELETE_TEMPLATE,
     ],
     inheritedRoles: [Role.TEMPLATE_GUEST],
+  },
+  [Role.TEMPLATE_ADMIN]: {
+    actions: [Action.DELETE_TEMPLATE],
+    inheritedRoles: [Role.TEMPLATE_MANAGER],
   },
 
   // GLOBAL ROLES
@@ -1370,7 +1380,12 @@ export const roleActions: Record<
     // NOTE this is a bit of a permission leak here re: general creator
     inheritedRoles: [Role.TEAM_MEMBER],
     // Projects owned by team -> manager
-    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_MANAGER]]]),
+    virtualRoles: new Map([
+      // Projects owned by team -> manager
+      [Resource.PROJECT, [Role.PROJECT_MANAGER]],
+      // Template owned by team -> manager
+      [Resource.TEMPLATE, [Role.TEMPLATE_MANAGER]],
+    ]),
   },
 
   [Role.TEAM_ADMIN]: {
@@ -1386,7 +1401,7 @@ export const roleActions: Record<
     ],
     inheritedRoles: [Role.TEAM_MANAGER],
     virtualRoles: new Map([
-      // Projects owned by team -> manager
+      // Projects owned by team -> admin
       [Resource.PROJECT, [Role.PROJECT_ADMIN]],
       // Template owned by team -> admin
       [Resource.TEMPLATE, [Role.TEMPLATE_ADMIN]],

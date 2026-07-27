@@ -125,7 +125,7 @@
     "@vitejs/plugin-react-swc": "^4.0.1",
     "@vitest/coverage-v8": "^2.1.8",
     "env-cmd": "^10.1.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "fast-check": "2.25.0",
     "gts": "^5.3.1",
     "jsdoc": "^4.0.2",

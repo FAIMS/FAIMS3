@@ -50,21 +50,27 @@ and {{notebooks}} in the team.
 | Act as {{notebook}} manager for any {{notebook}} owned by the team       |   ❌   |        ❌        |   ✅    |      ✅       |
 | Add or remove managers to the team                                       |   ❌   |        ❌        |   ❌    |      ✅       |
 | Act as {{notebook}} administrator for any {{notebook}} owned by the team |   ❌   |        ❌        |   ❌    |      ✅       |
+| Act as template manager for any template owned by the team               |   ❌   |        ❌        |   ✅    |      ✅       |
 | Act as template administrator for any template owned by the team         |   ❌   |        ❌        |   ❌    |      ✅       |
 
-> ⚠️ **Note**: _Team Member (Creator)_ can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}. They would become _{{Notebook}} Administrator_ for any {{notebooks}} that they create.
+> ⚠️ **Note**: _Team Member (Creator)_ can create {{notebooks}} but does NOT
+> automatically get access to existing team {{notebooks}}. This is by design for
+> teaching environments where students create isolated {{notebooks}}. They would
+> become _{{Notebook}} Administrator_ for any {{notebooks}} that they create.
 
 ### Template Roles
 
 Template roles give a user permission to work on a particular template.
 
-| Permission                                      | Guest | Administrator |
-| :---------------------------------------------- | :---: | :-----------: |
-| View the template                               |  ✅   |      ✅       |
-| update all details of a template                |  ❌   |      ✅       |
-| archive a template so it is no longer available |  ❌   |      ✅       |
+| Permission                                      | Guest | Manager | Administrator |
+| :---------------------------------------------- | :---: | :-----: | :-----------: |
+| View the template                               |  ✅   |   ✅    |      ✅       |
+| update all details of a template                |  ❌   |   ✅    |      ✅       |
+| archive a template so it is no longer available |  ❌   |   ✅    |      ✅       |
+| delete the template after archiving             |  ❌   |   ❌    |      ✅       |
 
-> 💡 **Note**: Template roles are primarily managed through team membership. Team Administrators act as template administrators for team templates.
+> 💡 **Note**: Template roles are primarily managed through team membership.
+> E.g. Team Administrators act as template administrators for team templates.
 
 ### {{Notebook}} Roles
 
@@ -82,4 +88,9 @@ Template roles give a user permission to work on a particular template.
 | can export data from the {{notebook}} in various formats                                        |  ❌   |     ❌      |   ✅    |      ✅       |
 | can create invites for the {{notebook}} and add or remove new guests, contributors and managers |  ❌   |     ❌      |   ✅    |      ✅       |
 | add or remove other administrators to the {{notebook}}                                          |  ❌   |     ❌      |   ❌    |      ✅       |
-| delete the notebook (operation not currently supported)                                         |  ❌   |     ❌      |   ❌    |      ✅       |
+| close the the {{notebook}} (prevents further contributions)                                     |  ❌   |     ❌      |   ✅    |      ✅       |
+| archive the {{notebook}} (makes it not visible to users)                                        |  ❌   |     ❌      |   ✅    |      ✅       |
+| delete the {{notebook}} after archiving (removes all data)                                      |  ❌   |     ❌      |   ❌    |      ✅       |
+
+> 💡 **Note**: {{Notebook}} roles are primarily managed through team membership.
+> E.g. Team Administrators act as {{notebook}} administrators for team templates.

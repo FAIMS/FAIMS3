@@ -42,7 +42,7 @@
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",
     "env-cmd": "^10.1.0",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.28.1"
   },
   "devDependencies": {
     "@types/node": "^24",
