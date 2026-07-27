@@ -12,7 +12,23 @@ Related docs:
 
 Not covered: notebook JSON migrations.
 
-## Notes
+## General vs AWS-specific
+
+Most of this guide is AWS CDK (EC2 replace, EBS snapshot, `cdk deploy`). A few
+points apply whenever you upgrade or recreate Couch for FAIMS, regardless of deployment approach.
+
+- Prefer a specific CouchDB 3.x patch tag (avoid `latest`).
+- Expect Couch (and therefore app) downtime until Couch is healthy again and
+  JWT keys are restored.
+- After Couch comes back, run `pnpm run migrate-with-keys` so the JWT public
+  key is configured in Couch and design-doc / schema migrations apply. Fresh
+  `local.ini` (user data on AWS, or `generate-local-keys` locally) does not by
+  itself leave FAIMS auth fully working until this step succeeds.
+- Notebook / template JSON migrations are a separate concern (not this guide).
+
+The numbered procedure below is AWS-specific but may provide some general guidance to other deployment options.
+
+## Notes (AWS)
 
 - CouchDB runs as a single EC2 instance with `userDataCausesReplacement: true`.
   Changing `couchVersionTag` changes user data, so CloudFormation **replaces the
@@ -21,9 +37,8 @@ Not covered: notebook JSON migrations.
 - **This procedure incurs Couch (and therefore app) downtime** while the
   instance is stopped/replaced and until keys are re-pushed. The sysadmin
   should notify users ahead of the maintenance window.
-- Prefer a specific 3.x patch tag.
-- After replace, re-push JWT public keys into Couch (`migrate-with-keys`); user
-  data regenerates `local.ini` but does not restore signing-key config.
+- On AWS, user data regenerates `local.ini` but does not restore signing-key
+  config — step 4 (`migrate-with-keys`) is required after replace.
 
 ## Setup
 
