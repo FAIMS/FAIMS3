@@ -7,6 +7,16 @@ export interface SyncState {
   status: 'initial' | 'active' | 'paused' | 'error' | 'denied';
   lastUpdated: number;
   pendingRecords: number;
+  /**
+   * Has the pull side caught up with the remote since this state was created
+   * (activation or app start)? False from creation through the initial
+   * download, whatever order push and pull batches interleave in; true after
+   * a pull change event reports nothing pending or replication pauses
+   * cleanly; false again while a later bulk pull works through its batches.
+   * Consumers use this to tell "records may still be arriving" from "local
+   * data is as complete as sync can make it".
+   */
+  isPullCaughtUp: boolean;
   errorMessage?: string;
   lastChangeStats?: {
     docsRead: number;
@@ -96,6 +106,30 @@ class SyncStateService {
   }
 
   /**
+   * Record that the PULL side paused, which is the only pause that may raise
+   * the pull-catch-up marker.
+   *
+   * A clean pull pause means the pull is idle with nothing left to fetch, so
+   * the pull is caught up even if it never emitted a change event (nothing to
+   * pull). A pull that paused with an error is retrying, not finished, so it
+   * leaves the marker where it is.
+   *
+   * Deliberately NOT folded into {@link setPaused}: in two-way mode the
+   * aggregate `paused` event arrives with the child's error stripped by
+   * PouchDB's sync wrapper, so a device that went offline mid-download is
+   * indistinguishable there from one that finished. Reading that as a
+   * catch-up is exactly the false "no records here" state consumers must
+   * never see. Status stays owned by {@link setPaused}; this moves only the
+   * marker.
+   */
+  recordPullPause(serverId: string, projectId: string, error?: Error): void {
+    if (error) {
+      return;
+    }
+    this.updateSyncState(serverId, projectId, {isPullCaughtUp: true});
+  }
+
+  /**
    * Set sync state to error
    */
   setError(serverId: string, projectId: string, error: Error): SyncState {
@@ -122,22 +156,43 @@ class SyncStateService {
     serverId: string,
     projectId: string,
     info: {
-      pending: number;
+      /**
+       * Documents the remote still has queued for this direction, or
+       * undefined when the replication did not report it (PouchDB only fills
+       * `pending` in when the source supplies it).
+       */
+      pending: number | undefined;
       docsRead: number;
       docsWritten: number;
       direction: 'push' | 'pull';
     }
   ): SyncState {
-    return this.updateSyncState(serverId, projectId, {
+    const update: Partial<SyncState> = {
       status: 'active',
-      pendingRecords: info.pending,
+      pendingRecords: info.pending ?? 0,
       errorMessage: undefined,
       lastChangeStats: {
         docsRead: info.docsRead,
         docsWritten: info.docsWritten,
         direction: info.direction,
       },
-    });
+    };
+    // Only a pull batch moves the pull-catch-up marker: caught up when the
+    // batch reports nothing pending, behind while a bulk pull still has
+    // batches to go. Push batches say nothing about the pull side, so they
+    // leave the marker alone (in 'both' mode the two interleave through the
+    // same event stream).
+    //
+    // An unreported `pending` is "unknown", NOT "nothing pending": reading it
+    // as zero would let the first batch of a bulk download declare the pull
+    // caught up, which is precisely the mid-download blindness this marker
+    // exists to remove. Staying behind is safe because replication is live
+    // with retry, so a genuinely idle pull raises the marker via the clean
+    // pull pause in {@link recordPullPause}.
+    if (info.direction === 'pull') {
+      update.isPullCaughtUp = info.pending === 0;
+    }
+    return this.updateSyncState(serverId, projectId, update);
   }
 
   /**
@@ -174,6 +229,7 @@ class SyncStateService {
       status: 'initial',
       lastUpdated: Date.now(),
       pendingRecords: 0,
+      isPullCaughtUp: false,
     };
   }
 }
