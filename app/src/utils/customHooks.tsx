@@ -455,6 +455,25 @@ export const useRecordList = ({
   const dataDb = tryLocalGetDataDb(projectId);
   const canQueryRecords = enabled && !!dataDb && !!token && !!uiSpec;
 
+  /**
+   * Whether the returned lists can contain every record in the project. The
+   * queryFn below filters through {@link shouldDisplayRecordMinimalMetadata},
+   * which admits another user's record only under READ_ALL_PROJECT_RECORDS;
+   * computing the flag here, from the same token that filter reads, keeps the
+   * two from drifting apart. When false, absence from the lists proves
+   * nothing: hidden records may exist.
+   */
+  const canReadAllRecords = useMemo(
+    () =>
+      !!token &&
+      isAuthorized({
+        decodedToken: token,
+        action: Action.READ_ALL_PROJECT_RECORDS,
+        resourceId: projectId,
+      }),
+    [token, projectId]
+  );
+
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
     queryKey: [
@@ -638,6 +657,7 @@ export const useRecordList = ({
     myRecords: myRecords,
     otherRecords: otherRecords,
     isLoaded,
+    canReadAllRecords,
     initialQuery: unhydratedRecordQuery,
   };
 };
