@@ -17,8 +17,10 @@ import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
+import {syncStateService} from '../context/slices/helpers/syncStateService';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
+import {syncModeIncludesPull, type SyncMode} from '../sync/syncMode';
 import {shouldDisplayRecordMinimalMetadata} from '../users';
 import {localGetDataDb, tryLocalGetDataDb} from './database';
 
@@ -660,6 +662,71 @@ export const useRecordList = ({
     canReadAllRecords,
     initialQuery: unhydratedRecordQuery,
   };
+};
+
+/**
+ * Poll interval for the in-memory per-project sync state: the reads are cheap
+ * Map lookups, and state transitions (initial -> pulling -> caught up) should
+ * surface promptly in the UI.
+ */
+const SYNC_STATE_POLL_INTERVAL_MS = 1000;
+
+/**
+ * Whether a record download (the initial pull after activation, or a catch-up
+ * pull) is underway for a project, polled from the in-memory
+ * {@link syncStateService}. While true, records that exist on the server may
+ * not yet be in the local database, so a consumer must not treat a record's
+ * local absence as proof that none exists. Always false when the project
+ * never pulls (sync off, or push-only): local data is then all the device
+ * will ever have. A sync error or denial also reads as not-downloading, so
+ * an offline device keeps working from its local data.
+ */
+export const useIsRecordDownloadUnderway = ({
+  serverId,
+  projectId,
+  syncMode,
+}: {
+  serverId: string;
+  projectId: string;
+  /** The project's replication direction; only pull modes can download. */
+  syncMode: SyncMode;
+}): boolean => {
+  const computeIsDownloadUnderway = useCallback((): boolean => {
+    if (!syncModeIncludesPull(syncMode)) {
+      return false;
+    }
+    const syncState = syncStateService.getSyncStateOrDefault(
+      serverId,
+      projectId
+    );
+    // Errors and denials will not download any time soon; treating them as
+    // downloading would blank consumers forever on an offline device.
+    if (syncState.status === 'error' || syncState.status === 'denied') {
+      return false;
+    }
+    // Otherwise the pull-catch-up marker is the whole answer: false from
+    // activation (or app start) through every batch of the initial download,
+    // whatever order push and pull batches interleave in, and false again
+    // while a later bulk pull works through its batches. Deriving this from
+    // the *last* change event instead would go blind whenever a push batch
+    // or a stale previous cycle held the stats slot.
+    return !syncState.isPullCaughtUp;
+  }, [serverId, projectId, syncMode]);
+
+  const [isDownloadUnderway, setIsDownloadUnderway] = useState(
+    computeIsDownloadUnderway
+  );
+
+  useEffect(() => {
+    // The sync state lives outside React (a plain in-memory service), so
+    // poll it; setState with an unchanged boolean re-renders nothing.
+    const tick = () => setIsDownloadUnderway(computeIsDownloadUnderway());
+    tick();
+    const interval = setInterval(tick, SYNC_STATE_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [computeIsDownloadUnderway]);
+
+  return isDownloadUnderway;
 };
 
 /** useQuery to fetch and hydrate individual targeted revision of record */
