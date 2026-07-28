@@ -24,6 +24,7 @@ import {
   ExpressionError,
   ExprType,
   ExprValue,
+  extractExpressionReferences,
 } from '../src/uiSpecification/expressions';
 
 // Field types available to the expressions under test, as would be derived
@@ -315,5 +316,30 @@ describe('compileComputedExpression', () => {
         ExpressionError
       );
     });
+  });
+});
+
+// Add to library/data-model/tests/expressions.test.ts as a new describe block
+// (import extractExpressionReferences alongside the existing imports):
+
+describe('extractExpressionReferences', () => {
+  it('extracts unique braced references', () => {
+    expect(
+      extractExpressionReferences('{width} * {height} + {width}').sort()
+    ).toEqual(['height', 'width']);
+  });
+
+  it('handles hyphenated ids', () => {
+    expect(extractExpressionReferences('{Wet-Soil-Mass-g} * 2')).toEqual([
+      'Wet-Soil-Mass-g',
+    ]);
+  });
+
+  it('is tolerant of malformed expressions', () => {
+    expect(extractExpressionReferences('{width} * {unclosed')).toEqual([
+      'width',
+    ]);
+    expect(extractExpressionReferences('no references here')).toEqual([]);
+    expect(extractExpressionReferences('')).toEqual([]);
   });
 });

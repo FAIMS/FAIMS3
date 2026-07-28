@@ -152,6 +152,26 @@ function substituteReferences(source: string): {
   return {processed: out, placeholders};
 }
 
+/**
+ * Extracts the field IDs referenced in braces in an expression source.
+ * Tolerant of malformed or incomplete expressions - unlike
+ * compileComputedExpression it never throws - so it is suitable for
+ * dependency checking (e.g. blocking deletion of a referenced field) while
+ * an expression is still being written.
+ *
+ * @param source The expression source, e.g. "{Width} * {Height}"
+ * @returns The unique field IDs referenced
+ */
+export const extractExpressionReferences = (source: string): string[] => {
+  const refs = new Set<string>();
+  const pattern = /\{([^{}]+)\}/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(source)) !== null) {
+    refs.add(match[1]);
+  }
+  return [...refs];
+};
+
 // Recursively compiles an AST node into a typed closure, collecting referenced
 // field ids and type checking as it goes. Disallowed node types (member access,
 // calls, arrays, etc.) are rejected here - the safety boundary, with no path to

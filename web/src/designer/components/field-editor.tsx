@@ -972,7 +972,9 @@ const FieldEditorComponent = ({
                       ? 'Section Condition'
                       : dependency.type === 'templated-string'
                         ? 'Templated String'
-                        : 'Field Condition'}
+                        : dependency.type === 'computed-expression'
+                          ? 'Computed Expression'
+                          : 'Field Condition'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {dependency.fieldLabel ??
@@ -1069,7 +1071,9 @@ const FieldEditorComponent = ({
                       ? `Section Condition: ${ref.sectionLabel ?? 'Unknown section'}`
                       : ref.type === 'templated-string'
                         ? `Templated String: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`
-                        : `Field Condition: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`}
+                        : ref.type === 'computed-expression'
+                          ? `Computed Expression: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`
+                          : `Field Condition: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`}
                   </li>
                 ))}
               </ul>

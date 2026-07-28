@@ -1,4 +1,13 @@
-import {Alert, Box, FormHelperText, Typography} from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Box,
+  FormHelperText,
+  Typography,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {useMemo} from 'react';
 import {
   compileComputedExpression,
@@ -141,6 +150,43 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
             {validationError}
           </Alert>
         )}
+        <Accordion
+          disableGutters
+          elevation={0}
+          sx={{mt: 1, '&:before': {display: 'none'}, background: 'none'}}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon fontSize="small" />}
+            sx={{minHeight: 0, p: 0, '& .MuiAccordionSummary-content': {m: 0}}}
+          >
+            <Typography variant="caption" color="text.secondary">
+              Expression syntax
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{p: 0, pb: 1}}>
+            <Typography
+              variant="caption"
+              component="div"
+              color="text.secondary"
+            >
+              Reference fields in braces, e.g. {'{Width}'}. Operators:
+              <ul style={{margin: '4px 0', paddingLeft: 18}}>
+                <li>Arithmetic (numbers): + - * / %</li>
+                <li>
+                  Join text: &amp; — e.g. {'{Site-Code}'} &amp; '-' &amp;{' '}
+                  {'{Plot}'}
+                </li>
+                <li>
+                  Compare: &lt; &gt; &lt;= &gt;= (two numbers or two texts), ==
+                  != (matching types)
+                </li>
+                <li>Logic (true/false): &amp;&amp; || !</li>
+                <li>Conditional: condition ? ifTrue : ifFalse</li>
+              </ul>
+              The result must be {isText ? 'text' : 'a number'}.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
         {referenceableFieldCount > 0 ? (
           <Box sx={{mt: 2, maxWidth: 400}}>
             <FieldSearchAutocomplete
