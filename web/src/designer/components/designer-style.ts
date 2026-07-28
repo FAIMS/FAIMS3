@@ -1,5 +1,6 @@
 import {SxProps, Theme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
+import {ConditionBooleanOperator} from '../types/condition';
 
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
@@ -267,4 +268,42 @@ export const designerConditionFrameSx: SxProps<Theme> = {
   border: '1px dashed',
   borderColor: 'divider',
   p: 1.25,
+};
+
+/** Shared colour used to highlight an active condition drop target. */
+export const conditionDropBorderColour = 'success.main';
+
+/**
+ * Shared theme palette paths used to visually distinguish condition boolean
+ * operators. Values resolve via the active designer theme
+ * (`palette.conditionAnd` / `palette.conditionOr`).
+ */
+export const conditionBooleanOperatorColours: Record<
+  ConditionBooleanOperator,
+  string
+> = {
+  and: 'conditionAnd.main',
+  or: 'conditionOr.main',
+};
+
+/**
+ * Shared styles for the feedback label shown above an active condition drop
+ * target.
+ */
+export const designerConditionDropFeedbackSx: SxProps<Theme> = {
+  position: 'absolute',
+  left: '50%',
+  top: '-12px',
+  zIndex: 1,
+  transform: 'translateX(-50%)',
+  px: 1,
+  py: 0.1,
+  borderRadius: 1,
+  fontWeight: 700,
+  color: 'success.dark',
+  backgroundColor: 'background.paper',
+  border: '1px solid',
+  borderColor: conditionDropBorderColour,
+  whiteSpace: 'nowrap',
+  boxShadow: 1,
 };

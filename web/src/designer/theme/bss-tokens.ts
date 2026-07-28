@@ -38,6 +38,8 @@ export const bssTokens: DesignerThemeTokens = {
   deleteButtonColor: bssBrand.errorMain,
   successMain: bssBrand.successMain,
   infoMain: bssBrand.infoMain,
+  conditionAndMain: colors.cyan[700],
+  conditionOrMain: colors.deepPurple[700],
   // Primary is black in BSS; use the designer maroon accent for vivid contrast.
   searchMatchHighlight: '#B71C1C',
 
