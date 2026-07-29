@@ -47,7 +47,10 @@ import {config as appConfig} from '@/constants';
 import {config} from '../../buildconfig';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
-import {useDesignerEditingContext} from '../../state/editing-context';
+import {
+  useDesignerEditingContext,
+  useIsFieldNewInSession,
+} from '../../state/editing-context';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -141,10 +144,15 @@ export const BaseFieldEditor = ({
   const idInputRef = useRef<HTMLInputElement>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
   const isMounted = useRef(false);
-  // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
+  // Enable the one-time auto-sync (Label -> Field ID) that runs for a freshly
+  // added field; disabled permanently once the user touches the Field ID.
   const autoSyncFieldIdEnabled = useRef(true);
   const initialAutoSyncDone = useRef(false);
-  // Mark renames triggered by auto-sync (not by user changing selected field).
+  // Set by commitFieldID just before it dispatches a rename. Because a rename
+  // changes the field's key, this component re-renders with a new `fieldName`;
+  // the `fieldName` effect reads this flag to tell "we just renamed the current
+  // field" apart from "the user selected a different field", and so skips
+  // re-arming auto-sync and re-focusing in the former case.
   const internalRenameInFlight = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
@@ -154,6 +162,13 @@ export const BaseFieldEditor = ({
   } | null>(null);
   const {existingRecordCount} = useDesignerEditingContext();
   const hasExistingRecords = (existingRecordCount ?? 0) > 0;
+  // A field added during this session cannot have collected data, so renaming it
+  // is always safe — even when the survey already has records.
+  const isFieldNewInSession = useIsFieldNewInSession(field.designerIdentifier);
+  // The only case that risks orphaning collected data: the survey has records
+  // AND this field existed when they were collected. This gates every part of
+  // the confirm-before-rename flow below.
+  const changingIdMayOrphanData = hasExistingRecords && !isFieldNewInSession;
 
   const debouncedRename = useCallback(
     debounce((newFieldName: string) => {
@@ -172,6 +187,15 @@ export const BaseFieldEditor = ({
     [dispatch, uiSpec, fieldName]
   );
 
+  /**
+   * The single write path for changing a field's ID. Renaming a field changes
+   * the key it is stored under, so the store dispatches `fieldRenamed`, which
+   * makes this component re-render with a new `fieldName` prop. We flag that as
+   * an internal rename (see {@link internalRenameInFlight}) so the `fieldName`
+   * effect below does not mistake it for the user selecting a different field
+   * (which would re-arm label→ID auto-sync and steal focus). No-ops when the
+   * name is blank or unchanged.
+   */
   const commitFieldID = (newFieldName: string) => {
     const desired = newFieldName.trim();
     const viewId = getViewIDForField(uiSpec, fieldName);
@@ -191,13 +215,18 @@ export const BaseFieldEditor = ({
     autoSyncFieldIdEnabled.current = false;
     initialAutoSyncDone.current = true;
     setLocalFieldName(e.target.value);
-    // Once records exist the rename is confirmed on blur instead, so the user
-    // reads the data-loss warning before anything is actually renamed.
-    if (!hasExistingRecords) debouncedRename(e.target.value);
+    // When the rename could orphan data we defer the actual rename to blur, so
+    // the user reads and confirms the warning before anything is written.
+    // Otherwise (no records, or a session-new field) rename live as they type.
+    if (!changingIdMayOrphanData) debouncedRename(e.target.value);
   };
 
+  // Confirm-before-rename flow (only when {@link changingIdMayOrphanData}):
+  // typing edits `localFieldName` only; on blur we stage the change in
+  // `pendingFieldID`, which opens the dialog. The store is written solely by
+  // confirmFieldIDChange → commitFieldID, so Cancel leaves the field untouched.
   const handleIdBlur = () => {
-    if (!hasExistingRecords) return;
+    if (!changingIdMayOrphanData) return;
     const desired = localFieldName.trim();
     if (!desired) {
       setLocalFieldName(fieldName);
@@ -218,7 +247,7 @@ export const BaseFieldEditor = ({
     const desired = slugify(state.label || '');
     if (!desired || desired === fieldName) return;
     // Nothing is written — not even to the input — until the user confirms.
-    if (hasExistingRecords) {
+    if (changingIdMayOrphanData) {
       setPendingFieldID({from: fieldName, to: desired});
       return;
     }
@@ -831,25 +860,25 @@ export const BaseFieldEditor = ({
                     />
                   </Stack>
 
-                {state.condition && (
-                  <Box
-                    sx={{
-                      ...(designerInfoCalloutSx as Record<string, unknown>),
-                      p: 1.5,
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{fontWeight: 600, color: 'text.secondary'}}
+                  {state.condition && (
+                    <Box
+                      sx={{
+                        ...(designerInfoCalloutSx as Record<string, unknown>),
+                        p: 1.5,
+                      }}
                     >
-                      Show this field if{' '}
-                    </Typography>
-                    <Typography variant="caption" color="text.primary">
-                      <ConditionSummary condition={state.condition} />
-                    </Typography>
-                  </Box>
-                )}
-              </Grid>
+                      <Typography
+                        variant="caption"
+                        sx={{fontWeight: 600, color: 'text.secondary'}}
+                      >
+                        Show this field if{' '}
+                      </Typography>
+                      <Typography variant="caption" color="text.primary">
+                        <ConditionSummary condition={state.condition} />
+                      </Typography>
+                    </Box>
+                  )}
+                </Grid>
 
                 {/* RIGHT: Advanced controls + voice-to-text. Takes the
                   remaining two-thirds of the row since it has four toggles
