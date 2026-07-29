@@ -11,6 +11,7 @@
     "cdk": "cdk",
     "config": "bash ./config.sh",
     "validate-config": "ts-node validateConfig.ts",
+    "couch-upgrade-baseline": "ts-node scripts/couchUpgradeBaseline.ts",
     "test": "jest",
     "lint": "oxlint --config ../../.oxlintrc.json .",
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
