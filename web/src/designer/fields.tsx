@@ -552,25 +552,45 @@ const fields: {[key: string]: FieldType} = {
     order: 27,
   },
 
-  ComputedField: {
+  ComputedNumber: {
     'component-namespace': 'faims-custom',
-    'component-name': 'ComputedField',
+    'component-name': 'ComputedNumber',
     'type-returned': 'faims-core::Number',
     'component-parameters': {
-      label: 'Computed Value',
+      label: 'Computed Number',
       fullWidth: true,
-      name: 'computed-field',
+      name: 'computed-number',
       helperText: '',
       required: false,
       expression: '',
     },
     initialValue: null,
-    humanReadableName: 'Computed Value',
+    humanReadableName: 'Computed Number',
     humanReadableDescription:
       'Calculates a number from an expression over other fields',
     category: CategoryKey.NUMBERS,
     showInChooser: true,
     order: 28,
+  },
+  ComputedText: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'ComputedText',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Computed Text',
+      fullWidth: true,
+      name: 'computed-text',
+      helperText: '',
+      required: false,
+      expression: '',
+    },
+    initialValue: null,
+    humanReadableName: 'Computed Text',
+    humanReadableDescription:
+      'Builds text from an expression over other fields',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 29,
   },
 };
 
