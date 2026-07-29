@@ -123,6 +123,25 @@ export function DesignerWidget({
     };
   }, [notebook]);
 
+  // Identifiers of the fields present at load. The store is created from this
+  // same `processedNotebook`, so these match the fields the editor starts with;
+  // fields added later get fresh identifiers and are therefore absent here. Used
+  // to skip the field-ID data-loss warning for session-new fields.
+  const originalFieldIdentifiers = useMemo(
+    () =>
+      new Set(
+        Object.values(processedNotebook?.uiSpec.present.fields ?? {})
+          .map(field => field.designerIdentifier)
+          .filter((id): id is string => Boolean(id))
+      ),
+    [processedNotebook]
+  );
+
+  const editingContextValue = useMemo(
+    () => ({existingRecordCount, originalFieldIdentifiers}),
+    [existingRecordCount, originalFieldIdentifiers]
+  );
+
   // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
   const [store, setStore] = useState(() =>
     createDesignerStore(processedNotebook, debug)
@@ -240,7 +259,7 @@ export function DesignerWidget({
 
   return (
     <ReduxProvider store={store}>
-      <DesignerEditingProvider value={{existingRecordCount}}>
+      <DesignerEditingProvider value={editingContextValue}>
         <ThemeProvider theme={mergedTheme}>
           <ScopedCssBaseline />
           <Box
