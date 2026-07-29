@@ -46,8 +46,14 @@ describe('Web — Project edit details name length', () => {
     await byTestId('web-project-edit-details-button').click();
     await waitForTestId('web-project-edit-details-name', {timeout: 10000});
 
-    // Replace the current name with one below the 5-character minimum.
-    await byTestId('web-project-edit-details-name').setValue('abc');
+    // Replace the current name with one below the 5-character minimum. The
+    // field is pre-filled with the existing name, so it must be cleared first —
+    // setValue alone appends and would leave a valid (long) name behind.
+    const nameInput = byTestId('web-project-edit-details-name');
+    await nameInput.clearValue();
+    await nameInput.setValue('abc');
+    await expect(nameInput).toHaveValue('abc');
+
     await byTestId('web-project-edit-details-submit').click();
 
     // The form blocks the update and shows the validation message inline; the
