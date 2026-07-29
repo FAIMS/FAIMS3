@@ -57,7 +57,7 @@ import {
 } from '../../store/slices/uiSpec';
 import {ConditionType} from '../../types/condition';
 import {ConditionModal} from '../condition/ConditionModal';
-import {ConditionTranslation} from '../condition/ConditionTranslation';
+import {ConditionSummary} from '../condition/ConditionSummary';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import {SimpleFieldWrapper} from './SimpleFieldWrapper';
@@ -831,25 +831,25 @@ export const BaseFieldEditor = ({
                     />
                   </Stack>
 
-                  {state.condition && (
-                    <Box
-                      sx={{
-                        ...(designerInfoCalloutSx as Record<string, unknown>),
-                        p: 1.5,
-                      }}
+                {state.condition && (
+                  <Box
+                    sx={{
+                      ...(designerInfoCalloutSx as Record<string, unknown>),
+                      p: 1.5,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{fontWeight: 600, color: 'text.secondary'}}
                     >
-                      <Typography
-                        variant="caption"
-                        sx={{fontWeight: 600, color: 'text.secondary'}}
-                      >
-                        Show this field if{' '}
-                      </Typography>
-                      <Typography variant="caption" color="text.primary">
-                        <ConditionTranslation condition={state.condition} />
-                      </Typography>
-                    </Box>
-                  )}
-                </Grid>
+                      Show this field if{' '}
+                    </Typography>
+                    <Typography variant="caption" color="text.primary">
+                      <ConditionSummary condition={state.condition} />
+                    </Typography>
+                  </Box>
+                )}
+              </Grid>
 
                 {/* RIGHT: Advanced controls + voice-to-text. Takes the
                   remaining two-thirds of the row since it has four toggles

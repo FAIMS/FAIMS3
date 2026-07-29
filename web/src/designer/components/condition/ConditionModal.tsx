@@ -16,65 +16,99 @@
  * @file Modal entry point for editing a visibility condition with save/cancel.
  */
 
+import QuizIcon from '@mui/icons-material/Quiz';
 import {
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  SxProps,
   Stack,
+  SxProps,
   Theme,
+  Typography,
 } from '@mui/material';
 import type {ReactNode} from 'react';
-import {useCallback, useEffect, useState} from 'react';
-import {ConditionControl} from './ConditionControl';
-import {ConditionProps, ConditionType} from '../../types/condition';
-import QuizIcon from '@mui/icons-material/Quiz';
+import {useCallback, useState} from 'react';
+import {ConditionType} from '../../types/condition';
 import {
   designerCancelButtonSx,
   designerDialogContentSx,
 } from '../designer-style';
+import {ConditionControl, ConditionControlProps} from './ConditionControl';
+import {normaliseConditionForCompare} from '@/lib/conditionUtils';
+import {useConditionRuleFieldContext} from '@/hooks/use-condition-field-context';
+
+/**
+ * Message shown when there are not enough fields/sections to build a condition.
+ */
+const NoConditionFieldsMessage = (props: {view?: string}) => (
+  <Typography variant="body2" color="error">
+    {props.view ? (
+      <>
+        This form has only one section. Adding conditions for a section requires
+        more than one section so that fields from other sections can be
+        referenced.
+      </>
+    ) : (
+      <>
+        This form only has one field. Please add fields to this form to enable
+        adding conditions.
+      </>
+    )}
+  </Typography>
+);
 
 /** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
 export const ConditionModal = (
-  props: ConditionProps & {
+  props: ConditionControlProps & {
     label: string;
     icon?: ReactNode;
     buttonSx?: SxProps<Theme>;
   }
 ) => {
   const [open, setOpen] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
   // Local draft copy
   const [draft, setDraft] = useState<ConditionType | null>(
     props.initial ?? null
   );
 
-  // Reset the draft whenever the parent value changes while closed
-  // Doing it this way because the modal exists even when closed
-  useEffect(() => {
-    if (!open) setDraft(props.initial ?? null);
-  }, [props.initial, open]);
+  const {selectableFieldCount} = useConditionRuleFieldContext({
+    field: props.field,
+    view: props.view,
+  });
+  // If there are no fields to select, show a message instead of the editor.
+  const canEditCondition = selectableFieldCount > 0;
 
-  // Open the dialog and refresh draft from parent prop
+  // Open the dialog, refresh draft when opening
+  // Reset confirmCancel when opening/closing.
   const handleOpen = () => {
+    setConfirmCancel(false);
     setDraft(props.initial ?? null);
     setOpen(true);
   };
 
-  const close = () => setOpen(false);
-
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  // clear local draft when closing
+  const close = () => {
+    setOpen(false);
+    setConfirmCancel(false);
+    setDraft(null);
+  };
 
   // Warn when cancelling
   const handleCancel = useCallback(() => {
-    const changed =
-      JSON.stringify(draft) !== JSON.stringify(props.initial || null);
-    if (changed) setConfirmCancel(true);
+    const currentDraft = normaliseConditionForCompare(draft);
+    const initialCondition = normaliseConditionForCompare(props.initial);
+
+    const hasUnsavedChanges =
+      JSON.stringify(currentDraft) !== JSON.stringify(initialCondition);
+
+    if (hasUnsavedChanges) setConfirmCancel(true);
     else close();
   }, [draft, props.initial]);
 
   const handleCancelConfirm = () => {
-    setConfirmCancel(false);
     close();
   };
 
@@ -97,12 +131,16 @@ export const ConditionModal = (
 
       <Dialog open={open} fullWidth={true} maxWidth="lg" onClose={handleCancel}>
         <DialogContent sx={designerDialogContentSx}>
-          <ConditionControl
-            initial={draft}
-            onChange={setDraft}
-            field={props.field}
-            view={props.view}
-          />
+          {canEditCondition ? (
+            <ConditionControl
+              initial={draft}
+              onChange={setDraft}
+              field={props.field}
+              view={props.view}
+            />
+          ) : (
+            <NoConditionFieldsMessage view={props.view} />
+          )}
         </DialogContent>
 
         <DialogActions>
@@ -133,7 +171,11 @@ export const ConditionModal = (
               >
                 Cancel Edit
               </Button>
-              <Button variant="contained" onClick={handleSave}>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={!canEditCondition}
+              >
                 Save Changes
               </Button>
             </Stack>

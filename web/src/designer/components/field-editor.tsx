@@ -66,7 +66,7 @@ import {
   findFieldDependencyReferences,
   type FieldDependencyReference,
   findInvalidConditionReferences,
-} from './condition/utils';
+} from '@/lib/conditionUtils';
 import DebouncedTextField from './debounced-text-field';
 import {keyframes} from '@emotion/react';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
@@ -972,7 +972,9 @@ const FieldEditorComponent = ({
                       ? 'Section Condition'
                       : dependency.type === 'templated-string'
                         ? 'Templated String'
-                        : 'Field Condition'}
+                        : dependency.type === 'computed-expression'
+                          ? 'Computed Expression'
+                          : 'Field Condition'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {dependency.fieldLabel ??
@@ -1069,7 +1071,9 @@ const FieldEditorComponent = ({
                       ? `Section Condition: ${ref.sectionLabel ?? 'Unknown section'}`
                       : ref.type === 'templated-string'
                         ? `Templated String: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`
-                        : `Field Condition: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`}
+                        : ref.type === 'computed-expression'
+                          ? `Computed Expression: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`
+                          : `Field Condition: ${ref.fieldLabel ?? ref.fieldId ?? 'Unknown field'}`}
                   </li>
                 ))}
               </ul>

@@ -37,6 +37,8 @@ export const defaultTokens: DesignerThemeTokens = {
   deleteButtonColor: defaultBrand.errorMain,
   successMain: defaultBrand.successMain,
   infoMain: defaultBrand.infoMain,
+  conditionAndMain: colors.cyan[700],
+  conditionOrMain: colors.deepPurple[700],
   // Navy primary is too close to body text; use success green for vivid contrast.
   searchMatchHighlight: defaultBrand.successMain,
 

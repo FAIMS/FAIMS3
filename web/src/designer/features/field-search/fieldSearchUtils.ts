@@ -2,7 +2,7 @@
  * @file Builds searchable field entries and resolves which fields are in scope for pickers.
  */
 
-import {getFieldLabel} from '../../components/condition/utils';
+import {getFieldLabel} from '@/lib/conditionUtils';
 import type {FieldType} from '../../state/initial';
 import type {
   FieldSearchEntry,

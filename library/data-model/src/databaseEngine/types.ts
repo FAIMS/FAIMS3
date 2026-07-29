@@ -748,6 +748,23 @@ const initialFormData = z.object({
 export type InitialFormData = z.infer<typeof initialFormData>;
 
 /**
+ * A single entry in a record's revision history, for displaying an audit
+ * trail of who changed a record and when. Carries the revision identity,
+ * authorship, and the IDs of the fields that changed relative to the
+ * revision's parent (added, value-changed, or removed fields).
+ */
+export const revisionHistoryEntry = z.object({
+  revisionId: z.string(),
+  created: z.string().datetime(),
+  createdBy: z.string(),
+  // {parentId: [fieldIds]}
+  changedFields: z.record(z.string(), z.array(z.string())),
+  deleted: z.boolean().optional(),
+});
+
+export type RevisionHistoryEntry = z.infer<typeof revisionHistoryEntry>;
+
+/**
  * Query result for paginated record listing
  */
 export interface RecordQueryResult {

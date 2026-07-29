@@ -78,7 +78,14 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   PercentageSlider: ({fieldName}) => (
     <PercentageSliderFieldEditor fieldName={fieldName} />
   ),
-  ComputedField: ({fieldName, viewId, viewSetId}) => (
+  ComputedNumber: ({fieldName, viewId, viewSetId}) => (
+    <ComputedFieldEditor
+      fieldName={fieldName}
+      viewId={viewId}
+      viewsetId={viewSetId}
+    />
+  ),
+  ComputedText: ({fieldName, viewId, viewSetId}) => (
     <ComputedFieldEditor
       fieldName={fieldName}
       viewId={viewId}

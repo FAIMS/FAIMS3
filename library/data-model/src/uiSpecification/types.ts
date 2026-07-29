@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {ExprValue} from './expressions';
 
 // ============================================================================
 // Basic aliases
@@ -147,7 +148,7 @@ const compiledFieldDefinitionShape = {
    * `compileUiSpecConditionals`. Non-serializable, validated only as a function.
    */
   expressionFn: z
-    .custom<(scope: Map<string, number>) => number | null>()
+    .custom<(scope: Map<string, ExprValue>) => ExprValue | null>()
     .optional(),
   /** Field IDs referenced by the expression; used to build the eval scope. */
   expressionRefs: z.custom<string[]>().optional(),
