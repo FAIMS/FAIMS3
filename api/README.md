@@ -161,10 +161,24 @@ docker compose -f docker-compose.dev.yml up
 
 ## Tests
 
-Run tests inside the conductor instance:
+API unit tests use [Vitest](https://vitest.dev/) (Node environment), matching
+`app` / `web` / `forms`. Assertions use Vitest `expect`; cross-module
+dependencies are mocked with `vi.mock` / `vi.spyOn` (Mocha/Chai/Sinon removed).
+Tests run serially (`fileParallelism: false`, single fork) because they share
+in-memory PouchDB and the Express app singleton. `test/setup.ts` registers the
+PouchDB memory adapter and applies the Express async-error Layer patch before
+route modules load (see comments in that file and `vitest.config.ts`).
 
 ```bash
+# From repo root or api/
+pnpm --filter=@faims3/api test
+pnpm --filter=@faims3/api test:watch
+pnpm --filter=@faims3/api coverage
+```
 
+Inside Docker:
+
+```bash
 docker compose exec conductor pnpm run test
 ```
 

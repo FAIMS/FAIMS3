@@ -3,7 +3,7 @@
  * Migrate on-disk notebook JSON fixtures to CURRENT_NOTEBOOK_UI_SCHEMA_VERSION.
  *
  * Usage (from api/):
- *   pnpm exec ts-node src/scripts/migrateNotebookJson.ts path/to/file.json [...]
+ *   pnpm exec tsx src/scripts/migrateNotebookJson.ts path/to/file.json [...]
  *
  * Output shape:
  * - Legacy wire (`metadata` + `ui-specification`) or NotebookDefinition root → NotebookDefinition

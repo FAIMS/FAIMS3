@@ -27,7 +27,7 @@ import {
   notebookRecordIterator,
   registerClient,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {describe, expect, it} from 'vitest';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   getUserProjectsDetailed,
@@ -56,11 +56,11 @@ describe('Backup and restore', () => {
 
     // should now have the notebooks from the backup defined
     const user = await getExpressUserFromEmailOrUserId('admin');
-    expect(user).not.to.be.undefined;
+    expect(user).not.toBeUndefined();
     if (user) {
       const notebooks = await getUserProjectsDetailed(user);
-      expect(notebooks.length).to.equal(2);
-      expect(notebooks[0].name).to.equal('Campus Survey Demo');
+      expect(notebooks.length).toBe(2);
+      expect(notebooks[0].name).toBe('Campus Survey Demo');
 
       // test record iterator while we're here
       const projectId = notebooks[0]._id;
@@ -79,7 +79,7 @@ describe('Backup and restore', () => {
         count += 1;
         ({record, done} = await iterator.next());
       }
-      expect(count).to.equal(17);
+      expect(count).toBe(17);
 
       // throw in a test of getRecordsWithRegex while we're here
       const tokenContents = mockTokenContentsForUser(user);
@@ -91,7 +91,7 @@ describe('Backup and restore', () => {
         filterDeleted: true,
         uiSpecification: uiSpec,
       });
-      expect(records).to.have.lengthOf(28);
+      expect(records).toHaveLength(28);
     }
   });
 });

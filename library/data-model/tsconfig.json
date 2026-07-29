@@ -16,7 +16,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "declaration": true
+    "declaration": true,
+    "types": ["node", "jest"]
   },
   "include": [
     "./src",

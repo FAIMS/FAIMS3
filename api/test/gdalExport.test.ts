@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import {describe, expect, it} from 'vitest';
 import {
   assertGdalAvailable,
   GdalUnavailableError,
@@ -8,13 +8,13 @@ import {
 describe('GDAL availability', () => {
   it('isGdalAvailable returns a boolean', async () => {
     const result = await isGdalAvailable();
-    expect(result).to.be.a('boolean');
+    expect(result).toBeTypeOf('boolean');
   });
 
   it('GdalUnavailableError has a clear message', () => {
     const err = new GdalUnavailableError();
-    expect(err.name).to.equal('GdalUnavailableError');
-    expect(err.message).to.include('GDAL ogr2ogr is not installed');
+    expect(err.name).toBe('GdalUnavailableError');
+    expect(err.message).toContain('GDAL ogr2ogr is not installed');
   });
 
   it('assertGdalAvailable matches isGdalAvailable', async () => {
@@ -29,7 +29,7 @@ describe('GDAL availability', () => {
       await assertGdalAvailable();
       expect.fail('Expected assertGdalAvailable to throw when GDAL is missing');
     } catch (err) {
-      expect(err).to.be.instanceOf(GdalUnavailableError);
+      expect(err).toBeInstanceOf(GdalUnavailableError);
     }
   });
 });

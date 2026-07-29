@@ -14,3 +14,15 @@ Survey and template form designs are stored as **`uiSpecification`** on Couch do
 - **Inlining former metadata DB:** `projectsV3toV4Migration` in `src/data_storage/migrations/migrations.ts`
 
 See `docs/developer/docs/source/markdown/NotebookDefinition.md` in the repository.
+
+## Testing
+
+Unit tests use Jest. TypeScript 7 dropped the classic compiler API that `ts-jest`
+relied on, so tests are transformed with `@swc/jest` (see `.swcrc` and
+`jest.config.cjs`) instead.
+
+`@swc-contrib/mut-cjs-exports` is required because some tests
+`jest.spyOn(require(...), 'fn')` on ESM-style exports: SWC’s normal CJS emit
+makes those exports immutable, and the plugin keeps them spy-able. This is
+Jest-only noise; a later move to Vitest (like `api` / `app` / `web`) could
+remove the SWC stack.
