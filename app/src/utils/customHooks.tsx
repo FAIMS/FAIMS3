@@ -690,14 +690,14 @@ const SYNC_STATE_POLL_INTERVAL_MS = 1000;
  * will ever have. A sync error or denial also reads as not-downloading, so
  * an offline device keeps working from its local data.
  *
- * Exported with no callsite in this repository on purpose. The consumer is a
+ * May have no callsite in this repository, by design. The consumer is a
  * notebook view that renders a fixed set of positions and has to say, for
  * each one, whether a record exists there: an absent record must read as
  * "not downloaded yet" while this is true, and as "empty" only once it is
  * false. Such views are plug-in components supplied by third-party packages,
  * so this hook and {@link useRecordList}'s `canReadAllRecords` are part of
- * the surface those packages consume, not dead code. Keep both when the app
- * itself appears not to use them.
+ * the surface those packages consume, not dead code. Keep both even where
+ * nothing in the tree appears to use them.
  */
 export const useIsRecordDownloadUnderway = ({
   serverId,
