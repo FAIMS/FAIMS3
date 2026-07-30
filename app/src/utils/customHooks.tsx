@@ -562,15 +562,19 @@ export const useRecordList = ({
   });
 
   /**
-   * Whether the list has loaded at least once. TanStack keeps `data` across
-   * later refetch errors, so `data === undefined` means never loaded:
+   * Whether the list has never loaded, so an empty list means "not known
+   * yet" rather than "no records". TanStack keeps `data` across later
+   * refetch errors, so `data === undefined` means never loaded: still
    * loading, or the initial fetch errored and the interval refetch is
-   * retrying. Neither query flag expresses this: `isLoading` goes false when
-   * the initial fetch fails (presenting the empty fallback as a loaded,
-   * empty list), and `!isSuccess` goes true again when a background refetch
-   * fails while the loaded list is still being served.
+   * retrying.
+   *
+   * Deliberately not the query's own flag of the same name, because no query
+   * flag expresses this: `initialQuery.isLoading` goes false when the initial
+   * fetch fails, presenting the empty fallback as a loaded, empty list, and
+   * `!initialQuery.isSuccess` goes true again when a background refetch fails
+   * while the loaded list is still being served.
    */
-  const isLoaded = unhydratedRecordQuery.data !== undefined;
+  const isLoading = unhydratedRecordQuery.data === undefined;
 
   // Get all rows - defaulting to an empty list
   const allRows = unhydratedRecordQuery.data ?? [];
@@ -658,7 +662,7 @@ export const useRecordList = ({
     allRecords: nonDraftRecords,
     myRecords: myRecords,
     otherRecords: otherRecords,
-    isLoaded,
+    isLoading,
     canReadAllRecords,
     initialQuery: unhydratedRecordQuery,
   };
