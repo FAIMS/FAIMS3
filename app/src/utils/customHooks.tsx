@@ -464,6 +464,11 @@ export const useRecordList = ({
    * computing the flag here, from the same token that filter reads, keeps the
    * two from drifting apart. When false, absence from the lists proves
    * nothing: hidden records may exist.
+   *
+   * Returned for consumers rather than used here: the record tables present
+   * a filtered list honestly, so they have no need of it. A notebook view
+   * that reasons about a record's absence does, and those views are supplied
+   * from outside this file (see {@link useIsRecordDownloadUnderway}).
    */
   const canReadAllRecords = useMemo(
     () =>
@@ -684,6 +689,15 @@ const SYNC_STATE_POLL_INTERVAL_MS = 1000;
  * never pulls (sync off, or push-only): local data is then all the device
  * will ever have. A sync error or denial also reads as not-downloading, so
  * an offline device keeps working from its local data.
+ *
+ * Exported with no callsite in this repository on purpose. The consumer is a
+ * notebook view that renders a fixed set of positions and has to say, for
+ * each one, whether a record exists there: an absent record must read as
+ * "not downloaded yet" while this is true, and as "empty" only once it is
+ * false. Such views are plug-in components supplied by third-party packages,
+ * so this hook and {@link useRecordList}'s `canReadAllRecords` are part of
+ * the surface those packages consume, not dead code. Keep both when the app
+ * itself appears not to use them.
  */
 export const useIsRecordDownloadUnderway = ({
   serverId,
