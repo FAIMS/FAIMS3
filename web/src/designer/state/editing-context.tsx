@@ -1,22 +1,13 @@
 import {createContext, useContext} from 'react';
 
 /**
- * Facts about the survey being edited that the designer cannot derive from the
- * ui-specification itself. Supplied by the host app; empty by default so the
- * designer keeps working standalone (and for templates, which hold no records).
+ * Survey facts the designer cannot derive from the ui-specification. Supplied by
+ * the host app; empty by default so the designer still works standalone.
  */
 export interface DesignerEditingContextValue {
-  /** Records already collected for the survey. Undefined when not applicable. */
+  /** Records already collected for the survey. Omitted for templates. */
   existingRecordCount?: number;
-  /**
-   * `designerIdentifier`s of the fields that were present when this editing
-   * session began. A field's identifier is stable across renames, so a field
-   * added during the session is absent from this set — letting us change its
-   * Field ID without a data-loss warning (no records were ever collected
-   * against it). Undefined when the host does not supply it (e.g. standalone
-   * designer or templates), in which case we fall back to treating every field
-   * as pre-existing so a genuine warning is never suppressed.
-   */
+  /** `designerIdentifier`s of the fields present when the session began. */
   originalFieldIdentifiers?: ReadonlySet<string>;
 }
 
@@ -28,11 +19,9 @@ export const useDesignerEditingContext = () =>
   useContext(DesignerEditingContext);
 
 /**
- * True when the field identified by `designerIdentifier` was added during this
- * editing session (so it cannot have any collected data, and changing its Field
- * ID is safe). Returns `false` — "treat as pre-existing" — whenever the original
- * set is unknown or the identifier is missing, so a real data-loss warning is
- * never suppressed by absent context.
+ * True when the field was added during this session, so it cannot hold data and
+ * its Field ID is safe to change. Identifiers survive renames. Defaults to
+ * `false` when the set is unknown, so a real warning is never suppressed.
  */
 export const useIsFieldNewInSession = (
   designerIdentifier?: string

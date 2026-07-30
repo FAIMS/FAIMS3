@@ -58,10 +58,7 @@ export interface DesignerWidgetProps {
   notebook?: NotebookWithHistory;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
-  /**
-   * Records already collected for the survey being edited. Drives the warning
-   * shown when a field ID is changed. Omit for templates (no records).
-   */
+  /** Records already collected. Drives the field-ID warning; omit for templates. */
   existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
@@ -123,10 +120,8 @@ export function DesignerWidget({
     };
   }, [notebook]);
 
-  // Identifiers of the fields present at load. The store is created from this
-  // same `processedNotebook`, so these match the fields the editor starts with;
-  // fields added later get fresh identifiers and are therefore absent here. Used
-  // to skip the field-ID data-loss warning for session-new fields.
+  // Fields present at load. Built from the same `processedNotebook` the store is
+  // created from, so fields added later are absent and skip the warning.
   const originalFieldIdentifiers = useMemo(
     () =>
       new Set(
