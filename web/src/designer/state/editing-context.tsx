@@ -27,12 +27,6 @@ export const DesignerEditingProvider = DesignerEditingContext.Provider;
 export const useDesignerEditingContext = () =>
   useContext(DesignerEditingContext);
 
-/** True when the survey being edited already holds records. */
-export const useHasExistingRecords = (): boolean => {
-  const {existingRecordCount} = useDesignerEditingContext();
-  return (existingRecordCount ?? 0) > 0;
-};
-
 /**
  * True when the field identified by `designerIdentifier` was added during this
  * editing session (so it cannot have any collected data, and changing its Field
