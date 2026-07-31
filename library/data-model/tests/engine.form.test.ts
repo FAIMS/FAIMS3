@@ -4,7 +4,6 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import {
   CompiledNotebookUiSpec,
-  couchInitialiser,
   DatabaseInterface,
   DataDocument,
   DataEngine,
