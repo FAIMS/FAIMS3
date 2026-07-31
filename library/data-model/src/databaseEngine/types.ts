@@ -31,7 +31,7 @@ export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 //
 // `creator` / `parent` stay **optional on parse** even for the post-ACL shape.
 // Write paths always stamp via `stampRecordAcl` / `stampChildAcl`. With
-// `ACL_REQUIRE_CREATOR=true`, the proxy `_design/acl` VDU rejects unstamped
+// `ACL_REQUIRE_CREATOR=true`, the proxy `_design/acl` validate_doc_update rejects unstamped
 // non-admin creates — but read schemas must still accept:
 //   - pre-migration fixtures and server docs mid-migrate
 //   - leftover IndexedDB docs after public-URL cutover (no automatic local wipe)

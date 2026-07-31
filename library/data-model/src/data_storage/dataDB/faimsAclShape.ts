@@ -1,5 +1,5 @@
 /**
- * FAIMS-specific ACL stamp invariants enforced via a dedicated design-doc VDU.
+ * FAIMS-specific ACL stamp invariants enforced via a dedicated design-doc validate_doc_update.
  *
  * Couch runs `validate_doc_update` from **every** design doc; this one is
  * intentionally separate from `_design/acl` (couch-auth-proxy) so FAIMS field
@@ -8,14 +8,14 @@
  * Owns: when `record_id` is set, ACL `parent` must equal `record_id`.
  *
  * Require-creator is owned by couch-auth-proxy via `ACL_REQUIRE_CREATOR`
- * (baked into `_design/acl` VDU). See Authorisation/AclValidationLayering.md.
+ * (baked into `_design/acl` validate_doc_update). See Authorisation/AclValidationLayering.md.
  */
 
 /** Design doc id installed on every project data DB. */
 export const FAIMS_ACL_SHAPE_DDOC_ID = '_design/faims_acl_shape';
 
 /**
- * Bump when the VDU body changes so ensure/repair rewrites existing ddocs.
+ * Bump when the validate_doc_update body changes so ensure/repair rewrites existing ddocs.
  * 1.2.0 drops the temporary require-creator check (now proxy env).
  */
 export const FAIMS_ACL_SHAPE_DDOC_VERSION = '1.2.0';
@@ -74,7 +74,7 @@ function isConflictError(err: unknown): boolean {
 }
 
 /**
- * Ensure `_design/faims_acl_shape` exists with the current VDU. Idempotent.
+ * Ensure `_design/faims_acl_shape` exists with the current validate_doc_update. Idempotent.
  */
 export async function ensureFaimsAclShapeDesignDoc({
   db,

@@ -381,26 +381,33 @@ const CouchConfigSchema = z.object({
 });
 
 /**
- * couch-auth-proxy (mandatory public Pouch sync ACL). Always deployed: ALB
- * couch.* → proxy; Conductor INTERNAL → VPC Couch. Pin imageTag to the same
- * tag as docker-compose.yml — the image owns `_design/acl` map/VDU (FAIMS
- * only patches `dbacl`). See AclValidationLayering.md / CouchAuthProxyCutover.md.
+ * couch-auth-proxy (optional public Pouch sync ACL).
+ *
+ * `enabled: true` → ALB couch.* → proxy; Conductor INTERNAL → VPC Couch;
+ * sets Conductor `COUCH_AUTH_PROXY_ENABLED=true`.
+ * `enabled: false` (default) → legacy ALB → Couch; no proxy service; Conductor
+ * still stamps creator fields and runs DATA migrations so cutover can enable
+ * later. Pin imageTag to docker-compose.yml — the image owns `_design/acl`
+ * map/validate_doc_update (FAIMS only patches `dbacl`). See
+ * AclValidationLayering.md / CouchAuthProxyCutover.md.
  */
-const CouchAuthProxyConfigSchema = z
-  .object({
-    /** Container image repository (no tag) */
-    image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
-    /** Immutable tag / digest pin (must match docker-compose.yml) */
-    imageTag: z.string().default('1.7.0'),
-    /** Fargate CPU units */
-    cpu: z.number().int().positive().default(512),
-    /** Fargate memory in MiB */
-    memory: z.number().int().positive().default(1024),
-    /** Desired task count */
-    desiredCount: z.number().int().positive().default(2),
-  })
-  // Reject legacy `enabled` and other unknown keys — proxy is always on
-  .strict();
+const CouchAuthProxyConfigSchema = z.object({
+  /**
+   * When true, deploy proxy on ALB couch.* and wire Conductor PUBLIC → proxy.
+   * When false, keep ALB → Couch (legacy) and do not deploy the proxy.
+   */
+  enabled: z.boolean().default(false),
+  /** Container image repository (no tag) */
+  image: z.string().default('ghcr.io/peterbaker0/couch-auth-proxy'),
+  /** Immutable tag / digest pin (must match docker-compose.yml) */
+  imageTag: z.string().default('1.7.0'),
+  /** Fargate CPU units */
+  cpu: z.number().int().positive().default(512),
+  /** Fargate memory in MiB */
+  memory: z.number().int().positive().default(1024),
+  /** Desired task count */
+  desiredCount: z.number().int().positive().default(2),
+});
 
 const DomainsConfigSchema = z.object({
   /** The base domain for all services. Note: Apex domains are not currently supported. */
@@ -621,10 +628,12 @@ export const ConfigSchema = z.object({
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /**
-   * Public sync ACL proxy (always deployed; immediate cutover). Tuning/image
-   * pin only — migrate DATA to v2 promptly after deploy (CouchAuthProxyCutover.md).
+   * Public sync ACL proxy (optional). Default `enabled: false` keeps legacy
+   * ALB → Couch. Set `enabled: true` for cutover — migrate DATA to v2 promptly
+   * afterward (CouchAuthProxyCutover.md).
    */
   couchAuthProxy: CouchAuthProxyConfigSchema.optional().default({
+    enabled: false,
     image: 'ghcr.io/peterbaker0/couch-auth-proxy',
     imageTag: '1.7.0',
     cpu: 512,

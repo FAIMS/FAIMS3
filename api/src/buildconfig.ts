@@ -109,6 +109,15 @@ const EnvSchema = z
       'COUCHDB_PUBLIC_URL'
     ),
     /**
+     * When true, Conductor warms/pings couch-auth-proxy via COUCHDB_PUBLIC_URL
+     * so `_design/acl` is installed before FAIMS patches `dbacl`. When false,
+     * skip all proxy HTTP calls (proxy not deployed) but still stamp creator
+     * fields, run DATA migrations, and attempt dbacl overlay if the ddoc
+     * already exists. Default true for local compose; set false when the
+     * proxy service is not running.
+     */
+    COUCH_AUTH_PROXY_ENABLED: configHelpers.boolWithDefault(true),
+    /**
      * CouchDB admin username used by the server (paired with COUCHDB_PASSWORD).
      * Distinct from client-facing directory credentials.
      */
@@ -459,6 +468,7 @@ const EnvSchema = z
       designerUrl: env.DESIGNER_URL,
       couchdbInternalUrl: env.COUCHDB_INTERNAL_URL,
       couchdbPublicUrl: env.COUCHDB_PUBLIC_URL,
+      couchAuthProxyEnabled: env.COUCH_AUTH_PROXY_ENABLED,
       conductorKeyId,
       keyFilePath: env.KEY_FILE_PATH,
       shortCodePrefix: env.CONDUCTOR_SHORT_CODE_PREFIX,

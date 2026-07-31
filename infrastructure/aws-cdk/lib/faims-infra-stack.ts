@@ -98,9 +98,12 @@ export class FaimsInfraStack extends cdk.Stack {
     // COUCHDB
     // =======
 
-    // EC2 CouchDB is VPC-only (:5984). Public couch.* terminates on
-    // couch-auth-proxy (below). DNS alias to the shared ALB stays here.
-    // Deploy only after DATA v2 migration — see CouchAuthProxyCutover.md.
+    // When couch-auth-proxy is enabled, Couch is VPC-only (:5984) and public
+    // couch.* terminates on the proxy. When disabled, ALB → Couch (legacy).
+    // DNS alias to the shared ALB always stays here.
+    // See CouchAuthProxyCutover.md.
+    const couchAuthProxyEnabled = config.couchAuthProxy.enabled;
+
     const couchDb = new EC2CouchDB(this, 'couch-db', {
       vpc: networking.vpc,
       instanceType: config.couch.instanceType,
@@ -113,35 +116,43 @@ export class FaimsInfraStack extends cdk.Stack {
       monitoring: config.couch.monitoring,
       couchVersionTag: config.couch.couchVersionTag,
       cookieSecret: cookieSecret,
+      attachToPublicAlb: !couchAuthProxyEnabled,
     });
 
-    // COUCH-AUTH-PROXY (mandatory)
-    // ============================
-    // Public Pouch sync ACL. Always on; ALB couch.* → proxy → Couch.
+    // COUCH-AUTH-PROXY (optional)
+    // ===========================
+    // Public Pouch sync ACL. Enable after DATA is ready for cutover —
+    // see CouchAuthProxyCutover.md. Rollback: set enabled false (reopens
+    // the guest sync read gap).
 
-    const couchAuthProxy = new CouchAuthProxy(this, 'couch-auth-proxy', {
-      vpc: networking.vpc,
-      sharedBalancer: networking.sharedBalancer,
-      domainName: domains.couch,
-      certificate: primaryCert,
-      couchInternalUrl: couchDb.internalEndpoint,
-      couchAdminSecret: couchDb.passwordSecret,
-      couchSecurityGroup: couchDb.securityGroup,
-      // Browser PWA + Control Centre + Capacitor WebView origins (native sync
-      // uses Pouch fetch subject to CORS when CapacitorHttp is disabled).
-      corsOrigins: [
-        `https://${domains.faims}`,
-        `https://${domains.web}`,
-        'https://localhost',
-        'capacitor://localhost',
-      ],
-      image: config.couchAuthProxy.image,
-      imageTag: config.couchAuthProxy.imageTag,
-      cpu: config.couchAuthProxy.cpu,
-      memory: config.couchAuthProxy.memory,
-      desiredCount: config.couchAuthProxy.desiredCount,
-      couchInternalPort: couchDb.couchInternalPort,
-    });
+    let couchPublicEndpoint = couchDb.couchEndpoint;
+
+    if (couchAuthProxyEnabled) {
+      const couchAuthProxy = new CouchAuthProxy(this, 'couch-auth-proxy', {
+        vpc: networking.vpc,
+        sharedBalancer: networking.sharedBalancer,
+        domainName: domains.couch,
+        certificate: primaryCert,
+        couchInternalUrl: couchDb.internalEndpoint,
+        couchAdminSecret: couchDb.passwordSecret,
+        couchSecurityGroup: couchDb.securityGroup,
+        // Browser PWA + Control Centre + Capacitor WebView origins (native sync
+        // uses Pouch fetch subject to CORS when CapacitorHttp is disabled).
+        corsOrigins: [
+          `https://${domains.faims}`,
+          `https://${domains.web}`,
+          'https://localhost',
+          'capacitor://localhost',
+        ],
+        image: config.couchAuthProxy.image,
+        imageTag: config.couchAuthProxy.imageTag,
+        cpu: config.couchAuthProxy.cpu,
+        memory: config.couchAuthProxy.memory,
+        desiredCount: config.couchAuthProxy.desiredCount,
+        couchInternalPort: couchDb.couchInternalPort,
+      });
+      couchPublicEndpoint = couchAuthProxy.publicEndpoint;
+    }
 
     // CONDUCTOR
     // =========
@@ -158,8 +169,10 @@ export class FaimsInfraStack extends cdk.Stack {
       rateLimiterEnabled: config.security.rateLimiterEnabled,
       authAttemptLimiterEnabled: config.security.authAttemptLimiterEnabled,
       couchDbAdminSecret: couchDb.passwordSecret,
-      couchDBPublicEndpoint: couchAuthProxy.publicEndpoint,
+      couchDBPublicEndpoint: couchPublicEndpoint,
+      // Always VPC-internal for admin; proxy warm is gated by the enabled flag.
       couchDBInternalEndpoint: couchDb.internalEndpoint,
+      couchAuthProxyEnabled,
       couchDBPort: couchDb.exposedPort,
       webAppPublicUrl: `https://${domains.faims}`,
       androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
@@ -195,7 +208,7 @@ export class FaimsInfraStack extends cdk.Stack {
     // =========
 
     // Deploy the FAIMS 3 web front-end (app, web, docs) as S3 + CloudFront static websites
-    // CSP keep https://couch.* — same hostname, terminated on the proxy.
+    // CSP keep https://couch.* — same hostname (proxy or direct Couch on ALB).
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _frontEnd = new FaimsFrontEnd(this, 'frontend', {
       couchDbDomainOnly: domains.couch,

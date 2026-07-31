@@ -59,7 +59,9 @@ session:
    `curl http://localhost:5984/_up` and
    `curl http://localhost:5985/_couch-auth-proxy/health` to return 200.
    App sync uses `COUCHDB_PUBLIC_URL` (proxy, default `:5985`); Conductor uses
-   `COUCHDB_INTERNAL_URL` (Couch, `:5984`).
+   `COUCHDB_INTERNAL_URL` (Couch, `:5984`). Set `COUCH_AUTH_PROXY_ENABLED=true`
+   in `api/.env` when the proxy is running (default in `.env.dist`); set
+   `false` and point `COUCHDB_PUBLIC_URL` at `:5984` if you skip the proxy.
 4. Initialise the database (creates the `admin` user): `pnpm run migrate-with-keys`.
 5. Run all dev services with live reload: `pnpm run dev` (turbo runs api, app,
    web and the data-model watcher in parallel). Run it in a long-lived tmux

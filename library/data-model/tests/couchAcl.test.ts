@@ -28,7 +28,7 @@ import {dataV1toV2Migration, initDataDB} from '../src/data_storage';
 
 PouchDB.plugin(PouchDBMemoryAdapter);
 
-/** Minimal stand-in for a proxy-installed `_design/acl` (map/VDU omitted). */
+/** Minimal stand-in for a proxy-installed `_design/acl` (map/validate_doc_update omitted). */
 async function seedProxyAclStub(
   db: PouchDB.Database,
   dbacl?: DbAclOverlay
@@ -92,7 +92,7 @@ describe('couch-auth-proxy ACL helpers', () => {
     );
   });
 
-  test('FAIMS shape VDU requires child parent only; require-creator is proxy env', () => {
+  test('FAIMS shape validate_doc_update requires child parent only; require-creator is proxy env', () => {
     expect(FAIMS_ACL_SHAPE_VALIDATE_DOC_UPDATE_SOURCE).not.toContain(
       'Document must have a creator'
     );

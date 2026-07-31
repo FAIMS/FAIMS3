@@ -184,8 +184,9 @@ function minimalStackConfig(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ConfigSchema couchAuthProxy', () => {
-  it('applies defaults when couchAuthProxy is omitted', () => {
+  it('applies defaults when couchAuthProxy is omitted (proxy off)', () => {
     const parsed = ConfigSchema.parse(minimalStackConfig());
+    expect(parsed.couchAuthProxy.enabled).toBe(false);
     expect(parsed.couchAuthProxy.imageTag).toBe('1.7.0');
     expect(parsed.couchAuthProxy.image).toBe(
       'ghcr.io/peterbaker0/couch-auth-proxy'
@@ -201,14 +202,16 @@ describe('ConfigSchema couchAuthProxy', () => {
         couchAuthProxy: {},
       })
     );
+    expect(parsed.couchAuthProxy.enabled).toBe(false);
     expect(parsed.couchAuthProxy.cpu).toBe(512);
     expect(parsed.couchAuthProxy.imageTag).toBe('1.7.0');
   });
 
-  it('accepts a custom image pin', () => {
+  it('accepts enabled true with a custom image pin', () => {
     const parsed = ConfigSchema.parse(
       minimalStackConfig({
         couchAuthProxy: {
+          enabled: true,
           image: 'ghcr.io/peterbaker0/couch-auth-proxy',
           imageTag: 'sha-deadbeef',
           cpu: 256,
@@ -217,6 +220,7 @@ describe('ConfigSchema couchAuthProxy', () => {
         },
       })
     );
+    expect(parsed.couchAuthProxy.enabled).toBe(true);
     expect(parsed.couchAuthProxy.imageTag).toBe('sha-deadbeef');
     expect(parsed.couchAuthProxy.cpu).toBe(256);
   });
@@ -226,16 +230,6 @@ describe('ConfigSchema couchAuthProxy', () => {
       ConfigSchema.parse(
         minimalStackConfig({
           couchAuthProxy: {cpu: 0},
-        })
-      )
-    ).toThrow(ZodError);
-  });
-
-  it('rejects unknown enabled flag (proxy is always on)', () => {
-    expect(() =>
-      ConfigSchema.parse(
-        minimalStackConfig({
-          couchAuthProxy: {enabled: false},
         })
       )
     ).toThrow(ZodError);

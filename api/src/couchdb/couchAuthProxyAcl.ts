@@ -1,8 +1,28 @@
 /**
  * Conductor-side helpers for the couch-auth-proxy / FAIMS ACL ownership split.
  *
- * - Proxy installs/migrates `_design/acl` map + protocol VDU (`ACL_AUTO_INSTALL`).
- * - Conductor warms the proxy so that ddoc exists, then patches project `dbacl`.
+ * - Proxy installs/migrates `_design/acl` map + protocol validate_doc_update
+ *   (`ACL_AUTO_INSTALL`) when it first sees a matching DB.
+ * - Conductor **warms** the proxy (see below) so that ddoc exists, then patches
+ *   project `dbacl`.
+ *
+ * Gated by `config.couchAuthProxyEnabled` (`COUCH_AUTH_PROXY_ENABLED`). When
+ * false, warm is skipped (no HTTP to a non-existent proxy) but FAIMS still
+ * stamps `creator`/`parent`, runs DATA migrations, and may patch `dbacl` if
+ * `_design/acl` already exists (`missing_proxy_ddoc` is OK).
+ *
+ * ## What “warm” means
+ *
+ * Couch-auth-proxy installs `_design/acl` lazily on ACL-scoped access through
+ * the proxy — not when Conductor talks to Couch on `COUCHDB_INTERNAL_URL`
+ * (admin bypass). **Warming** is pinging the data DB via
+ * `COUCHDB_PUBLIC_URL` (admin `GET /{db}`) so the proxy’s `ensureDb` →
+ * `ensureAclDdoc` path runs and installs/migrates `_design/acl` if needed.
+ *
+ * Without that ping (or boot preload / a later client sync through the proxy),
+ * FAIMS must not invent a vendored map; `ensureDataDbAclOverlay` returns
+ * `missing_proxy_ddoc`. See AclValidationLayering.md and
+ * CouchAuthProxyAclInstallBrief.md.
  */
 
 import {
@@ -16,22 +36,35 @@ export class ProxyAclDesignDocMissingError extends Error {
   constructor(dbName: string) {
     super(
       `Proxy-managed _design/acl is missing on ${dbName}. ` +
-        `Warm couch-auth-proxy (ACL_AUTO_INSTALL) before patching dbacl.`
+        `Warm couch-auth-proxy first: GET the DB via COUCHDB_PUBLIC_URL so ` +
+        `ACL_AUTO_INSTALL can create _design/acl before patching dbacl.`
     );
     this.name = 'ProxyAclDesignDocMissingError';
   }
 }
 
 /**
- * Touch a data DB through `COUCHDB_PUBLIC_URL` (the proxy) as Couch admin so
- * `ensureDb` → `ensureAclDdoc` runs and auto-installs `_design/acl` when absent.
+ * Warm the proxy for a data DB: ping it through `COUCHDB_PUBLIC_URL` as Couch
+ * admin so couch-auth-proxy runs `ensureDb` → `ensureAclDdoc` and installs
+ * `_design/acl` when `ACL_AUTO_INSTALL` is on.
  *
- * No-ops when public URL equals internal URL (proxy not in path) — callers then
- * rely on an already-present ddoc or accept `missing_proxy_ddoc`.
+ * This is a deliberate side-effect of an otherwise ordinary DB GET. Conductor
+ * normally uses `COUCHDB_INTERNAL_URL`, which bypasses the proxy and therefore
+ * never triggers auto-install — so new/idle `data-*` DBs need this warm (or
+ * proxy boot preload / first client sync via the public URL) before FAIMS can
+ * patch `dbacl`.
+ *
+ * No-ops when `COUCH_AUTH_PROXY_ENABLED` is false, or when public URL equals
+ * internal URL (proxy not in the path) — callers then rely on an
+ * already-present ddoc or accept `missing_proxy_ddoc`.
  */
 export async function warmCouchAuthProxyAclDesignDoc(
   dbName: string
 ): Promise<void> {
+  if (!config.couchAuthProxyEnabled) {
+    return;
+  }
+
   const publicUrl = config.couchdbPublicUrl.replace(/\/$/, '');
   const internalUrl = config.couchdbInternalUrl.replace(/\/$/, '');
   if (publicUrl === internalUrl) {
@@ -76,13 +109,21 @@ export async function warmCouchAuthProxyAclDesignDoc(
 }
 
 /**
- * Warm the proxy ACL ddoc (if public ≠ internal), then patch FAIMS `dbacl` and
- * ensure `_design/faims_acl_shape`.
+ * Ensure proxy `_design/acl` exists (warm via public URL if needed), then patch
+ * FAIMS `dbacl` and ensure `_design/faims_acl_shape`.
+ *
+ * Warm = ping `{COUCHDB_PUBLIC_URL}/{data-db}` so couch-auth-proxy installs
+ * the ACL design doc before we overlay project role lists. Skipped when
+ * `COUCH_AUTH_PROXY_ENABLED` is false.
+ *
+ * When the proxy is disabled, `requireProxyDdoc` defaults to false so ops can
+ * still ensure `_design/faims_acl_shape` / patch `dbacl` if present without
+ * failing on a missing proxy-owned ddoc.
  */
 export async function ensureProjectDataDbAcl({
   projectId,
   db,
-  requireProxyDdoc = true,
+  requireProxyDdoc,
 }: {
   projectId: string;
   db: {
@@ -93,9 +134,10 @@ export async function ensureProjectDataDbAcl({
   requireProxyDdoc?: boolean;
 }): Promise<EnsureDataDbAclOverlayResult> {
   const dbName = `${DATA_DB_NAME_PREFIX}${projectId}`;
+  const mustHaveProxyDdoc = requireProxyDdoc ?? config.couchAuthProxyEnabled;
   await warmCouchAuthProxyAclDesignDoc(dbName);
   const result = await ensureDataDbAclOverlay({db, projectId});
-  if (requireProxyDdoc && result.status === 'missing_proxy_ddoc') {
+  if (mustHaveProxyDdoc && result.status === 'missing_proxy_ddoc') {
     throw new ProxyAclDesignDocMissingError(dbName);
   }
   return result;

@@ -206,8 +206,9 @@ export async function performMigration({
   let startKey = null;
   let hasMoreDocs = true;
 
-  // DATA ACL migration installs design docs; those are skipped in the document
-  // loop, and empty DBs would otherwise never run the migrator.
+  // DATA v1→v2 also patches dbacl / ensures faims_acl_shape once per DB.
+  // Design docs are skipped in the document loop below, and empty DBs would
+  // otherwise never invoke the migrator — run a prelude call first.
   if (migrationFunc === dataV1toV2Migration) {
     try {
       await Promise.resolve(

@@ -1,21 +1,33 @@
 /* eslint-disable n/no-process-exit */
 /**
- * Idempotent ops tool: warm couch-auth-proxy `_design/acl` on every project
- * data DB, patch FAIMS `dbacl` from the permission model, and ensure
- * `_design/faims_acl_shape`.
+ * Validate (and optionally fix) couch-auth-proxy ACL overlays on every project
+ * data DB.
  *
- * Use after permission-model token changes, or after cutover when proxy
- * auto-install may not have run yet for idle DBs.
+ * Normal migrate / Conductor startup already warms the proxy and patches
+ * `dbacl` via `initialiseDataDb` → `ensureProjectDataDbAcl`. This script is an
+ * ops **validation** tool: run `--check` first to confirm every `data-*` DB is
+ * healthy. Use `--write` only when check reports drift (missing `_design/acl`,
+ * mismatched `dbacl`) — e.g. after a permission-model token change, or after
+ * enabling the proxy when prepare-migrate ran with the proxy off.
+ *
+ * Modes (exactly one required):
+ *   --check   Inspect only. Exit 1 if any DB is missing `_design/acl` (when
+ *             the proxy is enabled) or has mismatched `dbacl`.
+ *   --write   Warm proxy (when enabled), patch FAIMS `dbacl`, ensure
+ *             `_design/faims_acl_shape`.
+ *
+ * `--dry-run` is accepted as a deprecated alias for `--check`.
  *
  * Usage (from api/):
- *   pnpm run repair-data-db-acl
- *   pnpm run repair-data-db-acl -- --dry-run
+ *   pnpm run repair-data-db-acl -- --check
+ *   pnpm run repair-data-db-acl -- --write
  */
 import {
   buildDbAclOverlay,
   DATA_DB_NAME_PREFIX,
   projectIdFromDataDbName,
 } from '@faims3/data-model';
+import {config} from '../buildconfig';
 import {
   getDataDb,
   listCouchDatabaseNames,
@@ -24,7 +36,35 @@ import {
 import {ensureProjectDataDbAcl} from '../couchdb/couchAuthProxyAcl';
 import {getAllProjectsDirectory} from '../couchdb/notebooks';
 
-const isDryRun = process.argv.includes('--dry-run');
+type Mode = 'check' | 'write';
+
+const printUsage = (): void => {
+  console.error(`Usage: pnpm run repair-data-db-acl -- --check | --write
+
+  --check   Validate only (no writes). Exit 1 on missing/mismatched ACL.
+  --write   Warm proxy + patch dbacl / faims_acl_shape where needed.
+
+  --dry-run is a deprecated alias for --check.`);
+};
+
+const parseMode = (argv: string[]): Mode | null => {
+  const wantsCheck = argv.includes('--check') || argv.includes('--dry-run');
+  const wantsWrite = argv.includes('--write');
+  if (wantsCheck && wantsWrite) {
+    console.error('Specify only one of --check or --write.');
+    return null;
+  }
+  if (wantsCheck) {
+    if (argv.includes('--dry-run') && !argv.includes('--check')) {
+      console.warn(
+        'Warning: --dry-run is deprecated; prefer --check (same behaviour).'
+      );
+    }
+    return 'check';
+  }
+  if (wantsWrite) return 'write';
+  return null;
+};
 
 type RepairCandidate = {
   dbName: string;
@@ -58,7 +98,7 @@ const discoverDataDatabases = async (): Promise<RepairCandidate[]> => {
     }
   } catch (err) {
     console.warn(
-      'Warning: could not read projects directory; repairing from Couch DB name list only.',
+      'Warning: could not read projects directory; validating from Couch DB name list only.',
       err instanceof Error ? err.message : err
     );
   }
@@ -67,11 +107,20 @@ const discoverDataDatabases = async (): Promise<RepairCandidate[]> => {
 };
 
 const main = async () => {
+  const mode = parseMode(process.argv);
+  if (!mode) {
+    printUsage();
+    process.exit(2);
+  }
+
   await verifyCouchDBConnection();
   const candidates = await discoverDataDatabases();
+  const proxyEnabled = config.couchAuthProxyEnabled;
 
   console.log(
-    `Found ${candidates.length} data DB(s) to ${isDryRun ? 'inspect' : 'repair'}.`
+    `Found ${candidates.length} data DB(s) to ${
+      mode === 'check' ? 'check' : 'repair'
+    } (proxy ${proxyEnabled ? 'enabled' : 'disabled'}).`
   );
 
   let ok = 0;
@@ -80,7 +129,7 @@ const main = async () => {
   for (const {dbName, projectId, source} of candidates) {
     const expected = buildDbAclOverlay(projectId);
     try {
-      if (isDryRun) {
+      if (mode === 'check') {
         const db = await getDataDb(projectId);
         try {
           const existing = (await db.get('_design/acl')) as {
@@ -94,29 +143,50 @@ const main = async () => {
               JSON.stringify(expected._w) &&
             JSON.stringify(existing.dbacl?._d ?? []) ===
               JSON.stringify(expected._d);
-          console.log(
-            `[dry-run] ${dbName} (${source}): has _design/acl version=${
-              existing.version ?? '?'
-            }, dbacl._r=${existing.dbacl?._r?.length ?? 0} (expected ${
-              expected._r.length
-            }), ${listsMatch ? 'DBACL_OK' : 'WOULD_PATCH_DBACL'}`
-          );
+          if (listsMatch) {
+            console.log(
+              `[check] ${dbName} (${source}): OK _design/acl version=${
+                existing.version ?? '?'
+              }, dbacl._r=${existing.dbacl?._r?.length ?? 0}`
+            );
+            ok += 1;
+          } else {
+            console.error(
+              `[check] ${dbName} (${source}): DBACL_MISMATCH _design/acl version=${
+                existing.version ?? '?'
+              }, dbacl._r=${existing.dbacl?._r?.length ?? 0} (expected ${
+                expected._r.length
+              }) — re-run with --write to patch`
+            );
+            failed += 1;
+          }
         } catch {
-          console.log(
-            `[dry-run] ${dbName} (${source}): MISSING _design/acl (would warm proxy + patch dbacl; expected dbacl._r=${expected._r.length})`
-          );
+          if (proxyEnabled) {
+            console.error(
+              `[check] ${dbName} (${source}): MISSING _design/acl ` +
+                `(expected dbacl._r=${expected._r.length}) — ` +
+                `re-run with --write to warm proxy + patch`
+            );
+            failed += 1;
+          } else {
+            console.log(
+              `[check] ${dbName} (${source}): MISSING _design/acl ` +
+                `(OK while COUCH_AUTH_PROXY_ENABLED=false; ` +
+                `expected dbacl._r=${expected._r.length} after enable + --write)`
+            );
+            ok += 1;
+          }
         }
-        ok += 1;
         continue;
       }
 
       const db = await getDataDb(projectId);
+      // requireProxyDdoc defaults from COUCH_AUTH_PROXY_ENABLED
       const result = await ensureProjectDataDbAcl({
         projectId,
         db: db as any,
-        requireProxyDdoc: true,
       });
-      console.log(`Repaired ${dbName} (${source}): ${result.status}`);
+      console.log(`Wrote ${dbName} (${source}): ${result.status}`);
       ok += 1;
     } catch (err) {
       failed += 1;
@@ -127,7 +197,9 @@ const main = async () => {
     }
   }
 
-  console.log(`Done. ok=${ok} failed=${failed}${isDryRun ? ' (dry-run)' : ''}`);
+  console.log(
+    `Done. ok=${ok} failed=${failed}${mode === 'check' ? ' (check only)' : ' (write)'}`
+  );
   process.exit(failed > 0 ? 1 : 0);
 };
 

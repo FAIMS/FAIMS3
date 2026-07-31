@@ -87,6 +87,7 @@
     }
   },
   "couchAuthProxy": {
+    "enabled": false,
     "image": "ghcr.io/peterbaker0/couch-auth-proxy",
     "imageTag": "1.7.0",
     "cpu": 512,

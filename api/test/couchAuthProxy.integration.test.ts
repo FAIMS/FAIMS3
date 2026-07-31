@@ -1,14 +1,12 @@
 /**
  * Integration tests for couch-auth-proxy guest/contributor ACL on data DBs.
  *
- * Ownership under test: proxy installs `_design/acl` (map/VDU); FAIMS patches
+ * Ownership under test: proxy installs `_design/acl` (map/validate_doc_update); FAIMS patches
  * `dbacl` and enforces `faims_acl_shape` — see AclValidationLayering.md.
  *
  * Requires a live stack:
  *   - CouchDB on COUCHDB_INTERNAL_URL (admin)
  *   - couch-auth-proxy on COUCHDB_PUBLIC_URL
- *
- * Skips automatically when the proxy is unreachable so unit CI stays green.
  *
  * Auth uses Couch `_users` + Basic through the proxy with FAIMS-encoded role
  * tokens (`projectId||ROLE`). That matches production JWT `_couchdb.roles`
@@ -16,6 +14,11 @@
  *
  * Run (stack up):
  *   pnpm --filter=@faims3/api run test:couch-auth-proxy
+ *
+ * TODO: Fold these scenarios into `@faims3/e2e` and/or improve the CI harness
+ * so general integration tests (live Couch + couch-auth-proxy) can run
+ * without a one-off package script. Prefer e2e for guest isolation coverage
+ * once that path is solid; keep this file as a local/manual proof until then.
  */
 import {expect} from 'chai';
 import PouchDB from 'pouchdb';
@@ -111,7 +114,11 @@ async function expectForbidden(p: Promise<unknown>): Promise<void> {
   }
 }
 
-/** Warm the proxy ACL cache / follower until a non-admin GET succeeds or 404s. */
+/**
+ * Wait until the proxy ACL cache/follower is ready for this DB handle
+ * (non-admin GET succeeds or 404/403). Separate from **warm** below, which
+ * pings via the public URL so `_design/acl` is installed.
+ */
 async function waitForAclReady(db: PouchDB.Database): Promise<void> {
   const deadline = Date.now() + 30000;
   let lastErr: unknown;
@@ -219,7 +226,8 @@ describe('couch-auth-proxy data DB ACL', function () {
       config: {applyPermissions: true, forceWrite: true},
     });
 
-    // Proxy owns `_design/acl` install; warm via public URL then patch FAIMS dbacl.
+    // Warm: ping via public URL so the proxy installs `_design/acl`, then
+    // patch FAIMS dbacl (admin/internal path alone never triggers auto-install).
     const warmAuth = Buffer.from(`${COUCH_USER}:${COUCH_PASSWORD}`).toString(
       'base64'
     );
@@ -447,7 +455,7 @@ describe('couch-auth-proxy data DB ACL', function () {
     );
   });
 
-  it('denies creates without creator (proxy ACL_REQUIRE_CREATOR VDU)', async function () {
+  it('denies creates without creator (proxy ACL_REQUIRE_CREATOR validate_doc_update)', async function () {
     const dbA = userDb(guestA, password);
     await waitForAclReady(dbA);
     await expectForbidden(
@@ -463,7 +471,7 @@ describe('couch-auth-proxy data DB ACL', function () {
     );
   });
 
-  it('denies forging creator on create (ACL VDU)', async function () {
+  it('denies forging creator on create (ACL validate_doc_update)', async function () {
     const dbB = userDb(guestB, password);
     await waitForAclReady(dbB);
     await expectForbidden(
@@ -480,7 +488,7 @@ describe('couch-auth-proxy data DB ACL', function () {
     );
   });
 
-  it('denies child create when parent !== record_id (faims_acl_shape VDU)', async function () {
+  it('denies child create when parent !== record_id (faims_acl_shape validate_doc_update)', async function () {
     const dbA = userDb(guestA, password);
     await waitForAclReady(dbA);
     await expectForbidden(

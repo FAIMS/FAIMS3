@@ -81,16 +81,22 @@ export interface FaimsConductorProps {
   couchDBPort: number;
   /**
    * Public Couch URL advertised to apps as dataDb.base_url
-   * (`COUCHDB_PUBLIC_URL`). After cutover this is the couch-auth-proxy
-   * hostname (same public host as before).
+   * (`COUCHDB_PUBLIC_URL`). When couch-auth-proxy is enabled this is the
+   * proxy hostname; otherwise the ALB → Couch hostname.
    */
   couchDBPublicEndpoint: string;
   /**
    * VPC-internal Couch URL for Conductor admin traffic
-   * (`COUCHDB_INTERNAL_URL`). After cutover this is http://PRIVATE_IP:5984
-   * and must bypass the proxy.
+   * (`COUCHDB_INTERNAL_URL`). Always http://PRIVATE_IP:5984 and must bypass
+   * the proxy when the proxy is deployed.
    */
   couchDBInternalEndpoint: string;
+  /**
+   * When true, Conductor warms couch-auth-proxy via PUBLIC URL before
+   * patching dbacl (`COUCH_AUTH_PROXY_ENABLED`). When false, skip proxy
+   * HTTP but still stamp creator fields and run DATA migrations.
+   */
+  couchAuthProxyEnabled: boolean;
   /** Public URL for the /web (new conductor) */
   webUrl: string;
   /** Public URL for web app */
@@ -270,10 +276,13 @@ export class FaimsConductor extends Construct {
         CONDUCTOR_INSTANCE_NAME: props.config.name,
         CONDUCTOR_DESCRIPTION: props.config.description,
         COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-        // PUBLIC → couch-auth-proxy; INTERNAL → VPC Couch (admin / migrations)
+        // PUBLIC → proxy (or ALB→Couch when disabled); INTERNAL → VPC Couch
         // See docs/.../Authorisation/CouchAuthProxyCutover.md
         COUCHDB_PUBLIC_URL: props.couchDBPublicEndpoint,
         COUCHDB_INTERNAL_URL: props.couchDBInternalEndpoint,
+        COUCH_AUTH_PROXY_ENABLED: props.couchAuthProxyEnabled
+          ? 'true'
+          : 'false',
         CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
         // Conductor API URLs
         CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,

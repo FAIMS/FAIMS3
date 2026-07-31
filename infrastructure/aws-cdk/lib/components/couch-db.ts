@@ -19,6 +19,8 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import {GraphWidget, Metric, TextWidget} from 'aws-cdk-lib/aws-cloudwatch';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as elbTargets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as r53targets from 'aws-cdk-lib/aws-route53-targets';
@@ -57,6 +59,12 @@ export interface EC2CouchDBProps {
   couchVersionTag: string;
   /** chttpd_auth.secret configuration value - injected into init file */
   cookieSecret: sm.Secret;
+  /**
+   * When true (default), register this instance on the shared ALB for
+   * `domainName` (legacy public Couch). Set false when couch-auth-proxy owns
+   * the public host rule — DNS alias to the ALB is still created here.
+   */
+  attachToPublicAlb?: boolean;
 }
 
 /**
@@ -66,7 +74,9 @@ export class EC2CouchDB extends Construct {
   /** The EC2 instance running CouchDB */
   public readonly instance: ec2.Instance;
   /**
-   * Public HTTPS endpoint for the couch hostname (ALB → couch-auth-proxy).
+   * Public HTTPS endpoint for the couch hostname (ALB). When the proxy is
+   * enabled this hostname terminates on couch-auth-proxy; otherwise on this
+   * instance's target group.
    */
   public readonly couchEndpoint: string;
   /**
@@ -80,8 +90,10 @@ export class EC2CouchDB extends Construct {
   public readonly exposedPort: number = 443;
   /** The secret containing the CouchDB admin user/password */
   public readonly passwordSecret: sm.Secret;
-  /** Shared ALB (DNS alias only; proxy owns the host rule) */
+  /** Shared ALB */
   private readonly sharedBalancer: SharedBalancer;
+  /** EC2 Target group (only when attachToPublicAlb) */
+  private readonly targetGroup?: elb.ApplicationTargetGroup;
   /** The internal port CouchDB listens on */
   public readonly couchInternalPort: number = 5984;
   /** The path where CouchDB data will be stored */
@@ -146,6 +158,7 @@ methods = GET, PUT, POST, HEAD, DELETE
     // Expose variables
     this.sharedBalancer = props.sharedBalancer;
     this.monitoringConfig = props.monitoring;
+    const attachToPublicAlb = props.attachToPublicAlb !== false;
 
     // AUXILIARY SETUP
     // ================
@@ -424,10 +437,52 @@ EOL`,
       }
     );
 
+    // LOAD BALANCING SETUP
+    // =========================
+    // When couch-auth-proxy is enabled, the proxy construct owns the public
+    // ALB host rule for domainName. We still publish DNS to the shared ALB.
+
+    if (attachToPublicAlb) {
+      // Create the target group for the CouchDB instances (legacy public path)
+      this.targetGroup = new elb.ApplicationTargetGroup(this, 'CouchTG', {
+        port: this.couchInternalPort,
+        protocol: elb.ApplicationProtocol.HTTP,
+        targetType: elb.TargetType.INSTANCE,
+        healthCheck: {
+          enabled: true,
+          healthyHttpCodes: '200',
+          protocol: elb.Protocol.HTTP,
+          interval: Duration.seconds(30),
+          timeout: Duration.seconds(5),
+          port: this.couchInternalPort.toString(),
+          path: '/',
+        },
+        vpc: props.vpc,
+      });
+
+      // Add the EC2 instance to the target group
+      this.targetGroup.addTarget(new elbTargets.InstanceTarget(this.instance));
+
+      // Add HTTP redirected HTTPS service to ALB against target group
+      props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
+        'couch',
+        this.targetGroup,
+        [elb.ListenerCondition.hostHeaders([props.domainName])],
+        110, // TODO: Understand and consider priorities
+        110
+      );
+
+      // Allow inbound traffic from the ALB to the CouchDB instances
+      this.securityGroup.connections.allowFrom(
+        props.sharedBalancer.alb,
+        ec2.Port.tcp(this.couchInternalPort),
+        'Allow traffic from ALB to CouchDB instances'
+      );
+    }
+
     // DNS ROUTES
     // ===========
-    // Public couch.* DNS → shared ALB. The couch-auth-proxy construct owns the
-    // ALB host rule; this instance is not registered on the public ALB.
+    // Public couch.* DNS → shared ALB (proxy or instance TG owns the host rule).
 
     new route53.ARecord(this, 'CouchDBAliasRecord', {
       zone: props.hz,
@@ -496,7 +551,7 @@ EOL`,
     // OUTPUTS
     // ================
 
-    // Public hostname (ALB → couch-auth-proxy).
+    // Public hostname (ALB → proxy or this instance, depending on attachToPublicAlb).
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
     this.internalEndpoint = `http://${this.instance.instancePrivateIp}:${this.couchInternalPort}`;
     this.dataVolume = dataVolume;
@@ -612,6 +667,30 @@ EOL`,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       alarmDescription: 'CouchDB instance network out is high',
     });
+
+    // HTTP 5xx Errors Alarm (only when this construct owns the public TG)
+    if (this.targetGroup) {
+      this.createAlarm('CouchDBHttp5xxAlarm', {
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/ApplicationELB',
+          metricName: 'HTTPCode_Target_5XX_Count',
+          dimensionsMap: {
+            LoadBalancer: this.sharedBalancer.alb.loadBalancerFullName,
+            TargetGroup: this.targetGroup.targetGroupFullName,
+          },
+          statistic: 'Sum',
+          period: Duration.minutes(5),
+        }),
+        threshold: this.monitoringConfig?.http5xx?.threshold ?? 10,
+        evaluationPeriods:
+          this.monitoringConfig?.http5xx?.evaluationPeriods ?? 5,
+        datapointsToAlarm:
+          this.monitoringConfig?.http5xx?.datapointsToAlarm ?? 3,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        alarmDescription: 'CouchDB is returning a high number of 5xx errors',
+      });
+    }
   }
 
   /**
@@ -637,6 +716,7 @@ EOL`,
 
     const instanceId = this.instance.instanceId;
     const albFullName = this.sharedBalancer.alb.loadBalancerFullName;
+    const targetGroupFullName = this.targetGroup?.targetGroupFullName;
 
     // Helper function to create a left annotation for alarm thresholds
     const createLeftAnnotation = (value: number, label: string) => ({
@@ -811,5 +891,61 @@ EOL`,
         height: 6,
       })
     );
+
+    // Target-group widgets only when this construct owns the public Couch TG
+    if (targetGroupFullName) {
+      dashboard.addWidgets(
+        new GraphWidget({
+          title: 'ALB HTTP Error Codes',
+          left: [
+            new Metric({
+              namespace: 'AWS/ApplicationELB',
+              metricName: 'HTTPCode_Target_4XX_Count',
+              dimensionsMap: {
+                LoadBalancer: albFullName,
+                TargetGroup: targetGroupFullName,
+              },
+              statistic: 'Sum',
+              period: Duration.minutes(5),
+            }),
+            new Metric({
+              namespace: 'AWS/ApplicationELB',
+              metricName: 'HTTPCode_Target_5XX_Count',
+              dimensionsMap: {
+                LoadBalancer: albFullName,
+                TargetGroup: targetGroupFullName,
+              },
+              statistic: 'Sum',
+              period: Duration.minutes(5),
+            }),
+          ],
+          leftAnnotations: [
+            createLeftAnnotation(
+              this.monitoringConfig?.http5xx?.threshold ?? 10,
+              '5XX Error Alarm Threshold'
+            ),
+          ],
+          width: 8,
+          height: 6,
+        }),
+        new GraphWidget({
+          title: 'ALB Healthy Host Count',
+          left: [
+            new Metric({
+              namespace: 'AWS/ApplicationELB',
+              metricName: 'HealthyHostCount',
+              dimensionsMap: {
+                LoadBalancer: albFullName,
+                TargetGroup: targetGroupFullName,
+              },
+              statistic: 'Average',
+              period: Duration.minutes(5),
+            }),
+          ],
+          width: 12,
+          height: 6,
+        })
+      );
+    }
   }
 }

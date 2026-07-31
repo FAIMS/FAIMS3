@@ -2,12 +2,14 @@
  * FAIMS ↔ couch-auth-proxy ACL helpers for project data DBs.
  *
  * Ownership split (see Authorisation/AclValidationLayering.md):
- * - couch-auth-proxy owns `_design/acl` map + protocol VDU (auto-install /
- *   migrate when `ACL_AUTO_INSTALL` is enabled). FAIMS never vendors that body.
+ * - couch-auth-proxy owns `_design/acl` map + protocol validate_doc_update
+ *   (auto-install / migrate when `ACL_AUTO_INSTALL` is enabled). FAIMS never
+ *   vendors that body. Callers must **warm** the proxy first (ping the DB via
+ *   the public URL) so that ddoc exists — see `warmCouchAuthProxyAclDesignDoc`.
  * - FAIMS owns project-scoped `dbacl` overlays on that ddoc, document stamps
  *   (`creator` / `parent`), and `_design/faims_acl_shape`.
  *
- * Pin the proxy image in compose / CDK; do not copy map/VDU source here.
+ * Pin the proxy image in compose / CDK; do not copy map/validate_doc_update source here.
  */
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
@@ -132,9 +134,15 @@ function dbAclListsEqual(a: unknown, b: DbAclOverlay): boolean {
 }
 
 /**
- * Apply DATA ACL stamp fields to a document (pure). Used by DATA v1→v2
- * migration and backup restore so unstamped corpus cannot re-enter after
- * cutover.
+ * Apply DATA ACL stamp fields to a document (pure).
+ *
+ * Used by DATA v1→v2 (`dataV1toV2Migration`) and backup restore so unstamped
+ * corpus cannot re-enter after couch-auth-proxy cutover:
+ * - record docs (`rec-*` / `record_format_version`): set `creator` from
+ *   `created_by`, else {@link ACL_ORPHAN_CREATOR}
+ * - child graph docs with `record_id`: set `creator` the same way and
+ *   `parent = record_id` (proxy inheritance; not FAIMS relationship.parent)
+ * - `_design/*` and already-correct docs: no-op (`null`)
  *
  * Returns a shallow-cloned updated doc, or `null` when already correct.
  */
@@ -206,10 +214,12 @@ function isConflictError(err: unknown): boolean {
  * Patch project-scoped `dbacl` onto an existing proxy-managed `_design/acl`,
  * then ensure FAIMS `_design/faims_acl_shape`.
  *
- * Never installs or rewrites the proxy map / protocol VDU / `version`. If the
- * ddoc is absent, returns `missing_proxy_ddoc` after still ensuring the FAIMS
- * shape doc — callers that need the proxy ddoc must warm couch-auth-proxy
- * first (`ACL_AUTO_INSTALL`).
+ * Never installs or rewrites the proxy map / protocol validate_doc_update /
+ * `version`. If the ddoc is absent, returns `missing_proxy_ddoc` after still
+ * ensuring the FAIMS shape doc — callers that need the proxy ddoc must **warm**
+ * couch-auth-proxy first: ping the DB via the public (proxy) URL so
+ * `ACL_AUTO_INSTALL` can create `_design/acl`. Admin traffic on the internal
+ * Couch URL bypasses the proxy and never triggers that install.
  */
 export async function ensureDataDbAclOverlay({
   db,

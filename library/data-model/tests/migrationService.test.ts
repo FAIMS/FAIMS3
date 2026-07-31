@@ -1104,7 +1104,7 @@ describe('Migration System Tests', () => {
 
       try {
         // Proxy-owned stub; migration must resolve projectId from db.name URL
-        // and patch dbacl without inventing map/VDU.
+        // and patch dbacl without inventing map/validate_doc_update.
         await testDataDb.put({
           _id: '_design/acl',
           language: 'javascript',

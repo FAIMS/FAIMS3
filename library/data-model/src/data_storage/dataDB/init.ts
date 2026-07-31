@@ -11,8 +11,10 @@ export type DataDbInitialisationConfig = {
  * Design docs + security for a project data DB.
  *
  * Does **not** install couch-auth-proxy `_design/acl` — the proxy auto-installs
- * that on first ACL-scoped access (`ACL_AUTO_INSTALL`). Conductor then patches
- * project `dbacl` via {@link ensureDataDbAclOverlay} after warming the proxy.
+ * that on first ACL-scoped access through the public URL (`ACL_AUTO_INSTALL`).
+ * Conductor **warms** the proxy (admin `GET` via `COUCHDB_PUBLIC_URL` so
+ * `_design/acl` is installed), then patches project `dbacl` via
+ * {@link ensureDataDbAclOverlay}.
  */
 export function initDataDB({
   projectId,

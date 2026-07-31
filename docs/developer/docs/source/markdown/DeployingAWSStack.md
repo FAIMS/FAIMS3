@@ -769,7 +769,7 @@ COUCHDB_EXTERNAL_PORT=443
 #   INTERNAL → http://<couch-private-ip>:5984         (VPC, admin Basic)
 # For local migrate against a deployed stack, INTERNAL must reach Couch
 # directly (SSM port-forward / VPN / ssh -L) — never the public proxy URL.
-# See Authorisation/CouchAuthProxyAwsCdk.md and CouchAuthProxyCutover.md.
+# See infrastructure/aws-cdk/README.md and Authorisation/CouchAuthProxyCutover.md.
 COUCHDB_INTERNAL_URL=http://<couch-private-ip>:5984
 # Public sync URL advertised to the app as dataDb.base_url (proxy hostname).
 COUCHDB_PUBLIC_URL=https://couch.<your domain>:443
@@ -828,12 +828,14 @@ You can now manage the deployment with your personal login.
 
 ## couch-auth-proxy (per-document sync ACL)
 
-Public Pouch↔Couch sync always goes through couch-auth-proxy in the AWS CDK
-stack. Tune the image/size via `couchAuthProxy` in your config JSON (see
+Public Pouch↔Couch sync goes through couch-auth-proxy when
+`couchAuthProxy.enabled` is **`true`** (default **`false`** keeps legacy
+ALB → Couch). Tune via `couchAuthProxy` in your config JSON (see
 [infrastructure/aws-cdk/README.md](../../../../infrastructure/aws-cdk/README.md)):
 
 ```json
 "couchAuthProxy": {
+  "enabled": true,
   "image": "ghcr.io/peterbaker0/couch-auth-proxy",
   "imageTag": "1.7.0",
   "cpu": 512,
@@ -842,20 +844,27 @@ stack. Tune the image/size via `couchAuthProxy` in your config JSON (see
 }
 ```
 
-Always-on topology (immediate cutover on deploy):
+When enabled:
 
 - public `couch.*` / `db.*` hostname on the shared ALB → **couch-auth-proxy** ECS
-- Conductor `COUCHDB_PUBLIC_URL` → that hostname; `COUCHDB_INTERNAL_URL` → VPC Couch
+- Conductor `COUCH_AUTH_PROXY_ENABLED=true`, `COUCHDB_PUBLIC_URL` → that hostname;
+  `COUCHDB_INTERNAL_URL` → VPC Couch
 - Couch `:5984` is **not** registered on the internet-facing ALB (SG: proxy + Conductor only)
 
-**After deploy:** migrate DATA DBs to target version **2** + run
-`repair-data-db-acl` promptly (warm proxy `_design/acl`, patch `dbacl`, ensure
-`faims_acl_shape`). Unstamped legacy docs stay member-readable (`r-*`) until
-then — the same effective access as today’s public Couch, not a new regression.
+When disabled: ALB → Couch; Conductor `COUCH_AUTH_PROXY_ENABLED=false` (no proxy
+HTTP); creator stamps and DATA migrations still run.
 
-Ownership / VDU layering:
+**After enabling:** migrate DATA DBs to target version **2** promptly, then
+**check** ACL overlays with
+`pnpm --filter=@faims3/api run repair-data-db-acl -- --check`. Normal migrate /
+Conductor startup init already warms the proxy and patches `dbacl`; use
+`--write` only if check reports missing/mismatched overlays. Unstamped legacy
+docs stay member-readable (`r-*`) until migrate — the same effective access as
+today’s public Couch, not a new regression.
+
+Ownership / validate_doc_update layering:
 [AclValidationLayering](Authorisation/AclValidationLayering.md).  
-Design / CDK details: [CouchAuthProxyAwsCdk](Authorisation/CouchAuthProxyAwsCdk.md).  
+Design / CDK details: [infrastructure/aws-cdk/README.md](../../../../../infrastructure/aws-cdk/README.md).  
 Operator runbook: [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md).
 
 ## Additional configurations

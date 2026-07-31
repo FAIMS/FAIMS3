@@ -1,7 +1,8 @@
 /*
  * ECS Fargate couch-auth-proxy on the shared ALB (public couch.* hostname).
  *
- * See docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyAwsCdk.md
+ * See infrastructure/aws-cdk/README.md and
+ * docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyCutover.md
  */
 
 import {Duration} from 'aws-cdk-lib';
