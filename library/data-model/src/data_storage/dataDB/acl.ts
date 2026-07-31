@@ -1,18 +1,49 @@
 /**
- * FAIMS ↔ couch-auth-proxy ACL helpers for project data DBs.
+ * FAIMS ↔ couch-auth-proxy ACL helpers for project data DBs (`data-{projectId}`).
  *
- * Ownership split (see Authorisation/AclValidationLayering.md):
- * - couch-auth-proxy owns `_design/acl` map + protocol validate_doc_update
- *   (auto-install / migrate when `ACL_AUTO_INSTALL` is enabled). FAIMS never
- *   vendors that body. Callers must **warm** the proxy first (ping the DB via
- *   the public URL) so that ddoc exists — see `warmCouchAuthProxyAclDesignDoc`.
- * - FAIMS owns project-scoped `dbacl` overlays on that ddoc, document stamps
- *   (`creator` / `parent`), and `_design/faims_acl_shape`.
+ * ## Ownership (do not blur)
  *
- * Pin the proxy image in compose / CDK; do not copy map/validate_doc_update source here.
+ * | Piece | Owner | Role |
+ * | ----- | ----- | ---- |
+ * | `_design/acl` map + protocol `validate_doc_update` | **couch-auth-proxy** | Sync filter + ACL-field protocol (`creator`/`owners`/`acl`/`parent`; optional require-creator). Auto-install/migrate when `ACL_AUTO_INSTALL=true`. |
+ * | `_design/acl` → `dbacl` | **FAIMS** (this module) | Project-wide ALL-role grants (`_r`/`_w`/`_d`). Patched after warm; never vendors the map/VDU. |
+ * | Doc stamps `creator` / `parent` | **FAIMS** | Per-doc ownership / inheritance for the proxy filter. |
+ * | `_design/faims_acl_shape` | **FAIMS** | `record_id` ⇒ `parent === record_id`. |
+ * | `_design/permissions` | **FAIMS** | my/all write/delete on `created_by` (not this file). |
+ *
+ * Pin the proxy **image** in compose/CDK — it is the source of truth for the
+ * protocol ddoc. Do not copy map / validate_doc_update source here.
+ *
+ * Callers that need `_design/acl` must **warm** the proxy first (admin GET via
+ * `COUCHDB_PUBLIC_URL`) — internal Couch traffic bypasses the proxy and never
+ * triggers install. See `warmCouchAuthProxyAclDesignDoc` in the API.
+ *
+ * ## `dbacl.{_r,_w,_d}` — what each list does
+ *
+ * Defined by couch-auth-proxy on `_design/acl.dbacl`; FAIMS fills the values.
+ * Each list is grant tokens (`r-{role}` / `u-{user}`) that may act on **any**
+ * doc in the DB during sync (not just docs they created):
+ *
+ * | Key | Sync capability | Built from FAIMS `Action` |
+ * | --- | --------------- | ------------------------- |
+ * | `_r` | read all docs / attachments / changes | `READ_ALL_PROJECT_RECORDS` |
+ * | `_w` | write/update any doc | `EDIT_ALL_PROJECT_RECORDS` |
+ * | `_d` | delete any doc | `DELETE_ALL_PROJECT_RECORDS` |
+ *
+ * Built via `necessaryActionToCouchRoleList` → `toProxyRoleGrant` (proxy treats
+ * bare strings as `u-…`, so roles must be `r-…`). Guest/my-only access is
+ * **not** in `dbacl` — those users sync via doc `creator` / `parent` only.
+ *
+ * ## Docs
+ *
+ * - Ownership + VDU layering: `docs/.../Authorisation/AclValidationLayering.md`
+ * - RBAC actions/roles: `docs/.../PermissionModel.md`
+ * - Ops / warm / cutover: `docs/.../Authorisation/CouchAuthProxyCutover.md`
+ * - Install timing: `docs/.../Authorisation/CouchAuthProxyAclInstallBrief.md`
  */
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
+import {isConflictError, isNotFoundError} from '../utils';
 import {ensureFaimsAclShapeDesignDoc} from './faimsAclShape';
 
 /**
@@ -25,13 +56,26 @@ export const ACL_ORPHAN_CREATOR = '__faims_acl_orphan__';
 /** Prefix for project data Couch databases (`data-{projectId}`). */
 export const DATA_DB_NAME_PREFIX = 'data-';
 
+/**
+ * Project-scoped overlay written to `_design/acl.dbacl`.
+ * Grant tokens only — the proxy interprets them during sync.
+ * @see module header for `_r` / `_w` / `_d` semantics
+ */
 export type DbAclOverlay = {
+  /** Roles/users that may read any doc (from `READ_ALL_PROJECT_RECORDS`). */
   _r: string[];
+  /** Roles/users that may write any doc (from `EDIT_ALL_PROJECT_RECORDS`). */
   _w: string[];
+  /** Roles/users that may delete any doc (from `DELETE_ALL_PROJECT_RECORDS`). */
   _d: string[];
 };
 
+/** Proxy ACL owner on a `rec-*` doc (`creator` ≠ FAIMS `created_by`). */
 export type RecordAclStamp = {creator: string};
+/**
+ * Child-graph stamp: `parent` is the `rec-*` id the proxy inherits grants from
+ * (not FAIMS `relationship.parent` / revision `parents[]`).
+ */
 export type ChildAclStamp = {creator: string; parent: string};
 
 export type EnsureDataDbAclOverlayResult =
@@ -54,8 +98,9 @@ export function toProxyRoleGrant(role: string): string {
 }
 
 /**
- * Derive `dbacl` role-token lists for a project data DB from the FAIMS
- * permission model (READ/EDIT/DELETE ALL). Guest (my-only) tokens are absent.
+ * Derive `dbacl.{_r,_w,_d}` from FAIMS RBAC for one project.
+ * Only `*_ALL_PROJECT_RECORDS` roles; guests (my-only) are omitted on purpose.
+ * @see {@link DbAclOverlay} and module header
  */
 export function buildDbAclOverlay(projectId: string): DbAclOverlay {
   return {
@@ -186,30 +231,6 @@ export function stampDataDocumentAclFields(
   return needsUpdate ? updated : null;
 }
 
-function isNotFoundError(err: unknown): boolean {
-  const status =
-    err && typeof err === 'object' && 'status' in err
-      ? (err as {status?: number}).status
-      : undefined;
-  const name =
-    err && typeof err === 'object' && 'name' in err
-      ? (err as {name?: string}).name
-      : undefined;
-  return status === 404 || name === 'not_found';
-}
-
-function isConflictError(err: unknown): boolean {
-  const status =
-    err && typeof err === 'object' && 'status' in err
-      ? (err as {status?: number}).status
-      : undefined;
-  const name =
-    err && typeof err === 'object' && 'name' in err
-      ? (err as {name?: string}).name
-      : undefined;
-  return status === 409 || name === 'conflict';
-}
-
 /**
  * Patch project-scoped `dbacl` onto an existing proxy-managed `_design/acl`,
  * then ensure FAIMS `_design/faims_acl_shape`.
@@ -263,9 +284,3 @@ export async function ensureDataDbAclOverlay({
   await ensureFaimsAclShapeDesignDoc({db});
   return result;
 }
-
-/**
- * @deprecated Use {@link ensureDataDbAclOverlay}. Kept as a stable alias while
- * call sites migrate.
- */
-export const ensureDataDbAclDesignDoc = ensureDataDbAclOverlay;

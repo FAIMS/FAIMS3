@@ -33,7 +33,7 @@ export interface CouchAuthProxyProps {
   couchAdminSecret: sm.ISecret;
   /** SG on the Couch EC2 instance — receives ingress from this service */
   couchSecurityGroup: ec2.ISecurityGroup;
-  /** Allowed CORS origins (app + web + Capacitor WebView origins as needed) */
+  /** Allowed CORS origins (app + web + Capacitor WebView / iosScheme origins) */
   corsOrigins: string[];
   /** Container image repository (no tag) */
   image: string;

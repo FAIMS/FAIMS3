@@ -49,7 +49,8 @@ Fargate on the shared ALB:
   `ACL_REQUIRE_CREATOR=true`, `COUCH_PRELOAD_DB_INCLUDE=/^data-/` (boot warm),
   `AUTH_RESOLVE_VIA_COUCH_SESSION=true`,
   `CORS_ORIGINS` from faims + web HTTPS hosts plus Capacitor WebView origins
-  (`https://localhost`, `capacitor://localhost`).
+  (`https://localhost`, `capacitor://localhost`, `{appId}://localhost` for
+  FAIMS `iosScheme: appId`).
 - **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:1.7.0`
   (must match `docker-compose.yml` — image is source of truth for ACL map/validate_doc_update).
 - **Conductor**: `COUCH_AUTH_PROXY_ENABLED=true`, `COUCHDB_PUBLIC_URL` → proxy,

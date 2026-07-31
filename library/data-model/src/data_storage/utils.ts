@@ -26,6 +26,46 @@ export function convertToCouchDBString(func: Function) {
 }
 
 /**
+ * Narrow an unknown thrown value to a CouchDB/PouchDB-style error shape.
+ * Nano, PouchDB, and pouchdb-http typically set `status` and/or `name`.
+ */
+function couchErrorFields(err: unknown): {status?: number; name?: string} {
+  if (!err || typeof err !== 'object') {
+    return {};
+  }
+  const status =
+    'status' in err ? (err as {status?: number}).status : undefined;
+  const name = 'name' in err ? (err as {name?: string}).name : undefined;
+  return {status, name};
+}
+
+/**
+ * True when `err` is a CouchDB/PouchDB "document not found" failure.
+ *
+ * Matches either HTTP `status === 404` or Couch error `name === 'not_found'`
+ * (drivers vary which they set). Use in `get`/`put` catch paths that treat
+ * absence as a normal branch rather than a hard failure.
+ *
+ * Does **not** match higher-level app exceptions (e.g. API
+ * `ItemNotFoundException`); callers that wrap those should check them first.
+ */
+export function isNotFoundError(err: unknown): boolean {
+  const {status, name} = couchErrorFields(err);
+  return status === 404 || name === 'not_found';
+}
+
+/**
+ * True when `err` is a CouchDB/PouchDB revision conflict.
+ *
+ * Matches either HTTP `status === 409` or Couch error `name === 'conflict'`.
+ * Typical use: retry loops that re-fetch `_rev` and put again.
+ */
+export function isConflictError(err: unknown): boolean {
+  const {status, name} = couchErrorFields(err);
+  return status === 409 || name === 'conflict';
+}
+
+/**
  * Type definition for CouchDB design documents
  */
 export type DesignDocument = {
@@ -98,9 +138,9 @@ export async function safeWriteDocument<T extends {}>({
   // Try to put directly - if no clash or _rev already provided, succeeds immediately
   try {
     return await db.put(data);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // If 409 - that's a conflict - handle based on writeOnClash setting
-    if (err.status === 409) {
+    if (isConflictError(err)) {
       if (writeOnClash) {
         // Retry logic: fetch latest _rev and attempt write again
         let attempts = 0;
@@ -109,10 +149,10 @@ export async function safeWriteDocument<T extends {}>({
             const existingRecord = await db.get<T>(data._id);
             // Update _rev with latest version and retry the write
             return await db.put({...data, _rev: existingRecord._rev});
-          } catch (retryErr: any) {
+          } catch (retryErr: unknown) {
             attempts++;
             // If it's another 409 and we haven't hit max retries, continue loop
-            if (retryErr.status === 409 && attempts < maxRetries) {
+            if (isConflictError(retryErr) && attempts < maxRetries) {
               continue;
             }
             // Either hit max retries or encountered a different error
@@ -169,7 +209,7 @@ export async function batchWriteDocuments<T extends {}>({
         if (
           'error' in result &&
           result.error &&
-          result.status === 409 &&
+          isConflictError(result) &&
           writeOnClash
         ) {
           // Handle conflict individually
@@ -231,9 +271,9 @@ export async function writeNewDocument<T extends {}>({
     let existingDoc: PouchDB.Core.ExistingDocument<T> | undefined;
     try {
       existingDoc = await db.get(data._id);
-    } catch (err: any) {
-      // If the document doesn't exist, PouchDB will throw a 404 error
-      if (err.status !== 404) {
+    } catch (err: unknown) {
+      // If the document doesn't exist, PouchDB will throw a 404 / not_found
+      if (!isNotFoundError(err)) {
         throw err;
       }
       existingDoc = undefined;

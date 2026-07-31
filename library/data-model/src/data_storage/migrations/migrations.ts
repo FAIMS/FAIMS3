@@ -39,6 +39,7 @@ import {
   DBTargetVersions,
   DatabaseType,
   IS_TESTING,
+  MigrationBeforeDatabase,
   MigrationDetails,
   MigrationFunc,
 } from './types';
@@ -60,48 +61,50 @@ import {
   stampDataDocumentAclFields,
 } from '../dataDB/acl';
 
-/** Tracks data DBs that already had ACL overlays ensured in this process. */
-const ensuredDataAclDesignDocs = new Set<string>();
-
 /**
- * DATA DB v1 → v2 (project `data-{projectId}` DBs; targetVersion 2).
+ * DATA DB v1 → v2 once-per-DB setup ({@link MigrationDetails.beforeDatabase}).
  *
- * Prepares corpus for couch-auth-proxy per-document sync ACL:
+ * Patches project-scoped `dbacl` onto an existing proxy-managed `_design/acl`
+ * when present, and ensures FAIMS `_design/faims_acl_shape`. Does not invent
+ * the proxy map / protocol `validate_doc_update` / `version`.
  *
- * 1. **Stamps** on legacy docs via {@link stampDataDocumentAclFields}:
- *    - `rec-*`: `creator = created_by` (or {@link ACL_ORPHAN_CREATOR} if
- *      missing — fail-closed for guests; ALL roles still reach via `dbacl`)
- *    - docs with `record_id` (frev/avp/att): `creator` + `parent = record_id`
- *    - Idempotent for already-stamped docs; design docs skipped
- * 2. **Patches** project-scoped `dbacl` onto an existing proxy-managed
- *    `_design/acl` when present (`ensureDataDbAclOverlay`) — does not invent
- *    the proxy map / protocol `validate_doc_update` / `version`
- * 3. **Ensures** FAIMS `_design/faims_acl_shape` (`record_id` ↔ `parent`)
- *
- * Ownership: proxy auto-install owns `_design/acl` map/validate_doc_update;
- * FAIMS owns stamps, `dbacl` overlays, and `faims_acl_shape`. This migrator
- * does **not** warm the proxy — Conductor `initialiseDataDb` /
+ * Runs even for empty / design-doc-only DBs (the document migrator alone would
+ * never fire). Does **not** warm the proxy — Conductor `initialiseDataDb` /
  * `ensureProjectDataDbAcl` (or ops `repair-data-db-acl -- --write`) must ping
  * via `COUCHDB_PUBLIC_URL` so `ACL_AUTO_INSTALL` can create `_design/acl`
- * before `dbacl` can be patched. Migrations docs must be keyed by logical
- * name `data-{projectId}` (not a remote Pouch URL).
+ * before `dbacl` can be patched. `context.dbName` must be the logical name
+ * `data-{projectId}` (or a remote Pouch URL ending in that form).
+ */
+export const dataV1toV2BeforeDatabase: MigrationBeforeDatabase =
+  async context => {
+    if (!context.db || !context.dbName) {
+      return;
+    }
+    const projectId = projectIdFromDataDbName(context.dbName);
+    if (!projectId) {
+      return;
+    }
+    await ensureDataDbAclOverlay({db: context.db, projectId});
+  };
+
+/**
+ * DATA DB v1 → v2 per-document migrator (project `data-{projectId}` DBs;
+ * targetVersion 2).
+ *
+ * Stamps legacy docs for couch-auth-proxy sync ACL via
+ * {@link stampDataDocumentAclFields}:
+ * - `rec-*`: `creator = created_by` (or {@link ACL_ORPHAN_CREATOR} if missing
+ *   — fail-closed for guests; ALL roles still reach via `dbacl`)
+ * - docs with `record_id` (frev/avp/att): `creator` + `parent = record_id`
+ * - Idempotent for already-stamped docs; design docs skipped
+ *
+ * DB-scoped ACL overlay / `faims_acl_shape` lives in
+ * {@link dataV1toV2BeforeDatabase}, registered on the migration entry.
  *
  * See also: docs Authorisation/AclValidationLayering.md,
  * Authorisation/CouchAuthProxyCutover.md (migrate then `--check`).
  */
-export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
-  // Once per data DB: overlay dbacl + faims_acl_shape. Design docs are skipped
-  // by performMigration's document loop, and empty DBs still need this via the
-  // migrationService prelude. `projectIdFromDataDbName` accepts bare
-  // `data-{id}` or remote Pouch URL forms.
-  if (context?.db && context.dbName) {
-    const projectId = projectIdFromDataDbName(context.dbName);
-    if (projectId && !ensuredDataAclDesignDocs.has(context.dbName)) {
-      await ensureDataDbAclOverlay({db: context.db, projectId});
-      ensuredDataAclDesignDocs.add(context.dbName);
-    }
-  }
-
+export const dataV1toV2Migration: MigrationFunc = doc => {
   const updated = stampDataDocumentAclFields(doc as Record<string, unknown>);
   if (!updated) {
     return {action: 'none'};
@@ -704,8 +707,7 @@ export const authV4toV5Migration: MigrationFunc = doc => {
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
-  // DATA v2: see {@link dataV1toV2Migration}. defaultVersion stays 1 so any
-  // data DB without a migrations doc still runs the idempotent 1→2 backfill.
+  // DATA v2: see {@link dataV1toV2Migration} + {@link dataV1toV2BeforeDatabase}.
   // New DBs already stamp via init/writes; migrator is a no-op on stamped docs
   // and still ensures FAIMS ACL ddocs when the proxy `_design/acl` exists.
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 2},
@@ -723,8 +725,9 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     from: 1,
     to: 2,
     description:
-      'DATA ACL cutover: stamp creator/parent, patch dbacl when proxy _design/acl exists, ensure _design/faims_acl_shape (see dataV1toV2Migration)',
+      'DATA ACL cutover: stamp creator/parent, patch dbacl when proxy _design/acl exists, ensure _design/faims_acl_shape',
     migrationFunction: dataV1toV2Migration,
+    beforeDatabase: dataV1toV2BeforeDatabase,
   },
   {
     dbType: DatabaseType.PEOPLE,

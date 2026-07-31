@@ -19,6 +19,7 @@ import {
   initMigrationsDB,
   initPeopleDB,
   isDbUpToDate,
+  dataV1toV2BeforeDatabase,
   dataV1toV2Migration,
   migrateDbs,
   performMigration,
@@ -1117,6 +1118,7 @@ describe('Migration System Tests', () => {
         const result = await performMigration({
           db: testDataDb,
           migrationFunc: dataV1toV2Migration,
+          beforeDatabase: dataV1toV2BeforeDatabase,
           getDbById: async () => testDataDb,
           // Omit dbName to exercise URL parsing of db.name
         });

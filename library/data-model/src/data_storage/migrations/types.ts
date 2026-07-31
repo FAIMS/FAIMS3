@@ -83,10 +83,21 @@ export type MigrationFunc = (
   context?: MigrationContext
 ) => MigrationFuncReturn | Promise<MigrationFuncReturn>;
 
+/**
+ * Optional once-per-database work run by {@link performMigration} before the
+ * per-document loop. Use for design-doc / DB-scoped side effects that must run
+ * even when the DB is empty or only contains `_design/*` docs.
+ */
+export type MigrationBeforeDatabase = (
+  context: MigrationContext
+) => void | Promise<void>;
+
 export type MigrationDetails = {
   dbType: DATABASE_TYPE;
   from: number;
   description: string;
   to: number;
   migrationFunction: MigrationFunc;
+  /** Once-per-DB setup before documents are migrated. */
+  beforeDatabase?: MigrationBeforeDatabase;
 };

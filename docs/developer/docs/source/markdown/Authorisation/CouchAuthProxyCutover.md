@@ -254,7 +254,8 @@ to the proxy later is safe if ddocs are still present.
    to internal networks only (AWS CDK does this; DO/custom must match).
 3. **CORS missing app origin** — browser / Capacitor WebView sync fails; add
    origins to proxy `CORS_ORIGINS` (PWA host, Control Centre, and typically
-   `https://localhost` / `capacitor://localhost` for native).
+   `https://localhost` / `capacitor://localhost` / `{appId}://localhost` for
+   native — FAIMS sets Capacitor `iosScheme` to `appId`).
 4. **Wrong logical migrations `dbName`** — migrations docs must be keyed by
    `data-{projectId}`, not a full Couch URL. Current Conductor enqueue does
    this; if you see URL-shaped keys in `migrations`, treat as a bug / re-run

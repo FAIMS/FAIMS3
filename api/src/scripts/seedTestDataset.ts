@@ -48,6 +48,7 @@ import {
   roleDetails,
   ROOT_DESCRIPTION_MAX_LENGTH,
   normalizeRootDescriptionForStore,
+  isNotFoundError as isCouchNotFoundError,
   safeWriteDocument,
   TemplateDocument,
 } from '@faims3/data-model';
@@ -340,13 +341,12 @@ function seedDescription(description?: string): string | undefined {
   return normalizeRootDescriptionForStore(clampDescription(description));
 }
 
+/** Seed helpers may see API `ItemNotFoundException` or raw Couch not_found. */
 function isNotFoundError(error: unknown): boolean {
-  if (error instanceof Exceptions.ItemNotFoundException) {
-    return true;
-  }
-  const status = (error as {status?: number} | null)?.status;
-  const name = (error as {name?: string} | null)?.name;
-  return status === 404 || name === 'not_found';
+  return (
+    error instanceof Exceptions.ItemNotFoundException ||
+    isCouchNotFoundError(error)
+  );
 }
 
 async function upsertSeedTeam({

@@ -138,11 +138,14 @@ export class FaimsInfraStack extends cdk.Stack {
         couchSecurityGroup: couchDb.securityGroup,
         // Browser PWA + Control Centre + Capacitor WebView origins (native sync
         // uses Pouch fetch subject to CORS when CapacitorHttp is disabled).
+        // Android default scheme → https://localhost; Capacitor iOS default →
+        // capacitor://localhost; FAIMS sets iosScheme: appId → {appId}://localhost.
         corsOrigins: [
           `https://${domains.faims}`,
           `https://${domains.web}`,
           'https://localhost',
           'capacitor://localhost',
+          `${config.uiConfiguration.appId}://localhost`,
         ],
         image: config.couchAuthProxy.image,
         imageTag: config.couchAuthProxy.imageTag,

@@ -7,16 +7,13 @@ import {
   MigrationsDBFields,
 } from '../migrationsDB';
 import {buildMigrationContext, DEFAULT_MIGRATION_CREATED_BY} from './hooks';
-import {
-  DB_MIGRATIONS,
-  DB_TARGET_VERSIONS,
-  dataV1toV2Migration,
-} from './migrations';
+import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
 import {
   DATABASE_TYPE,
   DatabaseType,
   GetDbById,
   IS_TESTING,
+  MigrationBeforeDatabase,
   MigrationContext,
   MigrationDetails,
   MigrationFunc,
@@ -154,11 +151,12 @@ export function identifyMigrations({
  * Performs a migration on all non-design documents in a PouchDB database.
  *
  * This function:
- * 1. Iterates through all non-design documents
- * 2. Applies the migration function to each document
- * 3. Updates documents that need changes
- * 4. Preserves the original _id and _rev fields
- * 5. Tracks and returns any issues encountered
+ * 1. Optionally runs {@link MigrationBeforeDatabase} once (DB-scoped setup)
+ * 2. Iterates through all non-design documents
+ * 3. Applies the migration function to each document
+ * 4. Updates documents that need changes
+ * 5. Preserves the original _id and _rev fields
+ * 6. Tracks and returns any issues encountered
  *
  * @param {Object} params - The parameters object.
  * @param {DatabaseInterface} params.db - The PouchDB database to migrate.
@@ -173,6 +171,7 @@ export async function performMigration({
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
   dbName,
+  beforeDatabase,
 }: {
   db: DatabaseInterface;
   migrationFunc: MigrationFunc;
@@ -183,6 +182,8 @@ export async function performMigration({
    * `db.name`, which is a full URL for remote Pouch handles.
    */
   dbName?: string;
+  /** Optional once-per-DB work before the document loop. */
+  beforeDatabase?: MigrationBeforeDatabase;
 }): Promise<{
   issues: string[];
   processedCount: number;
@@ -206,20 +207,13 @@ export async function performMigration({
   let startKey = null;
   let hasMoreDocs = true;
 
-  // DATA v1→v2 also patches dbacl / ensures faims_acl_shape once per DB.
-  // Design docs are skipped in the document loop below, and empty DBs would
-  // otherwise never invoke the migrator — run a prelude call first.
-  if (migrationFunc === dataV1toV2Migration) {
+  // Once-per-DB setup (e.g. design docs) — must run even for empty DBs.
+  if (beforeDatabase) {
     try {
-      await Promise.resolve(
-        migrationFunc(
-          {_id: '_local/faims-migration-prelude', _rev: '0-0'} as any,
-          context
-        )
-      );
+      await Promise.resolve(beforeDatabase(context));
     } catch (error) {
       issues.push(
-        `Error during DATA ACL migration prelude: ${
+        `Error during migration beforeDatabase hook: ${
           error instanceof Error ? error.message : String(error)
         }.`
       );
@@ -430,6 +424,7 @@ export async function migrateDbs({
           getDbById: migrationContext.getDbById,
           migrationCreatedBy: migrationContext.migrationCreatedBy,
           dbName,
+          beforeDatabase: migrationDetail.beforeDatabase,
         });
 
         // Log stats about this migration step

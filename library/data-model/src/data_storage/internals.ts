@@ -57,7 +57,7 @@ import {
   HridFieldMap,
 } from '../uiSpecification';
 import {UiSpecModel} from '../uiSpecification/types';
-import {createHash} from './utils';
+import {createHash, isNotFoundError} from './utils';
 
 // INDEX NAMES
 
@@ -137,9 +137,9 @@ export async function getCouchDocument<DocType extends {[key: string]: any}>({
     }
 
     return doc;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle document not found errors specifically
-    if (error.name === 'not_found') {
+    if (isNotFoundError(error)) {
       return undefined;
     }
     // Re-throw other errors
