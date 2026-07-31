@@ -197,10 +197,14 @@ const EmptyState: React.FC<{
       </Box>
       <Typography
         variant="caption"
-        color="text.secondary"
-        sx={{display: 'block', mt: 1.5}}
+        sx={{
+          display: 'block',
+          mt: 1.5,
+          fontStyle: 'italic',
+          color: theme.palette.text.secondary,
+        }}
       >
-        You can select several photos from the gallery at once.
+        Note: you can select multiple photos at once from the gallery.
       </Typography>
     </Paper>
   );
@@ -554,34 +558,41 @@ const PhotoGallery: React.FC<{
           {/* Add from gallery — separate so capture stays a single tap */}
           {!disabled && (
             <ImageItemContainer>
-              <Tooltip title="Add from gallery — you can select several at once">
+              <Tooltip title="Select multiple photos at once from your gallery">
                 <Paper
                   sx={{
                     height: '100%',
+                    position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 0.5,
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    textAlign: 'center',
-                    px: 0.5,
                   }}
                   onClick={onPickFromGallery}
                   aria-label="Add photos from gallery, multiple selection allowed"
                 >
                   <PhotoLibraryIcon
-                    sx={{fontSize: 40, color: theme.palette.text.secondary}}
+                    sx={{fontSize: 48, color: theme.palette.primary.main}}
                   />
                   <Typography variant="caption" color="text.secondary">
                     Gallery
                   </Typography>
+                  {/* Small corner note; absolute so it never shifts the icon. */}
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{lineHeight: 1.2, opacity: 0.85}}
+                    sx={{
+                      position: 'absolute',
+                      bottom: 2,
+                      right: 6,
+                      fontSize: '0.65rem',
+                      fontStyle: 'italic',
+                      lineHeight: 1,
+                      color: theme.palette.text.secondary,
+                    }}
                   >
-                    select multiple
+                    multiple
                   </Typography>
                 </Paper>
               </Tooltip>
@@ -759,38 +770,45 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   }, []);
 
   /**
-   * Stores one captured or selected image: optimistic preview, geolocation EXIF
-   * on native, then the attachment write. Shared by the camera and gallery
-   * paths so both behave identically once an image is in hand.
+   * Shows a thumbnail immediately and returns its temporary id. Kept separate
+   * from storage so a batch can be previewed at once, before the slower
+   * per-photo writes begin.
    */
-  const savePhoto = useCallback(
+  const addPendingPreview = useCallback((photoBlob: Blob): string => {
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const optimisticUrl = URL.createObjectURL(photoBlob);
+    pendingUrlsRef.current.add(optimisticUrl);
+    setPendingPhotos(current => {
+      const updated = new Map(current);
+      updated.set(tempId, {
+        url: optimisticUrl,
+        attachmentId: null,
+        capturedAt: Date.now(),
+      });
+      return updated;
+    });
+
+    return tempId;
+  }, []);
+
+  /**
+   * Writes one already-previewed image to storage. `path` is only supplied for
+   * camera captures: geotagging uses the *current* position, which is only
+   * correct for a photo taken here and now.
+   */
+  const storePhoto = useCallback(
     async ({
+      tempId,
       photoBlob,
       format,
       path,
     }: {
+      tempId: string;
       photoBlob: Blob;
       format: string;
       path?: string;
     }) => {
-      // Generate temporary ID for optimistic display
-      const tempId = `temp-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}`;
-
-      // Setup optimistic preview
-      const optimisticUrl = URL.createObjectURL(photoBlob);
-      pendingUrlsRef.current.add(optimisticUrl);
-      setPendingPhotos(current => {
-        const updated = new Map(current);
-        updated.set(tempId, {
-          url: optimisticUrl,
-          attachmentId: null,
-          capturedAt: Date.now(),
-        });
-        return updated;
-      });
-
       if (Capacitor.getPlatform() !== 'web' && path) {
         // Native: attempt to add geolocation EXIF data
         try {
@@ -908,7 +926,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
-      await savePhoto({
+      await storePhoto({
+        tempId: addPendingPreview(photoBlob),
         photoBlob,
         format: photoResult.format,
         path: photoResult.path,
@@ -921,7 +940,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         setAttachmentSaving?.(false);
       }
     }
-  }, [savePhoto, setAttachmentSaving]);
+  }, [addPendingPreview, storePhoto, setAttachmentSaving]);
 
   /**
    * Adds existing images from the device gallery. Multi-select, so a batch can
@@ -951,15 +970,24 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       setAttachmentSaving?.(true);
       attachmentLockHeld = true;
 
-      // Sequential: each save writes to PouchDB, and ordering keeps the
-      // optimistic previews in the order the user picked them.
+      // Preview the whole selection first so every thumbnail appears at once,
+      // rather than trickling in behind each write.
+      const pending = [];
       for (const photo of photos) {
         const response = await fetch(photo.webPath);
-        await savePhoto({
-          photoBlob: await response.blob(),
+        const photoBlob = await response.blob();
+        pending.push({
+          tempId: addPendingPreview(photoBlob),
+          photoBlob,
           format: photo.format,
-          path: photo.path,
         });
+      }
+
+      // Sequential writes: concurrent PouchDB attachment writes contend, and
+      // this keeps the saved order the same as the picked order. No `path` is
+      // passed, so gallery images keep their original EXIF location.
+      for (const item of pending) {
+        await storePhoto(item);
       }
     } catch (err: any) {
       if (isCancellation(err)) return;
@@ -969,7 +997,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         setAttachmentSaving?.(false);
       }
     }
-  }, [savePhoto, setAttachmentSaving]);
+  }, [addPendingPreview, storePhoto, setAttachmentSaving]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
