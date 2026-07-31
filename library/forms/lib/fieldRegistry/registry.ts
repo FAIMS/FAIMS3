@@ -3,7 +3,7 @@ import {addressFieldSpec} from './fields/AddressField';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {audioRecorderFieldSpec} from './fields/AudioRecorder';
 import {checkboxFieldSpec} from './fields/CheckboxField';
-import {computedFieldSpec} from './fields/ComputedField';
+import {computedNumberSpec, computedTextSpec} from './fields/ComputedFields';
 import {
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
@@ -56,7 +56,8 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   monthPickerFieldSpec,
   percentageSliderFieldSpec,
   numberFieldSpec,
-  computedFieldSpec,
+  computedNumberSpec,
+  computedTextSpec,
   addressFieldSpec,
   audioRecorderFieldSpec,
 ];
