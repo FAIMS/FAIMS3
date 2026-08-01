@@ -211,6 +211,44 @@ describe('useRecordFeatures', () => {
     );
   });
 
+  it('skips only the field whose AVP is missing', async () => {
+    getRevision.mockResolvedValue({
+      avps: {site_location: 'avp-gone', orphan_location: 'avp-ok'},
+    });
+    getAvp.mockImplementation((avpId: string) =>
+      avpId === 'avp-gone'
+        ? Promise.reject(new DocumentNotFoundError(avpId))
+        : Promise.resolve({data: POINT_FEATURE})
+    );
+
+    const result = await renderFeatures([siteRecord]);
+
+    expect(result.current.isError).toBe(false);
+    expect(result.current.data!.features).toHaveLength(1);
+  });
+
+  // The hook's `retry: 2` costs a fixed 1s + 2s of backoff before the query
+  // settles, which overruns vitest's 5s default, so this case buys more room.
+  it('surfaces a systemic AVP read failure instead of showing an empty map', async () => {
+    getAvp.mockRejectedValue(new Error('database is closed'));
+
+    const {result} = renderHook(
+      () =>
+        useRecordFeatures({
+          projectId: 'test-project',
+          uiSpec,
+          records: [siteRecord],
+          recordTypes,
+        }),
+      {wrapper}
+    );
+
+    await waitFor(() => expect(result.current.isError).toBe(true), {
+      timeout: 15000,
+    });
+    expect(result.current.data).toBeUndefined();
+  }, 20000);
+
   // The hook's `retry: 2` costs a fixed 1s + 2s of backoff before the query
   // settles, which overruns vitest's 5s default, so this case buys more room.
   it('surfaces a systemic read failure instead of showing an empty map', async () => {

@@ -64,14 +64,10 @@ export const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
 /**
  * Extract features from a single record for the given GIS fields.
  *
- * A revision that is simply missing skips its record, and a malformed or absent
- * GIS value skips its field, so one bad record cannot blank every record's
- * geometry. Any other failure to read the *revision* is rethrown, so a systemic
- * fault there surfaces as an error rather than as an empty map.
- *
- * Failures reading an individual AVP are still swallowed per field, as they were
- * before this module existed, so a systemic fault that only manifests on AVP
- * reads can still present as "no geometry" rather than as an error.
+ * A revision or AVP that is simply missing skips its record or field, and a
+ * malformed GIS value skips its field, so one bad record cannot blank every
+ * record's geometry. Any other read failure is rethrown, so a systemic fault
+ * surfaces as an error rather than as an empty map.
  */
 export const extractFeaturesFromRecord = async (
   dataEngine: DataEngine,
@@ -139,10 +135,10 @@ export const extractFeaturesFromRecord = async (
           });
         }
       } catch (error) {
-        // Log but don't fail - skip this field/record combination
+        // A missing AVP skips only this field; anything else is systemic
+        if (!(error instanceof DocumentNotFoundError)) throw error;
         console.warn(
-          `Failed to extract GIS data for record ${record.recordId}, field ${field}:`,
-          error
+          `Skipping field ${field} of record ${record.recordId}: AVP not found`
         );
       }
     })
