@@ -191,8 +191,10 @@ class AppRecordsPage extends Page {
 
     await this.finishButton.waitForClickable({timeout: 15000});
     await this.finishButton.click();
+    // Bounded wait rather than an instant isExisting(): the validation dialog
+    // renders a beat after the click, and missing it strands the URL wait below.
     const finishAnyway = await $('button*=Finish anyway');
-    if (await finishAnyway.isExisting()) {
+    if (await finishAnyway.waitForExist({timeout: 3000}).catch(() => false)) {
       await finishAnyway.click();
     }
     await browser.waitUntil(
