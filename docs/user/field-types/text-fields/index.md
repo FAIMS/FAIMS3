@@ -15,6 +15,7 @@ multiline-text-field.md
 templated-string.md
 qr-barcode-scanner.md
 address.md
+computed-text-field.md
 
 ```
 
@@ -34,3 +35,6 @@ address.md
   and QR code scanning, supporting multiple barcode formats.
 - **[Address](address.md)** — Structured address capture storing data in a
   geocoding-compatible format. Beta feature.
+- **[Computed Text](computed-text-field.md)** — Builds text from a typed
+  expression over other fields — joins, classifications, and
+  conditionals — shown read-only to data collectors.
