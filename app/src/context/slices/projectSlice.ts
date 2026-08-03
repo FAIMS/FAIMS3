@@ -464,7 +464,10 @@ const projectsSlice = createSlice({
     addProject: (
       state,
       action: PayloadAction<
-        ProjectInformation & ProjectIdentity & {couchDbUrl: string}
+        ProjectInformation &
+          ProjectIdentity & {
+            couchDbUrl: string;
+          }
       >
     ) => {
       const payload = action.payload;
@@ -648,7 +651,10 @@ const projectsSlice = createSlice({
     updateProjectDetails: (
       state,
       action: PayloadAction<
-        ProjectInformation & ProjectIdentity & {couchDbUrl: string}
+        ProjectInformation &
+          ProjectIdentity & {
+            couchDbUrl: string;
+          }
       >
     ) => {
       const payload = action.payload;
@@ -681,6 +687,16 @@ const projectsSlice = createSlice({
       server.couchDbUrl = payload.couchDbUrl;
 
       const existingProject = server.projects[payload.projectId];
+
+      // Keep remote connection config in sync with Conductor's advertised
+      // public URL so rebuildDbs / credential refresh do not prefer a stale
+      // couchUrl after COUCHDB_PUBLIC_URL flips (e.g. Couch → proxy).
+      if (existingProject.database?.remote) {
+        existingProject.database.remote.connectionConfiguration = {
+          ...existingProject.database.remote.connectionConfiguration,
+          couchUrl: payload.couchDbUrl,
+        };
+      }
 
       // Now we can update it
       server.projects[payload.projectId] = {
@@ -2314,6 +2330,98 @@ export const setSyncMode = createAsyncThunk<
 });
 
 /**
+ * After Conductor listing refresh, re-point activated remotes at the
+ * advertised public Couch/proxy URL when it changed.
+ *
+ * Cold-start {@link rebuildDbs} may open remotes against a stale persisted
+ * `couchUrl`; listing updates `server.couchDbUrl` and the stored connection
+ * config. This recreates remote + sync handles only — local IndexedDB is not
+ * wiped (known cutover limitation). Pre-proxy leftover docs may remain on
+ * already-activated devices until refresh / re-activate; wire isolation is
+ * still enforced by the proxy.
+ */
+export const reconcileRemoteCouchUrlAfterListing = createAsyncThunk<void, void>(
+  'projects/reconcileRemoteCouchUrlAfterListing',
+  async (_, {getState, dispatch}) => {
+    const state = (getState() as RootState).projects;
+    const appDispatch = dispatch as AppDispatch;
+
+    for (const server of Object.values(state.servers)) {
+      if (!server.couchDbUrl) continue;
+
+      for (const project of Object.values(server.projects)) {
+        if (!project.isActivated || !project.database?.remote) continue;
+        const dbInfo = project.database;
+        const remote = dbInfo.remote!;
+        const connectionConfiguration: DatabaseConnectionConfig = {
+          ...remote.connectionConfiguration,
+          couchUrl: server.couchDbUrl,
+        };
+        // remoteDbId is the opened connection string; listing may already have
+        // updated connectionConfiguration.couchUrl in Redux without recreating
+        // the live Pouch handle.
+        const expectedRemoteId = connectionConfiguration.couchUrl.endsWith('/')
+          ? connectionConfiguration.couchUrl +
+            connectionConfiguration.databaseName
+          : `${connectionConfiguration.couchUrl}/${connectionConfiguration.databaseName}`;
+        if (remote.remoteDbId === expectedRemoteId) continue;
+
+        const localDb = databaseService.getLocalDatabase(dbInfo.localDbId);
+        if (!localDb) continue;
+
+        if (remote.syncId) {
+          await databaseService.closeAndRemoveSync(remote.syncId);
+        }
+        await databaseService.closeAndRemoveRemoteDatabase(remote.remoteDbId);
+
+        const {db: remoteDb, id: remoteDbId} =
+          createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+            connectionConfiguration
+          );
+        databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
+          tolerant: true,
+        });
+
+        let updatedSyncId: string | undefined;
+        if (isReplicating(dbInfo.syncMode)) {
+          const handlers = createSyncStateHandlers(
+            project.projectId,
+            project.serverId
+          );
+          const replication = createPouchDbReplication({
+            syncMode: dbInfo.syncMode,
+            attachmentDownload: dbInfo.isSyncingAttachments,
+            localDb,
+            remoteDb,
+            eventHandlers: handlers,
+          });
+          updatedSyncId = buildSyncId({
+            localId: dbInfo.localDbId,
+            remoteId: remoteDbId,
+          });
+          await databaseService.registerSync(updatedSyncId, replication, {
+            tolerant: true,
+          });
+        }
+
+        appDispatch(
+          updateDatabaseAuthSuccess({
+            projectId: project.projectId,
+            serverId: server.serverId,
+            connectionConfiguration,
+            remoteDbId,
+            syncId: updatedSyncId,
+            syncMode: dbInfo.syncMode,
+            isSyncingAttachments: dbInfo.isSyncingAttachments,
+            localDbId: dbInfo.localDbId,
+          })
+        );
+      }
+    }
+  }
+);
+
+/**
  * As part of initialisation, rebuilds and registers all databases (local,
  * remote) and sync objects, based on the current store configuration.
  *
@@ -2332,7 +2440,6 @@ export const rebuildDbs = async (
           // here we already have stuff ready to go (config etc)
           const dbInfo = project.database;
 
-          // First - build the local DB
           const localDb = createLocalPouchDatabase<ProjectDataObject>({
             id: dbInfo.localDbId,
           });
@@ -2348,10 +2455,17 @@ export const rebuildDbs = async (
 
           // Next - setup the remote if we need it
           if (dbInfo.remote) {
+            // Prefer Conductor's advertised public URL over a possibly stale
+            // persisted remote connection config (listing refresh updates
+            // server.couchDbUrl). Fall back when listing has not run yet.
+            const connectionConfiguration: DatabaseConnectionConfig = {
+              ...dbInfo.remote.connectionConfiguration,
+              ...(server.couchDbUrl ? {couchUrl: server.couchDbUrl} : {}),
+            };
             // creates the remote database (pouch remote)
             const {db: remoteDb, id: remoteDbId} =
               createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-                dbInfo.remote.connectionConfiguration
+                connectionConfiguration
               );
             databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
               tolerant: true,

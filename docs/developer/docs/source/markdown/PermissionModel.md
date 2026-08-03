@@ -36,6 +36,33 @@ Authorization is managed through tokens that encode:
 
 CouchDB uses these roles in the `validate_doc_update` design document function and `member` array of the security document to enforce permissions.
 
+### Sync enforcement (couch-auth-proxy)
+
+CouchDB `_security` membership alone cannot enforce per-document reads (e.g.
+guest = own records only). Membership still means “may talk to this DB”; the
+public sync URL (`COUCHDB_PUBLIC_URL`) points at
+[`couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy), which
+answers “which docs?”.
+
+**FAIMS owns policy; the proxy owns the sync filter and ACL-field protocol.**
+Role/action lists stay in `@faims3/data-model`. FAIMS stamps docs and patches
+project `dbacl`; the proxy image owns `_design/acl` map/validate_doc_update. Full split:
+[AclValidationLayering](Authorisation/AclValidationLayering.md).
+
+| Grant                        | Source                                                                                                                      |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Own record graph             | Doc `creator` on `rec-*`; children set ACL `parent` to the record id                                                        |
+| Read/edit/delete all         | `_design/acl` `dbacl` from `necessaryActionToCouchRoleList` (`*_ALL_*`) — FAIMS patches; proxy owns map/validate_doc_update |
+| Write my/all on `created_by` | `_design/permissions` `validate_doc_update`                                                                                 |
+| Require `creator` on create  | Proxy `_design/acl` validate_doc_update when `ACL_REQUIRE_CREATOR=true`                                                     |
+| Child stamp shape            | `_design/faims_acl_shape` — `parent` must equal `record_id` when set                                                        |
+
+Conductor keeps `COUCHDB_INTERNAL_URL` (admin, bypasses the proxy). API
+`canReadRecord` and app `shouldDisplayRecord` remain defense-in-depth / UX.
+
+- **Layering / ownership:** [AclValidationLayering](Authorisation/AclValidationLayering.md)
+- Operator cutover: [CouchAuthProxyCutover](Authorisation/CouchAuthProxyCutover.md)
+
 ## Usage Examples
 
 ### Checking User Permissions

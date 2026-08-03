@@ -19,6 +19,8 @@ import {
   initMigrationsDB,
   initPeopleDB,
   isDbUpToDate,
+  dataV1toV2BeforeDatabase,
+  dataV1toV2Migration,
   migrateDbs,
   performMigration,
 } from '../src/data_storage';
@@ -26,6 +28,16 @@ import {DatabaseInterface} from '../src';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
+
+const peopleV1toV2MigrationEntry = () => {
+  const entry = DB_MIGRATIONS.find(
+    m => m.dbType === DatabaseType.PEOPLE && m.from === 1 && m.to === 2
+  );
+  if (!entry) {
+    throw new Error('PEOPLE v1→v2 migration not registered');
+  }
+  return entry;
+};
 
 describe('Migration System Tests', () => {
   /**
@@ -520,7 +532,8 @@ describe('Migration System Tests', () => {
 
     it('should handle new database without existing migration document', async () => {
       // Mock the peopleV1toV2Migration for this test
-      const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
+      const originalMigrationFunc =
+        peopleV1toV2MigrationEntry().migrationFunction;
       const originalDefaultVersion =
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
       const originalTargetVersion =
@@ -528,7 +541,7 @@ describe('Migration System Tests', () => {
       // Set to 1
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = 1;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 2;
-      DB_MIGRATIONS[0].migrationFunction = record => {
+      peopleV1toV2MigrationEntry().migrationFunction = record => {
         return {
           action: 'update',
           updatedRecord: {
@@ -586,7 +599,7 @@ describe('Migration System Tests', () => {
       expect(person2.permissions.canEdit).toBe(true);
 
       // Restore original migration function
-      DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+      peopleV1toV2MigrationEntry().migrationFunction = originalMigrationFunc;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
         originalDefaultVersion;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
@@ -797,8 +810,9 @@ describe('Migration System Tests', () => {
       await testMigrationDb.post(existingMigrationDoc);
 
       // Mock the peopleV1toV2Migration to throw an error
-      const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
-      DB_MIGRATIONS[0].migrationFunction = record => {
+      const originalMigrationFunc =
+        peopleV1toV2MigrationEntry().migrationFunction;
+      peopleV1toV2MigrationEntry().migrationFunction = record => {
         if (record._id === 'person1') {
           throw new Error('Test migration error');
         }
@@ -840,7 +854,7 @@ describe('Migration System Tests', () => {
       );
 
       // Restore original migration function
-      DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+      peopleV1toV2MigrationEntry().migrationFunction = originalMigrationFunc;
     });
 
     it('should migrate multiple databases in sequence', async () => {
@@ -852,7 +866,8 @@ describe('Migration System Tests', () => {
 
       try {
         // For this test, we'll mock the peopleV1toV2Migration to work properly
-        const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
+        const originalMigrationFunc =
+          peopleV1toV2MigrationEntry().migrationFunction;
         const originalDefaultVersion =
           DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
         const originalTargetVersion =
@@ -865,7 +880,7 @@ describe('Migration System Tests', () => {
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 2;
         DB_TARGET_VERSIONS[DatabaseType.PROJECTS].defaultVersion = 1;
         DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion = 1;
-        DB_MIGRATIONS[0].migrationFunction = record => {
+        peopleV1toV2MigrationEntry().migrationFunction = record => {
           return {
             action: 'update',
             updatedRecord: {...record, migrated: true},
@@ -920,7 +935,7 @@ describe('Migration System Tests', () => {
         expect(person1.migrated).toBe(true);
 
         // Restore original migration function
-        DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+        peopleV1toV2MigrationEntry().migrationFunction = originalMigrationFunc;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
           originalDefaultVersion;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
@@ -932,6 +947,189 @@ describe('Migration System Tests', () => {
       } finally {
         // Clean up
         await testProjectsDb.destroy();
+      }
+    });
+
+    it('DATA migrations stamp docs, ensure faims_acl_shape, and patch dbacl when proxy ddoc exists', async () => {
+      const projectId = `mig-acl-${Date.now()}`;
+      const dataDbName = `data-${projectId}`;
+      const testDataDb = new PouchDB(dataDbName, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+
+      try {
+        // Stand-in for couch-auth-proxy auto-install (FAIMS never vendors the map).
+        await testDataDb.put({
+          _id: '_design/acl',
+          language: 'javascript',
+          type: 'ddoc',
+          version: '2.3.0',
+          acl: [],
+          views: {acl: {map: 'function (doc) { emit(doc._id, {}); }'}},
+          validate_doc_update: 'function () {}',
+        });
+        await testDataDb.put({
+          _id: 'rec-legacy',
+          record_format_version: 1,
+          created_by: 'alice',
+          created: new Date().toISOString(),
+          revisions: [],
+          heads: [],
+          type: 'FormA',
+        });
+        await testDataDb.put({
+          _id: 'frev-legacy',
+          revision_format_version: 1,
+          record_id: 'rec-legacy',
+          created_by: 'alice',
+          parents: [],
+          avps: {},
+          type: 'FormA',
+          created: new Date().toISOString(),
+        });
+
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: dataDbName,
+              db: testDataDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById: async () => testDataDb,
+        });
+
+        const acl = await testDataDb.get<{
+          dbacl: {_r: string[]};
+          version: string;
+          views: {acl: {map: string}};
+        }>('_design/acl');
+        expect(acl.version).toBe('2.3.0');
+        expect(acl.views.acl.map).toContain('emit(doc._id');
+        expect(acl.dbacl._r.length).toBeGreaterThan(0);
+        const shape = await testDataDb.get('_design/faims_acl_shape');
+        expect(shape).toBeDefined();
+
+        const record = await testDataDb.get<{creator: string}>('rec-legacy');
+        expect(record.creator).toBe('alice');
+        const rev = await testDataDb.get<{creator: string; parent: string}>(
+          'frev-legacy'
+        );
+        expect(rev.creator).toBe('alice');
+        expect(rev.parent).toBe('rec-legacy');
+
+        const migrationDocs = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, dataDbName],
+            include_docs: true,
+          }
+        );
+        expect(migrationDocs.rows.length).toBe(1);
+        expect(migrationDocs.rows[0].doc?.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+        );
+      } finally {
+        await testDataDb.destroy();
+      }
+    });
+
+    it('DATA migrations resolve projectId from remote Pouch db.name and ensure faims_acl_shape', async () => {
+      // Production remote Pouch handles expose a full URL as db.name. The
+      // migrator must still resolve projectId from the logical dbName arg.
+      const projectId = `mig-acl-url-${Date.now()}`;
+      const logicalDbName = `data-${projectId}`;
+      const testDataDb = new PouchDB(logicalDbName, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      // Simulate remote Pouch naming without needing a live Couch URL adapter.
+      Object.defineProperty(testDataDb, 'name', {
+        value: `http://localhost:5984/${logicalDbName}`,
+        configurable: true,
+      });
+
+      try {
+        // Empty corpus + no proxy ddoc: FAIMS must not invent `_design/acl`,
+        // but still installs `_design/faims_acl_shape`.
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: logicalDbName,
+              db: testDataDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById: async () => testDataDb,
+        });
+
+        await expect(testDataDb.get('_design/acl')).rejects.toBeTruthy();
+        await testDataDb.get('_design/faims_acl_shape');
+
+        const migrationDocs = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, logicalDbName],
+            include_docs: true,
+          }
+        );
+        expect(migrationDocs.rows.length).toBe(1);
+        expect(migrationDocs.rows[0].doc?.version).toBe(
+          DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
+        );
+        // Must not have indexed under the URL form of db.name
+        const urlKeyed = await testMigrationDb.query<MigrationsDBFields>(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, testDataDb.name],
+            include_docs: true,
+          }
+        );
+        expect(urlKeyed.rows.length).toBe(0);
+      } finally {
+        await testDataDb.destroy();
+      }
+    });
+
+    it('performMigration resolves projectId from URL db.name fallback', async () => {
+      const projectId = `mig-acl-fallback-${Date.now()}`;
+      const logicalDbName = `data-${projectId}`;
+      const testDataDb = new PouchDB(`mem-${logicalDbName}`, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      Object.defineProperty(testDataDb, 'name', {
+        value: `http://couchdb:5984/${logicalDbName}`,
+        configurable: true,
+      });
+
+      try {
+        // Proxy-owned stub; migration must resolve projectId from db.name URL
+        // and patch dbacl without inventing map/validate_doc_update.
+        await testDataDb.put({
+          _id: '_design/acl',
+          language: 'javascript',
+          type: 'ddoc',
+          version: '2.3.0',
+          acl: [],
+          views: {acl: {map: 'function (doc) { emit(doc._id, {}); }'}},
+          validate_doc_update: 'function () {}',
+        });
+        const result = await performMigration({
+          db: testDataDb,
+          migrationFunc: dataV1toV2Migration,
+          beforeDatabase: dataV1toV2BeforeDatabase,
+          getDbById: async () => testDataDb,
+          // Omit dbName to exercise URL parsing of db.name
+        });
+        expect(result.issues).toEqual([]);
+        const acl = await testDataDb.get<{dbacl: {_r: string[]}}>(
+          '_design/acl'
+        );
+        expect(acl.dbacl._r.length).toBeGreaterThan(0);
+        await testDataDb.get('_design/faims_acl_shape');
+      } finally {
+        await testDataDb.destroy();
       }
     });
   });

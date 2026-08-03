@@ -39,6 +39,7 @@ import {
   DBTargetVersions,
   DatabaseType,
   IS_TESTING,
+  MigrationBeforeDatabase,
   MigrationDetails,
   MigrationFunc,
 } from './types';
@@ -53,6 +54,78 @@ import {
   LEGACY_INLINE_NOTEBOOK_DB_PREFIX,
   resolveMigrationCreatedBy,
 } from './hooks';
+import {
+  ACL_ORPHAN_CREATOR,
+  ensureDataDbAclOverlay,
+  projectIdFromDataDbName,
+  stampDataDocumentAclFields,
+} from '../dataDB/acl';
+
+/**
+ * DATA DB v1 → v2 once-per-DB setup ({@link MigrationDetails.beforeDatabase}).
+ *
+ * Patches project-scoped `dbacl` onto an existing proxy-managed `_design/acl`
+ * when present, and ensures FAIMS `_design/faims_acl_shape`. Does not invent
+ * the proxy map / protocol `validate_doc_update` / `version`.
+ *
+ * Runs even for empty / design-doc-only DBs (the document migrator alone would
+ * never fire). Does **not** warm the proxy — Conductor `initialiseDataDb` /
+ * `ensureProjectDataDbAcl` (or ops `repair-data-db-acl -- --write`) must ping
+ * via `COUCHDB_PUBLIC_URL` so `ACL_AUTO_INSTALL` can create `_design/acl`
+ * before `dbacl` can be patched. `context.dbName` must be the logical name
+ * `data-{projectId}` (or a remote Pouch URL ending in that form).
+ */
+export const dataV1toV2BeforeDatabase: MigrationBeforeDatabase =
+  async context => {
+    if (!context.db || !context.dbName) {
+      return;
+    }
+    const projectId = projectIdFromDataDbName(context.dbName);
+    if (!projectId) {
+      return;
+    }
+    await ensureDataDbAclOverlay({db: context.db, projectId});
+  };
+
+/**
+ * DATA DB v1 → v2 per-document migrator (project `data-{projectId}` DBs;
+ * targetVersion 2).
+ *
+ * Stamps legacy docs for couch-auth-proxy sync ACL via
+ * {@link stampDataDocumentAclFields}:
+ * - `rec-*`: `creator = created_by` (or {@link ACL_ORPHAN_CREATOR} if missing
+ *   — fail-closed for guests; ALL roles still reach via `dbacl`)
+ * - docs with `record_id` (frev/avp/att): `creator` + `parent = record_id`
+ * - Idempotent for already-stamped docs; design docs skipped
+ *
+ * DB-scoped ACL overlay / `faims_acl_shape` lives in
+ * {@link dataV1toV2BeforeDatabase}, registered on the migration entry.
+ *
+ * See also: docs Authorisation/AclValidationLayering.md,
+ * Authorisation/CouchAuthProxyCutover.md (migrate then `--check`).
+ */
+export const dataV1toV2Migration: MigrationFunc = doc => {
+  const updated = stampDataDocumentAclFields(doc as Record<string, unknown>);
+  if (!updated) {
+    return {action: 'none'};
+  }
+
+  if (
+    updated.creator === ACL_ORPHAN_CREATOR &&
+    !(typeof doc.created_by === 'string' && doc.created_by.length > 0) &&
+    !IS_TESTING
+  ) {
+    console.warn(
+      `[dataV1toV2Migration] Doc ${String(doc._id ?? '<unknown>')} has no created_by; ` +
+        `stamping creator=${ACL_ORPHAN_CREATOR} (fail-closed for guests).`
+    );
+  }
+
+  return {
+    action: 'update',
+    updatedRecord: updated as PouchDB.Core.ExistingDocument<any>,
+  };
+};
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -634,7 +707,10 @@ export const authV4toV5Migration: MigrationFunc = doc => {
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
-  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
+  // DATA v2: see {@link dataV1toV2Migration} + {@link dataV1toV2BeforeDatabase}.
+  // New DBs already stamp via init/writes; migrator is a no-op on stamped docs
+  // and still ensures FAIMS ACL ddocs when the proxy `_design/acl` exists.
+  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
@@ -644,6 +720,15 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
 };
 
 export const DB_MIGRATIONS: MigrationDetails[] = [
+  {
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    description:
+      'DATA ACL cutover: stamp creator/parent, patch dbacl when proxy _design/acl exists, ensure _design/faims_acl_shape',
+    migrationFunction: dataV1toV2Migration,
+    beforeDatabase: dataV1toV2BeforeDatabase,
+  },
   {
     dbType: DatabaseType.PEOPLE,
     from: 1,

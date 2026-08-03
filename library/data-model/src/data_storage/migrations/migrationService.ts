@@ -13,6 +13,7 @@ import {
   DatabaseType,
   GetDbById,
   IS_TESTING,
+  MigrationBeforeDatabase,
   MigrationContext,
   MigrationDetails,
   MigrationFunc,
@@ -150,11 +151,12 @@ export function identifyMigrations({
  * Performs a migration on all non-design documents in a PouchDB database.
  *
  * This function:
- * 1. Iterates through all non-design documents
- * 2. Applies the migration function to each document
- * 3. Updates documents that need changes
- * 4. Preserves the original _id and _rev fields
- * 5. Tracks and returns any issues encountered
+ * 1. Optionally runs {@link MigrationBeforeDatabase} once (DB-scoped setup)
+ * 2. Iterates through all non-design documents
+ * 3. Applies the migration function to each document
+ * 4. Updates documents that need changes
+ * 5. Preserves the original _id and _rev fields
+ * 6. Tracks and returns any issues encountered
  *
  * @param {Object} params - The parameters object.
  * @param {DatabaseInterface} params.db - The PouchDB database to migrate.
@@ -168,20 +170,34 @@ export async function performMigration({
   migrationFunc,
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
+  dbName,
+  beforeDatabase,
 }: {
   db: DatabaseInterface;
   migrationFunc: MigrationFunc;
   getDbById: GetDbById;
   migrationCreatedBy?: string;
+  /**
+   * Logical Couch database name (e.g. `data-{projectId}`). Prefer this over
+   * `db.name`, which is a full URL for remote Pouch handles.
+   */
+  dbName?: string;
+  /** Optional once-per-DB work before the document loop. */
+  beforeDatabase?: MigrationBeforeDatabase;
 }): Promise<{
   issues: string[];
   processedCount: number;
   writtenCount: number;
   deletedCount: number;
 }> {
+  // Prefer the caller-supplied logical name; fall back to parsing Pouch's
+  // `db.name` (URL or bare) so DATA ACL ensure still resolves projectId.
+  const resolvedDbName = dbName ?? db.name;
   const context: MigrationContext = buildMigrationContext({
     getDbById,
     migrationCreatedBy,
+    db,
+    dbName: resolvedDbName,
   });
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
@@ -190,6 +206,19 @@ export async function performMigration({
   const batchSize = 100; // Number of documents to process in each batch
   let startKey = null;
   let hasMoreDocs = true;
+
+  // Once-per-DB setup (e.g. design docs) — must run even for empty DBs.
+  if (beforeDatabase) {
+    try {
+      await Promise.resolve(beforeDatabase(context));
+    } catch (error) {
+      issues.push(
+        `Error during migration beforeDatabase hook: ${
+          error instanceof Error ? error.message : String(error)
+        }.`
+      );
+    }
+  }
 
   // Process documents in batches to avoid memory issues with large databases
   while (hasMoreDocs) {
@@ -388,12 +417,14 @@ export async function migrateDbs({
         }
         migrationLogEntry.notes += `\n- ${migrationDetail.description}`;
 
-        // Perform the migration
+        // Perform the migration (pass logical dbName — remote Pouch db.name is a URL)
         const result = await performMigration({
           db,
           migrationFunc: migrationDetail.migrationFunction,
           getDbById: migrationContext.getDbById,
           migrationCreatedBy: migrationContext.migrationCreatedBy,
+          dbName,
+          beforeDatabase: migrationDetail.beforeDatabase,
         });
 
         // Log stats about this migration step

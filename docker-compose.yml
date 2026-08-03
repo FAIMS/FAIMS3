@@ -82,7 +82,65 @@ services:
         source: couchdb_data
         target: /opt/couchdb/data
     ports:
+      # Direct Couch for Conductor admin / local debugging. App sync should use
+      # couch-auth-proxy (COUCHDB_PUBLIC_URL), not this port.
       - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Per-document ACL reverse proxy for Pouch↔Couch sync (guest my/all reads).
+  # Optional for local: if you skip this service, set api/.env
+  # COUCH_AUTH_PROXY_ENABLED=false and COUCHDB_PUBLIC_URL=http://localhost:5984.
+  # Pin must match CDK `couchAuthProxy.imageTag` (image owns `_design/acl`
+  # map/validate_doc_update + ACL_REQUIRE_CREATOR). FAIMS patches `dbacl` only; stamp shape is
+  # `_design/faims_acl_shape` (record_id ↔ parent). Prefer digest pins in prod.
+  couch-auth-proxy:
+    image: ghcr.io/peterbaker0/couch-auth-proxy:1.7.0
+    environment:
+      COUCH_URL: http://couchdb:5984
+      # Must match Couch admin in api/.env (COUCHDB_USER / COUCHDB_PASSWORD).
+      # Compose interpolates these from the project-root `.env` / shell — keep
+      # root `.env` and `api/.env` passwords in sync (both .env.dist match).
+      COUCH_ADMIN_USER: ${COUCHDB_USER:-admin}
+      COUCH_ADMIN_PASSWORD: ${COUCHDB_PASSWORD:-aSecretPasswordThatCantBeGuessed}
+      ACL_DB_INCLUDE: '/^data-/'
+      # `root` = GET / (PouchDB remote id() reads Couch uuid during sync).
+      ACL_ROUTE_INCLUDE: pouch-sync,session,root
+      # Proxy installs/migrates `_design/acl`; FAIMS only patches `dbacl`.
+      ACL_AUTO_INSTALL: 'true'
+      # Fail-closed: non-admin creates must stamp creator (validate_doc_update in _design/acl).
+      ACL_REQUIRE_CREATOR: 'true'
+      # Boot-warm matching DBs (1.6.0+): at start, /_all_dbs → ensureDb so
+      # `_design/acl` is installed without waiting for a Conductor/client ping
+      # (union with COUCH_PRELOAD_DBS). Still filtered by ACL_DB_* / system DBs.
+      COUCH_PRELOAD_DB_INCLUDE: '/^data-/'
+      AUTH_RESOLVE_VIA_COUCH_SESSION: 'true'
+      # Browser PWA + Control Centre. Capacitor native WebViews typically use
+      # https://localhost / capacitor://localhost — add those if testing native.
+      CORS_ORIGINS: ${COUCH_AUTH_PROXY_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,https://localhost,capacitor://localhost}
+      PORT: '8000'
+      HOST: '0.0.0.0'
+    ports:
+      - '0.0.0.0:${COUCH_AUTH_PROXY_EXTERNAL_PORT:-5985}:8000'
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '-qO-',
+          'http://127.0.0.1:8000/_couch-auth-proxy/health',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   couchdb_data:

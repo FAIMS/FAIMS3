@@ -138,12 +138,21 @@ export function getTheme(): string {
 export type PersonaKey =
   | 'operationsAdmin'
   | 'managerBlue'
+  | 'managerRed'
+  | 'adminRed'
   | 'managerCross'
   | 'memberBoth'
   | 'redMemberCreator'
   | 'user'
   | 'projectContributor'
-  | 'projectGuest';
+  | 'projectGuest'
+  | 'projectGuestB';
+
+/** Stable seed notebook / project ids from `seedTestDataset.ts`. */
+export const SEED_NOTEBOOK = {
+  red: 'notebook_seed_red',
+  blue: 'notebook_seed_blue',
+} as const;
 
 const PERSONA_ENV: Record<PersonaKey, {user: string; pass: string}> = {
   operationsAdmin: {
@@ -153,6 +162,14 @@ const PERSONA_ENV: Record<PersonaKey, {user: string; pass: string}> = {
   managerBlue: {
     user: 'TEST_MANAGER_BLUE_USERNAME',
     pass: 'TEST_MANAGER_BLUE_PASSWORD',
+  },
+  managerRed: {
+    user: 'TEST_MANAGER_RED_USERNAME',
+    pass: 'TEST_MANAGER_RED_PASSWORD',
+  },
+  adminRed: {
+    user: 'TEST_ADMIN_RED_USERNAME',
+    pass: 'TEST_ADMIN_RED_PASSWORD',
   },
   managerCross: {
     user: 'TEST_MANAGER_CROSS_USERNAME',
@@ -177,6 +194,10 @@ const PERSONA_ENV: Record<PersonaKey, {user: string; pass: string}> = {
   projectGuest: {
     user: 'TEST_PROJECT_GUEST_USERNAME',
     pass: 'TEST_PROJECT_GUEST_PASSWORD',
+  },
+  projectGuestB: {
+    user: 'TEST_PROJECT_GUEST_B_USERNAME',
+    pass: 'TEST_PROJECT_GUEST_B_PASSWORD',
   },
 };
 

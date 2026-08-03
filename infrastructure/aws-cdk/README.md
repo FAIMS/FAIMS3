@@ -24,8 +24,48 @@ The `EC2CouchDB` construct deploys CouchDB:
 - **Cloud Watch**: Includes a set of monitoring alarms triggering SNS topics, subscribed to an email address. Cloudwatch agent is installed and configured on instance. Logs collected and reported to /ec2/couchdb log stream.
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
-- **Load Balancer Integration**: Uses the shared ALB with a dedicated target group. Will support clustering in the future and performs TLS termination.
-- **DNS**: Creates a custom domain for CouchDB access.
+- **Load Balancer Integration**: When `couchAuthProxy.enabled` is **false**
+  (default), ALB `couch.*` → Couch EC2 `:5984` (legacy). When **true**, Couch
+  is VPC-only; only proxy + Conductor security groups may reach `:5984`.
+- **DNS**: Creates a custom domain alias to the shared ALB (hostname unchanged
+  for CSP/clients).
+- **Internal endpoint**: Exposes `internalEndpoint` (`http://<private-ip>:5984`)
+  for Conductor admin (and the proxy when enabled).
+
+### couch-auth-proxy (public sync ACL — optional)
+
+Controlled by `couchAuthProxy.enabled` in the stack JSON (default **`false`**).
+
+When **`enabled: true`**, the `CouchAuthProxy` construct deploys
+[`couch-auth-proxy`](https://github.com/PeterBaker0/couch-auth-proxy) as ECS
+Fargate on the shared ALB:
+
+- **Public hostname**: Same `couch.<baseDomain>` as before (no app/CSP rebuild).
+- **ALB**: Host rule → proxy target group on `:8000`; health check
+  `/_couch-auth-proxy/health`. Couch is detached from the public ALB.
+- **Upstream**: VPC HTTP to Couch `internalEndpoint`; admin creds via Secrets Manager.
+- **Hardened env**: `ACL_DB_INCLUDE=/^data-/`, `ACL_ROUTE_INCLUDE=pouch-sync,session,root`,
+  `ACL_AUTO_INSTALL=true` (proxy owns `_design/acl`; FAIMS patches `dbacl`),
+  `ACL_REQUIRE_CREATOR=true`, `COUCH_PRELOAD_DB_INCLUDE=/^data-/` (boot warm),
+  `AUTH_RESOLVE_VIA_COUCH_SESSION=true`,
+  `CORS_ORIGINS` from faims + web HTTPS hosts plus Capacitor WebView origins
+  (`https://localhost`, `capacitor://localhost`, `{appId}://localhost` for
+  FAIMS `iosScheme: appId`).
+- **Image pin**: Default `ghcr.io/peterbaker0/couch-auth-proxy:1.7.0`
+  (must match `docker-compose.yml` — image is source of truth for ACL map/validate_doc_update).
+- **Conductor**: `COUCH_AUTH_PROXY_ENABLED=true`, `COUCHDB_PUBLIC_URL` → proxy,
+  `COUCHDB_INTERNAL_URL` → VPC Couch.
+
+When **`enabled: false`**, the proxy service is **not** deployed; ALB → Couch
+as before. Conductor still gets `COUCHDB_INTERNAL_URL` (VPC) and
+`COUCH_AUTH_PROXY_ENABLED=false` so it never HTTP-calls a missing proxy.
+Creator stamps and DATA migrations still run — safe to enable later.
+
+**Cutover:** Set `enabled: true`, deploy, migrate DATA DBs to version **2**,
+then **check** ACL overlays (`repair-data-db-acl -- --check`; `--write` only
+if check reports drift). See
+[AclValidationLayering](../../docs/developer/docs/source/markdown/Authorisation/AclValidationLayering.md),
+[CouchAuthProxyCutover](../../docs/developer/docs/source/markdown/Authorisation/CouchAuthProxyCutover.md).
 
 ### Conductor (API Service)
 
@@ -33,6 +73,8 @@ The `FaimsConductor` construct sets up the API service:
 
 - **ECS Fargate**: Runs the Conductor API as a containerized service. Can either be built using CDK with a debug flag in the code, or preferably use a docker hub image (name and tag).
 - **Task Definition**: Configures the container with environment variables and secrets.
+- **Couch URLs**: `COUCHDB_PUBLIC_URL` (apps / sync → proxy or ALB Couch) vs
+  `COUCHDB_INTERNAL_URL` (admin → VPC Couch), plus `COUCH_AUTH_PROXY_ENABLED`.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
 - **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
@@ -366,6 +408,17 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
+- `couchAuthProxy`: Public Pouch sync ACL proxy (**optional**). Defaults keep
+  legacy ALB → Couch. Set `enabled: true` for cutover; migrate DATA DBs to v2
+  promptly afterward — see CouchAuthProxyCutover.md.
+  - `enabled`: (default `false`) Deploy proxy on ALB `couch.*` and wire
+    Conductor `COUCH_AUTH_PROXY_ENABLED`. When false, ALB → Couch and no
+    proxy service.
+  - `image`: (default `ghcr.io/peterbaker0/couch-auth-proxy`) Image repository
+  - `imageTag`: (default `1.7.0`) Pin matching `docker-compose.yml`
+  - `cpu`: (default `512`) Fargate CPU units
+  - `memory`: (default `1024`) Fargate memory MiB
+  - `desiredCount`: (default `2`) Desired task count
 - `conductor`: Configuration for the Conductor API service.
   - `name`: Title for this conductor instance (e.g. shown on listings page)
   - `description`: Subheading or description for the instance
@@ -471,6 +524,20 @@ This project includes a script to generate RSA key pairs and store them in AWS S
 This process ensures that your CDK stack uses the correct, securely stored keys for JWT signing and validation.
 
 Remember to run this script and update your configuration whenever you need to rotate keys or set up a new environment.
+
+## Exporting local `.env` from a deployed stack
+
+With AWS credentials active, from `infrastructure/aws-cdk`:
+
+```bash
+# Conductor API env (ECS task + Secrets Manager) → api/.env.cdk-export
+./scripts/api-env-from-cdk-stack.sh <stack-name> -o ../../api/.env --region <region>
+
+# App Vite env (VITE_* from the deployed static bundle) → app/.env.cdk-export
+./scripts/app-env-from-cdk-stack.sh <stack-name> -o ../../app/.env --region <region>
+```
+
+Review the generated file before copying over an existing `.env`. The API export may still need local overrides (`COUCHDB_INTERNAL_URL` via VPN/tunnel, `KEY_SOURCE=file`, etc.). The app export is build-time values baked into the deployed JS — useful for local Vite or debug APK builds against that stack.
 
 # CDK Context File (cdk.context.json)
 

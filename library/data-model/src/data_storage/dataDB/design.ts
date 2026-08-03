@@ -3,6 +3,17 @@
 
 import {Action, necessaryActionToCouchRoleList} from '../../permission';
 import {convertToCouchDBString} from '../utils';
+import {buildFaimsAclShapeDesignDoc} from './faimsAclShape';
+
+/**
+ * FAIMS ACL stamp shape (`record_id` → `parent`).
+ * Proxy-owned `_design/acl` (map/protocol validate_doc_update + optional
+ * require-creator) is installed by couch-auth-proxy on first ACL-scoped access
+ * through the proxy. FAIMS only patches `dbacl` onto it after a **warm**
+ * (ping the DB via the public/proxy URL so that install has run), then
+ * `ensureDataDbAclOverlay`. See AclValidationLayering.md.
+ */
+export const faimsAclShapeDocument = () => buildFaimsAclShapeDesignDoc();
 
 /**
  * Design document for filtering attachments
@@ -266,4 +277,6 @@ export const dataDbDesignDocuments = {
   permissionsDocument,
   indexDocument,
   recordAuditDocument,
+  /** FAIMS stamp validate_doc_update — see {@link faimsAclShapeDocument}. */
+  faimsAclShapeDocument,
 };

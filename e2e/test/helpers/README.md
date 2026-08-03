@@ -16,6 +16,7 @@ duplicating env reads, waits, or screenshot logic in specs.
 | `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`           |
 | `hooks.ts`      | WDIO hooks wired from conf files                                           |
 | `seed.ts`       | Optional API helpers for invites / project ids                             |
+| `syncProbe.ts`  | Auth-proxy sync probes via `window.__FAIMS_E2E__` (local + public Couch)   |
 
 ## Screenshot modes (`SCREENSHOT_MODE`)
 

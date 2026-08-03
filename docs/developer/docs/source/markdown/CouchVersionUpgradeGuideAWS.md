@@ -78,8 +78,8 @@ With **AWS credentials active**, build `api/.env` from the Conductor task
 From `infrastructure/aws-cdk`:
 
 ```bash
-./scripts/env-from-cdk-stack.sh <stack-name> -o ../../api/.env --region <region>
-# e.g. ./scripts/env-from-cdk-stack.sh DASS-stage -o ../../api/.env -r ap-southeast-2
+./scripts/api-env-from-cdk-stack.sh <stack-name> -o ../../api/.env --region <region>
+# e.g. ./scripts/api-env-from-cdk-stack.sh DASS-stage -o ../../api/.env -r ap-southeast-2
 ```
 
 Confirm `api/.env` includes the region (needed for Secrets Manager / JWT key
@@ -179,7 +179,7 @@ pnpm run couch-upgrade-baseline -- --instance-id
 
 ## 4. Re-init keys and migrate
 
-Using the `api/.env` from Setup (re-run `env-from-cdk-stack.sh` only if you need
+Using the `api/.env` from Setup (re-run `api-env-from-cdk-stack.sh` only if you need
 a fresh export). With **AWS credentials active** in this terminal
 (`migrate-with-keys` loads signing keys from Secrets Manager):
 

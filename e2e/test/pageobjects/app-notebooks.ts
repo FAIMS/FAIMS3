@@ -50,6 +50,13 @@ class AppNotebooksPage extends Page {
     return byTestId('app-notebook-row');
   }
 
+  /**
+   * MUI DataGrid row for a stable seed project id (`getRowId` → `data-id`).
+   */
+  notebookRowByProjectId(projectId: string) {
+    return $(`[data-testid="app-notebook-row"][data-id="${projectId}"]`);
+  }
+
   /** Wait until the workspace heading is present. */
   async waitForWorkspace() {
     await waitForTestId('app-notebooks-heading', {timeout: 20000});

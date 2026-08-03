@@ -48,6 +48,7 @@ import {
   roleDetails,
   ROOT_DESCRIPTION_MAX_LENGTH,
   normalizeRootDescriptionForStore,
+  isNotFoundError as isCouchNotFoundError,
   safeWriteDocument,
   TemplateDocument,
 } from '@faims3/data-model';
@@ -264,7 +265,8 @@ const USER_SPECS: UserSpec[] = [
   },
 
   // ── seed-project-guest ────────────────────────────────────────────────────
-  // Project guest on Blue Team notebook only — restricted visibility.
+  // Project guest on Blue (UI/permission e2e) and Red (auth-proxy sync isolation
+  // against e2e-minimal with Guest B + Contributor).
   {
     email: 'seed-project-guest@faims.test',
     tag: 'PROJECT_GUEST',
@@ -274,6 +276,27 @@ const USER_SPECS: UserSpec[] = [
         user,
         role: Role.PROJECT_GUEST,
         projectId: ctx.blueNotebookId,
+      });
+      addProjectRole({
+        user,
+        role: Role.PROJECT_GUEST,
+        projectId: ctx.redNotebookId,
+      });
+    },
+  },
+
+  // ── seed-project-guest-b ──────────────────────────────────────────────────
+  // Second guest on Red only — pair with seed-project-guest for my-only sync
+  // isolation e2e (Guest A must not pull Guest B’s corpus and vice versa).
+  {
+    email: 'seed-project-guest-b@faims.test',
+    tag: 'PROJECT_GUEST_B',
+    name: 'Project Guest B',
+    assignResourceRoles(user, ctx) {
+      addProjectRole({
+        user,
+        role: Role.PROJECT_GUEST,
+        projectId: ctx.redNotebookId,
       });
     },
   },
@@ -318,13 +341,12 @@ function seedDescription(description?: string): string | undefined {
   return normalizeRootDescriptionForStore(clampDescription(description));
 }
 
+/** Seed helpers may see API `ItemNotFoundException` or raw Couch not_found. */
 function isNotFoundError(error: unknown): boolean {
-  if (error instanceof Exceptions.ItemNotFoundException) {
-    return true;
-  }
-  const status = (error as {status?: number} | null)?.status;
-  const name = (error as {name?: string} | null)?.name;
-  return status === 404 || name === 'not_found';
+  return (
+    error instanceof Exceptions.ItemNotFoundException ||
+    isCouchNotFoundError(error)
+  );
 }
 
 async function upsertSeedTeam({

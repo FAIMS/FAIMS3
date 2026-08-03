@@ -23,6 +23,7 @@ import App from './App';
 import {config} from './buildconfig';
 import './index.css';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import {installE2eHarness} from './e2eHarness';
 import {shouldDisplayRecord} from './users';
 import {localGetDataDb} from './utils/database';
 
@@ -36,6 +37,9 @@ registerClient({
   // This will determine if a record should be displayed
   shouldDisplayRecord: shouldDisplayRecord,
 });
+
+// Dev/e2e probe for local Pouch + public (proxy) Couch ACL assertions.
+installE2eHarness();
 
 // Change the page title to configured app name
 if (document.getElementsByTagName('title')[0])

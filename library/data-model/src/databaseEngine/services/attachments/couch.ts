@@ -15,6 +15,7 @@ import {
   StoreAttachmentResult,
 } from './types';
 import {attachmentSaveTrace} from '../../../logging';
+import {stampChildAcl} from '../../../data_storage/dataDB/acl';
 import {base64ToBlob, fileToBase64} from './utils';
 
 // The default att- prefix
@@ -108,6 +109,10 @@ export class CouchAttachmentService extends BaseAttachmentService {
       revision_id: metadata.recordContext.revisionId,
       created: metadata.recordContext.created,
       created_by: metadata.recordContext.createdBy,
+      ...stampChildAcl({
+        createdBy: metadata.recordContext.createdBy,
+        recordId: metadata.recordContext.recordId,
+      }),
       attach_format_version: 1,
     };
 
@@ -181,6 +186,10 @@ export class CouchAttachmentService extends BaseAttachmentService {
       revision_id: metadata.recordContext.revisionId,
       created: metadata.recordContext.created,
       created_by: metadata.recordContext.createdBy,
+      ...stampChildAcl({
+        createdBy: metadata.recordContext.createdBy,
+        recordId: metadata.recordContext.recordId,
+      }),
       attach_format_version: 1,
     };
 
@@ -364,6 +373,10 @@ export class CouchAttachmentService extends BaseAttachmentService {
       revision_id: metadata.recordContext.revisionId,
       created: metadata.recordContext.created,
       created_by: metadata.recordContext.createdBy,
+      ...stampChildAcl({
+        createdBy: metadata.recordContext.createdBy,
+        recordId: metadata.recordContext.recordId,
+      }),
       attach_format_version: 1,
     };
 

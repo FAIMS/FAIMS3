@@ -20,6 +20,16 @@ export type MigrationContext = {
    * no creator. Defaults to {@link DEFAULT_MIGRATION_CREATED_BY}.
    */
   migrationCreatedBy?: string;
+  /**
+   * Database currently being migrated (when running via {@link performMigration}).
+   * Optional for unit tests that invoke migration functions directly.
+   */
+  db?: DatabaseInterface;
+  /**
+   * Logical Couch database name for {@link db} (e.g. `data-{projectId}`).
+   * Prefer this over Pouch `db.name`, which is a full URL for remote handles.
+   */
+  dbName?: string;
 };
 
 // Check if we are testing
@@ -73,10 +83,21 @@ export type MigrationFunc = (
   context?: MigrationContext
 ) => MigrationFuncReturn | Promise<MigrationFuncReturn>;
 
+/**
+ * Optional once-per-database work run by {@link performMigration} before the
+ * per-document loop. Use for design-doc / DB-scoped side effects that must run
+ * even when the DB is empty or only contains `_design/*` docs.
+ */
+export type MigrationBeforeDatabase = (
+  context: MigrationContext
+) => void | Promise<void>;
+
 export type MigrationDetails = {
   dbType: DATABASE_TYPE;
   from: number;
   description: string;
   to: number;
   migrationFunction: MigrationFunc;
+  /** Once-per-DB setup before documents are migrated. */
+  beforeDatabase?: MigrationBeforeDatabase;
 };

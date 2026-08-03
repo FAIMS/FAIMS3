@@ -55,6 +55,7 @@ import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {ensureProjectDataDbAcl} from './couchAuthProxyAcl';
 import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
 
@@ -403,6 +404,29 @@ export const initialiseDataDb = async ({
     );
   }
 
+  // When COUCH_AUTH_PROXY_ENABLED: warm via COUCHDB_PUBLIC_URL so the proxy
+  // installs `_design/acl`, then patch FAIMS dbacl. When disabled: skip warm
+  // (no proxy calls) but still attempt dbacl/shape overlay if the ddoc exists.
+  // Creator stamps + DATA migrations always run elsewhere regardless.
+  // In unit tests there is usually no proxy — skip rather than fail init.
+  if (!isTesting) {
+    try {
+      await ensureProjectDataDbAcl({
+        projectId,
+        db: dataDb as unknown as {
+          get: (id: string) => Promise<Record<string, unknown>>;
+          put: (doc: Record<string, unknown>) => Promise<unknown>;
+        },
+        requireProxyDdoc: false,
+      });
+    } catch (e) {
+      console.warn(
+        `Warning: could not warm/patch proxy ACL for data-${projectId}:`,
+        e instanceof Error ? e.message : e
+      );
+    }
+  }
+
   return dataDb;
 };
 
@@ -659,13 +683,19 @@ export const initialiseAndMigrateDBs = async ({
     // Project ID
     const projectId = project._id;
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-    dbs.concat([
-      {
-        db: dataDb,
-        dbType: DatabaseType.DATA,
-        dbName: dataDb.name,
-      },
-    ]);
+    // Bug fix in feat/proxy-auth-integration: `dbs.concat([...])` was a no-op
+    // (concat returns a new
+    // array and the result was discarded), so project data DBs were never
+    // queued for migrate. Use `push` instead.
+    // Also use the logical Couch name (`data-{projectId}`), not `dataDb.name`.
+    // Remote Pouch handles expose a full URL as `db.name`, which would break
+    // migrations-doc indexing and DATA ACL projectId resolution.
+    const dataDbName = project.dataDb?.db_name ?? `data-${projectId}`;
+    dbs.push({
+      db: dataDb,
+      dbType: DatabaseType.DATA,
+      dbName: dataDbName,
+    });
   }
   await migrateDbs({
     dbs,

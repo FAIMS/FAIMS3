@@ -127,6 +127,12 @@ export type EncodedRecord = PouchDB.Core.Document<{
   record_format_version: number;
   created: string;
   created_by: string;
+  /**
+   * couch-auth-proxy ACL owner (r/w/d). Always stamped on the clean write path
+   * and by DATA v1→v2; optional here so pre-migration / leftover local docs
+   * still type-check (no automatic IndexedDB wipe on cutover).
+   */
+  creator?: string;
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
@@ -145,6 +151,16 @@ export interface Revision {
   parents: RevisionID[];
   created: string;
   created_by: string;
+  /**
+   * couch-auth-proxy ACL creator. Stamped on write; optional for legacy /
+   * leftover local docs (see EncodedRecord.creator).
+   */
+  creator?: string;
+  /**
+   * couch-auth-proxy ACL parent (record doc id). Distinct from `parents`
+   * (revision DAG) and `relationship.parent` (form links). Optional on read.
+   */
+  parent?: string;
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;
@@ -167,6 +183,13 @@ export interface AttributeValuePair {
   annotations: Annotations;
   created: string;
   created_by: string;
+  /**
+   * couch-auth-proxy ACL creator. Stamped on write; optional for legacy /
+   * leftover local docs (see EncodedRecord.creator).
+   */
+  creator?: string;
+  /** couch-auth-proxy ACL parent (record doc id). Optional on read. */
+  parent?: string;
   faims_attachments?: FAIMSAttachmentReference[];
 }
 
@@ -190,6 +213,13 @@ export interface FAIMSAttachment {
   record_id: RecordID;
   created: string;
   created_by: string;
+  /**
+   * couch-auth-proxy ACL creator. Stamped on write; optional for legacy /
+   * leftover local docs (see EncodedRecord.creator).
+   */
+  creator?: string;
+  /** couch-auth-proxy ACL parent (record doc id). Optional on read. */
+  parent?: string;
 }
 
 /**

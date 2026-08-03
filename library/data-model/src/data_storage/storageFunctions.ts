@@ -31,6 +31,7 @@ import {
 } from '../types';
 import {UiSpecModel} from '../uiSpecification/types';
 import {randomUuid} from '../utils';
+import {stampChildAcl} from './dataDB/acl';
 import {
   addNewRevisionFromForm,
   FormData,
@@ -325,6 +326,7 @@ export async function setRecordAsDeleted({
     parents: [baseRevisionId],
     created: date.toISOString(),
     created_by: userId,
+    ...stampChildAcl({createdBy: userId, recordId}),
     deleted: true,
     relationship: baseRevision.relationship,
   };
@@ -364,6 +366,7 @@ export async function setRecordAsUndeleted({
     parents: [baseRevisionId],
     created: date.toISOString(),
     created_by: userId,
+    ...stampChildAcl({createdBy: userId, recordId}),
     deleted: false,
     relationship: baseRevision.relationship,
   };

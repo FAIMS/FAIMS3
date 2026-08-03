@@ -212,6 +212,7 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
       delete project._rev;
       // add database connection details
       if (project.dataDb) project.dataDb.base_url = config.couchdbPublicUrl;
+
       projects.push(project);
     }
   });

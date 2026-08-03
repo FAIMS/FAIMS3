@@ -107,19 +107,21 @@ jobs:
 
           pnpm run generate-local-keys
 
-      - name: Start CouchDB
+      - name: Start CouchDB + couch-auth-proxy
         run: |
           set -euo pipefail
-          sudo docker compose up -d --build couchdb
+          # App sync uses COUCHDB_PUBLIC_URL (:5985 proxy); Conductor uses :5984.
+          sudo docker compose up -d --build couchdb couch-auth-proxy
           for i in $(seq 1 60); do
-            if curl -sf http://localhost:5984/_up >/dev/null; then
-              echo "CouchDB ready"
+            if curl -sf http://localhost:5984/_up >/dev/null \
+              && curl -sf http://localhost:5985/_couch-auth-proxy/health >/dev/null; then
+              echo "CouchDB + couch-auth-proxy ready"
               exit 0
             fi
             sleep 2
           done
-          echo "CouchDB did not become ready"
-          sudo docker compose logs couchdb || true
+          echo "CouchDB / couch-auth-proxy did not become ready"
+          sudo docker compose logs couchdb couch-auth-proxy || true
           exit 1
 
       - name: Build shared packages and apps
@@ -306,5 +308,7 @@ jobs:
         run: |
           echo "==== docker couchdb ===="
           sudo docker compose logs --tail=200 couchdb || true
+          echo "==== docker couch-auth-proxy ===="
+          sudo docker compose logs --tail=200 couch-auth-proxy || true
           echo "==== faims-dev.log ===="
           tail -n 400 /tmp/faims-dev.log || true

@@ -24,6 +24,7 @@ import {
   FAIMSAttachment,
   FAIMSAttachmentReference,
 } from '../types';
+import {stampChildAcl} from './dataDB/acl';
 
 interface FullAttachments {
   [attachmentId: string]: PouchDB.Core.FullAttachment;
@@ -65,6 +66,10 @@ export function file_data_to_attachments(
         record_id: avp.record_id,
         created: avp.created,
         created_by: avp.created_by,
+        ...stampChildAcl({
+          createdBy: avp.created_by,
+          recordId: avp.record_id,
+        }),
         filename: file_name,
         _attachments: {},
       };

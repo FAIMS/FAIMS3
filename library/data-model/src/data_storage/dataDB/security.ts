@@ -18,8 +18,10 @@ export const DataDBSecurityDocument = ({
     },
     members: {
       names: [],
-      // We have to stoop to reading here since there is no differentiation
-      // possible in couch (for read)
+      // Membership = "may talk to this DB". Per-document my/all sync reads are
+      // enforced by couch-auth-proxy (`creator`/`parent` + FAIMS-patched
+      // `dbacl` on proxy `_design/acl`). See AclValidationLayering.md /
+      // dataDB/acl.ts.
       roles: necessaryActionToCouchRoleList({
         action: Action.READ_MY_PROJECT_RECORDS,
         resourceId: projectId,

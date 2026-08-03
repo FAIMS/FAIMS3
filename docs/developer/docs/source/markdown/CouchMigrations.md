@@ -394,13 +394,13 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
 };
 ```
 
-### Example 4: Data Database V2 to V3 Migration (with Document Deletion)
+### Example 4: Hypothetical data restructure migration (with document deletion)
 
-This migration restructures data records and removes deprecated document types:
+Illustrative only — not the real DATA ACL migration. Shows update/delete actions:
 
 ```typescript
-export const dataV2toV3Migration: MigrationFunc = doc => {
-  // Cast input to v2 type
+export const exampleDataRestructureMigration: MigrationFunc = doc => {
+  // Cast input to prior type
   const inputDoc = doc as unknown as DataV2Document;
 
   // Check if this is a deprecated document type that should be removed

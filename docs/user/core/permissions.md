@@ -94,3 +94,8 @@ Template roles give a user permission to work on a particular template.
 
 > 💡 **Note**: {{Notebook}} roles are primarily managed through team membership.
 > E.g. Team Administrators act as {{notebook}} administrators for team templates.
+
+Guests only sync their own records (and related revisions/attachments) to the
+app. Contributors and above sync the full {{notebook}}. The app may also hide
+other users’ records in the UI, but for guests the sync layer itself does not
+download them.

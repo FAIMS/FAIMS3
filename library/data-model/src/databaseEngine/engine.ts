@@ -58,6 +58,7 @@ import {
   normalizeRelationshipInstances,
   toDbRelationshipInstances,
 } from './utils';
+import {stampChildAcl, stampRecordAcl} from '../data_storage/dataDB/acl';
 
 // =======
 // HELPERS
@@ -962,6 +963,11 @@ class HydratedOperations {
       created: revision.created,
       deleted: revision.deleted,
       created_by: revision.createdBy,
+      // Always stamp ACL on the clean write path (do not preserve missing/wrong).
+      ...stampChildAcl({
+        createdBy: revision.createdBy,
+        recordId: revision.recordId,
+      }),
       parents: revision.parents,
       record_id: revision.recordId,
       revision_format_version: 1,
@@ -1100,6 +1106,7 @@ class FormOperations {
       record_format_version: 1,
       created: getCurrentTimestamp(),
       created_by: validated.createdBy,
+      ...stampRecordAcl(validated.createdBy),
       // Track a single revision and this is the active head
       revisions: [revisionId],
       heads: [revisionId],
@@ -1131,6 +1138,7 @@ class FormOperations {
       parents: [],
       created: getCurrentTimestamp(),
       created_by: validated.createdBy,
+      ...stampChildAcl({createdBy: validated.createdBy, recordId}),
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
@@ -1198,6 +1206,7 @@ class FormOperations {
       avps: parentRevision.avps,
       created: getCurrentTimestamp(),
       created_by: createdBy,
+      ...stampChildAcl({createdBy, recordId}),
       // Mark the parent revision ID as the parent
       parents: [revisionId],
       record_id: recordId,
@@ -1247,6 +1256,7 @@ class FormOperations {
       avps: baseRevision.avps,
       created: getCurrentTimestamp(),
       created_by: userId,
+      ...stampChildAcl({createdBy: userId, recordId}),
       parents: [baseRevisionId],
       record_id: recordId,
       revision_format_version: 1,
@@ -1369,6 +1379,11 @@ class FormOperations {
         parents: currentRevision.parents,
         created: currentRevision.created,
         created_by: currentRevision.created_by,
+        // Re-stamp ACL so restore/legacy orphans cannot linger on update.
+        ...stampChildAcl({
+          createdBy: currentRevision.created_by,
+          recordId: currentRevision.record_id,
+        }),
         type: currentRevision.type,
         ugc_comment: currentRevision.ugc_comment,
         relationship: currentRevision.relationship,
@@ -1876,6 +1891,10 @@ class FormOperations {
       avp_format_version: 1,
       created: getCurrentTimestamp(),
       created_by: updatedBy,
+      ...stampChildAcl({
+        createdBy: updatedBy,
+        recordId: currentRevision.record_id,
+      }),
       record_id: currentRevision.record_id,
       revision_id: currentRevision._id,
       type: fieldType,
@@ -1900,6 +1919,11 @@ class FormOperations {
 
     return {
       ...currentAvp,
+      // Re-stamp ACL on in-place AVP updates (clean path; repairs orphans).
+      ...stampChildAcl({
+        createdBy: currentAvp.created_by,
+        recordId: currentAvp.record_id,
+      }),
       annotations: newData.annotation,
       data: newData.data,
       faims_attachments: newData.attachments?.map(a => ({
