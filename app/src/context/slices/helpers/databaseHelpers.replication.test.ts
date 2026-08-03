@@ -9,9 +9,7 @@ import {PouchDBWrapper} from './pouchDBWrapper';
 /**
  * The last handle each PouchDB factory produced, so tests can assert WHICH
  * emitter a handler was attached to. The two-way sync handle carries its
- * `push`/`pull` children, matching PouchDB's real shape: the aggregate
- * re-emits its children's `paused` with the error stripped, so attaching a
- * pull-specific handler to the aggregate would silently lose the error.
+ * `push`/`pull` children, matching PouchDB's real shape.
  */
 const mocks = vi.hoisted(() => ({
   handles: {} as {
@@ -119,10 +117,8 @@ describe('createPouchDbReplication', () => {
     const pullPaused = vi.fn();
 
     it('attaches pullPaused to the pull child in both mode, never the aggregate', () => {
-      // The crux: PouchDB.sync's wrapper re-emits a child pause with the
-      // error stripped, so a device that went offline mid-download looks
-      // idle-and-finished on the aggregate. A consumer that reads a clean
-      // pause as "download complete" must therefore watch the pull child.
+      // The aggregate strips the child's error, so an offline device would
+      // look idle-and-finished there.
       createPouchDbReplication({
         syncMode: 'both',
         attachmentDownload: false,
@@ -138,8 +134,7 @@ describe('createPouchDbReplication', () => {
     });
 
     it('attaches pullPaused to the handle itself in pull mode', () => {
-      // A one-way pull replication IS its own pull side and reports its own
-      // errors, so the handle is the right emitter.
+      // A one-way pull replication is its own pull side.
       createPouchDbReplication({
         syncMode: 'pull',
         attachmentDownload: false,

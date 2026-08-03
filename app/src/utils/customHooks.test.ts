@@ -4,21 +4,18 @@ import {syncStateService} from '../context/slices/helpers/syncStateService';
 import type {SyncMode} from '../sync/syncMode';
 import {useIsRecordDownloadUnderway} from './customHooks';
 
-// The hook under test reads the sync state service, not the redux store, but
-// importing its module pulls the store in; building the real store from a
-// test entry point initialises its slices in the wrong order.
+// The hook reads the sync state service, not the redux store, but importing
+// its module pulls the store in, which initialises its slices in the wrong
+// order from a test entry point.
 vi.mock('../context/store', () => ({
   useAppDispatch: () => vi.fn(),
   useAppSelector: () => undefined,
 }));
 
 /**
- * The hook a notebook view asks before it presents a record's absence as
- * meaningful. Its contract is narrow but the failure is silent in both
- * directions: read it as false too early and a half-downloaded notebook is
- * presented as a complete one, read it as true forever and an offline device
- * never shows the data it already has. The sync state it reads lives outside
- * React, hence the poll each test has to step past.
+ * The failure is silent in both directions: false too early presents a
+ * half-downloaded notebook as a complete one, true forever means an offline
+ * device never shows the data it already has.
  */
 describe('useIsRecordDownloadUnderway', () => {
   const serverId = 'server';
@@ -56,9 +53,8 @@ describe('useIsRecordDownloadUnderway', () => {
     });
 
   it('reads as downloading from the very first render of a pulling project', () => {
-    // Nothing has been heard from replication yet, which is exactly when a
-    // consumer is most likely to mistake an empty local database for an
-    // empty notebook.
+    // Nothing heard from replication yet: when a consumer is most likely to
+    // mistake an empty local database for an empty notebook.
     const {result} = renderForSyncMode('both');
     expect(result.current).toBe(true);
   });
@@ -71,8 +67,8 @@ describe('useIsRecordDownloadUnderway', () => {
   });
 
   it('reads as downloading again when a later bulk pull arrives', () => {
-    // Starts from caught up, so this exercises the fall-behind transition
-    // rather than the not-yet-heard-from state the first render is already in.
+    // Starts from caught up, so this is the fall-behind transition rather
+    // than the not-yet-heard-from state of the first render.
     const {result} = renderForSyncMode('pull');
     pullBatch(0);
     poll();
@@ -86,9 +82,8 @@ describe('useIsRecordDownloadUnderway', () => {
   });
 
   it('never reads as downloading when the project cannot pull', () => {
-    // Sync off or push-only: the local data is all this device will ever
-    // have, so waiting on a download that will not come would blank the
-    // consumer permanently.
+    // Sync off or push-only: waiting on a download that will not come would
+    // blank the consumer permanently.
     for (const syncMode of ['none', 'push'] as const) {
       const {result} = renderForSyncMode(syncMode);
       expect(result.current).toBe(false);
@@ -113,9 +108,8 @@ describe('useIsRecordDownloadUnderway', () => {
   });
 
   it('stops polling once unmounted', () => {
-    // A poll left running holds a closure over an unmounted component for the
-    // life of the app; a notebook the user opens and closes repeatedly would
-    // accumulate one per visit.
+    // A notebook opened and closed repeatedly would otherwise accumulate one
+    // live poll per visit.
     const setInterval = vi.spyOn(globalThis, 'setInterval');
     const clearInterval = vi.spyOn(globalThis, 'clearInterval');
     const {unmount} = renderForSyncMode('both');

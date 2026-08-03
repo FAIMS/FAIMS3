@@ -173,9 +173,8 @@ export interface ChangeSyncInfo {
     /** Whether the replication was successful */
     ok: boolean;
     /**
-     * How many records pending sync, or undefined when the replication did
-     * not report it: PouchDB only fills `pending` in when the source supplies
-     * it, so consumers must keep "unknown" distinct from "nothing pending".
+     * How many records pending sync, or undefined when the source did not
+     * report it. Keep "unknown" distinct from "nothing pending".
      */
     pending?: number;
     /** Start time of the replication */
@@ -208,17 +207,12 @@ export interface SyncEventHandlers {
 
   /**
    * Fired when the PULL side specifically pauses, carrying its own error.
+   * Never fired for push-only replication.
    *
-   * Distinct from {@link paused} because `PouchDB.sync`'s two-way wrapper
-   * aggregates its children's pause events and emits `paused` with NO
-   * arguments, discarding the child's error (see `pullPaused` in
-   * pouchdb-browser's sync implementation). A pull that paused because the
-   * device went offline is therefore indistinguishable from a pull that
-   * paused because it is idle and up to date, if you only watch `paused`.
-   * Anything that reads a clean pause as "the download finished" must watch
-   * this instead, or it will treat an offline device as fully synced.
-   *
-   * Never fired for push-only replication, which has no pull side.
+   * Distinct from {@link paused}: `PouchDB.sync` re-emits its children's
+   * pauses with the error stripped, so on the aggregate an offline pull is
+   * indistinguishable from an idle, caught-up one. Anything reading a clean
+   * pause as "the download finished" must watch this instead.
    *
    * @param err Error object if the pull was paused due to an error
    */
@@ -327,12 +321,10 @@ function asReplicationEventEmitter(
 
 /**
  * The emitter carrying the PULL side's own events, or undefined when the
- * replication has no pull side.
- *
- * Two-way `PouchDB.sync` exposes its two child replications as `.push` and
- * `.pull`; the aggregate object is NOT a substitute for the pull child,
- * because its wrapper re-emits `paused` with the child's error stripped. A
- * one-way handle is its own pull side iff it replicates in that direction.
+ * replication has no pull side. Two-way `PouchDB.sync` exposes its children as
+ * `.push`/`.pull`; a one-way handle is its own pull side iff it replicates in
+ * that direction. See {@link SyncEventHandlers.pullPaused} for why the
+ * aggregate is not a substitute.
  */
 function getPullEventEmitter(
   replication: PouchReplicationHandle,
@@ -379,9 +371,6 @@ function attachReplicationEventHandlers(
     );
   }
   if (eventHandlers.pullPaused) {
-    // Listen on the pull side itself, never the aggregate: sync's wrapper
-    // drops the child's error, so an offline pull reaches the aggregate
-    // looking exactly like an idle, up-to-date one.
     getPullEventEmitter(replication, defaultDirection)?.on(
       'paused',
       eventHandlers.pullPaused

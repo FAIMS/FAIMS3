@@ -8,13 +8,10 @@ export interface SyncState {
   lastUpdated: number;
   pendingRecords: number;
   /**
-   * Has the pull side caught up with the remote since this state was created
-   * (activation or app start)? False from creation through the initial
-   * download, whatever order push and pull batches interleave in; true after
-   * a pull change event reports nothing pending or replication pauses
-   * cleanly; false again while a later bulk pull works through its batches.
-   * Consumers use this to tell "records may still be arriving" from "local
-   * data is as complete as sync can make it".
+   * Has the pull side caught up with the remote since this state was created?
+   * False through the initial download, true once a pull reports nothing
+   * pending or pauses cleanly. Lets consumers tell "records may still be
+   * arriving" from "local data is as complete as sync can make it".
    */
   isPullCaughtUp: boolean;
   errorMessage?: string;
@@ -106,21 +103,13 @@ class SyncStateService {
   }
 
   /**
-   * Record that the PULL side paused, which is the only pause that may raise
-   * the pull-catch-up marker.
+   * Record that the PULL side paused, the only pause that may raise the
+   * pull-catch-up marker: a clean pull pause means nothing is left to fetch,
+   * while one carrying an error is retrying, not finished.
    *
-   * A clean pull pause means the pull is idle with nothing left to fetch, so
-   * the pull is caught up even if it never emitted a change event (nothing to
-   * pull). A pull that paused with an error is retrying, not finished, so it
-   * leaves the marker where it is.
-   *
-   * Deliberately NOT folded into {@link setPaused}: in two-way mode the
-   * aggregate `paused` event arrives with the child's error stripped by
-   * PouchDB's sync wrapper, so a device that went offline mid-download is
-   * indistinguishable there from one that finished. Reading that as a
-   * catch-up is exactly the false "no records here" state consumers must
-   * never see. Status stays owned by {@link setPaused}; this moves only the
-   * marker.
+   * Kept out of {@link setPaused} because the aggregate `paused` of a two-way
+   * sync arrives with the child's error stripped, so an offline device would
+   * look finished. Moves only the marker; status stays with {@link setPaused}.
    */
   recordPullPause(serverId: string, projectId: string, error?: Error): void {
     if (error) {
@@ -156,11 +145,7 @@ class SyncStateService {
     serverId: string,
     projectId: string,
     info: {
-      /**
-       * Documents the remote still has queued for this direction, or
-       * undefined when the replication did not report it (PouchDB only fills
-       * `pending` in when the source supplies it).
-       */
+      /** Undefined when the source did not report it, which is not zero. */
       pending: number | undefined;
       docsRead: number;
       docsWritten: number;
@@ -177,18 +162,10 @@ class SyncStateService {
         direction: info.direction,
       },
     };
-    // Only a pull batch moves the pull-catch-up marker: caught up when the
-    // batch reports nothing pending, behind while a bulk pull still has
-    // batches to go. Push batches say nothing about the pull side, so they
-    // leave the marker alone (in 'both' mode the two interleave through the
-    // same event stream).
-    //
-    // An unreported `pending` is "unknown", NOT "nothing pending": reading it
-    // as zero would let the first batch of a bulk download declare the pull
-    // caught up, which is precisely the mid-download blindness this marker
-    // exists to remove. Staying behind is safe because replication is live
-    // with retry, so a genuinely idle pull raises the marker via the clean
-    // pull pause in {@link recordPullPause}.
+    // Only a pull batch moves the marker; push batches say nothing about the
+    // pull side. An unreported `pending` stays behind rather than reading as
+    // zero, which would let the first batch of a bulk download declare
+    // catch-up; a genuinely idle pull raises it via {@link recordPullPause}.
     if (info.direction === 'pull') {
       update.isPullCaughtUp = info.pending === 0;
     }

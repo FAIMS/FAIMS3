@@ -2429,10 +2429,8 @@ export function createSyncStateHandlers(
     change: info => {
       const change = info.change;
       syncStateService.recordChange(serverId, projectId, {
-        // Passed through undefined-and-all: `pending` is typed as a number but
-        // PouchDB omits it whenever the source does not report it, and the
-        // service needs "unknown" to stay distinct from "nothing pending" so
-        // an unreported batch cannot declare a pull caught up mid-download.
+        // Passed through undefined-and-all: the service needs "unknown" to
+        // stay distinct from "nothing pending".
         pending: change.pending,
         docsRead: change.docs_read ?? 0,
         docsWritten: change.docs_written ?? 0,

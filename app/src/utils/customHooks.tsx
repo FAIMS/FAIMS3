@@ -459,16 +459,11 @@ export const useRecordList = ({
 
   /**
    * Whether the returned lists can contain every record in the project. The
-   * queryFn below filters through {@link shouldDisplayRecordMinimalMetadata},
-   * which admits another user's record only under READ_ALL_PROJECT_RECORDS;
-   * computing the flag here, from the same token that filter reads, keeps the
-   * two from drifting apart. When false, absence from the lists proves
-   * nothing: hidden records may exist.
+   * queryFn filters through {@link shouldDisplayRecordMinimalMetadata}, so
+   * when this is false a record's absence proves nothing: hidden records may
+   * exist. Computed from the same token that filter reads.
    *
-   * Returned for consumers rather than used here: the record tables present
-   * a filtered list honestly, so they have no need of it. A notebook view
-   * that reasons about a record's absence does, and those views are supplied
-   * from outside this file (see {@link useIsRecordDownloadUnderway}).
+   * Only currently used in third party plugins, not dead code.
    */
   const canReadAllRecords = useMemo(
     () =>
@@ -567,17 +562,12 @@ export const useRecordList = ({
   });
 
   /**
-   * Whether the list has never loaded, so an empty list means "not known
-   * yet" rather than "no records". TanStack keeps `data` across later
-   * refetch errors, so `data === undefined` means never loaded: still
-   * loading, or the initial fetch errored and the interval refetch is
-   * retrying.
+   * Whether the list has never loaded, so an empty list means "not known yet"
+   * rather than "no records".
    *
-   * Deliberately not the query's own flag of the same name, because no query
-   * flag expresses this: `initialQuery.isLoading` goes false when the initial
-   * fetch fails, presenting the empty fallback as a loaded, empty list, and
-   * `!initialQuery.isSuccess` goes true again when a background refetch fails
-   * while the loaded list is still being served.
+   * Deliberately not `initialQuery.isLoading`, which goes false when the
+   * initial fetch fails, presenting the empty fallback as a loaded, empty
+   * list.
    */
   const isLoading = unhydratedRecordQuery.data === undefined;
 
@@ -673,31 +663,17 @@ export const useRecordList = ({
   };
 };
 
-/**
- * Poll interval for the in-memory per-project sync state: the reads are cheap
- * Map lookups, and state transitions (initial -> pulling -> caught up) should
- * surface promptly in the UI.
- */
+/** Poll interval for the in-memory per-project sync state. */
 const SYNC_STATE_POLL_INTERVAL_MS = 1000;
 
 /**
- * Whether a record download (the initial pull after activation, or a catch-up
- * pull) is underway for a project, polled from the in-memory
- * {@link syncStateService}. While true, records that exist on the server may
- * not yet be in the local database, so a consumer must not treat a record's
- * local absence as proof that none exists. Always false when the project
- * never pulls (sync off, or push-only): local data is then all the device
- * will ever have. A sync error or denial also reads as not-downloading, so
- * an offline device keeps working from its local data.
+ * Whether a record download is underway for a project, polled from the
+ * in-memory {@link syncStateService}. While true, records that exist on the
+ * server may not yet be local, so a consumer must not read a record's absence
+ * as proof that none exists. False when the project never pulls, and on error
+ * or denial, so an offline device keeps working from its local data.
  *
- * May have no callsite in this repository, by design. The consumer is a
- * notebook view that renders a fixed set of positions and has to say, for
- * each one, whether a record exists there: an absent record must read as
- * "not downloaded yet" while this is true, and as "empty" only once it is
- * false. Such views are plug-in components supplied by third-party packages,
- * so this hook and {@link useRecordList}'s `canReadAllRecords` are part of
- * the surface those packages consume, not dead code. Keep both even where
- * nothing in the tree appears to use them.
+ * Only currently used in third party plugins, not dead code.
  */
 export const useIsRecordDownloadUnderway = ({
   serverId,
@@ -722,12 +698,6 @@ export const useIsRecordDownloadUnderway = ({
     if (syncState.status === 'error' || syncState.status === 'denied') {
       return false;
     }
-    // Otherwise the pull-catch-up marker is the whole answer: false from
-    // activation (or app start) through every batch of the initial download,
-    // whatever order push and pull batches interleave in, and false again
-    // while a later bulk pull works through its batches. Deriving this from
-    // the *last* change event instead would go blind whenever a push batch
-    // or a stale previous cycle held the stats slot.
     return !syncState.isPullCaughtUp;
   }, [serverId, projectId, syncMode]);
 
@@ -736,8 +706,8 @@ export const useIsRecordDownloadUnderway = ({
   );
 
   useEffect(() => {
-    // The sync state lives outside React (a plain in-memory service), so
-    // poll it; setState with an unchanged boolean re-renders nothing.
+    // The sync state lives outside React, so poll it; setState with an
+    // unchanged boolean re-renders nothing.
     const tick = () => setIsDownloadUnderway(computeIsDownloadUnderway());
     tick();
     const interval = setInterval(tick, SYNC_STATE_POLL_INTERVAL_MS);
