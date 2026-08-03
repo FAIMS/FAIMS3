@@ -22,7 +22,7 @@ import {
   GeoJSONFeatureOrCollectionSchema,
   type GeoJSONFeature,
 } from '@faims3/forms';
-import {useQuery} from '@tanstack/react-query';
+import {useQueries, type UseQueryResult} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import {localGetDataDb} from '../../../utils/database';
 
@@ -148,19 +148,40 @@ interface UseRecordFeaturesParams {
   records: MinimalRecordMetadata[] | undefined;
   /**
    * The form types whose records to hydrate (the overview map passes its
-   * configured display types). Pass a memoized array; it participates in the
-   * query key.
+   * configured display types). Pass a memoized array; the record filter is
+   * memoized on it.
    */
   recordTypes: string[];
 }
 
 /**
+ * Fold the per-record query results into one collection plus aggregate status.
+ * Module-scope so the reference is stable: React Query memoizes the combined
+ * value on it, keeping the collection's identity stable across renders.
+ */
+const combineRecordQueries = (
+  results: UseQueryResult<RecordGeoJSONFeature[], Error>[]
+) => ({
+  data:
+    results.length > 0 && results.every(result => result.data !== undefined)
+      ? ({
+          type: 'FeatureCollection' as const,
+          features: results.flatMap(result => result.data ?? []),
+        } satisfies RecordFeatureCollection)
+      : undefined,
+  isLoading: results.some(result => result.isLoading),
+  isError: results.some(result => result.isError),
+  error: results.find(result => result.error)?.error ?? null,
+});
+
+/**
  * Extract the GIS features of a notebook's records, managed by React Query
  * (record hydration is async database work). Only records whose type is in
- * `recordTypes` are read, each through the notebook's GIS fields. Returns the
- * query state (`data` is undefined while loading or disabled) alongside the
- * memoized `dataEngine` and `gisFields`, so consumers share them without
- * rebuilding their own.
+ * `recordTypes` are read, each through the notebook's GIS fields, as one query
+ * per record so a record syncing in re-reads only itself. Returns the combined
+ * state (`data` is undefined while loading or disabled) alongside the memoized
+ * `dataEngine` and `gisFields`, so consumers share them without rebuilding
+ * their own.
  */
 export const useRecordFeatures = ({
   projectId,
@@ -186,68 +207,30 @@ export const useRecordFeatures = ({
     [records, recordTypes]
   );
 
-  // Memoized: rebuilding this O(records) string on every render would tax
-  // large notebooks even while the query is disabled or fresh.
-  const recordsSignature = useMemo(
-    () =>
-      mapRecords
-        // conflicts is part of the signature: a conflicting head syncing in
-        // can flip it without changing the winning revision id
-        .map(r => `${r.recordId}:${r.revisionId}:${r.conflicts}`)
-        .join(','),
-    [mapRecords]
-  );
+  const gisFieldsKey = gisFields.join(',');
 
-  /**
-   * Query function to fetch all features from all records
-   */
-  const fetchAllFeatures = async (): Promise<RecordFeatureCollection> => {
-    if (gisFields.length === 0 || mapRecords.length === 0) {
-      return {type: 'FeatureCollection', features: []};
-    }
-
-    // Process records in parallel with concurrency limit to avoid overwhelming the DB
-    const BATCH_SIZE = 10;
-    const allFeatures: RecordGeoJSONFeature[] = [];
-
-    for (let i = 0; i < mapRecords.length; i += BATCH_SIZE) {
-      const batch = mapRecords.slice(i, i + BATCH_SIZE);
-      const batchResults = await Promise.all(
-        batch.map(record =>
-          extractFeaturesFromRecord(dataEngine, record, gisFields)
-        )
-      );
-      allFeatures.push(...batchResults.flat());
-    }
-
-    return {
-      type: 'FeatureCollection',
-      features: allFeatures,
-    };
-  };
-
-  // Use React Query to manage the async feature fetching
-  const query = useQuery({
-    queryKey: [
-      'record-features',
-      projectId,
-      recordsSignature,
-      gisFields.join(','),
-      recordTypes.join(','),
-    ],
-    queryFn: fetchAllFeatures,
-    enabled: gisFields.length > 0 && mapRecords.length > 0,
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    retry: 2,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
+  const {data, isLoading, isError, error} = useQueries({
+    queries: mapRecords.map(record => ({
+      queryKey: [
+        'record-features',
+        projectId,
+        record.recordId,
+        record.revisionId,
+        // conflicts is part of the key: a conflicting head syncing in can
+        // flip it without changing the winning revision id
+        record.conflicts,
+        gisFieldsKey,
+      ],
+      queryFn: () => extractFeaturesFromRecord(dataEngine, record, gisFields),
+      enabled: gisFields.length > 0,
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+      retry: 2,
+      retryDelay: (attemptIndex: number) =>
+        Math.min(1000 * 2 ** attemptIndex, 10000),
+    })),
+    combine: combineRecordQueries,
   });
-
-  // Read only the props consumers use. Spreading `query` would touch every key
-  // on React Query's tracked-props proxy (including `promise`, which rejects
-  // the observer's internal thenable when prefetch-in-render is off), causing
-  // re-renders on unrelated state such as isFetching and dataUpdatedAt.
-  const {data, isLoading, isError, error} = query;
 
   return {data, isLoading, isError, error, dataEngine, gisFields};
 };
