@@ -5,7 +5,7 @@ import {
   DEFAULT_TEST_COORDS,
   stubGeolocation,
   type TestCoords,
-} from '../helpers/geolocation.ts';
+} from '../helpers/stubLocation.ts';
 import {byTestId} from '../helpers/selectors.ts';
 import {waitForTestId, waitForUrl} from '../helpers/wait.ts';
 import AppNotebooksPage from './app-notebooks.ts';
