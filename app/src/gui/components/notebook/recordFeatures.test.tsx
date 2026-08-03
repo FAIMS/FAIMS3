@@ -8,9 +8,11 @@
  * its AVP still holds the geometry.
  */
 import {
+  compileUiSpecConditionals,
   DocumentNotFoundError,
   MinimalRecordMetadata,
   type CompiledNotebookUiSpec,
+  type NotebookUiSpec,
 } from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {renderHook, waitFor} from '@testing-library/react';
@@ -51,25 +53,25 @@ const POINT_FEATURE = {
  * `orphan_location` is a spatial field that no view references, standing in for
  * a field moved to another form or dropped from its section after capture.
  */
-const uiSpec = {
+const rawUiSpec: NotebookUiSpec = {
   fields: {
     site_location: {
       'component-namespace': 'mapping-plugin',
       'component-name': 'MapFormField',
       'type-returned': 'faims-core::JSON',
-      'component-parameters': {},
+      'component-parameters': {name: 'site_location'},
     },
     orphan_location: {
       'component-namespace': 'mapping-plugin',
       'component-name': 'MapFormField',
       'type-returned': 'faims-core::JSON',
-      'component-parameters': {},
+      'component-parameters': {name: 'orphan_location'},
     },
     obs_note: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      'component-parameters': {},
+      'component-parameters': {name: 'obs_note'},
     },
   },
   views: {
@@ -83,22 +85,28 @@ const uiSpec = {
   visible_types: ['Site', 'Observation'],
   settings: {showQrCodeButton: false},
   schemaVersion: '1',
-  conditional_sources: new Set<string>(),
-} as unknown as CompiledNotebookUiSpec;
+};
+compileUiSpecConditionals(rawUiSpec);
+// Same cast as the app's compiledSpecService: the compiler attaches its
+// artifacts in place
+const uiSpec = rawUiSpec as CompiledNotebookUiSpec;
 
 const makeRecord = (
   recordId: string,
   revisionId: string,
   type: string
-): MinimalRecordMetadata =>
-  ({
-    projectId: 'test-project',
-    recordId,
-    revisionId,
-    type,
-    conflicts: false,
-    deleted: false,
-  }) as MinimalRecordMetadata;
+): MinimalRecordMetadata => ({
+  projectId: 'test-project',
+  recordId,
+  revisionId,
+  type,
+  created: new Date(0),
+  createdBy: 'tester',
+  updated: new Date(0),
+  updatedBy: 'tester',
+  conflicts: false,
+  deleted: false,
+});
 
 const siteRecord = makeRecord('rec-site', 'frev-site', 'Site');
 const obsRecord = makeRecord('rec-obs', 'frev-obs', 'Observation');
