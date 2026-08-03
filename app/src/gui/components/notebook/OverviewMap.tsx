@@ -66,8 +66,6 @@ interface OverviewMapProps {
   records: {allRecords: MinimalRecordMetadata[]};
 }
 
-type FeatureProps = RecordFeatureProps;
-
 /** Distinct colors for form types on the map */
 const FORM_TYPE_COLORS = [
   '#2171b5', // blue
@@ -82,8 +80,6 @@ const FORM_TYPE_COLORS = [
   '#dd3497', // pink
 ];
 
-type FeatureCollection = RecordFeatureCollection;
-
 /** Query key prefix for overview map record hydration (data engine) */
 const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
 
@@ -92,7 +88,7 @@ const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
  * via the data engine's hydration module (React Query) and shows key metadata.
  */
 interface SelectedRecordPopoverContentProps {
-  feature: FeatureProps;
+  feature: RecordFeatureProps;
   project_id: ProjectID;
   serverId: string;
   uiSpec: NotebookUiSpec;
@@ -252,9 +248,8 @@ const SelectedRecordPopoverContent = ({
 export const OverviewMap = (props: OverviewMapProps) => {
   const {uiSpec, project_id, serverId, records} = props;
   const [map, setMap] = useState<Map | undefined>(undefined);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
-    null
-  );
+  const [selectedFeature, setSelectedFeature] =
+    useState<RecordFeatureProps | null>(null);
   /** Popover anchor in viewport coordinates (set when opening so position is reliable on first open) */
   const [popoverAnchorPosition, setPopoverAnchorPosition] = useState<{
     left: number;
@@ -277,7 +272,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
   // Ref so the vector layer style function can read current selection and highlight it
-  const selectedFeatureRef = useRef<FeatureProps | null>(null);
+  const selectedFeatureRef = useRef<RecordFeatureProps | null>(null);
 
   const mapConfig = getMapConfig();
 
@@ -304,7 +299,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Build a map from form_id to color for styling features by form type.
    */
   const getFormIdToColor = useCallback(
-    (features: FeatureCollection): Record<string, string> => {
+    (features: RecordFeatureCollection): Record<string, string> => {
       const formIds = [
         ...new Set(
           features.features
@@ -325,7 +320,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Add the features to the map and set the map view to encompass the features.
    */
   const addFeaturesToMap = useCallback(
-    (theMap: Map, features: FeatureCollection) => {
+    (theMap: Map, features: RecordFeatureCollection) => {
       // Remove existing layer if present
       if (vectorLayerRef.current) {
         theMap.removeLayer(vectorLayerRef.current);
@@ -426,7 +421,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         olFeature => {
           const props = olFeature.getProperties();
           if (props.record_id) {
-            return props as FeatureProps;
+            return props as RecordFeatureProps;
           }
           return undefined;
         },

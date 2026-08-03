@@ -18,7 +18,10 @@ import {
   SPATIAL_FIELDS,
   type CompiledNotebookUiSpec,
 } from '@faims3/data-model';
-import {GeoJSONFeatureOrCollectionSchema} from '@faims3/forms';
+import {
+  GeoJSONFeatureOrCollectionSchema,
+  type GeoJSONFeature,
+} from '@faims3/forms';
 import {useQuery} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import {localGetDataDb} from '../../../utils/database';
@@ -31,11 +34,9 @@ export type RecordFeatureProps = {
   form_id: string;
 };
 
-/** A GeoJSON feature extracted from a record's GIS field. */
-export type RecordGeoJSONFeature = {
-  type: string;
-  geometry?: unknown;
-  properties?: RecordFeatureProps;
+/** A parsed GeoJSON feature retagged with its owning record's properties. */
+export type RecordGeoJSONFeature = Omit<GeoJSONFeature, 'properties'> & {
+  properties: RecordFeatureProps;
 };
 
 /** The extracted features of all records, as one GeoJSON FeatureCollection. */
@@ -117,23 +118,15 @@ export const extractFeaturesFromRecord = async (
           form_id: record.type,
         };
 
-        if (geoJson.type === 'FeatureCollection') {
-          // Handle FeatureCollection with multiple features
-          geoJson.features?.forEach(feature => {
-            if (feature && feature.geometry) {
-              features.push({
-                ...feature,
-                properties: baseProperties,
-              });
-            }
-          });
-        } else if (geoJson.type === 'Feature') {
-          // Handle single Feature or geometry object
+        // The parse guarantees each feature carries a geometry
+        const parsed =
+          geoJson.type === 'FeatureCollection' ? geoJson.features : [geoJson];
+        parsed.forEach(feature => {
           features.push({
-            ...geoJson,
+            ...feature,
             properties: baseProperties,
           });
-        }
+        });
       } catch (error) {
         // A missing AVP skips only this field; anything else is systemic
         if (!(error instanceof DocumentNotFoundError)) throw error;
