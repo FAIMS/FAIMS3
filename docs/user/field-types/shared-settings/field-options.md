@@ -65,18 +65,9 @@ field's value forward when a collector creates a new record. This
 records — such as the recorder's name, persistent environmental
 conditions, or a site identifier.
 
-### Display in child records
-
-_Planned feature._ When implemented, checking this option will display
-this field's value (read-only) from the parent record when a collector
-is working in a related child record, providing context without
-requiring navigation back to the parent.
-
-> **Note:** Some field types display additional settings below the shared
-> options panel. For example, text fields include a **Speech-to-Text
-> Settings** section with options to enable voice-to-text input. These
-> field-type-specific settings are documented in each field type's own
-> design guide.
+> **Looking for parent values in child records?** Add a
+> [Parent Field Value](../display-fields/parent-field-value.md) field to
+> the child form and choose which parent field to display.
 
 ## Tips
 
