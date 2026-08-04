@@ -43,20 +43,20 @@ EOT
 
 echo "Generating assets for ${VITE_THEME} theme"
 
-npx capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
+pnpx sssf-capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
   --pwaManifestPath ./public/manifest.json \
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'
 
 ## capacitor-assets can put the pwa icons in the wrong place sometimes
-if test -f icons/icon-48.webp; then
+if test -f icons/icon-192.png; then
   echo "Moving icons into public"
   mkdir -p ./public/assets
   mv icons ./public/assets/icons
 fi
 
 ## copy the icons over to web/ as well (check they exist first)
-if test -f ./public/assets/icons/icon-48.webp; then
+if test -f ./public/assets/icons/icon-192.png; then
   rm -rf ../web/public/assets/icons
   mkdir -p ../web/public/assets/
   cp -r ./public/assets/icons ../web/public/assets/icons
