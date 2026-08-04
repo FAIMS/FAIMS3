@@ -11,13 +11,14 @@
     "cdk": "cdk",
     "config": "bash ./config.sh",
     "validate-config": "ts-node validateConfig.ts",
+    "couch-upgrade-baseline": "ts-node scripts/couchUpgradeBaseline.ts",
     "test": "jest",
     "lint": "oxlint --config ../../.oxlintrc.json .",
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "dependencies": {
     "@cloudcomponents/cdk-static-website": "^2.0.0",
-    "aws-cdk-lib": "^2.189.0",
+    "aws-cdk-lib": "^2.260.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.21",
     "zod": "^4.1.12"

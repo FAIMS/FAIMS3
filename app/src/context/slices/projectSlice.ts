@@ -2429,7 +2429,9 @@ export function createSyncStateHandlers(
     change: info => {
       const change = info.change;
       syncStateService.recordChange(serverId, projectId, {
-        pending: change.pending ?? 0,
+        // Passed through undefined-and-all: the service needs "unknown" to
+        // stay distinct from "nothing pending".
+        pending: change.pending,
         docsRead: change.docs_read ?? 0,
         docsWritten: change.docs_written ?? 0,
         direction: info.direction,
@@ -2437,6 +2439,9 @@ export function createSyncStateHandlers(
     },
     paused: err => {
       syncStateService.setPaused(serverId, projectId, err);
+    },
+    pullPaused: err => {
+      syncStateService.recordPullPause(serverId, projectId, err);
     },
     denied: err => {
       syncStateService.setDenied(serverId, projectId, err);

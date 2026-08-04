@@ -107,18 +107,15 @@ setup_node_version() {
 manage_docker_volumes() {
   docker_prefix="docker compose"
   echo "Stopping existing Docker containers..."
-  ${docker_prefix} down
 
   if [ "$CLEAR_DB" = true ]; then
+    # Let compose remove its own volumes: couchdb_data is this project's only
+    # named volume, and removing by volume label instead matched every
+    # project's couchdb_data on the host (other checkouts and worktrees).
     echo "Pruning volume containing the couchdb database..."
-    volume_to_remove=$(docker volume ls -q --filter "label=com.docker.compose.volume=couchdb_data")
-    if [ -n "$volume_to_remove" ]; then
-      docker volume rm $volume_to_remove
-      echo "Volume removed: $volume_to_remove"
-    else
-      echo "No volumes found for couchdb_data"
-    fi
+    ${docker_prefix} down --volumes
   else
+    ${docker_prefix} down
     echo "Skipping volume pruning (use --clear-db to clear volumes)"
   fi
 

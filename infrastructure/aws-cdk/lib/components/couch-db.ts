@@ -13,7 +13,7 @@
  * TODO: Investigate better key setup process for one-click deploy
  */
 
-import {Duration, RemovalPolicy, Size} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Size, Stack} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import {GraphWidget, Metric, TextWidget} from 'aws-cdk-lib/aws-cloudwatch';
@@ -385,6 +385,9 @@ EOL`,
       }),
       */
       userData,
+      // UserData (incl. couchVersionTag) only runs on first boot. Without this,
+      // CFN updates UserData in place and the running instance never applies it.
+      userDataCausesReplacement: true,
       vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
       securityGroup: couchSecurityGroup,
       instanceType: new ec2.InstanceType(props.instanceType),
@@ -684,8 +687,10 @@ EOL`,
    * Adds left annotations for alarm thresholds to improve visibility
    */
   private createDashboard() {
+    // Dashboard names are account+region unique; include stack name so
+    // multiple environments (e.g. DASS-dev and DASS-stage) can coexist.
     const dashboard = new cloudwatch.Dashboard(this, 'CouchDBDashboard', {
-      dashboardName: 'CouchDB-Dashboard',
+      dashboardName: `${Stack.of(this).stackName}-CouchDB-Dashboard`,
     });
 
     const instanceId = this.instance.instanceId;

@@ -843,7 +843,7 @@ describe('template API tests', () => {
     await requestAuthAndType(
       request(app)
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({name: 'x'} satisfies PutUpdateTemplateInput)
+        .send({name: 'Valid template name'} satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404)
@@ -864,7 +864,7 @@ describe('template API tests', () => {
     await requestAuthAndType(
       request(app)
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({name: 'x'} satisfies PutUpdateTemplateInput)
+        .send({name: 'Valid template name'} satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404);
@@ -995,7 +995,7 @@ describe('template API tests', () => {
     return await requestAuthAndType(
       request(app)
         .put(`${TEMPLATE_API_BASE}/12345`)
-        .send({name: 'x'} satisfies PutUpdateTemplateInput),
+        .send({name: 'Valid template name'} satisfies PutUpdateTemplateInput),
       localUserToken
     ).expect(401);
   });
