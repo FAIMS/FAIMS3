@@ -592,6 +592,26 @@ const fields: {[key: string]: FieldType} = {
     showInChooser: true,
     order: 29,
   },
+  ParentFieldDisplay: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'ParentFieldDisplay',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Parent Field Value',
+      fullWidth: true,
+      name: 'parent-field-display',
+      helperText: '',
+      required: false,
+      parentFieldId: '',
+    },
+    initialValue: null,
+    humanReadableName: 'Parent Field Value',
+    humanReadableDescription:
+      'Displays a value from the parent record (read-only)',
+    category: CategoryKey.DISPLAY,
+    showInChooser: true,
+    order: 30,
+  },
 };
 
 /** All registered field type keys (chooser + factory). */
