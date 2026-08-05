@@ -16,7 +16,7 @@
  *      exercise permission-visibility scenarios.
  *
  * Usage:
- *   env-cmd ts-node src/scripts/seedTestDataset.ts
+ *   env-cmd tsx src/scripts/seedTestDataset.ts
  *
  * Environment variables:
  *   TEST_SEED_PASSWORD   Shared password for all seeded users.

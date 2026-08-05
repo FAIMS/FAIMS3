@@ -49,7 +49,7 @@
         "appium",
         "appium-uiautomator2-driver",
         "chromedriver",
-        "ts-node"
+        "tsx"
       ]
     }
   }

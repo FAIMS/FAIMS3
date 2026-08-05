@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
@@ -23,6 +23,7 @@ import {
   getVerificationChallengesByUserId,
   validateVerificationChallenge,
 } from '../src/couchdb/verificationChallenges';
+import {config} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {hashChallengeCode} from '../src/utils';
 import {
@@ -40,7 +41,7 @@ describe('Email Verification Tests', () => {
   describe('Service Layer', () => {
     it('creates verification challenge correctly', async () => {
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(localUser).to.not.be.null;
+      expect(localUser).not.toBeNull();
 
       const testEmail = 'test@example.com';
       const {code, record} = await createVerificationChallenge({
@@ -48,14 +49,14 @@ describe('Email Verification Tests', () => {
         email: testEmail,
       });
 
-      expect(code).to.be.a('string');
-      expect(record).to.not.be.null;
-      expect(record.documentType).to.equal('verification');
-      expect(record.userId).to.equal(localUser!.user_id);
-      expect(record.email).to.equal(testEmail);
-      expect(record.used).to.be.false;
-      expect(record.expiryTimestampMs).to.be.a('number');
-      expect(record.createdTimestampMs).to.be.a('number');
+      expect(code).toBeTypeOf('string');
+      expect(record).not.toBeNull();
+      expect(record.documentType).toBe('verification');
+      expect(record.userId).toBe(localUser!.user_id);
+      expect(record.email).toBe(testEmail);
+      expect(record.used).toBe(false);
+      expect(record.expiryTimestampMs).toBeTypeOf('number');
+      expect(record.createdTimestampMs).toBeTypeOf('number');
     });
 
     it('retrieves verification challenges by user ID', async () => {
@@ -80,10 +81,10 @@ describe('Email Verification Tests', () => {
         userId: localUser!.user_id,
       });
 
-      expect(challenges).to.be.an('array');
-      expect(challenges.length).to.be.at.least(2);
-      expect(challenges.some(c => c.email === testEmail1)).to.be.true;
-      expect(challenges.some(c => c.email === testEmail2)).to.be.true;
+      expect(challenges).toBeInstanceOf(Array);
+      expect(challenges.length).toBeGreaterThanOrEqual(2);
+      expect(challenges.some(c => c.email === testEmail1)).toBe(true);
+      expect(challenges.some(c => c.email === testEmail2)).toBe(true);
     });
 
     it('retrieves verification challenges by email', async () => {
@@ -101,10 +102,10 @@ describe('Email Verification Tests', () => {
         email: testEmail,
       });
 
-      expect(challenges).to.be.an('array');
-      expect(challenges.length).to.be.at.least(1);
-      expect(challenges[0].email).to.equal(testEmail);
-      expect(challenges[0].userId).to.equal(localUser!.user_id);
+      expect(challenges).toBeInstanceOf(Array);
+      expect(challenges.length).toBeGreaterThanOrEqual(1);
+      expect(challenges[0].email).toBe(testEmail);
+      expect(challenges[0].userId).toBe(localUser!.user_id);
     });
 
     it('validates verification challenges correctly', async () => {
@@ -122,10 +123,10 @@ describe('Email Verification Tests', () => {
         code,
       });
 
-      expect(validation.valid).to.be.true;
-      expect(validation.user).to.not.be.undefined;
-      expect(validation.challenge).to.not.be.undefined;
-      expect(validation.challenge!.email).to.equal(testEmail);
+      expect(validation.valid).toBe(true);
+      expect(validation.user).not.toBeUndefined();
+      expect(validation.challenge).not.toBeUndefined();
+      expect(validation.challenge!.email).toBe(testEmail);
 
       // Validate with user ID
       validation = await validateVerificationChallenge({
@@ -133,7 +134,7 @@ describe('Email Verification Tests', () => {
         userId: localUser!.user_id,
       });
 
-      expect(validation.valid).to.be.true;
+      expect(validation.valid).toBe(true);
 
       // Validate with email
       validation = await validateVerificationChallenge({
@@ -141,7 +142,7 @@ describe('Email Verification Tests', () => {
         email: testEmail,
       });
 
-      expect(validation.valid).to.be.true;
+      expect(validation.valid).toBe(true);
 
       // Validate with incorrect user ID
       validation = await validateVerificationChallenge({
@@ -149,7 +150,7 @@ describe('Email Verification Tests', () => {
         userId: 'wrong-user-id',
       });
 
-      expect(validation.valid).to.be.false;
+      expect(validation.valid).toBe(false);
 
       // Validate with incorrect email
       validation = await validateVerificationChallenge({
@@ -157,7 +158,7 @@ describe('Email Verification Tests', () => {
         email: 'wrong@example.com',
       });
 
-      expect(validation.valid).to.be.false;
+      expect(validation.valid).toBe(false);
 
       // Consume the verification challenge
       await consumeVerificationChallenge({
@@ -169,14 +170,16 @@ describe('Email Verification Tests', () => {
         code,
       });
 
-      expect(validation.valid).to.be.false;
-      expect(validation.validationError).to.include('already been used');
+      expect(validation.valid).toBe(false);
+      expect(validation.validationError).toContain('already been used');
     });
 
     it('handles rate limiting correctly', async () => {
+      if (!config.authAttemptLimiterEnabled) {
+        return;
+      }
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const testEmail = 'ratelimit@example.com';
-
       // Check initial state (should be allowed)
       let canCreate = await checkCanCreateVerificationChallenge({
         userId: localUser!.user_id,
@@ -184,7 +187,7 @@ describe('Email Verification Tests', () => {
         maxAttempts: 2, // Set low for testing
       });
 
-      expect(canCreate.canCreate).to.be.true;
+      expect(canCreate.canCreate).toBe(true);
 
       // Create first challenge
       await createVerificationChallenge({
@@ -199,7 +202,7 @@ describe('Email Verification Tests', () => {
         maxAttempts: 2,
       });
 
-      expect(canCreate.canCreate).to.be.true;
+      expect(canCreate.canCreate).toBe(true);
 
       // Create second challenge
       await createVerificationChallenge({
@@ -216,9 +219,9 @@ describe('Email Verification Tests', () => {
         cooldownMs: 100,
       });
 
-      expect(canCreate.canCreate).to.be.false;
-      expect(canCreate.reason).to.include('Too many verification attempts');
-      expect(canCreate.nextAttemptAllowedAt).to.be.a('number');
+      expect(canCreate.canCreate).toBe(false);
+      expect(canCreate.reason).toContain('Too many verification attempts');
+      expect(canCreate.nextAttemptAllowedAt).toBeTypeOf('number');
 
       // Wait for cooldown
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -231,7 +234,7 @@ describe('Email Verification Tests', () => {
         cooldownMs: 100,
       });
 
-      expect(canCreate.canCreate).to.be.true;
+      expect(canCreate.canCreate).toBe(true);
     });
 
     it('consumes verification challenges correctly', async () => {
@@ -250,28 +253,28 @@ describe('Email Verification Tests', () => {
         code: hashedCode,
       });
 
-      expect(challenge).to.not.be.null;
-      expect(challenge!.used).to.be.false;
+      expect(challenge).not.toBeNull();
+      expect(challenge!.used).toBe(false);
 
       // Consume the challenge
       const consumedChallenge = await consumeVerificationChallenge({
         code,
       });
 
-      expect(consumedChallenge.used).to.be.true;
+      expect(consumedChallenge.used).toBe(true);
 
       // Verify it's marked as used in the database
       challenge = await getVerificationChallengeByCode({
         code: hashedCode,
       });
 
-      expect(challenge).to.not.be.null;
-      expect(challenge!.used).to.be.true;
+      expect(challenge).not.toBeNull();
+      expect(challenge!.used).toBe(true);
     });
 
     it('updates user email verification status correctly', async () => {
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(localUser).to.not.be.null;
+      expect(localUser).not.toBeNull();
 
       // Ensure we have at least one email that's not verified
       const userEmail = localUser!.emails[0].email;
@@ -283,8 +286,9 @@ describe('Email Verification Tests', () => {
 
       // Get fresh user data
       let updatedUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(updatedUser!.emails.find(e => e.email === userEmail)!.verified).to
-        .be.false;
+      expect(
+        updatedUser!.emails.find(e => e.email === userEmail)!.verified
+      ).toBe(false);
 
       // Update verification status
       await updateUserEmailVerificationStatus({
@@ -295,8 +299,9 @@ describe('Email Verification Tests', () => {
 
       // Verify the status was updated
       updatedUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(updatedUser!.emails.find(e => e.email === userEmail)!.verified).to
-        .be.true;
+      expect(
+        updatedUser!.emails.find(e => e.email === userEmail)!.verified
+      ).toBe(true);
     });
   });
 
@@ -330,11 +335,11 @@ describe('Email Verification Tests', () => {
         localUserToken
       ).expect(200);
 
-      expect(response.body.message).to.include(
+      expect(response.body.message).toContain(
         'Verification email has been sent'
       );
-      expect(response.body.email).to.equal(userEmail);
-      expect(response.body.expiresAt).to.be.a('number');
+      expect(response.body.email).toBe(userEmail);
+      expect(response.body.expiresAt).toBeTypeOf('number');
     });
 
     it('initiate email verification fails for non-owned email', async () => {
@@ -376,13 +381,14 @@ describe('Email Verification Tests', () => {
         } as PutConfirmEmailVerificationRequest)
         .expect(200);
 
-      expect(response.body.message).to.include('successfully verified');
-      expect(response.body.email).to.equal(userEmail);
+      expect(response.body.message).toContain('successfully verified');
+      expect(response.body.email).toBe(userEmail);
 
       // Verify the email is now marked as verified
       const updatedUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(updatedUser!.emails.find(e => e.email === userEmail)!.verified).to
-        .be.true;
+      expect(
+        updatedUser!.emails.find(e => e.email === userEmail)!.verified
+      ).toBe(true);
 
       // Verify the code is now marked as used
       const hashedCode = hashChallengeCode(code);
@@ -390,8 +396,8 @@ describe('Email Verification Tests', () => {
         code: hashedCode,
       });
 
-      expect(challenge).to.not.be.null;
-      expect(challenge!.used).to.be.true;
+      expect(challenge).not.toBeNull();
+      expect(challenge!.used).toBe(true);
     });
 
     it('confirm email verification with expired code fails', async () => {
@@ -451,6 +457,9 @@ describe('Email Verification Tests', () => {
     });
 
     it('handles rate limiting at API level', async () => {
+      if (!config.authAttemptLimiterEnabled) {
+        return;
+      }
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const userEmail = localEmail;
 

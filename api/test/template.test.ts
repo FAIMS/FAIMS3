@@ -41,7 +41,7 @@ import {
   TemplateApiDocumentSchema,
   TemplateApiListItemSchema,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {Express} from 'express';
 import request from 'supertest';
 import {getProjectById} from '../src/couchdb/notebooks';
@@ -262,7 +262,7 @@ describe('template API tests', () => {
     )
       .expect(200)
       .then(res => PostCreateTemplateResponseSchema.parse(res.body));
-    expect(created.description).to.equal(undefined);
+    expect(created.description).toBe(undefined);
   });
 
   it('rejects template create when description exceeds 250 characters', async () => {
@@ -283,15 +283,15 @@ describe('template API tests', () => {
     // List: each row is a template summary (no ui-specification in the JSON body)
     const listed = await listTemplates(app);
     const summary = listed.templates.find(t => t._id === template._id);
-    expect(summary).to.be.ok;
-    expect(summary!).to.not.have.property('uiSpecification');
+    expect(summary).toBeTruthy();
+    expect(summary!).not.toHaveProperty('uiSpecification');
 
     const detail = await getATemplate(app, template._id);
-    expect(detail.uiSpecification).to.be.ok;
+    expect(detail.uiSpecification).toBeTruthy();
     // Deep-equal (order-insensitive): validating the spec through the data-model
     // zod schemas can reorder object keys (modelled keys first, then
     // passthrough), but the content must be identical.
-    expect(detail.uiSpecification).to.deep.equal(nb.uiSpecification);
+    expect(detail.uiSpecification).toEqual(nb.uiSpecification);
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
@@ -308,13 +308,13 @@ describe('template API tests', () => {
 
     const defaultList = await listTemplates(app);
     const defaultIds = defaultList.templates.map(t => t._id).sort();
-    expect(defaultIds).to.deep.equal([activeTpl._id].sort());
+    expect(defaultIds).toEqual([activeTpl._id].sort());
 
     const archivedOnly = await listTemplates(app, adminToken, {
       includeArchived: true,
     });
     const archivedIds = archivedOnly.templates.map(t => t._id).sort();
-    expect(archivedIds).to.deep.equal([archivedTpl._id].sort());
+    expect(archivedIds).toEqual([archivedTpl._id].sort());
 
     await setTemplateArchived(app, activeTpl._id, true);
     await deleteATemplate(app, activeTpl._id);
@@ -328,32 +328,32 @@ describe('template API tests', () => {
     const id = template._id;
 
     let defaultList = await listTemplates(app);
-    expect(defaultList.templates.map(t => t._id)).to.include(id);
+    expect(defaultList.templates.map(t => t._id)).toContain(id);
 
     await setTemplateArchived(app, id, true);
     await getATemplate(app, id).then(doc => {
-      expect(doc.archived).to.equal(true);
+      expect(doc.archived).toBe(true);
     });
 
     defaultList = await listTemplates(app);
-    expect(defaultList.templates.map(t => t._id)).to.not.include(id);
+    expect(defaultList.templates.map(t => t._id)).not.toContain(id);
     const archivedOnly = await listTemplates(app, adminToken, {
       includeArchived: true,
     });
-    expect(archivedOnly.templates.map(t => t._id)).to.include(id);
+    expect(archivedOnly.templates.map(t => t._id)).toContain(id);
 
     await setTemplateArchived(app, id, false);
     await getATemplate(app, id).then(doc => {
-      expect(doc.archived).to.equal(false);
-      expect(doc._id).to.equal(id);
+      expect(doc.archived).toBe(false);
+      expect(doc._id).toBe(id);
     });
 
     defaultList = await listTemplates(app);
-    expect(defaultList.templates.map(t => t._id)).to.include(id);
+    expect(defaultList.templates.map(t => t._id)).toContain(id);
     const archivedAfter = await listTemplates(app, adminToken, {
       includeArchived: true,
     });
-    expect(archivedAfter.templates.map(t => t._id)).to.not.include(id);
+    expect(archivedAfter.templates.map(t => t._id)).not.toContain(id);
 
     await setTemplateArchived(app, id, true);
     await deleteATemplate(app, id);
@@ -369,8 +369,8 @@ describe('template API tests', () => {
         .send({archive: false}),
       adminToken
     );
-    expect(response.status).to.equal(400);
-    expect(response.body.error.message).to.equal(
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toBe(
       'Only archived templates can be restored.'
     );
 
@@ -386,23 +386,23 @@ describe('template API tests', () => {
     // list and see the new template
     await listTemplates(app).then(templateList => {
       // Check that the list exists and has one entry
-      expect(templateList.templates.length).to.equal(1);
+      expect(templateList.templates.length).toBe(1);
 
       // Get the first entry and check ID matches as well as summary fields
       const entry = templateList.templates[0];
 
       // Check all properties match
-      expect(entry._id).to.equal(templateId1);
-      expect(entry.name).to.equal(name);
+      expect(entry._id).toBe(templateId1);
+      expect(entry.name).toBe(name);
 
       // List endpoint returns summaries only (no ui-specification field).
-      expect(entry).to.not.have.property('uiSpecification');
+      expect(entry).not.toHaveProperty('uiSpecification');
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
-      // expect(JSON.stringify(entry['ui-specification'])).to.equal(
+      // expect(JSON.stringify(entry['ui-specification'])).toBe(
       //   JSON.stringify(nb['ui-specification'])
       // );
-      // expect(JSON.stringify(entry.metadata)).to.equal(
+      // expect(JSON.stringify(entry.metadata)).toBe(
       //   JSON.stringify(nb.metadata)
       // );
 
@@ -411,7 +411,7 @@ describe('template API tests', () => {
       // delete entry.metadata.template_id;
 
       // should be version 1
-      expect(entry.version).to.equal(1);
+      expect(entry.version).toBe(1);
     });
 
     // get the specific new template
@@ -419,11 +419,11 @@ describe('template API tests', () => {
       // Check all properties match. Deep-equal is order-insensitive: validating
       // the spec through the data-model zod schemas can reorder object keys
       // (modelled keys first, then passthrough), but content must be identical.
-      expect(template._id).to.equal(templateId1);
-      expect(template.uiSpecification).to.deep.equal(nb.uiSpecification);
+      expect(template._id).toBe(templateId1);
+      expect(template.uiSpecification).toEqual(nb.uiSpecification);
 
       // should be version 1
-      expect(template.version).to.equal(1);
+      expect(template.version).toBe(1);
     });
 
     // Now create another
@@ -433,31 +433,31 @@ describe('template API tests', () => {
     // list and see the new template
     await listTemplates(app).then(templateList => {
       // Check that the list exists and has correct length
-      expect(templateList.templates.length).to.equal(2);
+      expect(templateList.templates.length).toBe(2);
 
       // Get the new entry
       const entry = templateList.templates.find(t => t._id === templateId2);
-      expect(entry).to.not.be.undefined;
+      expect(entry).not.toBeUndefined();
 
       // Check all properties match
-      expect(entry?._id).to.equal(templateId2);
+      expect(entry?._id).toBe(templateId2);
       if (entry) {
         // Same as above: list entries are summaries without ui-specification
-        expect(entry).to.not.have.property('uiSpecification');
+        expect(entry).not.toHaveProperty('uiSpecification');
       }
 
       // should be version 1
-      expect(entry?.version).to.equal(1);
+      expect(entry?.version).toBe(1);
     });
 
     // get the specific new template
     await getATemplate(app, templateId2).then(template => {
       // Check all properties match (order-insensitive deep-equal; see above).
-      expect(template._id).to.equal(templateId2);
-      expect(template.uiSpecification).to.deep.equal(nb.uiSpecification);
+      expect(template._id).toBe(templateId2);
+      expect(template.uiSpecification).toEqual(nb.uiSpecification);
 
       // should be version 1
-      expect(template.version).to.equal(1);
+      expect(template.version).toBe(1);
     });
 
     // Now delete template 2 and check list again (archive-before-delete)
@@ -467,11 +467,11 @@ describe('template API tests', () => {
     // List again
     await listTemplates(app).then(templateList => {
       // Check that the list exists and has correct length
-      expect(templateList.templates.length).to.equal(1);
+      expect(templateList.templates.length).toBe(1);
 
       // Get the old entry
       const entry = templateList.templates.find(t => t._id === templateId1);
-      expect(entry).to.not.be.undefined;
+      expect(entry).not.toBeUndefined();
     });
 
     // Now delete template 1 and check list again
@@ -481,7 +481,7 @@ describe('template API tests', () => {
     // List again
     await listTemplates(app).then(templateList => {
       // Check that the list exists and has correct length
-      expect(templateList.templates.length).to.equal(0);
+      expect(templateList.templates.length).toBe(0);
     });
   });
 
@@ -502,8 +502,8 @@ describe('template API tests', () => {
 
     console.log('body error', response.body.error);
     // Check that the response indicates an error
-    expect(response.status).to.equal(403);
-    expect(response.body.error.message).to.equal(
+    expect(response.status).toBe(403);
+    expect(response.body.error.message).toBe(
       'The specified team ID does not exist.'
     );
   });
@@ -515,14 +515,14 @@ describe('template API tests', () => {
       name: 'updated name for template',
       description: 'updated description',
     }).then(newTemplate => {
-      expect(newTemplate.version).to.equal(1);
-      expect(newTemplate.name).to.equal('updated name for template');
-      expect(newTemplate.description).to.equal('updated description');
+      expect(newTemplate.version).toBe(1);
+      expect(newTemplate.name).toBe('updated name for template');
+      expect(newTemplate.description).toBe('updated description');
     });
 
     await getATemplate(app, template._id).then(newTemplate => {
-      expect(newTemplate.name).to.equal('updated name for template');
-      expect(newTemplate.description).to.equal('updated description');
+      expect(newTemplate.name).toBe('updated name for template');
+      expect(newTemplate.description).toBe('updated description');
     });
   });
 
@@ -532,14 +532,14 @@ describe('template API tests', () => {
     await updateATemplate(app, template._id, {
       name: 'updated name for template',
     }).then(newTemplate => {
-      expect(newTemplate.version).to.equal(1);
-      expect(newTemplate.name).to.equal('updated name for template');
-      expect(newTemplate.ownedByTeamId).to.equal(template.ownedByTeamId);
+      expect(newTemplate.version).toBe(1);
+      expect(newTemplate.name).toBe('updated name for template');
+      expect(newTemplate.ownedByTeamId).toBe(template.ownedByTeamId);
     });
 
     await getATemplate(app, template._id).then(newTemplate => {
-      expect(newTemplate.name).to.equal('updated name for template');
-      expect(newTemplate.ownedByTeamId).to.equal(template.ownedByTeamId);
+      expect(newTemplate.name).toBe('updated name for template');
+      expect(newTemplate.ownedByTeamId).toBe(template.ownedByTeamId);
     });
   });
 
@@ -552,20 +552,20 @@ describe('template API tests', () => {
 
     const listed = await listTemplates(app);
     const fromList = listed.templates.find(t => t._id === template._id);
-    expect(fromList?.ownedByTeamDisplayName).to.equal('Acme Research');
+    expect(fromList?.ownedByTeamDisplayName).toBe('Acme Research');
     if (fromList) {
       TemplateApiListItemSchema.parse(fromList);
     }
 
     const fetched = await getATemplate(app, template._id);
-    expect(fetched.ownedByTeamDisplayName).to.equal('Acme Research');
+    expect(fetched.ownedByTeamDisplayName).toBe('Acme Research');
     TemplateApiDocumentSchema.parse(fetched);
 
     const {template: solo} = await createSampleTemplate(app, {
       name: 'no-team-display-name',
     });
     const alone = await getATemplate(app, solo._id);
-    expect(alone.ownedByTeamDisplayName).to.be.undefined;
+    expect(alone.ownedByTeamDisplayName).toBeUndefined();
     TemplateApiDocumentSchema.parse(alone);
 
     await setTemplateArchived(app, template._id, true);
@@ -588,7 +588,7 @@ describe('template API tests', () => {
     const listed = await listTemplates(app);
     for (const id of [a._id, b._id]) {
       const row = listed.templates.find(t => t._id === id);
-      expect(row?.ownedByTeamDisplayName).to.equal('Shared Batch Team');
+      expect(row?.ownedByTeamDisplayName).toBe('Shared Batch Team');
     }
 
     await setTemplateArchived(app, a._id, true);
@@ -609,7 +609,7 @@ describe('template API tests', () => {
       includeArchived: true,
     });
     const row = archivedOnly.templates.find(t => t._id === template._id);
-    expect(row?.ownedByTeamDisplayName).to.equal('Archived Team Name');
+    expect(row?.ownedByTeamDisplayName).toBe('Archived Team Name');
 
     await deleteATemplate(app, template._id);
   });
@@ -628,7 +628,7 @@ describe('template API tests', () => {
         } satisfies PostCreateTemplateInput),
       adminToken
     ).expect(200);
-    expect(createRes.body).to.not.have.property('ownedByTeamDisplayName');
+    expect(createRes.body).not.toHaveProperty('ownedByTeamDisplayName');
     const created = PostCreateTemplateResponseSchema.parse(createRes.body);
 
     const updated = await updateATemplate(
@@ -637,7 +637,7 @@ describe('template API tests', () => {
       {name: 'updated-name-without-display-field'},
       adminToken
     );
-    expect(updated).to.not.have.property('ownedByTeamDisplayName');
+    expect(updated).not.toHaveProperty('ownedByTeamDisplayName');
 
     await setTemplateArchived(app, created._id, true);
     await deleteATemplate(app, created._id);
@@ -653,7 +653,7 @@ describe('template API tests', () => {
     });
 
     await getATemplate(app, template._id).then(initial => {
-      expect(initial.ownedByTeamDisplayName).to.equal('team1');
+      expect(initial.ownedByTeamDisplayName).toBe('team1');
     });
 
     // update team ownership
@@ -661,14 +661,14 @@ describe('template API tests', () => {
     await changeTemplateTeam(app, template._id, {
       teamId: team2._id,
     }).then(newTemplate => {
-      expect(newTemplate.version).to.equal(1);
-      expect(newTemplate.ownedByTeamId).to.equal(team2._id);
+      expect(newTemplate.version).toBe(1);
+      expect(newTemplate.ownedByTeamId).toBe(team2._id);
     });
 
     await getATemplate(app, template._id).then(newTemplate => {
-      expect(newTemplate.version).to.equal(1);
-      expect(newTemplate.ownedByTeamId).to.equal(team2._id);
-      expect(newTemplate.ownedByTeamDisplayName).to.equal('team2');
+      expect(newTemplate.version).toBe(1);
+      expect(newTemplate.ownedByTeamId).toBe(team2._id);
+      expect(newTemplate.ownedByTeamDisplayName).toBe('team2');
     });
   });
 
@@ -687,8 +687,8 @@ describe('template API tests', () => {
       adminToken
     );
 
-    expect(response.status).to.equal(403);
-    expect(response.body.error.message).to.equal(
+    expect(response.status).toBe(403);
+    expect(response.body.error.message).toBe(
       'The specified team ID does not exist.'
     );
   });
@@ -698,19 +698,19 @@ describe('template API tests', () => {
       name: 'role-cleanup-template',
     });
     const admin = await getCouchUserFromEmailOrUserId(adminUserName);
-    expect(admin).to.not.equal(null);
-    expect(
-      admin!.templateRoles.some(r => r.resourceId === template._id)
-    ).to.equal(true);
+    expect(admin).not.toBe(null);
+    expect(admin!.templateRoles.some(r => r.resourceId === template._id)).toBe(
+      true
+    );
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
 
     const adminAfter = await getCouchUserFromEmailOrUserId(adminUserName);
-    expect(adminAfter).to.not.equal(null);
+    expect(adminAfter).not.toBe(null);
     expect(
       adminAfter!.templateRoles.some(r => r.resourceId === template._id)
-    ).to.equal(false);
+    ).toBe(false);
   });
 
   it('rejects permanent delete when template is not archived', async () => {
@@ -718,14 +718,14 @@ describe('template API tests', () => {
     const res = await requestAuthAndType(
       request(app).post(`${TEMPLATE_API_BASE}/${template._id}/delete`)
     ).send();
-    expect(res.status).to.equal(400);
-    expect(res.body.error.message).to.include('Only archived templates');
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('Only archived templates');
   });
 
   it('reports survey reference count and clears templateId on projects when deleted', async () => {
     const {template} = await createSampleTemplate(app, {});
     await getTemplateSurveyReferences(app, template._id).then(r =>
-      expect(r.count).to.equal(0)
+      expect(r.count).toBe(0)
     );
 
     const notebookId = await requestAuthAndType(
@@ -741,24 +741,24 @@ describe('template API tests', () => {
       .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
 
     const withRef = await getProjectById(notebookId);
-    expect(withRef.templateId).to.equal(template._id);
+    expect(withRef.templateId).toBe(template._id);
 
     await getTemplateSurveyReferences(app, template._id).then(r =>
-      expect(r.count).to.equal(1)
+      expect(r.count).toBe(1)
     );
 
     await setTemplateArchived(app, template._id, true);
     await deleteATemplate(app, template._id);
 
     const afterDelete = await getProjectById(notebookId);
-    expect(afterDelete.templateId).to.equal(undefined);
+    expect(afterDelete.templateId).toBe(undefined);
 
     await requestAuthAndType(
       request(app).get(`${NOTEBOOKS_API_BASE}/${notebookId}`)
     )
       .expect(200)
       .then(res => {
-        expect(res.body.templateId).to.equal(undefined);
+        expect(res.body.templateId).toBe(undefined);
       });
 
     await requestAuthAndType(
@@ -797,13 +797,13 @@ describe('template API tests', () => {
       .then(response => {
         // Parse response as the get model
 
-        expect(
-          response.body.uiSpecification.metadata.custom?.test_key
-        ).to.equal(notebook.uiSpecification.metadata.custom?.test_key);
+        expect(response.body.uiSpecification.metadata.custom?.test_key).toBe(
+          notebook.uiSpecification.metadata.custom?.test_key
+        );
 
-        expect(response.body.templateId).to.equal(template._id);
-        expect(response.body.description).to.equal(userDescription);
-        expect(response.body.description).to.not.equal(template.description);
+        expect(response.body.templateId).toBe(template._id);
+        expect(response.body.description).toBe(userDescription);
+        expect(response.body.description).not.toBe(template.description);
       });
   });
 
@@ -814,7 +814,7 @@ describe('template API tests', () => {
     // Make list request
     await listTemplates(app).then(templateList => {
       // Check that the list exists and has empty length
-      expect(templateList.templates.length).to.equal(0);
+      expect(templateList.templates.length).toBe(0);
     });
   });
 
@@ -827,13 +827,13 @@ describe('template API tests', () => {
     });
 
     // check that it is version 1 - i.e. version is ignored
-    expect(template.version).to.equal(1);
+    expect(template.version).toBe(1);
 
     // Metadata-only PUT does not bump version; version in the body is not accepted
     await updateATemplate(app, template._id, {
       name: template.name,
     }).then(updated => {
-      expect(updated.version).to.equal(1);
+      expect(updated.version).toBe(1);
     });
   });
 
@@ -849,14 +849,14 @@ describe('template API tests', () => {
       .expect(404)
       // And check the body has the error properties we want
       .then(res => {
-        expect(res.body).to.have.property('error');
-        expect(res.body.error).to.have.property('message');
-        expect(res.body.error).to.have.property('status');
+        expect(res.body).toHaveProperty('error');
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error).toHaveProperty('status');
         // Ensure the error message from the templates couch logic is being passed through
-        expect(res.body.error.message).to.include(
+        expect(res.body.error.message).toContain(
           'Are you sure the ID is correct?'
         );
-        expect(res.body.error.status).to.equal(404);
+        expect(res.body.error.status).toBe(404);
       });
 
     // make a template and do the same
@@ -896,14 +896,14 @@ describe('template API tests', () => {
       .expect(404)
       // And check the body has the error properties we want
       .then(res => {
-        expect(res.body).to.have.property('error');
-        expect(res.body.error).to.have.property('message');
-        expect(res.body.error).to.have.property('status');
+        expect(res.body).toHaveProperty('error');
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error).toHaveProperty('status');
         // Ensure the error message from the templates couch logic is being passed through
-        expect(res.body.error.message).to.include(
+        expect(res.body.error.message).toContain(
           'Are you sure the ID is correct?'
         );
-        expect(res.body.error.status).to.equal(404);
+        expect(res.body.error.status).toBe(404);
       });
 
     // make a template and do the same
@@ -923,14 +923,14 @@ describe('template API tests', () => {
       .expect(404)
       // And check the body has the error properties we want
       .then(res => {
-        expect(res.body).to.have.property('error');
-        expect(res.body.error).to.have.property('message');
-        expect(res.body.error).to.have.property('status');
+        expect(res.body).toHaveProperty('error');
+        expect(res.body.error).toHaveProperty('message');
+        expect(res.body.error).toHaveProperty('status');
         // Ensure the error message from the templates couch logic is being passed through
-        expect(res.body.error.message).to.include(
+        expect(res.body.error.message).toContain(
           'Are you sure the ID is correct?'
         );
-        expect(res.body.error.status).to.equal(404);
+        expect(res.body.error.status).toBe(404);
       });
   });
 
@@ -1023,13 +1023,13 @@ describe('template API tests', () => {
       name: 'public-flag',
       payloadExtras: {isPublic: true},
     });
-    expect(template.isPublic).to.equal(true);
+    expect(template.isPublic).toBe(true);
 
     const listed = await listTemplates(app, localUserToken);
-    expect(listed.templates.some(t => t._id === template._id)).to.equal(true);
+    expect(listed.templates.some(t => t._id === template._id)).toBe(true);
 
     await getATemplate(app, template._id, localUserToken).then(t =>
-      expect(t.isPublic).to.equal(true)
+      expect(t.isPublic).toBe(true)
     );
   });
 
@@ -1063,14 +1063,14 @@ describe('template API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200);
     const template = PostCreateTemplateResponseSchema.parse(res.body);
-    expect(template.isPublic !== true).to.equal(true);
+    expect(template.isPublic !== true).toBe(true);
   });
 
   it('general user cannot read private template by id', async () => {
     const {template} = await createSampleTemplate(app, {
       name: 'private-only',
     });
-    expect(template.isPublic !== true).to.equal(true);
+    expect(template.isPublic !== true).toBe(true);
 
     await requestAuthAndType(
       request(app).get(`${TEMPLATE_API_BASE}/${template._id}`),
@@ -1093,7 +1093,7 @@ describe('template API tests', () => {
     ).expect(200);
 
     const unchanged = await getATemplate(app, template._id);
-    expect(unchanged.isPublic !== true).to.equal(true);
+    expect(unchanged.isPublic !== true).toBe(true);
   });
 
   it('PUT /visibility updates isPublic and is forbidden without operations admin', async () => {
@@ -1102,7 +1102,7 @@ describe('template API tests', () => {
     });
 
     const updated = await putTemplateSetVisibility(app, template._id, true);
-    expect(updated.isPublic).to.equal(true);
+    expect(updated.isPublic).toBe(true);
 
     await requestAuthAndType(
       request(app)
@@ -1112,7 +1112,7 @@ describe('template API tests', () => {
     ).expect(401);
 
     const afterDenied = await getATemplate(app, template._id);
-    expect(afterDenied.isPublic).to.equal(true);
+    expect(afterDenied.isPublic).toBe(true);
   });
 
   it('notebook creator cannot instantiate another users private template', async () => {
