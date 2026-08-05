@@ -59,6 +59,7 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `web/designer-basic.e2e.ts`          | Open designer from template (minimal form + text + save when available) |
 | `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control          |
 | `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search              |
+| `app/notebook-map.e2e.ts`            | Capture a point, open the Map tab, assert record geometry plots         |
 | `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace        |
 
 ### Tier 2 — Lifecycle & invites
@@ -106,7 +107,7 @@ Credentials live in `e2e/.env.dist` (copy to `e2e/.env`). Dataset:
 | `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                              |
 | `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                    |
 | `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                    |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                  |
+| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit, overview-map geometry (Red `e2e-minimal`)    |
 | `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                               |
 | `TEST_USER_*`                     | Generic member (`seed-user@faims.test`)                              |
 
