@@ -41,9 +41,11 @@ EOT
 
 ## Now run the asset generation script
 
-echo "Generating assets for ${VITE_THEME} theme"
+THEME=${VITE_THEME:-default}
 
-pnpx sssf-capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
+echo "Generating assets for ${THEME} theme"
+
+pnpm dlx sssf-capacitor-assets generate --assetPath "./public/base-assets/${THEME}" \
   --pwaManifestPath ./public/manifest.json \
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'
