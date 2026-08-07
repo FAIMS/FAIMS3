@@ -215,4 +215,124 @@ platform :ios do
 
     delete_temp_keychain()
   end
+
+  # Individual App Store Connect API key + readonly match.
+  # Match will only fetch existing certs/profiles from the git repo (no
+  # provisioning API). Renew certs outside CI with a Team key / Admin account.
+  # app_store_connect_api_key omits issuer_id so Fastlane treats the key as individual.
+  lane :closed_beta_testflight_individual do
+    ensure_temp_keychain()
+
+    app_store_connect_api_key(
+      key_id: APPLE_KEY_ID,
+      key_content: APPLE_KEY_CONTENT,
+      duration: 1200,
+      in_house: false
+    )
+
+    cocoapods(
+      clean_install: true
+    )
+
+    match(
+      type: 'appstore',
+      storage_mode: "git",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
+      git_url: ENV["MATCH_GIT_URL"],
+      git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
+      readonly: true,
+      keychain_name: KEYCHAIN_NAME,
+      keychain_password: KEYCHAIN_PASSWORD
+    )
+
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
+    )
+
+    gym(
+      configuration: "Release",
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+        },
+        teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
+      }
+    )
+    changelog = changelog_from_git_commits(
+      match_lightweight_tag: false,
+      merge_commit_filtering: "exclude_merges"
+    )
+
+    pilot(
+      apple_id: "#{DEVELOPER_APP_ID}",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
+      skip_waiting_for_build_processing: false,
+      skip_submission: true,
+      distribute_external: false,
+      notify_external_testers: false,
+      ipa: "App.ipa",
+      changelog: changelog
+    )
+
+    delete_temp_keychain()
+  end
+
+  lane :production_individual do
+    ensure_temp_keychain()
+
+    app_store_connect_api_key(
+      key_id: APPLE_KEY_ID,
+      key_content: APPLE_KEY_CONTENT,
+      duration: 1200,
+      in_house: false
+    )
+
+    cocoapods(
+      clean_install: true
+    )
+
+    match(
+      type: 'appstore',
+      storage_mode: "git",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
+      git_url: ENV["MATCH_GIT_URL"],
+      git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
+      readonly: true,
+      keychain_name: KEYCHAIN_NAME,
+      keychain_password: KEYCHAIN_PASSWORD
+    )
+
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
+    )
+
+    gym(
+      configuration: "Release",
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+        },
+        teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
+      }
+    )
+
+    deliver(
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
+      ipa: "App.ipa",
+      submit_for_review: false,
+      automatic_release: false,
+      force: true,
+      run_precheck_before_submit: false
+    )
+
+    delete_temp_keychain()
+  end
 end
