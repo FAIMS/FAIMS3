@@ -33,7 +33,12 @@ export const ParentFieldDisplayRenderer: DataViewFieldRender = props => {
     return <TextWrapper content="Field is not configured." />;
   }
   if (query.isPending) {
-    return <Skeleton variant="text" width="60%" />;
+    // Skeleton sizes itself from the placeholder text it stands in for.
+    return (
+      <Skeleton variant="text">
+        <Typography>Loading parent record value</Typography>
+      </Skeleton>
+    );
   }
   if (query.isError) {
     return (

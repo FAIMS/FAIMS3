@@ -7,6 +7,10 @@ import {ParentFieldDisplayRenderer} from '../../../rendering/fields/view/special
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {resolveParentFieldValue} from './resolveParentField';
+import {logWarn} from '../../../logging';
+
+// Matches the rendered height of an outlined MUI text input.
+const INPUT_SKELETON_HEIGHT = 56;
 
 const ParentFieldDisplayPropsSchema = BaseFieldParametersSchema.extend({
   // Field ID in the parent form whose value is displayed.
@@ -29,7 +33,7 @@ const ParentFieldDisplay = (props: ParentFieldDisplayFullProps) => {
 
   const query = useQuery({
     queryKey: ['parent-field-display', fullConfig?.recordId, parentFieldId],
-    enabled: fullConfig !== null,
+    enabled: fullConfig !== null && typeof fullConfig.dataEngine === 'function',
     queryFn: () =>
       resolveParentFieldValue({
         engine: fullConfig!.dataEngine(),
@@ -43,7 +47,7 @@ const ParentFieldDisplay = (props: ParentFieldDisplayFullProps) => {
   });
 
   let content: React.ReactNode;
-  if (!fullConfig) {
+  if (config.mode === 'preview') {
     content = (
       <MuiTextField
         value=""
@@ -53,8 +57,25 @@ const ParentFieldDisplay = (props: ParentFieldDisplayFullProps) => {
         variant="outlined"
       />
     );
+  } else if (typeof config.dataEngine !== 'function') {
+    // Full mode without an engine is a wiring error, not a preview.
+    logWarn('ParentFieldDisplay: full mode config missing data engine');
+    content = (
+      <MuiTextField
+        value="Unable to load parent record value"
+        fullWidth
+        disabled
+        variant="outlined"
+        error
+      />
+    );
   } else if (query.isPending) {
-    content = <Skeleton variant="rounded" height={56} />;
+    // Skeleton sizes itself from the (hidden) input it stands in for.
+    content = (
+      <Skeleton variant="rounded">
+        <MuiTextField fullWidth disabled variant="outlined" />
+      </Skeleton>
+    );
   } else if (query.isError) {
     content = (
       <MuiTextField
@@ -99,5 +120,6 @@ export const parentFieldDisplaySpec: FieldInfo<ParentFieldDisplayFullProps> = {
   // Never blocks validation; the user cannot influence the value.
   fieldDataSchemaFunction: () => z.any().nullable().optional(),
   isCompleteFunction: () => true,
+  excludeFromParentDisplay: true,
   view: {component: ParentFieldDisplayRenderer, config: {}},
 };
