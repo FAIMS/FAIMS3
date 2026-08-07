@@ -59,6 +59,9 @@ Annotation, and Uncertainty options do not apply and are not shown.
 - If the record has no parent (for example, it was created directly
   from the record list), or the parent's field is empty, a dash is
   shown instead of a value.
+- A record can have parents of more than one form. The value is taken from
+  the first parent whose form contains the configured field; other parents
+  are ignored.
 
 ## Tips
 
