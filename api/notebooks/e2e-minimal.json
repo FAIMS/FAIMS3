@@ -55,8 +55,7 @@
               "label": "uncertainty"
             }
           },
-          "persistent": false,
-          "displayParent": false
+          "persistent": false
         },
         "location": {
           "component-namespace": "faims-custom",
@@ -80,8 +79,7 @@
               "label": "uncertainty"
             }
           },
-          "persistent": false,
-          "displayParent": false
+          "persistent": false
         }
       },
       "views": {
@@ -101,7 +99,7 @@
       "settings": {
         "showQrCodeButton": false
       },
-      "schemaVersion": "6.0"
+      "schemaVersion": "7.0"
     },
     "metadata": {
       "information": {

@@ -100,7 +100,6 @@ const fieldDefinitionShape = {
   'component-parameters': BaseFieldParametersSchema.passthrough(),
   initialValue: z.any().optional(),
   persistent: z.boolean().optional(),
-  displayParent: z.boolean().optional(),
   meta: FieldMetaSchema.optional(),
   /** Conditional logic controlling this field's visibility. */
   condition: ConditionalExpressionSchema.nullable().optional(),
