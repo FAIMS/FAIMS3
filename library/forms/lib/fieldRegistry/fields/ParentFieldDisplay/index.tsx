@@ -8,9 +8,7 @@ import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {resolveParentFieldValue} from './resolveParentField';
 import {logWarn} from '../../../logging';
-
-// Matches the rendered height of an outlined MUI text input.
-const INPUT_SKELETON_HEIGHT = 56;
+import {useEffect} from 'react';
 
 const ParentFieldDisplayPropsSchema = BaseFieldParametersSchema.extend({
   // Field ID in the parent form whose value is displayed.
@@ -22,12 +20,13 @@ type ParentFieldDisplayFullProps = ParentFieldDisplayProps &
   FormFieldContextProps;
 
 /**
- * Read-only field showing a value from this record's parent. Nothing is
- * stored on the record; the value is resolved live from the parent's current
- * data, so parent edits are always reflected.
+ * Read-only field showing a value from this record's parent. The value is
+ * resolved live from the parent's current data on render, and the resolved
+ * value is written into form state so it persists on save and appears in
+ * exports. The stored value is accurate as of the child's last save.
  */
 const ParentFieldDisplay = (props: ParentFieldDisplayFullProps) => {
-  const {config, parentFieldId} = props;
+  const {config, parentFieldId, state, setFieldData} = props;
   // Preview mode (designer) has no data engine or record.
   const fullConfig = config.mode === 'full' ? config : null;
 
@@ -45,6 +44,23 @@ const ParentFieldDisplay = (props: ParentFieldDisplayFullProps) => {
     refetchOnMount: 'always',
     networkMode: 'always',
   });
+
+  // Resolved value to persist. Empty string when there is no parent or the
+  // configured field no longer exists, so a stale value never survives.
+  const resolved = query.isSuccess
+    ? query.data.kind === 'value'
+      ? (query.data.display ?? '')
+      : ''
+    : null;
+
+  // Write the resolved value into form state so it saves and exports.
+  // Guarded so an unchanged value never dirties the form.
+  useEffect(() => {
+    if (resolved === null || fullConfig === null) return;
+    if (state.value?.data !== resolved) {
+      setFieldData(resolved);
+    }
+  }, [resolved]);
 
   let content: React.ReactNode;
   if (config.mode === 'preview') {
@@ -113,8 +129,9 @@ const ParentFieldDisplay = (props: ParentFieldDisplayFullProps) => {
 export const parentFieldDisplaySpec: FieldInfo<ParentFieldDisplayFullProps> = {
   namespace: 'faims-custom',
   name: 'ParentFieldDisplay',
-  // Display only - no value is stored.
-  returns: null,
+  // The resolved parent value is persisted on save (String) so it appears
+  // in exported data. Display still resolves live on render.
+  returns: 'faims-core::String',
   component: ParentFieldDisplay,
   fieldPropsSchema: ParentFieldDisplayPropsSchema,
   // Never blocks validation; the user cannot influence the value.
