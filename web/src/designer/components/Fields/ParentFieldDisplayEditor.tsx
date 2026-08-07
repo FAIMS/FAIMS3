@@ -1,20 +1,17 @@
-import {
-  Alert,
-  ListSubheader,
-  MenuItem,
-  Select,
-  Typography,
-} from '@mui/material';
+import {Alert, Typography} from '@mui/material';
+import {getFieldInfo} from '@faims3/forms';
 import {useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {FieldSearchAutocomplete} from '../field-selector/FieldSearchAutocomplete';
 import {getViewsetFieldIds} from '../../features/field-search';
 import {
   selectUiFields,
   selectUiViews,
   selectUiViewSets,
 } from '../../store/selectors';
+import type {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 type PropType = {
@@ -23,23 +20,24 @@ type PropType = {
   viewsetId: string;
 };
 
-// Fields with no meaningful single value to display.
-const EXCLUDED_COMPONENT_NAMES = [
-  'RelatedRecordSelector',
-  'ParentFieldDisplay',
-  'RichText',
-];
-
-type CandidateField = {
-  fieldId: string;
-  label: string;
-  formLabel: string;
+/** Whether a field type opts out of parent-value display (registry flag). */
+const isExcludedFromParentDisplay = (field: FieldType): boolean => {
+  const namespace = field['component-namespace'];
+  const name = field['component-name'];
+  if (typeof namespace !== 'string' || typeof name !== 'string') return true;
+  try {
+    const {fieldInfo} = getFieldInfo({namespace, name});
+    return fieldInfo.excludeFromParentDisplay === true;
+  } catch {
+    // Unknown field type - exclude rather than offer something undisplayable.
+    return true;
+  }
 };
 
 /**
- * Property editor for ParentFieldDisplay. Adds a select of fields drawn from
- * forms that can parent this form - those holding a Child-relation
- * RelatedRecordSelector targeting this form.
+ * Property editor for ParentFieldDisplay. Adds a searchable field picker over
+ * fields drawn from forms that can parent this form - those holding a
+ * Child-relation RelatedRecordSelector targeting this form.
  */
 export const ParentFieldDisplayEditor = ({fieldName, viewsetId}: PropType) => {
   const field = useAppSelector(
@@ -53,14 +51,17 @@ export const ParentFieldDisplayEditor = ({fieldName, viewsetId}: PropType) => {
   const parentFieldId =
     (field['component-parameters'].parentFieldId as string | undefined) || '';
 
-  const candidateFields = useMemo(() => {
-    const out: CandidateField[] = [];
+  // Fields belonging to any form that parents this one.
+  const candidateFieldIds = useMemo(() => {
+    const ids = new Set<string>();
     for (const parentViewsetId of Object.keys(viewsets)) {
       if (parentViewsetId === viewsetId) continue;
-      const ids = getViewsetFieldIds(parentViewsetId, views, viewsets);
-
-      // A parent form holds a Child-relation selector targeting this form.
-      const isParentForm = ids.some(id => {
+      const viewsetFields = getViewsetFieldIds(
+        parentViewsetId,
+        views,
+        viewsets
+      );
+      const isParentForm = viewsetFields.some(id => {
         const f = allFields[id];
         return (
           f?.['component-name'] === 'RelatedRecordSelector' &&
@@ -69,76 +70,46 @@ export const ParentFieldDisplayEditor = ({fieldName, viewsetId}: PropType) => {
         );
       });
       if (!isParentForm) continue;
-
-      const formLabel = viewsets[parentViewsetId]?.label ?? parentViewsetId;
-      for (const id of ids) {
-        const f = allFields[id];
-        if (!f) continue;
-        if (EXCLUDED_COMPONENT_NAMES.includes(f['component-name'] ?? '')) {
-          continue;
-        }
-        out.push({
-          fieldId: id,
-          label: (f['component-parameters']?.label as string) || id,
-          formLabel,
-        });
-      }
+      for (const id of viewsetFields) ids.add(id);
     }
-    return out;
+    return ids;
   }, [viewsets, views, allFields, viewsetId]);
 
-  const updateParentFieldId = (value: string) => {
+  const updateParentFieldId = (value: string | null) => {
     const newField = withUpdatedField(field, nextField => {
-      nextField['component-parameters'].parentFieldId = value;
+      nextField['component-parameters'].parentFieldId = value ?? '';
     });
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
-  // Group menu items under a subheader per parent form.
-  const menuItems = useMemo(() => {
-    const items: React.ReactNode[] = [];
-    let currentForm: string | null = null;
-    for (const candidate of candidateFields) {
-      if (candidate.formLabel !== currentForm) {
-        currentForm = candidate.formLabel;
-        items.push(
-          <ListSubheader key={`form-${candidate.formLabel}`}>
-            {candidate.formLabel}
-          </ListSubheader>
-        );
-      }
-      items.push(
-        <MenuItem key={candidate.fieldId} value={candidate.fieldId}>
-          {candidate.label}
-        </MenuItem>
-      );
-    }
-    return items;
-  }, [candidateFields]);
-
   const selectionMissing =
-    parentFieldId !== '' &&
-    !candidateFields.some(c => c.fieldId === parentFieldId);
+    parentFieldId !== '' && !candidateFieldIds.has(parentFieldId);
 
   return (
     <BaseFieldEditor fieldName={fieldName} showExtraConfig={false}>
       <Typography variant="subtitle2" sx={{mb: 1}}>
         Parent field to display
       </Typography>
-      {candidateFields.length > 0 ? (
-        <Select
-          value={selectionMissing ? '' : parentFieldId}
-          onChange={e => updateParentFieldId(e.target.value)}
-          displayEmpty
-          fullWidth
-          size="small"
-          data-testid="parent-field-select"
-        >
-          <MenuItem value="">
-            <em>Select a field</em>
-          </MenuItem>
-          {menuItems}
-        </Select>
+      {candidateFieldIds.size > 0 ? (
+        <>
+          <FieldSearchAutocomplete
+            value={parentFieldId || null}
+            onChange={updateParentFieldId}
+            scope={{kind: 'all'}}
+            filters={{
+              predicate: (id, f) =>
+                candidateFieldIds.has(id) && !isExcludedFromParentDisplay(f),
+            }}
+            placeholder="Search parent form fields"
+            noOptionsText="No matching parent form fields"
+            data-testid="parent-field-select"
+            size="small"
+          />
+          <Typography variant="caption" sx={{display: 'block', mt: 1}}>
+            If a record has more than one parent, the value shown comes from the
+            first parent whose form contains this field.
+          </Typography>
+        </>
       ) : (
         <Alert severity="info">
           No form in this notebook has this form as a child. Add a related
