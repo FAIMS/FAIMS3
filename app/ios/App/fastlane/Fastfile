@@ -4,7 +4,6 @@ default_platform(:ios)
 
 DEVELOPER_APP_ID = ENV["DEVELOPER_APP_ID"]
 VITE_APPLE_BUNDLE_IDENTIFIER = ENV["VITE_APPLE_BUNDLE_IDENTIFIER"]
-PROVISIONING_PROFILE_SPECIFIER = ENV["PROVISIONING_PROFILE_SPECIFIER"]
 APPLE_ISSUER_ID = ENV["APPLE_ISSUER_ID"]
 APPLE_KEY_ID = ENV["APPLE_KEY_ID"]
 APPLE_KEY_CONTENT = ENV["APPLE_KEY_CONTENT"]
@@ -31,6 +30,15 @@ def ensure_temp_keychain()
     unlock: false,
     timeout: 0
   )
+end
+
+# Prefer PROVISIONING_PROFILE_SPECIFIER when set (custom Match profile names);
+# otherwise the standard Match App Store name for this bundle id.
+# Xcode project profile name is set in prebuildIOS.sh; this is for gym export.
+def appstore_profile_specifier
+  custom = ENV["PROVISIONING_PROFILE_SPECIFIER"].to_s.strip
+  return custom unless custom.empty?
+  "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
 end
 
 platform :ios do
@@ -132,7 +140,7 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+            VITE_APPLE_BUNDLE_IDENTIFIER => appstore_profile_specifier
         },
         teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
@@ -198,7 +206,7 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+            VITE_APPLE_BUNDLE_IDENTIFIER => appstore_profile_specifier
         },
         teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
@@ -257,7 +265,7 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+            VITE_APPLE_BUNDLE_IDENTIFIER => appstore_profile_specifier
         },
         teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
@@ -318,7 +326,7 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+            VITE_APPLE_BUNDLE_IDENTIFIER => appstore_profile_specifier
         },
         teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
