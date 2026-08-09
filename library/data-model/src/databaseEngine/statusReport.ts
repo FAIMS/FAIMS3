@@ -9,7 +9,7 @@ import {
   IsCompleteResolver,
 } from './completion';
 import {DataEngine} from './engine';
-import {RecordDeletedError} from './exceptions';
+import {DocumentNotFoundError, RecordDeletedError} from './exceptions';
 import {
   relatedRecordFieldAvpValueSchema,
   relatedRecordSelectorComponentParamsSchema,
@@ -231,13 +231,20 @@ async function walk(
         skippedChildren.push(entry.record_id);
         continue;
       }
-      toRecurse.push(entry.record_id);
+      // A duplicate link to the same child is still one child
+      if (!toRecurse.includes(entry.record_id)) {
+        toRecurse.push(entry.record_id);
+      }
     }
 
-    // Dangling references resolve to null and are skipped like deleted ones
+    // Dangling references are skipped like deleted ones; anything else
+    // (connectivity, corrupt data) must surface rather than skew the report
     const results = await Promise.all(
       toRecurse.map(childId =>
-        walk(ctx, childId, nextAncestors, depth + 1).catch(() => null)
+        walk(ctx, childId, nextAncestors, depth + 1).catch(err => {
+          if (err instanceof DocumentNotFoundError) return null;
+          throw err;
+        })
       )
     );
     const children: RecordStatusReport[] = [];

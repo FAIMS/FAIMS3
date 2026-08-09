@@ -175,6 +175,20 @@ describe('Record status report', () => {
       expect(result.percentComplete).toBe(1.0);
     });
 
+    test('duplicate links to the same child count once', async () => {
+      const layer = await create('Layer', {depth: {data: '225'}});
+      const {recordId} = await create('Cell', {
+        'cell-id': {data: 'C1'},
+        layers: {data: [link(layer.recordId), link(layer.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'layers')).toMatchObject({
+        createdCount: 1,
+        expectedCount: 1,
+      });
+      expect(result.percentComplete).toBe(1.0);
+    });
+
     test('singleton (non-array) child link values are handled', async () => {
       const layer = await create('Layer', {depth: {data: '225'}});
       const {recordId} = await create('Cell', {

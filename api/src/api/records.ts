@@ -393,6 +393,8 @@ recordsRouter.get(
         );
       }
 
+      // No isCompleteResolver: no registry field defines isCompleteFunction
+      // today; inject parity with the app here if one ever does.
       const report = await computeRecordStatusReport({
         engine,
         recordId,
