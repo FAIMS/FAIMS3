@@ -220,8 +220,10 @@ describe('Record status report', () => {
         expectedCount: 1,
       });
       expect(result.skippedChildren).toEqual([layer.recordId]);
-      // own is 1.0 (the layers field itself holds data), child unit contributes 0
-      expect(result.percentComplete).toBe(0.5);
+      // a link to a deleted child scores no better than an empty field:
+      // own drops to 1/2 and the expected child unit contributes 0
+      expect(result.ownProgress.incompleteRequired).toContain('layers');
+      expect(result.percentComplete).toBe(0.25);
     });
 
     test('linked relations are ignored entirely', async () => {
@@ -244,7 +246,18 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(result.skippedChildren).toEqual(['no-such-record']);
-      expect(result.percentComplete).toBe(0.5);
+      // dangling links leave the required layers field incomplete
+      expect(result.percentComplete).toBe(0.25);
+    });
+
+    test('an empty-array child value scores like an absent one', async () => {
+      const {recordId} = await create('Cell', {
+        'cell-id': {data: 'C1'},
+        layers: {data: []},
+      });
+      const result = await report(recordId);
+      expect(result.ownProgress.progress).toBe(0.5);
+      expect(result.percentComplete).toBe(0.25);
     });
 
     test('recordFilter excludes children from counts and payload', async () => {

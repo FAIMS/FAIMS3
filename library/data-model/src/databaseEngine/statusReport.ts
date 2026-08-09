@@ -48,10 +48,50 @@ export interface RecordStatusReport {
   /** Raw values of the form's summary_fields, keyed by field name. */
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
-  /** Child record ids excluded from the roll-up (deleted, cycle, unreadable). */
+  /**
+   * Child record ids excluded from the roll-up (deleted, cycle, unreadable).
+   * Ids are safe to expose: they already appear in the parent's own readable
+   * field data, and the cause of each skip is deliberately indistinguishable.
+   */
   skippedChildren?: string[];
   /** True when the depth cap forced this node to be treated as a leaf. */
   truncated?: boolean;
+}
+
+/**
+ * Reconciles a record's own completion with its resolved children: a required
+ * Child selector field is complete only while it has a live child, because any
+ * stored link (even one to a deleted record) satisfies the generic field check
+ * and would otherwise score better than an empty field.
+ */
+function adjustOwnProgressForChildren(
+  own: CompletionResult,
+  childFields: RecordStatusChildField[]
+): CompletionResult {
+  let incomplete = own.incompleteRequired;
+  for (const field of childFields) {
+    if (!field.required) {
+      continue;
+    }
+    const hasLiveChild = field.createdCount > 0;
+    const wasIncomplete = incomplete.includes(field.fieldId);
+    if (hasLiveChild && wasIncomplete) {
+      incomplete = incomplete.filter(id => id !== field.fieldId);
+    } else if (!hasLiveChild && !wasIncomplete) {
+      incomplete = [...incomplete, field.fieldId];
+    }
+  }
+  if (incomplete === own.incompleteRequired) {
+    return own;
+  }
+  const completedCount = own.requiredCount - incomplete.length;
+  return {
+    progress:
+      own.requiredCount === 0 ? 1.0 : completedCount / own.requiredCount,
+    requiredCount: own.requiredCount,
+    completedCount,
+    incompleteRequired: incomplete,
+  };
 }
 
 interface WalkContext {
@@ -70,7 +110,11 @@ interface WalkContext {
  *
  * Only faims-core::Child relations are followed, discovered from the parent's
  * RelatedRecordSelector field values. Deleted and filter-excluded records are
- * left out of both numerator and denominator.
+ * left out of both numerator and denominator, so the percent means "completion
+ * of what this viewer can see" and may differ between viewers. A required
+ * Child field counts complete in the record's own progress only while it has
+ * at least one live child, so a link to a deleted or dangling record scores no
+ * better than an empty field.
  *
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
@@ -159,7 +203,7 @@ async function walk(
     uiSpec: engine.uiSpec,
     viewsetId: formId,
   });
-  const ownProgress = completion({
+  const rawOwnProgress = completion({
     uiSpec: engine.uiSpec,
     formId,
     data,
@@ -177,14 +221,15 @@ async function walk(
     recordId,
     hrid: context.hrid,
     formId,
-    ownProgress,
     summaryValues,
   };
 
+  // At the cap children are unknown, so own progress stays unreconciled
   if (depth >= STATUS_REPORT_MAX_DEPTH) {
     return {
       ...base,
-      percentComplete: ownProgress.progress,
+      ownProgress: rawOwnProgress,
+      percentComplete: rawOwnProgress.progress,
       childFields: [],
       truncated: true,
     };
@@ -268,6 +313,8 @@ async function walk(
     });
   }
 
+  const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);
+
   // Each expected child is one unit alongside the record's own form
   const units = childFields.reduce(
     (sum, field) => sum + field.expectedCount,
@@ -286,6 +333,7 @@ async function walk(
 
   return {
     ...base,
+    ownProgress,
     percentComplete,
     childFields,
     ...(skippedChildren.length > 0 ? {skippedChildren} : {}),
