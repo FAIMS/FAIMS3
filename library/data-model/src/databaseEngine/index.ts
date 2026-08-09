@@ -1,3 +1,4 @@
+export * from './completion';
 export * from './engine';
 export * from './exceptions';
 export * from './types';
