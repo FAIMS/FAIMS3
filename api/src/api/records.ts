@@ -17,13 +17,15 @@
  * `/api/notebooks/:id/records`.
  *
  * Read routes are always registered: GET `…/metadata` (paginated, permission-filtered
- * metadata) and GET `…/:recordId` (full form data). Mutation routes (POST create, POST
- * fork revision, PUT update, DELETE soft-delete) are compiled in but only registered
- * when {@link ENABLE_RECORDS_CRUD_MUTATIONS} is true.
+ * metadata), GET `…/:recordId` (full form data) and GET `…/:recordId/status` (recursive
+ * completion roll-up). Mutation routes (POST create, POST fork revision, PUT update,
+ * DELETE soft-delete) are compiled in but only registered when
+ * {@link ENABLE_RECORDS_CRUD_MUTATIONS} is true.
  */
 
 import {
   Action,
+  computeRecordStatusReport,
   DatabaseInterface,
   DataDocument,
   DataEngine,
@@ -33,6 +35,7 @@ import {
   GetListRecordsResponse,
   GetRecordQuerySchema,
   GetRecordResponse,
+  GetRecordStatusReportResponse,
   MalformedParentsError,
   newFormRecordSchema,
   NoHeadsError,
@@ -341,6 +344,67 @@ recordsRouter.get(
       });
 
       res.json(formData);
+    } catch (err) {
+      if (err instanceof Exceptions.ForbiddenException) throw err;
+      mapDataModelError(err);
+    }
+  }
+);
+
+/**
+ * GET /api/notebooks/:id/records/:recordId/status — recursive completion roll-up
+ * for a record and its child records. Children the caller cannot read are left
+ * out of the roll-up and listed in `skippedChildren`, so percentages can differ
+ * between viewers on mixed-author trees.
+ */
+recordsRouter.get(
+  '/:recordId/status',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_MY_PROJECT_RECORDS,
+    getResourceId: req => req.params.id,
+  }),
+  validate({
+    params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
+  }),
+  async (req, res: Response<GetRecordStatusReportResponse>) => {
+    if (!req.user) throw new Exceptions.UnauthorizedException();
+    const projectId = projectIdFromReq(req);
+    const {recordId} = req.params;
+
+    try {
+      const dataDb = await getDataDb(projectId);
+      const uiSpec = await getCompiledUiSpecModel(projectId);
+      const engine = new DataEngine({
+        dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
+
+      const record = await engine.core.getRecord(recordId);
+      if (
+        !canReadRecord({
+          user: req.user,
+          projectId,
+          createdBy: record.created_by,
+        })
+      ) {
+        throw new Exceptions.ForbiddenException(
+          'You do not have permission to read this record.'
+        );
+      }
+
+      const report = await computeRecordStatusReport({
+        engine,
+        recordId,
+        projectId,
+        recordFilter: rec =>
+          canReadRecord({
+            user: req.user!,
+            projectId,
+            createdBy: rec.createdBy,
+          }),
+      });
+      res.json(report);
     } catch (err) {
       if (err instanceof Exceptions.ForbiddenException) throw err;
       mapDataModelError(err);
