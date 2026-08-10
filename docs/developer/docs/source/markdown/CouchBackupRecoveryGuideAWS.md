@@ -16,13 +16,13 @@ Related docs:
 
 ## How backups relate to the stack
 
-| Piece | Role |
-| ----- | ---- |
-| Couch EC2 | Boot + Docker + `local.ini`; **not** the durable datastore |
-| Data EBS (`/dev/xvdf` → `/opt/couchdb/data`) | Couch databases; retained across instance replace |
-| AWS Backup (`BackupConstruct`) | Scheduled snapshots of **that EBS volume only** (vault + plan from `backup` in config) |
-| Manual snapshot | `./scripts/ec2Snapshot.sh create` — same volume, ad-hoc `snap-…` |
-| `couch.ebsRecoverySnapshotId` | CDK creates a **new** volume from `snap-…` and attaches it |
+| Piece                                        | Role                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Couch EC2                                    | Boot + Docker + `local.ini`; **not** the durable datastore                             |
+| Data EBS (`/dev/xvdf` → `/opt/couchdb/data`) | Couch databases; retained across instance replace                                      |
+| AWS Backup (`BackupConstruct`)               | Scheduled snapshots of **that EBS volume only** (vault + plan from `backup` in config) |
+| Manual snapshot                              | `./scripts/ec2Snapshot.sh create` — same volume, ad-hoc `snap-…`                       |
+| `couch.ebsRecoverySnapshotId`                | CDK creates a **new** volume from `snap-…` and attaches it                             |
 
 AWS Backup EBS recovery-point ARNs look like
 `arn:aws:ec2:<region>::snapshot/snap-…` — the `snap-…` id is what you put in
