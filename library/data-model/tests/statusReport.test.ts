@@ -12,6 +12,7 @@ import {
   DataDocument,
   DataEngine,
   DocumentNotFoundError,
+  formDataToValues,
   FormUpdateData,
   NotebookDefinition,
   RecordDeletedError,
@@ -256,23 +257,22 @@ describe('Record status report', () => {
       const feature = await create('Feature', {depth: {data: '50'}});
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
-        // a bare record-id string and an entry whose record_id is a number
+        // a legacy bare record-id string in place of a link object
         features: {
-          data: ['legacy-bare-id', {record_id: 42}, link(feature.recordId)],
+          data: ['legacy-bare-id', link(feature.recordId)],
         },
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual(['legacy-bare-id', '42']);
+      expect(result.skippedChildren).toEqual(['legacy-bare-id']);
     });
 
-    test('a required child field in two sections weighs both occurrences', async () => {
-      // finds appears in both Trench sections; completion() counts it twice,
-      // so with no live children both occurrences must flip to incomplete
+    test('a required child field in two sections counts once', async () => {
+      // finds appears in both Trench sections but is still one field
       const {recordId} = await create('Trench', {finds: {data: []}});
       const result = await report(recordId);
       expect(result.ownProgress).toMatchObject({
-        requiredCount: 2,
+        requiredCount: 1,
         completedCount: 0,
         progress: 0,
       });
@@ -280,13 +280,16 @@ describe('Record status report', () => {
       expect(result.progress).toBe(0);
     });
 
-    test('a live child completes both occurrences of a two-section field', async () => {
+    test('a live child completes a two-section field', async () => {
       const photo = await create('Photo');
       const {recordId} = await create('Trench', {
         finds: {data: [link(photo.recordId)]},
       });
       const result = await report(recordId);
-      expect(result.ownProgress.progress).toBe(1.0);
+      expect(result.ownProgress).toMatchObject({
+        requiredCount: 1,
+        progress: 1.0,
+      });
       expect(result.progress).toBe(1.0);
     });
 
@@ -301,6 +304,34 @@ describe('Record status report', () => {
       expect(
         result.childFields.filter(f => f.fieldId === 'sub-samples')
       ).toHaveLength(1);
+    });
+
+    test('a child shared by two parent records reports under each', async () => {
+      // shared is incomplete, so each parent scores (1 own + 0) / 2 and the
+      // root rolls up (1 own + 0.5 + 0.5) / 3
+      const shared = await create('Sample');
+      const left = await create('Sample', {
+        'sample-type': {data: 'l'},
+        'sub-samples': {data: [link(shared.recordId)]},
+      });
+      const right = await create('Sample', {
+        'sample-type': {data: 'r'},
+        'sub-samples': {data: [link(shared.recordId)]},
+      });
+      const root = await create('Feature', {
+        depth: {data: '50'},
+        samples: {data: [link(left.recordId), link(right.recordId)]},
+      });
+
+      const result = await report(root.recordId);
+      const parents = childField(result, 'samples').children;
+      expect(parents).toHaveLength(2);
+      for (const parent of parents) {
+        const sharedNode = childField(parent, 'sub-samples').children[0];
+        expect(sharedNode.recordId).toBe(shared.recordId);
+        expect(parent.progress).toBe(0.5);
+      }
+      expect(result.progress).toBe(2 / 3);
     });
 
     test('a child linked from two fields counts one roll-up unit', async () => {
@@ -396,6 +427,32 @@ describe('Record status report', () => {
       expect(childField(result, 'features').createdCount).toBe(1);
       expect(result.skippedChildren).toEqual([theirs.recordId]);
       // (1 own + 1 remaining feature) / (1 + 1)
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a child with an unknown form type is skipped, not scored complete', async () => {
+      // e.g. the child's form was removed from the notebook after creation
+      const ghost = await create('Ghost');
+      const live = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(live.recordId), link(ghost.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual([ghost.recordId]);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a link with an empty project id counts as local', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [{...link(feature.recordId), project_id: ''}]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toBeUndefined();
       expect(result.progress).toBe(1.0);
     });
 
@@ -703,10 +760,11 @@ describe('Record status report', () => {
         node = childField(node, 'features').children[0];
       }
       expect(node.truncated).toBe(true);
-      // the dead link scores like an empty required field, as it would on an
-      // untruncated node, and is still listed as skipped
+      // the dead link scores exactly like an empty required field on an
+      // untruncated node (own 0.5 plus one empty expected-child unit), and
+      // is still listed as skipped
       expect(node.ownProgress.incompleteRequired).toContain('features');
-      expect(node.progress).toBe(0.5);
+      expect(node.progress).toBe(0.25);
       expect(node.skippedChildren).toEqual([dead.recordId]);
     });
   });
@@ -759,10 +817,8 @@ describe('Record status report', () => {
 
   describe('completion (moved from forms)', () => {
     const completionFor = (data: FormUpdateData, formId = 'Site') => {
-      const values: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(data)) values[k] = v.data;
       const visibilityMap = currentlyVisibleMap({
-        values,
+        values: formDataToValues(data),
         uiSpec,
         viewsetId: formId,
       });

@@ -72,10 +72,17 @@ export function completion({
   let fieldCount = 0;
   let completedCount = 0;
   const incompleteRequired: string[] = [];
+  const seen = new Set<string>();
 
   const allViews = getViewsForViewSet(uiSpec, formId);
   for (const sectionId of allViews) {
     for (const fieldId of visibilityMap[sectionId] ?? []) {
+      // A field shown in several sections is still one field
+      if (seen.has(fieldId)) {
+        continue;
+      }
+      seen.add(fieldId);
+
       // Find the field spec
       const fieldSpec = uiSpec.fields[fieldId];
       if (!fieldSpec) {
