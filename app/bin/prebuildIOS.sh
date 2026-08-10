@@ -28,5 +28,13 @@ fi
 
 echo "Updating project.pbxproj with", ${VITE_APPLE_BUNDLE_IDENTIFIER}, ${VITE_APP_STORE_CONNECT_TEAM_ID}
 # update project file for local build
+# Bundle-id substitution also rewrites the default Match profile name to
+# "match AppStore <bundle-id>". Optionally override with PROVISIONING_PROFILE_SPECIFIER.
 sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APPLE_BUNDLE_IDENTIFIER}/g" ./ios/App/App.xcodeproj/project.pbxproj.dist |\
-  sed -e "s/VITE_APP_STORE_CONNECT_TEAM_ID/${VITE_APP_STORE_CONNECT_TEAM_ID}/g" > ./ios/App/App.xcodeproj/project.pbxproj
+  sed -e "s/VITE_APP_STORE_CONNECT_TEAM_ID/${VITE_APP_STORE_CONNECT_TEAM_ID}/g" |\
+  if [ -n "${PROVISIONING_PROFILE_SPECIFIER:-}" ]; then
+    echo "Overriding PROVISIONING_PROFILE_SPECIFIER -> ${PROVISIONING_PROFILE_SPECIFIER}" >&2
+    sed -e "s#\"PROVISIONING_PROFILE_SPECIFIER\[sdk=iphoneos\*\]\" = \"[^\"]*\"#\"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]\" = \"${PROVISIONING_PROFILE_SPECIFIER}\"#"
+  else
+    cat
+  fi > ./ios/App/App.xcodeproj/project.pbxproj

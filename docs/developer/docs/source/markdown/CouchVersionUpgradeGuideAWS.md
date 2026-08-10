@@ -166,7 +166,9 @@ Before deploy, stop the instance and detach the data volume. CFN cannot move
 **WARNING**: This will initiate hard down-time. The couchDB will be unavailable from now until the updated CDK deployment, re-run of the user data script, and the migration. Ensure you are ready to follow through the below steps.
 
 ```bash
+# Detaches the volume off the EC2 and shuts it down
 ./scripts/ec2PrepareReplace.sh
+# Runs the deployment to transfer attachment to new instance with user data setting up fresh version of couch
 pnpm cdk deploy
 ```
 
