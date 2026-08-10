@@ -56,7 +56,9 @@ export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
 // ==================
 
 // logout
-export const PutLogoutInputSchema = z.object({refreshToken: TokenInputSchema});
+export const PutLogoutInputSchema = z.object({
+  refreshToken: TokenInputSchema,
+});
 export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
 
 // Change Password
@@ -1125,7 +1127,7 @@ export const RecordStatusReportNodeSchema: z.ZodType<RecordStatusReport> =
       recordId: z.string(),
       hrid: z.string(),
       formId: z.string(),
-      percentComplete: z.number(),
+      progress: z.number(),
       ownProgress: completionResultSchema,
       summaryValues: z.record(z.string(), z.unknown()),
       childFields: z.array(RecordStatusReportChildFieldSchema),

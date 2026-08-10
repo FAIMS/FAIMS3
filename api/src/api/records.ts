@@ -394,7 +394,8 @@ recordsRouter.get(
       }
 
       // No isCompleteResolver: no registry field defines isCompleteFunction
-      // today; inject parity with the app here if one ever does.
+      // today; the forms registryParity test fails if one appears, and it
+      // must then be wired in here for parity with the app.
       const report = await computeRecordStatusReport({
         engine,
         recordId,

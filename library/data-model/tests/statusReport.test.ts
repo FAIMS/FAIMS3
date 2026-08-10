@@ -24,6 +24,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory'));
 
 const CHILD_PAIR: [string, string] = ['is child of', 'has child'];
 const USER = 'test-user';
+const PROJECT = 'test-project';
 
 /** Forward child link as stored in a RelatedRecordSelector field value. */
 const link = (recordId: string) => ({
@@ -70,7 +71,12 @@ describe('Record status report', () => {
   };
 
   const report = (recordId: string, extras = {}) =>
-    computeRecordStatusReport({engine, recordId, ...extras});
+    computeRecordStatusReport({
+      engine,
+      recordId,
+      projectId: PROJECT,
+      ...extras,
+    });
 
   /** The child-field entry for fieldId; fails the test if absent. */
   const childField = (node: RecordStatusReport, fieldId: string) => {
@@ -84,7 +90,7 @@ describe('Record status report', () => {
       const {recordId} = await create('Photo');
       const result = await report(recordId);
       expect(result.ownProgress.progress).toBe(1.0);
-      expect(result.percentComplete).toBe(1.0);
+      expect(result.progress).toBe(1.0);
       expect(result.formId).toBe('Photo');
     });
 
@@ -98,182 +104,261 @@ describe('Record status report', () => {
         createdCount: 0,
         expectedCount: 0,
       });
-      expect(result.percentComplete).toBe(1.0);
+      expect(result.progress).toBe(1.0);
     });
 
     test('record with unknown form type reports a complete leaf', async () => {
       const {recordId} = await create('Ghost');
       const result = await report(recordId);
-      expect(result.percentComplete).toBe(1.0);
+      expect(result.progress).toBe(1.0);
       expect(result.childFields).toEqual([]);
     });
   });
 
   describe('roll-up formula', () => {
     test('required child field with no records counts as one expected child', async () => {
-      const {recordId} = await create('Cell', {'cell-id': {data: 'C1'}});
+      const {recordId} = await create('Site', {'site-id': {data: 'S1'}});
       const result = await report(recordId);
-      // own: cell-id complete, layers incomplete -> 1/2
+      // own: site-id complete, features incomplete -> 1/2
       expect(result.ownProgress.progress).toBe(0.5);
-      expect(childField(result, 'layers')).toMatchObject({
+      expect(childField(result, 'features')).toMatchObject({
         required: true,
         createdCount: 0,
         expectedCount: 1,
-        relatedFormId: 'Layer',
+        relatedFormId: 'Feature',
       });
       // (0.5 own + 0 children) / (1 + 1 expected child)
-      expect(result.percentComplete).toBe(0.25);
+      expect(result.progress).toBe(0.25);
     });
 
     test('complete and incomplete children roll up per unit', async () => {
-      const complete = await create('Layer', {depth: {data: '225'}});
-      const empty = await create('Layer');
-      const cellDone = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link(complete.recordId)]},
+      const complete = await create('Feature', {depth: {data: '50'}});
+      const empty = await create('Feature');
+      const siteDone = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(complete.recordId)]},
       });
-      const cellHalf = await create('Cell', {
-        'cell-id': {data: 'C2'},
-        layers: {data: [link(empty.recordId)]},
+      const siteHalf = await create('Site', {
+        'site-id': {data: 'S2'},
+        features: {data: [link(empty.recordId)]},
       });
 
-      expect((await report(cellDone.recordId)).percentComplete).toBe(1.0);
+      expect((await report(siteDone.recordId)).progress).toBe(1.0);
       // (1 own + 0 child) / (1 + 1)
-      expect((await report(cellHalf.recordId)).percentComplete).toBe(0.5);
+      expect((await report(siteHalf.recordId)).progress).toBe(0.5);
     });
 
     test('every created child is a unit in the denominator', async () => {
-      const layers = [
-        await create('Layer', {depth: {data: '1'}}),
-        await create('Layer', {depth: {data: '2'}}),
-        await create('Layer'),
+      const features = [
+        await create('Feature', {depth: {data: '1'}}),
+        await create('Feature', {depth: {data: '2'}}),
+        await create('Feature'),
       ];
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: layers.map(l => link(l.recordId))},
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: features.map(l => link(l.recordId))},
       });
       const result = await report(recordId);
-      expect(childField(result, 'layers')).toMatchObject({
+      expect(childField(result, 'features')).toMatchObject({
         createdCount: 3,
         expectedCount: 3,
       });
       // (1 own + 1 + 1 + 0) / (1 + 3)
-      expect(result.percentComplete).toBe(0.75);
+      expect(result.progress).toBe(0.75);
     });
 
     test('units sum across multiple child fields', async () => {
-      const layer = await create('Layer', {depth: {data: '225'}});
+      const feature = await create('Feature', {depth: {data: '50'}});
       const photo = await create('Photo');
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link(layer.recordId)]},
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(feature.recordId)]},
         photos: {data: [link(photo.recordId)]},
       });
       const result = await report(recordId);
       expect(result.childFields).toHaveLength(2);
-      // (1 own + 1 layer + 1 photo) / (1 + 2)
-      expect(result.percentComplete).toBe(1.0);
+      // (1 own + 1 feature + 1 photo) / (1 + 2)
+      expect(result.progress).toBe(1.0);
     });
 
     test('duplicate links to the same child count once', async () => {
-      const layer = await create('Layer', {depth: {data: '225'}});
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link(layer.recordId), link(layer.recordId)]},
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(feature.recordId), link(feature.recordId)]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'layers')).toMatchObject({
+      expect(childField(result, 'features')).toMatchObject({
         createdCount: 1,
         expectedCount: 1,
       });
-      expect(result.percentComplete).toBe(1.0);
+      expect(result.progress).toBe(1.0);
     });
 
     test('singleton (non-array) child link values are handled', async () => {
-      const layer = await create('Layer', {depth: {data: '225'}});
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: link(layer.recordId)},
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: link(feature.recordId)},
       });
       const result = await report(recordId);
-      expect(childField(result, 'layers').createdCount).toBe(1);
-      expect(result.percentComplete).toBe(1.0);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('legacy links without a vocab pair still count', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [{record_id: feature.recordId}]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a malformed link entry does not hide its siblings', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [{not_a_link: true}, link(feature.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a child linked from two fields counts one roll-up unit', async () => {
+      // shared child is incomplete (depth missing) so double-counting it
+      // would show up in the denominator
+      const shared = await create('Feature');
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(shared.recordId)]},
+        photos: {data: [link(shared.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'photos').createdCount).toBe(1);
+      // one distinct incomplete child: (1 own + 0 child) / (1 + 1)
+      expect(result.progress).toBe(0.5);
     });
   });
 
   describe('exclusions', () => {
     test('deleted children are skipped and required expectation returns', async () => {
-      const layer = await create('Layer', {depth: {data: '225'}});
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link(layer.recordId)]},
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(feature.recordId)]},
       });
       await engine.form.deleteRecord({
-        recordId: layer.recordId,
-        baseRevisionId: layer.revisionId,
+        recordId: feature.recordId,
+        baseRevisionId: feature.revisionId,
         userId: USER,
       });
 
       const result = await report(recordId);
-      expect(childField(result, 'layers')).toMatchObject({
+      expect(childField(result, 'features')).toMatchObject({
         createdCount: 0,
         expectedCount: 1,
       });
-      expect(result.skippedChildren).toEqual([layer.recordId]);
+      expect(result.skippedChildren).toEqual([feature.recordId]);
       // a link to a deleted child scores no better than an empty field:
       // own drops to 1/2 and the expected child unit contributes 0
-      expect(result.ownProgress.incompleteRequired).toContain('layers');
-      expect(result.percentComplete).toBe(0.25);
+      expect(result.ownProgress.incompleteRequired).toContain('features');
+      expect(result.progress).toBe(0.25);
     });
 
     test('linked relations are ignored entirely', async () => {
       const calibration = await create('Calibration');
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
         'calibration-ref': {data: [link(calibration.recordId)]},
       });
       const result = await report(recordId);
       expect(
         result.childFields.find(f => f.fieldId === 'calibration-ref')
       ).toBeUndefined();
-      expect(result.percentComplete).toBe(0.25);
+      expect(result.progress).toBe(0.25);
     });
 
     test('dangling child references are skipped', async () => {
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link('no-such-record')]},
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link('no-such-record')]},
       });
       const result = await report(recordId);
       expect(result.skippedChildren).toEqual(['no-such-record']);
-      // dangling links leave the required layers field incomplete
-      expect(result.percentComplete).toBe(0.25);
+      // dangling links leave the required features field incomplete
+      expect(result.progress).toBe(0.25);
     });
 
     test('an empty-array child value scores like an absent one', async () => {
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: []},
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: []},
       });
       const result = await report(recordId);
       expect(result.ownProgress.progress).toBe(0.5);
-      expect(result.percentComplete).toBe(0.25);
+      expect(result.progress).toBe(0.25);
     });
 
     test('recordFilter excludes children from counts and payload', async () => {
-      const mine = await create('Layer', {depth: {data: '1'}});
-      const theirs = await create('Layer', {depth: {data: '2'}}, 'other-user');
-      const {recordId} = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link(mine.recordId), link(theirs.recordId)]},
+      const mine = await create('Feature', {depth: {data: '1'}});
+      const theirs = await create(
+        'Feature',
+        {depth: {data: '2'}},
+        'other-user'
+      );
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(mine.recordId), link(theirs.recordId)]},
       });
       const result = await report(recordId, {
         recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
       });
-      expect(childField(result, 'layers').createdCount).toBe(1);
+      expect(childField(result, 'features').createdCount).toBe(1);
       expect(result.skippedChildren).toEqual([theirs.recordId]);
-      // (1 own + 1 remaining layer) / (1 + 1)
-      expect(result.percentComplete).toBe(1.0);
+      // (1 own + 1 remaining feature) / (1 + 1)
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('links tagged with another project are skipped', async () => {
+      const local = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {
+          data: [
+            {...link(local.recordId), project_id: PROJECT},
+            {...link('foreign-record'), project_id: 'other-project'},
+          ],
+        },
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual(['foreign-record']);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a child with corrupt (empty) heads is skipped, not fatal', async () => {
+      const live = await create('Feature', {depth: {data: '50'}});
+      const corrupt = await create('Feature', {depth: {data: '50'}});
+      const doc = await (db as PouchDB.Database).get<{heads: string[]}>(
+        corrupt.recordId
+      );
+      doc.heads = [];
+      await (db as PouchDB.Database).put(doc);
+
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(live.recordId), link(corrupt.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual([corrupt.recordId]);
+      // (1 own + 1 live feature) / (1 + 1)
+      expect(result.progress).toBe(1.0);
     });
 
     test('deleted root throws RecordDeletedError', async () => {
@@ -289,24 +374,26 @@ describe('Record status report', () => {
 
   describe('recursion safety', () => {
     test('walks a four-level tree', async () => {
-      const subSample = await create('Sample', {'sample-type': {data: 's2'}});
+      const subSample = await create('Sample', {
+        'sample-type': {data: 's2'},
+      });
       const sample = await create('Sample', {
         'sample-type': {data: 's1'},
         'sub-samples': {data: [link(subSample.recordId)]},
       });
-      const layer = await create('Layer', {
-        depth: {data: '225'},
+      const feature = await create('Feature', {
+        depth: {data: '50'},
         samples: {data: [link(sample.recordId)]},
       });
-      const cell = await create('Cell', {
-        'cell-id': {data: 'C1'},
-        layers: {data: [link(layer.recordId)]},
+      const site = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(feature.recordId)]},
       });
 
-      const result = await report(cell.recordId);
-      expect(result.percentComplete).toBe(1.0);
-      const layerNode = childField(result, 'layers').children[0];
-      const sampleNode = childField(layerNode, 'samples').children[0];
+      const result = await report(site.recordId);
+      expect(result.progress).toBe(1.0);
+      const featureNode = childField(result, 'features').children[0];
+      const sampleNode = childField(featureNode, 'samples').children[0];
       const subSampleNode = childField(sampleNode, 'sub-samples').children[0];
       expect(subSampleNode.recordId).toBe(subSample.recordId);
     });
@@ -333,8 +420,30 @@ describe('Record status report', () => {
       expect(bNode.recordId).toBe(b.recordId);
       expect(bNode.skippedChildren).toEqual([a.recordId]);
       // the cycle edge adds no unit, so both nodes are complete
-      expect(bNode.percentComplete).toBe(1.0);
-      expect(result.percentComplete).toBe(1.0);
+      expect(bNode.progress).toBe(1.0);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('duplicate cycle links are reported as skipped once', async () => {
+      const a = await create('Sample', {'sample-type': {data: 'a'}});
+      const b = await create('Sample', {
+        'sample-type': {data: 'b'},
+        'sub-samples': {data: [link(a.recordId), link(a.recordId)]},
+      });
+      await engine.form.updateRevision({
+        recordId: a.recordId,
+        revisionId: a.revisionId,
+        update: {
+          'sample-type': {data: 'a'},
+          'sub-samples': {data: [link(b.recordId)]},
+        },
+        mode: 'new',
+        updatedBy: USER,
+      });
+
+      const result = await report(a.recordId);
+      const bNode = childField(result, 'sub-samples').children[0];
+      expect(bNode.skippedChildren).toEqual([a.recordId]);
     });
 
     test('depth cap truncates instead of recursing forever', async () => {
@@ -359,14 +468,64 @@ describe('Record status report', () => {
       expect(node.truncated).toBe(true);
       expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
     });
+
+    test('a truncated node still reconciles dead child links', async () => {
+      const dead = await create('Feature', {depth: {data: '50'}});
+      await engine.form.deleteRecord({
+        recordId: dead.recordId,
+        baseRevisionId: dead.revisionId,
+        userId: USER,
+      });
+
+      // Chain of Sites deep enough that the last one sits at the cap; its
+      // only child link points at the deleted Feature
+      let childId = dead.recordId;
+      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
+        const {recordId} = await create('Site', {
+          'site-id': {data: `S${i}`},
+          features: {data: [link(childId)]},
+        });
+        childId = recordId;
+      }
+
+      let node = await report(childId);
+      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
+        node = childField(node, 'features').children[0];
+      }
+      expect(node.truncated).toBe(true);
+      // the dead link scores like an empty required field, as it would on an
+      // untruncated node
+      expect(node.ownProgress.incompleteRequired).toContain('features');
+      expect(node.progress).toBe(0.5);
+    });
   });
 
   describe('report contents', () => {
     test('carries hrid and summary field values', async () => {
-      const {recordId} = await create('Cell', {'cell-id': {data: 'C1'}});
+      const {recordId} = await create('Site', {'site-id': {data: 'S1'}});
       const result = await report(recordId);
-      expect(result.hrid).toBe('C1');
-      expect(result.summaryValues).toEqual({'cell-id': 'C1'});
+      expect(result.hrid).toBe('S1');
+      expect(result.summaryValues).toEqual({'site-id': 'S1'});
+    });
+
+    test('hidden summary fields are omitted, visible ones reported', async () => {
+      // special-note is a summary field shown only when site-id is SHOW-NOTE
+      const stale = await create('Site', {
+        'site-id': {data: 'S1'},
+        'special-note': {data: 'stale'},
+      });
+      expect((await report(stale.recordId)).summaryValues).toEqual({
+        'site-id': 'S1',
+      });
+
+      const shown = await create('Site', {
+        'site-id': {data: 'SHOW-NOTE'},
+        'special-note': {data: 'note'},
+      });
+      expect((await report(shown.recordId)).summaryValues).toEqual({
+        'site-id': 'SHOW-NOTE',
+        'special-note': 'note',
+      });
     });
 
     test('forms without summary fields report none', async () => {
@@ -377,7 +536,7 @@ describe('Record status report', () => {
   });
 
   describe('completion (moved from forms)', () => {
-    const completionFor = (data: FormUpdateData, formId = 'Cell') => {
+    const completionFor = (data: FormUpdateData, formId = 'Site') => {
       const values: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(data)) values[k] = v.data;
       const visibilityMap = currentlyVisibleMap({
@@ -391,11 +550,11 @@ describe('Record status report', () => {
     test('counts only required fields', async () => {
       const result = completion({
         uiSpec,
-        ...completionFor({'cell-id': {data: 'C1'}, caption: {data: 'x'}}),
+        ...completionFor({'site-id': {data: 'S1'}, caption: {data: 'x'}}),
       });
       expect(result.requiredCount).toBe(2);
       expect(result.completedCount).toBe(1);
-      expect(result.incompleteRequired).toEqual(['layers']);
+      expect(result.incompleteRequired).toEqual(['features']);
     });
 
     test('empty required set counts as complete', async () => {
@@ -410,13 +569,13 @@ describe('Record status report', () => {
     test('conditionally hidden required fields are excluded until shown', async () => {
       const hidden = completion({
         uiSpec,
-        ...completionFor({'cell-id': {data: 'C1'}}),
+        ...completionFor({'site-id': {data: 'S1'}}),
       });
       expect(hidden.requiredCount).toBe(2);
 
       const shown = completion({
         uiSpec,
-        ...completionFor({'cell-id': {data: 'SHOW-NOTE'}}),
+        ...completionFor({'site-id': {data: 'SHOW-NOTE'}}),
       });
       expect(shown.requiredCount).toBe(3);
       expect(shown.incompleteRequired).toContain('special-note');
@@ -425,12 +584,12 @@ describe('Record status report', () => {
     test('isCompleteResolver overrides the default check', async () => {
       const result = completion({
         uiSpec,
-        ...completionFor({'cell-id': {data: 'C1'}}),
+        ...completionFor({'site-id': {data: 'S1'}}),
         isCompleteResolver: ({name}) =>
           name === 'FAIMSTextField' ? () => false : undefined,
       });
-      // cell-id fails the injected check, layers still uses the default
-      expect(result.incompleteRequired).toContain('cell-id');
+      // site-id fails the injected check, features still uses the default
+      expect(result.incompleteRequired).toContain('site-id');
     });
   });
 });

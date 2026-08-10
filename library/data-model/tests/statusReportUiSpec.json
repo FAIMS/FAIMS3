@@ -1,14 +1,14 @@
 {
   "uiSpec": {
     "fields": {
-      "cell-id": {
+      "site-id": {
         "component-namespace": "faims-custom",
         "component-name": "FAIMSTextField",
         "type-returned": "faims-core::String",
         "component-parameters": {
-          "label": "Cell ID",
+          "label": "Site ID",
           "required": true,
-          "name": "cell-id"
+          "name": "site-id"
         },
         "initialValue": "",
         "meta": {
@@ -18,15 +18,15 @@
         "persistent": false,
         "displayParent": false
       },
-      "layers": {
+      "features": {
         "component-namespace": "faims-custom",
         "component-name": "RelatedRecordSelector",
         "type-returned": "faims-core::Relationship",
         "component-parameters": {
-          "label": "Layers",
+          "label": "Features",
           "required": true,
-          "name": "layers",
-          "related_type": "Layer",
+          "name": "features",
+          "related_type": "Feature",
           "relation_type": "faims-core::Child",
           "multiple": true
         },
@@ -89,7 +89,7 @@
         },
         "condition": {
           "operator": "equal",
-          "field": "cell-id",
+          "field": "site-id",
           "value": "SHOW-NOTE"
         },
         "initialValue": "",
@@ -210,15 +210,15 @@
       }
     },
     "views": {
-      "Cell-Main": {
+      "Site-Main": {
         "label": "Main",
-        "fields": ["cell-id", "layers", "photos", "calibration-ref"]
+        "fields": ["site-id", "features", "photos", "calibration-ref"]
       },
-      "Cell-Extra": {
+      "Site-Extra": {
         "label": "Extra",
         "fields": ["special-note"]
       },
-      "Layer-Main": {
+      "Feature-Main": {
         "label": "Main",
         "fields": ["depth", "samples"]
       },
@@ -236,15 +236,15 @@
       }
     },
     "viewsets": {
-      "Cell": {
-        "label": "Cell",
-        "views": ["Cell-Main", "Cell-Extra"],
-        "hridField": "cell-id",
-        "summary_fields": ["cell-id"]
+      "Site": {
+        "label": "Site",
+        "views": ["Site-Main", "Site-Extra"],
+        "hridField": "site-id",
+        "summary_fields": ["site-id", "special-note"]
       },
-      "Layer": {
-        "label": "Layer",
-        "views": ["Layer-Main"]
+      "Feature": {
+        "label": "Feature",
+        "views": ["Feature-Main"]
       },
       "Sample": {
         "label": "Sample",
@@ -259,7 +259,7 @@
         "views": ["Calibration-Main"]
       }
     },
-    "visible_types": ["Cell", "Layer", "Sample", "Photo", "Calibration"],
+    "visible_types": ["Site", "Feature", "Sample", "Photo", "Calibration"],
     "settings": {
       "showQrCodeButton": false
     },
