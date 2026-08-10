@@ -690,6 +690,81 @@ describe('Record status report', () => {
       expect(bNode.skippedChildren).toEqual([a.recordId]);
     });
 
+    test('mutually-linked siblings each report their own cycle cut', async () => {
+      // a <-> b, both children of the root: each sibling's subtree must
+      // contain the other with the back edge skipped, so a report shaped by
+      // one path cannot be reused on the other
+      const a = await create('Sample', {'sample-type': {data: 'a'}});
+      const b = await create('Sample', {
+        'sample-type': {data: 'b'},
+        'sub-samples': {data: [link(a.recordId)]},
+      });
+      await engine.form.updateRevision({
+        recordId: a.recordId,
+        revisionId: a.revisionId,
+        update: {
+          'sample-type': {data: 'a'},
+          'sub-samples': {data: [link(b.recordId)]},
+        },
+        mode: 'new',
+        updatedBy: USER,
+      });
+      const root = await create('Feature', {
+        depth: {data: '50'},
+        samples: {data: [link(a.recordId), link(b.recordId)]},
+      });
+
+      const result = await report(root.recordId);
+      const siblings = childField(result, 'samples').children;
+      expect(siblings).toHaveLength(2);
+      for (const sibling of siblings) {
+        const other = childField(sibling, 'sub-samples').children[0];
+        expect([a.recordId, b.recordId]).toContain(other.recordId);
+        expect(other.recordId).not.toBe(sibling.recordId);
+        expect(other.skippedChildren).toEqual([sibling.recordId]);
+      }
+    });
+
+    test('a shared child reached at the cap still truncates', async () => {
+      // C has a child, is linked directly by the root (shallow, full report)
+      // and again at the cap via a chain: the capped occurrence must truncate
+      // rather than reuse the shallow report
+      const d = await create('Sample', {'sample-type': {data: 'd'}});
+      const c = await create('Sample', {
+        'sample-type': {data: 'c'},
+        'sub-samples': {data: [link(d.recordId)]},
+      });
+      let childId = c.recordId;
+      for (let i = 1; i < STATUS_REPORT_MAX_DEPTH; i++) {
+        const {recordId} = await create('Sample', {
+          'sample-type': {data: `s${i}`},
+          'sub-samples': {data: [link(childId)]},
+        });
+        childId = recordId;
+      }
+      const root = await create('Feature', {
+        depth: {data: '50'},
+        samples: {data: [link(childId), link(c.recordId)]},
+      });
+
+      const result = await report(root.recordId);
+      const topChildren = childField(result, 'samples').children;
+      const shallowC = topChildren.find(n => n.recordId === c.recordId)!;
+      expect(shallowC.truncated).toBeUndefined();
+      expect(childField(shallowC, 'sub-samples').children[0].recordId).toBe(
+        d.recordId
+      );
+      let node = topChildren.find(n => n.recordId !== c.recordId)!;
+      while (node.recordId !== c.recordId) {
+        node = childField(node, 'sub-samples').children[0];
+      }
+      expect(node.truncated).toBe(true);
+      expect(childField(node, 'sub-samples')).toMatchObject({
+        createdCount: 1,
+        children: [],
+      });
+    });
+
     test('depth cap truncates instead of recursing forever', async () => {
       // Chain two records past the cap, deepest first
       let child: string | undefined;

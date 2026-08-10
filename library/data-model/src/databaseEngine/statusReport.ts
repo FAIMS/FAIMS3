@@ -151,8 +151,18 @@ interface WalkContext {
   recordFilter?: (record: {recordId: string; createdBy: string}) => boolean;
   isCompleteResolver?: IsCompleteResolver;
   limiter: FetchLimiter;
-  /** Settled reports, shared walk-wide so a child linked from several records is computed once. */
+  /** Context-free settled reports, shared walk-wide so a child linked from several records is computed once. */
   memo: Map<string, RecordStatusReport | null>;
+}
+
+/**
+ * A walked report plus whether it is context-free: `reusable` is false when
+ * the subtree was shaped by this path's ancestry (a cycle cut) or by the depth
+ * cap, so the report must not be shared with other paths via the memo.
+ */
+interface WalkResult {
+  report: RecordStatusReport | null;
+  reusable: boolean;
 }
 
 /**
@@ -203,7 +213,7 @@ export async function computeRecordStatusReport({
     limiter: new FetchLimiter(STATUS_REPORT_FETCH_CONCURRENCY),
     memo: new Map(),
   };
-  const report = await walk(ctx, recordId, new Set(), 0);
+  const {report} = await walk(ctx, recordId, new Set(), 0);
   if (report === null) {
     throw new RecordDeletedError(recordId);
   }
@@ -387,25 +397,26 @@ function toChildField(
 
 /**
  * Memoized walk: a child linked from several records is computed once and its
- * report shared. Only settled results are reused — awaiting another branch's
- * in-flight promise could deadlock on mutually-linked records — and truncated
- * reports stay uncached because they are depth-specific.
+ * report shared. Only settled, context-free results are cached (see
+ * WalkResult) — awaiting another branch's in-flight promise could deadlock on
+ * mutually-linked records — and a node reached at the cap always computes
+ * fresh so it truncates like any other capped node.
  */
 async function walk(
   ctx: WalkContext,
   recordId: string,
   ancestors: ReadonlySet<string>,
   depth: number
-): Promise<RecordStatusReport | null> {
+): Promise<WalkResult> {
   const cached = ctx.memo.get(recordId);
-  if (cached !== undefined) {
-    return cached;
+  if (cached !== undefined && depth < STATUS_REPORT_MAX_DEPTH) {
+    return {report: cached, reusable: true};
   }
-  const report = await walkNode(ctx, recordId, ancestors, depth);
-  if (!report?.truncated) {
-    ctx.memo.set(recordId, report);
+  const result = await walkNode(ctx, recordId, ancestors, depth);
+  if (result.reusable) {
+    ctx.memo.set(recordId, result.report);
   }
-  return report;
+  return result;
 }
 
 /**
@@ -417,7 +428,7 @@ async function walkNode(
   recordId: string,
   ancestors: ReadonlySet<string>,
   depth: number
-): Promise<RecordStatusReport | null> {
+): Promise<WalkResult> {
   const {engine} = ctx;
 
   const {formId, data, context} = await ctx.limiter.run(() =>
@@ -427,13 +438,13 @@ async function walkNode(
     })
   );
   if (context.revision.deleted) {
-    return null;
+    return {report: null, reusable: true};
   }
   if (
     ctx.recordFilter &&
     !ctx.recordFilter({recordId, createdBy: context.record.createdBy})
   ) {
-    return null;
+    return {report: null, reusable: true};
   }
 
   // Unknown form type (e.g. the form was removed from the notebook): progress
@@ -442,21 +453,24 @@ async function walkNode(
   // matches prototype keys ('constructor')
   if (!Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, formId)) {
     if (depth > 0) {
-      return null;
+      return {report: null, reusable: true};
     }
     return {
-      recordId,
-      hrid: context.hrid,
-      formId,
-      progress: 1.0,
-      ownProgress: {
+      report: {
+        recordId,
+        hrid: context.hrid,
+        formId,
         progress: 1.0,
-        requiredCount: 0,
-        completedCount: 0,
-        incompleteRequired: [],
+        ownProgress: {
+          progress: 1.0,
+          requiredCount: 0,
+          completedCount: 0,
+          incompleteRequired: [],
+        },
+        summaryValues: {},
+        childFields: [],
       },
-      summaryValues: {},
-      childFields: [],
+      reusable: true,
     };
   }
 
@@ -504,11 +518,17 @@ async function walkNode(
   );
   const distinctIds = [...new Set(collected.flatMap(field => field.childIds))];
 
+  // A cycle cut above makes this subtree specific to the current path
+  let reusable = ![...skipped].some(id => nextAncestors.has(id));
+
   // One walk per distinct child, so a child linked from several fields is
   // fetched once and counts as one roll-up unit. At the cap children are not
   // hydrated: a recursion-free liveness check still gates required-field
   // completion, but they carry no report and so no roll-up unit
   const atCap = depth >= STATUS_REPORT_MAX_DEPTH;
+  if (atCap && distinctIds.length > 0) {
+    reusable = false;
+  }
   const reports = new Map<string, RecordStatusReport | null>();
   const live = new Map<string, boolean>();
   await Promise.all(
@@ -519,14 +539,17 @@ async function walkNode(
           .catch(absorbSkippableChildError);
         live.set(childId, alive === true);
       } else {
-        const childReport = await walk(
-          ctx,
-          childId,
-          nextAncestors,
-          depth + 1
-        ).catch(absorbSkippableChildError);
-        reports.set(childId, childReport);
-        live.set(childId, childReport !== null);
+        const child = await walk(ctx, childId, nextAncestors, depth + 1).catch(
+          (err): WalkResult => ({
+            report: absorbSkippableChildError(err),
+            reusable: true,
+          })
+        );
+        if (!child.reusable) {
+          reusable = false;
+        }
+        reports.set(childId, child.report);
+        live.set(childId, child.report !== null);
       }
     })
   );
@@ -568,11 +591,14 @@ async function walkNode(
       : (ownProgress.progress + childProgressSum) / (1 + units);
 
   return {
-    ...base,
-    ownProgress,
-    progress,
-    childFields,
-    ...(skipped.size > 0 ? {skippedChildren: [...skipped]} : {}),
-    ...(atCap && distinctIds.length > 0 ? {truncated: true} : {}),
+    report: {
+      ...base,
+      ownProgress,
+      progress,
+      childFields,
+      ...(skipped.size > 0 ? {skippedChildren: [...skipped]} : {}),
+      ...(atCap && distinctIds.length > 0 ? {truncated: true} : {}),
+    },
+    reusable,
   };
 }
