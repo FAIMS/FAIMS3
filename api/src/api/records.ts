@@ -410,7 +410,7 @@ recordsRouter.get(
       // A deleted record has no status; the shared 400 mapping is for mutations
       if (err instanceof RecordDeletedError) {
         throw new Exceptions.ItemNotFoundException(
-          `Record "${recordId}" is deleted; no status is available.`
+          `No status is available for record "${recordId}".`
         );
       }
       mapDataModelError(err);

@@ -29,6 +29,10 @@ export const RELATED_RECORD_SELECTOR = {
   name: 'RelatedRecordSelector',
 } as const;
 
+// Backstop against corrupt/pathological deep data (real trees are ~4 levels);
+// it also bounds the response, which repeats a shared subtree once per path
+export const STATUS_REPORT_MAX_DEPTH = 10;
+
 // Only the id and project tag matter here, so legacy vocab-pair drift in a
 // stored link cannot invalidate a live child
 const storedLinkEntrySchema = z.object({
@@ -63,6 +67,8 @@ export interface RecordStatusReport {
   /** Raw values of the form's currently visible summary_fields, keyed by field name. */
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
+  /** True when the depth cap stopped recursion here: link counts remain, child reports are dropped. */
+  truncated?: boolean;
 }
 
 /**
@@ -117,7 +123,8 @@ interface WalkContext {
  * (faims-core::Child links only). Deleted, unreadable and corrupt children
  * drop out of both sides of the roll-up, so the fraction means "completion of
  * what this viewer can see". Child graphs are assumed acyclic; a cycle in
- * corrupt data is cut where it closes.
+ * corrupt data is cut where it closes, and {@link STATUS_REPORT_MAX_DEPTH}
+ * truncates anything deeper.
  *
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
@@ -149,7 +156,7 @@ export async function computeRecordStatusReport({
     memo: new Map(),
     path: new Set(),
   };
-  const report = await walk(ctx, recordId);
+  const report = await walk(ctx, recordId, 0);
   if (report === null) {
     throw new RecordDeletedError(recordId);
   }
@@ -240,10 +247,14 @@ function collectChildFields(
   return collected;
 }
 
-/** Memoized walk; the path check cuts cycle links so corrupt data terminates. */
+/**
+ * Memoized walk; the path check cuts cycle links so corrupt data terminates
+ * (reports under a cut are best-effort and can vary with link order).
+ */
 async function walk(
   ctx: WalkContext,
-  recordId: string
+  recordId: string,
+  depth: number
 ): Promise<RecordStatusReport | null> {
   if (ctx.path.has(recordId)) {
     return null;
@@ -252,8 +263,11 @@ async function walk(
   if (cached !== undefined) {
     return cached;
   }
-  const report = await walkNode(ctx, recordId);
-  ctx.memo.set(recordId, report);
+  const report = await walkNode(ctx, recordId, depth);
+  // A truncated report is shaped by its depth, so other paths recompute it
+  if (report === null || !report.truncated) {
+    ctx.memo.set(recordId, report);
+  }
   return report;
 }
 
@@ -263,7 +277,8 @@ async function walk(
  */
 async function walkNode(
   ctx: WalkContext,
-  recordId: string
+  recordId: string,
+  depth: number
 ): Promise<RecordStatusReport | null> {
   const {engine} = ctx;
 
@@ -313,30 +328,45 @@ async function walkNode(
   }
 
   const collected = collectChildFields(ctx, visibleFields, data);
+  const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
+
+  // At the cap children are not walked: link counts stand in for liveness and
+  // carry no reports, so no roll-up units
+  const isAtCap = depth >= STATUS_REPORT_MAX_DEPTH;
 
   // One walk per distinct child, so a child linked from several fields is
   // fetched once and counts as one roll-up unit
   const reports = new Map<string, RecordStatusReport | null>();
-  ctx.path.add(recordId);
-  for (const childId of new Set(collected.flatMap(field => field.childIds))) {
-    reports.set(
-      childId,
-      await walk(ctx, childId).catch(absorbSkippableChildError)
-    );
+  if (!isAtCap) {
+    ctx.path.add(recordId);
+    try {
+      for (const childId of distinctChildIds) {
+        let childReport: RecordStatusReport | null;
+        try {
+          childReport = await walk(ctx, childId, depth + 1);
+        } catch (err) {
+          // Memoize the skip: a dangling/corrupt child is dead for every parent
+          childReport = absorbSkippableChildError(err);
+          ctx.memo.set(childId, childReport);
+        }
+        reports.set(childId, childReport);
+      }
+    } finally {
+      ctx.path.delete(recordId);
+    }
   }
-  ctx.path.delete(recordId);
 
   const childFields = collected.map((field): RecordStatusChildField => {
     const children = field.childIds
       .map(id => reports.get(id))
       .filter((child): child is RecordStatusReport => !!child);
+    const createdCount = isAtCap ? field.childIds.length : children.length;
     return {
       fieldId: field.fieldId,
       relatedFormId: field.relatedFormId,
       required: field.required,
-      createdCount: children.length,
-      expectedCount:
-        children.length > 0 ? children.length : field.required ? 1 : 0,
+      createdCount,
+      expectedCount: createdCount > 0 ? createdCount : field.required ? 1 : 0,
       children,
     };
   });
@@ -369,5 +399,6 @@ async function walkNode(
     ownProgress,
     summaryValues,
     childFields,
+    ...(isAtCap && distinctChildIds.size > 0 ? {truncated: true} : {}),
   };
 }

@@ -17,6 +17,7 @@ import {
   NotebookDefinition,
   RecordDeletedError,
   RecordStatusReport,
+  STATUS_REPORT_MAX_DEPTH,
   UnknownFormTypeError,
 } from '../src';
 
@@ -679,8 +680,8 @@ describe('Record status report', () => {
       expect(childField(result, 'samples').children).toHaveLength(2);
     });
 
-    test('a deep chain reports to its full depth', async () => {
-      const chainLength = 15;
+    test('the depth cap truncates instead of recursing forever', async () => {
+      const chainLength = STATUS_REPORT_MAX_DEPTH + 5;
       let child: string | undefined;
       const ids: string[] = [];
       for (let i = 0; i < chainLength; i++) {
@@ -698,9 +699,57 @@ describe('Record status report', () => {
         node = node.childFields[0].children[0];
         depth += 1;
       }
-      expect(depth).toBe(chainLength - 1);
+      expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
+      expect(node.truncated).toBe(true);
+      // the capped node still counts its links
+      expect(childField(node, 'sub-samples').createdCount).toBe(1);
+    });
+
+    test('a leaf at the depth cap is not marked truncated', async () => {
+      let child: string | undefined;
+      const ids: string[] = [];
+      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
+        const {recordId} = await create('Sample', {
+          'sample-type': {data: `s${i}`},
+          ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
+        });
+        ids.push(recordId);
+        child = recordId;
+      }
+
+      let node = await report(ids[ids.length - 1]);
+      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
+        node = childField(node, 'sub-samples').children[0];
+      }
       expect(node.recordId).toBe(ids[0]);
+      expect(node.truncated).toBeUndefined();
       expect(node.progress).toBe(1.0);
+    });
+
+    test('a chain sharing each child across two fields stays bounded', async () => {
+      // Each Site links the next from both features and photos, so the
+      // serialized tree doubles per level; the cap must bound it
+      let child: string | undefined;
+      let recordId = '';
+      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH + 4; i++) {
+        ({recordId} = await create('Site', {
+          'site-id': {data: `S${i}`},
+          ...(child
+            ? {features: {data: [link(child)]}, photos: {data: [link(child)]}}
+            : {}),
+        }));
+        child = recordId;
+      }
+
+      const countNodes = (node: RecordStatusReport): number =>
+        1 +
+        node.childFields
+          .flatMap(field => field.children)
+          .reduce((sum, c) => sum + countNodes(c), 0);
+      const result = await report(recordId);
+      expect(countNodes(result)).toBeLessThanOrEqual(
+        2 ** (STATUS_REPORT_MAX_DEPTH + 1) - 1
+      );
     });
   });
 
