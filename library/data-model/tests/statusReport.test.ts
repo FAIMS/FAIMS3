@@ -11,6 +11,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
+  DocumentNotFoundError,
   FormUpdateData,
   NotebookDefinition,
   RecordDeletedError,
@@ -109,6 +110,14 @@ describe('Record status report', () => {
 
     test('record with unknown form type reports a complete leaf', async () => {
       const {recordId} = await create('Ghost');
+      const result = await report(recordId);
+      expect(result.progress).toBe(1.0);
+      expect(result.childFields).toEqual([]);
+    });
+
+    test('a record typed with a prototype key reports a complete leaf', async () => {
+      // 'constructor' is on Object.prototype, so an `in` check would pass it
+      const {recordId} = await create('constructor');
       const result = await report(recordId);
       expect(result.progress).toBe(1.0);
       expect(result.childFields).toEqual([]);
@@ -217,6 +226,21 @@ describe('Record status report', () => {
       expect(result.progress).toBe(1.0);
     });
 
+    test('legacy links with a partial vocab pair still count', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {
+          data: [
+            {record_id: feature.recordId, relation_type_vocabPair: ['half']},
+          ],
+        },
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.progress).toBe(1.0);
+    });
+
     test('a malformed link entry does not hide its siblings', async () => {
       const feature = await create('Feature', {depth: {data: '50'}});
       const {recordId} = await create('Site', {
@@ -226,6 +250,33 @@ describe('Record status report', () => {
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
       expect(result.progress).toBe(1.0);
+    });
+
+    test('a malformed link with a recoverable id is traced as skipped', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        // a bare record-id string and an entry whose record_id is not a string
+        features: {
+          data: ['legacy-bare-id', {record_id: 42}, link(feature.recordId)],
+        },
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual(['legacy-bare-id']);
+    });
+
+    test('a field listed in two visible sections reports one child field', async () => {
+      // sub-samples appears in both Sample-Main and Sample-Links
+      const sub = await create('Sample', {'sample-type': {data: 's2'}});
+      const {recordId} = await create('Sample', {
+        'sample-type': {data: 's1'},
+        'sub-samples': {data: [link(sub.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(
+        result.childFields.filter(f => f.fieldId === 'sub-samples')
+      ).toHaveLength(1);
     });
 
     test('a child linked from two fields counts one roll-up unit', async () => {
@@ -339,6 +390,40 @@ describe('Record status report', () => {
       expect(childField(result, 'features').createdCount).toBe(1);
       expect(result.skippedChildren).toEqual(['foreign-record']);
       expect(result.progress).toBe(1.0);
+    });
+
+    test('legacy system-wide project ids match on their notebook part', async () => {
+      const local = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {
+          data: [
+            {...link(local.recordId), project_id: `listing||${PROJECT}`},
+            {...link('foreign-record'), project_id: 'listing||other-project'},
+          ],
+        },
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual(['foreign-record']);
+    });
+
+    test('a live child with a missing AVP document is a hard error', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(feature.recordId)]},
+      });
+      const revision = await (db as PouchDB.Database).get<{
+        avps: Record<string, string>;
+      }>(feature.revisionId);
+      const avpDoc = await (db as PouchDB.Database).get(
+        Object.values(revision.avps)[0]
+      );
+      await (db as PouchDB.Database).remove(avpDoc);
+
+      // corrupt data on a live child must surface, never read as deleted
+      await expect(report(recordId)).rejects.toThrow(DocumentNotFoundError);
     });
 
     test('a child with corrupt (empty) heads is skipped, not fatal', async () => {
@@ -494,9 +579,10 @@ describe('Record status report', () => {
       }
       expect(node.truncated).toBe(true);
       // the dead link scores like an empty required field, as it would on an
-      // untruncated node
+      // untruncated node, and is still listed as skipped
       expect(node.ownProgress.incompleteRequired).toContain('features');
       expect(node.progress).toBe(0.5);
+      expect(node.skippedChildren).toEqual([dead.recordId]);
     });
   });
 
@@ -525,6 +611,17 @@ describe('Record status report', () => {
       expect((await report(shown.recordId)).summaryValues).toEqual({
         'site-id': 'SHOW-NOTE',
         'special-note': 'note',
+      });
+    });
+
+    test('a visible summary field with no value reports null', async () => {
+      // JSON would drop an undefined value, hiding the column from clients
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'SHOW-NOTE'},
+      });
+      expect((await report(recordId)).summaryValues).toEqual({
+        'site-id': 'SHOW-NOTE',
+        'special-note': null,
       });
     });
 

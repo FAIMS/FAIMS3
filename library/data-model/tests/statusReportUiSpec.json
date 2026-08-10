@@ -226,6 +226,10 @@
         "label": "Main",
         "fields": ["sample-type", "sub-samples"]
       },
+      "Sample-Links": {
+        "label": "Links",
+        "fields": ["sub-samples"]
+      },
       "Photo-Main": {
         "label": "Main",
         "fields": ["caption"]
@@ -248,7 +252,7 @@
       },
       "Sample": {
         "label": "Sample",
-        "views": ["Sample-Main"]
+        "views": ["Sample-Main", "Sample-Links"]
       },
       "Photo": {
         "label": "Photo",

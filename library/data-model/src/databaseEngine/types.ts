@@ -85,9 +85,6 @@ export const relatedRecordFieldAvpEntrySchema = relationshipInstanceSchema
   .omit({field_id: true})
   .extend({
     project_id: z.string().optional(),
-    // Stored values tolerate absent/partial legacy pairs (matching the view
-    // renderer); the forms edit schema re-tightens this to a full pair
-    relation_type_vocabPair: z.array(z.string()).optional(),
   })
   .passthrough();
 export type RelatedRecordFieldAvpEntry = z.infer<

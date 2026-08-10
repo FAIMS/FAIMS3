@@ -11,6 +11,12 @@ describe('field registry completion parity', () => {
     const offenders = [...FIELD_REGISTRY.entries()]
       .filter(([, info]) => info.isCompleteFunction !== undefined)
       .map(([key]) => key);
-    expect(offenders).toEqual([]);
+    expect(
+      offenders,
+      `These field types define isCompleteFunction: ${offenders.join(', ')}. ` +
+        'Wire an isCompleteResolver into the API status route ' +
+        '(api/src/api/records.ts, computeRecordStatusReport call) before ' +
+        'relaxing this test, or app and API completion will diverge.'
+    ).toEqual([]);
   });
 });
