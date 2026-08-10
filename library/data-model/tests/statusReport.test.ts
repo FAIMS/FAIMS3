@@ -256,14 +256,38 @@ describe('Record status report', () => {
       const feature = await create('Feature', {depth: {data: '50'}});
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
-        // a bare record-id string and an entry whose record_id is not a string
+        // a bare record-id string and an entry whose record_id is a number
         features: {
           data: ['legacy-bare-id', {record_id: 42}, link(feature.recordId)],
         },
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual(['legacy-bare-id']);
+      expect(result.skippedChildren).toEqual(['legacy-bare-id', '42']);
+    });
+
+    test('a required child field in two sections weighs both occurrences', async () => {
+      // finds appears in both Trench sections; completion() counts it twice,
+      // so with no live children both occurrences must flip to incomplete
+      const {recordId} = await create('Trench', {finds: {data: []}});
+      const result = await report(recordId);
+      expect(result.ownProgress).toMatchObject({
+        requiredCount: 2,
+        completedCount: 0,
+        progress: 0,
+      });
+      // (0 own + 0 children) / (1 + 1 expected child)
+      expect(result.progress).toBe(0);
+    });
+
+    test('a live child completes both occurrences of a two-section field', async () => {
+      const photo = await create('Photo');
+      const {recordId} = await create('Trench', {
+        finds: {data: [link(photo.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(result.ownProgress.progress).toBe(1.0);
+      expect(result.progress).toBe(1.0);
     });
 
     test('a field listed in two visible sections reports one child field', async () => {
@@ -408,22 +432,100 @@ describe('Record status report', () => {
       expect(result.skippedChildren).toEqual(['foreign-record']);
     });
 
-    test('a live child with a missing AVP document is a hard error', async () => {
-      const feature = await create('Feature', {depth: {data: '50'}});
+    test('a live child with a missing AVP document is skipped, not fatal', async () => {
+      const broken = await create('Feature', {depth: {data: '50'}});
+      const live = await create('Feature', {depth: {data: '50'}});
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
-        features: {data: [link(feature.recordId)]},
+        features: {data: [link(broken.recordId), link(live.recordId)]},
       });
       const revision = await (db as PouchDB.Database).get<{
         avps: Record<string, string>;
-      }>(feature.revisionId);
+      }>(broken.revisionId);
       const avpDoc = await (db as PouchDB.Database).get(
         Object.values(revision.avps)[0]
       );
       await (db as PouchDB.Database).remove(avpDoc);
 
-      // corrupt data on a live child must surface, never read as deleted
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual([broken.recordId]);
+      // (1 own + 1 live feature) / (1 + 1)
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a missing AVP on the root record is a hard error', async () => {
+      const {recordId, revisionId} = await create('Site', {
+        'site-id': {data: 'S1'},
+      });
+      const revision = await (db as PouchDB.Database).get<{
+        avps: Record<string, string>;
+      }>(revisionId);
+      const avpDoc = await (db as PouchDB.Database).get(
+        Object.values(revision.avps)[0]
+      );
+      await (db as PouchDB.Database).remove(avpDoc);
+
       await expect(report(recordId)).rejects.toThrow(DocumentNotFoundError);
+    });
+
+    test('a child whose record document fails validation is skipped, not fatal', async () => {
+      const live = await create('Feature', {depth: {data: '50'}});
+      const corrupt = await create('Feature', {depth: {data: '50'}});
+      const doc = await (db as PouchDB.Database).get<{created: string}>(
+        corrupt.recordId
+      );
+      doc.created = 'not-a-datetime';
+      await (db as PouchDB.Database).put(doc);
+
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {data: [link(live.recordId), link(corrupt.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toEqual([corrupt.recordId]);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a root record that fails validation is a hard error', async () => {
+      const {recordId} = await create('Photo');
+      const doc = await (db as PouchDB.Database).get<{created: string}>(
+        recordId
+      );
+      doc.created = 'not-a-datetime';
+      await (db as PouchDB.Database).put(doc);
+
+      await expect(report(recordId)).rejects.toThrow();
+    });
+
+    test('links under a child field with unparseable params are traced as skipped', async () => {
+      const photo = await create('Photo');
+      // legacy-children lacks related_type, so its params fail the schema
+      const {recordId} = await create('Legacy', {
+        'legacy-children': {data: [link(photo.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(result.childFields).toEqual([]);
+      expect(result.skippedChildren).toEqual([photo.recordId]);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test('a duplicate link tagged with another project does not double-report a live child', async () => {
+      const feature = await create('Feature', {depth: {data: '50'}});
+      const {recordId} = await create('Site', {
+        'site-id': {data: 'S1'},
+        features: {
+          data: [
+            {...link(feature.recordId), project_id: 'listing||other-project'},
+            link(feature.recordId),
+          ],
+        },
+      });
+      const result = await report(recordId);
+      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(result.skippedChildren).toBeUndefined();
+      expect(result.progress).toBe(1.0);
     });
 
     test('a child with corrupt (empty) heads is skipped, not fatal', async () => {
@@ -552,6 +654,29 @@ describe('Record status report', () => {
       }
       expect(node.truncated).toBe(true);
       expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
+    });
+
+    test('a leaf at the depth cap is not marked truncated', async () => {
+      // Chain sized so the deepest record sits exactly at the cap with no
+      // child links of its own: nothing is dropped, so nothing is truncated
+      let child: string | undefined;
+      const ids: string[] = [];
+      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
+        const {recordId} = await create('Sample', {
+          'sample-type': {data: `s${i}`},
+          ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
+        });
+        ids.push(recordId);
+        child = recordId;
+      }
+
+      let node = await report(ids[ids.length - 1]);
+      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
+        node = childField(node, 'sub-samples').children[0];
+      }
+      expect(node.recordId).toBe(ids[0]);
+      expect(node.truncated).toBeUndefined();
+      expect(node.progress).toBe(1.0);
     });
 
     test('a truncated node still reconciles dead child links', async () => {

@@ -191,6 +191,45 @@
         "persistent": false,
         "displayParent": false
       },
+      "finds": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Finds",
+          "required": true,
+          "name": "finds",
+          "related_type": "Photo",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "legacy-children": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Legacy children",
+          "required": false,
+          "name": "legacy-children",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
       "cal-value": {
         "component-namespace": "faims-custom",
         "component-name": "FAIMSTextField",
@@ -237,6 +276,18 @@
       "Calibration-Main": {
         "label": "Main",
         "fields": ["cal-value"]
+      },
+      "Trench-Main": {
+        "label": "Main",
+        "fields": ["finds"]
+      },
+      "Trench-Links": {
+        "label": "Links",
+        "fields": ["finds"]
+      },
+      "Legacy-Main": {
+        "label": "Main",
+        "fields": ["legacy-children"]
       }
     },
     "viewsets": {
@@ -261,9 +312,25 @@
       "Calibration": {
         "label": "Calibration",
         "views": ["Calibration-Main"]
+      },
+      "Trench": {
+        "label": "Trench",
+        "views": ["Trench-Main", "Trench-Links"]
+      },
+      "Legacy": {
+        "label": "Legacy",
+        "views": ["Legacy-Main"]
       }
     },
-    "visible_types": ["Site", "Feature", "Sample", "Photo", "Calibration"],
+    "visible_types": [
+      "Site",
+      "Feature",
+      "Sample",
+      "Photo",
+      "Calibration",
+      "Trench",
+      "Legacy"
+    ],
     "settings": {
       "showQrCodeButton": false
     },
