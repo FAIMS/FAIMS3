@@ -7,7 +7,6 @@ import {
 import {
   completion,
   CompletionResult,
-  FieldVisibilityMap,
   formDataToValues,
   IsCompleteResolver,
 } from './completion';
@@ -17,10 +16,10 @@ import {
   DocumentValidationError,
   NoHeadsError,
   RecordDeletedError,
+  UnknownFormTypeError,
 } from './exceptions';
 import {
   FormUpdateData,
-  relatedRecordFieldAvpEntrySchema,
   relatedRecordSelectorComponentParamsSchema,
 } from './types';
 
@@ -30,45 +29,11 @@ export const RELATED_RECORD_SELECTOR = {
   name: 'RelatedRecordSelector',
 } as const;
 
-// Backstop against corrupt/pathological deep data; real trees are ~4 levels
-export const STATUS_REPORT_MAX_DEPTH = 10;
-
-// Caps concurrent record hydrations across the whole walk; each hydration
-// still fans out one AVP fetch per field, so in-flight CouchDB requests scale
-// with form size rather than tree size
-const STATUS_REPORT_FETCH_CONCURRENCY = 10;
-
-/** FIFO semaphore; a slot is held only across one record's hydration, never across recursion. */
-class FetchLimiter {
-  private active = 0;
-  private queue: Array<() => void> = [];
-  constructor(private readonly limit: number) {}
-
-  async run<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.active < this.limit) {
-      this.active++;
-    } else {
-      // The releasing task hands its slot straight to us
-      await new Promise<void>(resolve => this.queue.push(resolve));
-    }
-    try {
-      return await fn();
-    } finally {
-      const next = this.queue.shift();
-      if (next) {
-        next();
-      } else {
-        this.active--;
-      }
-    }
-  }
-}
-
-// Stored link values tolerate absent/partial legacy vocab pairs. Local to the
-// report on purpose: the shared schema stays strict so the export stripper
-// keeps leaving unparseable legacy fields untouched.
-const storedLinkEntrySchema = relatedRecordFieldAvpEntrySchema.extend({
-  relation_type_vocabPair: z.array(z.string()).optional(),
+// Only the id and project tag matter here, so legacy vocab-pair drift in a
+// stored link cannot invalidate a live child
+const storedLinkEntrySchema = z.object({
+  record_id: z.string().min(1),
+  project_id: z.string().optional(),
 });
 
 /** Status of one Child-type related-record field on a record. */
@@ -91,29 +56,19 @@ export interface RecordStatusReport {
   formId: string;
   /**
    * Roll-up fraction 0->1: (own progress + sum of live child progress) /
-   * (1 + distinct live children + required-but-empty child fields).
+   * (1 + live children + required-but-empty child fields).
    */
   progress: number;
   ownProgress: CompletionResult;
   /** Raw values of the form's currently visible summary_fields, keyed by field name. */
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
-  /**
-   * Child ids excluded from the roll-up (deleted, cycle, cross-project,
-   * unreadable, malformed, unknown form; the cause is deliberately
-   * indistinguishable). Safe to expose: they already appear in the parent's
-   * own readable field data.
-   */
-  skippedChildren?: string[];
-  /** True when the depth cap stopped recursion here: child counts remain, child reports are dropped. */
-  truncated?: boolean;
 }
 
 /**
- * Reconciles a record's own completion with its resolved children: a required
- * Child selector field is complete only while it has a live child, because any
- * stored link (even one to a deleted record) satisfies the generic field check
- * and would otherwise score better than an empty field.
+ * A required Child field is complete only while it has a live child: a stored
+ * link (even to a deleted record) satisfies the generic field check and would
+ * otherwise score better than an empty field.
  */
 function adjustOwnProgressForChildren(
   own: CompletionResult,
@@ -150,47 +105,28 @@ interface WalkContext {
   projectId: string;
   recordFilter?: (record: {recordId: string; createdBy: string}) => boolean;
   isCompleteResolver?: IsCompleteResolver;
-  limiter: FetchLimiter;
-  /** Context-free settled reports, shared walk-wide so a child linked from several records is computed once. */
+  /** Settled reports, so a child linked from several records is computed once. */
   memo: Map<string, RecordStatusReport | null>;
-}
-
-/**
- * A walked report plus whether it is context-free: `reusable` is false when
- * the subtree was shaped by this path's ancestry (a cycle cut) or by the depth
- * cap, so the report must not be shared with other paths via the memo.
- */
-interface WalkResult {
-  report: RecordStatusReport | null;
-  reusable: boolean;
+  /** Records on the current walk path; cuts the cycles corrupt data can hold. */
+  path: Set<string>;
 }
 
 /**
  * Computes the recursive status report for a record: per node the HRID,
- * required-field completion, summary values and the same for child records.
- * Each record counts as one roll-up unit so a large child form cannot dwarf
- * its parent; a required child field with no records yet counts as one
- * expected child contributing zero progress.
- *
- * Only faims-core::Child relations are followed, discovered from the parent's
- * RelatedRecordSelector field values. Deleted and filter-excluded records are
- * left out of both numerator and denominator, so the fraction means
- * "completion of what this viewer can see" and may differ between viewers. A
- * required Child field counts complete in the record's own progress only while
- * it has at least one live child, so a link to a deleted or dangling record
- * scores no better than an empty field. A child whose documents are missing or
- * corrupt is skipped and listed in `skippedChildren`, so one bad child cannot
- * fail the whole report; the same faults on the root record still throw.
+ * required-field completion, summary values and the same for child records
+ * (faims-core::Child links only). Deleted, unreadable and corrupt children
+ * drop out of both sides of the roll-up, so the fraction means "completion of
+ * what this viewer can see". Child graphs are assumed acyclic; a cycle in
+ * corrupt data is cut where it closes.
  *
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
- * @param projectId - Project the walk is scoped to; links tagged with another
- *   project id are skipped
+ * @param projectId - Links tagged with another project id are skipped
  * @param recordFilter - Per-record read filter (e.g. API permission check)
  * @param isCompleteResolver - Optional per-field-type completeness override
  * @returns The report tree rooted at recordId
  * @throws RecordDeletedError if the root record is deleted (or filtered out)
- * @throws DocumentNotFoundError if the root record does not exist
+ * @throws UnknownFormTypeError if the root's form is not in the ui-spec
  */
 export async function computeRecordStatusReport({
   engine,
@@ -203,17 +139,17 @@ export async function computeRecordStatusReport({
   recordId: string;
 } & Omit<
   WalkContext,
-  'engine' | 'limiter' | 'memo'
+  'engine' | 'memo' | 'path'
 >): Promise<RecordStatusReport> {
   const ctx: WalkContext = {
     engine,
     projectId,
     recordFilter,
     isCompleteResolver,
-    limiter: new FetchLimiter(STATUS_REPORT_FETCH_CONCURRENCY),
     memo: new Map(),
+    path: new Set(),
   };
-  const {report} = await walk(ctx, recordId, new Set(), 0);
+  const report = await walk(ctx, recordId);
   if (report === null) {
     throw new RecordDeletedError(recordId);
   }
@@ -221,94 +157,38 @@ export async function computeRecordStatusReport({
 }
 
 /**
- * Recursion-free record-level liveness check used at the depth cap, where
- * children still gate required-field completion but are not hydrated.
- */
-async function isLiveRecord(
-  ctx: WalkContext,
-  recordId: string
-): Promise<boolean> {
-  const record = await ctx.engine.core.getRecord(recordId);
-  // Same unknown-form rule as the full walk: an unmeasurable child is skipped
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      ctx.engine.uiSpec.viewsets,
-      record.type
-    )
-  ) {
-    return false;
-  }
-  const {selectedHead} = ctx.engine.core.resolveHead({
-    recordId,
-    heads: record.heads,
-    behavior: 'pickFirst',
-  });
-  const revision = await ctx.engine.core.getRevision(selectedHead);
-  if (revision.deleted) {
-    return false;
-  }
-  if (
-    ctx.recordFilter &&
-    !ctx.recordFilter({recordId, createdBy: record.created_by})
-  ) {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Converts one child's failure to load into a skip: dangling or corrupt
- * children (missing record/revision/AVP docs, empty heads, schema-invalid
- * docs) land in skippedChildren rather than failing the whole report. The
- * same errors on the root record still surface to the caller.
+ * Converts one child's failure to load into a skip: a dangling, corrupt or
+ * unmeasurable child cannot fail the whole report. The same errors on the
+ * root record still surface to the caller.
  */
 function absorbSkippableChildError(err: unknown): null {
   if (
     err instanceof DocumentNotFoundError ||
     err instanceof NoHeadsError ||
-    err instanceof DocumentValidationError
+    err instanceof DocumentValidationError ||
+    err instanceof UnknownFormTypeError
   ) {
     return null;
   }
   throw err;
 }
 
-/**
- * Best-effort child id from an unparseable link entry (a bare id string, or
- * an entry whose record_id survived as a string), for skippedChildren tracing.
- */
-function recoverLinkId(rawEntry: unknown): string | null {
-  const rawId =
-    typeof rawEntry === 'string'
-      ? rawEntry
-      : (rawEntry as {record_id?: unknown} | null)?.record_id;
-  return typeof rawId === 'string' && rawId.length > 0 ? rawId : null;
-}
-
 interface CollectedChildField {
   fieldId: string;
   relatedFormId: string;
   required: boolean;
-  /** Distinct linked child ids; cycle and cross-project links excluded. */
+  /** Distinct linked child ids; cross-project and malformed links excluded. */
   childIds: string[];
 }
 
-/**
- * Reads the record's visible Child-type RelatedRecordSelector fields and their
- * linked child ids. Cycle, cross-project and malformed-but-identifiable links
- * land in `skipped`; each entry is judged individually so one bad link cannot
- * hide its siblings.
- */
+/** Reads the visible Child-type RelatedRecordSelector fields and their linked child ids. */
 function collectChildFields(
   ctx: WalkContext,
-  visibilityMap: FieldVisibilityMap,
-  data: FormUpdateData | undefined,
-  ancestors: ReadonlySet<string>,
-  skipped: Set<string>
+  visibleFields: ReadonlySet<string>,
+  data: FormUpdateData | undefined
 ): CollectedChildField[] {
   const collected: CollectedChildField[] = [];
-  // Set: a field listed in two visible sections is still one child field
-  for (const fieldId of new Set(Object.values(visibilityMap).flat())) {
+  for (const fieldId of visibleFields) {
     const fieldSpec = ctx.engine.uiSpec.fields[fieldId];
     if (
       fieldSpec?.['component-namespace'] !==
@@ -317,46 +197,22 @@ function collectChildFields(
     ) {
       continue;
     }
+    const params = relatedRecordSelectorComponentParamsSchema.safeParse(
+      fieldSpec['component-parameters']
+    );
+    if (!params.success || params.data.relation_type !== 'faims-core::Child') {
+      continue;
+    }
     const raw = data?.[fieldId]?.data;
     const rawEntries = Array.isArray(raw)
       ? raw
       : raw === null || raw === undefined
         ? []
         : [raw];
-
-    const params = relatedRecordSelectorComponentParamsSchema.safeParse(
-      fieldSpec['component-parameters']
-    );
-    if (!params.success) {
-      // Unparseable params: unless the field is explicitly Linked, trace its
-      // linked ids as skipped so the subtree cannot vanish without a marker
-      if (
-        fieldSpec['component-parameters']?.relation_type !==
-        'faims-core::Linked'
-      ) {
-        for (const rawEntry of rawEntries) {
-          const rawId = recoverLinkId(rawEntry);
-          if (rawId !== null) {
-            skipped.add(rawId);
-          }
-        }
-      }
-      continue;
-    }
-    if (params.data.relation_type !== 'faims-core::Child') {
-      continue;
-    }
-
     const childIds: string[] = [];
     for (const rawEntry of rawEntries) {
       const entry = storedLinkEntrySchema.safeParse(rawEntry);
       if (!entry.success) {
-        // Trace an unreadable link whenever an id is recoverable, so it
-        // cannot vanish from the report without a skippedChildren marker
-        const rawId = recoverLinkId(rawEntry);
-        if (rawId !== null) {
-          skipped.add(rawId);
-        }
         continue;
       }
       const {record_id: childId, project_id: linkProjectId} = entry.data;
@@ -366,11 +222,7 @@ function collectChildFields(
       const linkNotebookId = linkProjectId
         ? linkProjectId.split(ENCODING_SEPARATOR).pop()
         : undefined;
-      if (
-        (linkNotebookId !== undefined && linkNotebookId !== ctx.projectId) ||
-        ancestors.has(childId)
-      ) {
-        skipped.add(childId);
+      if (linkNotebookId !== undefined && linkNotebookId !== ctx.projectId) {
         continue;
       }
       // A duplicate link to the same child is still one child
@@ -388,44 +240,21 @@ function collectChildFields(
   return collected;
 }
 
-/** Builds the reported child-field entry from a collected field. */
-function toChildField(
-  field: CollectedChildField,
-  createdCount: number,
-  children: RecordStatusReport[]
-): RecordStatusChildField {
-  return {
-    fieldId: field.fieldId,
-    relatedFormId: field.relatedFormId,
-    required: field.required,
-    createdCount,
-    expectedCount: createdCount > 0 ? createdCount : field.required ? 1 : 0,
-    children,
-  };
-}
-
-/**
- * Memoized walk: a child linked from several records is computed once and its
- * report shared. Only settled, context-free results are cached (see
- * WalkResult) — awaiting another branch's in-flight promise could deadlock on
- * mutually-linked records — and a node reached at the cap always computes
- * fresh so it truncates like any other capped node.
- */
+/** Memoized walk; the path check cuts cycle links so corrupt data terminates. */
 async function walk(
   ctx: WalkContext,
-  recordId: string,
-  ancestors: ReadonlySet<string>,
-  depth: number
-): Promise<WalkResult> {
+  recordId: string
+): Promise<RecordStatusReport | null> {
+  if (ctx.path.has(recordId)) {
+    return null;
+  }
   const cached = ctx.memo.get(recordId);
-  if (cached !== undefined && depth < STATUS_REPORT_MAX_DEPTH) {
-    return {report: cached, reusable: true};
+  if (cached !== undefined) {
+    return cached;
   }
-  const result = await walkNode(ctx, recordId, ancestors, depth);
-  if (result.reusable) {
-    ctx.memo.set(recordId, result.report);
-  }
-  return result;
+  const report = await walkNode(ctx, recordId);
+  ctx.memo.set(recordId, report);
+  return report;
 }
 
 /**
@@ -434,53 +263,26 @@ async function walk(
  */
 async function walkNode(
   ctx: WalkContext,
-  recordId: string,
-  ancestors: ReadonlySet<string>,
-  depth: number
-): Promise<WalkResult> {
+  recordId: string
+): Promise<RecordStatusReport | null> {
   const {engine} = ctx;
 
-  const {formId, data, context} = await ctx.limiter.run(() =>
-    engine.form.getExistingFormData({
-      recordId,
-      config: {conflictBehaviour: 'pickFirst'},
-    })
-  );
+  const {formId, data, context} = await engine.form.getExistingFormData({
+    recordId,
+    config: {conflictBehaviour: 'pickFirst'},
+  });
   if (context.revision.deleted) {
-    return {report: null, reusable: true};
+    return null;
   }
   if (
     ctx.recordFilter &&
     !ctx.recordFilter({recordId, createdBy: context.record.createdBy})
   ) {
-    return {report: null, reusable: true};
+    return null;
   }
-
-  // Unknown form type (e.g. the form was removed from the notebook): progress
-  // is unmeasurable, so a child is skipped like a deleted one; the root still
-  // reports a bare leaf rather than erroring. hasOwnProperty, since `in` also
-  // matches prototype keys ('constructor')
+  // hasOwnProperty, since `in` also matches prototype keys ('constructor')
   if (!Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, formId)) {
-    if (depth > 0) {
-      return {report: null, reusable: true};
-    }
-    return {
-      report: {
-        recordId,
-        hrid: context.hrid,
-        formId,
-        progress: 1.0,
-        ownProgress: {
-          progress: 1.0,
-          requiredCount: 0,
-          completedCount: 0,
-          incompleteRequired: [],
-        },
-        summaryValues: {},
-        childFields: [],
-      },
-      reusable: true,
-    };
+    throw new UnknownFormTypeError(recordId, formId);
   }
 
   const values = formDataToValues(data);
@@ -497,8 +299,10 @@ async function walkNode(
     isCompleteResolver: ctx.isCompleteResolver,
   });
 
-  // Hidden summary fields may hold stale values, so only visible ones report
+  // Set: a field listed in two visible sections is still one field
   const visibleFields = new Set(Object.values(visibilityMap).flat());
+
+  // Hidden summary fields may hold stale values, so only visible ones report
   const summaryValues: Record<string, unknown> = {};
   for (const fieldName of getSummaryFieldInformation(engine.uiSpec, formId)
     .fieldNames) {
@@ -508,90 +312,48 @@ async function walkNode(
     }
   }
 
-  const base = {
-    recordId,
-    hrid: context.hrid,
-    formId,
-    summaryValues,
-  };
-
-  const skipped = new Set<string>();
-  const nextAncestors = new Set(ancestors);
-  nextAncestors.add(recordId);
-  const collected = collectChildFields(
-    ctx,
-    visibilityMap,
-    data,
-    nextAncestors,
-    skipped
-  );
-  const distinctIds = [...new Set(collected.flatMap(field => field.childIds))];
-
-  // A cycle cut above makes this subtree specific to the current path
-  let reusable = ![...skipped].some(id => nextAncestors.has(id));
+  const collected = collectChildFields(ctx, visibleFields, data);
 
   // One walk per distinct child, so a child linked from several fields is
-  // fetched once and counts as one roll-up unit. At the cap children are not
-  // hydrated: a recursion-free liveness check still gates required-field
-  // completion, but they carry no report and so no roll-up unit
-  const atCap = depth >= STATUS_REPORT_MAX_DEPTH;
-  if (atCap && distinctIds.length > 0) {
-    reusable = false;
-  }
+  // fetched once and counts as one roll-up unit
   const reports = new Map<string, RecordStatusReport | null>();
-  const live = new Map<string, boolean>();
-  await Promise.all(
-    distinctIds.map(async childId => {
-      if (atCap) {
-        const alive = await ctx.limiter
-          .run(() => isLiveRecord(ctx, childId))
-          .catch(absorbSkippableChildError);
-        live.set(childId, alive === true);
-      } else {
-        const child = await walk(ctx, childId, nextAncestors, depth + 1).catch(
-          (err): WalkResult => ({
-            report: absorbSkippableChildError(err),
-            reusable: true,
-          })
-        );
-        if (!child.reusable) {
-          reusable = false;
-        }
-        reports.set(childId, child.report);
-        live.set(childId, child.report !== null);
-      }
-    })
-  );
-
-  // A child both live and skipped (a duplicate link tagged with another
-  // project) reports as live only
-  for (const childId of distinctIds) {
-    if (live.get(childId)) {
-      skipped.delete(childId);
-    } else {
-      skipped.add(childId);
-    }
+  ctx.path.add(recordId);
+  for (const childId of new Set(collected.flatMap(field => field.childIds))) {
+    reports.set(
+      childId,
+      await walk(ctx, childId).catch(absorbSkippableChildError)
+    );
   }
+  ctx.path.delete(recordId);
 
-  const childFields = collected.map(field => {
-    const liveIds = field.childIds.filter(id => live.get(id));
-    const children = liveIds
+  const childFields = collected.map((field): RecordStatusChildField => {
+    const children = field.childIds
       .map(id => reports.get(id))
       .filter((child): child is RecordStatusReport => !!child);
-    return toChildField(field, liveIds.length, children);
+    return {
+      fieldId: field.fieldId,
+      relatedFormId: field.relatedFormId,
+      required: field.required,
+      createdCount: children.length,
+      expectedCount:
+        children.length > 0 ? children.length : field.required ? 1 : 0,
+      children,
+    };
   });
 
   const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);
 
-  // Each reported live child is one unit alongside the record's own form; a
-  // required field with no children expects one empty unit
-  const reportedIds = distinctIds.filter(id => reports.get(id));
+  // Each live child is one unit alongside the record's own form; a required
+  // field with no children expects one empty unit
+  const liveReports = [...reports.values()].filter(
+    (child): child is RecordStatusReport => !!child
+  );
   const units =
-    reportedIds.length +
+    liveReports.length +
     childFields.filter(field => field.required && field.createdCount === 0)
       .length;
-  const childProgressSum = reportedIds.reduce(
-    (sum, id) => sum + reports.get(id)!.progress,
+  const childProgressSum = liveReports.reduce(
+    (sum, child) => sum + child.progress,
     0
   );
   const progress =
@@ -600,14 +362,12 @@ async function walkNode(
       : (ownProgress.progress + childProgressSum) / (1 + units);
 
   return {
-    report: {
-      ...base,
-      ownProgress,
-      progress,
-      childFields,
-      ...(skipped.size > 0 ? {skippedChildren: [...skipped]} : {}),
-      ...(atCap && distinctIds.length > 0 ? {truncated: true} : {}),
-    },
-    reusable,
+    recordId,
+    hrid: context.hrid,
+    formId,
+    progress,
+    ownProgress,
+    summaryValues,
+    childFields,
   };
 }

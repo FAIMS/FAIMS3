@@ -25,7 +25,9 @@ export class DocumentValidationError extends Error {
       docMsg = undefined;
     }
     super(
-      `The target record (id = ${recordId}) failed validation.\nOperation: ${operation}.\nValidation error: ${validationErr}.\nDocument contents:\n${docMsg ?? 'Could not be serialised as JSON...'}.`
+      `The target record (id = ${recordId}) failed validation.\nOperation: ${operation}.\nValidation error: ${validationErr}.\nDocument contents:\n${
+        docMsg ?? 'Could not be serialised as JSON...'
+      }.`
     );
     this.name = 'DocumentValidationError';
   }
@@ -74,7 +76,9 @@ export class RecordConflictError extends Error {
     public readonly heads: string[]
   ) {
     super(
-      `Record "${recordId}" has ${heads.length} conflicting heads: ${heads.join(', ')}`
+      `Record "${recordId}" has ${heads.length} conflicting heads: ${heads.join(
+        ', '
+      )}`
     );
     this.name = 'RecordConflictError';
   }
@@ -99,6 +103,19 @@ export class MalformedParentsError extends Error {
       `Record ${recordId}, revision ${revisionId} had a malformed parents array, details: ${details}`
     );
     this.name = 'MalformedParentsError';
+  }
+}
+
+/**
+ * Thrown when a record's form (viewset) is missing from the notebook's
+ * ui-spec, e.g. after the form was removed, so completion is unmeasurable.
+ */
+export class UnknownFormTypeError extends Error {
+  constructor(recordId: string, formId: string) {
+    super(
+      `Record "${recordId}" has form type "${formId}" which is not in the notebook's ui-spec.`
+    );
+    this.name = 'UnknownFormTypeError';
   }
 }
 

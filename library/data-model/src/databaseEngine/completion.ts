@@ -29,21 +29,10 @@ export type IsCompleteResolver = (fieldType: {
 /** A field is complete when it has a non-empty string or any non-null data. */
 export function defaultCompletionFunction(formData: FormDataEntry): boolean {
   const {data} = formData;
-
-  // string case
   if (typeof data === 'string') {
-    if (data !== null && data !== undefined && data.length > 0) {
-      return true;
-    }
-    return false;
+    return data.length > 0;
   }
-
-  // other cases, check for non-null/undefined
-  if (data !== null && data !== undefined) {
-    return true;
-  }
-
-  return false;
+  return data !== null && data !== undefined;
 }
 
 /**

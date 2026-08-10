@@ -17,7 +17,7 @@ import {
   NotebookDefinition,
   RecordDeletedError,
   RecordStatusReport,
-  STATUS_REPORT_MAX_DEPTH,
+  UnknownFormTypeError,
 } from '../src';
 
 // Setup PouchDB plugins
@@ -109,19 +109,16 @@ describe('Record status report', () => {
       expect(result.progress).toBe(1.0);
     });
 
-    test('record with unknown form type reports a complete leaf', async () => {
+    test('a root with an unknown form type is a hard error', async () => {
+      // e.g. the record's form was removed from the notebook after creation
       const {recordId} = await create('Ghost');
-      const result = await report(recordId);
-      expect(result.progress).toBe(1.0);
-      expect(result.childFields).toEqual([]);
+      await expect(report(recordId)).rejects.toThrow(UnknownFormTypeError);
     });
 
-    test('a record typed with a prototype key reports a complete leaf', async () => {
+    test('a record typed with a prototype key is unknown, not a viewset', async () => {
       // 'constructor' is on Object.prototype, so an `in` check would pass it
       const {recordId} = await create('constructor');
-      const result = await report(recordId);
-      expect(result.progress).toBe(1.0);
-      expect(result.childFields).toEqual([]);
+      await expect(report(recordId)).rejects.toThrow(UnknownFormTypeError);
     });
   });
 
@@ -253,7 +250,7 @@ describe('Record status report', () => {
       expect(result.progress).toBe(1.0);
     });
 
-    test('a malformed link with a recoverable id is traced as skipped', async () => {
+    test('a legacy bare-string link entry is ignored', async () => {
       const feature = await create('Feature', {depth: {data: '50'}});
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
@@ -264,7 +261,7 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual(['legacy-bare-id']);
+      expect(result.progress).toBe(1.0);
     });
 
     test('a required child field in two sections counts once', async () => {
@@ -369,7 +366,6 @@ describe('Record status report', () => {
         createdCount: 0,
         expectedCount: 1,
       });
-      expect(result.skippedChildren).toEqual([feature.recordId]);
       // a link to a deleted child scores no better than an empty field:
       // own drops to 1/2 and the expected child unit contributes 0
       expect(result.ownProgress.incompleteRequired).toContain('features');
@@ -395,7 +391,7 @@ describe('Record status report', () => {
         features: {data: [link('no-such-record')]},
       });
       const result = await report(recordId);
-      expect(result.skippedChildren).toEqual(['no-such-record']);
+      expect(childField(result, 'features').createdCount).toBe(0);
       // dangling links leave the required features field incomplete
       expect(result.progress).toBe(0.25);
     });
@@ -425,7 +421,6 @@ describe('Record status report', () => {
         recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
       });
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual([theirs.recordId]);
       // (1 own + 1 remaining feature) / (1 + 1)
       expect(result.progress).toBe(1.0);
     });
@@ -440,7 +435,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual([ghost.recordId]);
       expect(result.progress).toBe(1.0);
     });
 
@@ -452,7 +446,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toBeUndefined();
       expect(result.progress).toBe(1.0);
     });
 
@@ -469,7 +462,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual(['foreign-record']);
       expect(result.progress).toBe(1.0);
     });
 
@@ -486,7 +478,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual(['foreign-record']);
     });
 
     test('a live child with a missing AVP document is skipped, not fatal', async () => {
@@ -506,7 +497,6 @@ describe('Record status report', () => {
 
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual([broken.recordId]);
       // (1 own + 1 live feature) / (1 + 1)
       expect(result.progress).toBe(1.0);
     });
@@ -541,7 +531,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual([corrupt.recordId]);
       expect(result.progress).toBe(1.0);
     });
 
@@ -556,7 +545,7 @@ describe('Record status report', () => {
       await expect(report(recordId)).rejects.toThrow();
     });
 
-    test('links under a child field with unparseable params are traced as skipped', async () => {
+    test('a child field with unparseable params is skipped', async () => {
       const photo = await create('Photo');
       // legacy-children lacks related_type, so its params fail the schema
       const {recordId} = await create('Legacy', {
@@ -564,7 +553,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(result.childFields).toEqual([]);
-      expect(result.skippedChildren).toEqual([photo.recordId]);
       expect(result.progress).toBe(1.0);
     });
 
@@ -581,7 +569,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toBeUndefined();
       expect(result.progress).toBe(1.0);
     });
 
@@ -600,7 +587,6 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
-      expect(result.skippedChildren).toEqual([corrupt.recordId]);
       // (1 own + 1 live feature) / (1 + 1)
       expect(result.progress).toBe(1.0);
     });
@@ -642,7 +628,7 @@ describe('Record status report', () => {
       expect(subSampleNode.recordId).toBe(subSample.recordId);
     });
 
-    test('cycles terminate and are reported as skipped', async () => {
+    test('a cycle in corrupt data is cut, not recursed forever', async () => {
       const a = await create('Sample', {'sample-type': {data: 'a'}});
       const b = await create('Sample', {
         'sample-type': {data: 'b'},
@@ -662,64 +648,13 @@ describe('Record status report', () => {
       const result = await report(a.recordId);
       const bNode = childField(result, 'sub-samples').children[0];
       expect(bNode.recordId).toBe(b.recordId);
-      expect(bNode.skippedChildren).toEqual([a.recordId]);
-      // the cycle edge adds no unit, so both nodes are complete
+      // the back edge to a is cut and adds no unit
+      expect(childField(bNode, 'sub-samples').createdCount).toBe(0);
       expect(bNode.progress).toBe(1.0);
       expect(result.progress).toBe(1.0);
     });
 
-    test('duplicate cycle links are reported as skipped once', async () => {
-      const a = await create('Sample', {'sample-type': {data: 'a'}});
-      const b = await create('Sample', {
-        'sample-type': {data: 'b'},
-        'sub-samples': {data: [link(a.recordId), link(a.recordId)]},
-      });
-      await engine.form.updateRevision({
-        recordId: a.recordId,
-        revisionId: a.revisionId,
-        update: {
-          'sample-type': {data: 'a'},
-          'sub-samples': {data: [link(b.recordId)]},
-        },
-        mode: 'new',
-        updatedBy: USER,
-      });
-
-      const result = await report(a.recordId);
-      const bNode = childField(result, 'sub-samples').children[0];
-      expect(bNode.skippedChildren).toEqual([a.recordId]);
-    });
-
-    test('an unknown-form child at the cap is skipped like elsewhere', async () => {
-      const ghost = await create('Ghost');
-
-      // Chain of Sites deep enough that the last one sits at the cap; its
-      // only child link points at the unknown-form record
-      let childId = ghost.recordId;
-      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
-        const {recordId} = await create('Site', {
-          'site-id': {data: `S${i}`},
-          features: {data: [link(childId)]},
-        });
-        childId = recordId;
-      }
-
-      let node = await report(childId);
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
-        node = childField(node, 'features').children[0];
-      }
-      expect(node.truncated).toBe(true);
-      expect(node.skippedChildren).toEqual([ghost.recordId]);
-      expect(childField(node, 'features').createdCount).toBe(0);
-      // scores exactly like the untruncated unknown-form case: own 0.5 plus
-      // one empty expected-child unit
-      expect(node.progress).toBe(0.25);
-    });
-
-    test('mutually-linked siblings each report their own cycle cut', async () => {
-      // a <-> b, both children of the root: each sibling's subtree must
-      // contain the other with the back edge skipped, so a report shaped by
-      // one path cannot be reused on the other
+    test('mutually-linked sibling records terminate', async () => {
       const a = await create('Sample', {'sample-type': {data: 'a'}});
       const b = await create('Sample', {
         'sample-type': {data: 'b'},
@@ -741,61 +676,14 @@ describe('Record status report', () => {
       });
 
       const result = await report(root.recordId);
-      const siblings = childField(result, 'samples').children;
-      expect(siblings).toHaveLength(2);
-      for (const sibling of siblings) {
-        const other = childField(sibling, 'sub-samples').children[0];
-        expect([a.recordId, b.recordId]).toContain(other.recordId);
-        expect(other.recordId).not.toBe(sibling.recordId);
-        expect(other.skippedChildren).toEqual([sibling.recordId]);
-      }
+      expect(childField(result, 'samples').children).toHaveLength(2);
     });
 
-    test('a shared child reached at the cap still truncates', async () => {
-      // C has a child, is linked directly by the root (shallow, full report)
-      // and again at the cap via a chain: the capped occurrence must truncate
-      // rather than reuse the shallow report
-      const d = await create('Sample', {'sample-type': {data: 'd'}});
-      const c = await create('Sample', {
-        'sample-type': {data: 'c'},
-        'sub-samples': {data: [link(d.recordId)]},
-      });
-      let childId = c.recordId;
-      for (let i = 1; i < STATUS_REPORT_MAX_DEPTH; i++) {
-        const {recordId} = await create('Sample', {
-          'sample-type': {data: `s${i}`},
-          'sub-samples': {data: [link(childId)]},
-        });
-        childId = recordId;
-      }
-      const root = await create('Feature', {
-        depth: {data: '50'},
-        samples: {data: [link(childId), link(c.recordId)]},
-      });
-
-      const result = await report(root.recordId);
-      const topChildren = childField(result, 'samples').children;
-      const shallowC = topChildren.find(n => n.recordId === c.recordId)!;
-      expect(shallowC.truncated).toBeUndefined();
-      expect(childField(shallowC, 'sub-samples').children[0].recordId).toBe(
-        d.recordId
-      );
-      let node = topChildren.find(n => n.recordId !== c.recordId)!;
-      while (node.recordId !== c.recordId) {
-        node = childField(node, 'sub-samples').children[0];
-      }
-      expect(node.truncated).toBe(true);
-      expect(childField(node, 'sub-samples')).toMatchObject({
-        createdCount: 1,
-        children: [],
-      });
-    });
-
-    test('depth cap truncates instead of recursing forever', async () => {
-      // Chain two records past the cap, deepest first
+    test('a deep chain reports to its full depth', async () => {
+      const chainLength = 15;
       let child: string | undefined;
       const ids: string[] = [];
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH + 2; i++) {
+      for (let i = 0; i < chainLength; i++) {
         const {recordId} = await create('Sample', {
           'sample-type': {data: `s${i}`},
           ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
@@ -810,63 +698,9 @@ describe('Record status report', () => {
         node = node.childFields[0].children[0];
         depth += 1;
       }
-      expect(node.truncated).toBe(true);
-      expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
-    });
-
-    test('a leaf at the depth cap is not marked truncated', async () => {
-      // Chain sized so the deepest record sits exactly at the cap with no
-      // child links of its own: nothing is dropped, so nothing is truncated
-      let child: string | undefined;
-      const ids: string[] = [];
-      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
-        const {recordId} = await create('Sample', {
-          'sample-type': {data: `s${i}`},
-          ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
-        });
-        ids.push(recordId);
-        child = recordId;
-      }
-
-      let node = await report(ids[ids.length - 1]);
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
-        node = childField(node, 'sub-samples').children[0];
-      }
+      expect(depth).toBe(chainLength - 1);
       expect(node.recordId).toBe(ids[0]);
-      expect(node.truncated).toBeUndefined();
       expect(node.progress).toBe(1.0);
-    });
-
-    test('a truncated node still reconciles dead child links', async () => {
-      const dead = await create('Feature', {depth: {data: '50'}});
-      await engine.form.deleteRecord({
-        recordId: dead.recordId,
-        baseRevisionId: dead.revisionId,
-        userId: USER,
-      });
-
-      // Chain of Sites deep enough that the last one sits at the cap; its
-      // only child link points at the deleted Feature
-      let childId = dead.recordId;
-      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
-        const {recordId} = await create('Site', {
-          'site-id': {data: `S${i}`},
-          features: {data: [link(childId)]},
-        });
-        childId = recordId;
-      }
-
-      let node = await report(childId);
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
-        node = childField(node, 'features').children[0];
-      }
-      expect(node.truncated).toBe(true);
-      // the dead link scores exactly like an empty required field on an
-      // untruncated node (own 0.5 plus one empty expected-child unit), and
-      // is still listed as skipped
-      expect(node.ownProgress.incompleteRequired).toContain('features');
-      expect(node.progress).toBe(0.25);
-      expect(node.skippedChildren).toEqual([dead.recordId]);
     });
   });
 

@@ -49,6 +49,7 @@ import {
   RecordDeletedError,
   RevisionMismatchError,
   setRecordAsDeleted,
+  UnknownFormTypeError,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -148,6 +149,9 @@ function mapDataModelError(err: unknown): never {
     throw new Exceptions.InvalidRequestException(err.message);
   }
   if (err instanceof MalformedParentsError) {
+    throw new Exceptions.InvalidRequestException(err.message);
+  }
+  if (err instanceof UnknownFormTypeError) {
     throw new Exceptions.InvalidRequestException(err.message);
   }
   throw err;
@@ -360,9 +364,8 @@ recordsRouter.get(
 
 /**
  * GET /api/notebooks/:id/records/:recordId/status — recursive completion roll-up
- * for a record and its child records. Children the caller cannot read are left
- * out of the roll-up and listed in `skippedChildren`, so percentages can differ
- * between viewers on mixed-author trees.
+ * for a record and its child records. Children the caller cannot read drop out
+ * of the roll-up, so percentages can differ between viewers on mixed-author trees.
  */
 recordsRouter.get(
   '/:recordId/status',
@@ -404,6 +407,12 @@ recordsRouter.get(
       });
       res.json(report);
     } catch (err) {
+      // A deleted record has no status; the shared 400 mapping is for mutations
+      if (err instanceof RecordDeletedError) {
+        throw new Exceptions.ItemNotFoundException(
+          `Record "${recordId}" is deleted; no status is available.`
+        );
+      }
       mapDataModelError(err);
     }
   }

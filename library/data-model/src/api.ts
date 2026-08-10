@@ -1131,8 +1131,6 @@ export const RecordStatusReportNodeSchema: z.ZodType<RecordStatusReport> =
       ownProgress: completionResultSchema,
       summaryValues: z.record(z.string(), z.unknown()),
       childFields: z.array(RecordStatusReportChildFieldSchema),
-      skippedChildren: z.array(z.string()).optional(),
-      truncated: z.boolean().optional(),
     })
   );
 
