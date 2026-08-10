@@ -228,6 +228,11 @@ platform :ios do
   # Match will only fetch existing certs/profiles from the git repo (no
   # provisioning API). Renew certs outside CI with a Team key / Admin account.
   # app_store_connect_api_key omits issuer_id so Fastlane treats the key as individual.
+  #
+  # altool cannot use Individual API keys for the binary upload, so pilot falls
+  # back to FASTLANE_APPLE_ID + FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD.
+  # That path only works non-interactively when apple_id and
+  # skip_waiting_for_build_processing are both set (see pilot docs).
   lane :closed_beta_testflight_individual do
     ensure_temp_keychain()
 
@@ -278,7 +283,7 @@ platform :ios do
     pilot(
       apple_id: "#{DEVELOPER_APP_ID}",
       app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
-      skip_waiting_for_build_processing: false,
+      skip_waiting_for_build_processing: true,
       skip_submission: true,
       distribute_external: false,
       notify_external_testers: false,
