@@ -123,13 +123,11 @@ jobs:
           DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
           VITE_APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
-          FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
           MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
           MATCH_GIT_URL: '${{ vars.MATCH_GIT_URL }}'
           GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
           PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
-          # Individual key: no APPLE_ISSUER_ID. Keep team-key secrets for the non-_individual workflows.
+          # Individual key: no APPLE_ISSUER_ID / Apple ID / ASP. Team-key secrets stay on non-_individual workflows.
           APPLE_KEY_ID: '${{ secrets.APPLE_INDIVIDUAL_KEY_ID }}'
           APPLE_KEY_CONTENT: '${{ secrets.APPLE_INDIVIDUAL_KEY_CONTENT }}'
           BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'

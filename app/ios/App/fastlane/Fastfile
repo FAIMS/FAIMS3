@@ -225,15 +225,12 @@ platform :ios do
   end
 
   # Individual App Store Connect API key + readonly match.
-  # Match will only fetch existing certs/profiles from the git repo (no
-  # provisioning API). Renew certs outside CI with a Team key / Admin account.
-  # app_store_connect_api_key omits issuer_id so Fastlane treats the key as individual.
-  #
-  # Requires fastlane >= 2.233 so altool can upload with an Individual key
-  # (--api-key-subject user). Older fastlane cleared the key and fell back to
-  # Apple ID + ASP, then crashed on nil tunes_client.teams when resolving the
-  # transporter (see deliver transporter_for_selected_team).
-  # apple_id + skip_waiting_for_build_processing keep pilot non-interactive.
+  # Match only fetches existing certs/profiles (no provisioning API). Renew
+  # certs outside CI with a Team key / Admin account.
+  # Omitting issuer_id makes Fastlane treat the key as individual.
+  # Requires fastlane >= 2.233 for Individual-key altool uploads (no Apple ID / ASP).
+  # apple_id here is the numeric ASC app id; with skip_waiting_for_build_processing
+  # pilot stays non-interactive on CI.
   lane :closed_beta_testflight_individual do
     ensure_temp_keychain()
 
@@ -296,8 +293,6 @@ platform :ios do
   end
 
   # Same Individual-key constraints as closed_beta_testflight_individual.
-  # itc_provider avoids the nil tunes_client.teams crash on fastlane < 2.233
-  # when deliver falls back to Apple ID transporter auth.
   lane :production_individual do
     ensure_temp_keychain()
 
@@ -347,8 +342,7 @@ platform :ios do
       submit_for_review: false,
       automatic_release: false,
       force: true,
-      run_precheck_before_submit: false,
-      itc_provider: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
+      run_precheck_before_submit: false
     )
 
     delete_temp_keychain()
