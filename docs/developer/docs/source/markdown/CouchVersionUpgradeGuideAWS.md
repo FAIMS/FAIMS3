@@ -7,7 +7,9 @@ Related docs:
 
 - [Deploying AWS Stack](./DeployingAWSStack.md)
 - [CDK README](../../../../../infrastructure/aws-cdk/README.md) — config pull/push,
-  validation, and [EBS snapshot recovery](../../../../../infrastructure/aws-cdk/README.md#recovering-couch-data-volume-from-ebs-snapshot)
+  validation
+- [CouchDB backup recovery on AWS](./CouchBackupRecoveryGuideAWS.md) — restore
+  data volume from `snap-…` / AWS Backup
 - Upstream: <https://docs.couchdb.org/en/stable/install/upgrading.html>
 
 Not covered: notebook JSON migrations.
@@ -90,6 +92,35 @@ load). The export script writes this when you pass `--region`; if missing, add:
 AWS_DEFAULT_REGION=ap-southeast-2
 ```
 
+### Local access to VPC-only Couch (placeholder)
+
+**When** couch-auth-proxy is deployed (Couch no longer on the public ALB;
+[#2211](https://github.com/FAIMS/FAIMS3/pull/2211) — expected on `main` later),
+`env-from-cdk-stack` sets `COUCHDB_INTERNAL_URL` to a **VPC private** address.
+Laptop scripts (`dump-user-emails`, `migrate-with-keys`, baseline) cannot reach
+it directly.
+
+**Fix:** SSM port-forward Couch `:5984` to localhost, then point both
+`api/.env` and `scripts/.env` at the tunnel (leave `COUCHDB_PUBLIC_URL` as the
+public proxy hostname). Ensure `scripts/.env` has `STACK_NAME` (see Baseline
+below).
+
+```bash
+# from infrastructure/aws-cdk — STACK_NAME from scripts/.env; leave running
+./scripts/ssmCouchTunnel.sh
+```
+
+```bash
+# api/.env
+COUCHDB_INTERNAL_URL=http://127.0.0.1:5984
+
+# infrastructure/aws-cdk/scripts/.env (baseline / EC2 helpers)
+COUCH_URL=http://127.0.0.1:5984
+```
+
+Until proxy lands on `main`, skip this if Couch is still reachable via the
+exported public/internal URL.
+
 ### Notify users
 
 Dump active user emails (uses `api/.env` above) and send a maintenance notice
@@ -98,8 +129,8 @@ Dump active user emails (uses `api/.env` above) and send a maintenance notice
 ```bash
 cd api
 pnpm run dump-user-emails                 # one address per line (stdout)
-pnpm run dump-user-emails -- --format=bcc # comma-separated for a BCC field
-pnpm run dump-user-emails -- --format=csv > users.csv
+pnpm run dump-user-emails --format=bcc # comma-separated for a BCC field
+pnpm run dump-user-emails --format=csv > users.csv
 ```
 
 Default skip filters drop addresses matching `test`, `demo`, or `example.com`;
@@ -176,7 +207,7 @@ Watch CloudFormation events and ALB Couch target health until healthy. Refresh
 `EC2_INSTANCE_ID` in `scripts/.env` for the new instance:
 
 ```bash
-pnpm run couch-upgrade-baseline -- --instance-id
+pnpm run couch-upgrade-baseline --instance-id
 ```
 
 ## 4. Re-init keys and migrate
@@ -198,7 +229,7 @@ From `infrastructure/aws-cdk`, refresh the instance id if needed and re-run the
 baseline; compare to the pre-upgrade output (version, markers):
 
 ```bash
-pnpm run couch-upgrade-baseline -- --instance-id
+pnpm run couch-upgrade-baseline --instance-id
 ```
 
 Smoke-test Conductor login, Control Centre, and the collection app.
@@ -210,6 +241,6 @@ Smoke-test Conductor login, Control Centre, and the collection app.
 on-disk state; if auth breaks, use snapshot restore instead.
 
 **Data restore:** follow
-[Recovering couch data volume from EBS Snapshot](../../../../../infrastructure/aws-cdk/README.md#recovering-couch-data-volume-from-ebs-snapshot)
-(`ebsRecoverySnapshotId`). Remove that field from config after a successful
-restore.
+[CouchDB backup recovery on AWS](./CouchBackupRecoveryGuideAWS.md)
+(`ebsRecoverySnapshotId`). Leave that field set after restore — clearing it and
+redeploying replaces the data volume with an empty one.

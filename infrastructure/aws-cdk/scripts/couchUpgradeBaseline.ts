@@ -3,7 +3,7 @@
  *
  *   cp scripts/.env.dist scripts/.env   # fill in values
  *   pnpm run couch-upgrade-baseline
- *   pnpm run couch-upgrade-baseline -- --instance-id
+ *   pnpm run couch-upgrade-baseline --instance-id
  *
  * With --instance-id: look up the Couch EC2 instance from STACK_NAME via
  * CloudFormation and write EC2_INSTANCE_ID into scripts/.env.
@@ -58,7 +58,7 @@ function parseArgs(argv: string[]): {
 }
 
 function printHelp(): void {
-  console.log(`Usage: pnpm run couch-upgrade-baseline [-- --instance-id]
+  console.log(`Usage: pnpm run couch-upgrade-baseline [--instance-id]
 
 Record CouchDB version, DB list, and optional marker stats as JSON.
 
