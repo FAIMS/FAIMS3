@@ -690,6 +690,32 @@ describe('Record status report', () => {
       expect(bNode.skippedChildren).toEqual([a.recordId]);
     });
 
+    test('an unknown-form child at the cap is skipped like elsewhere', async () => {
+      const ghost = await create('Ghost');
+
+      // Chain of Sites deep enough that the last one sits at the cap; its
+      // only child link points at the unknown-form record
+      let childId = ghost.recordId;
+      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
+        const {recordId} = await create('Site', {
+          'site-id': {data: `S${i}`},
+          features: {data: [link(childId)]},
+        });
+        childId = recordId;
+      }
+
+      let node = await report(childId);
+      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
+        node = childField(node, 'features').children[0];
+      }
+      expect(node.truncated).toBe(true);
+      expect(node.skippedChildren).toEqual([ghost.recordId]);
+      expect(childField(node, 'features').createdCount).toBe(0);
+      // scores exactly like the untruncated unknown-form case: own 0.5 plus
+      // one empty expected-child unit
+      expect(node.progress).toBe(0.25);
+    });
+
     test('mutually-linked siblings each report their own cycle cut', async () => {
       // a <-> b, both children of the root: each sibling's subtree must
       // contain the other with the back edge skipped, so a report shaped by

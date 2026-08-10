@@ -229,6 +229,15 @@ async function isLiveRecord(
   recordId: string
 ): Promise<boolean> {
   const record = await ctx.engine.core.getRecord(recordId);
+  // Same unknown-form rule as the full walk: an unmeasurable child is skipped
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      ctx.engine.uiSpec.viewsets,
+      record.type
+    )
+  ) {
+    return false;
+  }
   const {selectedHead} = ctx.engine.core.resolveHead({
     recordId,
     heads: record.heads,
