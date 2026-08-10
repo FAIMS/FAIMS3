@@ -186,7 +186,7 @@ We provide a script called `config.sh` to manage configurations. This script can
    or
 
    ```bash
-   pnpm run config -- <push/pull> <environment> [options]
+   pnpm run config <push/pull> <environment> [options]
    ```
 
    - `<push/pull>`: Use `pull` to fetch configurations, `push` to update the repository.
@@ -239,7 +239,7 @@ To switch between different environments:
    or
 
    ```bash
-   pnpm run config -- pull prod
+   pnpm run config pull prod
    ```
 
 2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
@@ -548,101 +548,20 @@ This
 
 This operation is a "no-op" if already setup.
 
-# Recovering couch data volume from EBS Snapshot
+# Recovering couch data volume from EBS snapshot
 
-The couch data volume is handled separately from the OS data in your instance. This allows the data volume to be backed up regularly without needing to be concerned about producing AMIs which associate the boot volume with EBS snapshots (such as in the AWS Backup for EC2 process). The config contains a flag to recover the EBS data volume from an existing EBS snapshot ID. The process to perform this recovery is explained below.
+Couch data lives on a separate EBS volume (`/dev/xvdf`). AWS Backup
+(`BackupConstruct`) snapshots that volume on the `backup` schedule; ad-hoc
+snapshots use `scripts/ec2Snapshot.sh`. Restore is driven by
+`couch.ebsRecoverySnapshotId` (`snap-…`).
 
-TODO: Verify and test these instructions with real data.
+**Operator procedure:** [CouchDB backup recovery on AWS](../../docs/developer/docs/source/markdown/CouchBackupRecoveryGuideAWS.md)
+— prepare-replace → set snap id → `cdk deploy` → `ec2StartInstance.sh` →
+`migrate-with-keys` → **leave the snapshot id set** (removing it and redeploying
+replaces the volume with an empty disk).
 
-If you need to recover your CouchDB data from a previously created EBS snapshot, follow these steps:
-
-1. **Locate your EBS snapshot ID**
-   - Go to the AWS Management Console
-   - Navigate to EC2 > Snapshots
-   - Find the snapshot you want to use for recovery
-   - Copy the Snapshot ID (it should look like `snap-0123456789abcdef0`)
-
-2. **Update your configuration file**
-   - Open your infrastructure configuration file (typically `configs/<stage>.json`)
-   - Locate the `couch` section
-   - Add or update the `ebsRecoverySnapshotId` field with your snapshot ID:
-
-     ```json
-     "couch": {
-       ...
-       "ebsRecoverySnapshotId": "snap-0123456789abcdef0"
-     }
-     ```
-
-   - The `volumeSize` field will be ignored if a snapshot ID is provided
-
-3. **Deploy your updated infrastructure**
-   - Run your deployment command, for example:
-     ```
-     export CONFIG_FILE_NAME=<stage>.json
-     cdk deploy
-     ```
-
-4. **Verify the recovery**
-   - Once deployment is complete, SSM or SSH connect into your EC2 instance
-     - TODO: verify a process to do this in production context - right now permissions would not allow this connection
-   - Check that the CouchDB data volume is mounted correctly:
-     ```
-     df -h /opt/couchdb/data
-     ```
-   - Verify that CouchDB is running and can access the data:
-     ```
-     curl http://localhost:5984
-     ```
-
-5. **After Recovery**
-   - It's probably safe to continue using
-   - Once recovery is successful and you've verified your data, you may want to remove the `ebsRecoverySnapshotId` from your config to prevent accidental reuse in future deployments.
-   - If you need to change the volume size or create a new volume:
-     1. You'll need to manually delete the existing EBS volume through the AWS console or CLI.
-     2. Remove the `ebsRecoverySnapshotId` from your config.
-     3. Add the desired `volumeSize` to your config.
-     4. Run `cdk deploy` to create a new volume with the specified size.
-
-Remember:
-
-- Always use CDK diff to understand the likely ramifications of your CDK update
-- If you want to keep using the recovered data but need more space, consider using AWS EBS volume modification to increase the size of the existing volume instead of creating a new one.
-- Deleting an EBS volume is irreversible. Always ensure you have backups before making such changes.
-
-## Recovery process diagram (proposed)
-
-The below diagram indicates three backup/recovery processes for couch
-
-1. (CouchDB replication - left) Nightly startup of idle couch instance, replicate all databases from live DB, shut down. Run EBS snapshot.
-2. (EBS Snapshots - middle) Nightly snapshots of live db data volume
-3. (Recovery options - right)
-   1. (Realtime rollover) Try recovering but starting up idle instance, adding to target group for load balancer, and removing unhealthy instance. This could be followed by getting the latest snapshot from the live instance and recovering it, depending on recovery priorities.
-   2. (Recover backup DB from EBS snapshot) If prod continues to operate but data has been lost, could use idle database to recover from an EBS snapshot, and then replicate lost data.
-   3. (Recover live DB from EBS snapshot) If both databases are not operational and require recovery, can directly recover the live DB from the latest EBS snapshot.
-
-```mermaid
-graph TD
-    A[Start] --> B[Nightly Backup Process]
-    B --> C[Start idle instance]
-    C --> D[Replicate all databases]
-    D --> E[Shutdown idle instance]
-    E --> F[Take EBS snapshot of backup instance]
-
-    G[Regular Process] --> H[Take regular EBS snapshots of live DB]
-
-    I[Disaster Recovery Situation] --> J{Try immediate recovery}
-    J -->|Yes| K[Start idle instance]
-    K --> L[Point load balancer to idle instance]
-    L --> M{Does it work?}
-    M -->|Yes| N[Recovery complete]
-    M -->|No| O[Use EBS snapshot]
-    J -->|No| O
-    O --> P[Recover data volume of main instance]
-    P --> Q[Restart main instance]
-    Q --> R[Point load balancer to main instance]
-    R --> N
-```
+Related scripts under `scripts/`: `ec2Snapshot.sh`, `ec2PrepareReplace.sh`,
+`ec2StartInstance.sh`, `ssmCouchTunnel.sh` (VPC-only Couch / proxy stacks).
 
 # Email Configuration
 
