@@ -1,4 +1,3 @@
-import {z} from 'zod';
 import {UiSpecModel} from '../uiSpecification/types';
 import {getViewsForViewSet} from '../uiSpecification/utils';
 import {FormDataEntry, FormUpdateData} from './types';
@@ -7,15 +6,13 @@ import {FormDataEntry, FormUpdateData} from './types';
 // visible at all
 export type FieldVisibilityMap = Record<string, string[]>;
 
-// Schema so API responses embedding a completion result can reuse it
-export const completionResultSchema = z.object({
-  progress: z.number(),
-  requiredCount: z.number(),
-  completedCount: z.number(),
+export type CompletionResult = {
+  progress: number;
+  requiredCount: number;
+  completedCount: number;
   /** Required fields the user hasn't filled in yet. */
-  incompleteRequired: z.array(z.string()),
-});
-export type CompletionResult = z.infer<typeof completionResultSchema>;
+  incompleteRequired: string[];
+};
 
 /**
  * Builds a CompletionResult from the required-field total and the ids still

@@ -25,9 +25,7 @@ export class DocumentValidationError extends Error {
       docMsg = undefined;
     }
     super(
-      `The target record (id = ${recordId}) failed validation.\nOperation: ${operation}.\nValidation error: ${validationErr}.\nDocument contents:\n${
-        docMsg ?? 'Could not be serialised as JSON...'
-      }.`
+      `The target record (id = ${recordId}) failed validation.\nOperation: ${operation}.\nValidation error: ${validationErr}.\nDocument contents:\n${docMsg ?? 'Could not be serialised as JSON...'}.`
     );
     this.name = 'DocumentValidationError';
   }
@@ -76,9 +74,7 @@ export class RecordConflictError extends Error {
     public readonly heads: string[]
   ) {
     super(
-      `Record "${recordId}" has ${heads.length} conflicting heads: ${heads.join(
-        ', '
-      )}`
+      `Record "${recordId}" has ${heads.length} conflicting heads: ${heads.join(', ')}`
     );
     this.name = 'RecordConflictError';
   }

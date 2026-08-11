@@ -80,53 +80,12 @@ function projectIdFromReq(req: express.Request): string {
 }
 
 /**
- * Builds the project's data engine; every record route needs the same
- * database + compiled ui-spec pair. The raw database is returned too for the
- * routes that write outside the engine.
- */
-async function getDataEngine(projectId: string) {
-  const dataDb = await getDataDb(projectId);
-  const uiSpec = await getCompiledUiSpecModel(projectId);
-  const engine = new DataEngine({
-    dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
-    uiSpec,
-  });
-  return {engine, dataDb};
-}
-
-/**
- * Loads the record stub and enforces a record-level permission, which the
- * route middleware cannot check: it depends on the record's creator.
- */
-async function getRecordEnforcingPermission({
-  engine,
-  recordId,
-  isPermitted,
-  action,
-}: {
-  engine: DataEngine;
-  recordId: string;
-  isPermitted: (createdBy: string) => boolean;
-  action: 'read' | 'edit' | 'delete';
-}) {
-  const record = await engine.core.getRecord(recordId);
-  if (!isPermitted(record.created_by)) {
-    throw new Exceptions.ForbiddenException(
-      `You do not have permission to ${action} this record.`
-    );
-  }
-  return record;
-}
-
-/**
  * Translates data-model layer errors into HTTP-oriented API exceptions.
- * Record-level permission failures ({@link Exceptions.ForbiddenException})
- * pass through unchanged, as does any unrecognized error.
+ * Callers that must surface 403 before this mapping should rethrow
+ * {@link Exceptions.ForbiddenException} themselves (see get/update/delete handlers).
+ * Any unrecognized error is rethrown unchanged.
  */
 function mapDataModelError(err: unknown): never {
-  if (err instanceof Exceptions.ForbiddenException) {
-    throw err;
-  }
   if (err instanceof RecordDeletedError) {
     throw new Exceptions.InvalidRequestException(err.message);
   }
@@ -180,7 +139,12 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       const createdBy = req.body.createdBy ?? req.user.user_id;
 
       try {
-        const {engine} = await getDataEngine(projectId);
+        const dataDb = await getDataDb(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
+        const engine = new DataEngine({
+          dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+          uiSpec,
+        });
 
         const validated = newFormRecordSchema.parse({
           formId: req.body.formId,
@@ -229,7 +193,12 @@ recordsRouter.get(
         : undefined;
 
     try {
-      const {engine} = await getDataEngine(projectId);
+      const dataDb = await getDataDb(projectId);
+      const uiSpec = await getCompiledUiSpecModel(projectId);
+      const engine = new DataEngine({
+        dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
 
       const result = await engine.query.listMinimalRecordMetadata({
         projectId,
@@ -286,14 +255,25 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       const createdBy = req.body.createdBy ?? req.user.user_id;
 
       try {
-        const {engine} = await getDataEngine(projectId);
-        await getRecordEnforcingPermission({
-          engine,
-          recordId,
-          isPermitted: createdBy =>
-            canEditRecord({user: req.user!, projectId, createdBy}),
-          action: 'edit',
+        const dataDb = await getDataDb(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
+        const engine = new DataEngine({
+          dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+          uiSpec,
         });
+
+        const record = await engine.core.getRecord(recordId);
+        if (
+          !canEditRecord({
+            user: req.user,
+            projectId,
+            createdBy: record.created_by,
+          })
+        ) {
+          throw new Exceptions.ForbiddenException(
+            'You do not have permission to edit this record.'
+          );
+        }
 
         const revision = await engine.form.createRevision({
           recordId,
@@ -302,6 +282,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
         });
         res.status(201).json({revisionId: revision._id});
       } catch (err) {
+        if (err instanceof Exceptions.ForbiddenException) throw err;
         mapDataModelError(err);
       }
     }
@@ -331,14 +312,25 @@ recordsRouter.get(
     const revisionId = req.query.revisionId;
 
     try {
-      const {engine} = await getDataEngine(projectId);
-      await getRecordEnforcingPermission({
-        engine,
-        recordId,
-        isPermitted: createdBy =>
-          canReadRecord({user: req.user!, projectId, createdBy}),
-        action: 'read',
+      const dataDb = await getDataDb(projectId);
+      const uiSpec = await getCompiledUiSpecModel(projectId);
+      const engine = new DataEngine({
+        dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+        uiSpec,
       });
+
+      const record = await engine.core.getRecord(recordId);
+      if (
+        !canReadRecord({
+          user: req.user,
+          projectId,
+          createdBy: record.created_by,
+        })
+      ) {
+        throw new Exceptions.ForbiddenException(
+          'You do not have permission to read this record.'
+        );
+      }
 
       // If the chosen revision has multiple parent heads, pick one deterministically
       // instead of failing the request — appropriate for a read-only JSON API.
@@ -350,6 +342,7 @@ recordsRouter.get(
 
       res.json(formData);
     } catch (err) {
+      if (err instanceof Exceptions.ForbiddenException) throw err;
       mapDataModelError(err);
     }
   }
@@ -377,14 +370,25 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       const {recordId} = req.params;
 
       try {
-        const {engine} = await getDataEngine(projectId);
-        await getRecordEnforcingPermission({
-          engine,
-          recordId,
-          isPermitted: createdBy =>
-            canEditRecord({user: req.user!, projectId, createdBy}),
-          action: 'edit',
+        const dataDb = await getDataDb(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
+        const engine = new DataEngine({
+          dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+          uiSpec,
         });
+
+        const record = await engine.core.getRecord(recordId);
+        if (
+          !canEditRecord({
+            user: req.user,
+            projectId,
+            createdBy: record.created_by,
+          })
+        ) {
+          throw new Exceptions.ForbiddenException(
+            'You do not have permission to edit this record.'
+          );
+        }
 
         const updated = await engine.form.updateRevision({
           recordId,
@@ -395,6 +399,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
         });
         res.json({revisionId: updated._id});
       } catch (err) {
+        if (err instanceof Exceptions.ForbiddenException) throw err;
         mapDataModelError(err);
       }
     }
@@ -422,14 +427,25 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
       const {revisionId} = req.query;
 
       try {
-        const {engine, dataDb} = await getDataEngine(projectId);
-        await getRecordEnforcingPermission({
-          engine,
-          recordId,
-          isPermitted: createdBy =>
-            canDeleteRecord({user: req.user!, projectId, createdBy}),
-          action: 'delete',
+        const dataDb = await getDataDb(projectId);
+        const uiSpec = await getCompiledUiSpecModel(projectId);
+        const engine = new DataEngine({
+          dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+          uiSpec,
         });
+
+        const record = await engine.core.getRecord(recordId);
+        if (
+          !canDeleteRecord({
+            user: req.user,
+            projectId,
+            createdBy: record.created_by,
+          })
+        ) {
+          throw new Exceptions.ForbiddenException(
+            'You do not have permission to delete this record.'
+          );
+        }
 
         await setRecordAsDeleted({
           dataDb,
@@ -439,6 +455,7 @@ if (ENABLE_RECORDS_CRUD_MUTATIONS) {
         });
         res.status(204).send();
       } catch (err) {
+        if (err instanceof Exceptions.ForbiddenException) throw err;
         mapDataModelError(err);
       }
     }
