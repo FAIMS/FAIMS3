@@ -1,5 +1,6 @@
 import {
   currentlyVisibleMap,
+  getFieldsForView,
   getSummaryFieldInformation,
 } from '../uiSpecification/utils';
 import {
@@ -306,11 +307,21 @@ async function walk(
   // Set: a field listed in two visible sections is still one field
   const visibleFields = new Set(Object.values(visibilityMap).flat());
 
-  // Hidden summary fields may hold stale values, so only visible ones report
+  // Condition-hidden summary fields may hold stale values, so they drop out;
+  // statically hidden fields (component-parameters.hidden, e.g. templated
+  // fields) recompute at save and still report
+  const conditionVisibleFields = new Set(
+    Object.keys(visibilityMap).flatMap(viewId =>
+      getFieldsForView(engine.uiSpec, viewId).filter(fieldName => {
+        const {conditionFn} = engine.uiSpec.fields[fieldName];
+        return conditionFn ? conditionFn(values) : true;
+      })
+    )
+  );
   const summaryValues: Record<string, unknown> = {};
   for (const fieldName of getSummaryFieldInformation(engine.uiSpec, formId)
     .fieldNames) {
-    if (visibleFields.has(fieldName)) {
+    if (conditionVisibleFields.has(fieldName)) {
       // null, since JSON serialization would drop an undefined value's key
       summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
     }

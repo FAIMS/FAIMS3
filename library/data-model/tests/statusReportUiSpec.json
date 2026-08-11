@@ -18,6 +18,24 @@
         "persistent": false,
         "displayParent": false
       },
+      "site-label": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Site label",
+          "name": "site-label",
+          "hidden": true,
+          "template": "Site {{site-id}}"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
       "features": {
         "component-namespace": "faims-custom",
         "component-name": "RelatedRecordSelector",
@@ -251,7 +269,13 @@
     "views": {
       "Site-Main": {
         "label": "Main",
-        "fields": ["site-id", "features", "photos", "calibration-ref"]
+        "fields": [
+          "site-id",
+          "site-label",
+          "features",
+          "photos",
+          "calibration-ref"
+        ]
       },
       "Site-Extra": {
         "label": "Extra",
@@ -295,7 +319,7 @@
         "label": "Site",
         "views": ["Site-Main", "Site-Extra"],
         "hridField": "site-id",
-        "summary_fields": ["site-id", "special-note"]
+        "summary_fields": ["site-id", "site-label", "special-note"]
       },
       "Feature": {
         "label": "Feature",

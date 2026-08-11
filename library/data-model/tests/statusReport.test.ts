@@ -876,17 +876,24 @@ describe('Record status report', () => {
       const {recordId} = await create('Site', {'site-id': {data: 'S1'}});
       const result = await report(recordId);
       expect(result.hrid).toBe('S1');
-      expect(result.summaryValues).toEqual({'site-id': 'S1'});
+      expect(result.summaryValues).toEqual({
+        'site-id': 'S1',
+        'site-label': null,
+      });
     });
 
-    test('hidden summary fields are omitted, visible ones reported', async () => {
-      // special-note is a summary field shown only when site-id is SHOW-NOTE
+    test('condition-hidden summary fields are omitted, statically hidden ones report', async () => {
+      // special-note is a summary field shown only when site-id is SHOW-NOTE;
+      // site-label is statically hidden (component-parameters.hidden), the
+      // templated-field pattern, so its saved value still reports
       const stale = await create('Site', {
         'site-id': {data: 'S1'},
         'special-note': {data: 'stale'},
+        'site-label': {data: 'Site S1'},
       });
       expect((await report(stale.recordId)).summaryValues).toEqual({
         'site-id': 'S1',
+        'site-label': 'Site S1',
       });
 
       const shown = await create('Site', {
@@ -895,6 +902,7 @@ describe('Record status report', () => {
       });
       expect((await report(shown.recordId)).summaryValues).toEqual({
         'site-id': 'SHOW-NOTE',
+        'site-label': null,
         'special-note': 'note',
       });
     });
@@ -906,6 +914,7 @@ describe('Record status report', () => {
       });
       expect((await report(recordId)).summaryValues).toEqual({
         'site-id': 'SHOW-NOTE',
+        'site-label': null,
         'special-note': null,
       });
     });
