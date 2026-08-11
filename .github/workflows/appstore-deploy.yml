@@ -99,7 +99,7 @@ jobs:
         run: |
           cd app
           npx cap update ios
-          npx cap sync --deployment ios
+          npx cap sync ios
           cd ios/App; pod install
       - name: Set up XCode version
         uses: maxim-lobanov/setup-xcode@v1

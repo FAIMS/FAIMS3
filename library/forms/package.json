@@ -28,13 +28,13 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@capacitor-community/exif": "^7.0.0",
-    "@capacitor-mlkit/barcode-scanning": "^7.2.1",
-    "@capacitor/camera": "^7.0.2",
-    "@capacitor/core": "^7.4.3",
-    "@capacitor/geolocation": "^7.1.5",
-    "@capgo/capacitor-audio-recorder": "7",
-    "@capgo/capacitor-speech-recognition": "^8.0.4",
+    "@capacitor-community/exif": "^8.0.0",
+    "@capacitor-mlkit/barcode-scanning": "^8.1.0",
+    "@capacitor/camera": "^8.2.2",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/geolocation": "^8.2.0",
+    "@capgo/capacitor-audio-recorder": "^8.2.6",
+    "@capgo/capacitor-speech-recognition": "^8.1.10",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@faims3/data-model": "workspace:*",
@@ -76,10 +76,10 @@
     "vitest": "^4.1.8"
   },
   "peerDependencies": {
-    "@capacitor-community/exif": "^7.0.0",
-    "@capacitor/camera": "^7.0.1",
-    "@capacitor/core": "^7.2.0",
-    "@capacitor/geolocation": "^7.1.1",
+    "@capacitor-community/exif": "^8.0.0",
+    "@capacitor/camera": "^8.0.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/geolocation": "^8.0.0",
     "@tanstack/react-query": "^5.62.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

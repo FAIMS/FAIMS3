@@ -40,7 +40,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@capacitor-community/exif": "^7.0.0",
+    "@capacitor-community/exif": "^8.0.0",
     "env-cmd": "^10.1.0",
     "esbuild": "^0.28.1"
   },

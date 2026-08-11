@@ -17,6 +17,8 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 0,
     },
+    // On Android 16+ (API 36), overlaysWebView/backgroundColor are no-ops;
+    // insets come from EdgeToEdge + CSS env(safe-area-inset-*).
     StatusBar: {
       style: 'Light',
       backgroundColor: '#FAFAFB',
