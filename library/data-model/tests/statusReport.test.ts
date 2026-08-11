@@ -700,7 +700,7 @@ describe('Record status report', () => {
         depth += 1;
       }
       expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
-      expect(node.truncated).toBe(true);
+      expect(node.isTruncated).toBe(true);
       // the capped node still counts its links
       expect(childField(node, 'sub-samples').createdCount).toBe(1);
     });
@@ -722,7 +722,7 @@ describe('Record status report', () => {
         node = childField(node, 'sub-samples').children[0];
       }
       expect(node.recordId).toBe(ids[0]);
-      expect(node.truncated).toBeUndefined();
+      expect(node.isTruncated).toBeUndefined();
       expect(node.progress).toBe(1.0);
     });
 

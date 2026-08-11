@@ -69,7 +69,7 @@ export interface RecordStatusReport {
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
   /** True when the depth cap stopped recursion here: link counts remain, child reports are dropped. */
-  truncated?: boolean;
+  isTruncated?: boolean;
 }
 
 /**
@@ -360,6 +360,6 @@ async function walk(
     ownProgress,
     summaryValues,
     childFields,
-    ...(isAtCap && distinctChildIds.size > 0 ? {truncated: true} : {}),
+    ...(isAtCap && distinctChildIds.size > 0 ? {isTruncated: true} : {}),
   };
 }
