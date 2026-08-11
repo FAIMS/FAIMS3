@@ -10,13 +10,11 @@ import {
   TokenInputSchema,
 } from './inputLimits';
 import {
-  completionResultSchema,
   formRelationshipSchema,
   formUpdateDataSchema,
   hydratedRecordDocumentSchema,
   hydratedRevisionDocumentSchema,
   newFormRecordSchema,
-  RecordStatusChildField,
   RecordStatusReport,
 } from './databaseEngine';
 import {
@@ -1107,36 +1105,7 @@ export const GetRecordResponseSchema = z.object({
 });
 export type GetRecordResponse = z.infer<typeof GetRecordResponseSchema>;
 
-/** One Child-type field in a record status report (recursive, hence z.lazy) */
-export const RecordStatusReportChildFieldSchema: z.ZodType<RecordStatusChildField> =
-  z.lazy(() =>
-    z.object({
-      fieldId: z.string(),
-      relatedFormId: z.string(),
-      required: z.boolean(),
-      createdCount: z.number(),
-      expectedCount: z.number(),
-      children: z.array(RecordStatusReportNodeSchema),
-    })
-  );
-
-/** One node of the recursive completion roll-up tree */
-export const RecordStatusReportNodeSchema: z.ZodType<RecordStatusReport> =
-  z.lazy(() =>
-    z.object({
-      recordId: z.string(),
-      hrid: z.string(),
-      formId: z.string(),
-      progress: z.number(),
-      ownProgress: completionResultSchema,
-      summaryValues: z.record(z.string(), z.unknown()),
-      childFields: z.array(RecordStatusReportChildFieldSchema),
-      truncated: z.boolean().optional(),
-    })
-  );
-
 /** GET record status report response */
-export const GetRecordStatusReportResponseSchema = RecordStatusReportNodeSchema;
 export type GetRecordStatusReportResponse = RecordStatusReport;
 
 /** PATCH update record body */
