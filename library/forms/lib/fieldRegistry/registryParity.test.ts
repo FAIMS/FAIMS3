@@ -11,9 +11,9 @@ describe('field registry completion parity', () => {
     expect(
       offenders,
       `These field types define isCompleteFunction: ${offenders.join(', ')}. ` +
-        'Wire an isCompleteResolver into the API status route ' +
-        '(api/src/api/records.ts, computeRecordStatusReport call) before ' +
-        'relaxing this test, or app and API completion will diverge.'
+        'Wire an isCompleteResolver into every computeRecordStatusReport ' +
+        'caller before relaxing this test, or form and report completion ' +
+        'will diverge.'
     ).toEqual([]);
   });
 });

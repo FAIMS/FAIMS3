@@ -15,7 +15,6 @@ import {
   hydratedRecordDocumentSchema,
   hydratedRevisionDocumentSchema,
   newFormRecordSchema,
-  RecordStatusReport,
 } from './databaseEngine';
 import {
   CreateRootDescriptionSchema,
@@ -54,9 +53,7 @@ export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
 // ==================
 
 // logout
-export const PutLogoutInputSchema = z.object({
-  refreshToken: TokenInputSchema,
-});
+export const PutLogoutInputSchema = z.object({refreshToken: TokenInputSchema});
 export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
 
 // Change Password
@@ -1104,9 +1101,6 @@ export const GetRecordResponseSchema = z.object({
   }),
 });
 export type GetRecordResponse = z.infer<typeof GetRecordResponseSchema>;
-
-/** GET record status report response */
-export type GetRecordStatusReportResponse = RecordStatusReport;
 
 /** PATCH update record body */
 export const PatchUpdateRecordInputSchema = z.object({

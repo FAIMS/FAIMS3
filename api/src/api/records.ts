@@ -17,15 +17,13 @@
  * `/api/notebooks/:id/records`.
  *
  * Read routes are always registered: GET `…/metadata` (paginated, permission-filtered
- * metadata), GET `…/:recordId` (full form data) and GET `…/:recordId/status` (recursive
- * completion roll-up). Mutation routes (POST create, POST fork revision, PUT update,
- * DELETE soft-delete) are compiled in but only registered when
- * {@link ENABLE_RECORDS_CRUD_MUTATIONS} is true.
+ * metadata) and GET `…/:recordId` (full form data). Mutation routes (POST create, POST
+ * fork revision, PUT update, DELETE soft-delete) are compiled in but only registered
+ * when {@link ENABLE_RECORDS_CRUD_MUTATIONS} is true.
  */
 
 import {
   Action,
-  computeRecordStatusReport,
   DatabaseInterface,
   DataDocument,
   DataEngine,
@@ -35,7 +33,6 @@ import {
   GetListRecordsResponse,
   GetRecordQuerySchema,
   GetRecordResponse,
-  GetRecordStatusReportResponse,
   MalformedParentsError,
   newFormRecordSchema,
   NoHeadsError,
@@ -49,7 +46,6 @@ import {
   RecordDeletedError,
   RevisionMismatchError,
   setRecordAsDeleted,
-  UnknownFormTypeError,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -149,9 +145,6 @@ function mapDataModelError(err: unknown): never {
     throw new Exceptions.InvalidRequestException(err.message);
   }
   if (err instanceof MalformedParentsError) {
-    throw new Exceptions.InvalidRequestException(err.message);
-  }
-  if (err instanceof UnknownFormTypeError) {
     throw new Exceptions.InvalidRequestException(err.message);
   }
   throw err;
@@ -357,62 +350,6 @@ recordsRouter.get(
 
       res.json(formData);
     } catch (err) {
-      mapDataModelError(err);
-    }
-  }
-);
-
-/**
- * GET /api/notebooks/:id/records/:recordId/status — recursive completion roll-up
- * for a record and its child records. Children the caller cannot read drop out
- * of the roll-up, so percentages can differ between viewers on mixed-author trees.
- */
-recordsRouter.get(
-  '/:recordId/status',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.READ_MY_PROJECT_RECORDS,
-    getResourceId: req => req.params.id,
-  }),
-  validate({
-    params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
-  }),
-  async (req, res: Response<GetRecordStatusReportResponse>) => {
-    if (!req.user) throw new Exceptions.UnauthorizedException();
-    const projectId = projectIdFromReq(req);
-    const {recordId} = req.params;
-
-    try {
-      const {engine} = await getDataEngine(projectId);
-      await getRecordEnforcingPermission({
-        engine,
-        recordId,
-        isPermitted: createdBy =>
-          canReadRecord({user: req.user!, projectId, createdBy}),
-        action: 'read',
-      });
-
-      // No isCompleteResolver: none is needed today, and the forms
-      // registryParity test points back here when that changes
-      const report = await computeRecordStatusReport({
-        engine,
-        recordId,
-        projectId,
-        recordFilter: rec =>
-          canReadRecord({
-            user: req.user!,
-            projectId,
-            createdBy: rec.createdBy,
-          }),
-      });
-      res.json(report);
-    } catch (err) {
-      // A deleted record has no status; the shared 400 mapping is for mutations
-      if (err instanceof RecordDeletedError) {
-        throw new Exceptions.ItemNotFoundException(
-          `No status is available for record "${recordId}".`
-        );
-      }
       mapDataModelError(err);
     }
   }
