@@ -9,6 +9,7 @@ import {
   CompletionResult,
   formDataToValues,
   IsCompleteResolver,
+  visibleFieldSet,
 } from './completion';
 import {DataEngine} from './engine';
 import {
@@ -240,6 +241,11 @@ function collectChildFields(
   return collected;
 }
 
+/** Truthy outcomes are live children; only full reports (not the at-cap 'live' marker) roll up. */
+const isChildReport = (
+  outcome: RecordStatusReport | 'live' | null | undefined
+): outcome is RecordStatusReport => !!outcome && outcome !== 'live';
+
 type HydratedWalkNode =
   | {status: 'deleted' | 'filtered'}
   | ({status: 'live'} & Awaited<
@@ -318,12 +324,10 @@ async function walk(
     isCompleteResolver: ctx.isCompleteResolver,
   });
 
-  // Set: a field listed in two visible sections is still one field
-  const visibleFields = new Set(Object.values(visibilityMap).flat());
+  const visibleFields = visibleFieldSet(visibilityMap);
 
   // Condition-hidden summary fields drop out (stale leftover values); statically
-  // hidden ones (e.g. templated fields, recomputed at save) still report. The
-  // visibility pass only runs for forms that have summary fields at all.
+  // hidden ones (e.g. templated fields, recomputed at save) still report.
   const summaryValues: Record<string, unknown> = {};
   const summaryFieldNames = getSummaryFieldInformation(
     engine.uiSpec,
@@ -387,9 +391,7 @@ async function walk(
   const childFields = collected.map((field): RecordStatusChildField => {
     const children = field.childIds
       .map(id => outcomes.get(id))
-      .filter(
-        (child): child is RecordStatusReport => !!child && child !== 'live'
-      );
+      .filter(isChildReport);
     const createdCount = field.childIds.filter(id => outcomes.get(id)).length;
     return {
       fieldId: field.fieldId,
@@ -405,9 +407,7 @@ async function walk(
 
   // Each live child is one unit alongside the record's own form; a field
   // expecting children but having none contributes one empty unit
-  const liveReports = [...outcomes.values()].filter(
-    (child): child is RecordStatusReport => !!child && child !== 'live'
-  );
+  const liveReports = [...outcomes.values()].filter(isChildReport);
   const units =
     liveReports.length +
     childFields.filter(

@@ -5,6 +5,13 @@ import {FormDataEntry, FormUpdateData} from './types';
 // visible at all
 export type FieldVisibilityMap = Record<string, string[]>;
 
+/** Distinct visible fields: a field listed in several visible sections is still one field. */
+export function visibleFieldSet(
+  visibilityMap: FieldVisibilityMap
+): Set<string> {
+  return new Set(Object.values(visibilityMap).flat());
+}
+
 export type CompletionResult = {
   progress: number;
   requiredCount: number;
@@ -72,8 +79,7 @@ export function completion({
   let fieldCount = 0;
   const incompleteRequired: string[] = [];
 
-  // Set: a field shown in several visible sections is still one field
-  for (const fieldId of new Set(Object.values(visibilityMap).flat())) {
+  for (const fieldId of visibleFieldSet(visibilityMap)) {
     const fieldSpec = uiSpec.fields[fieldId];
     if (!fieldSpec) {
       continue; // skip unknown fields
