@@ -117,7 +117,8 @@ interface WalkContext {
  * @param isCompleteResolver - Optional per-field-type completeness override
  * @returns The report tree rooted at recordId
  * @throws RecordDeletedError if the root record is deleted
- * @throws RecordFilteredError if recordFilter excludes the root record
+ * @throws RecordFilteredError if recordFilter excludes the root record. Map it
+ *   and not-found to one caller-facing response so record ids can't be probed.
  * @throws UnknownFormTypeError if the root's form is not in the ui-spec
  */
 export async function computeRecordStatusReport({
