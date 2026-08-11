@@ -122,7 +122,8 @@ export async function getImpliedNavigationRelationships(
  * @param formId - The ID of the form/viewset
  * @param data - The form data entries
  * @param visibilityMap - Map of visible fields per section
- * @returns Float 0->1 representing completion percentage
+ * @returns Progress fraction 0->1, required/completed counts and the required
+ *   fields still incomplete
  */
 export function completion(args: {
   uiSpec: UiSpecModel;
