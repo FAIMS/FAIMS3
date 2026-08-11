@@ -64,14 +64,16 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 
 ### Tier 2 — Lifecycle & invites
 
-| Spec                                     | Covers                                                      |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                        |
-| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                  |
-| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user) |
-| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav          |
-| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav   |
-| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control |
+| Spec                                     | Covers                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                                      |
+| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                                |
+| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user)               |
+| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav                        |
+| `web/project-delete-tombstone.e2e.ts`    | Permanent delete writes tombstone; GET `/api/tombstones/:id`              |
+| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav                 |
+| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control               |
+| `app/survey-remote-cleanup.e2e.ts`       | Tombstone delete removes local survey; missing without tombstone keeps it |
 
 ### Tier 3 — Admin, permissions, offline UI, exports
 
