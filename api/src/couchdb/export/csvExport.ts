@@ -18,6 +18,7 @@ import {
   convertDataForOutput,
   getComponentKey,
   MAX_CSV_FILENAME_LENGTH,
+  RELATIONSHIP_COMPONENT,
   truncateWithHash,
 } from './utils';
 
@@ -103,7 +104,7 @@ const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
     'faims-custom::TakePhoto': (fieldName: string) => [fieldName],
     'faims-custom::FileUploader': (fieldName: string) => [fieldName],
 
-    'faims-custom::RelatedRecordSelector': (fieldName: string) => [fieldName],
+    [RELATIONSHIP_COMPONENT]: (fieldName: string) => [fieldName],
   };
 
 // Default generator for unregistered components
