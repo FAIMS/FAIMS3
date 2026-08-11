@@ -1,4 +1,3 @@
-import {ENCODING_SEPARATOR} from '../constants';
 import {
   currentlyVisibleMap,
   getSummaryFieldInformation,
@@ -204,13 +203,8 @@ function collectChildFields(
         continue;
       }
       const {record_id: childId, project_id: linkProjectId} = entry.data;
-      // Legacy app versions stored the system-wide id (listing||notebook);
-      // only the notebook part is comparable to the API's bare project id.
       // An empty-string tag means untagged, like an absent one
-      const linkNotebookId = linkProjectId
-        ? linkProjectId.split(ENCODING_SEPARATOR).pop()
-        : undefined;
-      if (linkNotebookId !== undefined && linkNotebookId !== ctx.projectId) {
+      if (linkProjectId && linkProjectId !== ctx.projectId) {
         continue;
       }
       // An empty id is not a child; a duplicate link is still one child

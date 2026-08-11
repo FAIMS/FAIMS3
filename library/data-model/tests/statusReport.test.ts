@@ -468,21 +468,6 @@ describe('Record status report', () => {
       expect(result.progress).toBe(1.0);
     });
 
-    test('legacy system-wide project ids match on their notebook part', async () => {
-      const local = await create('Feature', {depth: {data: '50'}});
-      const {recordId} = await create('Site', {
-        'site-id': {data: 'S1'},
-        features: {
-          data: [
-            {...link(local.recordId), project_id: `listing||${PROJECT}`},
-            {...link('foreign-record'), project_id: 'listing||other-project'},
-          ],
-        },
-      });
-      const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
-    });
-
     test('a live child with a missing AVP document is skipped, not fatal', async () => {
       const broken = await create('Feature', {depth: {data: '50'}});
       const live = await create('Feature', {depth: {data: '50'}});
@@ -565,7 +550,7 @@ describe('Record status report', () => {
         'site-id': {data: 'S1'},
         features: {
           data: [
-            {...link(feature.recordId), project_id: 'listing||other-project'},
+            {...link(feature.recordId), project_id: 'other-project'},
             link(feature.recordId),
           ],
         },
