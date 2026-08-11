@@ -1,4 +1,3 @@
-import {z} from 'zod';
 import {ENCODING_SEPARATOR} from '../constants';
 import {
   currentlyVisibleMap,
@@ -21,6 +20,7 @@ import {
 } from './exceptions';
 import {
   FormUpdateData,
+  relatedRecordFieldAvpEntrySchema,
   relatedRecordSelectorComponentParamsSchema,
 } from './types';
 
@@ -36,9 +36,9 @@ export const STATUS_REPORT_MAX_DEPTH = 10;
 
 // Only the id and project tag matter here, so legacy vocab-pair drift in a
 // stored link cannot invalidate a live child
-const storedLinkEntrySchema = z.object({
-  record_id: z.string().min(1),
-  project_id: z.string().optional(),
+const storedLinkEntrySchema = relatedRecordFieldAvpEntrySchema.pick({
+  record_id: true,
+  project_id: true,
 });
 
 /** Status of one Child-type related-record field on a record. */
