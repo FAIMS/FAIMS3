@@ -491,33 +491,30 @@ export function getFieldsMatchingCondition(
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
   modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
-  const allFields = getFieldsForView(uiSpec, viewName);
-  // run the checks if there are modified control fields or the original views are empty
-  if (modified.length > 0 || fieldNames.length === 0) {
-    // filter the whole set of views
-    const result = allFields.filter(field => {
-      const fieldDetails = uiSpec.fields[field];
-      // A stale id in the view's field list (field since deleted) is not visible
-      if (!fieldDetails) {
-        return false;
-      }
-      // Visibility condition function (compiled specs always set one; default
-      // to visible if absent, mirroring getViewsMatchingCondition).
-      const visibleByCondition = fieldDetails.conditionFn
-        ? fieldDetails.conditionFn(values)
-        : true;
-      return (
-        visibleByCondition &&
-        // Hidden explicitly in element props - e.g. templated field
-        (options?.includeStaticallyHidden ||
-          !fieldDetails['component-parameters']?.hidden)
-      );
-    });
-    return result;
-  } else {
-    // shortcut return the existing set of fieldNames
-    return fieldNames;
-  }
+  // With no modified controller fields the caller's cached fieldNames are
+  // still current, so filter that smaller set; the same rules apply either way
+  const candidates =
+    modified.length > 0 || fieldNames.length === 0
+      ? getFieldsForView(uiSpec, viewName)
+      : fieldNames;
+  return candidates.filter(field => {
+    const fieldDetails = uiSpec.fields[field];
+    // A stale id in the view's field list (field since deleted) is not visible
+    if (!fieldDetails) {
+      return false;
+    }
+    // Visibility condition function (compiled specs always set one; default
+    // to visible if absent, mirroring getViewsMatchingCondition).
+    const visibleByCondition = fieldDetails.conditionFn
+      ? fieldDetails.conditionFn(values)
+      : true;
+    return (
+      visibleByCondition &&
+      // Hidden explicitly in element props - e.g. templated field
+      (options?.includeStaticallyHidden ||
+        !fieldDetails['component-parameters']?.hidden)
+    );
+  });
 }
 
 export function getViewsMatchingCondition(
@@ -530,20 +527,22 @@ export function getViewsMatchingCondition(
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
   modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
-  const allViews = getViewsForViewSet(uiSpec, viewsetName);
-  // run the checks if there are modified control fields or the original views are empty
-  if (modified.length > 0 || views.length === 0) {
-    // filter the whole set of views
-    const result = allViews.filter(view => {
-      const fn = uiSpec.views[view].conditionFn;
-      if (fn !== undefined) return fn(values);
-      else return true;
-    });
-    return result;
-  } else {
-    // shortcut return the existing set of views
-    return views;
-  }
+  // With no modified controller fields the caller's cached views are still
+  // current, so filter that smaller set; the same rules apply either way
+  const candidates =
+    modified.length > 0 || views.length === 0
+      ? getViewsForViewSet(uiSpec, viewsetName)
+      : views;
+  return candidates.filter(view => {
+    // A stale id in the viewset's view list (section since deleted) is not visible
+    const viewDetails = uiSpec.views[view];
+    if (!viewDetails) {
+      return false;
+    }
+    const fn = viewDetails.conditionFn;
+    if (fn !== undefined) return fn(values);
+    else return true;
+  });
 }
 
 // check whether this field is a 'controller' field for branching

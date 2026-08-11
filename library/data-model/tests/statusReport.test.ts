@@ -947,6 +947,19 @@ describe('Record status report', () => {
       const result = await report(recordId);
       expect(result.summaryValues).toEqual({});
     });
+
+    test('a stale section id in the viewset does not fail visibility', () => {
+      // A section deleted in the designer can stay listed in its viewset
+      const {uiSpec: staleSpec} = JSON.parse(uiSpecData) as NotebookDefinition;
+      staleSpec.viewsets['Photo'].views.push('Deleted-Section');
+      compileUiSpecConditionals(staleSpec);
+      const visible = currentlyVisibleMap({
+        values: {},
+        uiSpec: staleSpec as unknown as CompiledNotebookUiSpec,
+        viewsetId: 'Photo',
+      });
+      expect(Object.keys(visible)).toEqual(['Photo-Main']);
+    });
   });
 
   describe('completion (moved from forms)', () => {
