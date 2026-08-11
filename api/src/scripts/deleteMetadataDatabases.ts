@@ -5,7 +5,7 @@
  *
  * Usage (from api/):
  *   pnpm run delete-metadata-databases
- *   pnpm run delete-metadata-databases -- --dry-run
+ *   pnpm run delete-metadata-databases --dry-run
  */
 import * as readline from 'readline';
 import {ProjectDocument} from '@faims3/data-model';
