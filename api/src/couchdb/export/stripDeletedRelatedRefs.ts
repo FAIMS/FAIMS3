@@ -9,14 +9,12 @@ import {
   CompiledNotebookUiSpec,
 } from '@faims3/data-model';
 
-import {getComponentKey} from './utils';
+import {getComponentKey, RELATIONSHIP_COMPONENT} from './utils';
 
 /** Couch data DB as returned by {@link getDataDb} or test fakes typed as {@link DataDocument}. */
 export type StripRelatedRefsDataDb =
   | DataDbType
   | DatabaseInterface<DataDocument>;
-
-const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
 
 const DEFAULT_STRIP_CONFLICT_BEHAVIOUR = 'pickLast' as const;
 

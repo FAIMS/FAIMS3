@@ -76,6 +76,12 @@ export const relatedTypeSchema = z.enum([
 ]);
 export type RelatedType = z.infer<typeof relatedTypeSchema>;
 
+/** Component type whose field values hold forward links to related records. */
+export const RELATED_RECORD_SELECTOR = {
+  namespace: 'faims-custom',
+  name: 'RelatedRecordSelector',
+} as const;
+
 /**
  * One RelatedRecordSelector link as stored in an AVP `data` value (revision field map).
  * Same shape as {@link relationshipInstanceSchema} except `field_id` is omitted (that

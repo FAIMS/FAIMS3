@@ -485,7 +485,8 @@ export function getFieldsMatchingCondition(
   values: {[field_name: string]: any},
   fieldNames: string[],
   viewName: string,
-  touched: {[field_name: string]: any}
+  touched: {[field_name: string]: any},
+  options?: {includeStaticallyHidden?: boolean}
 ) {
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
@@ -496,6 +497,10 @@ export function getFieldsMatchingCondition(
     // filter the whole set of views
     const result = allFields.filter(field => {
       const fieldDetails = uiSpec.fields[field];
+      // A stale id in the view's field list (field since deleted) is not visible
+      if (!fieldDetails) {
+        return false;
+      }
       // Visibility condition function (compiled specs always set one; default
       // to visible if absent, mirroring getViewsMatchingCondition).
       const visibleByCondition = fieldDetails.conditionFn
@@ -504,7 +509,8 @@ export function getFieldsMatchingCondition(
       return (
         visibleByCondition &&
         // Hidden explicitly in element props - e.g. templated field
-        !fieldDetails['component-parameters']?.hidden
+        (options?.includeStaticallyHidden ||
+          !fieldDetails['component-parameters']?.hidden)
       );
     });
     return result;

@@ -2,6 +2,7 @@ import {
   Annotations,
   FAIMSAttachmentReference,
   FieldSummary,
+  RELATED_RECORD_SELECTOR,
 } from '@faims3/data-model';
 import {generateFilenameForAttachment} from './attachmentExport';
 
@@ -49,7 +50,10 @@ const ADDRESS_COMPONENT = 'faims-custom::AddressField';
 const MAP_COMPONENT = 'mapping-plugin::MapFormField';
 
 /** Component key for relationship list (type/id joined with ;). */
-const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
+export const RELATIONSHIP_COMPONENT = getComponentKey(
+  RELATED_RECORD_SELECTOR.namespace,
+  RELATED_RECORD_SELECTOR.name
+);
 
 /**
  * generate a suitable value for the CSV export from a field value.  Serialise

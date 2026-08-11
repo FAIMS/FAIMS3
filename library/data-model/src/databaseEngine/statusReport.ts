@@ -1,6 +1,6 @@
 import {
   currentlyVisibleMap,
-  getFieldsForView,
+  getFieldsMatchingCondition,
   getSummaryFieldInformation,
 } from '../uiSpecification/utils';
 import {
@@ -21,15 +21,10 @@ import {
 } from './exceptions';
 import {
   FormUpdateData,
+  RELATED_RECORD_SELECTOR,
   relatedRecordFieldAvpEntrySchema,
   relatedRecordSelectorComponentParamsSchema,
 } from './types';
-
-/** Component type whose field values hold forward links to related records. */
-export const RELATED_RECORD_SELECTOR = {
-  namespace: 'faims-custom',
-  name: 'RelatedRecordSelector',
-} as const;
 
 // Backstop against corrupt/pathological deep data (real trees are ~4 levels);
 // it also bounds the response, which repeats a shared subtree once per path
@@ -307,19 +302,26 @@ async function walk(
   // Set: a field listed in two visible sections is still one field
   const visibleFields = new Set(Object.values(visibilityMap).flat());
 
-  // Condition-hidden summary fields may hold stale leftover values, so they
-  // drop out; statically hidden fields (component-parameters.hidden) are only
-  // excluded from form entry (e.g. templated fields, recomputed at save) and
-  // still report
+  // Condition-hidden summary fields drop out (stale leftover values); statically
+  // hidden ones (e.g. templated fields, recomputed at save) still report
+  const summaryVisible = new Set(
+    Object.keys(visibilityMap).flatMap(viewId =>
+      getFieldsMatchingCondition(
+        engine.uiSpec,
+        values,
+        [],
+        viewId,
+        {},
+        {
+          includeStaticallyHidden: true,
+        }
+      )
+    )
+  );
   const summaryValues: Record<string, unknown> = {};
   for (const fieldName of getSummaryFieldInformation(engine.uiSpec, formId)
     .fieldNames) {
-    const isInVisibleView = Object.keys(visibilityMap).some(viewId =>
-      getFieldsForView(engine.uiSpec, viewId).includes(fieldName)
-    );
-    if (!isInVisibleView) continue;
-    const {conditionFn} = engine.uiSpec.fields[fieldName];
-    if (conditionFn && !conditionFn(values)) continue;
+    if (!summaryVisible.has(fieldName)) continue;
     // null, since JSON serialization would drop an undefined value's key
     summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
   }
@@ -336,35 +338,25 @@ async function walk(
   // fetched once and counts as one roll-up unit
   const reports = new Map<string, RecordStatusReport | null>();
   const liveAtCap = new Set<string>();
-  if (isAtCap) {
+  ctx.path.add(recordId);
+  try {
     for (const childId of distinctChildIds) {
-      // Same cycle rule as the full walk: a back edge is not a live child
-      if (childId === recordId || ctx.path.has(childId)) {
-        continue;
-      }
       try {
-        if ((await hydrateWalkNode(ctx, childId)).status === 'live') {
+        if (!isAtCap) {
+          reports.set(childId, await walk(ctx, childId, depth + 1));
+        } else if (
+          // Same cycle rule as the full walk: a back edge is not a live child
+          !ctx.path.has(childId) &&
+          (await hydrateWalkNode(ctx, childId)).status === 'live'
+        ) {
           liveAtCap.add(childId);
         }
       } catch (err) {
-        absorbSkippableChildError(err);
+        reports.set(childId, absorbSkippableChildError(err));
       }
     }
-  } else {
-    ctx.path.add(recordId);
-    try {
-      for (const childId of distinctChildIds) {
-        let childReport: RecordStatusReport | null;
-        try {
-          childReport = await walk(ctx, childId, depth + 1);
-        } catch (err) {
-          childReport = absorbSkippableChildError(err);
-        }
-        reports.set(childId, childReport);
-      }
-    } finally {
-      ctx.path.delete(recordId);
-    }
+  } finally {
+    ctx.path.delete(recordId);
   }
 
   const childFields = collected.map((field): RecordStatusChildField => {
