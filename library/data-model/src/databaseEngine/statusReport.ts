@@ -213,8 +213,8 @@ function collectChildFields(
       if (linkNotebookId !== undefined && linkNotebookId !== ctx.projectId) {
         continue;
       }
-      // A duplicate link to the same child is still one child
-      if (!childIds.includes(childId)) {
+      // An empty id is not a child; a duplicate link is still one child
+      if (childId && !childIds.includes(childId)) {
         childIds.push(childId);
       }
     }

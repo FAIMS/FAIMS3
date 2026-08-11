@@ -244,7 +244,9 @@ describe('Record status report', () => {
       const feature = await create('Feature', {depth: {data: '50'}});
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
-        features: {data: [{not_a_link: true}, link(feature.recordId)]},
+        features: {
+          data: [{not_a_link: true}, {record_id: ''}, link(feature.recordId)],
+        },
       });
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
