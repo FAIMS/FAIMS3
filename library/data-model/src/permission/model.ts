@@ -415,7 +415,7 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.READ_PROJECT_TOMBSTONE]: {
     name: 'Read Project Tombstone',
     description:
-      'Look up whether a survey ID was permanently deleted and view basic deletion metadata',
+      'Look up whether a project was permanently deleted and view basic deletion metadata',
     resourceSpecific: false,
     resource: Resource.PROJECT,
   },
