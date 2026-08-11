@@ -250,7 +250,6 @@ const fileUploaderSchemaFunction = (props: FileUploaderProps) => {
   },
   "initialValue": null,
   "persistent": true,
-  "displayParent": false,
   "meta": {
     "annotation": {"include": true, "label": "Document notes"},
     "uncertainty": {"include": false, "label": ""}
