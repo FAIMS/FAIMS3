@@ -16,6 +16,7 @@ import {
   UiSpecForm,
   ValuesObject,
 } from './types';
+import {compileComputedExpressionForForm} from './parentForms';
 
 /**
  * Retrieves a viewset from the UI specification by its ID
@@ -598,11 +599,15 @@ export function compileUiSpecConditionals(
       const expr = fieldDef['component-parameters']?.expression;
       if (typeof expr === 'string' && expr.trim() !== '') {
         try {
-          const compiled = compileComputedExpression(
-            expr,
-            expressionFieldTypes,
-            requiredType
-          );
+          // Per-form compile so parent.<Field-ID> references type against
+          // this form's possible parent forms.
+          const compiled = compileComputedExpressionForForm({
+            source: expr,
+            uiSpecification: uiSpecification as UiSpecModel,
+            formId:
+              getViewsetForField(uiSpecification as UiSpecModel, field) ?? '',
+            requiredType,
+          });
           fieldDef.expressionFn = compiled.evaluate;
           fieldDef.expressionRefs = compiled.references;
         } catch (e) {
