@@ -556,7 +556,7 @@ export const fetchProjectMetadataAndSpec = fetchNotebookDetails;
 /**
  * How the server classifies a notebook that is absent from the active directory
  * listing (`includeArchived=false`). Used to decide immediate archival cleanup
- * vs absent-id streak confirmation.
+ * vs tombstone-confirmed deletion.
  */
 export type NotebookServerLifecycleProbe =
   | 'active'
@@ -567,10 +567,10 @@ export type NotebookServerLifecycleProbe =
 /**
  * GET `/api/notebooks/:id` for a local notebook missing from the active directory.
  *
- * - `archived`: remove locally on first successful read
- * - `missing`: deleted or no access (401/403/404) — caller applies absent streak
+ * - `archived`: remove locally on first successful read (secure lifecycle signal)
+ * - `missing`: deleted or no access (401/403/404) — caller must confirm via tombstone
  * - `active`: still exists but not directory-listed (unexpected); keep local copy
- * - `unreachable`: network/other HTTP failure — do not advance absent streak
+ * - `unreachable`: network/other HTTP failure — keep local copy
  */
 export async function probeNotebookServerLifecycle({
   projectId,
@@ -614,4 +614,51 @@ export async function probeNotebookServerLifecycle({
   }
 
   return 'active';
+}
+
+/**
+ * Result of looking up a survey deletion tombstone.
+ *
+ * - `tombstoned`: server has a tombstone — safe to remove local data
+ * - `not_tombstoned`: 404 — no proof of deletion; keep local data
+ * - `unreachable`: network or other error — keep local data as a precaution
+ */
+export type ProjectTombstoneProbe =
+  | 'tombstoned'
+  | 'not_tombstoned'
+  | 'unreachable';
+
+/**
+ * GET `/api/tombstones/:id` — proof that a survey was permanently deleted.
+ */
+export async function probeProjectTombstone({
+  projectId,
+  serverUrl,
+  token,
+}: {
+  projectId: string;
+  serverUrl: string;
+  token: string;
+}): Promise<ProjectTombstoneProbe> {
+  const url = `${serverUrl}/api/tombstones/${projectId}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    return 'unreachable';
+  }
+
+  if (response.status === 404) {
+    return 'not_tombstoned';
+  }
+
+  if (response.ok) {
+    return 'tombstoned';
+  }
+
+  return 'unreachable';
 }
