@@ -693,24 +693,39 @@ describe('Record status report', () => {
       expect(childField(node, 'sub-samples').createdCount).toBe(1);
     });
 
-    /** Builds a Site chain so the capped node links bottomId; returns that node. */
-    const cappedNodeOver = async (bottomId: string, extras = {}) => {
+    /**
+     * Builds a Site chain of `levels` records over bottomId and returns the
+     * root id. The default leaves bottomId one level past the cap, where the
+     * capped node's liveness check judges it; `STATUS_REPORT_MAX_DEPTH` makes
+     * bottomId itself the capped node.
+     */
+    const buildChainOver = async (
+      bottomId: string,
+      levels = STATUS_REPORT_MAX_DEPTH + 1
+    ) => {
       let child = bottomId;
       let recordId = '';
-      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
+      for (let i = 0; i < levels; i++) {
         ({recordId} = await create('Site', {
           'site-id': {data: `S${i}`},
           features: {data: [link(child)]},
         }));
         child = recordId;
       }
-      let node = await report(recordId, extras);
+      return recordId;
+    };
+
+    /** Follows the features chain down to the node at the depth cap. */
+    const descendToCap = (root: RecordStatusReport) => {
+      let node = root;
       for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
         node = childField(node, 'features').children[0];
       }
-      expect(node.isTruncated).toBe(true);
       return node;
     };
+
+    const cappedNodeOver = async (bottomId: string, extras = {}) =>
+      descendToCap(await report(await buildChainOver(bottomId), extras));
 
     test('a deleted child at the depth cap is not counted', async () => {
       const dead = await create('Site', {'site-id': {data: 'dead'}});
@@ -727,6 +742,65 @@ describe('Record status report', () => {
         expectedCount: 1,
       });
       expect(node.progress).toBe(0.25);
+      // no live child report was dropped, so the node is not truncated
+      expect(node.isTruncated).toBeUndefined();
+    });
+
+    test('a child with a missing AVP document is not counted at the cap', async () => {
+      const broken = await create('Site', {'site-id': {data: 'B'}});
+      const revision = await rawDb.get<{avps: Record<string, string>}>(
+        broken.revisionId
+      );
+      const avpDoc = await rawDb.get(Object.values(revision.avps)[0]);
+      await rawDb.remove(avpDoc);
+
+      const node = await cappedNodeOver(broken.recordId);
+      expect(childField(node, 'features').createdCount).toBe(0);
+    });
+
+    test('a back edge into the walk path is not counted at the cap', async () => {
+      // The capped record itself links the chain root, an ancestor on the path
+      const capped = await create('Site', {'site-id': {data: 'B'}});
+      const rootId = await buildChainOver(
+        capped.recordId,
+        STATUS_REPORT_MAX_DEPTH
+      );
+      await engine.form.updateRevision({
+        recordId: capped.recordId,
+        revisionId: capped.revisionId,
+        update: {
+          'site-id': {data: 'B'},
+          features: {data: [link(rootId)]},
+        },
+        mode: 'new',
+        updatedBy: USER,
+      });
+
+      const node = descendToCap(await report(rootId));
+      expect(node.recordId).toBe(capped.recordId);
+      expect(childField(node, 'features').createdCount).toBe(0);
+    });
+
+    test('a self link at the depth cap is not counted', async () => {
+      const capped = await create('Site', {'site-id': {data: 'B'}});
+      await engine.form.updateRevision({
+        recordId: capped.recordId,
+        revisionId: capped.revisionId,
+        update: {
+          'site-id': {data: 'B'},
+          features: {data: [link(capped.recordId)]},
+        },
+        mode: 'new',
+        updatedBy: USER,
+      });
+
+      const node = descendToCap(
+        await report(
+          await buildChainOver(capped.recordId, STATUS_REPORT_MAX_DEPTH)
+        )
+      );
+      expect(node.recordId).toBe(capped.recordId);
+      expect(childField(node, 'features').createdCount).toBe(0);
     });
 
     test('recordFilter excludes children at the depth cap too', async () => {

@@ -68,7 +68,7 @@ export interface RecordStatusReport {
   /** Raw values of the form's currently visible summary_fields, keyed by field name. */
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
-  /** True when the depth cap stopped recursion here: live-child counts remain, child reports are dropped. */
+  /** True when the depth cap dropped this node's live child reports: live-child counts remain. */
   isTruncated?: boolean;
 }
 
@@ -224,40 +224,43 @@ function collectChildFields(
   return collected;
 }
 
+type HydratedWalkNode =
+  | {status: 'deleted' | 'filtered'}
+  | ({status: 'live'} & Awaited<
+      ReturnType<DataEngine['form']['getExistingFormData']>
+    >);
+
 /**
- * Recursion-free record-level liveness check used at the depth cap, where
- * children still gate required-field completion but are not hydrated.
+ * Hydrates one record and applies the walk's exclusion rules, so the full
+ * walk and the depth-cap liveness check score a record by exactly the same
+ * rules. Unknown forms and unreadable documents throw (absorbable for
+ * children via absorbSkippableChildError).
  */
-async function isLiveRecord(
+async function hydrateWalkNode(
   ctx: WalkContext,
   recordId: string
-): Promise<boolean> {
-  const record = await ctx.engine.core.getRecord(recordId);
-  // Same unknown-form rule as the full walk: an unmeasurable child is skipped
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      ctx.engine.uiSpec.viewsets,
-      record.type
-    )
-  ) {
-    return false;
-  }
-  const {selectedHead} = ctx.engine.core.resolveHead({
+): Promise<HydratedWalkNode> {
+  const {engine} = ctx;
+  const node = await engine.form.getExistingFormData({
     recordId,
-    heads: record.heads,
-    behavior: 'pickFirst',
+    config: {conflictBehaviour: 'pickFirst'},
   });
-  const revision = await ctx.engine.core.getRevision(selectedHead);
-  if (revision.deleted) {
-    return false;
+  if (node.context.revision.deleted) {
+    return {status: 'deleted'};
   }
   if (
     ctx.recordFilter &&
-    !ctx.recordFilter({recordId, createdBy: record.created_by})
+    !ctx.recordFilter({recordId, createdBy: node.context.record.createdBy})
   ) {
-    return false;
+    return {status: 'filtered'};
   }
-  return true;
+  // hasOwnProperty, since `in` also matches prototype keys ('constructor')
+  if (
+    !Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, node.formId)
+  ) {
+    throw new UnknownFormTypeError(recordId, node.formId);
+  }
+  return {status: 'live', ...node};
 }
 
 /**
@@ -276,27 +279,15 @@ async function walk(
   }
   const {engine} = ctx;
 
-  const {formId, data, context} = await engine.form.getExistingFormData({
-    recordId,
-    config: {conflictBehaviour: 'pickFirst'},
-  });
-  if (context.revision.deleted) {
-    return null;
-  }
-  if (
-    ctx.recordFilter &&
-    !ctx.recordFilter({recordId, createdBy: context.record.createdBy})
-  ) {
+  const node = await hydrateWalkNode(ctx, recordId);
+  if (node.status !== 'live') {
     // Filtered children drop out silently; the root must not read as deleted
-    if (depth === 0) {
+    if (node.status === 'filtered' && depth === 0) {
       throw new RecordFilteredError(recordId);
     }
     return null;
   }
-  // hasOwnProperty, since `in` also matches prototype keys ('constructor')
-  if (!Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, formId)) {
-    throw new UnknownFormTypeError(recordId, formId);
-  }
+  const {formId, data, context} = node;
 
   const values = formDataToValues(data);
   const visibilityMap = currentlyVisibleMap({
@@ -328,9 +319,9 @@ async function walk(
   const collected = collectChildFields(ctx, visibleFields, data);
   const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
 
-  // At the cap children are not walked: a recursion-free liveness check still
-  // gates required-field completion, but capped children carry no reports and
-  // so no roll-up units
+  // At the cap children are not recursed into: the walk's own hydration rules
+  // still decide liveness for required-field completion, but capped children
+  // carry no reports and so no roll-up units
   const isAtCap = depth >= STATUS_REPORT_MAX_DEPTH;
 
   // One walk per distinct child, so a child linked from several fields is
@@ -339,8 +330,12 @@ async function walk(
   const liveAtCap = new Set<string>();
   if (isAtCap) {
     for (const childId of distinctChildIds) {
+      // Same cycle rule as the full walk: a back edge is not a live child
+      if (childId === recordId || ctx.path.has(childId)) {
+        continue;
+      }
       try {
-        if (await isLiveRecord(ctx, childId)) {
+        if ((await hydrateWalkNode(ctx, childId)).status === 'live') {
           liveAtCap.add(childId);
         }
       } catch (err) {
@@ -410,6 +405,6 @@ async function walk(
     ownProgress,
     summaryValues,
     childFields,
-    ...(isAtCap && distinctChildIds.size > 0 ? {isTruncated: true} : {}),
+    ...(isAtCap && liveAtCap.size > 0 ? {isTruncated: true} : {}),
   };
 }
