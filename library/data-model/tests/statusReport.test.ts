@@ -16,6 +16,7 @@ import {
   FormUpdateData,
   NotebookDefinition,
   RecordDeletedError,
+  RecordFilteredError,
   RecordStatusReport,
   STATUS_REPORT_MAX_DEPTH,
   UnknownFormTypeError,
@@ -37,6 +38,8 @@ const link = (recordId: string) => ({
 
 describe('Record status report', () => {
   let db: DatabaseInterface<DataDocument>;
+  /** Raw Pouch handle for tests that corrupt documents directly. */
+  let rawDb: PouchDB.Database;
   let engine: DataEngine;
   const databaseName = 'test-status-report-db';
 
@@ -49,9 +52,8 @@ describe('Record status report', () => {
   const uiSpec = rawUiSpec as unknown as CompiledNotebookUiSpec;
 
   beforeEach(() => {
-    db = new PouchDB(databaseName, {
-      adapter: 'memory',
-    }) as DatabaseInterface<DataDocument>;
+    rawDb = new PouchDB(databaseName, {adapter: 'memory'});
+    db = rawDb as unknown as DatabaseInterface<DataDocument>;
     engine = new DataEngine({dataDb: db, uiSpec});
   });
 
@@ -475,13 +477,11 @@ describe('Record status report', () => {
         'site-id': {data: 'S1'},
         features: {data: [link(broken.recordId), link(live.recordId)]},
       });
-      const revision = await (db as PouchDB.Database).get<{
+      const revision = await rawDb.get<{
         avps: Record<string, string>;
       }>(broken.revisionId);
-      const avpDoc = await (db as PouchDB.Database).get(
-        Object.values(revision.avps)[0]
-      );
-      await (db as PouchDB.Database).remove(avpDoc);
+      const avpDoc = await rawDb.get(Object.values(revision.avps)[0]);
+      await rawDb.remove(avpDoc);
 
       const result = await report(recordId);
       expect(childField(result, 'features').createdCount).toBe(1);
@@ -493,13 +493,11 @@ describe('Record status report', () => {
       const {recordId, revisionId} = await create('Site', {
         'site-id': {data: 'S1'},
       });
-      const revision = await (db as PouchDB.Database).get<{
+      const revision = await rawDb.get<{
         avps: Record<string, string>;
       }>(revisionId);
-      const avpDoc = await (db as PouchDB.Database).get(
-        Object.values(revision.avps)[0]
-      );
-      await (db as PouchDB.Database).remove(avpDoc);
+      const avpDoc = await rawDb.get(Object.values(revision.avps)[0]);
+      await rawDb.remove(avpDoc);
 
       await expect(report(recordId)).rejects.toThrow(DocumentNotFoundError);
     });
@@ -507,11 +505,9 @@ describe('Record status report', () => {
     test('a child whose record document fails validation is skipped, not fatal', async () => {
       const live = await create('Feature', {depth: {data: '50'}});
       const corrupt = await create('Feature', {depth: {data: '50'}});
-      const doc = await (db as PouchDB.Database).get<{created: string}>(
-        corrupt.recordId
-      );
+      const doc = await rawDb.get<{created: string}>(corrupt.recordId);
       doc.created = 'not-a-datetime';
-      await (db as PouchDB.Database).put(doc);
+      await rawDb.put(doc);
 
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
@@ -524,11 +520,9 @@ describe('Record status report', () => {
 
     test('a root record that fails validation is a hard error', async () => {
       const {recordId} = await create('Photo');
-      const doc = await (db as PouchDB.Database).get<{created: string}>(
-        recordId
-      );
+      const doc = await rawDb.get<{created: string}>(recordId);
       doc.created = 'not-a-datetime';
-      await (db as PouchDB.Database).put(doc);
+      await rawDb.put(doc);
 
       await expect(report(recordId)).rejects.toThrow();
     });
@@ -563,11 +557,9 @@ describe('Record status report', () => {
     test('a child with corrupt (empty) heads is skipped, not fatal', async () => {
       const live = await create('Feature', {depth: {data: '50'}});
       const corrupt = await create('Feature', {depth: {data: '50'}});
-      const doc = await (db as PouchDB.Database).get<{heads: string[]}>(
-        corrupt.recordId
-      );
+      const doc = await rawDb.get<{heads: string[]}>(corrupt.recordId);
       doc.heads = [];
-      await (db as PouchDB.Database).put(doc);
+      await rawDb.put(doc);
 
       const {recordId} = await create('Site', {
         'site-id': {data: 'S1'},
@@ -587,6 +579,15 @@ describe('Record status report', () => {
         userId: USER,
       });
       await expect(report(recordId)).rejects.toThrow(RecordDeletedError);
+    });
+
+    test('a root excluded by recordFilter throws RecordFilteredError', async () => {
+      const {recordId} = await create('Photo', {}, 'other-user');
+      await expect(
+        report(recordId, {
+          recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
+        })
+      ).rejects.toThrow(RecordFilteredError);
     });
   });
 
@@ -688,8 +689,64 @@ describe('Record status report', () => {
       }
       expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
       expect(node.isTruncated).toBe(true);
-      // the capped node still counts its links
+      // the capped node still counts its live links
       expect(childField(node, 'sub-samples').createdCount).toBe(1);
+    });
+
+    /** Builds a Site chain so the capped node links bottomId; returns that node. */
+    const cappedNodeOver = async (bottomId: string, extras = {}) => {
+      let child = bottomId;
+      let recordId = '';
+      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
+        ({recordId} = await create('Site', {
+          'site-id': {data: `S${i}`},
+          features: {data: [link(child)]},
+        }));
+        child = recordId;
+      }
+      let node = await report(recordId, extras);
+      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
+        node = childField(node, 'features').children[0];
+      }
+      expect(node.isTruncated).toBe(true);
+      return node;
+    };
+
+    test('a deleted child at the depth cap is not counted', async () => {
+      const dead = await create('Site', {'site-id': {data: 'dead'}});
+      await engine.form.deleteRecord({
+        recordId: dead.recordId,
+        baseRevisionId: dead.revisionId,
+        userId: USER,
+      });
+
+      const node = await cappedNodeOver(dead.recordId);
+      // a dead link at the cap scores exactly like one below it
+      expect(childField(node, 'features')).toMatchObject({
+        createdCount: 0,
+        expectedCount: 1,
+      });
+      expect(node.progress).toBe(0.25);
+    });
+
+    test('recordFilter excludes children at the depth cap too', async () => {
+      const theirs = await create(
+        'Site',
+        {'site-id': {data: 'T'}},
+        'other-user'
+      );
+
+      const node = await cappedNodeOver(theirs.recordId, {
+        recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
+      });
+      expect(childField(node, 'features').createdCount).toBe(0);
+    });
+
+    test('an unknown-form child at the depth cap is not counted', async () => {
+      const ghost = await create('Ghost');
+
+      const node = await cappedNodeOver(ghost.recordId);
+      expect(childField(node, 'features').createdCount).toBe(0);
     });
 
     test('a leaf at the depth cap is not marked truncated', async () => {

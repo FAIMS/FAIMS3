@@ -116,6 +116,16 @@ export class UnknownFormTypeError extends Error {
 }
 
 /**
+ * Thrown when a record exists but the caller's record filter excludes it.
+ */
+export class RecordFilteredError extends Error {
+  constructor(recordId: string) {
+    super(`Record "${recordId}" is excluded by the record filter.`);
+    this.name = 'RecordFilteredError';
+  }
+}
+
+/**
  * Thrown when a mutation targets a record whose head revision is soft-deleted.
  */
 export class RecordDeletedError extends Error {

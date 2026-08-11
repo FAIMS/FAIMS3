@@ -15,6 +15,7 @@ import {
   DocumentValidationError,
   NoHeadsError,
   RecordDeletedError,
+  RecordFilteredError,
   UnknownFormTypeError,
 } from './exceptions';
 import {
@@ -67,7 +68,7 @@ export interface RecordStatusReport {
   /** Raw values of the form's currently visible summary_fields, keyed by field name. */
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
-  /** True when the depth cap stopped recursion here: link counts remain, child reports are dropped. */
+  /** True when the depth cap stopped recursion here: live-child counts remain, child reports are dropped. */
   isTruncated?: boolean;
 }
 
@@ -116,7 +117,8 @@ interface WalkContext {
  * @param recordFilter - Per-record read filter (e.g. API permission check)
  * @param isCompleteResolver - Optional per-field-type completeness override
  * @returns The report tree rooted at recordId
- * @throws RecordDeletedError if the root record is deleted (or filtered out)
+ * @throws RecordDeletedError if the root record is deleted
+ * @throws RecordFilteredError if recordFilter excludes the root record
  * @throws UnknownFormTypeError if the root's form is not in the ui-spec
  */
 export async function computeRecordStatusReport({
@@ -223,10 +225,46 @@ function collectChildFields(
 }
 
 /**
+ * Recursion-free record-level liveness check used at the depth cap, where
+ * children still gate required-field completion but are not hydrated.
+ */
+async function isLiveRecord(
+  ctx: WalkContext,
+  recordId: string
+): Promise<boolean> {
+  const record = await ctx.engine.core.getRecord(recordId);
+  // Same unknown-form rule as the full walk: an unmeasurable child is skipped
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      ctx.engine.uiSpec.viewsets,
+      record.type
+    )
+  ) {
+    return false;
+  }
+  const {selectedHead} = ctx.engine.core.resolveHead({
+    recordId,
+    heads: record.heads,
+    behavior: 'pickFirst',
+  });
+  const revision = await ctx.engine.core.getRevision(selectedHead);
+  if (revision.deleted) {
+    return false;
+  }
+  if (
+    ctx.recordFilter &&
+    !ctx.recordFilter({recordId, createdBy: record.created_by})
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * One node of the walk: a single hydration fetches the record, head revision
- * and AVPs together; null when the record is deleted, filtered out, or would
- * close a cycle (reports under a cut are best-effort and can vary with link
- * order).
+ * and AVPs together; null when the record is a deleted or filtered-out child,
+ * or would close a cycle (reports under a cut are best-effort and can vary
+ * with link order).
  */
 async function walk(
   ctx: WalkContext,
@@ -249,6 +287,10 @@ async function walk(
     ctx.recordFilter &&
     !ctx.recordFilter({recordId, createdBy: context.record.createdBy})
   ) {
+    // Filtered children drop out silently; the root must not read as deleted
+    if (depth === 0) {
+      throw new RecordFilteredError(recordId);
+    }
     return null;
   }
   // hasOwnProperty, since `in` also matches prototype keys ('constructor')
@@ -286,14 +328,26 @@ async function walk(
   const collected = collectChildFields(ctx, visibleFields, data);
   const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
 
-  // At the cap children are not walked: link counts stand in for liveness and
-  // carry no reports, so no roll-up units
+  // At the cap children are not walked: a recursion-free liveness check still
+  // gates required-field completion, but capped children carry no reports and
+  // so no roll-up units
   const isAtCap = depth >= STATUS_REPORT_MAX_DEPTH;
 
   // One walk per distinct child, so a child linked from several fields is
   // fetched once and counts as one roll-up unit
   const reports = new Map<string, RecordStatusReport | null>();
-  if (!isAtCap) {
+  const liveAtCap = new Set<string>();
+  if (isAtCap) {
+    for (const childId of distinctChildIds) {
+      try {
+        if (await isLiveRecord(ctx, childId)) {
+          liveAtCap.add(childId);
+        }
+      } catch (err) {
+        absorbSkippableChildError(err);
+      }
+    }
+  } else {
     ctx.path.add(recordId);
     try {
       for (const childId of distinctChildIds) {
@@ -314,7 +368,9 @@ async function walk(
     const children = field.childIds
       .map(id => reports.get(id))
       .filter((child): child is RecordStatusReport => !!child);
-    const createdCount = isAtCap ? field.childIds.length : children.length;
+    const createdCount = isAtCap
+      ? field.childIds.filter(id => liveAtCap.has(id)).length
+      : children.length;
     return {
       fieldId: field.fieldId,
       relatedFormId: field.relatedFormId,
