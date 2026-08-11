@@ -592,6 +592,21 @@ describe('Record status report', () => {
   });
 
   describe('recursion safety', () => {
+    /** Builds a bottom-up Sample chain of `length` records linked via sub-samples; returns ids bottom-first. */
+    const buildSampleChain = async (length: number) => {
+      let child: string | undefined;
+      const ids: string[] = [];
+      for (let i = 0; i < length; i++) {
+        const {recordId} = await create('Sample', {
+          'sample-type': {data: `s${i}`},
+          ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
+        });
+        ids.push(recordId);
+        child = recordId;
+      }
+      return ids;
+    };
+
     test('walks a four-level tree', async () => {
       const subSample = await create('Sample', {
         'sample-type': {data: 's2'},
@@ -669,17 +684,7 @@ describe('Record status report', () => {
     });
 
     test('the depth cap truncates instead of recursing forever', async () => {
-      const chainLength = STATUS_REPORT_MAX_DEPTH + 5;
-      let child: string | undefined;
-      const ids: string[] = [];
-      for (let i = 0; i < chainLength; i++) {
-        const {recordId} = await create('Sample', {
-          'sample-type': {data: `s${i}`},
-          ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
-        });
-        ids.push(recordId);
-        child = recordId;
-      }
+      const ids = await buildSampleChain(STATUS_REPORT_MAX_DEPTH + 5);
 
       let node = await report(ids[ids.length - 1]);
       let depth = 0;
@@ -824,16 +829,7 @@ describe('Record status report', () => {
     });
 
     test('a leaf at the depth cap is not marked truncated', async () => {
-      let child: string | undefined;
-      const ids: string[] = [];
-      for (let i = 0; i <= STATUS_REPORT_MAX_DEPTH; i++) {
-        const {recordId} = await create('Sample', {
-          'sample-type': {data: `s${i}`},
-          ...(child ? {'sub-samples': {data: [link(child)]}} : {}),
-        });
-        ids.push(recordId);
-        child = recordId;
-      }
+      const ids = await buildSampleChain(STATUS_REPORT_MAX_DEPTH + 1);
 
       let node = await report(ids[ids.length - 1]);
       for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
@@ -853,7 +849,10 @@ describe('Record status report', () => {
         ({recordId} = await create('Site', {
           'site-id': {data: `S${i}`},
           ...(child
-            ? {features: {data: [link(child)]}, photos: {data: [link(child)]}}
+            ? {
+                features: {data: [link(child)]},
+                photos: {data: [link(child)]},
+              }
             : {}),
         }));
         child = recordId;
@@ -957,7 +956,7 @@ describe('Record status report', () => {
         uiSpec,
         viewsetId: formId,
       });
-      return {data, formId, visibilityMap};
+      return {data, visibilityMap};
     };
 
     test('counts only required fields', async () => {

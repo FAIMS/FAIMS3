@@ -724,7 +724,6 @@ export const EditableFormManager: React.FC<
 
         const progress = completion({
           uiSpec: dataEngine.uiSpec,
-          formId: props.formId,
           data: form.state.values ?? {},
           visibilityMap: visibleMap,
         });
@@ -927,7 +926,6 @@ export const EditableFormManager: React.FC<
       {/* Form Progress */}
       <LiveFormProgress
         form={form as FaimsForm}
-        formId={props.formId}
         uiSpec={dataEngine.uiSpec}
         visibilityMap={visibleMap}
       />

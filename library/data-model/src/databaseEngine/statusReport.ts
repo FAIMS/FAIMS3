@@ -98,6 +98,8 @@ interface WalkContext {
   isCompleteResolver?: IsCompleteResolver;
   /** Records on the current walk path; cuts the cycles corrupt data can hold. */
   path: Set<string>;
+  /** Child-type fields resolved once per walk; the ui-spec never changes mid-walk. */
+  childFieldSpecs: Map<string, ChildFieldSpec>;
 }
 
 /**
@@ -126,13 +128,17 @@ export async function computeRecordStatusReport({
 }: {
   engine: DataEngine;
   recordId: string;
-} & Omit<WalkContext, 'engine' | 'path'>): Promise<RecordStatusReport> {
+} & Omit<
+  WalkContext,
+  'engine' | 'path' | 'childFieldSpecs'
+>): Promise<RecordStatusReport> {
   const ctx: WalkContext = {
     engine,
     projectId,
     recordFilter,
     isCompleteResolver,
     path: new Set(),
+    childFieldSpecs: resolveChildFieldSpecs(engine.uiSpec),
   };
   const report = await walk(ctx, recordId, 0);
   if (report === null) {
@@ -158,10 +164,39 @@ function absorbSkippableChildError(err: unknown): null {
   throw err;
 }
 
-interface CollectedChildField {
-  fieldId: string;
+interface ChildFieldSpec {
   relatedFormId: string;
   required: boolean;
+}
+
+/** Resolves the Child-type RelatedRecordSelector fields of the ui-spec, keyed by field id. */
+function resolveChildFieldSpecs(
+  uiSpec: DataEngine['uiSpec']
+): Map<string, ChildFieldSpec> {
+  const specs = new Map<string, ChildFieldSpec>();
+  for (const [fieldId, fieldSpec] of Object.entries(uiSpec.fields)) {
+    if (
+      fieldSpec['component-namespace'] !== RELATED_RECORD_SELECTOR.namespace ||
+      fieldSpec['component-name'] !== RELATED_RECORD_SELECTOR.name
+    ) {
+      continue;
+    }
+    const params = relatedRecordSelectorComponentParamsSchema.safeParse(
+      fieldSpec['component-parameters']
+    );
+    if (!params.success || params.data.relation_type !== 'faims-core::Child') {
+      continue;
+    }
+    specs.set(fieldId, {
+      relatedFormId: params.data.related_type,
+      required: !!fieldSpec['component-parameters']?.required,
+    });
+  }
+  return specs;
+}
+
+interface CollectedChildField extends ChildFieldSpec {
+  fieldId: string;
   /** Distinct linked child ids; cross-project and malformed links excluded. */
   childIds: string[];
 }
@@ -174,18 +209,8 @@ function collectChildFields(
 ): CollectedChildField[] {
   const collected: CollectedChildField[] = [];
   for (const fieldId of visibleFields) {
-    const fieldSpec = ctx.engine.uiSpec.fields[fieldId];
-    if (
-      fieldSpec?.['component-namespace'] !==
-        RELATED_RECORD_SELECTOR.namespace ||
-      fieldSpec['component-name'] !== RELATED_RECORD_SELECTOR.name
-    ) {
-      continue;
-    }
-    const params = relatedRecordSelectorComponentParamsSchema.safeParse(
-      fieldSpec['component-parameters']
-    );
-    if (!params.success || params.data.relation_type !== 'faims-core::Child') {
+    const spec = ctx.childFieldSpecs.get(fieldId);
+    if (!spec) {
       continue;
     }
     const raw = data?.[fieldId]?.data;
@@ -194,7 +219,8 @@ function collectChildFields(
       : raw === null || raw === undefined
         ? []
         : [raw];
-    const childIds: string[] = [];
+    // Set: an empty id is not a child; a duplicate link is still one child
+    const childIds = new Set<string>();
     for (const rawEntry of rawEntries) {
       const entry = storedLinkEntrySchema.safeParse(rawEntry);
       if (!entry.success) {
@@ -205,17 +231,11 @@ function collectChildFields(
       if (linkProjectId && linkProjectId !== ctx.projectId) {
         continue;
       }
-      // An empty id is not a child; a duplicate link is still one child
-      if (childId && !childIds.includes(childId)) {
-        childIds.push(childId);
+      if (childId) {
+        childIds.add(childId);
       }
     }
-    collected.push({
-      fieldId,
-      relatedFormId: params.data.related_type,
-      required: !!fieldSpec['component-parameters']?.required,
-      childIds,
-    });
+    collected.push({fieldId, ...spec, childIds: [...childIds]});
   }
   return collected;
 }
@@ -293,7 +313,6 @@ async function walk(
   });
   const rawOwnProgress = completion({
     uiSpec: engine.uiSpec,
-    formId,
     data,
     visibilityMap,
     isCompleteResolver: ctx.isCompleteResolver,
@@ -303,27 +322,33 @@ async function walk(
   const visibleFields = new Set(Object.values(visibilityMap).flat());
 
   // Condition-hidden summary fields drop out (stale leftover values); statically
-  // hidden ones (e.g. templated fields, recomputed at save) still report
-  const summaryVisible = new Set(
-    Object.keys(visibilityMap).flatMap(viewId =>
-      getFieldsMatchingCondition(
-        engine.uiSpec,
-        values,
-        [],
-        viewId,
-        {},
-        {
-          includeStaticallyHidden: true,
-        }
-      )
-    )
-  );
+  // hidden ones (e.g. templated fields, recomputed at save) still report. The
+  // visibility pass only runs for forms that have summary fields at all.
   const summaryValues: Record<string, unknown> = {};
-  for (const fieldName of getSummaryFieldInformation(engine.uiSpec, formId)
-    .fieldNames) {
-    if (!summaryVisible.has(fieldName)) continue;
-    // null, since JSON serialization would drop an undefined value's key
-    summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
+  const summaryFieldNames = getSummaryFieldInformation(
+    engine.uiSpec,
+    formId
+  ).fieldNames;
+  if (summaryFieldNames.length > 0) {
+    const summaryVisible = new Set(
+      Object.keys(visibilityMap).flatMap(viewId =>
+        getFieldsMatchingCondition(
+          engine.uiSpec,
+          values,
+          [],
+          viewId,
+          {},
+          {
+            includeStaticallyHidden: true,
+          }
+        )
+      )
+    );
+    for (const fieldName of summaryFieldNames) {
+      if (!summaryVisible.has(fieldName)) continue;
+      // null, since JSON serialization would drop an undefined value's key
+      summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
+    }
   }
 
   const collected = collectChildFields(ctx, visibleFields, data);
@@ -335,24 +360,24 @@ async function walk(
   const isAtCap = depth >= STATUS_REPORT_MAX_DEPTH;
 
   // One walk per distinct child, so a child linked from several fields is
-  // fetched once and counts as one roll-up unit
-  const reports = new Map<string, RecordStatusReport | null>();
-  const liveAtCap = new Set<string>();
+  // fetched once and counts as one roll-up unit. Truthy = live: a report below
+  // the cap, the bare 'live' marker at it (no report, so no roll-up unit)
+  const outcomes = new Map<string, RecordStatusReport | 'live' | null>();
   ctx.path.add(recordId);
   try {
     for (const childId of distinctChildIds) {
       try {
         if (!isAtCap) {
-          reports.set(childId, await walk(ctx, childId, depth + 1));
-        } else if (
+          outcomes.set(childId, await walk(ctx, childId, depth + 1));
+        } else {
           // Same cycle rule as the full walk: a back edge is not a live child
-          !ctx.path.has(childId) &&
-          (await hydrateWalkNode(ctx, childId)).status === 'live'
-        ) {
-          liveAtCap.add(childId);
+          const isLive =
+            !ctx.path.has(childId) &&
+            (await hydrateWalkNode(ctx, childId)).status === 'live';
+          outcomes.set(childId, isLive ? 'live' : null);
         }
       } catch (err) {
-        reports.set(childId, absorbSkippableChildError(err));
+        outcomes.set(childId, absorbSkippableChildError(err));
       }
     }
   } finally {
@@ -361,11 +386,11 @@ async function walk(
 
   const childFields = collected.map((field): RecordStatusChildField => {
     const children = field.childIds
-      .map(id => reports.get(id))
-      .filter((child): child is RecordStatusReport => !!child);
-    const createdCount = isAtCap
-      ? field.childIds.filter(id => liveAtCap.has(id)).length
-      : children.length;
+      .map(id => outcomes.get(id))
+      .filter(
+        (child): child is RecordStatusReport => !!child && child !== 'live'
+      );
+    const createdCount = field.childIds.filter(id => outcomes.get(id)).length;
     return {
       fieldId: field.fieldId,
       relatedFormId: field.relatedFormId,
@@ -380,8 +405,8 @@ async function walk(
 
   // Each live child is one unit alongside the record's own form; a field
   // expecting children but having none contributes one empty unit
-  const liveReports = [...reports.values()].filter(
-    (child): child is RecordStatusReport => !!child
+  const liveReports = [...outcomes.values()].filter(
+    (child): child is RecordStatusReport => !!child && child !== 'live'
   );
   const units =
     liveReports.length +
@@ -405,6 +430,6 @@ async function walk(
     ownProgress,
     summaryValues,
     childFields,
-    ...(isAtCap && liveAtCap.size > 0 ? {isTruncated: true} : {}),
+    ...([...outcomes.values()].includes('live') ? {isTruncated: true} : {}),
   };
 }

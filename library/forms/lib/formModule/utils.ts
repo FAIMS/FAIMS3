@@ -119,7 +119,6 @@ export async function getImpliedNavigationRelationships(
  * completeness overrides.
  *
  * @param uiSpec - The UI specification of the form
- * @param formId - The ID of the form/viewset
  * @param data - The form data entries
  * @param visibilityMap - Map of visible fields per section
  * @returns Progress fraction 0->1, required/completed counts and the required
@@ -127,7 +126,6 @@ export async function getImpliedNavigationRelationships(
  */
 export function completion(args: {
   uiSpec: UiSpecModel;
-  formId: string;
   data: FaimsFormData;
   visibilityMap: FieldVisibilityMap;
 }): CompletionResult {

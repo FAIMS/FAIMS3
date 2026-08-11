@@ -1,5 +1,4 @@
 import {UiSpecModel} from '../uiSpecification/types';
-import {getViewsForViewSet} from '../uiSpecification/utils';
 import {FormDataEntry, FormUpdateData} from './types';
 
 // Map from section -> list of visible fields - section included IFF it's
@@ -41,7 +40,7 @@ export type IsCompleteResolver = (fieldType: {
 }) => ((formData: FormDataEntry) => boolean) | undefined;
 
 /** A field is complete when it has a non-empty string or any non-null data. */
-export function defaultCompletionFunction(formData: FormDataEntry): boolean {
+function defaultCompletionFunction(formData: FormDataEntry): boolean {
   const {data} = formData;
   if (typeof data === 'string') {
     return data.length > 0;
@@ -53,7 +52,6 @@ export function defaultCompletionFunction(formData: FormDataEntry): boolean {
  * calculate completion progress for a form
  *
  * @param uiSpec - The UI specification of the form
- * @param formId - The ID of the form/viewset
  * @param data - The form data entries
  * @param visibilityMap - Map of visible fields per section
  * @param isCompleteResolver - Optional per-field-type completeness override
@@ -62,56 +60,39 @@ export function defaultCompletionFunction(formData: FormDataEntry): boolean {
  */
 export function completion({
   uiSpec,
-  formId,
   data,
   visibilityMap,
   isCompleteResolver,
 }: {
   uiSpec: UiSpecModel;
-  formId: string;
   data: FormUpdateData | undefined;
   visibilityMap: FieldVisibilityMap;
   isCompleteResolver?: IsCompleteResolver;
 }): CompletionResult {
   let fieldCount = 0;
   const incompleteRequired: string[] = [];
-  const seen = new Set<string>();
 
-  const allViews = getViewsForViewSet(uiSpec, formId);
-  for (const sectionId of allViews) {
-    for (const fieldId of visibilityMap[sectionId] ?? []) {
-      // A field shown in several sections is still one field
-      if (seen.has(fieldId)) {
-        continue;
-      }
-      seen.add(fieldId);
+  // Set: a field shown in several visible sections is still one field
+  for (const fieldId of new Set(Object.values(visibilityMap).flat())) {
+    const fieldSpec = uiSpec.fields[fieldId];
+    if (!fieldSpec) {
+      continue; // skip unknown fields
+    }
+    if (!fieldSpec['component-parameters']?.required) {
+      continue; // skip non-required fields
+    }
+    fieldCount += 1;
 
-      // Find the field spec
-      const fieldSpec = uiSpec.fields[fieldId];
-      if (!fieldSpec) {
-        continue; // skip unknown fields
-      }
+    // grab the completion function if defined otherwise use the default
+    const completionFunc =
+      isCompleteResolver?.({
+        namespace: fieldSpec['component-namespace'],
+        name: fieldSpec['component-name'],
+      }) ?? defaultCompletionFunction;
 
-      // If the field is required, add to count
-      if (!fieldSpec['component-parameters']?.required) {
-        continue; // skip non-required fields
-      }
-
-      // Count
-      fieldCount += 1;
-
-      // grab the completion function if defined otherwise use the default
-      const completionFunc =
-        isCompleteResolver?.({
-          namespace: fieldSpec['component-namespace'],
-          name: fieldSpec['component-name'],
-        }) ?? defaultCompletionFunction;
-
-      // Get the form data for this field
-      const fieldData = data?.[fieldId];
-      if (!fieldData || !completionFunc(fieldData)) {
-        incompleteRequired.push(fieldId);
-      }
+    const fieldData = data?.[fieldId];
+    if (!fieldData || !completionFunc(fieldData)) {
+      incompleteRequired.push(fieldId);
     }
   }
 
