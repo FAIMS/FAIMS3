@@ -264,6 +264,61 @@
         },
         "persistent": false,
         "displayParent": false
+      },
+      "mode": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Mode",
+          "name": "mode"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "both-note": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Both note",
+          "name": "both-note",
+          "hidden": true,
+          "template": "Note {{mode}}"
+        },
+        "condition": {
+          "operator": "equal",
+          "field": "mode",
+          "value": "FULL"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "extra-note": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Extra note",
+          "name": "extra-note"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
       }
     },
     "views": {
@@ -312,6 +367,19 @@
       "Legacy-Main": {
         "label": "Main",
         "fields": ["legacy-children"]
+      },
+      "Annotated-Main": {
+        "label": "Main",
+        "fields": ["mode", "both-note"]
+      },
+      "Annotated-Extra": {
+        "label": "Extra",
+        "fields": ["extra-note"],
+        "condition": {
+          "operator": "equal",
+          "field": "mode",
+          "value": "FULL"
+        }
       }
     },
     "viewsets": {
@@ -344,6 +412,11 @@
       "Legacy": {
         "label": "Legacy",
         "views": ["Legacy-Main"]
+      },
+      "Annotated": {
+        "label": "Annotated",
+        "views": ["Annotated-Main", "Annotated-Extra"],
+        "summary_fields": ["mode", "both-note", "extra-note"]
       }
     },
     "visible_types": [
@@ -353,7 +426,8 @@
       "Photo",
       "Calibration",
       "Trench",
-      "Legacy"
+      "Legacy",
+      "Annotated"
     ],
     "settings": {
       "showQrCodeButton": false

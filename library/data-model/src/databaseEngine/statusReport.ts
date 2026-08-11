@@ -66,7 +66,7 @@ export interface RecordStatusReport {
    */
   progress: number;
   ownProgress: CompletionResult;
-  /** Raw values of the form's currently visible summary_fields, keyed by field name. */
+  /** Raw values of the form's condition-visible summary_fields (statically hidden ones included), keyed by field name. */
   summaryValues: Record<string, unknown>;
   childFields: RecordStatusChildField[];
   /** True when the depth cap dropped this node's live child reports: live-child counts remain. */
@@ -307,24 +307,21 @@ async function walk(
   // Set: a field listed in two visible sections is still one field
   const visibleFields = new Set(Object.values(visibilityMap).flat());
 
-  // Condition-hidden summary fields may hold stale values, so they drop out;
-  // statically hidden fields (component-parameters.hidden, e.g. templated
-  // fields) recompute at save and still report
-  const conditionVisibleFields = new Set(
-    Object.keys(visibilityMap).flatMap(viewId =>
-      getFieldsForView(engine.uiSpec, viewId).filter(fieldName => {
-        const {conditionFn} = engine.uiSpec.fields[fieldName];
-        return conditionFn ? conditionFn(values) : true;
-      })
-    )
-  );
+  // Condition-hidden summary fields may hold stale leftover values, so they
+  // drop out; statically hidden fields (component-parameters.hidden) are only
+  // excluded from form entry (e.g. templated fields, recomputed at save) and
+  // still report
   const summaryValues: Record<string, unknown> = {};
   for (const fieldName of getSummaryFieldInformation(engine.uiSpec, formId)
     .fieldNames) {
-    if (conditionVisibleFields.has(fieldName)) {
-      // null, since JSON serialization would drop an undefined value's key
-      summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
-    }
+    const isInVisibleView = Object.keys(visibilityMap).some(viewId =>
+      getFieldsForView(engine.uiSpec, viewId).includes(fieldName)
+    );
+    if (!isInVisibleView) continue;
+    const {conditionFn} = engine.uiSpec.fields[fieldName];
+    if (conditionFn && !conditionFn(values)) continue;
+    // null, since JSON serialization would drop an undefined value's key
+    summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
   }
 
   const collected = collectChildFields(ctx, visibleFields, data);

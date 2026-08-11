@@ -907,6 +907,30 @@ describe('Record status report', () => {
       });
     });
 
+    test('view conditions and hidden-plus-condition fields gate the summary', async () => {
+      // extra-note sits in a view shown only when mode is FULL; both-note is
+      // statically hidden AND condition-gated on the same value, so the
+      // condition alone decides it
+      const partial = await create('Annotated', {
+        mode: {data: 'BASIC'},
+        'both-note': {data: 'leftover'},
+        'extra-note': {data: 'leftover'},
+      });
+      expect((await report(partial.recordId)).summaryValues).toEqual({
+        mode: 'BASIC',
+      });
+
+      const full = await create('Annotated', {
+        mode: {data: 'FULL'},
+        'both-note': {data: 'Note FULL'},
+      });
+      expect((await report(full.recordId)).summaryValues).toEqual({
+        mode: 'FULL',
+        'both-note': 'Note FULL',
+        'extra-note': null,
+      });
+    });
+
     test('a visible summary field with no value reports null', async () => {
       // JSON would drop an undefined value, hiding the column from clients
       const {recordId} = await create('Site', {
