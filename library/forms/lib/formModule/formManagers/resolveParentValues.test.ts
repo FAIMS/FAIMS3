@@ -24,6 +24,8 @@ const childLink = (target: string) => ({
   'component-name': 'RelatedRecordSelector',
   'type-returned': 'faims-core::Relationship',
   'component-parameters': {
+    name: 'site-features',
+    label: 'Site Features',
     related_type: target,
     relation_type: 'faims-core::Child',
   },
