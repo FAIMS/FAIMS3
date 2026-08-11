@@ -26,8 +26,6 @@
  *   - Pending navigation states via useNavigation
  */
 
-// import '@capacitor-community/safe-area';
-// import {SafeArea} from '@capacitor-community/safe-area';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {
