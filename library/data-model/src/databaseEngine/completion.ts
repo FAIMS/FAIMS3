@@ -18,6 +18,23 @@ export const completionResultSchema = z.object({
 export type CompletionResult = z.infer<typeof completionResultSchema>;
 
 /**
+ * Builds a CompletionResult from the required-field total and the ids still
+ * incomplete; a form with no required fields counts as complete.
+ */
+export function completionFromIncomplete(
+  requiredCount: number,
+  incompleteRequired: string[]
+): CompletionResult {
+  const completedCount = requiredCount - incompleteRequired.length;
+  return {
+    progress: requiredCount === 0 ? 1.0 : completedCount / requiredCount,
+    requiredCount,
+    completedCount,
+    incompleteRequired,
+  };
+}
+
+/**
  * Optional per-field-type completeness override, injected by the forms package
  * whose field registry can't live here (it is React-bound).
  */
@@ -59,7 +76,6 @@ export function completion({
   isCompleteResolver?: IsCompleteResolver;
 }): CompletionResult {
   let fieldCount = 0;
-  let completedCount = 0;
   const incompleteRequired: string[] = [];
   const seen = new Set<string>();
 
@@ -95,31 +111,13 @@ export function completion({
 
       // Get the form data for this field
       const fieldData = data?.[fieldId];
-      const isComplete = !!fieldData && completionFunc(fieldData);
-      if (isComplete) {
-        completedCount += 1;
-      } else {
+      if (!fieldData || !completionFunc(fieldData)) {
         incompleteRequired.push(fieldId);
       }
     }
   }
 
-  if (fieldCount === 0) {
-    // avoid division by zero, consider empty form as complete
-    return {
-      progress: 1.0,
-      requiredCount: 0,
-      completedCount: 0,
-      incompleteRequired: [],
-    };
-  }
-
-  return {
-    progress: completedCount / fieldCount,
-    requiredCount: fieldCount,
-    completedCount,
-    incompleteRequired,
-  };
+  return completionFromIncomplete(fieldCount, incompleteRequired);
 }
 
 /** Pulls raw values out of form data, e.g. for visibility evaluation. */

@@ -6,6 +6,7 @@ import {
 } from '../uiSpecification/utils';
 import {
   completion,
+  completionFromIncomplete,
   CompletionResult,
   formDataToValues,
   IsCompleteResolver,
@@ -80,30 +81,18 @@ function adjustOwnProgressForChildren(
   own: CompletionResult,
   childFields: RecordStatusChildField[]
 ): CompletionResult {
-  let incomplete = own.incompleteRequired;
+  const incomplete = new Set(own.incompleteRequired);
   for (const field of childFields) {
     if (!field.required) {
       continue;
     }
-    const hasLiveChild = field.createdCount > 0;
-    const wasIncomplete = incomplete.includes(field.fieldId);
-    if (hasLiveChild && wasIncomplete) {
-      incomplete = incomplete.filter(id => id !== field.fieldId);
-    } else if (!hasLiveChild && !wasIncomplete) {
-      incomplete = [...incomplete, field.fieldId];
+    if (field.createdCount > 0) {
+      incomplete.delete(field.fieldId);
+    } else {
+      incomplete.add(field.fieldId);
     }
   }
-  if (incomplete === own.incompleteRequired) {
-    return own;
-  }
-  const completedCount = own.requiredCount - incomplete.length;
-  return {
-    progress:
-      own.requiredCount === 0 ? 1.0 : completedCount / own.requiredCount,
-    requiredCount: own.requiredCount,
-    completedCount,
-    incompleteRequired: incomplete,
-  };
+  return completionFromIncomplete(own.requiredCount, [...incomplete]);
 }
 
 interface WalkContext {
