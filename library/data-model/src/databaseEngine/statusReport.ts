@@ -333,15 +333,16 @@ async function walk(
 
   const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);
 
-  // Each live child is one unit alongside the record's own form; a required
-  // field with no children expects one empty unit
+  // Each live child is one unit alongside the record's own form; a field
+  // expecting children but having none contributes one empty unit
   const liveReports = [...reports.values()].filter(
     (child): child is RecordStatusReport => !!child
   );
   const units =
     liveReports.length +
-    childFields.filter(field => field.required && field.createdCount === 0)
-      .length;
+    childFields.filter(
+      field => field.expectedCount > 0 && field.createdCount === 0
+    ).length;
   const childProgressSum = liveReports.reduce(
     (sum, child) => sum + child.progress,
     0
