@@ -111,8 +111,6 @@ interface WalkContext {
   projectId: string;
   recordFilter?: (record: {recordId: string; createdBy: string}) => boolean;
   isCompleteResolver?: IsCompleteResolver;
-  /** Settled reports, so a child linked from several records is computed once. */
-  memo: Map<string, RecordStatusReport | null>;
   /** Records on the current walk path; cuts the cycles corrupt data can hold. */
   path: Set<string>;
 }
@@ -121,10 +119,8 @@ interface WalkContext {
  * Computes the recursive status report for a record: per node the HRID,
  * required-field completion, summary values and the same for child records
  * (faims-core::Child links only). Deleted, unreadable and corrupt children
- * drop out of both sides of the roll-up, so the fraction means "completion of
- * what this viewer can see". Child graphs are assumed acyclic; a cycle in
- * corrupt data is cut where it closes, and {@link STATUS_REPORT_MAX_DEPTH}
- * truncates anything deeper.
+ * drop out of both sides of the roll-up; cycles in corrupt data are cut where
+ * they close and {@link STATUS_REPORT_MAX_DEPTH} truncates anything deeper.
  *
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
@@ -144,16 +140,12 @@ export async function computeRecordStatusReport({
 }: {
   engine: DataEngine;
   recordId: string;
-} & Omit<
-  WalkContext,
-  'engine' | 'memo' | 'path'
->): Promise<RecordStatusReport> {
+} & Omit<WalkContext, 'engine' | 'path'>): Promise<RecordStatusReport> {
   const ctx: WalkContext = {
     engine,
     projectId,
     recordFilter,
     isCompleteResolver,
-    memo: new Map(),
     path: new Set(),
   };
   const report = await walk(ctx, recordId, 0);
@@ -248,8 +240,10 @@ function collectChildFields(
 }
 
 /**
- * Memoized walk; the path check cuts cycle links so corrupt data terminates
- * (reports under a cut are best-effort and can vary with link order).
+ * One node of the walk: a single hydration fetches the record, head revision
+ * and AVPs together; null when the record is deleted, filtered out, or would
+ * close a cycle (reports under a cut are best-effort and can vary with link
+ * order).
  */
 async function walk(
   ctx: WalkContext,
@@ -259,27 +253,6 @@ async function walk(
   if (ctx.path.has(recordId)) {
     return null;
   }
-  const cached = ctx.memo.get(recordId);
-  if (cached !== undefined) {
-    return cached;
-  }
-  const report = await walkNode(ctx, recordId, depth);
-  // A truncated report is shaped by its depth, so other paths recompute it
-  if (report === null || !report.truncated) {
-    ctx.memo.set(recordId, report);
-  }
-  return report;
-}
-
-/**
- * One node of the walk: a single hydration fetches the record, head revision
- * and AVPs together; null when the record is deleted or filtered out.
- */
-async function walkNode(
-  ctx: WalkContext,
-  recordId: string,
-  depth: number
-): Promise<RecordStatusReport | null> {
   const {engine} = ctx;
 
   const {formId, data, context} = await engine.form.getExistingFormData({
@@ -345,9 +318,7 @@ async function walkNode(
         try {
           childReport = await walk(ctx, childId, depth + 1);
         } catch (err) {
-          // Memoize the skip: a dangling/corrupt child is dead for every parent
           childReport = absorbSkippableChildError(err);
-          ctx.memo.set(childId, childReport);
         }
         reports.set(childId, childReport);
       }
