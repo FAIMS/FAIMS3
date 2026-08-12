@@ -255,7 +255,10 @@ async function* paginateAuthView<T extends {_id?: string}>(
     const result = await authDB.query<T>(viewName, opts);
     let rows = result.rows.filter(r => !!r.doc).map(r => r.doc as T);
 
-    if (skipFirst && rows.length > 0) {
+    // Only drop the startkey row when it is still present. Deletes between
+    // pages remove the previous page's last id from the view, so CouchDB's
+    // next page already starts at the next live key — blind skip would drop it.
+    if (skipFirst && rows.length > 0 && rows[0]._id === startkey) {
       rows = rows.slice(1);
     }
     if (rows.length === 0) {
@@ -313,12 +316,19 @@ async function* paginateInvitesAllDocs(
       const chunk = docs.slice(0, batchSize);
       yield chunk;
       const lastId = chunk[chunk.length - 1]._id;
-      if (!lastId || rawRows.length < fetchLimit) {
+      if (!lastId) {
         return;
       }
-      startkey = lastId;
-      skipFirst = true;
-      continue;
+      // Continue when this page still has unyielded filtered docs (over-fetch
+      // can leave a local tail even on a short CouchDB page), or when CouchDB
+      // may have more rows. Returning on short pages alone permanently skips
+      // the remainder of `docs` after the first batchSize chunk.
+      if (docs.length > batchSize || rawRows.length >= fetchLimit) {
+        startkey = lastId;
+        skipFirst = true;
+        continue;
+      }
+      return;
     }
 
     if (rawRows.length < fetchLimit) {

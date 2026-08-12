@@ -10,13 +10,16 @@ worthwhile purging documents.
 
 ## What is cleaned
 
-| Doc type       | DB        | When deleted                                                                                                               |
-| -------------- | --------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `refresh`      | `auth`    | `expiryTimestampMs` older than now + grace (default 1 day)                                                                 |
-| `emailcode`    | `auth`    | Anchor (`createdTimestampMs`, else expiry) older than rate-limit window + cooldown + grace (not at code expiry alone)      |
-| `verification` | `auth`    | Same model with verification window (24h) + cooldown (30m) + grace                                                         |
-| invite         | `invites` | `expiry` in the past (+ optional grace). Exhausted-but-unexpired invites are **kept** by default                           |
-| `longlived`    | `auth`    | Opt-in (`--include-longlived`): revoked or past expiry, after 30d audit retention. Never deletes active non-expired tokens |
+Docs are not deleted the instant they expire. Each type is kept for a short
+extra window so in-flight auth and rate-limiting still work, then removed.
+
+| Doc type       | DB        | When deleted                                                                                                                                     |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `refresh`      | `auth`    | Kept for **1 day after expiry** (override with `--grace-ms`), then deleted                                                                       |
+| `emailcode`    | `auth`    | Kept for **rate-limit window + cooldown + 1h** from creation (fallback: expiry). Not deleted when the code itself expires                        |
+| `verification` | `auth`    | Same idea: kept for **24h window + 30m cooldown + 1h** from creation (fallback: expiry)                                                          |
+| invite         | `invites` | Deleted once `expiry` has passed (no extra wait by default; `--grace-ms` can add one). Exhausted-but-unexpired invites are **kept** by default |
+| `longlived`    | `auth`    | Opt-in (`--include-longlived`): revoked or expired tokens kept **30 days** for audit, then deleted. Active non-expired tokens are never deleted |
 
 Never touches `people`, `projects`, templates, teams, `data-*` survey DBs, or tombstones.
 
@@ -37,7 +40,7 @@ Useful flags:
 | ---------------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
 | `--dry-run`                  | off                                                | Count/log candidates only                                        |
 | `--compact`                  | off                                                | `POST /{db}/_compact` on auth + invites after successful deletes |
-| `--grace-ms <n>`             | 1d (refresh); also overrides invite grace when set | Extra retention after expiry                                     |
+| `--grace-ms <n>`             | 1d for refresh; 0 for invites unless set           | How long to keep refresh/invite docs after they expire           |
 | `--include-longlived`        | off                                                | Enable long-lived sweep                                          |
 | `--delete-exhausted-invites` | off                                                | Also delete non-expired invites with exhausted capped uses       |
 | `--batch-size <n>`           | 100                                                | `bulkDocs` chunk size                                            |

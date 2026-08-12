@@ -567,6 +567,85 @@ describe('TTL cleanup sweep integration', () => {
     expect(second.stats.longlived.deleted).toBe(0);
   });
 
+  it('scans invite tail when over-fetch exceeds batchSize on a short page', async () => {
+    // paginateInvitesAllDocs over-fetches by +10 then caps to batchSize. With
+    // batchSize=10 a single short page can hold 15 filtered invites; the old
+    // exit condition (rawRows.length < fetchLimit) dropped the last 5 forever.
+    const admin = await getUsersDB().get(adminUserName);
+    const invitesDB = getInvitesDB();
+    const now = Date.now();
+    const batchSize = 10;
+    const total = 15;
+    const ids: string[] = [];
+
+    for (let i = 0; i < total; i++) {
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: 'proj-ttl-page',
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: `expired-page-${i}`,
+        createdBy: admin._id,
+        expiry: now - HOUR_MS,
+      });
+      ids.push(invite._id);
+    }
+
+    const result = await runTtlCleanup({
+      dryRun: false,
+      nowMs: now,
+      batchSize,
+      log: () => {},
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.stats.invite.scanned).toBe(total);
+    expect(result.stats.invite.deleted).toBe(total);
+
+    for (const id of ids) {
+      await expect(invitesDB.get(id)).rejects.toMatchObject({status: 404});
+    }
+  });
+
+  it('auth pagination does not skip the next live doc after deleting a page anchor', async () => {
+    const authDB = getAuthDB();
+    const local = await getUsersDB().get(localUserName);
+    const now = Date.now();
+    const expiryTimestampMs = now - DEFAULT_REFRESH_GRACE_MS - HOUR_MS;
+
+    // Five consecutive expired refresh docs; batchSize 2 forces page boundaries
+    // on every even id. After page [a,b] deletes b, the next query with
+    // startkey=b must still process c (not slice it away).
+    const ids = ['a', 'b', 'c', 'd', 'e'].map(
+      s => `${AUTH_RECORD_ID_PREFIXES.refresh}ttl-page-${s}`
+    );
+    for (const id of ids) {
+      await authDB.put({
+        _id: id,
+        documentType: 'refresh',
+        userId: local._id,
+        expiryTimestampMs,
+        token: `tok-${id}`,
+        enabled: true,
+        exchangeTokenHash: `hash-${id}`,
+        exchangeTokenUsed: false,
+        exchangeTokenExpiryTimestampMs: now - HOUR_MS,
+      });
+    }
+
+    const result = await runTtlCleanup({
+      dryRun: false,
+      batchSize: 2,
+      nowMs: now,
+      log: () => {},
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.stats.refresh.deleted).toBe(5);
+    for (const id of ids) {
+      await expect(authDB.get(id)).rejects.toMatchObject({status: 404});
+    }
+  });
+
   it('does not delete long-lived tokens when flag is off', async () => {
     const authDB = getAuthDB();
     const local = await getUsersDB().get(localUserName);
