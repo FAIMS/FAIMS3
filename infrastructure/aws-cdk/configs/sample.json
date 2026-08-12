@@ -97,7 +97,7 @@
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
-    "shortCodePrefix": "FAIMS",
+    "inviteCodePrefix": "FAIMS",
     "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,

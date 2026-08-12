@@ -140,7 +140,7 @@ export interface ApiServerInfo {
   conductor_url: string;
   // A description of the server
   description: string;
-  // The short-code prefix used/expected by this server
+  // The invite-code prefix used/expected by this server
   prefix: string;
 }
 
@@ -252,8 +252,8 @@ export interface Server {
   // What is the URL of the couch database for this server?
   couchDbUrl?: string;
 
-  // Short code prefix
-  shortCodePrefix: string;
+  // Invite code prefix (e.g. FAIMS in FAIMS-…)
+  inviteCodePrefix: string;
 
   // server description
   description: string;
@@ -383,13 +383,13 @@ const projectsSlice = createSlice({
         serverUrl: string;
         couchDbUrl?: string;
         description: string;
-        shortCodePrefix: string;
+        inviteCodePrefix: string;
       }>
     ) => {
       const {
         serverId,
         description,
-        shortCodePrefix,
+        inviteCodePrefix,
         serverTitle,
         serverUrl,
         couchDbUrl,
@@ -404,7 +404,7 @@ const projectsSlice = createSlice({
         description,
         serverTitle,
         serverUrl,
-        shortCodePrefix,
+        inviteCodePrefix,
       };
       // If this was the first server added, select it by default
       if (Object.keys(state.servers).length === 1) {
@@ -422,7 +422,7 @@ const projectsSlice = createSlice({
         serverVersion?: string;
         serverTitle: string;
         serverUrl: string;
-        shortCodePrefix: string;
+        inviteCodePrefix: string;
         description: string;
       }>
     ) => {
@@ -431,7 +431,7 @@ const projectsSlice = createSlice({
         serverVersion,
         description,
         serverTitle,
-        shortCodePrefix,
+        inviteCodePrefix,
         serverUrl,
       } = action.payload;
       if (!state.servers[serverId]) {
@@ -452,7 +452,7 @@ const projectsSlice = createSlice({
         serverVersion,
         serverTitle,
         serverUrl,
-        shortCodePrefix,
+        inviteCodePrefix,
         description,
       };
     },
@@ -1722,7 +1722,7 @@ export const initialiseServers = createAsyncThunk<void>(
             serverId,
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
-            shortCodePrefix: apiServerInfo.prefix,
+            inviteCodePrefix: apiServerInfo.prefix,
             description: apiServerInfo.description,
             serverVersion: apiServerInfo.serverVersion,
           })
@@ -1734,7 +1734,7 @@ export const initialiseServers = createAsyncThunk<void>(
             serverId,
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
-            shortCodePrefix: apiServerInfo.prefix,
+            inviteCodePrefix: apiServerInfo.prefix,
             // We don't know this yet - it's considered sensitive so we need
             // authentication.
             couchDbUrl: undefined,

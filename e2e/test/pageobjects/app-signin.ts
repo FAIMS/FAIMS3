@@ -36,8 +36,13 @@ class LoginPage extends Page {
     return $('*=- or -'); // Divider text
   }
 
+  get inviteCodeInput() {
+    return $('[data-testid="invite-code-entry"]'); // Manual invite code entry
+  }
+
+  /** @deprecated Use {@link inviteCodeInput} */
   get shortCodeInput() {
-    return $('[data-testid="short-code-only"]'); // Input for short code
+    return this.inviteCodeInput;
   }
 
   /**

@@ -105,7 +105,7 @@ function stateWithProject(project: Project): ProjectsState {
         serverId,
         serverUrl: 'https://example.test',
         serverTitle: 'Test',
-        shortCodePrefix: 'T',
+        inviteCodePrefix: 'T',
         description: '',
         couchDbUrl: 'https://couch.example',
         projects: {[projectId]: project},

@@ -13,7 +13,7 @@
     "KEY_FILE_PATH": ".",
     "CONDUCTOR_INSTANCE_NAME": "Development FAIMS Server",
     "CONDUCTOR_DESCRIPTION": "Development server on localhost",
-    "CONDUCTOR_SHORT_CODE_PREFIX": "DEV",
+    "CONDUCTOR_INVITE_CODE_PREFIX": "DEV",
 
     "COUCHDB_USER": "admin",
 

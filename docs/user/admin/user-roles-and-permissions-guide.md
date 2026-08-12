@@ -240,13 +240,13 @@ Only users with the **Operations Administrator** or **Super User** system role c
    - **Role** — The system role invitees will receive (displayed as a role badge)
    - **Expiry** — When the invitation expires
    - **Uses remaining** — How many more times the invite can be used
-   - **Code** — A short code users can enter manually (click to copy)
-   - **Link** — A URL users can click to accept the invitation (click to copy)
-   - **QR Code** — Click to display a scannable QR code for mobile devices
+   - **QR Code** — Click to display a scannable QR code (preferred share method)
+   - **Link** — Copy a URL users can open to accept the invitation
+   - **Advanced** — Reveal the invite code for manual entry if needed
    - **Remove** — Delete the invitation
 
 ```{screenshot} user-roles/02-users-invites-tab.png
-:alt: Users page Invites tab showing a table of global invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
+:alt: Users page Invites tab showing a table of global invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Advanced, and Remove
 :align: right
 :width: 100%
 ```
@@ -418,16 +418,16 @@ The **Invites** tab allows you to create invitation links that users can use to 
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Expiry**         | The date/time after which the invite link no longer works. Expired invites cannot be extended — create a new one instead.                            |
 | **Uses remaining** | Limits how many people can use this invite. Use multi-use invites for workshops or group onboarding. Leave unlimited (default) for open invitations. |
-| **Code**           | A short code users can enter manually                                                                                                                |
-| **Link**           | A URL that users can click to accept the invitation                                                                                                  |
-| **QR Code**        | Scannable code for mobile devices — useful for in-person onboarding                                                                                  |
+| **QR Code**        | Scannable invite for mobile devices — preferred for in-person onboarding                                                                             |
+| **Link**           | A URL that users can open to accept the invitation                                                                                                   |
+| **Advanced**       | Reveal the invite code for manual entry when a QR/link cannot be used                                                                                |
 
 #### Viewing and Managing Invites
 
 The Invites tab shows all active invitations with their status.
 
 ```{screenshot} user-roles/08a-teams-invites-tab.png
-:alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
+:alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Advanced, and Remove
 :align: right
 :width: 100%
 ```
@@ -519,7 +519,7 @@ Unlike Teams, you **cannot add users directly** to a {{notebook}}. Instead, you 
 Once created, invitations appear in the **Invites** tab where you can manage them:
 
 ```{screenshot} user-roles/11-notebooks-invites-active.png
-:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove; includes + Create Invite button
+:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, QR Code, Link, Advanced, and Remove; includes + Create Invite button
 :align: right
 :width: 100%
 ```
@@ -532,11 +532,11 @@ The Invites tab shows:
 | **Role**           | The {{notebook}} role recipients will receive                |
 | **Expiry**         | When the invite expires — create a new invite if one expires |
 | **Uses remaining** | How many more people can use this invite                     |
-| **Code**           | Short code for manual entry                                  |
-| **Link**           | Clickable URL to share                                       |
-| **QR Code**        | Scannable code for mobile onboarding                         |
+| **QR Code**        | Scannable invite for mobile onboarding (preferred)           |
+| **Link**           | Invite URL to share                                          |
+| **Advanced**       | Reveal invite code for manual entry if needed                |
 
-> **Tip:** Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same code to join with the appropriate role.
+> **Tip:** Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same QR code to join with the appropriate role.
 
 ### Removing a User from a {{Notebook}}
 

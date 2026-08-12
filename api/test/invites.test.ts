@@ -89,6 +89,10 @@ describe('Invite Tests', () => {
 
       expect(invite).not.toBeNull();
       expect(invite._id).toContain('-');
+      // `{prefix}-{16-char nanoid body}` — long enough to resist brute force
+      const [, body] = invite._id.split('-');
+      expect(body).toHaveLength(16);
+      expect(body).toMatch(/^[0-9A-Za-z]+$/);
       expect(invite.resourceType).toBe(Resource.PROJECT);
       expect(invite.resourceId).toBe(projectId);
       expect(invite.role).toBe(Role.PROJECT_CONTRIBUTOR);

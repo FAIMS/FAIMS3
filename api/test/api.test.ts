@@ -88,7 +88,7 @@ describe('API tests', () => {
         expect(response.body.name).toBe(config.conductorInstanceName);
         expect(response.body.description).toBe(config.instanceDescription);
         expect(response.body.conductor_url).toBe(config.conductorPublicUrl);
-        expect(response.body.prefix).toBe(config.shortCodePrefix);
+        expect(response.body.prefix).toBe(config.inviteCodePrefix);
       });
   });
 

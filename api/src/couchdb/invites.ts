@@ -20,6 +20,8 @@
 
 import {
   ExistingInvitesDBDocument,
+  INVITE_CODE_ALPHABET,
+  INVITE_CODE_LENGTH,
   InvitesDBDocument,
   InvitesDBFields,
   PeopleDBDocument,
@@ -32,9 +34,16 @@ import {
   safeWriteDocument,
   writeNewDocument,
 } from '@faims3/data-model';
+import {customAlphabet} from 'nanoid';
 import {getInvitesDB} from '.';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+
+/** Cryptographically strong invite-code body generator (nanoid). */
+const generateInviteCodeBody = customAlphabet(
+  INVITE_CODE_ALPHABET,
+  INVITE_CODE_LENGTH
+);
 
 // Default 30 days expiry
 export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
@@ -128,21 +137,12 @@ export async function createGlobalInvite({
 }
 
 /**
- * Generate a short code identifier suitable for an invite.
- * May not be unique - uniqueness is handled by writeNewInvite.
- *
- * @returns {string} A six character identifier prefixed by the system code
+ * Generate a unique invite document ID: `{inviteCodePrefix}-{nanoid}`.
+ * Links/QR codes encode this ID; typing the code is an advanced fallback.
+ * Uniqueness is enforced by {@link writeNewInvite} collision retries.
  */
 function generateInviteId(): string {
-  const INVITE_LENGTH = 6;
-  const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
-
-  let ident = '';
-  for (let i = 0; i < INVITE_LENGTH; i++) {
-    const char = chars[Math.floor(Math.random() * chars.length)];
-    ident = ident + char;
-  }
-  return config.shortCodePrefix + '-' + ident;
+  return `${config.inviteCodePrefix}-${generateInviteCodeBody()}`;
 }
 
 /**
