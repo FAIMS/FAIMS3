@@ -2,8 +2,11 @@ import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
 import {config} from '@/constants';
 import {useRequiredUser} from '@/hooks/auth-hooks';
+import {dateDaysFromNow, dateToIso} from '@/lib/time';
 import {
+  DEFAULT_INVITE_EXPIRY_DAYS,
   INPUT_LIMITS,
+  MAX_INVITE_EXPIRY_DAYS,
   PostCreateInviteInput,
   Role,
   roleDetails,
@@ -40,7 +43,7 @@ export function CreateGlobalInviteForm({
   const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
-    undefined
+    () => dateToIso(dateDaysFromNow(DEFAULT_INVITE_EXPIRY_DAYS))
   );
 
   const fields: Field[] = [
@@ -146,7 +149,7 @@ export function CreateGlobalInviteForm({
       footer={
         <ExpirySelector
           hints={config.inviteTokenHints}
-          maxDurationDays={365}
+          maxDurationDays={MAX_INVITE_EXPIRY_DAYS}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}
           setSelectedDateTime={setSelectedDateTime}

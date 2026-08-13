@@ -19,11 +19,14 @@
  */
 
 import {
+  DEFAULT_INVITE_EXPIRY_MS,
   ExistingInvitesDBDocument,
   INVITE_CODE_ALPHABET,
   INVITE_CODE_LENGTH,
   InvitesDBDocument,
   InvitesDBFields,
+  isInviteExpiryWithinMax,
+  MAX_INVITE_EXPIRY_DAYS,
   PeopleDBDocument,
   Resource,
   Role,
@@ -45,8 +48,23 @@ const generateInviteCodeBody = customAlphabet(
   INVITE_CODE_LENGTH
 );
 
-// Default 30 days expiry
-export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
+/** @deprecated Use DEFAULT_INVITE_EXPIRY_MS from @faims3/data-model. */
+export const DEFAULT_INVITE_EXPIRY = DEFAULT_INVITE_EXPIRY_MS;
+
+/**
+ * Resolve create-time expiry: default 5 days; reject lifetimes beyond the max.
+ * Past timestamps are allowed so tests can create already-expired invites.
+ */
+function resolveInviteExpiry(expiry: number | undefined): number {
+  const now = Date.now();
+  const resolved = expiry ?? now + DEFAULT_INVITE_EXPIRY_MS;
+  if (!isInviteExpiryWithinMax(resolved, now)) {
+    throw new Exceptions.ValidationException(
+      `Invite expiry must be at most ${MAX_INVITE_EXPIRY_DAYS} days from now`
+    );
+  }
+  return resolved;
+}
 
 /**
  * Create an invite for a resource and role if one doesn't already exist.
@@ -68,7 +86,7 @@ export async function createResourceInvite({
   role,
   name,
   createdBy,
-  expiry = Date.now() + DEFAULT_INVITE_EXPIRY,
+  expiry,
   usesOriginal,
 }: {
   resourceType: Resource.TEAM | Resource.PROJECT;
@@ -88,7 +106,7 @@ export async function createResourceInvite({
     name,
     createdBy,
     createdAt: Date.now(),
-    expiry,
+    expiry: resolveInviteExpiry(expiry),
     usesOriginal,
     usesConsumed: 0,
     uses: [],
@@ -112,7 +130,7 @@ export async function createGlobalInvite({
   role,
   name,
   createdBy,
-  expiry = Date.now() + DEFAULT_INVITE_EXPIRY,
+  expiry,
   usesOriginal,
 }: {
   role: Role;
@@ -128,7 +146,7 @@ export async function createGlobalInvite({
     name,
     createdBy,
     createdAt: Date.now(),
-    expiry,
+    expiry: resolveInviteExpiry(expiry),
     usesOriginal,
     usesConsumed: 0,
     uses: [],

@@ -191,7 +191,10 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
       >
         {showPrefixSelector && (
           <FormControl sx={{minWidth: 72, maxWidth: 100, flexShrink: 0}}>
-            <InputLabel id="prefix-label" sx={{backgroundColor: 'white', px: 1}}>
+            <InputLabel
+              id="prefix-label"
+              sx={{backgroundColor: 'white', px: 1}}
+            >
               Prefix
             </InputLabel>
             <Select

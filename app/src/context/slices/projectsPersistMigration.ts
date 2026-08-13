@@ -504,8 +504,7 @@ export function migrateProjectsInviteCodePrefixV3(
     const {shortCodePrefix: legacyPrefix, ...rest} = legacy;
     migratedServers[serverId] = {
       ...rest,
-      inviteCodePrefix:
-        legacy.inviteCodePrefix || legacyPrefix || '',
+      inviteCodePrefix: legacy.inviteCodePrefix || legacyPrefix || '',
     };
   }
 
