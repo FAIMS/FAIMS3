@@ -19,9 +19,9 @@ describe('field registry completion parity', () => {
     ).toEqual([]);
   });
 
-  test('allowlist entries exist in the registry', () => {
+  test('allowlist entries match a live override', () => {
     const stale = [...ALLOWED_OVERRIDES].filter(
-      key => !FIELD_REGISTRY.has(key)
+      key => FIELD_REGISTRY.get(key)?.isCompleteFunction === undefined
     );
     expect(stale).toEqual([]);
   });
