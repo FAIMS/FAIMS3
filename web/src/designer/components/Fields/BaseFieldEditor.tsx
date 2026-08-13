@@ -85,7 +85,6 @@ type StateType = {
   advancedHelperText: string;
   required: boolean;
   persistent: boolean;
-  displayParent: boolean;
   annotation: boolean;
   annotationLabel: string;
   uncertainty: boolean;
@@ -284,7 +283,6 @@ export const BaseFieldEditor = ({
     uncertaintyLabel: field.meta?.uncertainty?.label || '',
     condition: field.condition,
     persistent: field.persistent || false,
-    displayParent: field.displayParent || false,
     protection: protectionEnabled,
     allowHiding: allowHidingEnabled,
   };
@@ -343,7 +341,6 @@ export const BaseFieldEditor = ({
     }
 
     newField.persistent = newState.persistent || false;
-    newField.displayParent = newState.displayParent || false;
 
     updateField(fieldName, newField);
   };
@@ -807,32 +804,6 @@ export const BaseFieldEditor = ({
                     mt: 0.5,
                   }}
                 >
-                  <FormControlLabel
-                    sx={{alignItems: 'center', mr: 0}}
-                    control={
-                      <Checkbox
-                        checked={state.displayParent}
-                        onChange={e =>
-                          updateProperty('displayParent', e.target.checked)
-                        }
-                        sx={designerCheckboxSx}
-                        size="small"
-                      />
-                    }
-                    label={
-                      <Box
-                        sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
-                      >
-                        <Typography variant="body2">
-                          Display in child records
-                        </Typography>
-                        <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
-                          <InfoIcon sx={designerInfoIconSx} />
-                        </Tooltip>
-                      </Box>
-                    }
-                  />
-
                   <FormControlLabel
                     sx={{alignItems: 'center', mr: 0}}
                     control={

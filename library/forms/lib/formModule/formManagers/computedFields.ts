@@ -1,14 +1,17 @@
 import {
   CompiledFieldDefinition,
+  ExprType,
   ExprValue,
   FAIMS_TYPE_TO_EXPR_TYPE,
   getFieldToIdsMap,
+  PARENT_REFERENCE_PREFIX,
   UiSpecModel,
   ValuesObject,
 } from '@faims3/data-model';
 import {formDataExtractor} from '../../utils';
 import {logWarn} from '../../logging';
 import {FaimsForm} from '../types';
+import {RecordContext} from './templatedFields';
 
 const TEMPLATED_STRING_FIELD_NAME = 'TemplatedStringField';
 
@@ -17,7 +20,9 @@ const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
 
 // Component names whose values are themselves derived. These are excluded as
 // inputs to a computed expression in this version to avoid evaluation ordering
-// problems; referencing one yields a blank (incomplete) result.
+// problems; referencing one yields a blank (incomplete) result. Note this
+// applies to local fields only - parent derived fields are usable, since
+// their stored values carry no ordering problem (see resolveParentRef).
 const DERIVED_FIELD_NAMES = [
   ...COMPUTED_FIELD_NAMES,
   TEMPLATED_STRING_FIELD_NAME,
@@ -31,19 +36,27 @@ const DERIVED_FIELD_NAMES = [
  * applies it against current values. Recompute-all-and-diff, matching the
  * templated-field recompute.
  *
+ * _PARENT.<Field-ID> references resolve from the parent record's stored values
+ * supplied via context.parentValues (see resolveParentValues). A referenced
+ * parent value that is missing - including when the record has no parent -
+ * leaves the result blank.
+ *
  * @param values Current form data values
  * @param uiSpecification The decoded UI spec (with compiled expressions attached)
  * @param formId The target form ID to update
+ * @param context Record context, carrying parent values if resolved
  * @returns Whether anything changed, and the new values keyed by field name
  */
 export function recomputeComputedFields({
   values,
   uiSpecification,
   formId,
+  context,
 }: {
   values: ValuesObject;
   uiSpecification: UiSpecModel;
   formId: string;
+  context?: RecordContext;
 }): {changes: boolean; updates: Record<string, ExprValue | null>} {
   const fieldMap = getFieldToIdsMap(uiSpecification);
 
@@ -86,20 +99,17 @@ export function recomputeComputedFields({
     }
   }
 
-  // Resolves a field name to a typed value matching its declared type-returned,
-  // or null when missing, mistyped, or itself derived. Number inputs may arrive
-  // as strings from form controls and are converted; other types are strict.
-  // An empty string counts as missing so partially filled forms stay blank.
-  const resolveField = (name: string): ExprValue | null => {
-    if (derivedFields.has(name)) {
-      return null;
-    }
-    const exprType =
-      FAIMS_TYPE_TO_EXPR_TYPE[uiSpecification.fields[name]?.['type-returned']];
+  // Coerces a raw value to the given expression type, or null when missing or
+  // mistyped. Numbers may arrive as strings from form controls; other types
+  // are strict. Empty string counts as missing so partially filled forms stay
+  // blank.
+  const coerceValue = (
+    raw: unknown,
+    exprType: ExprType | undefined
+  ): ExprValue | null => {
     if (!exprType) {
       return null;
     }
-    const raw = values[name];
     if (raw === undefined || raw === null || raw === '') {
       return null;
     }
@@ -115,16 +125,53 @@ export function recomputeComputedFields({
     }
   };
 
+  // Resolves a local field name to a typed value, or null when missing,
+  // mistyped, or itself derived.
+  const resolveField = (name: string): ExprValue | null => {
+    if (derivedFields.has(name)) {
+      return null;
+    }
+    return coerceValue(
+      values[name],
+      FAIMS_TYPE_TO_EXPR_TYPE[uiSpecification.fields[name]?.['type-returned']]
+    );
+  };
+
+  // Resolves a _PARENT.<Field-ID> reference from the parent's stored values.
+  // Parent derived fields ARE usable: their stored values carry no evaluation
+  // ordering problem, and persist-on-save is what guarantees they exist.
+  // Field IDs are globally unique in the uiSpec, so the field's type can be
+  // looked up directly.
+  const resolveParentRef = (ref: string): ExprValue | null => {
+    const parentFieldId = ref.slice(PARENT_REFERENCE_PREFIX.length);
+    return coerceValue(
+      context?.parentValues?.[parentFieldId],
+      FAIMS_TYPE_TO_EXPR_TYPE[
+        uiSpecification.fields[parentFieldId]?.['type-returned']
+      ]
+    );
+  };
+
   let changes = false;
   const updates: Record<string, ExprValue | null> = {};
 
   for (const {fieldName, expressionFn, references} of computedFields) {
-    // Build the scope from referenced symbols that are fields in this form.
-    // A referenced field with no usable value leaves the result blank; any
-    // symbol that is not a field in this form is treated as unknown.
+    // Build the scope from referenced symbols: parent references resolve from
+    // the parent record's values, local references from fields in this form.
+    // A reference with no usable value leaves the result blank; any other
+    // symbol is treated as unknown.
     const scope = new Map<string, ExprValue>();
     let incomplete = false;
     for (const ref of references) {
+      if (ref.startsWith(PARENT_REFERENCE_PREFIX)) {
+        const value = resolveParentRef(ref);
+        if (value === null) {
+          incomplete = true;
+          break;
+        }
+        scope.set(ref, value);
+        continue;
+      }
       if (!formFields.has(ref)) {
         continue;
       }
@@ -166,6 +213,7 @@ export function recomputeComputedFields({
  * @param form The tanstack form
  * @param formId The target form ID to update
  * @param uiSpec The decoded UI spec (with compiled expressions attached)
+ * @param context Record context, carrying parent values if resolved
  * @param runListeners Whether tanstack should fire listeners for the update
  * @returns True iff a change was detected
  */
@@ -173,11 +221,13 @@ export function onChangeComputedFields({
   form,
   uiSpec,
   formId,
+  context,
   runListeners,
 }: {
   form: FaimsForm;
   formId: string;
   uiSpec: UiSpecModel;
+  context?: RecordContext;
   runListeners: boolean;
 }): boolean {
   const data = formDataExtractor({fullData: form.state.values});
@@ -185,6 +235,7 @@ export function onChangeComputedFields({
     formId,
     uiSpecification: uiSpec,
     values: data,
+    context,
   });
 
   for (const [k, v] of Object.entries(updates)) {

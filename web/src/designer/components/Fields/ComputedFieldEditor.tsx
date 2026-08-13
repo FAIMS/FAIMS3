@@ -6,14 +6,21 @@ import {
   Box,
   FormHelperText,
   Typography,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {useMemo} from 'react';
 import {
-  compileComputedExpression,
+  buildParentFieldTypes,
+  compileComputedExpressionForForm,
   ExpressionError,
   ExprType,
   FAIMS_TYPE_TO_EXPR_TYPE,
+  PARENT_REFERENCE_PREFIX,
+  UiSpecModel,
 } from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
@@ -69,6 +76,17 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
 
+  // The data-model helpers read the uiSpec shape; the designer's slices are
+  // structurally compatible.
+  const uiSpecForCompile = useMemo(
+    () => ({fields: allFields, views, viewsets}) as unknown as UiSpecModel,
+    [allFields, views, viewsets]
+  );
+
+  const getFieldLabelFor = (id: string) =>
+    (allFields[id]?.['component-parameters']?.label as string | undefined) ??
+    id;
+
   const expression =
     (field['component-parameters'].expression as string | undefined) || '';
   const isText = field['component-name'] === 'ComputedText';
@@ -93,23 +111,34 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
   );
 
-  // Compile the expression against the current field types, mirroring the
-  // notebook-load compile. Runs when the (debounced) expression or the spec
-  // changes; returns the compile error message, or null when valid/empty.
+  // Parent fields referenceable as {_PARENT.Field-ID}.
+  const parentFieldOptions = useMemo(() => {
+    const {types} = buildParentFieldTypes({
+      uiSpecification: uiSpecForCompile,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => ({
+      ref,
+      label: getFieldLabelFor(ref.slice(PARENT_REFERENCE_PREFIX.length)),
+    }));
+  }, [uiSpecForCompile, viewsetId]);
+
+  // Compile with the per-form wrapper so {_PARENT.Field-ID} references
+  // validate against this form's possible parent forms.
   const validationError = useMemo(() => {
     if (expression.trim() === '') return null;
-    const fieldTypes = new Map<string, ExprType>();
-    for (const [id, f] of Object.entries(allFields)) {
-      const t = FAIMS_TYPE_TO_EXPR_TYPE[f['type-returned'] ?? ''];
-      if (t) fieldTypes.set(id, t);
-    }
     try {
-      compileComputedExpression(expression, fieldTypes, requiredType);
+      compileComputedExpressionForForm({
+        source: expression,
+        uiSpecification: uiSpecForCompile,
+        formId: viewsetId,
+        requiredType,
+      });
       return null;
     } catch (e) {
       return e instanceof ExpressionError ? e.message : 'Invalid expression';
     }
-  }, [expression, allFields, requiredType]);
+  }, [expression, uiSpecForCompile, viewsetId, requiredType]);
 
   const updateExpression = (value: string) => {
     const newField = withUpdatedField(field, nextField => {
@@ -182,28 +211,58 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                 </li>
                 <li>Logic (true/false): &amp;&amp; || !</li>
                 <li>Conditional: condition ? ifTrue : ifFalse</li>
+                <li>
+                  Parent record fields: {'{_PARENT.Field-ID}'} - value from the
+                  record's parent
+                </li>
               </ul>
               The result must be {isText ? 'text' : 'a number'}.
             </Typography>
           </AccordionDetails>
         </Accordion>
         {referenceableFieldCount > 0 ? (
-          <Box sx={{mt: 2, maxWidth: 400}}>
-            <FieldSearchAutocomplete
-              value={null}
-              onChange={fieldId => {
-                if (fieldId) insertFieldRef(fieldId);
-              }}
-              scope={{kind: 'viewset', viewsetId}}
-              filters={referenceableFieldFilters}
-              label="Insert field"
-              placeholder="Search fields…"
-              size="small"
-              clearOnSelect
-              noOptionsText="No field search results"
-              data-testid="computed-field-insert"
-            />
-          </Box>
+          <>
+            <Box sx={{mt: 2, maxWidth: 400}}>
+              <FieldSearchAutocomplete
+                value={null}
+                onChange={fieldId => {
+                  if (fieldId) insertFieldRef(fieldId);
+                }}
+                scope={{kind: 'viewset', viewsetId}}
+                filters={referenceableFieldFilters}
+                label="Insert field"
+                placeholder="Search fields…"
+                size="small"
+                clearOnSelect
+                noOptionsText="No field search results"
+                data-testid="computed-field-insert"
+              />
+            </Box>
+            {parentFieldOptions.length > 0 && (
+              <Box sx={{mt: 1, maxWidth: 400}}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="parent-field-insert-label">
+                    Insert parent field
+                  </InputLabel>
+                  <Select
+                    labelId="parent-field-insert-label"
+                    label="Insert parent field"
+                    value=""
+                    data-testid="computed-parent-field-insert"
+                    onChange={e => {
+                      if (e.target.value) insertFieldRef(e.target.value);
+                    }}
+                  >
+                    {parentFieldOptions.map(({ref, label}) => (
+                      <MenuItem key={ref} value={ref}>
+                        {label} ({ref})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+          </>
         ) : (
           <Alert severity="info" sx={{mt: 2}}>
             No referenceable fields in this form. Add number, text, or checkbox

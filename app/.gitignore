@@ -135,5 +135,5 @@ public/assets/icons/
 ios/App/App/Assets.xcassets/AppIcon.appiconset
 ios/App/App/Assets.xcassets/Splash.imageset
 
-# generated during build from capacitor.config.ts
+# generated during prebuild from capacitor.config.dist.json
 capacitor.config.json
