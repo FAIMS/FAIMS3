@@ -48,9 +48,6 @@ const generateInviteCodeBody = customAlphabet(
   INVITE_CODE_LENGTH
 );
 
-/** @deprecated Use DEFAULT_INVITE_EXPIRY_MS from @faims3/data-model. */
-export const DEFAULT_INVITE_EXPIRY = DEFAULT_INVITE_EXPIRY_MS;
-
 /**
  * Resolve create-time expiry: default 5 days; reject lifetimes beyond the max.
  * Past timestamps are allowed so tests can create already-expired invites.

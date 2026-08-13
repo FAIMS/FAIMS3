@@ -62,12 +62,23 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
     props.servers[0]?.shortCodePrefix || ''
   );
 
+  /**
+   * Processes input to handle prefixes and keep a valid invite-code body.
+   *
+   * Also strips any whitespace.
+   *
+   * @param input The raw input string to process
+   * @returns The cleaned invite-code body without prefix or whitespace
+   */
   const processInput = (input: string): string => {
+    // Preserve case for new alphanumeric codes; strip whitespace.
     const cleanInput = input.trim().replace(/\s+/g, '');
 
+    // Check if input starts with any known prefix (including potential dash)
     for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`, 'i');
       if (prefixPattern.test(cleanInput)) {
+        // If found, update selected prefix and remove it from input
         setSelectedPrefix(prefix);
         showInfo(`Prefix "${prefix}" detected and selected automatically`);
         return cleanInput.replace(prefixPattern, '');
@@ -134,6 +145,7 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
     }
   };
 
+  // only show the prefix selection dropdown if more than one server
   const showPrefixSelector = props.servers.length > 1;
   const canSubmit =
     inviteCodeBody.length >= INVITE_CODE_MIN_LENGTH &&
@@ -147,8 +159,8 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
             Enter invite code
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Prefer scanning an invite QR code when you can. Use this only if you
-            were given an invite code to type or paste.
+            If you cannot scan a QR code, you can manually enter the invite
+            code here.
           </Typography>
         </>
       }
@@ -220,15 +232,20 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
 export function InviteQRRegistration(props: InviteRegistrationProps) {
   const dispatch = useAppDispatch();
   const handleRegister = async (url: string) => {
+    // verify that this URL is one that's going to work
+    // valid urls look like:
+    // http://host/register?inviteId=PREFIX-…
     const valid_hosts = props.servers.map(server => server.serverUrl);
     const valid_re = valid_hosts.join('|') + '/register.*';
 
     if (url.match(valid_re)) {
+      // Process the URL with our new function
       const finalUrl = replaceOrAppendRedirect({
         url,
         redirectTo: `${config.appId}://auth-return`,
       });
 
+      // Use the capacitor browser plugin in apps
       await Browser.open({
         url: finalUrl,
       });

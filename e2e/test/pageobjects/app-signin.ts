@@ -40,11 +40,6 @@ class LoginPage extends Page {
     return $('[data-testid="invite-code-entry"]'); // Manual invite code entry
   }
 
-  /** @deprecated Use {@link inviteCodeInput} */
-  get shortCodeInput() {
-    return this.inviteCodeInput;
-  }
-
   /**
    * Page actions
    */

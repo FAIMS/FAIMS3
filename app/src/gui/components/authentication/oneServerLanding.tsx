@@ -66,6 +66,7 @@ const OnboardingComponent = ({
               backgroundColor: '#ffffff',
             }}
           >
+            {/* If we have more than one server, show the multi-server selector */}
             <MultiServerSelector />
           </Paper>
         )}

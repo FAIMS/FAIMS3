@@ -339,6 +339,7 @@ export async function validateAndApplyInviteToUser({
   const requestMeta = req ? inviteAuditFromRequest(req) : {};
 
   try {
+    // Try and lookup the invite
     const invite = await lookupAndValidateInvite({inviteCode});
 
     let targetDbUser: PeopleDBDocument;
