@@ -77,6 +77,41 @@ describe('getParentFormsForForm', () => {
       getParentFormsForForm({uiSpecification: spec, formId: 'Feature'}).sort()
     ).toEqual(['Site', 'Trench']);
   });
+
+  it('ignores a selector with a nonstandard namespace', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Features': {
+          ...makeChildLink('Feature'),
+          'component-namespace': 'legacy-custom',
+        },
+      },
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormsForForm({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual([]);
+  });
+
+  it('ignores a selector whose params fail the shared schema', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Features': {
+          ...makeChildLink('Feature'),
+          // multiple must be a boolean when present
+          'component-parameters': {
+            related_type: 'Feature',
+            relation_type: 'faims-core::Child',
+            multiple: 'true',
+          },
+        },
+      },
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormsForForm({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual([]);
+  });
 });
 
 describe('buildParentFieldTypes', () => {

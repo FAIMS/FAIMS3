@@ -178,6 +178,7 @@ function resolveChildFieldSpecs(
     }
     specs.set(fieldId, {
       relatedFormId: params.related_type,
+      // required is a base field param, outside the selector params schema
       required: !!fieldSpec['component-parameters']?.required,
     });
   }

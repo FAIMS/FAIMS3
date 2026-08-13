@@ -18,7 +18,9 @@
  *   Determines which forms can parent a given form, and types the
  *   _PARENT.<Field-ID> references usable in computed expressions on that form.
  *   Shared by the notebook-load compile pass, the designer's live expression
- *   validation, and the forms runtime.
+ *   validation, and the forms runtime. Also home of the shared child-relation
+ *   field scan (getChildRelationParams, fieldIdsForViewset) that the record
+ *   status report reuses.
  */
 
 import {
@@ -58,7 +60,8 @@ export const fieldIdsForViewset = (
  * Parses a field as a Child-relation RelatedRecordSelector, null for any other
  * field (including selectors with malformed parameters). The one definition
  * keeps parent-form inference and the record status report scanning for the
- * same fields.
+ * same fields; the designer's ParentFieldDisplayEditor keeps a looser
+ * name-only copy of this scan.
  */
 export const getChildRelationParams = (field: FieldDefinition | undefined) => {
   if (
