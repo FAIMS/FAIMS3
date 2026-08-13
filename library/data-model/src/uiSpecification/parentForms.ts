@@ -22,6 +22,10 @@
  */
 
 import {
+  RELATED_RECORD_SELECTOR,
+  relatedRecordSelectorComponentParamsSchema,
+} from '../databaseEngine/types';
+import {
   compileComputedExpression,
   CompiledExpression,
   ExpressionError,
@@ -29,17 +33,14 @@ import {
   extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
 } from './expressions';
-import {UiSpecModel} from './types';
+import {FieldDefinition, UiSpecModel} from './types';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
-const RELATED_RECORD_COMPONENT = 'RelatedRecordSelector';
-const CHILD_RELATION = 'faims-core::Child';
-
-/** Field IDs across all views of a viewset. Local to avoid an import cycle
- * with utils.ts, which imports this module via the compile pass. */
-const fieldIdsForViewset = (
+/** Field IDs across all views of a viewset; stale view ids are skipped. Lives
+ * here, not in utils.ts, which imports this module via the compile pass. */
+export const fieldIdsForViewset = (
   uiSpecification: UiSpecModel,
   viewSetId: string
 ): string[] => {
@@ -53,9 +54,30 @@ const fieldIdsForViewset = (
 };
 
 /**
+ * Parses a field as a Child-relation RelatedRecordSelector, null for any other
+ * field (including selectors with malformed parameters). The one definition
+ * keeps parent-form inference and the record status report scanning for the
+ * same fields.
+ */
+export const getChildRelationParams = (field: FieldDefinition | undefined) => {
+  if (
+    !field ||
+    field['component-namespace'] !== RELATED_RECORD_SELECTOR.namespace ||
+    field['component-name'] !== RELATED_RECORD_SELECTOR.name
+  ) {
+    return null;
+  }
+  const params = relatedRecordSelectorComponentParamsSchema.safeParse(
+    field['component-parameters']
+  );
+  return params.success && params.data.relation_type === 'faims-core::Child'
+    ? params.data
+    : null;
+};
+
+/**
  * Form IDs of every form that can parent the given form: those holding a
- * Child-relation RelatedRecordSelector targeting it. Matches the designer's
- * ParentFieldDisplay editor scan.
+ * Child-relation RelatedRecordSelector targeting it.
  */
 export const getParentFormsForForm = ({
   uiSpecification,
@@ -68,14 +90,9 @@ export const getParentFormsForForm = ({
   for (const candidateId of Object.keys(uiSpecification.viewsets)) {
     if (candidateId === formId) continue;
     const isParent = fieldIdsForViewset(uiSpecification, candidateId).some(
-      id => {
-        const f = uiSpecification.fields[id];
-        return (
-          f?.['component-name'] === RELATED_RECORD_COMPONENT &&
-          f['component-parameters']?.related_type === formId &&
-          f['component-parameters']?.relation_type === CHILD_RELATION
-        );
-      }
+      id =>
+        getChildRelationParams(uiSpecification.fields[id])?.related_type ===
+        formId
     );
     if (isParent) parentForms.push(candidateId);
   }

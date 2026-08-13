@@ -1,4 +1,8 @@
 import {
+  fieldIdsForViewset,
+  getChildRelationParams,
+} from '../uiSpecification/parentForms';
+import {
   currentlyVisibleMap,
   getFieldsMatchingCondition,
   getSummaryFieldInformation,
@@ -20,12 +24,7 @@ import {
   RecordFilteredError,
   UnknownFormTypeError,
 } from './exceptions';
-import {
-  FormUpdateData,
-  RELATED_RECORD_SELECTOR,
-  relatedRecordFieldAvpEntrySchema,
-  relatedRecordSelectorComponentParamsSchema,
-} from './types';
+import {FormUpdateData, relatedRecordFieldAvpEntrySchema} from './types';
 
 // Backstop against corrupt/pathological deep data (real trees are ~4 levels);
 // it also bounds the response, which repeats a shared subtree once per path
@@ -180,20 +179,12 @@ function resolveChildFieldSpecs(
 ): Map<string, ChildFieldSpec> {
   const specs = new Map<string, ChildFieldSpec>();
   for (const [fieldId, fieldSpec] of Object.entries(uiSpec.fields)) {
-    if (
-      fieldSpec['component-namespace'] !== RELATED_RECORD_SELECTOR.namespace ||
-      fieldSpec['component-name'] !== RELATED_RECORD_SELECTOR.name
-    ) {
-      continue;
-    }
-    const params = relatedRecordSelectorComponentParamsSchema.safeParse(
-      fieldSpec['component-parameters']
-    );
-    if (!params.success || params.data.relation_type !== 'faims-core::Child') {
+    const params = getChildRelationParams(fieldSpec);
+    if (!params) {
       continue;
     }
     specs.set(fieldId, {
-      relatedFormId: params.data.related_type,
+      relatedFormId: params.related_type,
       required: !!fieldSpec['component-parameters']?.required,
     });
   }
@@ -207,20 +198,6 @@ interface CollectedChildField extends ChildFieldSpec {
   childIds: string[];
 }
 
-/** Field ids across all the form's sections, hidden or not; stale section ids are skipped. */
-function formFieldIds(
-  uiSpec: DataEngine['uiSpec'],
-  formId: string
-): Set<string> {
-  const ids = new Set<string>();
-  for (const viewId of uiSpec.viewsets[formId].views) {
-    for (const fieldId of uiSpec.views[viewId]?.fields ?? []) {
-      ids.add(fieldId);
-    }
-  }
-  return ids;
-}
-
 /** Reads the form's Child-type RelatedRecordSelector fields and their linked child ids. */
 function collectChildFields(
   ctx: WalkContext,
@@ -229,7 +206,10 @@ function collectChildFields(
   data: FormUpdateData | undefined
 ): CollectedChildField[] {
   const collected: CollectedChildField[] = [];
-  for (const fieldId of formFieldIds(ctx.engine.uiSpec, formId)) {
+  // Set: a field listed in two sections is still one child field
+  for (const fieldId of new Set(
+    fieldIdsForViewset(ctx.engine.uiSpec, formId)
+  )) {
     const spec = ctx.childFieldSpecs.get(fieldId);
     if (!spec) {
       continue;
