@@ -155,12 +155,12 @@ export async function createGlobalInvite({
 }
 
 /**
- * Generate a unique invite document ID: `{inviteCodePrefix}-{nanoid}`.
+ * Generate a unique invite document ID: `{shortCodePrefix}-{nanoid}`.
  * Links/QR codes encode this ID; typing the code is an advanced fallback.
  * Uniqueness is enforced by {@link writeNewInvite} collision retries.
  */
 function generateInviteId(): string {
-  return `${config.inviteCodePrefix}-${generateInviteCodeBody()}`;
+  return `${config.shortCodePrefix}-${generateInviteCodeBody()}`;
 }
 
 /**

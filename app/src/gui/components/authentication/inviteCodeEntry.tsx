@@ -95,7 +95,7 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
   const [inviteCodeBody, setInviteCodeBody] = useState('');
   const {showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
-    props.servers[0]?.inviteCodePrefix || ''
+    props.servers[0]?.shortCodePrefix || ''
   );
 
   /**
@@ -105,7 +105,7 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
     // Preserve case for new alphanumeric codes; strip whitespace.
     const cleanInput = input.trim().replace(/\s+/g, '');
 
-    for (const prefix of props.servers.map(server => server.inviteCodePrefix)) {
+    for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`, 'i');
       if (prefixPattern.test(cleanInput)) {
         setSelectedPrefix(prefix);
@@ -151,7 +151,7 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
     }
 
     const serverInfo = props.servers.find(
-      server => server.inviteCodePrefix === selectedPrefix
+      server => server.shortCodePrefix === selectedPrefix
     );
 
     if (!serverInfo) {
@@ -159,7 +159,7 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
       return;
     }
 
-    const inviteCode = `${serverInfo.inviteCodePrefix}-${inviteCodeBody}`;
+    const inviteCode = `${serverInfo.shortCodePrefix}-${inviteCodeBody}`;
     const url = `${serverInfo.serverUrl}/register?inviteId=${inviteCode}`;
 
     if (IS_WEB_PLATFORM) {
@@ -205,10 +205,10 @@ export const InviteCodeEntry = (props: InviteCodeEntryProps) => {
             >
               {props.servers.map(server => (
                 <MenuItem
-                  key={server.inviteCodePrefix}
-                  value={server.inviteCodePrefix}
+                  key={server.shortCodePrefix}
+                  value={server.shortCodePrefix}
                 >
-                  {server.inviteCodePrefix}
+                  {server.shortCodePrefix}
                 </MenuItem>
               ))}
             </Select>

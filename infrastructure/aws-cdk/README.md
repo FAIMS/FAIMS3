@@ -371,7 +371,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `description`: Subheading or description for the instance
   - `conductorDockerImage`: Conductor docker image name from public registry (e.g. ghcr.io/faims/faims3-api or org/faims3-api)
   - `conductorDockerImageTag`: (default "latest") Image tag; composed with `conductorDockerImage` as `image`:`tag`.
-  - `inviteCodePrefix`: (default "FAIMS") Prefix for invite codes (`{prefix}-{code}`). Legacy `shortCodePrefix` is still accepted.
+  - `shortCodePrefix`: (default "FAIMS") Prefix for invite codes (`{prefix}-{code}`).
   - `provisionSSOUsersPolicy`: (default "reject") When an unknown user signs in via SSO: `own-team`, `general-user`, or `reject`
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task

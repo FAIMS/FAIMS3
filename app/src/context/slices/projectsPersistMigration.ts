@@ -6,7 +6,7 @@
  * Wired from `projectsPersistConfig` in `store.tsx` via `createMigrate`. When a
  * user upgrades the app, redux-persist rehydrates IndexedDB state and runs each
  * migration step from the stored `_persist.version` up to the configured
- * version (currently **3**).
+ * version (currently **2**).
  *
  * These functions must be **pure transforms** of persisted JSON: no network I/O,
  * no PouchDB handles, and no Redux dispatches. Structured logging
@@ -25,9 +25,6 @@
  * - Maps legacy `database.isSyncing: boolean` to {@link SyncMode} on
  *   `database.syncMode` (`true` → `'both'`, `false` → `'none'`).
  * - Preserves all other project fields; does not reset `isInitialised`.
- *
- * **Version 3** — {@link migrateProjectsInviteCodePrefixV3}
- * - Renames server `shortCodePrefix` → `inviteCodePrefix`.
  *
  * @see store.tsx — `projectsPersistConfig.version` and migrate map
  * @see projectsPersistMigration.test.ts — regression tests for v1 and v2
@@ -471,44 +468,6 @@ export function migrateProjectsSyncModeV2(state: unknown): ProjectsState {
   }
 
   logMigrationInfo('complete', {persistVersion: 2});
-
-  return {
-    ...inbound,
-    servers: migratedServers,
-  };
-}
-
-/**
- * redux-persist **migration 3**: rename server `shortCodePrefix` → `inviteCodePrefix`.
- *
- * Safe when the field is already migrated or missing (no-op / empty string).
- */
-export function migrateProjectsInviteCodePrefixV3(
-  state: unknown
-): ProjectsState {
-  logMigrationInfo('begin', {persistVersion: 3});
-
-  if (!isPlainObject(state)) {
-    return emptyProjectsState;
-  }
-
-  const inbound = state as unknown as ProjectsState;
-  const servers = inbound.servers ?? {};
-  const migratedServers: ProjectsState['servers'] = {};
-
-  for (const [serverId, server] of Object.entries(servers)) {
-    if (!server) {
-      continue;
-    }
-    const legacy = server as typeof server & {shortCodePrefix?: string};
-    const {shortCodePrefix: legacyPrefix, ...rest} = legacy;
-    migratedServers[serverId] = {
-      ...rest,
-      inviteCodePrefix: legacy.inviteCodePrefix || legacyPrefix || '',
-    };
-  }
-
-  logMigrationInfo('complete', {persistVersion: 3});
 
   return {
     ...inbound,

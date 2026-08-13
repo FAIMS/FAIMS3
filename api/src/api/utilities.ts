@@ -105,7 +105,7 @@ api.get('/info', async (req, res) => {
     name: config.conductorInstanceName,
     conductor_url: config.conductorPublicUrl,
     description: config.instanceDescription,
-    prefix: config.inviteCodePrefix,
+    prefix: config.shortCodePrefix,
     // Report the server version e.g. 1.3.1
     serverVersion: config.apiVersion,
   };

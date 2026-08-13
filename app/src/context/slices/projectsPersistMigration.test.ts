@@ -41,7 +41,7 @@ describe('migrateProjectsPersistedState', () => {
           serverId,
           serverUrl: 'https://example.test',
           serverTitle: 'Test',
-          inviteCodePrefix: 'T',
+          shortCodePrefix: 'T',
           description: '',
           projects: {
             [projectId]: {
@@ -87,7 +87,7 @@ describe('migrateProjectsPersistedState', () => {
           serverId,
           serverUrl: 'https://x.test',
           serverTitle: 'X',
-          inviteCodePrefix: 'X',
+          shortCodePrefix: 'X',
           description: '',
           projects: {
             [projectId]: {
@@ -118,7 +118,7 @@ describe('migrateProjectsPersistedState', () => {
           serverId,
           serverUrl: 'https://x.test',
           serverTitle: 'X',
-          inviteCodePrefix: 'X',
+          shortCodePrefix: 'X',
           description: '',
           projects: {
             [projectId]: {
@@ -153,7 +153,7 @@ describe('migrateProjectsSyncModeV2', () => {
           serverId: 'server-a',
           serverUrl: 'https://example.test',
           serverTitle: 'Test',
-          inviteCodePrefix: 'T',
+          shortCodePrefix: 'T',
           description: '',
           projects: {
             off: {

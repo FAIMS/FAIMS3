@@ -59,13 +59,13 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
   const [inviteCodeBody, setInviteCodeBody] = useState('');
   const {showSuccess, showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
-    props.servers[0]?.inviteCodePrefix || ''
+    props.servers[0]?.shortCodePrefix || ''
   );
 
   const processInput = (input: string): string => {
     const cleanInput = input.trim().replace(/\s+/g, '');
 
-    for (const prefix of props.servers.map(server => server.inviteCodePrefix)) {
+    for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`, 'i');
       if (prefixPattern.test(cleanInput)) {
         setSelectedPrefix(prefix);
@@ -111,7 +111,7 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
     }
 
     const server = props.servers.find(
-      server => server.inviteCodePrefix === selectedPrefix
+      server => server.shortCodePrefix === selectedPrefix
     );
 
     if (!server) {
@@ -119,7 +119,7 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
       return;
     }
 
-    const inviteCode = `${server.inviteCodePrefix}-${inviteCodeBody}`;
+    const inviteCode = `${server.shortCodePrefix}-${inviteCodeBody}`;
     const url = `${server.serverUrl}/register?inviteId=${inviteCode}`;
 
     showSuccess('Initiating registration...');
@@ -171,10 +171,10 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
               >
                 {props.servers.map(server => (
                   <MenuItem
-                    key={server.inviteCodePrefix}
-                    value={server.inviteCodePrefix}
+                    key={server.shortCodePrefix}
+                    value={server.shortCodePrefix}
                   >
-                    {server.inviteCodePrefix}
+                    {server.shortCodePrefix}
                   </MenuItem>
                 ))}
               </Select>

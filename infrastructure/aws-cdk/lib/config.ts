@@ -395,61 +395,51 @@ const DomainsConfigSchema = z.object({
   docs: z.string().default('docs'),
 });
 
-const ConductorConfigSchema = z
-  .object({
-    /** The title for this conductor instance, shown on listings page */
-    name: z.string(),
-    /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
-    enhancedObservability: z.boolean().optional(),
-    /** The description shown underneath as a sub heading */
-    description: z.string(),
-    /** Conductor docker image e.g. org/faims3-api */
-    conductorDockerImage: z.string(),
-    /** Conductor docker image e.g. latest, sha-123456 */
-    conductorDockerImageTag: z.string().default('latest'),
-    /**
-     * Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`).
-     * Accepts legacy `shortCodePrefix` in config JSON for one release.
-     */
-    inviteCodePrefix: z.string().optional(),
-    /** @deprecated Use `inviteCodePrefix`. */
-    shortCodePrefix: z.string().optional(),
-    /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
-    provisionSSOUsersPolicy: z
-      .enum(['own-team', 'general-user', 'reject'])
-      .default('reject'),
-    /** The number of CPU units for the Fargate task */
-    cpu: z.number().int().positive(),
-    /** The amount of memory (in MiB) for the Fargate task */
-    memory: z.number().int().positive(),
-    /** Auto scaling configuration for the Conductor service */
-    autoScaling: z.object({
-      /** The desired number of tasks to run (general stable target) */
-      desiredCapacity: z.number().int().positive(),
-      /** The minimum number of tasks to run */
-      minCapacity: z.number().int().positive(),
-      /** The maximum number of tasks that can be run */
-      maxCapacity: z.number().int().positive(),
-      /** The target CPU utilization percentage for scaling */
-      targetCpuUtilization: z.number().min(0).max(100),
-      /** The target memory utilization percentage for scaling */
-      targetMemoryUtilization: z.number().min(0).max(100),
-      /** The cooldown period (in seconds) before allowing another scale in action */
-      scaleInCooldown: z.number().int().nonnegative(),
-      /** The cooldown period (in seconds) before allowing another scale out action */
-      scaleOutCooldown: z.number().int().nonnegative(),
-    }),
-    /** Allow localhost typical addresses in the redirects for conductor? NOT
-     * recommended for production use cases (for security reasons). */
-    localhostWhitelist: z.boolean().default(false),
-    /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
-     * migrations on startup. */
-    migrateNotebooksOnStartup: z.boolean().default(true),
-  })
-  .transform(({inviteCodePrefix, shortCodePrefix, ...rest}) => ({
-    ...rest,
-    inviteCodePrefix: inviteCodePrefix || shortCodePrefix || 'FAIMS',
-  }));
+const ConductorConfigSchema = z.object({
+  /** The title for this conductor instance, shown on listings page */
+  name: z.string(),
+  /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
+  enhancedObservability: z.boolean().optional(),
+  /** The description shown underneath as a sub heading */
+  description: z.string(),
+  /** Conductor docker image e.g. org/faims3-api */
+  conductorDockerImage: z.string(),
+  /** Conductor docker image e.g. latest, sha-123456 */
+  conductorDockerImageTag: z.string().default('latest'),
+  /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
+  shortCodePrefix: z.string().default('FAIMS'),
+  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+  provisionSSOUsersPolicy: z
+    .enum(['own-team', 'general-user', 'reject'])
+    .default('reject'),
+  /** The number of CPU units for the Fargate task */
+  cpu: z.number().int().positive(),
+  /** The amount of memory (in MiB) for the Fargate task */
+  memory: z.number().int().positive(),
+  /** Auto scaling configuration for the Conductor service */
+  autoScaling: z.object({
+    /** The desired number of tasks to run (general stable target) */
+    desiredCapacity: z.number().int().positive(),
+    /** The minimum number of tasks to run */
+    minCapacity: z.number().int().positive(),
+    /** The maximum number of tasks that can be run */
+    maxCapacity: z.number().int().positive(),
+    /** The target CPU utilization percentage for scaling */
+    targetCpuUtilization: z.number().min(0).max(100),
+    /** The target memory utilization percentage for scaling */
+    targetMemoryUtilization: z.number().min(0).max(100),
+    /** The cooldown period (in seconds) before allowing another scale in action */
+    scaleInCooldown: z.number().int().nonnegative(),
+    /** The cooldown period (in seconds) before allowing another scale out action */
+    scaleOutCooldown: z.number().int().nonnegative(),
+  }),
+  /** Allow localhost typical addresses in the redirects for conductor? NOT
+   * recommended for production use cases (for security reasons). */
+  localhostWhitelist: z.boolean().default(false),
+  /** When true, sets MIGRATE_NOTEBOOKS_ON_STARTUP so the API runs notebook DB
+   * migrations on startup. */
+  migrateNotebooksOnStartup: z.boolean().default(true),
+});
 
 const WebConfigSchema = z.object({
   title: z.string().default('Control Centre'),

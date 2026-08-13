@@ -141,14 +141,11 @@ const EnvSchema = z
     CONDUCTOR_INSTANCE_NAME: z.string().optional(),
     /**
      * Prefix used when generating invite codes (e.g. `FAIMS` → `FAIMS-…`).
-     * Preferred over the deprecated `CONDUCTOR_SHORT_CODE_PREFIX` alias.
      */
-    CONDUCTOR_INVITE_CODE_PREFIX: z.string().optional(),
-    /**
-     * @deprecated Use `CONDUCTOR_INVITE_CODE_PREFIX`. Kept for one release so
-     * existing deployments keep working without an immediate env rename.
-     */
-    CONDUCTOR_SHORT_CODE_PREFIX: z.string().optional(),
+    CONDUCTOR_SHORT_CODE_PREFIX: configHelpers.stringDefault(
+      'FAIMS',
+      'CONDUCTOR_SHORT_CODE_PREFIX'
+    ),
     /** Free-text description of this Conductor instance. */
     CONDUCTOR_DESCRIPTION: configHelpers.stringDefault(
       'Fieldmark Conductor Server'
@@ -466,21 +463,7 @@ const EnvSchema = z
       couchdbPublicUrl: env.COUCHDB_PUBLIC_URL,
       conductorKeyId,
       keyFilePath: env.KEY_FILE_PATH,
-      inviteCodePrefix: (() => {
-        const fromNew = env.CONDUCTOR_INVITE_CODE_PREFIX;
-        const fromLegacy = env.CONDUCTOR_SHORT_CODE_PREFIX;
-        if (!configHelpers.isBlank(fromNew)) return fromNew;
-        if (!configHelpers.isBlank(fromLegacy)) {
-          console.warn(
-            'CONDUCTOR_SHORT_CODE_PREFIX is deprecated; use CONDUCTOR_INVITE_CODE_PREFIX'
-          );
-          return fromLegacy;
-        }
-        console.warn(
-          'No value for CONDUCTOR_INVITE_CODE_PREFIX was provided in the environment. Defaulting to FAIMS.'
-        );
-        return 'FAIMS';
-      })(),
+      shortCodePrefix: env.CONDUCTOR_SHORT_CODE_PREFIX,
       instanceDescription: env.CONDUCTOR_DESCRIPTION,
       cookieSecret: env.FAIMS_COOKIE_SECRET,
       conductorInternalPort: env.CONDUCTOR_INTERNAL_PORT,

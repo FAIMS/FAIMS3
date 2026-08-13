@@ -253,7 +253,7 @@ export interface Server {
   couchDbUrl?: string;
 
   // Invite code prefix (e.g. FAIMS in FAIMS-…)
-  inviteCodePrefix: string;
+  shortCodePrefix: string;
 
   // server description
   description: string;
@@ -383,13 +383,13 @@ const projectsSlice = createSlice({
         serverUrl: string;
         couchDbUrl?: string;
         description: string;
-        inviteCodePrefix: string;
+        shortCodePrefix: string;
       }>
     ) => {
       const {
         serverId,
         description,
-        inviteCodePrefix,
+        shortCodePrefix,
         serverTitle,
         serverUrl,
         couchDbUrl,
@@ -404,7 +404,7 @@ const projectsSlice = createSlice({
         description,
         serverTitle,
         serverUrl,
-        inviteCodePrefix,
+        shortCodePrefix,
       };
       // If this was the first server added, select it by default
       if (Object.keys(state.servers).length === 1) {
@@ -422,7 +422,7 @@ const projectsSlice = createSlice({
         serverVersion?: string;
         serverTitle: string;
         serverUrl: string;
-        inviteCodePrefix: string;
+        shortCodePrefix: string;
         description: string;
       }>
     ) => {
@@ -431,7 +431,7 @@ const projectsSlice = createSlice({
         serverVersion,
         description,
         serverTitle,
-        inviteCodePrefix,
+        shortCodePrefix,
         serverUrl,
       } = action.payload;
       if (!state.servers[serverId]) {
@@ -452,7 +452,7 @@ const projectsSlice = createSlice({
         serverVersion,
         serverTitle,
         serverUrl,
-        inviteCodePrefix,
+        shortCodePrefix,
         description,
       };
     },
@@ -1722,7 +1722,7 @@ export const initialiseServers = createAsyncThunk<void>(
             serverId,
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
-            inviteCodePrefix: apiServerInfo.prefix,
+            shortCodePrefix: apiServerInfo.prefix,
             description: apiServerInfo.description,
             serverVersion: apiServerInfo.serverVersion,
           })
@@ -1734,7 +1734,7 @@ export const initialiseServers = createAsyncThunk<void>(
             serverId,
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
-            inviteCodePrefix: apiServerInfo.prefix,
+            shortCodePrefix: apiServerInfo.prefix,
             // We don't know this yet - it's considered sensitive so we need
             // authentication.
             couchDbUrl: undefined,

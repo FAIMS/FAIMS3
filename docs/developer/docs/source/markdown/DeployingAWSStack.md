@@ -366,7 +366,7 @@ The following section configures the API.
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "see-below",
     "conductorDockerImageTag": "latest",
-    "inviteCodePrefix": "FAIMS",
+    "shortCodePrefix": "FAIMS",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
