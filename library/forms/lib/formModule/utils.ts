@@ -3,6 +3,7 @@ import {
   DataEngine,
   FormRelationshipInstance,
   HydratedRevisionDocument,
+  IsCompleteResolver,
   UiSpecModel,
 } from '@faims3/data-model';
 import {getFieldInfo} from '../fieldRegistry';
@@ -113,6 +114,16 @@ export async function getImpliedNavigationRelationships(
 }
 
 /**
+ * The field registry's per-field-type completeness overrides, for data-model
+ * completion callers outside this package (e.g. computeRecordStatusReport), so
+ * they score a record exactly as the form progress bar does.
+ */
+export const fieldCompletionResolver: IsCompleteResolver = ({
+  namespace,
+  name,
+}) => getFieldInfo({namespace, name}).fieldInfo.isCompleteFunction;
+
+/**
  * calculate completion progress for a form
  *
  * Delegates to data-model; the field registry supplies per-field-type
@@ -131,7 +142,6 @@ export function completion(args: {
 }): CompletionResult {
   return computeCompletion({
     ...args,
-    isCompleteResolver: ({namespace, name}) =>
-      getFieldInfo({namespace, name}).fieldInfo.isCompleteFunction,
+    isCompleteResolver: fieldCompletionResolver,
   });
 }

@@ -6,15 +6,16 @@
  *   parent/linked records and an edit button.
  * - Info: Shows record metadata (creation/modification details) and provides
  *   delete functionality.
+ * - Status: Completion of the record rolled up over its child-record tree.
  *
  * Features:
- * - Tab state synchronized with URL query parameter (?tab=view|info)
+ * - Tab state synchronized with URL query parameter (?tab=view|info|history|status)
  * - Fetches and caches record data via TanStack Query
  * - Resolves implied parent/linked relationships for navigation
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/view-record/:recordId?tab=view|info&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -64,6 +65,7 @@ import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import RecordDelete from '../components/notebook/delete';
 import RecordMeta from '../components/record/meta';
+import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
 import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
@@ -76,6 +78,7 @@ const RECORD_TABS = {
   VIEW: 'view',
   INFO: 'info',
   HISTORY: 'history',
+  STATUS: 'status',
 } as const;
 
 type RecordTab = (typeof RECORD_TABS)[keyof typeof RECORD_TABS];
@@ -685,6 +688,7 @@ export const ViewRecordPage: React.FC = () => {
             <Tab label="Record" value={RECORD_TABS.VIEW} />
             <Tab label="Info" value={RECORD_TABS.INFO} />
             <Tab label="History" value={RECORD_TABS.HISTORY} />
+            <Tab label="Status" value={RECORD_TABS.STATUS} />
           </TabList>
         </Box>
 
@@ -733,6 +737,16 @@ export const ViewRecordPage: React.FC = () => {
             recordId={recordId}
             dataEngine={getDataEngine()}
             uiSpec={uiSpec}
+          />
+        </TabPanel>
+
+        <TabPanel value={RECORD_TABS.STATUS} sx={{p: 0, pt: 2}}>
+          <RecordStatus
+            recordId={recordId}
+            projectId={projectId}
+            serverId={serverId}
+            dataEngine={getDataEngine()}
+            isDeleted={isDeleted}
           />
         </TabPanel>
       </TabContext>
