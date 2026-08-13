@@ -591,6 +591,29 @@ describe('Record status report', () => {
     });
   });
 
+  describe('hidden child fields', () => {
+    test('children linked from a condition-hidden field still report', async () => {
+      const {recordId: sampleId} = await create('Sample');
+      // survey-mode is not DETAILED, so survey-samples is condition-hidden
+      const {recordId} = await create('Survey', {
+        'survey-samples': {data: [link(sampleId)]},
+      });
+      const result = await report(recordId);
+      const field = childField(result, 'survey-samples');
+      expect(field).toMatchObject({createdCount: 1, required: false});
+      expect(field.children.map(child => child.recordId)).toEqual([sampleId]);
+      // The live child is a roll-up unit: (own 1 + child 0) / 2
+      expect(result.progress).toBe(0.5);
+    });
+
+    test('a hidden required child field with no children adds no expected unit', async () => {
+      const {recordId} = await create('Survey');
+      const result = await report(recordId);
+      expect(result.childFields).toEqual([]);
+      expect(result.progress).toBe(1.0);
+    });
+  });
+
   describe('recursion safety', () => {
     /** Builds a bottom-up Sample chain of `length` records linked via sub-samples; returns ids bottom-first. */
     const buildSampleChain = async (length: number) => {
@@ -882,9 +905,8 @@ describe('Record status report', () => {
     });
 
     test('condition-hidden summary fields are omitted, statically hidden ones report', async () => {
-      // special-note is a summary field shown only when site-id is SHOW-NOTE;
-      // site-label is statically hidden (component-parameters.hidden), the
-      // templated-field pattern, so its saved value still reports
+      // special-note only shows when site-id is SHOW-NOTE; statically hidden
+      // site-label (the templated-field pattern) still reports its saved value
       const stale = await create('Site', {
         'site-id': {data: 'S1'},
         'special-note': {data: 'stale'},
@@ -908,8 +930,7 @@ describe('Record status report', () => {
 
     test('view conditions and hidden-plus-condition fields gate the summary', async () => {
       // extra-note sits in a view shown only when mode is FULL; both-note is
-      // statically hidden AND condition-gated on the same value, so the
-      // condition alone decides it
+      // hidden AND condition-gated on the same value: the condition decides
       const partial = await create('Annotated', {
         mode: {data: 'BASIC'},
         'both-note': {data: 'leftover'},

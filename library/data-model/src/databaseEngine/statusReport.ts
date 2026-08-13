@@ -43,6 +43,7 @@ export interface RecordStatusChildField {
   fieldId: string;
   /** Form the children are created from (`related_type`). */
   relatedFormId: string;
+  /** Masked to false while the field is hidden, like required-field completion. */
   required: boolean;
   /** Resolvable, non-deleted, non-filtered children. */
   createdCount: number;
@@ -106,9 +107,11 @@ interface WalkContext {
 /**
  * Computes the recursive status report for a record: per node the HRID,
  * required-field completion, summary values and the same for child records
- * (faims-core::Child links only). Deleted, unreadable and corrupt children
- * drop out of both sides of the roll-up; cycles in corrupt data are cut where
- * they close and {@link STATUS_REPORT_MAX_DEPTH} truncates anything deeper.
+ * (faims-core::Child links only). A hidden Child field still reports its
+ * linked children, but its requirement is masked. Deleted, unreadable and
+ * corrupt children drop out of both sides of the roll-up; cycles in corrupt
+ * data are cut where they close and {@link STATUS_REPORT_MAX_DEPTH} truncates
+ * anything deeper.
  *
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
@@ -203,18 +206,14 @@ interface CollectedChildField extends ChildFieldSpec {
   childIds: string[];
 }
 
-/** Reads the visible Child-type RelatedRecordSelector fields and their linked child ids. */
+/** Reads the Child-type RelatedRecordSelector fields and their linked child ids. */
 function collectChildFields(
   ctx: WalkContext,
   visibleFields: ReadonlySet<string>,
   data: FormUpdateData | undefined
 ): CollectedChildField[] {
   const collected: CollectedChildField[] = [];
-  for (const fieldId of visibleFields) {
-    const spec = ctx.childFieldSpecs.get(fieldId);
-    if (!spec) {
-      continue;
-    }
+  for (const [fieldId, spec] of ctx.childFieldSpecs) {
     const raw = data?.[fieldId]?.data;
     const rawEntries = Array.isArray(raw)
       ? raw
@@ -237,7 +236,18 @@ function collectChildFields(
         childIds.add(childId);
       }
     }
-    collected.push({fieldId, ...spec, childIds: [...childIds]});
+    // A hidden field's linked children are still real records; only its
+    // requirement is masked, like required-field completion
+    const isVisible = visibleFields.has(fieldId);
+    if (!isVisible && childIds.size === 0) {
+      continue;
+    }
+    collected.push({
+      fieldId,
+      relatedFormId: spec.relatedFormId,
+      required: spec.required && isVisible,
+      childIds: [...childIds],
+    });
   }
   return collected;
 }
@@ -359,14 +369,12 @@ async function walk(
   const collected = collectChildFields(ctx, visibleFields, data);
   const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
 
-  // At the cap children are not recursed into: the walk's own hydration rules
-  // still decide liveness for required-field completion, but capped children
-  // carry no reports and so no roll-up units
+  // At the cap children are checked for liveness but not recursed into, so
+  // they carry no reports and no roll-up units
   const isAtCap = depth >= STATUS_REPORT_MAX_DEPTH;
 
   // One walk per distinct child, so a child linked from several fields is
-  // fetched once and counts as one roll-up unit. Truthy = live: a report below
-  // the cap, the bare 'live' marker at it (no report, so no roll-up unit)
+  // fetched once and counts as one roll-up unit
   const outcomes = new Map<string, RecordStatusReport | 'live' | null>();
   ctx.path.add(recordId);
   try {

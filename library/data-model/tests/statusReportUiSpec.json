@@ -304,6 +304,47 @@
         "persistent": false,
         "displayParent": false
       },
+      "survey-mode": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Survey mode",
+          "name": "survey-mode"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "survey-samples": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Survey samples",
+          "required": true,
+          "name": "survey-samples",
+          "related_type": "Sample",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "condition": {
+          "operator": "equal",
+          "field": "survey-mode",
+          "value": "DETAILED"
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
       "extra-note": {
         "component-namespace": "faims-custom",
         "component-name": "FAIMSTextField",
@@ -372,6 +413,10 @@
         "label": "Main",
         "fields": ["mode", "both-note"]
       },
+      "Survey-Main": {
+        "label": "Main",
+        "fields": ["survey-mode", "survey-samples"]
+      },
       "Annotated-Extra": {
         "label": "Extra",
         "fields": ["extra-note"],
@@ -417,6 +462,10 @@
         "label": "Annotated",
         "views": ["Annotated-Main", "Annotated-Extra"],
         "summary_fields": ["mode", "both-note", "extra-note"]
+      },
+      "Survey": {
+        "label": "Survey",
+        "views": ["Survey-Main"]
       }
     },
     "visible_types": [
@@ -427,7 +476,8 @@
       "Calibration",
       "Trench",
       "Legacy",
-      "Annotated"
+      "Annotated",
+      "Survey"
     ],
     "settings": {
       "showQrCodeButton": false
