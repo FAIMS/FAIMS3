@@ -21,7 +21,7 @@ export function LogoIcon({size = 24}: {size?: number}) {
   return (
     <img
       className="inline-block"
-      src="/assets/icons/icon-48.webp"
+      src="/assets/icons/icon-192.png"
       width={size}
     />
   );

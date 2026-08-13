@@ -26,7 +26,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory'));
 PouchDB.plugin(PouchDBFind);
 
 import {PostCreateTeamResponse, Role} from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {app} from '../src/expressSetup';
@@ -62,18 +62,22 @@ const expectValidationError = (
   aspect: ValidationAspect,
   messageSubstring?: string | RegExp
 ): ValidationErrorItem => {
-  expect(body).to.be.an('array').that.is.not.empty;
+  expect(Array.isArray(body)).toBe(true);
+  expect((body as unknown[]).length).toBeGreaterThan(0);
   const items = body as ValidationErrorItem[];
   const match = items.find(item => item.type === aspect);
-  expect(match, `expected a ${aspect} validation error`).to.exist;
-  expect(match!.errors).to.include.keys('name', 'message', 'issues');
-  expect(match!.errors.issues).to.be.an('array').that.is.not.empty;
+  expect(match, `expected a ${aspect} validation error`).toBeDefined();
+  expect(Object.keys(match!.errors)).toEqual(
+    expect.arrayContaining(['name', 'message', 'issues'])
+  );
+  expect(Array.isArray(match!.errors.issues)).toBe(true);
+  expect(match!.errors.issues.length).toBeGreaterThan(0);
   if (messageSubstring !== undefined) {
     const messages = match!.errors.issues.map(i => i.message).join('\n');
     if (typeof messageSubstring === 'string') {
-      expect(messages).to.include(messageSubstring);
+      expect(messages).toContain(messageSubstring);
     } else {
-      expect(messages).to.match(messageSubstring);
+      expect(messages).toMatch(messageSubstring);
     }
   }
   return match!;
@@ -97,7 +101,7 @@ describe('Request validation (express-zod-safe)', () => {
         'Body',
         'Team name is required, minimum length 5'
       );
-      expect(response.body).to.have.lengthOf(1);
+      expect(response.body).toHaveLength(1);
     });
 
     it('rejects long-lived token create payloads missing required fields', async () => {
@@ -166,7 +170,7 @@ describe('Request validation (express-zod-safe)', () => {
       ).expect(400);
 
       expectValidationError(response.body, 'Query');
-      expect(response.body).to.have.lengthOf(1);
+      expect(response.body).toHaveLength(1);
     });
 
     it('rejects invalid includeArchived values on template list', async () => {
@@ -257,8 +261,8 @@ describe('Request validation (express-zod-safe)', () => {
         adminToken
       );
 
-      expect(response.status).to.not.equal(400);
-      expect(response.body).to.not.be.an('array');
+      expect(response.status).not.toBe(400);
+      expect(Array.isArray(response.body)).toBe(false);
     });
   });
 
@@ -280,7 +284,7 @@ describe('Request validation (express-zod-safe)', () => {
       );
       expect(
         (response.body as ValidationErrorItem[]).some(e => e.type === 'Params')
-      ).to.be.false;
+      ).toBe(false);
     });
 
     it('validates query on a params+query route without rejecting valid params', async () => {
@@ -301,7 +305,7 @@ describe('Request validation (express-zod-safe)', () => {
       expectValidationError(response.body, 'Query');
       expect(
         (response.body as ValidationErrorItem[]).some(e => e.type === 'Params')
-      ).to.be.false;
+      ).toBe(false);
     });
   });
 
@@ -316,8 +320,8 @@ describe('Request validation (express-zod-safe)', () => {
         adminToken
       );
 
-      expect(response.status).to.not.equal(400);
-      expect(response.body).to.not.be.an('array');
+      expect(response.status).not.toBe(400);
+      expect(Array.isArray(response.body)).toBe(false);
     });
 
     it('does not reject query strings when only the body schema is declared', async () => {
@@ -329,7 +333,7 @@ describe('Request validation (express-zod-safe)', () => {
         adminToken
       ).expect(200);
 
-      expect(response.body).to.have.property('_id');
+      expect(response.body).toHaveProperty('_id');
     });
   });
 
@@ -344,9 +348,11 @@ describe('Request validation (express-zod-safe)', () => {
       ).expect(400);
 
       const item = expectValidationError(response.body, 'Body');
-      expect(item.type).to.equal('Body');
-      expect(item.errors.name).to.equal('ZodError');
-      expect(item.errors.issues[0]).to.include.keys('message', 'code');
+      expect(item.type).toBe('Body');
+      expect(item.errors.name).toBe('ZodError');
+      expect(Object.keys(item.errors.issues[0])).toEqual(
+        expect.arrayContaining(['message', 'code'])
+      );
     });
   });
 });

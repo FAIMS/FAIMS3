@@ -1,12 +1,12 @@
 import {z} from 'zod';
 import {
-  boundedString,
   CodeInputSchema,
   EmailInputSchema,
   IdInputSchema,
   INPUT_LIMITS,
   PasswordInputSchema,
   RedirectInputSchema,
+  resourceNameString,
   TokenInputSchema,
 } from './inputLimits';
 import {
@@ -303,7 +303,7 @@ export type GetNotebookListResponse = z.infer<
 >;
 
 export const CreateNotebookFromTemplateSchema = z.object({
-  name: boundedString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH, 'Name'),
+  name: resourceNameString('Name'),
   description: CreateRootDescriptionSchema,
   template_id: IdInputSchema,
   teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
@@ -313,7 +313,7 @@ export type CreateNotebookFromTemplate = z.infer<
 >;
 
 export const CreateNotebookFromScratchSchema = z.object({
-  name: boundedString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH, 'Name'),
+  name: resourceNameString('Name'),
   description: CreateRootDescriptionSchema,
   uiSpecification: NotebookUiSpecificationInputSchema,
   teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
@@ -385,10 +385,7 @@ export const PutUpdateNotebookMetadataInputSchema = ProjectDBFieldsSchema.pick({
   .partial()
   .extend({
     // Bound the incoming name length (persisted schema is not retro-capped)
-    name: boundedString(
-      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
-      'Name'
-    ).optional(),
+    name: resourceNameString('Name').optional(),
   });
 export type PutUpdateNotebookMetadataInput = z.infer<
   typeof PutUpdateNotebookMetadataInputSchema
@@ -499,7 +496,7 @@ export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   name: true,
 }).extend({
   // Bound the incoming name length (persisted schema is not retro-capped)
-  name: boundedString(INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH, 'Name'),
+  name: resourceNameString('Name'),
   description: CreateRootDescriptionSchema,
   uiSpecification: NotebookUiSpecificationInputSchema,
   // prefer to use a nicer team ID input field
@@ -523,10 +520,7 @@ export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   .partial()
   .extend({
     // Bound the incoming name length (persisted schema is not retro-capped)
-    name: boundedString(
-      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
-      'Name'
-    ).optional(),
+    name: resourceNameString('Name').optional(),
   });
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema

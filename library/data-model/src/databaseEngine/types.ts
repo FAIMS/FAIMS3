@@ -757,7 +757,6 @@ export const revisionHistoryEntry = z.object({
   revisionId: z.string(),
   created: z.string().datetime(),
   createdBy: z.string(),
-  // {parentId: [fieldIds]}
   changedFields: z.record(z.string(), z.array(z.string())),
   deleted: z.boolean().optional(),
 });

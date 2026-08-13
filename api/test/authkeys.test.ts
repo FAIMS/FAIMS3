@@ -24,7 +24,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {addGlobalRole, Role} from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
@@ -32,8 +32,13 @@ import {
 import {validateToken} from '../src/auth/keySigning/read';
 import {keyService} from '../src/buildconfig';
 import {createUser, saveExpressUser} from '../src/couchdb/users';
+import {resetDatabases} from './mocks';
 
 describe('roundtrip creating and reading token', () => {
+  beforeEach(async () => {
+    await resetDatabases();
+  });
+
   it('create and read token', async () => {
     const username = 'bobalooba-the-great';
     const name = 'Bob Bobalooba';
@@ -64,12 +69,12 @@ describe('roundtrip creating and reading token', () => {
         return validateToken(token);
       })
       .then(valid_user => {
-        expect(valid_user).not.to.be.undefined;
+        expect(valid_user).not.toBeUndefined();
         if (valid_user) {
-          expect(valid_user.user_id).to.equal(user.user_id);
-          expect(valid_user.globalRoles).to.deep.equal(user.globalRoles);
-          expect(valid_user.resourceRoles).to.deep.equal(user.resourceRoles);
-          expect(valid_user.name).to.equal(user.name);
+          expect(valid_user.user_id).toBe(user.user_id);
+          expect(valid_user.globalRoles).toEqual(user.globalRoles);
+          expect(valid_user.resourceRoles).toEqual(user.resourceRoles);
+          expect(valid_user.name).toBe(user.name);
         }
       });
   });

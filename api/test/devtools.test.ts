@@ -23,7 +23,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {registerClient} from '@faims3/data-model';
-import {expect} from 'chai';
+import {expect, it} from 'vitest';
 import {config} from '../src/buildconfig';
 import {initialiseDbAndKeys} from '../src/couchdb';
 import {createRandomRecord} from '../src/couchdb/devtools';
@@ -39,7 +39,7 @@ if (config.developerMode) {
 
     const projectID = await createNotebookFromSampleFile('Test Notebook');
 
-    expect(projectID).not.to.be.undefined;
+    expect(projectID).not.toBeUndefined();
 
     if (projectID) {
       await createRandomRecord(projectID);
@@ -47,6 +47,6 @@ if (config.developerMode) {
   });
 } else {
   it('dummy test since we must have at least one test', async () => {
-    expect(true).to.be.true;
+    expect(true).toBe(true);
   });
 }

@@ -35,6 +35,7 @@
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
+    "generate-capacitor-config": "env-cmd --no-override --silent --use-shell ./bin/generateCapacitorConfig.sh",
     "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
   },
   "dependencies": {
@@ -134,7 +135,7 @@
     "msw": "^2.3.1",
     "node-gyp": "^9.3.1",
     "type-fest": "^4.20.0",
-    "typescript": "^5.9.2",
+    "typescript": "^7.0.2",
     "vite": "^7.3.2",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",

@@ -23,6 +23,7 @@ FAIMS3 Developer Documentation
    markdown/Backup.md
    markdown/DeployingAWSStack.md
    markdown/CouchVersionUpgradeGuideAWS.md
+   markdown/CouchBackupRecoveryGuideAWS.md
    markdown/IOS-Deployment.md
    markdown/AppInitialisation.md
    markdown/forms/04-dependency-injection.md

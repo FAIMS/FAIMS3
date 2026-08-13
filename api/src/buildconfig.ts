@@ -640,10 +640,10 @@ export function publicKeyPath(): string {
   );
 }
 
-/** Signing-key singleton. Tests may replace this export. */
+/** Signing-key singleton. */
 export const keyService: IKeyService = getKeyService(config.keySource);
 
-/** Email singleton. Tests may replace this export. */
+/** Email singleton. Tests may stub methods on this instance. */
 export const emailService: IEmailService = createEmailService({
   serviceType: emailServiceType,
   emailConfig: email,

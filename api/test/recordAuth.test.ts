@@ -20,7 +20,7 @@
  */
 
 import {Role} from '@faims3/data-model';
-import {expect} from 'chai';
+import {describe, expect, it} from 'vitest';
 import {canDeleteRecord, canEditRecord, canReadRecord} from '../src/recordAuth';
 
 const projectId = 'test-project-id';
@@ -43,7 +43,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'alice',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('denies PROJECT_GUEST from reading another user record', () => {
@@ -54,7 +54,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.false;
+      ).toBe(false);
     });
 
     it('allows PROJECT_CONTRIBUTOR to read own record', () => {
@@ -65,7 +65,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'alice',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('allows PROJECT_CONTRIBUTOR to read another user record', () => {
@@ -76,7 +76,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
   });
 
@@ -89,7 +89,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'alice',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('denies PROJECT_GUEST from editing another user record', () => {
@@ -100,7 +100,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.false;
+      ).toBe(false);
     });
 
     it('allows PROJECT_GUEST to edit own record', () => {
@@ -111,7 +111,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'alice',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('allows PROJECT_ADMIN to edit another user record', () => {
@@ -122,7 +122,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('allows PROJECT_CONTRIBUTOR to edit another user record (EDIT_ALL)', () => {
@@ -133,7 +133,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('allows PROJECT_MANAGER to edit another user record (inherits contributor)', () => {
@@ -144,7 +144,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
   });
 
@@ -157,7 +157,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'alice',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('allows PROJECT_GUEST to delete own record', () => {
@@ -168,7 +168,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'alice',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('denies PROJECT_GUEST from deleting another user record', () => {
@@ -179,7 +179,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.false;
+      ).toBe(false);
     });
 
     it('allows PROJECT_ADMIN to delete another user record', () => {
@@ -190,7 +190,7 @@ describe('recordAuth', () => {
           projectId,
           createdBy: 'bob',
         })
-      ).to.be.true;
+      ).toBe(true);
     });
   });
 });

@@ -39,13 +39,13 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import request from 'supertest';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/auth/keySigning/create';
-import {config, keyService} from '../src/buildconfig';
+import {config, emailService, keyService} from '../src/buildconfig';
 import {getDataDb} from '../src/couchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
@@ -85,23 +85,23 @@ describe('API tests', () => {
       .get('/api/info')
       .expect(200)
       .expect(response => {
-        expect(response.body.name).to.equal(config.conductorInstanceName);
-        expect(response.body.description).to.equal(config.instanceDescription);
-        expect(response.body.conductor_url).to.equal(config.conductorPublicUrl);
-        expect(response.body.prefix).to.equal(config.shortCodePrefix);
+        expect(response.body.name).toBe(config.conductorInstanceName);
+        expect(response.body.description).toBe(config.instanceDescription);
+        expect(response.body.conductor_url).toBe(config.conductorPublicUrl);
+        expect(response.body.prefix).toBe(config.shortCodePrefix);
       });
   });
 
   it('check is up - not authenticated', async () => {
     const result = await request(app).get('/api/hello');
-    expect(result.statusCode).to.equal(401);
+    expect(result.statusCode).toBe(401);
   });
 
   it('check is up - authenticated', async () => {
     const result = await request(app)
       .get('/api/hello')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(result.statusCode).to.equal(200);
+    expect(result.statusCode).toBe(200);
   });
 
   it('get notebooks', async () => {
@@ -112,7 +112,7 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200)
       .expect(response => {
-        expect(response.body).to.have.lengthOf(1);
+        expect(response.body).toHaveLength(1);
       });
   });
 
@@ -124,7 +124,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200)
       .expect(response => {
-        expect(response.body.notebook).to.include('-test-notebook');
+        expect(response.body.notebook).toContain('-test-notebook');
       });
   });
 
@@ -146,8 +146,8 @@ describe('API tests', () => {
       .expect(200);
 
     const project_id = response.body.notebook;
-    expect(project_id).not.to.be.undefined;
-    expect(project_id).to.include('-test-notebook');
+    expect(project_id).not.toBeUndefined();
+    expect(project_id).toContain('-test-notebook');
 
     const notebookUser =
       await getExpressUserFromEmailOrUserId(notebookUserName);
@@ -159,10 +159,10 @@ describe('API tests', () => {
           projectId: project_id,
           role: Role.PROJECT_ADMIN,
         })
-      ).to.be.true;
+      ).toBe(true);
     } else {
       console.log('notebookUser', notebookUser);
-      expect(notebookUser).not.to.be.null;
+      expect(notebookUser).not.toBeNull();
     }
   });
 
@@ -222,10 +222,10 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(projectID);
-    expect(project.name).to.equal('Updated Test Notebook');
-    expect(
-      project.uiSpecification.metadata.information.projectLeadLabel
-    ).to.equal('Bob Bobalooba');
+    expect(project.name).toBe('Updated Test Notebook');
+    expect(project.uiSpecification.metadata.information.projectLeadLabel).toBe(
+      'Bob Bobalooba'
+    );
   });
 
   it('PUT /notebooks/:id requires UPDATE_PROJECT_DETAILS, not UISPEC alone', async () => {
@@ -296,7 +296,7 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(projectId);
-    expect(project.name).to.equal('Manager rename');
+    expect(project.name).toBe('Manager rename');
   });
 
   it('creates a notebook without description', async () => {
@@ -310,7 +310,7 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(response.body.notebook);
-    expect(project.description).to.equal(undefined);
+    expect(project.description).toBe(undefined);
   });
 
   it('rejects notebook create when description exceeds 250 characters', async () => {
@@ -339,14 +339,14 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(response.body.notebook);
-    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal(
+    expect(project.uiSpecification.uiSpec.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );
-    expect(project.uiSpecification.uiSpec.views).to.be.ok;
-    expect(project.uiSpecification).to.not.have.property('ui-specification');
+    expect(project.uiSpecification.uiSpec.views).toBeTruthy();
+    expect(project.uiSpecification).not.toHaveProperty('ui-specification');
     expect(
       project.uiSpecification.metadata.information.purposeMarkdown
-    ).to.include('Nellies Glen');
+    ).toContain('Nellies Glen');
   });
 
   it('PUT uiSpecification migrates legacy wire JSON', async () => {
@@ -369,10 +369,10 @@ describe('API tests', () => {
       .expect(200);
 
     const project = await getProjectById(projectId);
-    expect(project.uiSpecification.uiSpec.schemaVersion).to.equal(
+    expect(project.uiSpecification.uiSpec.schemaVersion).toBe(
       CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
     );
-    expect(project.uiSpecification.uiSpec.views).to.be.ok;
+    expect(project.uiSpecification.uiSpec.views).toBeTruthy();
   });
 
   it('update notebook status', async () => {
@@ -392,7 +392,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(content => {
         const body = content.body as GetNotebookResponse;
-        expect(body.status).to.eq(ProjectStatus.OPEN);
+        expect(body.status).toBe(ProjectStatus.OPEN);
       });
 
     response = await request(app)
@@ -411,7 +411,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(content => {
         const body = content.body as GetNotebookResponse;
-        expect(body.status).to.eq(ProjectStatus.OPEN);
+        expect(body.status).toBe(ProjectStatus.OPEN);
       });
 
     response = await request(app)
@@ -430,7 +430,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(content => {
         const body = content.body as GetNotebookResponse;
-        expect(body.status).to.eq(ProjectStatus.CLOSED);
+        expect(body.status).toBe(ProjectStatus.CLOSED);
       });
 
     response = await request(app)
@@ -449,7 +449,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(content => {
         const body = content.body as GetNotebookResponse;
-        expect(body.status).to.eq(ProjectStatus.OPEN);
+        expect(body.status).toBe(ProjectStatus.OPEN);
       });
 
     response = await request(app)
@@ -476,7 +476,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(content => {
         const body = content.body as GetNotebookResponse;
-        expect(body.status).to.eq(ProjectStatus.ARCHIVED);
+        expect(body.status).toBe(ProjectStatus.ARCHIVED);
       });
 
     await request(app)
@@ -512,22 +512,22 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(content => {
         const body = content.body as GetNotebookResponse;
-        expect(body.status).to.eq(ProjectStatus.OPEN);
+        expect(body.status).toBe(ProjectStatus.OPEN);
       });
   });
 
   it('get notebook', async () => {
     const project_id = await createNotebookFromSampleFile('test-notebook');
 
-    expect(project_id).not.to.be.undefined;
+    expect(project_id).not.toBeUndefined();
     return request(app)
       .get('/api/notebooks/' + project_id)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200)
       .expect(response => {
-        expect(response.body.name).to.equal('test-notebook');
-        expect(response.body.uiSpecification).to.be.ok;
+        expect(response.body.name).toBe('test-notebook');
+        expect(response.body.uiSpecification).toBeTruthy();
       });
   });
 
@@ -543,8 +543,8 @@ describe('API tests', () => {
     const project_id = await createNotebookFromSampleFile('test-notebook');
     let notebooks = await getUserProjectsDetailed(adminUser);
     const dataDb = await getDataDB(project_id!);
-    expect(notebooks).to.have.lengthOf(1);
-    expect(project_id).not.to.be.undefined;
+    expect(notebooks).toHaveLength(1);
+    expect(project_id).not.toBeUndefined();
     await request(app)
       .post('/api/notebooks/' + project_id + '/delete')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -552,7 +552,7 @@ describe('API tests', () => {
       .send({confirmName: 'test-notebook'})
       .expect(200);
     notebooks = await getUserProjectsDetailed(adminUser);
-    expect(notebooks).to.be.empty;
+    expect(notebooks).toHaveLength(0);
 
     // Because of how mocks work with db list, we need to manually remove the
     // data db from the list TODO make the mock respect database deletion
@@ -578,14 +578,14 @@ describe('API tests', () => {
         const res = GetListAllUsersResponseSchema.parse(response.body);
 
         // there are a couple of users
-        expect(res.length).to.eq(3);
+        expect(res.length).toBe(3);
 
         // ensure that profiles.local info is boolean only
         for (const user of res) {
-          expect((user as any).profiles.local).to.be.a('boolean');
+          expect((user as any).profiles.local).toBeTypeOf('boolean');
 
           // but other properties should be valid
-          expect(user.name).to.not.be.undefined;
+          expect(user.name).not.toBeUndefined();
         }
       });
   });
@@ -643,12 +643,12 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200)
       .then(response => {
-        expect(response.body.roles).to.deep.equal(
+        expect(response.body.roles).toEqual(
           resourceRoles.PROJECT.map(r => r.role)
         );
         // only includes users who have at least one resource role on this
         // notebook
-        expect(response.body.users.length).to.equal(0);
+        expect(response.body.users.length).toBe(0);
       });
   });
 
@@ -784,7 +784,7 @@ describe('API tests', () => {
       .expect(200)
       .then(response => {
         for (const recordId of recordIds) {
-          expect(response.body.status[recordId]).to.be.true;
+          expect(response.body.status[recordId]).toBe(true);
         }
       });
 
@@ -800,8 +800,8 @@ describe('API tests', () => {
       })
       .expect(200)
       .then(response => {
-        expect(response.body.status[recordIds[0]]).to.be.false;
-        expect(response.body.status[recordIds[1]]).to.be.true;
+        expect(response.body.status[recordIds[0]]).toBe(false);
+        expect(response.body.status[recordIds[1]]).toBe(true);
       });
   });
 
@@ -815,7 +815,7 @@ describe('API tests', () => {
     }
 
     const notebooks = await getUserProjectsDetailed(admin);
-    expect(notebooks).to.have.lengthOf(2);
+    expect(notebooks).toHaveLength(2);
 
     await request(app)
       .get('/api/notebooks/1693291182736-campus-survey-demo/records/')
@@ -846,7 +846,7 @@ describe('API tests', () => {
       const adminUser = await getExpressUserFromEmailOrUserId('admin');
       if (adminUser) {
         const notebooks = await getUserProjectsDetailed(adminUser);
-        expect(notebooks).to.have.lengthOf(2);
+        expect(notebooks).toHaveLength(2);
 
         let redirectURL = '';
 
@@ -857,7 +857,7 @@ describe('API tests', () => {
             .set('Content-Type', 'application/json')
             .expect(302)
             .expect(response => {
-              expect(response.headers.location).to.match(/\/download\/.*/);
+              expect(response.headers.location).toMatch(/\/download\/.*/);
               redirectURL = response.headers.location;
             });
         } else {
@@ -882,23 +882,23 @@ describe('API tests', () => {
             .expect('Content-Type', 'text/csv')
             .expect(response => {
               // response body should be csv data
-              expect(response.text).to.contain('identifier');
-              expect(response.text).to.contain('take-photo');
+              expect(response.text).toContain('identifier');
+              expect(response.text).toContain('take-photo');
               // uncertainty label on asset number
-              expect(response.text).to.contain('asset-number_questionable');
+              expect(response.text).toContain('asset-number_questionable');
               // annotation label for asset number
-              expect(response.text).to.contain('asset-number_difficulties');
+              expect(response.text).toContain('asset-number_difficulties');
 
               const lines = response.text.split('\n');
               lines.forEach(line => {
                 if (line !== '' && !line.startsWith('identifier')) {
-                  expect(line).to.contain('rec');
-                  expect(line).to.contain('FORM2');
-                  expect(line).to.contain('frev');
+                  expect(line).toContain('rec');
+                  expect(line).toContain('FORM2');
+                  expect(line).toContain('frev');
                 }
               });
               // one more newline than the number of records + header
-              expect(lines).to.have.lengthOf(19);
+              expect(lines).toHaveLength(19);
             });
         }
       }
@@ -907,84 +907,72 @@ describe('API tests', () => {
 
   it('test email route - not authenticated', async () => {
     const result = await request(app).post('/api/admin/test-email');
-    expect(result.statusCode).to.equal(401);
+    expect(result.statusCode).toBe(401);
   });
 
   it('test email route - not admin', async () => {
     const result = await request(app)
       .post('/api/admin/test-email')
       .set('Authorization', `Bearer ${localUserToken}`);
-    expect(result.statusCode).to.equal(401);
+    expect(result.statusCode).toBe(401);
   });
 
   it('test email route - admin user', async () => {
-    // Mock the email service
-    const originalEmailService = require('../src/buildconfig').emailService;
-    const mockSendEmail = async () => ({
+    // Stub the method on the shared service instance (tsx export getters are
+    // non-configurable, so the module export itself cannot be replaced).
+    const sendEmailSpy = vi.spyOn(emailService, 'sendEmail').mockResolvedValue({
       messageId: 'test-message-id-123',
       response: 'Test email sent successfully',
       envelope: {
         from: 'test@example.com',
         to: ['test-recipient@example.com'],
       },
-    });
-
-    // Replace with mock temporarily
-    require('../src/buildconfig').emailService = {
-      sendEmail: mockSendEmail,
-    };
+    } as any);
 
     try {
       const result = await request(app)
         .post('/api/admin/test-email')
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect(result.statusCode).to.equal(200);
-      expect(result.body.success).to.be.true;
-      expect(result.body.status).to.equal('sent');
-      expect(result.body.details.messageId).to.equal('test-message-id-123');
-      expect(result.body.timings).to.have.property('total');
+      expect(result.statusCode).toBe(200);
+      expect(result.body.success).toBe(true);
+      expect(result.body.status).toBe('sent');
+      expect(result.body.details.messageId).toBe('test-message-id-123');
+      expect(result.body.timings).toHaveProperty('total');
     } finally {
-      // Restore original email service
-      require('../src/buildconfig').emailService = originalEmailService;
+      sendEmailSpy.mockRestore();
     }
   });
 
   it('test email route - handles errors', async () => {
-    // Mock the email service with an error
-    const originalEmailService = require('../src/buildconfig').emailService;
-    const mockSendEmail = async () => {
-      const error: any = new Error('SMTP connection failed');
-      error.code = 'ECONNREFUSED';
-      throw error;
-    };
-
-    // Replace with mock temporarily
-    require('../src/buildconfig').emailService = {
-      sendEmail: mockSendEmail,
-    };
+    const sendEmailSpy = vi
+      .spyOn(emailService, 'sendEmail')
+      .mockImplementation(async () => {
+        const error: any = new Error('SMTP connection failed');
+        error.code = 'ECONNREFUSED';
+        throw error;
+      });
 
     try {
       const result = await request(app)
         .post('/api/admin/test-email')
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect(result.statusCode).to.equal(200);
-      expect(result.body.success).to.be.false;
-      expect(result.body.status).to.equal('error');
-      expect(result.body.message).to.include('Failed to send test email');
-      expect(result.body.details.error).to.have.property('name', 'Error');
-      expect(result.body.details.error).to.have.property(
+      expect(result.statusCode).toBe(200);
+      expect(result.body.success).toBe(false);
+      expect(result.body.status).toBe('error');
+      expect(result.body.message).toContain('Failed to send test email');
+      expect(result.body.details.error).toHaveProperty('name', 'Error');
+      expect(result.body.details.error).toHaveProperty(
         'message',
         'SMTP connection failed'
       );
-      expect(result.body.details.error).to.have.property('suggestion');
-      expect(result.body.details.error.suggestion).to.include(
+      expect(result.body.details.error).toHaveProperty('suggestion');
+      expect(result.body.details.error.suggestion).toContain(
         'Check your SMTP host'
       );
     } finally {
-      // Restore original email service
-      require('../src/buildconfig').emailService = originalEmailService;
+      sendEmailSpy.mockRestore();
     }
   });
 
