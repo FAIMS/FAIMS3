@@ -202,18 +202,38 @@ function resolveChildFieldSpecs(
 
 interface CollectedChildField extends ChildFieldSpec {
   fieldId: string;
+  isVisible: boolean;
   /** Distinct linked child ids; cross-project and malformed links excluded. */
   childIds: string[];
 }
 
-/** Reads the Child-type RelatedRecordSelector fields and their linked child ids. */
+/** Field ids across all the form's sections, hidden or not; stale section ids are skipped. */
+function formFieldIds(
+  uiSpec: DataEngine['uiSpec'],
+  formId: string
+): Set<string> {
+  const ids = new Set<string>();
+  for (const viewId of uiSpec.viewsets[formId].views) {
+    for (const fieldId of uiSpec.views[viewId]?.fields ?? []) {
+      ids.add(fieldId);
+    }
+  }
+  return ids;
+}
+
+/** Reads the form's Child-type RelatedRecordSelector fields and their linked child ids. */
 function collectChildFields(
   ctx: WalkContext,
+  formId: string,
   visibleFields: ReadonlySet<string>,
   data: FormUpdateData | undefined
 ): CollectedChildField[] {
   const collected: CollectedChildField[] = [];
-  for (const [fieldId, spec] of ctx.childFieldSpecs) {
+  for (const fieldId of formFieldIds(ctx.engine.uiSpec, formId)) {
+    const spec = ctx.childFieldSpecs.get(fieldId);
+    if (!spec) {
+      continue;
+    }
     const raw = data?.[fieldId]?.data;
     const rawEntries = Array.isArray(raw)
       ? raw
@@ -239,13 +259,11 @@ function collectChildFields(
     // A hidden field's linked children are still real records; only its
     // requirement is masked, like required-field completion
     const isVisible = visibleFields.has(fieldId);
-    if (!isVisible && childIds.size === 0) {
-      continue;
-    }
     collected.push({
       fieldId,
       relatedFormId: spec.relatedFormId,
       required: spec.required && isVisible,
+      isVisible,
       childIds: [...childIds],
     });
   }
@@ -366,7 +384,7 @@ async function walk(
     }
   }
 
-  const collected = collectChildFields(ctx, visibleFields, data);
+  const collected = collectChildFields(ctx, formId, visibleFields, data);
   const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
 
   // At the cap children are checked for liveness but not recursed into, so
@@ -397,19 +415,25 @@ async function walk(
     ctx.path.delete(recordId);
   }
 
-  const childFields = collected.map((field): RecordStatusChildField => {
+  const childFields = collected.flatMap((field): RecordStatusChildField[] => {
     const children = field.childIds
       .map(id => outcomes.get(id))
       .filter(isChildReport);
     const createdCount = field.childIds.filter(id => outcomes.get(id)).length;
-    return {
-      fieldId: field.fieldId,
-      relatedFormId: field.relatedFormId,
-      required: field.required,
-      createdCount,
-      expectedCount: createdCount > 0 ? createdCount : field.required ? 1 : 0,
-      children,
-    };
+    // A hidden field reports only live children; with none it drops out
+    if (!field.isVisible && createdCount === 0) {
+      return [];
+    }
+    return [
+      {
+        fieldId: field.fieldId,
+        relatedFormId: field.relatedFormId,
+        required: field.required,
+        createdCount,
+        expectedCount: createdCount > 0 ? createdCount : field.required ? 1 : 0,
+        children,
+      },
+    ];
   });
 
   const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);

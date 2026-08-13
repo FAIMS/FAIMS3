@@ -612,6 +612,32 @@ describe('Record status report', () => {
       expect(result.childFields).toEqual([]);
       expect(result.progress).toBe(1.0);
     });
+
+    test('a hidden child field with only a dead link drops out', async () => {
+      const sample = await create('Sample');
+      const {recordId} = await create('Survey', {
+        'survey-samples': {data: [link(sample.recordId)]},
+      });
+      await engine.form.deleteRecord({
+        recordId: sample.recordId,
+        baseRevisionId: sample.revisionId,
+        userId: USER,
+      });
+      const result = await report(recordId);
+      expect(result.childFields).toEqual([]);
+      expect(result.progress).toBe(1.0);
+    });
+
+    test("a stale value under another form's child field is ignored", async () => {
+      const sample = await create('Sample');
+      // survey-samples belongs to the Survey form, not Photo
+      const {recordId} = await create('Photo', {
+        'survey-samples': {data: [link(sample.recordId)]},
+      });
+      const result = await report(recordId);
+      expect(result.childFields).toEqual([]);
+      expect(result.progress).toBe(1.0);
+    });
   });
 
   describe('recursion safety', () => {
