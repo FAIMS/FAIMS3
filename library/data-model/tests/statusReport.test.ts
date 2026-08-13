@@ -16,7 +16,6 @@ import {
   FormUpdateData,
   NotebookDefinition,
   RecordDeletedError,
-  RecordFilteredError,
   RecordStatusReport,
   STATUS_REPORT_MAX_DEPTH,
   UnknownFormTypeError,
@@ -75,12 +74,11 @@ describe('Record status report', () => {
     return {recordId: record._id, revisionId: revision._id};
   };
 
-  const report = (recordId: string, extras = {}) =>
+  const report = (recordId: string) =>
     computeRecordStatusReport({
       engine,
       recordId,
       projectId: PROJECT,
-      ...extras,
     });
 
   /** The child-field entry for fieldId; fails the test if absent. */
@@ -411,25 +409,6 @@ describe('Record status report', () => {
       expect(result.progress).toBe(0.25);
     });
 
-    test('recordFilter excludes children from counts and payload', async () => {
-      const mine = await create('Feature', {depth: {data: '1'}});
-      const theirs = await create(
-        'Feature',
-        {depth: {data: '2'}},
-        'other-user'
-      );
-      const {recordId} = await create('Site', {
-        'site-id': {data: 'S1'},
-        features: {data: [link(mine.recordId), link(theirs.recordId)]},
-      });
-      const result = await report(recordId, {
-        recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
-      });
-      expect(childField(result, 'features').createdCount).toBe(1);
-      // (1 own + 1 remaining feature) / (1 + 1)
-      expect(result.progress).toBe(1.0);
-    });
-
     test('a child with an unknown form type is skipped, not scored complete', async () => {
       // e.g. the child's form was removed from the notebook after creation
       const ghost = await create('Ghost');
@@ -579,15 +558,6 @@ describe('Record status report', () => {
         userId: USER,
       });
       await expect(report(recordId)).rejects.toThrow(RecordDeletedError);
-    });
-
-    test('a root excluded by recordFilter throws RecordFilteredError', async () => {
-      const {recordId} = await create('Photo', {}, 'other-user');
-      await expect(
-        report(recordId, {
-          recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
-        })
-      ).rejects.toThrow(RecordFilteredError);
     });
   });
 
@@ -778,8 +748,8 @@ describe('Record status report', () => {
       return node;
     };
 
-    const cappedNodeOver = async (bottomId: string, extras = {}) =>
-      descendToCap(await report(await buildChainOver(bottomId), extras));
+    const cappedNodeOver = async (bottomId: string) =>
+      descendToCap(await report(await buildChainOver(bottomId)));
 
     test('a deleted child at the depth cap is not counted', async () => {
       const dead = await create('Site', {'site-id': {data: 'dead'}});
@@ -854,19 +824,6 @@ describe('Record status report', () => {
         )
       );
       expect(node.recordId).toBe(capped.recordId);
-      expect(childField(node, 'features').createdCount).toBe(0);
-    });
-
-    test('recordFilter excludes children at the depth cap too', async () => {
-      const theirs = await create(
-        'Site',
-        {'site-id': {data: 'T'}},
-        'other-user'
-      );
-
-      const node = await cappedNodeOver(theirs.recordId, {
-        recordFilter: (rec: {createdBy: string}) => rec.createdBy === USER,
-      });
       expect(childField(node, 'features').createdCount).toBe(0);
     });
 

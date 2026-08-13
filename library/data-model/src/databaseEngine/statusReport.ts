@@ -21,7 +21,6 @@ import {
   DocumentValidationError,
   NoHeadsError,
   RecordDeletedError,
-  RecordFilteredError,
   UnknownFormTypeError,
 } from './exceptions';
 import {FormUpdateData, relatedRecordFieldAvpEntrySchema} from './types';
@@ -44,7 +43,7 @@ export interface RecordStatusChildField {
   relatedFormId: string;
   /** Masked to false while the field is hidden, like required-field completion. */
   required: boolean;
-  /** Resolvable, non-deleted, non-filtered children. */
+  /** Resolvable, non-deleted children. */
   createdCount: number;
   /** createdCount, except a required field with no children expects 1. */
   expectedCount: number;
@@ -95,7 +94,6 @@ function adjustOwnProgressForChildren(
 interface WalkContext {
   engine: DataEngine;
   projectId: string;
-  recordFilter?: (record: {recordId: string; createdBy: string}) => boolean;
   isCompleteResolver?: IsCompleteResolver;
   /** Records on the current walk path; cuts the cycles corrupt data can hold. */
   path: Set<string>;
@@ -115,19 +113,15 @@ interface WalkContext {
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
  * @param projectId - Links tagged with another project id are skipped
- * @param recordFilter - Per-record read filter (e.g. API permission check)
  * @param isCompleteResolver - Optional per-field-type completeness override
  * @returns The report tree rooted at recordId
  * @throws RecordDeletedError if the root record is deleted
- * @throws RecordFilteredError if recordFilter excludes the root record. Map it
- *   and not-found to one caller-facing response so record ids can't be probed.
  * @throws UnknownFormTypeError if the root's form is not in the ui-spec
  */
 export async function computeRecordStatusReport({
   engine,
   recordId,
   projectId,
-  recordFilter,
   isCompleteResolver,
 }: {
   engine: DataEngine;
@@ -139,7 +133,6 @@ export async function computeRecordStatusReport({
   const ctx: WalkContext = {
     engine,
     projectId,
-    recordFilter,
     isCompleteResolver,
     path: new Set(),
     childFieldSpecs: resolveChildFieldSpecs(engine.uiSpec),
@@ -256,7 +249,7 @@ const isChildReport = (
 ): outcome is RecordStatusReport => !!outcome && outcome !== 'live';
 
 type HydratedWalkNode =
-  | {status: 'deleted' | 'filtered'}
+  | {status: 'deleted'}
   | ({status: 'live'} & Awaited<
       ReturnType<DataEngine['form']['getExistingFormData']>
     >);
@@ -279,12 +272,6 @@ async function hydrateWalkNode(
   if (node.context.revision.deleted) {
     return {status: 'deleted'};
   }
-  if (
-    ctx.recordFilter &&
-    !ctx.recordFilter({recordId, createdBy: node.context.record.createdBy})
-  ) {
-    return {status: 'filtered'};
-  }
   // hasOwnProperty, since `in` also matches prototype keys ('constructor')
   if (
     !Object.prototype.hasOwnProperty.call(engine.uiSpec.viewsets, node.formId)
@@ -296,9 +283,8 @@ async function hydrateWalkNode(
 
 /**
  * One node of the walk: a single hydration fetches the record, head revision
- * and AVPs together; null when the record is a deleted or filtered-out child,
- * or would close a cycle (reports under a cut are best-effort and can vary
- * with link order).
+ * and AVPs together; null when the record is a deleted child, or would close
+ * a cycle (reports under a cut are best-effort and can vary with link order).
  */
 async function walk(
   ctx: WalkContext,
@@ -312,10 +298,6 @@ async function walk(
 
   const node = await hydrateWalkNode(ctx, recordId);
   if (node.status !== 'live') {
-    // Filtered children drop out silently; the root must not read as deleted
-    if (node.status === 'filtered' && depth === 0) {
-      throw new RecordFilteredError(recordId);
-    }
     return null;
   }
   const {formId, data, context} = node;
