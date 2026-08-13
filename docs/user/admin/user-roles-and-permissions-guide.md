@@ -530,15 +530,15 @@ Once created, invitations appear in the **Invites** tab where you can manage the
 
 The Invites tab shows:
 
-| Column             | Description                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| **Name**           | The invitation title/description                                                     |
-| **Role**           | The {{notebook}} role recipients will receive                                        |
-| **Expiry**         | When the invite expires — create a new invite if one expires                         |
-| **Uses remaining** | How many more people can use this invite                                             |
-| **QR Code**        | Scannable invite for mobile onboarding (preferred)                                   |
-| **Link**           | Invite URL to share                                                                  |
-| **Code**           | Reveal invite code for manual entry if needed (button labelled **Show code**)        |
+| Column             | Description                                                                   |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **Name**           | The invitation title/description                                              |
+| **Role**           | The {{notebook}} role recipients will receive                                 |
+| **Expiry**         | When the invite expires — create a new invite if one expires                  |
+| **Uses remaining** | How many more people can use this invite                                      |
+| **QR Code**        | Scannable invite for mobile onboarding (preferred)                            |
+| **Link**           | Invite URL to share                                                           |
+| **Code**           | Reveal invite code for manual entry if needed (button labelled **Show code**) |
 
 > **Tip:** Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same QR code to join with the appropriate role.
 
@@ -690,7 +690,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 ### Permission Matrix — Teams
 
-| Action                                   | Team Member (Contributor) | Team Member (Creator) | Team Manager |              Team Administrator             |
+| Action                                   | Team Member (Contributor) | Team Member (Creator) | Team Manager |             Team Administrator              |
 | ---------------------------------------- | :-----------------------: | :-------------------: | :----------: | :-----------------------------------------: |
 | View team details and members            |            ✅             |          ✅           |      ✅      |                     ✅                      |
 | View team templates                      |            ✅             |          ❌           |      ✅      |                     ✅                      |

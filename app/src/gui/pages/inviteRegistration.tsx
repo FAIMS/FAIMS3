@@ -159,8 +159,8 @@ export function InviteCodeRegistration(props: InviteRegistrationProps) {
             Enter invite code
           </Typography>
           <Typography variant="body1" gutterBottom>
-            If you cannot scan a QR code, you can manually enter the invite
-            code here.
+            If you cannot scan a QR code, you can manually enter the invite code
+            here.
           </Typography>
         </>
       }
