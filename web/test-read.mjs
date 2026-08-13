@@ -20,8 +20,11 @@ const choicesSchema = {
 };
 
 //Read the file
-const sheets = await readXlsxFile('./test.xlsx');
-console.log('Sheets found:', sheets.map(s => s.sheet));
+const sheets = await readXlsxFile('./test-geopoint.xlsx');
+console.log(
+  'Sheets found:',
+  sheets.map(s => s.sheet)
+);
 
 const surveySheet = sheets.find(s => s.sheet === 'survey');
 const choicesSheet = sheets.find(s => s.sheet === 'choices');
