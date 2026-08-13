@@ -8,7 +8,8 @@ Editor._
 ## What This Field Does
 
 A Computed Number derives a number from an expression over other fields
-in the same form — for example, multiplying a mass field by a count, or
+in the form (and, for child records, fields on the record's parent) —
+for example, multiplying a mass field by a count, or
 averaging two measurements. The generated value is read-only for data
 collectors; they see the result but cannot edit it, and it updates
 automatically as the fields it references change.
@@ -80,9 +81,29 @@ Text and checkbox fields can be referenced anywhere in the expression —
 only the final result must be a number. For example,
 `{vegType} == 'plot' ? 3 : 5` is a valid Computed Number.
 
-All referenced fields must be in the same form as the Computed Number. A
+Referenced fields are normally in the same form as the Computed Number;
+fields on the record's parent can also be referenced (see below). A
 Computed Number cannot reference another computed field or a Templated
-String.
+String in the same form.
+
+### Referencing Parent Record Values
+
+When the form is a child of another form (linked through a
+Child-relation Related Records field), the expression can reference
+fields on the record's parent by prefixing the Field ID with `_PARENT.`,
+e.g. `{_PARENT.Calibration-Factor} * {Reading}`. An **Insert parent
+field** picker below the expression lists the available parent fields.
+
+Parent references are type checked like any other reference, and —
+unlike same-form references — may point at the parent's computed fields
+and Templated Strings, whose stored values are used.
+
+If a record has no parent, a parent reference has no value and the
+result stays blank, matching the behaviour for missing same-form
+values. The computed value is stored on save and re-derives whenever
+the record is next opened or saved; if the parent changes in the
+meantime, the stored value reflects the parent as of the record's last
+save.
 
 ### Shared Field Options
 

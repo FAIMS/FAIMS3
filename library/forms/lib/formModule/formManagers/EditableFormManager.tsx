@@ -5,6 +5,7 @@ import {
   FormDataEntry,
   getFormLabel,
   HydratedRecordDocument,
+  ValuesObject,
 } from '@faims3/data-model';
 import CheckIcon from '@mui/icons-material/Check';
 import {
@@ -36,8 +37,10 @@ import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
+  RecordContext,
 } from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
+import {resolveParentValues} from './resolveParentValues';
 import {
   FieldVisibilityMap,
   FormNavigationContext,
@@ -135,6 +138,21 @@ export const EditableFormManager: React.FC<
   const dataEngine = useMemo(
     () => props.config.dataEngine(),
     [props.config.dataEngine]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Parent Values (for {{_PARENT.Field-ID}} templates and {_PARENT.Field-ID}
+  // expressions). Resolved once at mount; recompute fires on arrival so
+  // parent-only derived fields fill without waiting for user input.
+  // ---------------------------------------------------------------------------
+  const parentValuesRef = useRef<ValuesObject | null>(null);
+
+  const buildContext = useCallback(
+    (): RecordContext => ({
+      ...getRecordContextFromRecord({record: props.existingRecord}),
+      parentValues: parentValuesRef.current ?? undefined,
+    }),
+    [props.existingRecord]
   );
 
   // ---------------------------------------------------------------------------
@@ -264,13 +282,14 @@ export const EditableFormManager: React.FC<
         formId: props.formId,
         uiSpec: dataEngine.uiSpec,
         runListeners: false,
+        context: buildContext(),
       });
       onChangeTemplatedFields({
         form: form as FaimsForm,
         formId: props.formId,
         uiSpec: dataEngine.uiSpec,
         runListeners: false,
-        context: getRecordContextFromRecord({record: props.existingRecord}),
+        context: buildContext(),
       });
 
       attachmentSaveTrace('performSave:before-updateRevision', {
@@ -309,6 +328,7 @@ export const EditableFormManager: React.FC<
     props.formId,
     props.existingRecord,
     dataEngine,
+    buildContext,
   ]);
 
   const performSaveRef = useRef(performSave);
@@ -490,6 +510,47 @@ export const EditableFormManager: React.FC<
       onChange: ({value}) => validationFunction(value),
     },
   });
+
+  // Resolve parent values once at mount, then recompute derived fields so a
+  // template or expression referencing only parent fields fills immediately.
+  // Computed first, so templates embedding computed values read fresh results.
+  useEffect(() => {
+    let cancelled = false;
+    resolveParentValues({
+      engine: dataEngine,
+      recordId: props.recordId,
+      formId: props.formId,
+    }).then(values => {
+      if (cancelled || values === null) return;
+      parentValuesRef.current = values;
+      const computedChanged = onChangeComputedFields({
+        form: form as FaimsForm,
+        formId: props.formId,
+        uiSpec: dataEngine.uiSpec,
+        runListeners: false,
+        context: buildContext(),
+      });
+      const templatedChanged = onChangeTemplatedFields({
+        form: form as FaimsForm,
+        formId: props.formId,
+        uiSpec: dataEngine.uiSpec,
+        runListeners: false,
+        context: buildContext(),
+      });
+      // The writes above bypass listeners, so the pending-save machinery
+      // never sees them - schedule the save explicitly when anything changed.
+      if (computedChanged || templatedChanged) {
+        pendingValuesRef.current = true;
+        setHasPendingSave(true);
+        debouncedSave();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Mount-only: record and form identity are fixed for a mounted manager.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Attachment Handlers

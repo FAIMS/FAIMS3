@@ -65,8 +65,32 @@ The template supports:
 - **System variables** — inserts values such as the record creator or
   creation time.
 
-All referenced fields must be in the same form as the Templated String.
-A Templated String cannot reference another Templated String.
+Referenced fields are normally in the same form as the Templated
+String, but fields from the record's parent can also be referenced (see
+below). A Templated String cannot reference another Templated String in
+the same form.
+
+### Referencing Parent Record Values
+
+When the form is a child of another form (linked through a
+Child-relation Related Records field), the template can reference
+fields on the record's parent using the `_PARENT.` prefix, e.g.
+`{{_PARENT.Site-Name}}-{{Feature-type}}`. The Visual Builder lists the
+available parent fields with a "Parent:" prefix.
+
+Unlike same-form references, a parent reference may point at the
+parent's own Templated Strings and computed fields — so a child's
+identifier can be built from the parent's identifier.
+
+If a record has no parent (for example, it was created directly from
+the record list), the parent reference renders as empty text and the
+rest of the template is unaffected.
+
+The generated value is stored when the record is saved and updates
+whenever the record is next opened or saved. If the parent is edited
+in the meantime, the stored value reflects the parent as of the
+record's last save — the same behaviour as the
+[Parent Field Value](../display-fields/parent-field-value.md) field.
 
 ### Shared Field Options
 

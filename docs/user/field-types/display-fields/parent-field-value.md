@@ -3,11 +3,20 @@
 The **Parent Field Value** field displays a value from a record's parent
 (read-only) while a collector is working in a child record. It provides
 context from the parent — such as which site a building belongs to —
-without requiring navigation back to the parent record. It does not
-capture or store any data of its own.
+without requiring navigation back to the parent record. Collectors
+cannot edit the value.
 
-The value is resolved live from the parent record each time the child is
-viewed or edited, so later changes to the parent are always reflected.
+The displayed value is resolved live from the parent record each time
+the child is viewed or edited, so later changes to the parent are
+always reflected on screen. The resolved value is also stored in the
+child record when it is saved, so it appears in exported data; the
+stored value reflects the parent as of the child's last save.
+
+Parent values can also be used inside a child's
+[Templated Strings](../text-fields/templated-string.md) and computed
+fields ([number](../number-fields/computed-number-field.md),
+[text](../text-fields/computed-text-field.md)) using the `_PARENT.`
+prefix — see those pages for the syntax.
 
 ## Adding the Field
 
@@ -54,8 +63,8 @@ Annotation, and Uncertainty options do not apply and are not shown.
   value is shown immediately, and it remains visible when the record is
   later edited or viewed.
 - If the parent record's value changes, the child shows the updated
-  value the next time it is opened — the value is never copied into the
-  child, only displayed from the parent.
+  value the next time it is opened, and the stored copy is refreshed
+  when the child is next saved.
 - If the record has no parent (for example, it was created directly
   from the record list), or the parent's field is empty, a dash is
   shown instead of a value.
@@ -69,6 +78,6 @@ Annotation, and Uncertainty options do not apply and are not shown.
   identifying field (such as a site name or grid square) at the top of
   the child form helps collectors confirm they are working in the right
   place.
-- **To carry a value into the child's own data**, this field is not the
-  right tool — it stores nothing. Values that must be recorded on the
-  child should be entered in the child's own fields.
+- **Values a collector must enter or adjust** belong in the child's own
+  input fields — this field only mirrors the parent and cannot be
+  edited on the child.

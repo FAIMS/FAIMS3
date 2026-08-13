@@ -35,6 +35,8 @@ export interface RecordContext {
   createdTime?: number;
   // First Last name of creator - if any
   createdBy?: string;
+  // Raw field values of the parent record, if any (see resolveParentValues)
+  parentValues?: ValuesObject;
 }
 
 /**
@@ -251,6 +253,18 @@ function renderTemplate({
             uiSpecification,
           });
     }
+  }
+  // Parent record values available as {{_PARENT.Field-ID}}
+  if (context.parentValues) {
+    const parent: ValuesObject = {};
+    for (const [k, v] of Object.entries(context.parentValues)) {
+      parent[k] = valueForTemplateExpansion({
+        fieldName: k,
+        value: v,
+        uiSpecification,
+      });
+    }
+    filteredValues['_PARENT'] = parent;
   }
 
   // Render
