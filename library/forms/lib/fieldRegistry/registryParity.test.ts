@@ -3,9 +3,8 @@ import {describe, expect, test} from 'vitest';
 import './registry';
 import {FIELD_REGISTRY} from './registryApi';
 
-// Field types whose isCompleteFunction override is a known, accepted
-// divergence: computeRecordStatusReport callers that pass no
-// isCompleteResolver score these fields with the default rule.
+// Accepted divergences: computeRecordStatusReport callers without an
+// isCompleteResolver score these fields with the default rule
 const ALLOWED_OVERRIDES = new Set(['faims-custom::ParentFieldDisplay']);
 
 describe('field registry completion parity', () => {
@@ -16,10 +15,14 @@ describe('field registry completion parity', () => {
       .filter(key => !ALLOWED_OVERRIDES.has(key));
     expect(
       offenders,
-      `These field types define isCompleteFunction: ${offenders.join(', ')}. ` +
-        'Wire an isCompleteResolver into every computeRecordStatusReport ' +
-        'caller (or knowingly extend ALLOWED_OVERRIDES), or form and ' +
-        'report completion will diverge.'
+      'wire an isCompleteResolver into computeRecordStatusReport callers or extend ALLOWED_OVERRIDES'
     ).toEqual([]);
+  });
+
+  test('allowlist entries exist in the registry', () => {
+    const stale = [...ALLOWED_OVERRIDES].filter(
+      key => !FIELD_REGISTRY.has(key)
+    );
+    expect(stale).toEqual([]);
   });
 });
