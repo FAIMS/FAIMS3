@@ -22,10 +22,6 @@
  */
 
 import {
-  RELATED_RECORD_SELECTOR,
-  relatedRecordSelectorComponentParamsSchema,
-} from '../databaseEngine/types';
-import {
   compileComputedExpression,
   CompiledExpression,
   ExpressionError,
@@ -33,7 +29,12 @@ import {
   extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
 } from './expressions';
-import {FieldDefinition, UiSpecModel} from './types';
+import {
+  FieldDefinition,
+  RELATED_RECORD_SELECTOR,
+  relatedRecordSelectorComponentParamsSchema,
+  UiSpecModel,
+} from './types';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';

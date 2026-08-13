@@ -170,6 +170,33 @@ export const CompiledUiSpecFieldsSchema = z.record(
 );
 export type CompiledUiSpecFields = z.infer<typeof CompiledUiSpecFieldsSchema>;
 
+/** Relation kind for RelatedRecordSelector `component-parameters.relation_type`. */
+export const relatedTypeSchema = z.enum([
+  'faims-core::Child',
+  'faims-core::Linked',
+]);
+export type RelatedType = z.infer<typeof relatedTypeSchema>;
+
+/** Component type whose field values hold forward links to related records. */
+export const RELATED_RECORD_SELECTOR = {
+  namespace: 'faims-custom',
+  name: 'RelatedRecordSelector',
+} as const;
+
+/**
+ * RelatedRecordSelector-specific `component-parameters` (excludes shared base field
+ * props such as `label` and `name`, which are merged in by the forms package).
+ */
+export const relatedRecordSelectorComponentParamsSchema = z
+  .object({
+    related_type: z.string(),
+    relation_type: relatedTypeSchema,
+    multiple: z.boolean().optional().default(false),
+    allowLinkToExisting: z.boolean().optional().default(false),
+    hideCreateAnotherButton: z.boolean().optional().default(false),
+  })
+  .passthrough();
+
 /** A form: a named form type composed of one or more sections. */
 export const UiSpecFormSchema = z
   .object({

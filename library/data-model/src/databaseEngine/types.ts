@@ -69,19 +69,6 @@ export const relationshipInstanceSchema = z.object({
 });
 export type RelationshipInstance = z.infer<typeof relationshipInstanceSchema>;
 
-/** Relation kind for RelatedRecordSelector `component-parameters.relation_type`. */
-export const relatedTypeSchema = z.enum([
-  'faims-core::Child',
-  'faims-core::Linked',
-]);
-export type RelatedType = z.infer<typeof relatedTypeSchema>;
-
-/** Component type whose field values hold forward links to related records. */
-export const RELATED_RECORD_SELECTOR = {
-  namespace: 'faims-custom',
-  name: 'RelatedRecordSelector',
-} as const;
-
 /**
  * One RelatedRecordSelector link as stored in an AVP `data` value (revision field map).
  * Same shape as {@link relationshipInstanceSchema} except `field_id` is omitted (that
@@ -105,20 +92,6 @@ export const relatedRecordFieldAvpValueSchema = z.union([
 export type RelatedRecordFieldAvpValue = z.infer<
   typeof relatedRecordFieldAvpValueSchema
 >;
-
-/**
- * RelatedRecordSelector-specific `component-parameters` (excludes shared base field
- * props such as `label` and `name`, which are merged in by the forms package).
- */
-export const relatedRecordSelectorComponentParamsSchema = z
-  .object({
-    related_type: z.string(),
-    relation_type: relatedTypeSchema,
-    multiple: z.boolean().optional().default(false),
-    allowLinkToExisting: z.boolean().optional().default(false),
-    hideCreateAnotherButton: z.boolean().optional().default(false),
-  })
-  .passthrough();
 
 // Revision relationship field can be either a list or singleton entry
 export const relationshipSchema = z.object({
