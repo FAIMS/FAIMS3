@@ -254,7 +254,7 @@ function renderTemplate({
           });
     }
   }
-  // Parent record values available as {{parent.Field-ID}}
+  // Parent record values available as {{_PARENT.Field-ID}}
   if (context.parentValues) {
     const parent: ValuesObject = {};
     for (const [k, v] of Object.entries(context.parentValues)) {
@@ -264,7 +264,7 @@ function renderTemplate({
         uiSpecification,
       });
     }
-    filteredValues['parent'] = parent;
+    filteredValues['_PARENT'] = parent;
   }
 
   // Render

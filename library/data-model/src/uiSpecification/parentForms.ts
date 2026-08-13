@@ -16,7 +16,7 @@
  * Filename: parentForms.ts
  * Description:
  *   Determines which forms can parent a given form, and types the
- *   parent.<Field-ID> references usable in computed expressions on that form.
+ *   _PARENT.<Field-ID> references usable in computed expressions on that form.
  *   Shared by the notebook-load compile pass, the designer's live expression
  *   validation, and the forms runtime.
  */
@@ -32,7 +32,7 @@ import {
 import {UiSpecModel} from './types';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
-export const PARENT_REFERENCE_PREFIX = 'parent.';
+export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
 const RELATED_RECORD_COMPONENT = 'RelatedRecordSelector';
 const CHILD_RELATION = 'faims-core::Child';
@@ -83,12 +83,12 @@ export const getParentFormsForForm = ({
 };
 
 /**
- * Types the parent.<Field-ID> references available to expressions on the given
+ * Types the _PARENT.<Field-ID> references available to expressions on the given
  * form. A parent field is referenceable when exactly one parent form defines
  * it, or all defining forms agree on its expression type; otherwise it is
  * recorded as ambiguous. Fields whose type does not map onto an expression
  * type are treated as a disagreement, since runtime resolution could select
- * that parent.
+ * that _PARENT.
  */
 export const buildParentFieldTypes = ({
   uiSpecification,
@@ -97,7 +97,7 @@ export const buildParentFieldTypes = ({
   uiSpecification: UiSpecModel;
   formId: string;
 }): {
-  /** parent.<Field-ID> -> expression type, for unambiguous references. */
+  /** _PARENT.<Field-ID> -> expression type, for unambiguous references. */
   types: Map<string, ExprType>;
   /** Field ID -> defining parent form IDs, for ambiguous references. */
   ambiguous: Map<string, string[]>;
@@ -142,7 +142,7 @@ export const buildParentFieldTypes = ({
 
 /**
  * Compiles an expression for a computed field on the given form, resolving
- * parent.<Field-ID> references against the form's possible parent forms.
+ * _PARENT.<Field-ID> references against the form's possible parent forms.
  * Pre-checks parent references so failures produce targeted errors rather
  * than a bare "Unknown field". Local fields keep the existing behaviour.
  */

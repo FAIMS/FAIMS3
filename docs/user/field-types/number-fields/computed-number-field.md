@@ -90,8 +90,8 @@ String in the same form.
 
 When the form is a child of another form (linked through a
 Child-relation Related Records field), the expression can reference
-fields on the record's parent by prefixing the Field ID with `parent.`,
-e.g. `{parent.Calibration-Factor} * {Reading}`. An **Insert parent
+fields on the record's parent by prefixing the Field ID with `_PARENT.`,
+e.g. `{_PARENT.Calibration-Factor} * {Reading}`. An **Insert parent
 field** picker below the expression lists the available parent fields.
 
 Parent references are type checked like any other reference, and —

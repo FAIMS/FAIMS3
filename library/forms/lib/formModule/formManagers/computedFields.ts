@@ -36,7 +36,7 @@ const DERIVED_FIELD_NAMES = [
  * applies it against current values. Recompute-all-and-diff, matching the
  * templated-field recompute.
  *
- * parent.<Field-ID> references resolve from the parent record's stored values
+ * _PARENT.<Field-ID> references resolve from the parent record's stored values
  * supplied via context.parentValues (see resolveParentValues). A referenced
  * parent value that is missing - including when the record has no parent -
  * leaves the result blank.
@@ -137,7 +137,7 @@ export function recomputeComputedFields({
     );
   };
 
-  // Resolves a parent.<Field-ID> reference from the parent's stored values.
+  // Resolves a _PARENT.<Field-ID> reference from the parent's stored values.
   // Parent derived fields ARE usable: their stored values carry no evaluation
   // ordering problem, and persist-on-save is what guarantees they exist.
   // Field IDs are globally unique in the uiSpec, so the field's type can be

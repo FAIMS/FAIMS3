@@ -74,8 +74,8 @@ the same form.
 
 When the form is a child of another form (linked through a
 Child-relation Related Records field), the template can reference
-fields on the record's parent using the `parent.` prefix, e.g.
-`{{parent.Site-Name}}-{{Feature-type}}`. The Visual Builder lists the
+fields on the record's parent using the `_PARENT.` prefix, e.g.
+`{{_PARENT.Site-Name}}-{{Feature-type}}`. The Visual Builder lists the
 available parent fields with a "Parent:" prefix.
 
 Unlike same-form references, a parent reference may point at the

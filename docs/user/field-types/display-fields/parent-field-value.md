@@ -15,7 +15,7 @@ stored value reflects the parent as of the child's last save.
 Parent values can also be used inside a child's
 [Templated Strings](../text-fields/templated-string.md) and computed
 fields ([number](../number-fields/computed-number-field.md),
-[text](../text-fields/computed-text-field.md)) using the `parent.`
+[text](../text-fields/computed-text-field.md)) using the `_PARENT.`
 prefix — see those pages for the syntax.
 
 ## Adding the Field

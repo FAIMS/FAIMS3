@@ -94,10 +94,10 @@ describe('buildParentFieldTypes', () => {
       uiSpecification: spec,
       formId: 'Feature',
     });
-    expect(types.get('parent.Site-Name')).toBe('string');
-    expect(types.get('parent.Site-Area')).toBe('number');
+    expect(types.get('_PARENT.Site-Name')).toBe('string');
+    expect(types.get('_PARENT.Site-Area')).toBe('number');
     // Unmapped type on a single parent: not referenceable, not ambiguous.
-    expect(types.has('parent.Site-Geom')).toBe(false);
+    expect(types.has('_PARENT.Site-Geom')).toBe(false);
     expect(ambiguous.size).toBe(0);
   });
 
@@ -119,7 +119,7 @@ describe('buildParentFieldTypes', () => {
       uiSpecification: spec,
       formId: 'Feature',
     });
-    expect(types.get('parent.Label')).toBe('string');
+    expect(types.get('_PARENT.Label')).toBe('string');
     expect(ambiguous.size).toBe(0);
   });
 
@@ -135,7 +135,7 @@ describe('buildParentFieldTypes', () => {
       uiSpecification: spec,
       formId: 'Feature',
     });
-    expect(types.has('parent.Geom')).toBe(false);
+    expect(types.has('_PARENT.Geom')).toBe(false);
   });
 });
 
@@ -154,17 +154,17 @@ describe('compileComputedExpressionForForm', () => {
 
   it('compiles and evaluates a mixed local/parent expression', () => {
     const compiled = compileComputedExpressionForForm({
-      source: '{parent.Site-Name} & " / " & {Feature-Note}',
+      source: '{_PARENT.Site-Name} & " / " & {Feature-Note}',
       uiSpecification: spec,
       formId: 'Feature',
       requiredType: 'string',
     });
     expect(compiled.references.sort()).toEqual([
       'Feature-Note',
-      'parent.Site-Name',
+      '_PARENT.Site-Name',
     ]);
     const scope = new Map<string, any>([
-      ['parent.Site-Name', 'Alpha'],
+      ['_PARENT.Site-Name', 'Alpha'],
       ['Feature-Note', 'B2'],
     ]);
     expect(compiled.evaluate(scope)).toBe('Alpha / B2');
@@ -172,13 +172,13 @@ describe('compileComputedExpressionForForm', () => {
 
   it('types parent numeric fields for arithmetic', () => {
     const compiled = compileComputedExpressionForForm({
-      source: '{parent.Site-Area} * {Feature-Count}',
+      source: '{_PARENT.Site-Area} * {Feature-Count}',
       uiSpecification: spec,
       formId: 'Feature',
       requiredType: 'number',
     });
     const scope = new Map<string, any>([
-      ['parent.Site-Area', 10],
+      ['_PARENT.Site-Area', 10],
       ['Feature-Count', 3],
     ]);
     expect(compiled.evaluate(scope)).toBe(30);
@@ -187,7 +187,7 @@ describe('compileComputedExpressionForForm', () => {
   it('rejects a parent reference when no parent form exists', () => {
     expect(() =>
       compileComputedExpressionForForm({
-        source: '{parent.Anything}',
+        source: '{_PARENT.Anything}',
         uiSpecification: spec,
         formId: 'Site',
       })
@@ -197,7 +197,7 @@ describe('compileComputedExpressionForForm', () => {
   it('rejects a parent reference to a field on no parent form', () => {
     expect(() =>
       compileComputedExpressionForForm({
-        source: '{parent.Missing-Field}',
+        source: '{_PARENT.Missing-Field}',
         uiSpecification: spec,
         formId: 'Feature',
       })
@@ -206,11 +206,11 @@ describe('compileComputedExpressionForForm', () => {
 
   it('rejects a local field ID using the reserved prefix', () => {
     const bad = makeSpec({
-      Feature: {'parent.x': makeField('faims-core::String')},
+      Feature: {'_PARENT.x': makeField('faims-core::String')},
     });
     expect(() =>
       compileComputedExpressionForForm({
-        source: '{parent.x}',
+        source: '{_PARENT.x}',
         uiSpecification: bad,
         formId: 'Feature',
       })

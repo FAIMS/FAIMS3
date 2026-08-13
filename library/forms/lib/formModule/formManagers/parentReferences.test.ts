@@ -44,13 +44,13 @@ const makeSpec = (): UiSpecModel => {
       'Feature-Label': {
         ...field('faims-core::String', 'TemplatedStringField'),
         'component-parameters': {
-          template: '{{parent.Site-Name}} / {{Feature-Note}}',
+          template: '{{_PARENT.Site-Name}} / {{Feature-Note}}',
         },
       },
       'Feature-Density': {
         ...field('faims-core::Number', 'ComputedNumber'),
         'component-parameters': {
-          expression: '{Feature-Count} / {parent.Site-Area}',
+          expression: '{Feature-Count} / {_PARENT.Site-Area}',
         },
       },
     },
@@ -69,7 +69,7 @@ function field(typeReturned: string, componentName = 'TextField') {
 }
 
 describe('templated strings with parent references', () => {
-  it('renders parent values via {{parent.Field-ID}}', () => {
+  it('renders parent values via {{_PARENT.Field-ID}}', () => {
     const {updates} = recomputeDerivedFields({
       values: {'Feature-Note': 'B2'},
       uiSpecification: makeSpec(),
@@ -92,7 +92,7 @@ describe('templated strings with parent references', () => {
   it('can reference a derived field on the parent', () => {
     const spec = makeSpec();
     (spec.fields['Feature-Label']['component-parameters'] as any).template =
-      '{{parent.Site-HRID}}-x';
+      '{{_PARENT.Site-HRID}}-x';
     compileUiSpecConditionals(spec);
     const {updates} = recomputeDerivedFields({
       values: {},

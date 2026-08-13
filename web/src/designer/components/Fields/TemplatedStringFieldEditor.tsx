@@ -7,7 +7,11 @@ import {FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
 import {fieldUpdated} from '../../store/slices/uiSpec';
-import {buildParentFieldTypes, UiSpecModel} from '@faims3/data-model';
+import {
+  buildParentFieldTypes,
+  PARENT_REFERENCE_PREFIX,
+  UiSpecModel,
+} from '@faims3/data-model';
 
 type PropType = {
   fieldName: string;
@@ -87,7 +91,7 @@ export const TemplatedStringFieldEditor = ({
     };
   });
 
-  // Parent fields usable as {{parent.Field-ID}}.
+  // Parent fields usable as {{_PARENT.Field-ID}}.
   const parentVariables = useMemo(() => {
     const {types} = buildParentFieldTypes({
       uiSpecification: {
@@ -98,7 +102,7 @@ export const TemplatedStringFieldEditor = ({
       formId: viewsetId,
     });
     return [...types.keys()].map(ref => {
-      const id = ref.slice('parent.'.length);
+      const id = ref.slice(PARENT_REFERENCE_PREFIX.length);
       return {
         name: ref,
         displayName: `Parent: ${getFieldLabel(allFields[id]) || id}`,

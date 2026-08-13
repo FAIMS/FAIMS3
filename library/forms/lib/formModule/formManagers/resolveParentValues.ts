@@ -7,7 +7,7 @@ import {logWarn} from '../../logging';
 
 /**
  * Resolves the raw field values of this record's parent, for use in templated
- * strings ({{parent.Field-ID}}) and computed expressions ({parent.Field-ID}).
+ * strings ({{_PARENT.Field-ID}}) and computed expressions ({_PARENT.Field-ID}).
  *
  * Reads the parent relationship from the record's own revision, then loads
  * data from the first parent whose form can parent this record's form -

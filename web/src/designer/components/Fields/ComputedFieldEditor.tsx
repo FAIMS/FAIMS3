@@ -19,6 +19,7 @@ import {
   ExpressionError,
   ExprType,
   FAIMS_TYPE_TO_EXPR_TYPE,
+  PARENT_REFERENCE_PREFIX,
   UiSpecModel,
 } from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -110,7 +111,7 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     [viewsetId, views, viewsets, allFields, referenceableFieldFilters]
   );
 
-  // Parent fields referenceable as {parent.Field-ID}.
+  // Parent fields referenceable as {_PARENT.Field-ID}.
   const parentFieldOptions = useMemo(() => {
     const {types} = buildParentFieldTypes({
       uiSpecification: uiSpecForCompile,
@@ -118,11 +119,11 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     });
     return [...types.keys()].map(ref => ({
       ref,
-      label: getFieldLabelFor(ref.slice('parent.'.length)),
+      label: getFieldLabelFor(ref.slice(PARENT_REFERENCE_PREFIX.length)),
     }));
   }, [uiSpecForCompile, viewsetId]);
 
-  // Compile with the per-form wrapper so {parent.Field-ID} references
+  // Compile with the per-form wrapper so {_PARENT.Field-ID} references
   // validate against this form's possible parent forms.
   const validationError = useMemo(() => {
     if (expression.trim() === '') return null;
@@ -211,7 +212,7 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                 <li>Logic (true/false): &amp;&amp; || !</li>
                 <li>Conditional: condition ? ifTrue : ifFalse</li>
                 <li>
-                  Parent record fields: {'{parent.Field-ID}'} - value from the
+                  Parent record fields: {'{_PARENT.Field-ID}'} - value from the
                   record's parent
                 </li>
               </ul>

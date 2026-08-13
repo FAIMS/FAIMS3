@@ -141,7 +141,7 @@ export const EditableFormManager: React.FC<
   );
 
   // ---------------------------------------------------------------------------
-  // Parent Values (for {{parent.Field-ID}} templates and {parent.Field-ID}
+  // Parent Values (for {{_PARENT.Field-ID}} templates and {_PARENT.Field-ID}
   // expressions). Resolved once at mount; recompute fires on arrival so
   // parent-only derived fields fill without waiting for user input.
   // ---------------------------------------------------------------------------
