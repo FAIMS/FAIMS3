@@ -342,7 +342,7 @@ I recommend the following configuration for a production level deployment - you 
 
 The prior configuration is valid - consider the combination of retention and schedule which suits your requirements for snapshot retention.
 
-These snapshots retain the **EBS Volume backing couch** - we have tested that you can recover completely from this volume.
+These snapshots retain the **EBS Volume backing couch** - we have tested that you can recover completely from this volume. Recovery procedure (draft): [CouchDB backup recovery on AWS](./CouchBackupRecoveryGuideAWS.md).
 
 The above expression schedules a daily update at 3am - in combination with 30 day retentions, this means 30 concurrent snapshots - if you have a lot of data, this could result in a lot of storage costs - so beware.
 
@@ -358,13 +358,13 @@ aws backup delete-backup-vault \
 
 ### Conductor (API) Configuration
 
-The following section configures the API
+The following section configures the API.
 
 ```json
   "conductor": {
     "name": "FAIMS Server",
     "description": "FAIMS Conductor instance deployment.",
-    "conductorDockerImage": "org/faims3-api",
+    "conductorDockerImage": "see-below",
     "conductorDockerImageTag": "latest",
     "shortCodePrefix": "FAIMS",
     "cpu": 1024,
@@ -383,8 +383,17 @@ The following section configures the API
 
 You need to update the following
 
-- `conductorDockerImage`: you can either use `ghcr.io/faims/faims3-api` OR you can fork the repo, and deploy your own container to GHCR, which will allow you more control over the lifecycle. I think by default use a tagged version of the FAIMS upstream container image.
-- `conductorDockerImageTag`: I don't recommend using latest, as you may get out of sync, instead, specify the specific commit e.g. `sha-522bb4b`
+- `conductorDockerImage`: you can either use `ghcr.io/faims/faims3-api` OR you
+  can fork the repo, and deploy your own container to GHCR, which will allow you
+  more control over the lifecycle. I think by default use a tagged version of the
+  FAIMS upstream container image.
+  If you fork the repository, the image name will be `ghcr.io/org/reponame-api`
+  where `org` will be the organisation owning
+  your repository, `reponame` is the lowercase version of the repository name.  
+  You should see the package listed in your repository packages list.
+
+- `conductorDockerImageTag`: I don't recommend using latest, as you may get out
+  of sync, instead, specify the specific commit e.g. `sha-522bb4b`
 
 The remaining options are for your consideration. They are largely performance, the below is a suitable production profile:
 
@@ -776,7 +785,7 @@ From within `api` (again ensuring your have AWS creds active!)
 ```sh
 pnpm i
 npx turbo build
-pnpm run migrate -- --keys
+pnpm run migrate --keys
 ```
 
 This will migrate all the databases, and force push the JWT signing keys. In the future, you do not need to include the `-- --keys` postfix for routine migrations.

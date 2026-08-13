@@ -24,7 +24,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(PouchDBFind);
 
 import {PostLoginInput} from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
 import {config} from '../src/buildconfig';
@@ -37,77 +37,63 @@ const adminPassword = config.localCouchdbAuth
 
 it('check is up', async () => {
   const result = await request(app).get('/up');
-  expect(result.statusCode).to.equal(200);
+  expect(result.statusCode).toBe(200);
 });
 
 describe('Auth', () => {
   beforeEach(beforeApiTests);
 
-  it('redirect to login', done => {
-    request(app)
+  it('redirect to login', async () => {
+    await request(app)
       .get('/')
       .expect(302)
-      .expect('Location', /\/login/, done);
+      .expect('Location', /\/login/);
   });
 
-  it('login returns HTML', done => {
-    request(app)
+  it('login returns HTML', async () => {
+    await request(app)
       .get('/login')
       .expect(200)
-      .expect('Content-Type', /text\/html/, done);
+      .expect('Content-Type', /text\/html/);
   });
-  it('register returns HTML', done => {
-    request(app)
+  it('register returns HTML', async () => {
+    await request(app)
       .get('/register')
       .expect(200)
-      .expect('Content-Type', /text\/html/, done);
+      .expect('Content-Type', /text\/html/);
   });
-  it('shows login page', done => {
+  it('shows login page', async () => {
     // not if we don't have local auth configured
-    request(app)
-      .get('/login')
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('Sign in');
-        done();
-      });
+    const response = await request(app).get('/login').expect(200);
+    expect(response.text).toContain('Sign in');
   });
 
-  it('shows the configured login button(s)', done => {
+  it('shows the configured login button(s)', async () => {
     const providers = getAuthProviderConfig();
-    request(app)
-      .get('/login')
-      .expect(200)
-      .then(response => {
-        Object.values(providers || {}).forEach(provider => {
-          if (providers) expect(response.text).to.include(provider.displayName);
-        });
-        done();
-      });
+    const response = await request(app).get('/login').expect(200);
+    Object.values(providers || {}).forEach(provider => {
+      if (providers) expect(response.text).toContain(provider.displayName);
+    });
   });
 
-  it('redirects with a token on login', done => {
+  it('redirects with a token on login', async () => {
     // TODO: would like to test with this both enabled and disabled
     // but the way config works just now makes this difficult.
-    if (config.localLoginEnabled) {
-      const redirect = 'http://localhost:8080/';
-      request(app)
-        .post('/auth/local')
-        .send({
-          email: 'admin',
-          password: adminPassword,
-          action: 'login',
-          redirect,
-        } satisfies PostLoginInput)
-        .expect(302)
-        .then(response => {
-          const location = new URL(response.header.location);
-          expect(location.hostname).to.equal('localhost');
-          expect(location.search).to.match(/exchangeToken/);
-          done();
-        });
-    } else {
-      done();
+    if (!config.localLoginEnabled) {
+      return;
     }
+    const redirect = 'http://localhost:8080/';
+    const response = await request(app)
+      .post('/auth/local')
+      .send({
+        email: 'admin',
+        password: adminPassword,
+        action: 'login',
+        redirect,
+      } satisfies PostLoginInput)
+      .expect(302);
+    const location = new URL(response.header.location);
+    expect(location.hostname).toBe('localhost');
+    expect(location.search).toMatch(/exchangeToken/);
   });
 });

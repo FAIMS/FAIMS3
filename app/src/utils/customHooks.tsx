@@ -17,8 +17,10 @@ import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
+import {syncStateService} from '../context/slices/helpers/syncStateService';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
+import {syncModeIncludesPull, type SyncMode} from '../sync/syncMode';
 import {shouldDisplayRecordMinimalMetadata} from '../users';
 import {localGetDataDb, tryLocalGetDataDb} from './database';
 
@@ -455,6 +457,25 @@ export const useRecordList = ({
   const dataDb = tryLocalGetDataDb(projectId);
   const canQueryRecords = enabled && !!dataDb && !!token && !!uiSpec;
 
+  /**
+   * Whether the returned lists can contain every record in the project. The
+   * queryFn filters through {@link shouldDisplayRecordMinimalMetadata}, so
+   * when this is false a record's absence proves nothing: hidden records may
+   * exist. Computed from the same token that filter reads.
+   *
+   * Only currently used in third party plugins, not dead code.
+   */
+  const canReadAllRecords = useMemo(
+    () =>
+      !!token &&
+      isAuthorized({
+        decodedToken: token,
+        action: Action.READ_ALL_PROJECT_RECORDS,
+        resourceId: projectId,
+      }),
+    [token, projectId]
+  );
+
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
     queryKey: [
@@ -539,6 +560,16 @@ export const useRecordList = ({
       return rows.records;
     },
   });
+
+  /**
+   * Whether the list has never loaded, so an empty list means "not known yet"
+   * rather than "no records".
+   *
+   * Deliberately not `initialQuery.isLoading`, which goes false when the
+   * initial fetch fails, presenting the empty fallback as a loaded, empty
+   * list.
+   */
+  const isLoading = unhydratedRecordQuery.data === undefined;
 
   // Get all rows - defaulting to an empty list
   const allRows = unhydratedRecordQuery.data ?? [];
@@ -626,8 +657,64 @@ export const useRecordList = ({
     allRecords: nonDraftRecords,
     myRecords: myRecords,
     otherRecords: otherRecords,
+    isLoading,
+    canReadAllRecords,
     initialQuery: unhydratedRecordQuery,
   };
+};
+
+/** Poll interval for the in-memory per-project sync state. */
+const SYNC_STATE_POLL_INTERVAL_MS = 1000;
+
+/**
+ * Whether a record download is underway for a project, polled from the
+ * in-memory {@link syncStateService}. While true, records that exist on the
+ * server may not yet be local, so a consumer must not read a record's absence
+ * as proof that none exists. False when the project never pulls, and on error
+ * or denial, so an offline device keeps working from its local data.
+ *
+ * Only currently used in third party plugins, not dead code.
+ */
+export const useIsRecordDownloadUnderway = ({
+  serverId,
+  projectId,
+  syncMode,
+}: {
+  serverId: string;
+  projectId: string;
+  /** The project's replication direction; only pull modes can download. */
+  syncMode: SyncMode;
+}): boolean => {
+  const computeIsDownloadUnderway = useCallback((): boolean => {
+    if (!syncModeIncludesPull(syncMode)) {
+      return false;
+    }
+    const syncState = syncStateService.getSyncStateOrDefault(
+      serverId,
+      projectId
+    );
+    // Errors and denials will not download any time soon; treating them as
+    // downloading would blank consumers forever on an offline device.
+    if (syncState.status === 'error' || syncState.status === 'denied') {
+      return false;
+    }
+    return !syncState.isPullCaughtUp;
+  }, [serverId, projectId, syncMode]);
+
+  const [isDownloadUnderway, setIsDownloadUnderway] = useState(
+    computeIsDownloadUnderway
+  );
+
+  useEffect(() => {
+    // The sync state lives outside React, so poll it; setState with an
+    // unchanged boolean re-renders nothing.
+    const tick = () => setIsDownloadUnderway(computeIsDownloadUnderway());
+    tick();
+    const interval = setInterval(tick, SYNC_STATE_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [computeIsDownloadUnderway]);
+
+  return isDownloadUnderway;
 };
 
 /** useQuery to fetch and hydrate individual targeted revision of record */

@@ -172,8 +172,11 @@ export interface ChangeSyncInfo {
     last_seq: number | string;
     /** Whether the replication was successful */
     ok: boolean;
-    /** How many records pending sync? */
-    pending: number;
+    /**
+     * How many records pending sync, or undefined when the source did not
+     * report it. Keep "unknown" distinct from "nothing pending".
+     */
+    pending?: number;
     /** Start time of the replication */
     start_time: string;
     /** Documents involved in the change */
@@ -201,6 +204,19 @@ export interface SyncEventHandlers {
    * @param err Error object if replication was paused due to an error
    */
   paused?: (err?: Error) => void;
+
+  /**
+   * Fired when the PULL side specifically pauses, carrying its own error.
+   * Never fired for push-only replication.
+   *
+   * Distinct from {@link paused}: `PouchDB.sync` re-emits its children's
+   * pauses with the error stripped, so on the aggregate an offline pull is
+   * indistinguishable from an idle, caught-up one. Anything reading a clean
+   * pause as "the download finished" must watch this instead.
+   *
+   * @param err Error object if the pull was paused due to an error
+   */
+  pullPaused?: (err?: Error) => void;
 
   /**
    * Fired when the replication starts actively processing changes;
@@ -304,6 +320,25 @@ function asReplicationEventEmitter(
 }
 
 /**
+ * The emitter carrying the PULL side's own events, or undefined when the
+ * replication has no pull side. Two-way `PouchDB.sync` exposes its children as
+ * `.push`/`.pull`; a one-way handle is its own pull side iff it replicates in
+ * that direction. See {@link SyncEventHandlers.pullPaused} for why the
+ * aggregate is not a substitute.
+ */
+function getPullEventEmitter(
+  replication: PouchReplicationHandle,
+  defaultDirection: 'push' | 'pull'
+): ReplicationEventEmitter | undefined {
+  if ('pull' in replication && replication.pull) {
+    return replication.pull as unknown as ReplicationEventEmitter;
+  }
+  return defaultDirection === 'pull'
+    ? asReplicationEventEmitter(replication)
+    : undefined;
+}
+
+/**
  * Attach replication event handlers to a sync/replicate handle.
  *
  * Shared by all sync modes so callers register handlers once regardless of
@@ -333,6 +368,12 @@ function attachReplicationEventHandlers(
     handle = asReplicationEventEmitter(handle).on(
       'paused',
       eventHandlers.paused
+    );
+  }
+  if (eventHandlers.pullPaused) {
+    getPullEventEmitter(replication, defaultDirection)?.on(
+      'paused',
+      eventHandlers.pullPaused
     );
   }
   if (eventHandlers.active) {

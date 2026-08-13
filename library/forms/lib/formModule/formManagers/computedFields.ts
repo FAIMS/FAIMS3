@@ -1,5 +1,7 @@
 import {
   CompiledFieldDefinition,
+  ExprValue,
+  FAIMS_TYPE_TO_EXPR_TYPE,
   getFieldToIdsMap,
   UiSpecModel,
   ValuesObject,
@@ -8,20 +10,26 @@ import {formDataExtractor} from '../../utils';
 import {logWarn} from '../../logging';
 import {FaimsForm} from '../types';
 
-const COMPUTED_FIELD_NAME = 'ComputedField';
 const TEMPLATED_STRING_FIELD_NAME = 'TemplatedStringField';
+
+// Computed field components and the value type each produces.
+const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
 
 // Component names whose values are themselves derived. These are excluded as
 // inputs to a computed expression in this version to avoid evaluation ordering
 // problems; referencing one yields a blank (incomplete) result.
-const DERIVED_FIELD_NAMES = [COMPUTED_FIELD_NAME, TEMPLATED_STRING_FIELD_NAME];
+const DERIVED_FIELD_NAMES = [
+  ...COMPUTED_FIELD_NAMES,
+  TEMPLATED_STRING_FIELD_NAME,
+];
 
 /**
- * Recomputes all ComputedField values in the given form from current values.
- * Expressions are compiled once when the notebook loads (see
- * compileUiSpecConditionals in @faims3/data-model); this reads the precompiled
- * evaluator off each field and applies it against current values.
- * Recompute-all-and-diff, matching the templated-field recompute.
+ * Recomputes all computed field (ComputedNumber/ComputedText) values in the
+ * given form from current values. Expressions are compiled and type checked
+ * once when the notebook loads (see compileUiSpecConditionals in
+ * @faims3/data-model); this reads the precompiled evaluator off each field and
+ * applies it against current values. Recompute-all-and-diff, matching the
+ * templated-field recompute.
  *
  * @param values Current form data values
  * @param uiSpecification The decoded UI spec (with compiled expressions attached)
@@ -36,7 +44,7 @@ export function recomputeComputedFields({
   values: ValuesObject;
   uiSpecification: UiSpecModel;
   formId: string;
-}): {changes: boolean; updates: Record<string, number | null>} {
+}): {changes: boolean; updates: Record<string, ExprValue | null>} {
   const fieldMap = getFieldToIdsMap(uiSpecification);
 
   // Field names in this form, the derived ones (excluded as inputs), and the
@@ -45,7 +53,7 @@ export function recomputeComputedFields({
   const derivedFields = new Set<string>();
   const computedFields: {
     fieldName: string;
-    expressionFn: (scope: Map<string, number>) => number | null;
+    expressionFn: (scope: Map<string, ExprValue>) => ExprValue | null;
     references: string[];
   }[] = [];
 
@@ -61,7 +69,7 @@ export function recomputeComputedFields({
     if (DERIVED_FIELD_NAMES.includes(componentName)) {
       derivedFields.add(fieldName);
     }
-    if (componentName === COMPUTED_FIELD_NAME) {
+    if (COMPUTED_FIELD_NAMES.includes(componentName)) {
       // Expression is compiled at notebook load and attached in place; read it
       // off the compiled field definition.
       const compiledField = fieldDetails as CompiledFieldDefinition;
@@ -69,7 +77,7 @@ export function recomputeComputedFields({
       const references = compiledField.expressionRefs;
       if (!expressionFn || !references) {
         logWarn(
-          'ComputedField has no compiled expression - cannot evaluate. ' +
+          `${componentName} has no compiled expression - cannot evaluate. ` +
             'Was the UI spec compiled (compileUiSpecConditionals)?'
         );
         continue;
@@ -78,28 +86,43 @@ export function recomputeComputedFields({
     }
   }
 
-  // Resolves a field name to a number, or null when missing, non-numeric, or
-  // itself derived.
-  const resolveField = (name: string): number | null => {
+  // Resolves a field name to a typed value matching its declared type-returned,
+  // or null when missing, mistyped, or itself derived. Number inputs may arrive
+  // as strings from form controls and are converted; other types are strict.
+  // An empty string counts as missing so partially filled forms stay blank.
+  const resolveField = (name: string): ExprValue | null => {
     if (derivedFields.has(name)) {
+      return null;
+    }
+    const exprType =
+      FAIMS_TYPE_TO_EXPR_TYPE[uiSpecification.fields[name]?.['type-returned']];
+    if (!exprType) {
       return null;
     }
     const raw = values[name];
     if (raw === undefined || raw === null || raw === '') {
       return null;
     }
-    const n = typeof raw === 'number' ? raw : Number(raw);
-    return Number.isNaN(n) ? null : n;
+    switch (exprType) {
+      case 'number': {
+        const n = typeof raw === 'number' ? raw : Number(raw);
+        return Number.isNaN(n) ? null : n;
+      }
+      case 'string':
+        return typeof raw === 'string' ? raw : null;
+      case 'boolean':
+        return typeof raw === 'boolean' ? raw : null;
+    }
   };
 
   let changes = false;
-  const updates: Record<string, number | null> = {};
+  const updates: Record<string, ExprValue | null> = {};
 
   for (const {fieldName, expressionFn, references} of computedFields) {
     // Build the scope from referenced symbols that are fields in this form.
     // A referenced field with no usable value leaves the result blank; any
     // symbol that is not a field in this form is treated as unknown.
-    const scope = new Map<string, number>();
+    const scope = new Map<string, ExprValue>();
     let incomplete = false;
     for (const ref of references) {
       if (!formFields.has(ref)) {
@@ -113,14 +136,19 @@ export function recomputeComputedFields({
       scope.set(ref, value);
     }
 
-    const result = incomplete ? null : expressionFn(scope);
+    let result = incomplete ? null : expressionFn(scope);
+    // An empty-string result displays as blank; store it as null so repeat
+    // recomputes compare equal.
+    if (result === '') {
+      result = null;
+    }
 
     // Normalise previous value so null and empty compare equal.
     const previous = values[fieldName];
     const prev =
       previous === undefined || previous === null || previous === ''
         ? null
-        : Number(previous);
+        : (previous as ExprValue);
 
     if (!Object.is(prev, result)) {
       updates[fieldName] = result;

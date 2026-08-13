@@ -40,4 +40,10 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
    * are passed through to Mustache as today (objects may stringify poorly).
    */
   templateFunction?: (value: unknown) => string;
+  /**
+   * When true, this field type is not offered as a source for
+   * ParentFieldDisplay (e.g. relationship fields, display-only fields with
+   * no meaningful single value). Defaults to false.
+   */
+  excludeFromParentDisplay?: boolean;
 }

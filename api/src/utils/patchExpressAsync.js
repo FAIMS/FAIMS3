@@ -31,7 +31,7 @@ function wrap(fn) {
   return copyFnProps(fn, newFn);
 }
 
-export default function patchRouterParam() {
+function patchRouterParam() {
   const originalParam = Router.prototype.constructor.param;
   // @ts-ignore
   Router.prototype.constructor.param = function param(name, fn) {
@@ -40,13 +40,24 @@ export default function patchRouterParam() {
   };
 }
 
-Object.defineProperty(Layer.prototype, 'handle', {
-  enumerable: true,
-  get() {
-    return this.__handle;
-  },
-  set(fn) {
-    fn = wrap(fn);
-    this.__handle = fn;
-  },
-});
+// Idempotent: Vitest setupFiles may load this before expressSetup imports it.
+if (!Layer.prototype.__faimsAsyncPatched) {
+  Object.defineProperty(Layer.prototype, 'handle', {
+    configurable: true,
+    enumerable: true,
+    get() {
+      return this.__handle;
+    },
+    set(fn) {
+      fn = wrap(fn);
+      this.__handle = fn;
+    },
+  });
+  Object.defineProperty(Layer.prototype, '__faimsAsyncPatched', {
+    value: true,
+    configurable: true,
+  });
+}
+
+module.exports = patchRouterParam;
+module.exports.default = patchRouterParam;

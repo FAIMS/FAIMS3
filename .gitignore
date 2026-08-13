@@ -3,6 +3,8 @@ keys
 build
 .turbo
 out
+.swc
+.tmp
 app/public/manifest.json
 .env*
 !.env.dist
