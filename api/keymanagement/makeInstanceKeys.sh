@@ -43,7 +43,8 @@ echo $FLATTENED_KEY > "${KEYS_PATH}/${HOST_TARGET}_rsa_2048_public_key.pem.flatt
 
 cp ${API_ROOT}/couchdb/local.ini.dist ${API_ROOT}/couchdb/local.ini 
 sed -i.bak "s/secret = db7a1a86dbc734593febf8ca6fdf0cf8/secret = ${FAIMS_COOKIE_SECRET}/" ${API_ROOT}/couchdb/local.ini
-sed -i.bak "s/uuid = adf990d5dd21b735f65d4140ad1f10c2/uuid = "`uuid`"/" ${API_ROOT}/couchdb/local.ini
+UUID_CMD=$(command -v uuid || command -v uuidgen || echo "cat /proc/sys/kernel/random/uuid")
+sed -i.bak "s/uuid = adf990d5dd21b735f65d4140ad1f10c2/uuid = $($UUID_CMD)/" ${API_ROOT}/couchdb/local.ini
 echo "[jwt_keys]" >> ${API_ROOT}/couchdb/local.ini
 echo "rsa:${PROFILE_NAME}=${FLATTENED_KEY}" >> ${API_ROOT}/couchdb/local.ini
 echo '[admin]' >> ${API_ROOT}/couchdb/local.ini

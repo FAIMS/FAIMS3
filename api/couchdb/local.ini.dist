@@ -16,8 +16,11 @@ enable_cors = true
 [couchdb]
 single_node=true
 
+[cluster]
+n = 1
+
 [log]
-writer = syslog
+writer = stderr
 level = info
 
 [chttpd_auth]

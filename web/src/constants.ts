@@ -67,24 +67,31 @@ const EnvSchema = z
     VITE_NOTEBOOK_NAME: configHelpers.stringDefault('project'),
     /** Browser tab / chrome title for the Control Centre. */
     VITE_WEBSITE_TITLE: configHelpers.stringDefault('Control Centre'),
-    /** Product display name (required). */
-    VITE_APP_NAME: z
-      .string({error: 'Missing required env variable VITE_APP_NAME'})
-      .min(1, 'Missing required env variable VITE_APP_NAME'),
+    /** Product display name. */
+    VITE_APP_NAME: configHelpers.stringDefault('Fieldmark'),
     /** Optional short name; falls back to VITE_APP_NAME when blank. */
     VITE_APP_SHORT_NAME: z.string().optional(),
-    /** Public Control Centre base URL (required). */
+    /** Public Control Centre base URL. Pulled directly from VITE_WEB_URL. */
     VITE_WEB_URL: z
-      .string({error: 'Missing required env variable VITE_WEB_URL'})
-      .min(1, 'Missing required env variable VITE_WEB_URL'),
-    /** Public Conductor / API base URL (required). */
+      .string()
+      .optional()
+      .transform(v =>
+        v && v.trim() !== ''
+          ? v
+          : typeof window !== 'undefined'
+            ? window.location.origin
+            : 'http://localhost:3001'
+      ),
+    /** Public Conductor / API base URL. Pulled directly from VITE_API_URL. */
     VITE_API_URL: z
-      .string({error: 'Missing required env variable VITE_API_URL'})
-      .min(1, 'Missing required env variable VITE_API_URL'),
-    /** Public Fieldmark app base URL (required). */
+      .string()
+      .optional()
+      .transform(v => (v && v.trim() !== '' ? v : 'http://localhost:8080')),
+    /** Public Fieldmark app base URL. Pulled directly from VITE_APP_URL. */
     VITE_APP_URL: z
-      .string({error: 'Missing required env variable VITE_APP_URL'})
-      .min(1, 'Missing required env variable VITE_APP_URL'),
+      .string()
+      .optional()
+      .transform(v => (v && v.trim() !== '' ? v : 'http://localhost:3000')),
     /** Optional docs / help site URL. */
     VITE_DOCS_URL: configHelpers.stringDefault(''),
     /** Theme identifier applied to the Control Centre chrome. */
@@ -338,7 +345,15 @@ const EnvSchema = z
  * Pass the whole `import.meta.env` — `.strip()` drops Vite built-ins
  * (`MODE`, `DEV`, …) and any other keys not declared above.
  */
-export const config = EnvSchema.parse(import.meta.env);
+const getMergedEnv = () => {
+  const runtimeEnv =
+    typeof window !== 'undefined' && (window as any).__ENV__
+      ? (window as any).__ENV__
+      : {};
+  return {...import.meta.env, ...runtimeEnv};
+};
+
+export const config = EnvSchema.parse(getMergedEnv());
 
 export type Config = typeof config;
 

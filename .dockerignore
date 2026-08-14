@@ -1,13 +1,39 @@
-infrastructure/
-docs/
-tests/
-.env
-Dockerfile.build
-out
-node_modules
+# Node modules & build outputs (all packages)
+**/node_modules
+**/.pnpm-store
+**/.turbo
+**/dist
+**/build
+**/coverage
+**/.cache
+**/.next
+**/.vite
+
+# Root level directories not needed for Docker builds
 .git
+.github
+.vscode
+.husky
+.devcontainer
+docs
+infrastructure
+e2e
+tests
+scratch
+tmp
+**/*.jsonl
+
+# Environment & local files
+.env
+.env.*
+!.env.dist
+!.env.example
+
+# Logs, OS, & Docker outputs
 *.log
-dist
-build
-coverage
-.turbo
+*.tmp
+.DS_Store
+Thumbs.db
+out/
+Dockerfile*
+docker-compose*.yml

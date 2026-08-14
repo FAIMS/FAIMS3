@@ -1,91 +1,86 @@
 # syntax=docker/dockerfile:1
 # BASED ON https://turbo.build/repo/docs/guides/tools/docker
-# AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
 
-# Use Node 24 base
 FROM node:24-alpine AS alpine
 
-# What is the @faims3/... name of the package to build
+# Package to build (e.g., @faims3/api)
 ARG PACKAGE_NAME
 ENV PACKAGE_NAME=${PACKAGE_NAME}
 
-# What directory relative to the monorepo will the node build folder containing
-# index.js be built to. For example API -> api/build/src
+# Directory relative to monorepo containing start entrypoint (optional)
 ARG NODE_RUN_DIR
 ENV NODE_RUN_DIR=${NODE_RUN_DIR}
 
-# Setup pnpm
+# Memory limit to prevent V8 OOM during monorepo resolution
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Setup pnpm, bash, turbo and persistent store cache location
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
-RUN corepack enable
+RUN apk add --no-cache bash && \
+    npm install -g pnpm@11.6.0 turbo@2.9.14 && \
+    pnpm config set store-dir /pnpm/store
 
-# install some dependencies
-# RUN apk update && apk add --no-cache libc6-compat
-
-# create this layer to use to avoid repeatedly installing
 FROM alpine AS base
 
-# PRUNE TO GET DEPENDENCIES [pruner]
-# ===================================
-# Use turbo to prune package dependencies
+# PRUNE DEPENDENCIES [pruner]
 FROM base AS pruner
-
-# work in /app folder
 WORKDIR /app
-
-# copy everything into pruner
 COPY . .
+RUN turbo prune ${PACKAGE_NAME} --docker
 
-# prune using turbo for only faims3 and it's dependencies. This produces an
-# /app/out folder which has /full (all needed deps) or /json (package*.json
-# only)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm dlx turbo@^2.0.11 prune ${PACKAGE_NAME} --docker
-
-# INSTALL PACKAGES [builder]
-# ============================
-# add lockfiles dependencies
+# INSTALL PACKAGES & BUILD [builder]
 FROM base AS builder
-
 WORKDIR /app
 
-# Install dependencies
 COPY .gitignore .gitignore
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
+# Install dependencies using persistent cache mount
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --prefer-offline --config.minimumReleaseAge=0
 
-# Build the project 
 COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/out/json/ json
 
-# build packages using turbo
-RUN pnpm exec turbo run build --filter=${PACKAGE_NAME}
+# Build packages with Turbo cache mount
+RUN --mount=type=cache,id=turbo,target=/app/.turbo \
+    turbo run build --filter=${PACKAGE_NAME}
 
-# Package all necessary files to run app into pruner out
-COPY bundle.sh .
-RUN sh bundle.sh json . out && cp -R json/* /app/out/
+# Deploy standalone production application (pruned of devDependencies)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm --filter=${PACKAGE_NAME} deploy --legacy --prod --prefer-offline --config.minimumReleaseAge=0 /app/deploy && \
+    pkg_dir=$(pnpm --filter=${PACKAGE_NAME} exec pwd) && \
+    if [ -d "$pkg_dir/dist" ]; then cp -r "$pkg_dir/dist" /app/deploy/; fi && \
+    if [ -d "$pkg_dir/build" ]; then cp -r "$pkg_dir/build" /app/deploy/; fi && \
+    if [ -d "$pkg_dir/views" ]; then cp -r "$pkg_dir/views" /app/deploy/; fi && \
+    if [ -d "$pkg_dir/public" ]; then cp -r "$pkg_dir/public" /app/deploy/; fi && \
+    if [ -f "scripts/generate-env-config.sh" ]; then cp scripts/generate-env-config.sh /app/deploy/; chmod +x /app/deploy/generate-env-config.sh; fi
 
 # PRODUCTION RUNNER [runner]
-# ==========================
 FROM alpine AS runner
 
-# GeoPackage export uses ogr2ogr at runtime (see api/src/couchdb/export/gdal.ts)
-RUN apk add --no-cache gdal-tools
+# Install GDAL tools for GeoPackage export if needed, plus Node.js & serve for static sites
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+RUN apk add --no-cache gdal curl bash nodejs npm && \
+    npm install -g serve
 
 WORKDIR /app
 
-# Don't run production as root
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 faims
-USER faims
+# Non-root user (ID 33)
+RUN deluser www-data 2>/dev/null || true && \
+    delgroup www-data 2>/dev/null || true && \
+    addgroup -g 33 -S faims && \
+    adduser -u 33 -D -S -G faims faims && \
+    mkdir -p /app && \
+    chown -R 33:33 /app
 
-# Copy all files which are required to run the app
-COPY --from=builder /app/out .
+COPY --chown=33:33 --from=builder /app/deploy /app
 
-# Run the node app
-WORKDIR /app/${NODE_RUN_DIR}
-CMD ["node", "index.js"]
+USER 33:33
+
+EXPOSE 8000 3000 3001
+CMD ["sh", "-c", "if [ -f ./generate-env-config.sh ]; then ./generate-env-config.sh dist; ./generate-env-config.sh build; fi; if [ -n \"$NODE_RUN_DIR\" ] && [ -d \"$NODE_RUN_DIR\" ]; then cd \"$NODE_RUN_DIR\" && node index.js; elif [ -f \"build/src/index.js\" ]; then node build/src/index.js; elif [ -d \"build\" ]; then serve -s build -l ${PORT:-3000}; elif [ -d \"dist\" ]; then serve -s dist -l ${PORT:-3000}; else node .; fi"]
+

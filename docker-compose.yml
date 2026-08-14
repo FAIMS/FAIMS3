@@ -37,6 +37,8 @@ services:
     env_file:
       - ./web/.env
     build:
+      context: .
+      dockerfile: Dockerfile
       target: web
     ports:
       - '0.0.0.0:3001:3001'

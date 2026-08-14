@@ -464,7 +464,15 @@ const EnvSchema = z
  * Pass the whole `import.meta.env` — `.strip()` drops Vite built-ins
  * (`MODE`, `DEV`, …) and any other keys not declared above.
  */
-export const config = EnvSchema.parse(import.meta.env);
+const getMergedEnv = () => {
+  const runtimeEnv =
+    typeof window !== 'undefined' && (window as any).__ENV__
+      ? (window as any).__ENV__
+      : {};
+  return {...import.meta.env, ...runtimeEnv};
+};
+
+export const config = EnvSchema.parse(getMergedEnv());
 
 export type Config = typeof config;
 
