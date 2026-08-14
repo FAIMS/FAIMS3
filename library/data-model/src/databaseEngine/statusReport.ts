@@ -3,7 +3,6 @@ import {
   getChildRelationParams,
 } from '../uiSpecification/parentForms';
 import {
-  currentlyVisibleFields,
   currentlyVisibleMap,
   getSummaryFieldInformation,
 } from '../uiSpecification/utils';
@@ -41,8 +40,6 @@ export interface RecordStatusChildField {
   required: boolean;
   /** Resolvable, non-deleted children. */
   createdCount: number;
-  /** createdCount, except a required field with no children expects 1. */
-  expectedCount: number;
   children: RecordStatusReport[];
 }
 
@@ -273,11 +270,22 @@ async function walk(
   const {formId, data, context} = node;
 
   const values = formDataToValues(data);
-  const visibilityMap = currentlyVisibleMap({
+  // One condition pass serves both consumers: completion excludes statically
+  // hidden fields, summary values include them (templated, recomputed at save)
+  const fullVisibilityMap = currentlyVisibleMap({
     values,
     uiSpec: engine.uiSpec,
     viewsetId: formId,
+    includeStaticallyHidden: true,
   });
+  const isStaticallyHidden = (fieldId: string) =>
+    !!engine.uiSpec.fields[fieldId]?.['component-parameters']?.hidden;
+  const visibilityMap = Object.fromEntries(
+    Object.entries(fullVisibilityMap).map(([viewId, fieldIds]) => [
+      viewId,
+      fieldIds.filter(fieldId => !isStaticallyHidden(fieldId)),
+    ])
+  );
   const rawOwnProgress = completion({
     uiSpec: engine.uiSpec,
     data,
@@ -287,22 +295,14 @@ async function walk(
 
   const visibleFields = visibleFieldSet(visibilityMap);
 
-  // Condition-hidden summary fields drop out (stale leftover values); statically
-  // hidden ones (e.g. templated fields, recomputed at save) still report.
+  // Condition-hidden summary fields drop out (stale leftover values)
   const summaryValues: Record<string, unknown> = {};
   const summaryFieldNames = getSummaryFieldInformation(
     engine.uiSpec,
     formId
   ).fieldNames;
   if (summaryFieldNames.length > 0) {
-    const summaryVisible = new Set(
-      currentlyVisibleFields({
-        values,
-        uiSpec: engine.uiSpec,
-        viewsetId: formId,
-        includeStaticallyHidden: true,
-      })
-    );
+    const summaryVisible = visibleFieldSet(fullVisibilityMap);
     for (const fieldName of summaryFieldNames) {
       if (!summaryVisible.has(fieldName)) continue;
       // null, since JSON serialization would drop an undefined value's key
@@ -344,7 +344,6 @@ async function walk(
         relatedFormId: field.relatedFormId,
         required: field.required,
         createdCount,
-        expectedCount: createdCount > 0 ? createdCount : field.required ? 1 : 0,
         children,
       },
     ];
@@ -352,14 +351,13 @@ async function walk(
 
   const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);
 
-  // Each live child is one unit alongside the record's own form; a field
-  // expecting children but having none contributes one empty unit
+  // Each live child is one unit alongside the record's own form; a required
+  // field with no children contributes one empty unit
   const liveReports = [...outcomes.values()].filter(isChildReport);
   const units =
     liveReports.length +
-    childFields.filter(
-      field => field.expectedCount > 0 && field.createdCount === 0
-    ).length;
+    childFields.filter(field => field.required && field.createdCount === 0)
+      .length;
   const childProgressSum = liveReports.reduce(
     (sum, child) => sum + child.progress,
     0

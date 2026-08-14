@@ -101,10 +101,9 @@ describe('Record status report', () => {
         'sample-type': {data: 'soil'},
       });
       const result = await report(recordId);
-      // sub-samples is optional and empty: 0 created, 0 expected
+      // sub-samples is optional and empty
       expect(childField(result, 'sub-samples')).toMatchObject({
         createdCount: 0,
-        expectedCount: 0,
       });
       expect(result.progress).toBe(1.0);
     });
@@ -131,7 +130,6 @@ describe('Record status report', () => {
       expect(childField(result, 'features')).toMatchObject({
         required: true,
         createdCount: 0,
-        expectedCount: 1,
         relatedFormId: 'Feature',
       });
       // (0.5 own + 0 children) / (1 + 1 expected child)
@@ -168,7 +166,6 @@ describe('Record status report', () => {
       const result = await report(recordId);
       expect(childField(result, 'features')).toMatchObject({
         createdCount: 3,
-        expectedCount: 3,
       });
       // (1 own + 1 + 1 + 0) / (1 + 3)
       expect(result.progress).toBe(0.75);
@@ -197,7 +194,6 @@ describe('Record status report', () => {
       const result = await report(recordId);
       expect(childField(result, 'features')).toMatchObject({
         createdCount: 1,
-        expectedCount: 1,
       });
       expect(result.progress).toBe(1.0);
     });
@@ -366,7 +362,6 @@ describe('Record status report', () => {
       const result = await report(recordId);
       expect(childField(result, 'features')).toMatchObject({
         createdCount: 0,
-        expectedCount: 1,
       });
       // a link to a deleted child scores no better than an empty field:
       // own drops to 1/2 and the expected child unit contributes 0

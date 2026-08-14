@@ -446,16 +446,28 @@ export const currentlyVisibleMap = ({
   values,
   uiSpec,
   viewsetId,
+  includeStaticallyHidden,
 }: {
   uiSpec: CompiledUiSpecModel;
   values: ValuesObject;
   viewsetId: string;
+  /** Also include condition-visible fields that are statically hidden. */
+  includeStaticallyHidden?: boolean;
 }) => {
   // Build a set of visible fields within visible views
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
   const visibleMap: Record<string, string[]> = {};
   for (const v of views) {
-    visibleMap[v] = getFieldsMatchingCondition(uiSpec, values, [], v, {});
+    visibleMap[v] = getFieldsMatchingCondition(
+      uiSpec,
+      values,
+      [],
+      v,
+      {},
+      {
+        includeStaticallyHidden,
+      }
+    );
   }
   return visibleMap;
 };
