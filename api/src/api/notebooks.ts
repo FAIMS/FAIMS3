@@ -69,6 +69,10 @@ import {
 } from '../couchdb/export/attachmentExport';
 import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
 import {
+  refreshProjectDerivedValues,
+  tryRefreshProjectDerivedValues,
+} from '../couchdb/export/refreshDerivedValues';
+import {
   generateFullExportFilename,
   streamFullExport,
 } from '../couchdb/export/fullExport';
@@ -325,6 +329,13 @@ api.get(
       await assertGdalAvailable();
     }
 
+    // Refresh parent-derived values so the export reflects current parent
+    // data (#2245). Best effort - failure exports last-saved values.
+    await tryRefreshProjectDerivedValues({
+      projectId: req.params.id,
+      updatedBy: req.user.user_id,
+    });
+
     // Build the download token
     const jwt = await generateDownloadToken({
       user: req.user,
@@ -336,6 +347,35 @@ api.get(
     return res.json({
       url: config.conductorPublicUrl + `/api/notebooks/download/${jwt}`,
     });
+  }
+);
+
+/**
+ * POST recalculate parent-derived values for all records (#2245).
+ * Same operation as the automatic pre-export refresh; returns a summary for
+ * display. Gated as export since exporting already triggers the refresh.
+ */
+api.post(
+  '/:id/refresh-derived-values',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+    const summary = await refreshProjectDerivedValues({
+      projectId: req.params.id,
+      updatedBy: req.user.user_id,
+    });
+    return res.json(summary);
   }
 );
 
@@ -365,6 +405,13 @@ api.get(
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
+
+    // Refresh parent-derived values so the export reflects current parent
+    // data (#2245). Best effort - failure exports last-saved values.
+    await tryRefreshProjectDerivedValues({
+      projectId: req.params.id,
+      updatedBy: req.user.user_id,
+    });
 
     // get the label for this form for the filename header
     const uiSpec = await getUiSpecModel(req.params.id);
@@ -768,6 +815,12 @@ api.get(
     }
     const tokenContents = mockTokenContentsForUser(req.user);
     const {id: projectId} = req.params;
+    // Refresh parent-derived values so the export reflects current parent
+    // data (#2245). Best effort - failure exports last-saved values.
+    await tryRefreshProjectDerivedValues({
+      projectId,
+      updatedBy: req.user.user_id,
+    });
     const uiSpecification = await getCompiledUiSpecModel(req.params.id);
     compileUiSpecConditionals(uiSpecification);
     const dataDb = await getDataDb(projectId);
