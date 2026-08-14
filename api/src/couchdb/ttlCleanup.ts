@@ -278,7 +278,11 @@ async function* paginateByStartkey<T extends {_id?: string}>(
 
   while (hasMore) {
     const fetchLimit = batchSize + (skipFirst ? 1 : 0) + overFetch;
-    const {docs: fetched, lastRawId, fetchedCount} = await fetchPage({
+    const {
+      docs: fetched,
+      lastRawId,
+      fetchedCount,
+    } = await fetchPage({
       startkey,
       limit: fetchLimit,
     });
