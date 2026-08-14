@@ -3,8 +3,8 @@ import {
   getChildRelationParams,
 } from '../uiSpecification/parentForms';
 import {
+  currentlyVisibleFields,
   currentlyVisibleMap,
-  getFieldsMatchingCondition,
   getSummaryFieldInformation,
 } from '../uiSpecification/utils';
 import {
@@ -327,18 +327,12 @@ async function walk(
   ).fieldNames;
   if (summaryFieldNames.length > 0) {
     const summaryVisible = new Set(
-      Object.keys(visibilityMap).flatMap(viewId =>
-        getFieldsMatchingCondition(
-          engine.uiSpec,
-          values,
-          [],
-          viewId,
-          {},
-          {
-            includeStaticallyHidden: true,
-          }
-        )
-      )
+      currentlyVisibleFields({
+        values,
+        uiSpec: engine.uiSpec,
+        viewsetId: formId,
+        includeStaticallyHidden: true,
+      })
     );
     for (const fieldName of summaryFieldNames) {
       if (!summaryVisible.has(fieldName)) continue;

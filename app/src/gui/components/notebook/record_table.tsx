@@ -43,7 +43,12 @@ import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {buildHydrateKeys} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
-import {formatDate, prettifyFieldName} from '../../../utils/formUtilities';
+import {
+  formatDate,
+  getDisplayDataFromRecordMetadata,
+  MISSING_DATA_PLACEHOLDER,
+  prettifyFieldName,
+} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
 import CircularLoading from '../ui/circular_loading';
@@ -151,7 +156,7 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
 
 /** Default values for text display, record grid labels */
 export const RECORD_GRID_LABELS = {
-  MISSING_DATA_PLACEHOLDER: '-',
+  MISSING_DATA_PLACEHOLDER,
   HRID_COLUMN_LABEL: 'ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
 } as const;
@@ -479,60 +484,6 @@ export function buildColumnFromSystemField({
 
     default:
       return baseColumn;
-  }
-}
-
-/**
- * Converts record metadata field values to displayable strings.
- * Also used by the record view's Status tab so summary values read the same
- * here and there.
- *
- * @param field - The field name to extract from the data
- * @param data - The data object containing the field
- * @returns A string representation of the field value, or a fallback value if
- *          the data is missing or cannot be converted
- */
-export function getDisplayDataFromRecordMetadata({
-  field,
-  data,
-}: {
-  field: string;
-  data: {[key: string]: any};
-}): string {
-  const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
-  try {
-    if (!data) return fallback;
-
-    const value = data[field];
-
-    if (value === undefined || value === null) return fallback;
-
-    switch (typeof value) {
-      case 'string':
-        return value.trim() || fallback;
-      case 'number':
-        return Number.isFinite(value) ? value.toString() : fallback;
-      case 'boolean':
-        return value.toString();
-      case 'object':
-        if (Array.isArray(value)) {
-          return value.filter(item => item !== null).join(', ') || fallback;
-        }
-        if (value instanceof Date) {
-          return value.toISOString();
-        }
-        try {
-          const str = JSON.stringify(value);
-          return str === '{}' ? fallback : str;
-        } catch {
-          return fallback;
-        }
-      default:
-        return fallback;
-    }
-  } catch (error) {
-    console.warn(`Error formatting field ${field}:`, error);
-    return fallback;
   }
 }
 

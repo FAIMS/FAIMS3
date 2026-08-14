@@ -9,6 +9,8 @@ import {
   CompiledNotebookUiSpec,
   computeRecordStatusReport,
   DataEngine,
+  getFieldLabel,
+  getFormLabel,
   ProjectID,
   RecordID,
   RecordStatusReport,
@@ -27,7 +29,7 @@ import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {getViewRecordRoute} from '../../../constants/routes';
-import {getDisplayDataFromRecordMetadata} from '../notebook/record_table';
+import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
   recordId: RecordID;
@@ -36,14 +38,6 @@ interface RecordStatusProps {
   dataEngine: DataEngine;
   isDeleted: boolean;
 }
-
-/** Label for a form, falling back to its id. */
-const formLabelOf = (uiSpec: CompiledNotebookUiSpec, formId: string) =>
-  uiSpec.viewsets[formId]?.label ?? formId;
-
-/** Label for a field, falling back to its id. */
-const fieldLabelOf = (uiSpec: CompiledNotebookUiSpec, fieldId: string) =>
-  uiSpec.fields[fieldId]?.['component-parameters']?.label ?? fieldId;
 
 /**
  * One node of the tree: the record's roll-up progress, its own required-field
@@ -76,7 +70,7 @@ const StatusNode: React.FC<{
         sx={{alignItems: 'baseline', flexWrap: 'wrap'}}
       >
         <Typography variant="subtitle1">
-          {formLabelOf(uiSpec, report.formId)}
+          {getFormLabel({uiSpec, formId: report.formId})}
         </Typography>
         {isRoot ? (
           <Typography variant="body2" color="textSecondary">
@@ -112,7 +106,7 @@ const StatusNode: React.FC<{
           {summaryFieldIds
             .map(
               fieldId =>
-                `${fieldLabelOf(uiSpec, fieldId)}: ${getDisplayDataFromRecordMetadata(
+                `${getFieldLabel(uiSpec, fieldId)}: ${getDisplayDataFromRecordMetadata(
                   {field: fieldId, data: report.summaryValues}
                 )}`
             )
@@ -128,7 +122,10 @@ const StatusNode: React.FC<{
       )}
 
       {report.childFields.map(field => {
-        const childFormLabel = formLabelOf(uiSpec, field.relatedFormId);
+        const childFormLabel = getFormLabel({
+          uiSpec,
+          formId: field.relatedFormId,
+        });
         return (
           <Box
             key={field.fieldId}
@@ -145,7 +142,7 @@ const StatusNode: React.FC<{
                     : 'textSecondary'
               }
             >
-              {fieldLabelOf(uiSpec, field.fieldId)}:{' '}
+              {getFieldLabel(uiSpec, field.fieldId)}:{' '}
               {field.createdCount === 0
                 ? `no ${childFormLabel} records yet${field.required ? ' (required)' : ''}`
                 : `${field.createdCount} ${childFormLabel} record${field.createdCount === 1 ? '' : 's'}`}
