@@ -31,6 +31,7 @@ import {
   refreshDerivedValues,
 } from '../src';
 import {couchInitialiser, initDataDB} from '../src/data_storage';
+import {getAttributeValuePairs} from '../src/data_storage/internals';
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory'));
@@ -362,5 +363,28 @@ describe('refreshDerivedValues', () => {
     expect(summary.recordsExamined).toBe(1);
     expect(summary.recordsUpdated).toBe(1);
     expect(summary.recordsFailed).toBe(0);
+  });
+
+  test('does not stamp attachment keys onto untouched fields', async () => {
+    const parentId = await createParent('A7', 10);
+    const childId = await createChild(parentId, {
+      name: 'A7-L1',
+      area: 20,
+      ref: 'A7',
+    });
+    await editParent(parentId, 'A8', 12);
+    await refreshDerivedValues({engine, updatedBy: 'admin'});
+
+    // The untouched field's stored value must survive an export-mode
+    // (includeAttachments: false) fetch - i.e. the refresh must not flip its
+    // AVP into an attachment-bearing shape.
+    const child = await engine.form.getExistingFormData({recordId: childId});
+    const notesAvpId = child.context.revision.avps['Layer-Notes'];
+    const fetched = await getAttributeValuePairs({
+      dataDb: db as any,
+      avpIds: [notesAvpId],
+      includeAttachments: false,
+    });
+    expect(fetched[notesAvpId].data).toBe('dig notes');
   });
 });

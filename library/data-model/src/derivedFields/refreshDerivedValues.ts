@@ -245,12 +245,14 @@ const refreshRecord = async ({
     update[k] = {
       data: k in changed ? changed[k] : entry.data,
       annotation: entry.annotations as FormUpdateData[string]['annotation'],
-      attachments: (entry.faimsAttachments ??
-        []) as FormUpdateData[string]['attachments'],
+      attachments:
+        entry.faimsAttachments as FormUpdateData[string]['attachments'],
     };
   }
   for (const k of Object.keys(changed)) {
     if (!(k in update)) {
+      // Fresh entry for a field with no prior AVP; empty attachments here is
+      // safe since the export loader treats present-but-empty as none.
       update[k] = {data: changed[k], attachments: []};
     }
   }
