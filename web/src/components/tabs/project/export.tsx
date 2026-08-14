@@ -4,6 +4,7 @@ import {FullExportDialog} from '@/components/dialogs/full-export-dialog';
 import {Card} from '@/components/ui/card';
 import {ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {config} from '@/constants';
+import {RecalculateValuesDialog} from '@/components/dialogs/recalculate-values-dialog';
 
 /**
  * ProjectExport component renders a card with options to export a project's data.
@@ -46,6 +47,17 @@ const ProjectExport = (): JSX.Element => (
         </ListDescription>
       </ListItem>
       <PhotoExportDialog />
+    </Card>
+    <Card className="flex flex-col gap-4 flex-1 justify-between">
+      <ListItem>
+        <ListLabel>Recalculate Values</ListLabel>
+        <ListDescription>
+          Update values derived from parent records across this{' '}
+          {config.notebookName}. Runs automatically before every export; use
+          this to bring records up to date without exporting.
+        </ListDescription>
+      </ListItem>
+      <RecalculateValuesDialog />
     </Card>
   </div>
 );
