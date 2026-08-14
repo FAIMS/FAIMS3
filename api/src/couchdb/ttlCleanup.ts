@@ -198,8 +198,16 @@ export const shouldDeleteInvite = (
 };
 
 /**
- * Long-lived tokens: never delete non-expired enabled tokens. Delete
- * revoked (!enabled) or past-expiry tokens only after audit retention.
+ * Long-lived tokens: never delete enabled, non-expired tokens (including
+ * never-expiring ones). Revoked (`enabled === false`) or past-expiry tokens
+ * are kept for `auditRetentionMs` (default 30 days) so revocation/expiry
+ * remains auditable, then deleted.
+ *
+ * The audit clock (`auditAnchor`) starts at:
+ * - revoked: `updatedTimestampMs` (when it was disabled), falling back to
+ *   `createdTimestampMs`
+ * - expired but not revoked: `expiryTimestampMs`, then `updatedTimestampMs`,
+ *   then `createdTimestampMs`
  */
 export const shouldDeleteLongLivedToken = (
   doc: Pick<
@@ -234,109 +242,138 @@ export const shouldDeleteLongLivedToken = (
   return auditAnchor < nowMs - auditRetentionMs;
 };
 
+type StartkeyPage<T> = {
+  /** Docs after source-specific filtering (e.g. drop `_design/*`). */
+  docs: T[];
+  /** Last raw CouchDB row id; used to advance past filtered-only pages. */
+  lastRawId?: string;
+  /** Raw rows returned this fetch (for the page-full check). */
+  fetchedCount: number;
+};
+
+/**
+ * Inclusive-startkey pagination shared by auth views and invites `allDocs`.
+ *
+ * CouchDB `startkey` is inclusive, so after the first page we request
+ * `batchSize + 1` (+ `overFetch`) and drop the previous page's last id — but
+ * only when that id is still the first row. Concurrent deletes can remove
+ * that id from the view between pages; CouchDB then already starts at the
+ * next live key, and a blind skip would drop a live document.
+ *
+ * When the fetch callback filters rows (e.g. `_design/*`), `overFetch` and
+ * `lastRawId` keep us from stalling on filtered-only pages or dropping a
+ * local tail after capping to `batchSize`.
+ */
+async function* paginateByStartkey<T extends {_id?: string}>(
+  batchSize: number,
+  fetchPage: (opts: {
+    startkey?: string;
+    limit: number;
+  }) => Promise<StartkeyPage<T>>,
+  {overFetch = 0}: {overFetch?: number} = {}
+): AsyncGenerator<T[]> {
+  let startkey: string | undefined;
+  let skipFirst = false;
+  let hasMore = true;
+
+  while (hasMore) {
+    const fetchLimit = batchSize + (skipFirst ? 1 : 0) + overFetch;
+    const {docs: fetched, lastRawId, fetchedCount} = await fetchPage({
+      startkey,
+      limit: fetchLimit,
+    });
+    const pageFull = fetchedCount >= fetchLimit;
+
+    let docs = fetched;
+    // Only drop the startkey row when it is still present. Deletes between
+    // pages remove the previous page's last id from the view, so CouchDB's
+    // next page already starts at the next live key — blind skip would drop it.
+    if (skipFirst && docs.length > 0 && docs[0]._id === startkey) {
+      docs = docs.slice(1);
+    }
+
+    if (docs.length === 0) {
+      // Empty after filter (e.g. design-doc-only page): skip past last raw id
+      // when CouchDB may still have rows, otherwise we are done.
+      if (pageFull && lastRawId) {
+        startkey = lastRawId;
+        skipFirst = true;
+      } else {
+        hasMore = false;
+      }
+      continue;
+    }
+
+    const chunk = docs.slice(0, batchSize);
+    yield chunk;
+    const lastId = chunk[chunk.length - 1]._id;
+    // Continue when leftover filtered docs remain locally, or CouchDB may
+    // have more rows. Stopping on short pages alone permanently skips the
+    // remainder of `docs` after the first batchSize chunk.
+    if (lastId && (docs.length > batchSize || pageFull)) {
+      startkey = lastId;
+      skipFirst = true;
+    } else {
+      hasMore = false;
+    }
+  }
+}
+
+/** Page an auth-DB view by `_id` startkey. See {@link paginateByStartkey}. */
 async function* paginateAuthView<T extends {_id?: string}>(
   viewName: string,
   batchSize: number
 ): AsyncGenerator<T[]> {
   const authDB = getAuthDB();
-  let startkey: string | undefined;
-  let skipFirst = false;
-
-  for (;;) {
-    const fetchLimit = batchSize + (skipFirst ? 1 : 0);
+  yield* paginateByStartkey(batchSize, async ({startkey, limit}) => {
     const opts: PouchDB.Query.Options<any, any> = {
       include_docs: true,
-      limit: fetchLimit,
+      limit,
     };
     if (startkey !== undefined) {
       opts.startkey = startkey;
     }
-
     const result = await authDB.query<T>(viewName, opts);
-    let rows = result.rows.filter(r => !!r.doc).map(r => r.doc as T);
-
-    // Only drop the startkey row when it is still present. Deletes between
-    // pages remove the previous page's last id from the view, so CouchDB's
-    // next page already starts at the next live key — blind skip would drop it.
-    if (skipFirst && rows.length > 0 && rows[0]._id === startkey) {
-      rows = rows.slice(1);
-    }
-    if (rows.length === 0) {
-      return;
-    }
-
-    yield rows;
-
-    const lastId = rows[rows.length - 1]._id;
-    if (!lastId || rows.length < batchSize) {
-      return;
-    }
-    startkey = lastId;
-    skipFirst = true;
-  }
+    const docs = result.rows.filter(r => !!r.doc).map(r => r.doc as T);
+    return {
+      docs,
+      lastRawId: result.rows[result.rows.length - 1]?.id,
+      fetchedCount: result.rows.length,
+    };
+  });
 }
 
+/**
+ * Page the invites DB via `allDocs` (no type-specific view). Over-fetches so
+ * filtering `_design/*` still yields a full batch. See {@link paginateByStartkey}.
+ */
 async function* paginateInvitesAllDocs(
   batchSize: number
 ): AsyncGenerator<ExistingInvitesDBDocument[]> {
   const invitesDB = getInvitesDB();
-  let startkey: string | undefined;
-  let skipFirst = false;
-
-  for (;;) {
-    // Over-fetch so filtering `_design/*` and skipFirst still yields a full batch.
-    const fetchLimit = batchSize + (skipFirst ? 1 : 0) + 10;
-    const opts: Record<string, unknown> = {
-      include_docs: true,
-      limit: fetchLimit,
-    };
-    if (startkey !== undefined) {
-      opts.startkey = startkey;
-    }
-
-    const result = await invitesDB.allDocs(opts as any);
-    const rawRows = result.rows.filter(r => !!r.doc);
-    if (rawRows.length === 0) {
-      return;
-    }
-
-    let docs = rawRows
-      .filter(r => !r.id.startsWith('_design/'))
-      .map(r => r.doc as ExistingInvitesDBDocument);
-
-    if (skipFirst && docs.length > 0 && docs[0]._id === startkey) {
-      docs = docs.slice(1);
-    }
-
-    // Advance past the last raw row so we do not stall on design-doc-only pages.
-    const lastRawId = rawRows[rawRows.length - 1].id;
-
-    if (docs.length > 0) {
-      // Cap to batchSize for consistent bulk delete chunks.
-      const chunk = docs.slice(0, batchSize);
-      yield chunk;
-      const lastId = chunk[chunk.length - 1]._id;
-      if (!lastId) {
-        return;
+  yield* paginateByStartkey(
+    batchSize,
+    async ({startkey, limit}) => {
+      const opts: Record<string, unknown> = {
+        include_docs: true,
+        limit,
+      };
+      if (startkey !== undefined) {
+        opts.startkey = startkey;
       }
-      // Continue when this page still has unyielded filtered docs (over-fetch
-      // can leave a local tail even on a short CouchDB page), or when CouchDB
-      // may have more rows. Returning on short pages alone permanently skips
-      // the remainder of `docs` after the first batchSize chunk.
-      if (docs.length > batchSize || rawRows.length >= fetchLimit) {
-        startkey = lastId;
-        skipFirst = true;
-        continue;
-      }
-      return;
-    }
-
-    if (rawRows.length < fetchLimit) {
-      return;
-    }
-    startkey = lastRawId;
-    skipFirst = true;
-  }
+      const result = await invitesDB.allDocs(opts as any);
+      const rawRows = result.rows.filter(r => !!r.doc);
+      const docs = rawRows
+        .filter(r => !r.id.startsWith('_design/'))
+        .map(r => r.doc as ExistingInvitesDBDocument);
+      return {
+        docs,
+        lastRawId: rawRows[rawRows.length - 1]?.id,
+        fetchedCount: rawRows.length,
+      };
+    },
+    {overFetch: 10}
+  );
 }
 
 const bulkDelete = async (
