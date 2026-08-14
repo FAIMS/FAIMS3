@@ -715,6 +715,12 @@ export const destroyCouchDatabase = async (dbName: string): Promise<void> => {
   await nano.db.destroy(dbName);
 };
 
+/** Compacts a CouchDB database by name (reclaims revision bodies). */
+export const compactCouchDatabase = async (dbName: string): Promise<void> => {
+  const nano = await getNanoInstance();
+  await nano.db.compact(dbName);
+};
+
 /**
  * Returns the data DB for a given project using nano-couchdb
  * @param projectID The project ID to use

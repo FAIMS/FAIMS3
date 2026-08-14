@@ -17,6 +17,7 @@ FAIMS3 Developer Documentation
    markdown/GeospatialExport.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
+   markdown/TtlCleanup.md
    markdown/TestDatasetSeeding.md
    markdown/Configuration.md
    markdown/Android-Deployment.md
