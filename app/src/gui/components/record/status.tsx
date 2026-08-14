@@ -15,7 +15,14 @@ import {
   STATUS_REPORT_MAX_DEPTH,
 } from '@faims3/data-model';
 import {fieldCompletionResolver, ProgressBar} from '@faims3/forms';
-import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  Link,
+  Stack,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
@@ -37,6 +44,13 @@ const formLabelOf = (uiSpec: CompiledNotebookUiSpec, formId: string) =>
 const fieldLabelOf = (uiSpec: CompiledNotebookUiSpec, fieldId: string) =>
   uiSpec.fields[fieldId]?.['component-parameters']?.label ?? fieldId;
 
+/** Display form of a raw summary value; a blank shows a dash so the gap is visible. */
+const formatSummaryValue = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+};
+
 /**
  * One node of the tree: the record's roll-up progress, its own required-field
  * count, then each child field with its child records nested underneath.
@@ -50,6 +64,13 @@ const StatusNode: React.FC<{
   isRoot?: boolean;
 }> = ({report, uiSpec, projectId, serverId, isRoot}) => {
   const {ownProgress} = report;
+  const theme = useTheme();
+  // Green at 100% so finished branches read at a glance; amber marks the gaps
+  const barColor =
+    report.progress >= 1
+      ? theme.palette.success.main
+      : theme.palette.warning.main;
+  const summaryEntries = Object.entries(report.summaryValues);
 
   return (
     <Stack spacing={1}>
@@ -80,12 +101,26 @@ const StatusNode: React.FC<{
         )}
       </Stack>
 
-      <ProgressBar completion={report.progress} barStyle={{height: '16px'}} />
+      <ProgressBar
+        completion={report.progress}
+        barStyle={{height: '16px', backgroundColor: barColor}}
+      />
       <Typography variant="caption" color="textSecondary">
         {ownProgress.requiredCount === 0
           ? 'No required fields on this record'
           : `${ownProgress.completedCount}/${ownProgress.requiredCount} required fields on this record`}
       </Typography>
+
+      {summaryEntries.length > 0 && (
+        <Typography variant="body2">
+          {summaryEntries
+            .map(
+              ([fieldId, value]) =>
+                `${fieldLabelOf(uiSpec, fieldId)}: ${formatSummaryValue(value)}`
+            )
+            .join(' · ')}
+        </Typography>
+      )}
 
       {report.isTruncated && (
         <Typography variant="caption" color="textSecondary">
