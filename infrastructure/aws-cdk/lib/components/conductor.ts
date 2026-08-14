@@ -383,6 +383,15 @@ export class FaimsConductor extends Construct {
       desiredCount: props.config.autoScaling.desiredCapacity,
       securityGroups: [serviceSecurityGroup],
       assignPublicIp: true, // TODO Change this if using private subnets with NAT
+      // Keep full healthy capacity during deployments (ALB-backed API).
+      // With maxHealthyPercent defaulting to 200, ECS starts replacement
+      // tasks before draining old ones.
+      minHealthyPercent: 100,
+      // Fail (and roll back) quickly when new tasks cannot start healthy.
+      circuitBreaker: {
+        enable: true,
+        rollback: true,
+      },
     });
 
     // LOAD BALANCING SETUP
@@ -452,12 +461,11 @@ export class FaimsConductor extends Construct {
     // DNS ROUTES
     // ===========
 
-    // Route from conductor domain to ALB
+    // Route from conductor domain to ALB (alias targets ignore TTL)
     new r53.ARecord(this, 'conductorRoute', {
       zone: props.hz,
       recordName: props.domainName,
       comment: `Route from ${props.domainName} to Conductor ECS service through ALB`,
-      ttl: Duration.minutes(30),
       target: r53.RecordTarget.fromAlias(
         new r53Targets.LoadBalancerTarget(props.sharedBalancer.alb)
       ),
