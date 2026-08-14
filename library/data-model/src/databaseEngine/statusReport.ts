@@ -71,7 +71,8 @@ export interface RecordStatusReport {
 /**
  * A required Child field is complete only while it has a live child: a stored
  * link (even to a deleted record) satisfies the generic field check and would
- * otherwise score better than an empty field.
+ * otherwise score better than an empty field. The form's progress bar scores
+ * synchronously without this liveness check, an accepted divergence.
  */
 function adjustOwnProgressForChildren(
   own: CompletionResult,

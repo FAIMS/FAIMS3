@@ -189,7 +189,8 @@ export const RecordStatus: React.FC<RecordStatusProps> = ({
         engine: dataEngine,
         recordId,
         projectId,
-        // Score fields exactly as the record's own progress bar does
+        // Same per-field scoring as the form's progress bar; the walk also
+        // checks child liveness, so the two can differ after a child delete
         isCompleteResolver: fieldCompletionResolver,
       }),
     // A deleted root has no report to compute
