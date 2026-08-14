@@ -484,13 +484,15 @@ export function buildColumnFromSystemField({
 
 /**
  * Converts record metadata field values to displayable strings.
+ * Also used by the record view's Status tab so summary values read the same
+ * here and there.
  *
  * @param field - The field name to extract from the data
  * @param data - The data object containing the field
  * @returns A string representation of the field value, or a fallback value if
  *          the data is missing or cannot be converted
  */
-function getDisplayDataFromRecordMetadata({
+export function getDisplayDataFromRecordMetadata({
   field,
   data,
 }: {

@@ -27,6 +27,7 @@ import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {getViewRecordRoute} from '../../../constants/routes';
+import {getDisplayDataFromRecordMetadata} from '../notebook/record_table';
 
 interface RecordStatusProps {
   recordId: RecordID;
@@ -44,13 +45,6 @@ const formLabelOf = (uiSpec: CompiledNotebookUiSpec, formId: string) =>
 const fieldLabelOf = (uiSpec: CompiledNotebookUiSpec, fieldId: string) =>
   uiSpec.fields[fieldId]?.['component-parameters']?.label ?? fieldId;
 
-/** Display form of a raw summary value; a blank shows a dash so the gap is visible. */
-const formatSummaryValue = (value: unknown) => {
-  if (value === null || value === undefined || value === '') return '—';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-};
-
 /**
  * One node of the tree: the record's roll-up progress, its own required-field
  * count, then each child field with its child records nested underneath.
@@ -65,12 +59,14 @@ const StatusNode: React.FC<{
 }> = ({report, uiSpec, projectId, serverId, isRoot}) => {
   const {ownProgress} = report;
   const theme = useTheme();
-  // Green at 100% so finished branches read at a glance; amber marks the gaps
+  // Green at 100% so finished branches read at a glance; amber marks the gaps.
+  // Keyed on the same rounded figure the bar's "NN% complete" label shows, so
+  // colour and label always agree.
   const barColor =
-    report.progress >= 1
+    Math.round(report.progress * 100) === 100
       ? theme.palette.success.main
       : theme.palette.warning.main;
-  const summaryEntries = Object.entries(report.summaryValues);
+  const summaryFieldIds = Object.keys(report.summaryValues);
 
   return (
     <Stack spacing={1}>
@@ -111,12 +107,14 @@ const StatusNode: React.FC<{
           : `${ownProgress.completedCount}/${ownProgress.requiredCount} required fields on this record`}
       </Typography>
 
-      {summaryEntries.length > 0 && (
-        <Typography variant="body2">
-          {summaryEntries
+      {summaryFieldIds.length > 0 && (
+        <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
+          {summaryFieldIds
             .map(
-              ([fieldId, value]) =>
-                `${fieldLabelOf(uiSpec, fieldId)}: ${formatSummaryValue(value)}`
+              fieldId =>
+                `${fieldLabelOf(uiSpec, fieldId)}: ${getDisplayDataFromRecordMetadata(
+                  {field: fieldId, data: report.summaryValues}
+                )}`
             )
             .join(' · ')}
         </Typography>
