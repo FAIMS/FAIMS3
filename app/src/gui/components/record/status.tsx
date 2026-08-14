@@ -14,7 +14,6 @@ import {
   ProjectID,
   RecordID,
   RecordStatusReport,
-  STATUS_REPORT_MAX_DEPTH,
 } from '@faims3/data-model';
 import {fieldCompletionResolver, ProgressBar} from '@faims3/forms';
 import {
@@ -111,13 +110,6 @@ const StatusNode: React.FC<{
                 )}`
             )
             .join(' · ')}
-        </Typography>
-      )}
-
-      {report.isTruncated && (
-        <Typography variant="caption" color="textSecondary">
-          Child records more than {STATUS_REPORT_MAX_DEPTH} levels deep are
-          counted but not shown here.
         </Typography>
       )}
 

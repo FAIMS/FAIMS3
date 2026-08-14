@@ -17,7 +17,6 @@ import {
   NotebookDefinition,
   RecordDeletedError,
   RecordStatusReport,
-  STATUS_REPORT_MAX_DEPTH,
   UnknownFormTypeError,
 } from '../src';
 
@@ -702,8 +701,8 @@ describe('Record status report', () => {
       expect(childField(result, 'samples').children).toHaveLength(2);
     });
 
-    test('the depth cap truncates instead of recursing forever', async () => {
-      const ids = await buildSampleChain(STATUS_REPORT_MAX_DEPTH + 5);
+    test('a deep chain is walked to its leaf', async () => {
+      const ids = await buildSampleChain(15);
 
       let node = await report(ids[ids.length - 1]);
       let depth = 0;
@@ -711,168 +710,9 @@ describe('Record status report', () => {
         node = node.childFields[0].children[0];
         depth += 1;
       }
-      expect(depth).toBe(STATUS_REPORT_MAX_DEPTH);
-      expect(node.isTruncated).toBe(true);
-      // the capped node still counts its live links
-      expect(childField(node, 'sub-samples').createdCount).toBe(1);
-    });
-
-    /**
-     * Builds a Site chain of `levels` records over bottomId and returns the
-     * root id. The default leaves bottomId one level past the cap, where the
-     * capped node's liveness check judges it; `STATUS_REPORT_MAX_DEPTH` makes
-     * bottomId itself the capped node.
-     */
-    const buildChainOver = async (
-      bottomId: string,
-      levels = STATUS_REPORT_MAX_DEPTH + 1
-    ) => {
-      let child = bottomId;
-      let recordId = '';
-      for (let i = 0; i < levels; i++) {
-        ({recordId} = await create('Site', {
-          'site-id': {data: `S${i}`},
-          features: {data: [link(child)]},
-        }));
-        child = recordId;
-      }
-      return recordId;
-    };
-
-    /** Follows the features chain down to the node at the depth cap. */
-    const descendToCap = (root: RecordStatusReport) => {
-      let node = root;
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
-        node = childField(node, 'features').children[0];
-      }
-      return node;
-    };
-
-    const cappedNodeOver = async (bottomId: string) =>
-      descendToCap(await report(await buildChainOver(bottomId)));
-
-    test('a deleted child at the depth cap is not counted', async () => {
-      const dead = await create('Site', {'site-id': {data: 'dead'}});
-      await engine.form.deleteRecord({
-        recordId: dead.recordId,
-        baseRevisionId: dead.revisionId,
-        userId: USER,
-      });
-
-      const node = await cappedNodeOver(dead.recordId);
-      // a dead link at the cap scores exactly like one below it
-      expect(childField(node, 'features')).toMatchObject({
-        createdCount: 0,
-        expectedCount: 1,
-      });
-      expect(node.progress).toBe(0.25);
-      // no live child report was dropped, so the node is not truncated
-      expect(node.isTruncated).toBeUndefined();
-    });
-
-    test('a child with a missing AVP document is not counted at the cap', async () => {
-      const broken = await create('Site', {'site-id': {data: 'B'}});
-      const revision = await rawDb.get<{avps: Record<string, string>}>(
-        broken.revisionId
-      );
-      const avpDoc = await rawDb.get(Object.values(revision.avps)[0]);
-      await rawDb.remove(avpDoc);
-
-      const node = await cappedNodeOver(broken.recordId);
-      expect(childField(node, 'features').createdCount).toBe(0);
-    });
-
-    test('a back edge into the walk path is not counted at the cap', async () => {
-      // The capped record itself links the chain root, an ancestor on the path
-      const capped = await create('Site', {'site-id': {data: 'B'}});
-      const rootId = await buildChainOver(
-        capped.recordId,
-        STATUS_REPORT_MAX_DEPTH
-      );
-      await engine.form.updateRevision({
-        recordId: capped.recordId,
-        revisionId: capped.revisionId,
-        update: {
-          'site-id': {data: 'B'},
-          features: {data: [link(rootId)]},
-        },
-        mode: 'new',
-        updatedBy: USER,
-      });
-
-      const node = descendToCap(await report(rootId));
-      expect(node.recordId).toBe(capped.recordId);
-      expect(childField(node, 'features').createdCount).toBe(0);
-    });
-
-    test('a self link at the depth cap is not counted', async () => {
-      const capped = await create('Site', {'site-id': {data: 'B'}});
-      await engine.form.updateRevision({
-        recordId: capped.recordId,
-        revisionId: capped.revisionId,
-        update: {
-          'site-id': {data: 'B'},
-          features: {data: [link(capped.recordId)]},
-        },
-        mode: 'new',
-        updatedBy: USER,
-      });
-
-      const node = descendToCap(
-        await report(
-          await buildChainOver(capped.recordId, STATUS_REPORT_MAX_DEPTH)
-        )
-      );
-      expect(node.recordId).toBe(capped.recordId);
-      expect(childField(node, 'features').createdCount).toBe(0);
-    });
-
-    test('an unknown-form child at the depth cap is not counted', async () => {
-      const ghost = await create('Ghost');
-
-      const node = await cappedNodeOver(ghost.recordId);
-      expect(childField(node, 'features').createdCount).toBe(0);
-    });
-
-    test('a leaf at the depth cap is not marked truncated', async () => {
-      const ids = await buildSampleChain(STATUS_REPORT_MAX_DEPTH + 1);
-
-      let node = await report(ids[ids.length - 1]);
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH; i++) {
-        node = childField(node, 'sub-samples').children[0];
-      }
+      expect(depth).toBe(14);
       expect(node.recordId).toBe(ids[0]);
-      expect(node.isTruncated).toBeUndefined();
       expect(node.progress).toBe(1.0);
-    });
-
-    test('a chain sharing each child across two fields stays bounded', async () => {
-      // Each Site links the next from both features and photos, so the
-      // serialized tree doubles per level; the cap must bound it
-      let child: string | undefined;
-      let recordId = '';
-      for (let i = 0; i < STATUS_REPORT_MAX_DEPTH + 4; i++) {
-        ({recordId} = await create('Site', {
-          'site-id': {data: `S${i}`},
-          ...(child
-            ? {
-                features: {data: [link(child)]},
-                photos: {data: [link(child)]},
-              }
-            : {}),
-        }));
-        child = recordId;
-      }
-
-      const countNodes = (node: RecordStatusReport): number =>
-        1 +
-        node.childFields
-          .flatMap(field => field.children)
-          .reduce((sum, c) => sum + countNodes(c), 0);
-      const result = await report(recordId);
-      expect(countNodes(result)).toBeLessThanOrEqual(
-        2 ** (STATUS_REPORT_MAX_DEPTH + 1) - 1
-      );
     });
   });
 
