@@ -56,12 +56,17 @@ export const fieldIdsForViewset = (
   return ids;
 };
 
+/** The scan reads only these keys; a malformed unrelated param (e.g. a string
+ * `multiple` in a hand-edited notebook) must not hide the relation. */
+const childRelationScanSchema = relatedRecordSelectorComponentParamsSchema.pick(
+  {related_type: true, relation_type: true}
+);
+
 /**
  * Parses a field as a Child-relation RelatedRecordSelector, null for any other
  * field (including selectors with malformed parameters). The one definition
- * keeps parent-form inference and the record status report scanning for the
- * same fields; the designer's ParentFieldDisplayEditor keeps a looser
- * name-only copy of this scan.
+ * keeps parent-form inference, the record status report, and the designer's
+ * ParentFieldDisplayEditor scanning for the same fields.
  */
 export const getChildRelationParams = (field: FieldDefinition | undefined) => {
   if (
@@ -71,7 +76,7 @@ export const getChildRelationParams = (field: FieldDefinition | undefined) => {
   ) {
     return null;
   }
-  const params = relatedRecordSelectorComponentParamsSchema.safeParse(
+  const params = childRelationScanSchema.safeParse(
     field['component-parameters']
   );
   return params.success && params.data.relation_type === 'faims-core::Child'

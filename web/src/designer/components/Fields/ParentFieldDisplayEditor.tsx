@@ -1,4 +1,5 @@
 import {Alert, Typography} from '@mui/material';
+import {getChildRelationParams} from '@faims3/data-model';
 import {getFieldInfo} from '@faims3/forms';
 import {useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -61,14 +62,9 @@ export const ParentFieldDisplayEditor = ({fieldName, viewsetId}: PropType) => {
         views,
         viewsets
       );
-      const isParentForm = viewsetFields.some(id => {
-        const f = allFields[id];
-        return (
-          f?.['component-name'] === 'RelatedRecordSelector' &&
-          f['component-parameters']?.related_type === viewsetId &&
-          f['component-parameters']?.relation_type === 'faims-core::Child'
-        );
-      });
+      const isParentForm = viewsetFields.some(
+        id => getChildRelationParams(allFields[id])?.related_type === viewsetId
+      );
       if (!isParentForm) continue;
       for (const id of viewsetFields) ids.add(id);
     }

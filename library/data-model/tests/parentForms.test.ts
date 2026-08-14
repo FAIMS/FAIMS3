@@ -93,16 +93,35 @@ describe('getParentFormsForForm', () => {
     ).toEqual([]);
   });
 
-  it('ignores a selector whose params fail the shared schema', () => {
+  it('tolerates a malformed param the scan does not read', () => {
     const spec = makeSpec({
       Site: {
         'Site-Features': {
           ...makeChildLink('Feature'),
-          // multiple must be a boolean when present
+          // multiple should be a boolean, but the scan only reads
+          // related_type/relation_type
           'component-parameters': {
             related_type: 'Feature',
             relation_type: 'faims-core::Child',
             multiple: 'true',
+          },
+        },
+      },
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormsForForm({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual(['Site']);
+  });
+
+  it('ignores a selector whose relation keys fail the shared schema', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Features': {
+          ...makeChildLink('Feature'),
+          'component-parameters': {
+            related_type: 'Feature',
+            relation_type: 'faims-core::ChildOf',
           },
         },
       },
