@@ -1,355 +1,58 @@
+/*
+ * Copyright 2026 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: templatedFields.ts
+ * Description:
+ *   Form bindings for templated string evaluation. The evaluation lives in
+ *   @faims3/data-model so it can run in the app and server-side alike; this
+ *   module binds it to the field registry and the tanstack form.
+ */
+
 import {
-  getFieldToIdsMap,
-  HydratedRecordDocument,
+  recomputeDerivedFields as recomputeDerivedFieldsCore,
+  RecordContext,
+  TemplateFunctionLookup,
   UiSpecModel,
   ValuesObject,
 } from '@faims3/data-model';
-import Mustache from 'mustache';
 import {getFieldInfo} from '../../fieldRegistry/registry';
 import {formDataExtractor} from '../../utils';
 import {FaimsForm} from '../types';
-import {logWarn} from '../../logging';
 
-/*
-Patch mustache to not escape values.
-
-This addresses JIRA BSS-714 where Observation/Point of Interest was being
-rendered as "Observation&#x2F;Point of Interest"
-
-This is generally a risky approach but safe enough in our use case provided the
-output is never:
-
-- Inserted into the DOM using .innerHTML
-- Used as an HTML attribute value
-- Evaluated as JavaScript
-- Used in a <script> tag
-- Used in a CSS value
-- Used in a URL
-*/
-Mustache.escape = function (text: string) {
-  return text;
-};
-
-export interface RecordContext {
-  // timestamp ms created
-  createdTime?: number;
-  // First Last name of creator - if any
-  createdBy?: string;
-  // Raw field values of the parent record, if any (see resolveParentValues)
-  parentValues?: ValuesObject;
-}
+// Template functions resolve through the field registry. Registry entries
+// reference functions defined in data-model's builtin map, keeping client and
+// server evaluation identical.
+const registryTemplateFunctionLookup: TemplateFunctionLookup = ({
+  namespace,
+  name,
+}) => getFieldInfo({namespace, name}).fieldInfo.templateFunction;
 
 /**
- * Converts a record into record context used in the form
- * @param record
- * @returns The form context which can be injected
+ * Recomputes templated string values for the given form; see the core in
+ * @faims3/data-model. Bound to the field registry lookup.
  */
-export function getRecordContextFromRecord({
-  record,
-}: {
-  record: HydratedRecordDocument;
-}): RecordContext {
-  let time = Date.now();
-  try {
-    time = new Date(record.created).getTime();
-  } catch (e) {
-    logWarn(
-      'Failed to parse time from record. Falling back to current time. Err: ',
-      e
-    );
-  }
-  return {
-    // The author
-    createdBy: record.createdBy,
-    // The created time (epoch ms timestamp)
-    createdTime: time,
-  };
-}
-
-// TEMPLATE RENDERING
-// ------------------
-
-/**
- * Formats a timestamp into a date-time string in the format "DD/MM/YY H:MMam/pm"
- *
- * @param timestamp - Unix timestamp in milliseconds (e.g., from Date.now())
- * @returns Formatted date-time string or empty string if input is invalid
- *
- * @throws Never - Returns empty string for all error cases
- *
- * Handles the following edge cases:
- * - Invalid inputs (null, undefined, NaN, Infinity)
- * - String timestamps (converts to numbers)
- * - Invalid date objects
- * - Out of range values for date components
- */
-export function formatTimestamp(
-  timestamp: string | number | null | undefined,
-  timezone: string | undefined = undefined
-): string {
-  if (timestamp === null || timestamp === undefined) {
-    return '';
-  }
-
-  const timestampNum =
-    typeof timestamp === 'string' ? Number(timestamp) : timestamp;
-
-  if (isNaN(timestampNum) || !isFinite(timestampNum)) {
-    return '';
-  }
-
-  try {
-    const date = new Date(timestampNum);
-
-    // If timezone is specified, convert to that timezone
-    if (timezone) {
-      const options: Intl.DateTimeFormatOptions = {
-        timeZone: timezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-      };
-
-      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(
-        date
-      );
-      const dateParts = parts.reduce(
-        (acc, part) => {
-          acc[part.type] = part.value;
-          return acc;
-        },
-        {} as {[key: string]: string}
-      );
-
-      const day = dateParts.day.padStart(2, '0');
-      const month = dateParts.month.padStart(2, '0');
-      const year = dateParts.year.slice(-2);
-
-      let hours = parseInt(dateParts.hour);
-      if (dateParts.dayPeriod === 'PM' && hours !== 12) hours += 12;
-      if (dateParts.dayPeriod === 'AM' && hours === 12) hours = 0;
-
-      hours = hours % 12 || 12;
-      const minutes = dateParts.minute.padStart(2, '0');
-      const ampm = dateParts.dayPeriod.toLowerCase();
-
-      return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
-    }
-
-    // Default behavior using local timezone
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = String(date.getFullYear()).slice(-2);
-
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-
-    hours = hours % 12;
-    hours = hours || 12;
-
-    return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
-  } catch (error) {
-    return '';
-  }
-}
-
-const TEMPLATED_STRING_FIELD_NAME = 'TemplatedStringField';
-
-// What system variables can we inject
-const CREATOR_NAME_ID = '_CREATOR_NAME';
-const CREATED_TIME_ID = '_CREATED_TIME';
-
-/**
- * Converts the RecordContext into an object mapping from key -> value for use
- * in template replacement
- * @param context
- * @returns The context values to inject
- */
-function contextToTemplate(context: RecordContext): ValuesObject {
-  const vals: ValuesObject = {};
-  vals[CREATOR_NAME_ID] = context.createdBy ?? 'Unknown User';
-  vals[CREATED_TIME_ID] = context.createdTime
-    ? formatTimestamp(context.createdTime)
-    : 'Unknown Time';
-  return vals;
-}
-
-/**
- * If the field is registered with a templateFunction, run it to produce the
- * string Mustache sees; otherwise return the raw value (existing behaviour).
- */
-function valueForTemplateExpansion({
-  fieldName,
-  value,
-  uiSpecification,
-}: {
-  fieldName: string;
-  value: unknown;
-  uiSpecification: UiSpecModel;
-}): unknown {
-  const fieldDetails = uiSpecification.fields[fieldName];
-  if (!fieldDetails) {
-    return value;
-  }
-  const namespace = fieldDetails['component-namespace'];
-  const componentName = fieldDetails['component-name'];
-  if (typeof namespace !== 'string' || typeof componentName !== 'string') {
-    return value;
-  }
-  const {fieldInfo} = getFieldInfo({namespace, name: componentName});
-  const fn = fieldInfo.templateFunction;
-  if (!fn) {
-    return value;
-  }
-  try {
-    const out = fn(value);
-    return typeof out === 'string' ? out : '';
-  } catch (e) {
-    logWarn(
-      `templateFunction failed for field "${fieldName}" (${namespace}::${componentName}):`,
-      e
-    );
-    return '';
-  }
-}
-
-/**
- * Renders a mustache template into a string
- * @param template The template string
- * @param values The form values to use in replacmeent
- * @param context The record context
- * @param excludedFields Fields to exclude from replacement
- */
-function renderTemplate({
-  template,
-  values,
-  context,
-  excludedFields,
-  uiSpecification,
-}: {
-  template: string;
-  values: ValuesObject;
-  context: RecordContext;
-  excludedFields: string[];
-  uiSpecification: UiSpecModel;
-}): string {
-  // generate context vars from record context
-  const contextVars = contextToTemplate(context);
-  const filteredValues: ValuesObject = {};
-  for (const [k, v] of Object.entries({...values, ...contextVars})) {
-    if (!excludedFields.includes(k)) {
-      // Filter out any excluded fields
-      const isInjectedContextKey =
-        k === CREATOR_NAME_ID || k === CREATED_TIME_ID;
-      filteredValues[k] = isInjectedContextKey
-        ? v
-        : valueForTemplateExpansion({
-            fieldName: k,
-            value: v,
-            uiSpecification,
-          });
-    }
-  }
-  // Parent record values available as {{_PARENT.Field-ID}}
-  if (context.parentValues) {
-    const parent: ValuesObject = {};
-    for (const [k, v] of Object.entries(context.parentValues)) {
-      parent[k] = valueForTemplateExpansion({
-        fieldName: k,
-        value: v,
-        uiSpecification,
-      });
-    }
-    filteredValues['_PARENT'] = parent;
-  }
-
-  // Render
-  return Mustache.render(template, filteredValues);
-}
-
-/**
- * Given the existing values, ui spec and context, updates the values.
- * Recomputes derived template field properties.
- *
- * Filters out any template fields
- *
- * @param values
- * @param formId
- * @param uiSpecification
- * @param context
- */
-export function recomputeDerivedFields({
-  values,
-  uiSpecification,
-  formId,
-  context,
-}: {
+export function recomputeDerivedFields(args: {
   values: ValuesObject;
   uiSpecification: UiSpecModel;
   formId: string;
   context: RecordContext;
 }): {changes: boolean; updates: Record<string, string>} {
-  // compute fields to be updated
-  const fieldsToBeUpdated: {template: string; fieldName: string}[] = [];
-  const filterFields: string[] = [];
-  const fieldMap = getFieldToIdsMap(uiSpecification);
-
-  for (const [fieldName, location] of Object.entries(fieldMap)) {
-    if (location.viewSetId !== formId) {
-      continue;
-    }
-
-    // Get info about it
-    const fieldDetails = uiSpecification.fields[fieldName];
-    // We are looking for these fields "component-name": "TemplatedStringField"
-    if (fieldDetails['component-name'] === TEMPLATED_STRING_FIELD_NAME) {
-      // We should always filter out templated strings from template expansion
-      filterFields.push(fieldName);
-
-      // check we have a template prop
-      const template = fieldDetails['component-parameters']?.template;
-      if (!template) {
-        logWarn('TemplatedStringField missing template prop - cannot render.');
-        continue;
-      }
-
-      if (typeof template !== 'string') {
-        logWarn('TemplatedStringField template prop is not a string.');
-        continue;
-      }
-      fieldsToBeUpdated.push({fieldName, template});
-    }
-  }
-
-  // notify if something changes
-  let changeDetected = false;
-
-  // track updates to make
-  const updates: Record<string, string> = {};
-
-  // For each field, recompute given broader context and then update
-  for (const {fieldName, template} of fieldsToBeUpdated) {
-    // Generate the updated value
-    const rendered = renderTemplate({
-      context,
-      template,
-      values,
-      excludedFields: filterFields,
-      uiSpecification,
-    });
-    // Update the value if it's changed
-    const previousFieldValue = values[fieldName];
-    if (previousFieldValue !== rendered) {
-      updates[fieldName] = rendered;
-      changeDetected = true;
-    }
-  }
-
-  return {changes: changeDetected, updates};
+  return recomputeDerivedFieldsCore({
+    ...args,
+    getTemplateFunction: registryTemplateFunctionLookup,
+  });
 }
 
 /**
@@ -376,8 +79,6 @@ export function onChangeTemplatedFields({
   context: RecordContext;
   runListeners: boolean;
 }): boolean {
-  // Iterate through fields, and recompute any templated fields, and then update
-  // those values (if diff)
   const data = formDataExtractor({fullData: form.state.values});
   const {changes, updates} = recomputeDerivedFields({
     context,

@@ -1,6 +1,6 @@
 import type {DataEngine, UiSpecModel} from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
-import {formatFieldValue, resolveParentFieldValue} from './resolveParentField';
+import {formatFieldValue, resolveParentFieldValue} from '@faims3/data-model';
 
 const meta = {
   annotation: {include: false, label: 'annotation'},
