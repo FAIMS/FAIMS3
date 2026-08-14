@@ -13,10 +13,12 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: resolveParentValues.ts
+ * Filename: logging.ts
  * Description:
- *   Re-export; the implementation lives in @faims3/data-model
- *   (derivedFields) so the API's refresh pass (#2245) shares it.
+ *   Warn logging for the derived-fields module. Swap the implementation here
+ *   if data-model adopts a shared logging utility.
  */
 
-export {resolveParentValues} from '@faims3/data-model';
+export const logWarn = (...args: unknown[]): void => {
+  console.warn(...args);
+};

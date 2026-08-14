@@ -34,6 +34,8 @@ export * from './datamodel';
 export * from './data_storage';
 export * from './permission';
 export * from './uiSpecification';
+export * from './derivedFields';
+export * from './addressTypes';
 export * from './databaseEngine';
 export {configHelpers} from './config';
 export type {ConfigHelpers} from './config';
