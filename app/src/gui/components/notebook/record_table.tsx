@@ -540,7 +540,9 @@ export function buildVerticalStackColumn({
     sortable: false,
     renderCell: (params: GridCellParams) => {
       try {
-        const kvp: {[fieldName: string]: string | ReactNode} = {};
+        // A list, not a label-keyed object: labels are not unique (two summary
+        // fields can share one, or shadow a system row label)
+        const rows: Array<{label: string; value: string | ReactNode}> = [];
 
         // Add the kind property if needed (put this first)
         if (includeKind) {
@@ -549,8 +551,10 @@ export function buildVerticalStackColumn({
             record: params.row,
             uiSpecification,
           });
-          kvp[COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type'] =
-            val ?? MISSING_DATA_PLACEHOLDER;
+          rows.push({
+            label: COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type',
+            value: val ?? MISSING_DATA_PLACEHOLDER,
+          });
         }
 
         // Use the summary fields if present
@@ -560,24 +564,30 @@ export function buildVerticalStackColumn({
               field: summaryField,
               data: params.row.summaryValues ?? {},
             });
-            const key = getFieldLabel(uiSpecification, summaryField);
-            kvp[key] = val ?? MISSING_DATA_PLACEHOLDER;
+            rows.push({
+              label: getFieldLabel(uiSpecification, summaryField),
+              value: val ?? MISSING_DATA_PLACEHOLDER,
+            });
           }
         } else {
           // Add the HRID if available
-          kvp[RECORD_GRID_LABELS.HRID_COLUMN_LABEL] =
-            params.row.hrid ?? MISSING_DATA_PLACEHOLDER;
+          rows.push({
+            label: RECORD_GRID_LABELS.HRID_COLUMN_LABEL,
+            value: params.row.hrid ?? MISSING_DATA_PLACEHOLDER,
+          });
         }
 
         // Add mandatory columns
         for (const mandatoryField of MANDATORY_COLUMNS) {
-          const key = COLUMN_TO_LABEL_MAP.get(mandatoryField) ?? 'Details';
-          kvp[key] =
-            getDataForColumn({
-              record: params.row,
-              column: mandatoryField,
-              uiSpecification,
-            }) ?? MISSING_DATA_PLACEHOLDER;
+          rows.push({
+            label: COLUMN_TO_LABEL_MAP.get(mandatoryField) ?? 'Details',
+            value:
+              getDataForColumn({
+                record: params.row,
+                column: mandatoryField,
+                uiSpecification,
+              }) ?? MISSING_DATA_PLACEHOLDER,
+          });
         }
 
         // Add the conflict field if there is a conflict
@@ -588,9 +598,10 @@ export function buildVerticalStackColumn({
             uiSpecification,
           });
           if (val === 'Yes') {
-            kvp[COLUMN_TO_LABEL_MAP.get('CONFLICTS') ?? 'Conflicts'] = (
-              <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
-            );
+            rows.push({
+              label: COLUMN_TO_LABEL_MAP.get('CONFLICTS') ?? 'Conflicts',
+              value: <WarningAmberIcon color="warning" sx={{marginRight: 1}} />,
+            });
           }
         }
 
@@ -600,14 +611,17 @@ export function buildVerticalStackColumn({
           record: params.row,
           uiSpecification,
         });
-        kvp['Sync Status'] =
-          sync === 'synced' ? (
-            <CloudDoneIcon color="success" />
-          ) : (
-            <PendingIcon color="warning" />
-          );
+        rows.push({
+          label: 'Sync Status',
+          value:
+            sync === 'synced' ? (
+              <CloudDoneIcon color="success" />
+            ) : (
+              <PendingIcon color="warning" />
+            ),
+        });
 
-        return <KeyValueTable data={kvp} />;
+        return <KeyValueTable rows={rows} />;
       } catch (e) {
         console.warn(
           'Failed to render the vertical stack summary field, error: ',
@@ -763,20 +777,20 @@ function buildColumnDefinitions({
 }
 
 /**
- * A simple display for key-value pair data.
+ * A simple display for ordered label/value rows.
  * Used in vertical summary stack layout for small screens.
  */
 export const KeyValueTable = ({
-  data,
+  rows,
 }: {
-  data: {[key: string]: string | ReactNode};
+  rows: Array<{label: string; value: string | ReactNode}>;
 }) => {
   return (
     <TableContainer>
       <Table size="small">
         <TableBody>
-          {Object.entries(data).map(([key, val]) => (
-            <TableRow key={key}>
+          {rows.map((row, index) => (
+            <TableRow key={index}>
               <TableCell
                 sx={{
                   width: '30%',
@@ -785,7 +799,7 @@ export const KeyValueTable = ({
                   textAlign: 'right',
                 }}
               >
-                {key}
+                {row.label}
               </TableCell>
               <TableCell
                 sx={{
@@ -796,7 +810,7 @@ export const KeyValueTable = ({
                   textAlign: 'left',
                 }}
               >
-                {val}
+                {row.value}
               </TableCell>
             </TableRow>
           ))}
