@@ -1,4 +1,3 @@
-import {visibleFieldSet} from '../databaseEngine/completion';
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
@@ -11,6 +10,7 @@ import {
 import {
   CompiledUiSpecModel,
   CompiledUiSpecSections,
+  FieldDefinition,
   HridFieldMap,
   NotebookUiSpec,
   UiSpecModel,
@@ -423,6 +423,17 @@ export const currentlyVisibleFields = ({
   return visibleFields;
 };
 
+// Map from section -> list of visible fields - section included IFF it's
+// visible at all
+export type FieldVisibilityMap = Record<string, string[]>;
+
+/** Distinct visible fields: a field listed in several visible sections is still one field. */
+export function visibleFieldSet(
+  visibilityMap: FieldVisibilityMap
+): Set<string> {
+  return new Set(Object.values(visibilityMap).flat());
+}
+
 /**
  * For the given ui spec, viewset and current form values, considers conditional
  * rendering, visibility etc to provide a set of visible views and fields
@@ -439,10 +450,10 @@ export const currentlyVisibleMap = ({
   viewsetId: string;
   /** Also include condition-visible fields that are statically hidden. */
   includeStaticallyHidden?: boolean;
-}) => {
+}): FieldVisibilityMap => {
   // Build a set of visible fields within visible views
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
-  const visibleMap: Record<string, string[]> = {};
+  const visibleMap: FieldVisibilityMap = {};
   for (const v of views) {
     visibleMap[v] = getFieldsMatchingCondition(uiSpec, values, v, {
       includeStaticallyHidden,
@@ -473,6 +484,11 @@ export const requiredFields = (
   );
 };
 
+/** Hidden explicitly in element props - e.g. templated field */
+export const isFieldStaticallyHidden = (
+  field: FieldDefinition | undefined
+): boolean => !!field?.['component-parameters']?.hidden;
+
 // Return a list of field or view names that should be shown, taking account
 // of branching logic.
 
@@ -495,9 +511,8 @@ export function getFieldsMatchingCondition(
       : true;
     return (
       visibleByCondition &&
-      // Hidden explicitly in element props - e.g. templated field
       (options?.includeStaticallyHidden ||
-        !fieldDetails['component-parameters']?.hidden)
+        !isFieldStaticallyHidden(fieldDetails))
     );
   });
 }

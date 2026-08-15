@@ -2,14 +2,18 @@ import {
   fieldIdsForViewset,
   getChildRelationParams,
 } from '../uiSpecification/parentForms';
-import {currentlyVisibleMap, getSummaryValues} from '../uiSpecification/utils';
+import {
+  currentlyVisibleMap,
+  getSummaryValues,
+  isFieldStaticallyHidden,
+  visibleFieldSet,
+} from '../uiSpecification/utils';
 import {
   completion,
   completionFromIncomplete,
   CompletionResult,
   formDataToValues,
   IsCompleteResolver,
-  visibleFieldSet,
 } from './completion';
 import {DataEngine} from './engine';
 import {
@@ -274,12 +278,12 @@ async function walk(
     viewsetId: formId,
     includeStaticallyHidden: true,
   });
-  const isStaticallyHidden = (fieldId: string) =>
-    !!engine.uiSpec.fields[fieldId]?.['component-parameters']?.hidden;
   const visibilityMap = Object.fromEntries(
     Object.entries(fullVisibilityMap).map(([viewId, fieldIds]) => [
       viewId,
-      fieldIds.filter(fieldId => !isStaticallyHidden(fieldId)),
+      fieldIds.filter(
+        fieldId => !isFieldStaticallyHidden(engine.uiSpec.fields[fieldId])
+      ),
     ])
   );
   const rawOwnProgress = completion({

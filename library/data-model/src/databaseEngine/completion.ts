@@ -1,16 +1,6 @@
 import {UiSpecModel} from '../uiSpecification/types';
+import {FieldVisibilityMap, visibleFieldSet} from '../uiSpecification/utils';
 import {FormDataEntry, FormUpdateData} from './types';
-
-// Map from section -> list of visible fields - section included IFF it's
-// visible at all
-export type FieldVisibilityMap = Record<string, string[]>;
-
-/** Distinct visible fields: a field listed in several visible sections is still one field. */
-export function visibleFieldSet(
-  visibilityMap: FieldVisibilityMap
-): Set<string> {
-  return new Set(Object.values(visibilityMap).flat());
-}
 
 export type CompletionResult = {
   progress: number;
