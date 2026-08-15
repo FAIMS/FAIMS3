@@ -106,6 +106,7 @@ export function FormProgressBar({
   completion,
   style,
   barStyle,
+  colorByCompletion,
 }: FormProgressBarProps) {
   const rounded = Math.round(completion.progress * 100);
   return (
@@ -114,6 +115,7 @@ export function FormProgressBar({
       subtitle={`Completed ${rounded}% (${completion.completedCount}/${completion.requiredCount} required fields)`}
       style={style}
       barStyle={barStyle}
+      colorByCompletion={colorByCompletion}
     />
   );
 }
