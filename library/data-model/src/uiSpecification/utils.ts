@@ -1,3 +1,4 @@
+import {visibleFieldSet} from '../databaseEngine/completion';
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
@@ -747,6 +748,43 @@ export function getSummaryFieldInformation(
     enabled,
     fieldNames: enabled ? summaryFields : [],
   };
+}
+
+/**
+ * Values of a form's summary_fields for display, keyed by field id in
+ * summary_fields order. Condition-hidden fields drop out (their leftover
+ * values are stale); statically hidden ones stay, since templating recomputes
+ * them at save. A missing value maps to null so JSON serialization keeps the
+ * key. The one definition of summary-value selection, shared by the record
+ * list and the record Status tab.
+ */
+export function getSummaryValues({
+  uiSpec,
+  formId,
+  values,
+}: {
+  uiSpec: CompiledUiSpecModel;
+  formId: string;
+  values: ValuesObject;
+}): Record<string, unknown> {
+  const {fieldNames} = getSummaryFieldInformation(uiSpec, formId);
+  if (fieldNames.length === 0) {
+    return {};
+  }
+  const visible = visibleFieldSet(
+    currentlyVisibleMap({
+      values,
+      uiSpec,
+      viewsetId: formId,
+      includeStaticallyHidden: true,
+    })
+  );
+  const summaryValues: Record<string, unknown> = {};
+  for (const fieldName of fieldNames) {
+    if (!visible.has(fieldName)) continue;
+    summaryValues[fieldName] = values[fieldName] ?? null;
+  }
+  return summaryValues;
 }
 
 export function getFieldsForView(uiSpecification: UiSpecModel, viewId: string) {

@@ -2,10 +2,7 @@ import {
   fieldIdsForViewset,
   getChildRelationParams,
 } from '../uiSpecification/parentForms';
-import {
-  currentlyVisibleMap,
-  getSummaryFieldInformation,
-} from '../uiSpecification/utils';
+import {currentlyVisibleMap, getSummaryValues} from '../uiSpecification/utils';
 import {
   completion,
   completionFromIncomplete,
@@ -269,15 +266,6 @@ async function walk(
   const {formId, data, context} = node;
 
   const values = formDataToValues(data);
-  // Two condition passes, differing only in the flag: completion excludes
-  // statically hidden fields, summary values include them (templated,
-  // recomputed at save)
-  const fullVisibilityMap = currentlyVisibleMap({
-    values,
-    uiSpec: engine.uiSpec,
-    viewsetId: formId,
-    includeStaticallyHidden: true,
-  });
   const visibilityMap = currentlyVisibleMap({
     values,
     uiSpec: engine.uiSpec,
@@ -292,20 +280,11 @@ async function walk(
 
   const visibleFields = visibleFieldSet(visibilityMap);
 
-  // Condition-hidden summary fields drop out (stale leftover values)
-  const summaryValues: Record<string, unknown> = {};
-  const summaryFieldNames = getSummaryFieldInformation(
-    engine.uiSpec,
-    formId
-  ).fieldNames;
-  if (summaryFieldNames.length > 0) {
-    const summaryVisible = visibleFieldSet(fullVisibilityMap);
-    for (const fieldName of summaryFieldNames) {
-      if (!summaryVisible.has(fieldName)) continue;
-      // null, since JSON serialization would drop an undefined value's key
-      summaryValues[fieldName] = data?.[fieldName]?.data ?? null;
-    }
-  }
+  const summaryValues = getSummaryValues({
+    uiSpec: engine.uiSpec,
+    formId,
+    values,
+  });
 
   const collected = collectChildFields(ctx, formId, visibleFields, data);
   const distinctChildIds = new Set(collected.flatMap(field => field.childIds));

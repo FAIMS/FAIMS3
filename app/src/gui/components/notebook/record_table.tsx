@@ -1,7 +1,9 @@
 import {
   DataDbType,
   fetchAndHydrateRecord,
+  getFieldLabel,
   getSummaryFieldInformation,
+  getSummaryValues,
   getVisibleTypes,
   MinimalRecordMetadata,
   PostRecordStatusResponse,
@@ -47,7 +49,6 @@ import {
   formatDate,
   getDisplayDataFromRecordMetadata,
   MISSING_DATA_PLACEHOLDER,
-  prettifyFieldName,
 } from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
@@ -371,15 +372,14 @@ export function buildColumnsFromSummaryFields({
       ({
         field: field,
         sortable: false,
-        headerName: prettifyFieldName(field),
+        headerName: getFieldLabel(uiSpecification, field),
         type: 'string',
         filterable: false,
         flex: 1,
         valueGetter: (value: any, row: any) => {
-          const data = row?.data ?? {};
           return getDisplayDataFromRecordMetadata({
             field,
-            data: data,
+            data: row?.summaryValues ?? {},
           });
         },
       }) as GridColumnType
@@ -558,9 +558,9 @@ export function buildVerticalStackColumn({
           for (const summaryField of summaryFields) {
             const val = getDisplayDataFromRecordMetadata({
               field: summaryField,
-              data: params.row.data ?? {},
+              data: params.row.summaryValues ?? {},
             });
-            const key = prettifyFieldName(summaryField);
+            const key = getFieldLabel(uiSpecification, summaryField);
             kvp[key] = val ?? MISSING_DATA_PLACEHOLDER;
           }
         } else {
@@ -1129,11 +1129,26 @@ export function RecordsTable(props: RecordsTableProps) {
 
   // Merge hydrated data into sorted rows
   const displayRows = useMemo(() => {
-    return allSorted.map(row => ({
-      ...(hydratedMap.get(row.recordId) ?? row),
-      synced: recordStatus ? recordStatus.status[row.recordId] : undefined,
-    }));
-  }, [allSorted, hydratedMap]);
+    return allSorted.map(row => {
+      const hydrated = hydratedMap.get(row.recordId);
+      const synced = recordStatus
+        ? recordStatus.status[row.recordId]
+        : undefined;
+      if (!hydrated || !uiSpec) {
+        return {...row, synced};
+      }
+      return {
+        ...hydrated,
+        // Same summary selection and gating as the record Status tab
+        summaryValues: getSummaryValues({
+          uiSpec,
+          formId: hydrated.type,
+          values: hydrated.data ?? {},
+        }),
+        synced,
+      };
+    });
+  }, [allSorted, hydratedMap, uiSpec, recordStatus]);
 
   // Handle sort change - reset to first page when sort changes
   const handleSortChange = useCallback((newSort: SortOption) => {
