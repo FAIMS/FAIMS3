@@ -393,8 +393,7 @@ export const currentlyVisibleViews = ({
   values: ValuesObject;
   viewsetId: string;
 }) => {
-  // Build a set of visible fields within visible views
-  return getViewsMatchingCondition(uiSpec, values, [], viewsetId, {});
+  return getViewsMatchingCondition(uiSpec, values, viewsetId);
 };
 
 /**
@@ -415,13 +414,7 @@ export const currentlyVisibleFields = ({
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
   const visibleFields: string[] = [];
   for (const v of views) {
-    const fieldsMatching = getFieldsMatchingCondition(
-      uiSpec,
-      values,
-      [],
-      v,
-      {}
-    );
+    const fieldsMatching = getFieldsMatchingCondition(uiSpec, values, v);
     // Add all fields to visible fields set
     for (const f of fieldsMatching) {
       visibleFields.push(f);
@@ -451,16 +444,9 @@ export const currentlyVisibleMap = ({
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
   const visibleMap: Record<string, string[]> = {};
   for (const v of views) {
-    visibleMap[v] = getFieldsMatchingCondition(
-      uiSpec,
-      values,
-      [],
-      v,
-      {},
-      {
-        includeStaticallyHidden,
-      }
-    );
+    visibleMap[v] = getFieldsMatchingCondition(uiSpec, values, v, {
+      includeStaticallyHidden,
+    });
   }
   return visibleMap;
 };
@@ -493,21 +479,10 @@ export const requiredFields = (
 export function getFieldsMatchingCondition(
   uiSpec: CompiledUiSpecModel,
   values: {[field_name: string]: any},
-  fieldNames: string[],
   viewName: string,
-  touched: {[field_name: string]: any},
   options?: {includeStaticallyHidden?: boolean}
 ) {
-  let modified = Object.keys(touched);
-  if (values.updateField) modified.push(values.updateField);
-  modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
-  // With no modified controller fields the caller's cached fieldNames are
-  // still current, so filter that smaller set; the same rules apply either way
-  const candidates =
-    modified.length > 0 || fieldNames.length === 0
-      ? getFieldsForView(uiSpec, viewName)
-      : fieldNames;
-  return candidates.filter(field => {
+  return getFieldsForView(uiSpec, viewName).filter(field => {
     const fieldDetails = uiSpec.fields[field];
     // A stale id in the view's field list (field since deleted) is not visible
     if (!fieldDetails) {
@@ -530,20 +505,9 @@ export function getFieldsMatchingCondition(
 export function getViewsMatchingCondition(
   uiSpec: CompiledUiSpecModel,
   values: {[field_name: string]: any},
-  views: string[],
-  viewsetName: string,
-  touched: {[field_name: string]: any} = {}
+  viewsetName: string
 ) {
-  let modified = Object.keys(touched);
-  if (values.updateField) modified.push(values.updateField);
-  modified = modified.filter((f: string) => is_controller_field(uiSpec, f));
-  // With no modified controller fields the caller's cached views are still
-  // current, so filter that smaller set; the same rules apply either way
-  const candidates =
-    modified.length > 0 || views.length === 0
-      ? getViewsForViewSet(uiSpec, viewsetName)
-      : views;
-  return candidates.filter(view => {
+  return getViewsForViewSet(uiSpec, viewsetName).filter(view => {
     // A stale id in the viewset's view list (section since deleted) is not visible
     const viewDetails = uiSpec.views[view];
     if (!viewDetails) {
@@ -553,19 +517,6 @@ export function getViewsMatchingCondition(
     if (fn !== undefined) return fn(values);
     else return true;
   });
-}
-
-// check whether this field is a 'controller' field for branching
-// logic, return true if it is, false otherwise
-//
-function is_controller_field(uiSpec: CompiledUiSpecModel, field: string) {
-  // check that this is a field, touched can contain non-field stuff
-  if (uiSpec.fields[field] === undefined) {
-    return false;
-  }
-
-  // a controller field is one referenced by a conditional expression
-  return Boolean(uiSpec.conditional_sources?.has(field));
 }
 
 // compile all conditional expressions in this UiSpec and store the
