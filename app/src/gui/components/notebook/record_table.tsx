@@ -1,4 +1,5 @@
 import {
+  CompiledNotebookUiSpec,
   DataDbType,
   fetchAndHydrateRecord,
   getFieldLabel,
@@ -972,6 +973,11 @@ const useSortedAndPaginatedRows = (
   }, [rows, sortOption, paginationModel]);
 };
 
+/** Hydrated record plus its precomputed summary values for display. */
+type HydratedDisplayRecord = RecordMetadata & {
+  summaryValues: Record<string, unknown>;
+};
+
 /**
  * Manages hydration of visible rows.
  * Creates React Query queries for each visible row and returns a map of
@@ -987,11 +993,28 @@ const useSortedAndPaginatedRows = (
 const useRowHydration = (
   pageRows: MinimalRecordMetadata[],
   projectId: string,
-  uiSpec: UiSpecModel | null | undefined,
+  uiSpec: CompiledNotebookUiSpec | null | undefined,
   dataDb: DataDbType,
   activeUser: ReturnType<typeof selectActiveUser>
 ) => {
   const token = activeUser?.parsedToken;
+
+  // In select so react-query caches the visibility pass against the fetched
+  // data; same summary selection and gating as the record Status tab
+  const withSummaryValues = useCallback(
+    (rec: RecordMetadata | undefined): HydratedDisplayRecord | undefined =>
+      rec && uiSpec
+        ? {
+            ...rec,
+            summaryValues: getSummaryValues({
+              uiSpec,
+              formId: rec.type,
+              values: rec.data ?? {},
+            }),
+          }
+        : undefined,
+    [uiSpec]
+  );
 
   const hydratedQueries = useQueries({
     queries:
@@ -1017,6 +1040,7 @@ const useRowHydration = (
                 revisionId: undefined,
               });
             },
+            select: withSummaryValues,
             networkMode: 'always' as const,
             staleTime: 5 * 60 * 1000, // Cache for 5 minutes
             // Force a refresh on mount - this will help to ensure that the live page
@@ -1029,7 +1053,7 @@ const useRowHydration = (
 
   // Build a map of hydrated records by ID
   const hydratedMap = useMemo(() => {
-    const map = new Map<string, RecordMetadata>();
+    const map = new Map<string, HydratedDisplayRecord>();
     pageRows.forEach((row, index) => {
       const query = hydratedQueries[index];
       // Queries may be empty while pageRows is not (e.g. token briefly null)
@@ -1148,21 +1172,9 @@ export function RecordsTable(props: RecordsTableProps) {
       const synced = recordStatus
         ? recordStatus.status[row.recordId]
         : undefined;
-      if (!hydrated || !uiSpec) {
-        return {...row, synced};
-      }
-      return {
-        ...hydrated,
-        // Same summary selection and gating as the record Status tab
-        summaryValues: getSummaryValues({
-          uiSpec,
-          formId: hydrated.type,
-          values: hydrated.data ?? {},
-        }),
-        synced,
-      };
+      return hydrated ? {...hydrated, synced} : {...row, synced};
     });
-  }, [allSorted, hydratedMap, uiSpec, recordStatus]);
+  }, [allSorted, hydratedMap, recordStatus]);
 
   // Handle sort change - reset to first page when sort changes
   const handleSortChange = useCallback((newSort: SortOption) => {
