@@ -16,7 +16,10 @@ import {
   UiSpecForm,
   ValuesObject,
 } from './types';
-import {compileComputedExpressionForForm} from './parentForms';
+import {
+  compileComputedExpressionForForm,
+  fieldIdsForViewset,
+} from './parentForms';
 
 /**
  * Retrieves a viewset from the UI specification by its ID
@@ -84,7 +87,10 @@ export const getFieldNamesForView = ({
 };
 
 /**
- * Gets all field names across all views in a viewset
+ * Gets all field names across all views in a viewset. Delegates to
+ * {@link fieldIdsForViewset}, whose tolerant behaviour is canonical: an
+ * unknown viewset yields [] and stale view ids are skipped, so a notebook
+ * mid-migration lists its surviving fields rather than throwing.
  * @param {Object} params - The parameters object
  * @param {UiSpecModel} params.uiSpecification - The UI specification containing viewsets
  * @param {string} params.viewSetId - The ID of the viewset to get fields from
@@ -96,17 +102,7 @@ export const getFieldNamesForViewset = ({
 }: {
   uiSpecification: UiSpecModel;
   viewSetId: string;
-}): string[] => {
-  const viewset = getViewsetByViewsetId({uiSpecification, viewSetId});
-  let fieldNames: string[] = [];
-  for (const viewId of viewset.views) {
-    fieldNames = [
-      ...fieldNames,
-      ...getFieldNamesForView({uiSpecification, viewId}),
-    ];
-  }
-  return fieldNames;
-};
+}): string[] => fieldIdsForViewset(uiSpecification, viewSetId);
 
 /**
  * Gets the HRID field name for a viewset, either from explicit configuration or
