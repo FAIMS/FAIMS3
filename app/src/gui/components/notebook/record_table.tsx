@@ -156,7 +156,6 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
 
 /** Default values for text display, record grid labels */
 export const RECORD_GRID_LABELS = {
-  MISSING_DATA_PLACEHOLDER,
   HRID_COLUMN_LABEL: 'ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
 } as const;
@@ -283,7 +282,7 @@ function getDataForColumn({
   column: ColumnType;
   uiSpecification: UiSpecModel;
 }): string | undefined {
-  const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+  const fallback = MISSING_DATA_PLACEHOLDER;
   if (!record) return fallback;
 
   try {
@@ -551,7 +550,7 @@ export function buildVerticalStackColumn({
             uiSpecification,
           });
           kvp[COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type'] =
-            val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+            val ?? MISSING_DATA_PLACEHOLDER;
         }
 
         // Use the summary fields if present
@@ -562,12 +561,12 @@ export function buildVerticalStackColumn({
               data: params.row.data ?? {},
             });
             const key = prettifyFieldName(summaryField);
-            kvp[key] = val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+            kvp[key] = val ?? MISSING_DATA_PLACEHOLDER;
           }
         } else {
           // Add the HRID if available
           kvp[RECORD_GRID_LABELS.HRID_COLUMN_LABEL] =
-            params.row.hrid ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+            params.row.hrid ?? MISSING_DATA_PLACEHOLDER;
         }
 
         // Add mandatory columns
@@ -578,7 +577,7 @@ export function buildVerticalStackColumn({
               record: params.row,
               column: mandatoryField,
               uiSpecification,
-            }) ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+            }) ?? MISSING_DATA_PLACEHOLDER;
         }
 
         // Add the conflict field if there is a conflict
