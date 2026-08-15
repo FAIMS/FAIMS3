@@ -39,7 +39,6 @@ export interface RecordStatusChildField {
   /** Masked to false while the field is hidden, like required-field completion. */
   required: boolean;
   /** Resolvable, non-deleted children. */
-  createdCount: number;
   children: RecordStatusReport[];
 }
 
@@ -74,7 +73,7 @@ function adjustOwnProgressForChildren(
     if (!field.required) {
       continue;
     }
-    if (field.createdCount > 0) {
+    if (field.children.length > 0) {
       incomplete.delete(field.fieldId);
     } else {
       incomplete.add(field.fieldId);
@@ -86,7 +85,7 @@ function adjustOwnProgressForChildren(
 interface WalkContext {
   engine: DataEngine;
   projectId: string;
-  isCompleteResolver?: IsCompleteResolver;
+  isCompleteResolver: IsCompleteResolver;
   /** Records on the current walk path; cuts the cycles corrupt data can hold. */
   path: Set<string>;
   /** Child-type fields resolved once per walk; the ui-spec never changes mid-walk. */
@@ -104,7 +103,8 @@ interface WalkContext {
  * @param engine - Data engine for the project's data database
  * @param recordId - Root record to report on
  * @param projectId - Links tagged with another project id are skipped
- * @param isCompleteResolver - Optional per-field-type completeness override
+ * @param isCompleteResolver - Per-field-type completeness override; pass
+ *   `() => undefined` to score every field with the default rule
  * @returns The report tree rooted at recordId
  * @throws RecordDeletedError if the root record is deleted
  * @throws UnknownFormTypeError if the root's form is not in the ui-spec
@@ -117,10 +117,9 @@ export async function computeRecordStatusReport({
 }: {
   engine: DataEngine;
   recordId: string;
-} & Omit<
-  WalkContext,
-  'engine' | 'path' | 'childFieldSpecs'
->): Promise<RecordStatusReport> {
+  projectId: string;
+  isCompleteResolver: IsCompleteResolver;
+}): Promise<RecordStatusReport> {
   const ctx: WalkContext = {
     engine,
     projectId,
@@ -270,22 +269,20 @@ async function walk(
   const {formId, data, context} = node;
 
   const values = formDataToValues(data);
-  // One condition pass serves both consumers: completion excludes statically
-  // hidden fields, summary values include them (templated, recomputed at save)
+  // Two condition passes, differing only in the flag: completion excludes
+  // statically hidden fields, summary values include them (templated,
+  // recomputed at save)
   const fullVisibilityMap = currentlyVisibleMap({
     values,
     uiSpec: engine.uiSpec,
     viewsetId: formId,
     includeStaticallyHidden: true,
   });
-  const isStaticallyHidden = (fieldId: string) =>
-    !!engine.uiSpec.fields[fieldId]?.['component-parameters']?.hidden;
-  const visibilityMap = Object.fromEntries(
-    Object.entries(fullVisibilityMap).map(([viewId, fieldIds]) => [
-      viewId,
-      fieldIds.filter(fieldId => !isStaticallyHidden(fieldId)),
-    ])
-  );
+  const visibilityMap = currentlyVisibleMap({
+    values,
+    uiSpec: engine.uiSpec,
+    viewsetId: formId,
+  });
   const rawOwnProgress = completion({
     uiSpec: engine.uiSpec,
     data,
@@ -333,9 +330,8 @@ async function walk(
     const children = field.childIds
       .map(id => outcomes.get(id))
       .filter(isChildReport);
-    const createdCount = children.length;
     // A hidden field reports only live children; with none it drops out
-    if (!field.isVisible && createdCount === 0) {
+    if (!field.isVisible && children.length === 0) {
       return [];
     }
     return [
@@ -343,7 +339,6 @@ async function walk(
         fieldId: field.fieldId,
         relatedFormId: field.relatedFormId,
         required: field.required,
-        createdCount,
         children,
       },
     ];
@@ -356,7 +351,7 @@ async function walk(
   const liveReports = [...outcomes.values()].filter(isChildReport);
   const units =
     liveReports.length +
-    childFields.filter(field => field.required && field.createdCount === 0)
+    childFields.filter(field => field.required && field.children.length === 0)
       .length;
   const childProgressSum = liveReports.reduce(
     (sum, child) => sum + child.progress,

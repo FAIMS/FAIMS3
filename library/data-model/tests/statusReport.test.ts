@@ -78,6 +78,8 @@ describe('Record status report', () => {
       engine,
       recordId,
       projectId: PROJECT,
+      // Default completion rule for every field type
+      isCompleteResolver: () => undefined,
     });
 
   /** The child-field entry for fieldId; fails the test if absent. */
@@ -103,7 +105,7 @@ describe('Record status report', () => {
       const result = await report(recordId);
       // sub-samples is optional and empty
       expect(childField(result, 'sub-samples')).toMatchObject({
-        createdCount: 0,
+        children: [],
       });
       expect(result.progress).toBe(1.0);
     });
@@ -129,7 +131,7 @@ describe('Record status report', () => {
       expect(result.ownProgress.progress).toBe(0.5);
       expect(childField(result, 'features')).toMatchObject({
         required: true,
-        createdCount: 0,
+        children: [],
         relatedFormId: 'Feature',
       });
       // (0.5 own + 0 children) / (1 + 1 expected child)
@@ -164,9 +166,7 @@ describe('Record status report', () => {
         features: {data: features.map(l => link(l.recordId))},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features')).toMatchObject({
-        createdCount: 3,
-      });
+      expect(childField(result, 'features').children).toHaveLength(3);
       // (1 own + 1 + 1 + 0) / (1 + 3)
       expect(result.progress).toBe(0.75);
     });
@@ -192,9 +192,7 @@ describe('Record status report', () => {
         features: {data: [link(feature.recordId), link(feature.recordId)]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features')).toMatchObject({
-        createdCount: 1,
-      });
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -205,7 +203,7 @@ describe('Record status report', () => {
         features: {data: link(feature.recordId)},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -216,7 +214,7 @@ describe('Record status report', () => {
         features: {data: [{record_id: feature.recordId}]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -231,7 +229,7 @@ describe('Record status report', () => {
         },
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -244,7 +242,7 @@ describe('Record status report', () => {
         },
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -258,7 +256,7 @@ describe('Record status report', () => {
         },
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -339,8 +337,8 @@ describe('Record status report', () => {
         photos: {data: [link(shared.recordId)]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
-      expect(childField(result, 'photos').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
+      expect(childField(result, 'photos').children).toHaveLength(1);
       // one distinct incomplete child: (1 own + 0 child) / (1 + 1)
       expect(result.progress).toBe(0.5);
     });
@@ -361,7 +359,7 @@ describe('Record status report', () => {
 
       const result = await report(recordId);
       expect(childField(result, 'features')).toMatchObject({
-        createdCount: 0,
+        children: [],
       });
       // a link to a deleted child scores no better than an empty field:
       // own drops to 1/2 and the expected child unit contributes 0
@@ -388,7 +386,7 @@ describe('Record status report', () => {
         features: {data: [link('no-such-record')]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(0);
+      expect(childField(result, 'features').children).toHaveLength(0);
       // dangling links leave the required features field incomplete
       expect(result.progress).toBe(0.25);
     });
@@ -412,7 +410,7 @@ describe('Record status report', () => {
         features: {data: [link(live.recordId), link(ghost.recordId)]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -423,7 +421,7 @@ describe('Record status report', () => {
         features: {data: [{...link(feature.recordId), project_id: ''}]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -439,7 +437,7 @@ describe('Record status report', () => {
         },
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -457,7 +455,7 @@ describe('Record status report', () => {
       await rawDb.remove(avpDoc);
 
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       // (1 own + 1 live feature) / (1 + 1)
       expect(result.progress).toBe(1.0);
     });
@@ -487,7 +485,7 @@ describe('Record status report', () => {
         features: {data: [link(live.recordId), link(corrupt.recordId)]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -523,7 +521,7 @@ describe('Record status report', () => {
         },
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       expect(result.progress).toBe(1.0);
     });
 
@@ -539,7 +537,7 @@ describe('Record status report', () => {
         features: {data: [link(live.recordId), link(corrupt.recordId)]},
       });
       const result = await report(recordId);
-      expect(childField(result, 'features').createdCount).toBe(1);
+      expect(childField(result, 'features').children).toHaveLength(1);
       // (1 own + 1 live feature) / (1 + 1)
       expect(result.progress).toBe(1.0);
     });
@@ -564,7 +562,7 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       const field = childField(result, 'survey-samples');
-      expect(field).toMatchObject({createdCount: 1, required: false});
+      expect(field).toMatchObject({required: false});
       expect(field.children.map(child => child.recordId)).toEqual([sampleId]);
       // The live child is a roll-up unit: (own 1 + child 0) / 2
       expect(result.progress).toBe(0.5);
@@ -666,7 +664,7 @@ describe('Record status report', () => {
       const bNode = childField(result, 'sub-samples').children[0];
       expect(bNode.recordId).toBe(b.recordId);
       // the back edge to a is cut and adds no unit
-      expect(childField(bNode, 'sub-samples').createdCount).toBe(0);
+      expect(childField(bNode, 'sub-samples').children).toHaveLength(0);
       expect(bNode.progress).toBe(1.0);
       expect(result.progress).toBe(1.0);
     });

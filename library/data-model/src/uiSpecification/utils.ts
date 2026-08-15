@@ -409,13 +409,10 @@ export const currentlyVisibleFields = ({
   values,
   uiSpec,
   viewsetId,
-  includeStaticallyHidden,
 }: {
   uiSpec: CompiledUiSpecModel;
   values: ValuesObject;
   viewsetId: string;
-  /** Also include condition-visible fields that are statically hidden. */
-  includeStaticallyHidden?: boolean;
 }) => {
   // Build a set of visible fields within visible views
   const views = currentlyVisibleViews({values, uiSpec, viewsetId});
@@ -426,8 +423,7 @@ export const currentlyVisibleFields = ({
       values,
       [],
       v,
-      {},
-      {includeStaticallyHidden}
+      {}
     );
     // Add all fields to visible fields set
     for (const f of fieldsMatching) {

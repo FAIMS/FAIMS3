@@ -4,6 +4,11 @@ import {CompletionResult} from '../formModule/types';
 interface BaseProgressBarProps {
   style?: React.CSSProperties;
   barStyle?: React.CSSProperties;
+  /**
+   * Colour the bar by completion: green at 100%, amber below. Keyed on the
+   * same rounded figure as the "NN%" subtitle, so colour and label agree.
+   */
+  colorByCompletion?: boolean;
 }
 
 interface ProgressBarProps extends BaseProgressBarProps {
@@ -22,9 +27,15 @@ function ProgressBarBase({
   subtitle,
   style,
   barStyle,
+  colorByCompletion,
 }: BaseProgressBarProps & {percentage: number; subtitle: string}) {
   const theme = useTheme();
   const rounded = Math.round(percentage * 100);
+  const barColor = colorByCompletion
+    ? rounded === 100
+      ? theme.palette.success.main
+      : theme.palette.warning.main
+    : theme.palette.primary.main || 'red';
 
   return (
     <div
@@ -45,7 +56,7 @@ function ProgressBarBase({
           style={{
             width: `${rounded}%`,
             height: '32px',
-            backgroundColor: theme.palette.primary.main || 'red',
+            backgroundColor: barColor,
             borderRadius: '10px',
             ...barStyle,
           }}
@@ -63,8 +74,14 @@ function ProgressBarBase({
  * @param {number} props.completion - A value between 0 and 1 representing the completion percentage.
  * @param {React.CSSProperties} [props.style] - Additional styles for the container.
  * @param {React.CSSProperties} [props.barStyle] - Additional styles for the progress bar.
+ * @param {boolean} [props.colorByCompletion] - Colour the bar green at 100%, amber below.
  */
-export function ProgressBar({completion, style, barStyle}: ProgressBarProps) {
+export function ProgressBar({
+  completion,
+  style,
+  barStyle,
+  colorByCompletion,
+}: ProgressBarProps) {
   const rounded = Math.round(completion * 100);
   return (
     <ProgressBarBase
@@ -72,6 +89,7 @@ export function ProgressBar({completion, style, barStyle}: ProgressBarProps) {
       subtitle={`${rounded}% complete`}
       style={style}
       barStyle={barStyle}
+      colorByCompletion={colorByCompletion}
     />
   );
 }

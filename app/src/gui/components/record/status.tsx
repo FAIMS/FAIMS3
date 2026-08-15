@@ -16,14 +16,7 @@ import {
   RecordStatusReport,
 } from '@faims3/data-model';
 import {fieldCompletionResolver, ProgressBar} from '@faims3/forms';
-import {
-  Box,
-  CircularProgress,
-  Link,
-  Stack,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
@@ -51,14 +44,6 @@ const StatusNode: React.FC<{
   isRoot?: boolean;
 }> = ({report, uiSpec, projectId, serverId, isRoot}) => {
   const {ownProgress} = report;
-  const theme = useTheme();
-  // Green at 100% so finished branches read at a glance; amber marks the gaps.
-  // Keyed on the same rounded figure the bar's "NN% complete" label shows, so
-  // colour and label always agree.
-  const barColor =
-    Math.round(report.progress * 100) === 100
-      ? theme.palette.success.main
-      : theme.palette.warning.main;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
   return (
@@ -90,9 +75,11 @@ const StatusNode: React.FC<{
         )}
       </Stack>
 
+      {/* Green at 100% so finished branches read at a glance; amber marks the gaps */}
       <ProgressBar
         completion={report.progress}
-        barStyle={{height: '16px', backgroundColor: barColor}}
+        colorByCompletion
+        barStyle={{height: '16px'}}
       />
       <Typography variant="caption" color="textSecondary">
         {ownProgress.requiredCount === 0
@@ -127,7 +114,7 @@ const StatusNode: React.FC<{
               variant="body2"
               // A required field with no children is what holds the roll-up back
               color={
-                field.createdCount > 0
+                field.children.length > 0
                   ? 'textPrimary'
                   : field.required
                     ? 'warning'
@@ -135,9 +122,9 @@ const StatusNode: React.FC<{
               }
             >
               {getFieldLabel(uiSpec, field.fieldId)}:{' '}
-              {field.createdCount === 0
+              {field.children.length === 0
                 ? `no ${childFormLabel} records yet${field.required ? ' (required)' : ''}`
-                : `${field.createdCount} ${childFormLabel} record${field.createdCount === 1 ? '' : 's'}`}
+                : `${field.children.length} ${childFormLabel} record${field.children.length === 1 ? '' : 's'}`}
             </Typography>
             <Stack spacing={2} sx={{pt: 1}}>
               {field.children.map(child => (
