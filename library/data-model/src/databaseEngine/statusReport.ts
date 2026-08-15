@@ -256,7 +256,9 @@ async function walk(
 
   const node = await engine.form.getExistingFormData({
     recordId,
-    config: {conflictBehaviour: 'pickFirst'},
+    // pickLast matches the RelatedRecord display paths, so on a conflicted
+    // record both tabs resolve the same head
+    config: {conflictBehaviour: 'pickLast'},
   });
   if (node.context.revision.deleted) {
     return null;
