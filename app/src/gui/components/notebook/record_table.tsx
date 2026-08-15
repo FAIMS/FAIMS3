@@ -1118,27 +1118,16 @@ export function RecordsTable(props: RecordsTableProps) {
     pageSize: pageSize(maxRows) ?? 25,
   });
 
-  // Filter rows by visible types and add sync status
+  // Filter rows by visible types
   const {rows: rawFilteredRows, hasConflict} = useFilteredRows(
     rows,
     visibleTypes
   );
 
-  // Add sync status information if available; memoized so the sorted rows
-  // and per-row summary values downstream recompute only when inputs change
-  const filteredRows = useMemo(() => {
-    if (!recordStatus) {
-      return rawFilteredRows;
-    }
-    return rawFilteredRows.map(row => ({
-      ...row,
-      synced: recordStatus.status[row.recordId],
-    }));
-  }, [rawFilteredRows, recordStatus]);
-
-  // Sort and paginate
+  // Sort and paginate; sync status attaches in displayRows below, so a
+  // status refresh never re-sorts
   const {allSorted, pageRows} = useSortedAndPaginatedRows(
-    filteredRows,
+    rawFilteredRows,
     sortOption,
     paginationModel
   );
