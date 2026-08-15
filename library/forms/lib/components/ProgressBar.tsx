@@ -4,15 +4,15 @@ import {CompletionResult} from '../formModule/types';
 interface BaseProgressBarProps {
   style?: React.CSSProperties;
   barStyle?: React.CSSProperties;
+}
+
+interface ProgressBarProps extends BaseProgressBarProps {
+  completion: number;
   /**
    * Colour the bar by completion: green at 100%, amber below. Keyed on the
    * same rounded figure as the "NN%" subtitle, so colour and label agree.
    */
   colorByCompletion?: boolean;
-}
-
-interface ProgressBarProps extends BaseProgressBarProps {
-  completion: number;
 }
 
 interface FormProgressBarProps extends BaseProgressBarProps {
@@ -28,7 +28,11 @@ function ProgressBarBase({
   style,
   barStyle,
   colorByCompletion,
-}: BaseProgressBarProps & {percentage: number; subtitle: string}) {
+}: BaseProgressBarProps & {
+  percentage: number;
+  subtitle: string;
+  colorByCompletion?: boolean;
+}) {
   const theme = useTheme();
   const rounded = Math.round(percentage * 100);
   const barColor = colorByCompletion
@@ -106,7 +110,6 @@ export function FormProgressBar({
   completion,
   style,
   barStyle,
-  colorByCompletion,
 }: FormProgressBarProps) {
   const rounded = Math.round(completion.progress * 100);
   return (
@@ -115,7 +118,6 @@ export function FormProgressBar({
       subtitle={`Completed ${rounded}% (${completion.completedCount}/${completion.requiredCount} required fields)`}
       style={style}
       barStyle={barStyle}
-      colorByCompletion={colorByCompletion}
     />
   );
 }
