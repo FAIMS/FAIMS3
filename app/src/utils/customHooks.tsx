@@ -328,9 +328,8 @@ export function buildHydrateKeys({
 }
 
 /**
- * Query key for a record's Status tab report. Under the hydration prefix so
- * removed-project cleanup ({@link cancelProjectQueries}) and the notebook
- * refresh invalidation cover it alongside the other record hydration queries.
+ * Query key for a record's Status tab report. Starts with the hydration
+ * prefix so cancelProjectQueries and invalidateProjectHydration match it.
  */
 export function buildStatusReportKey({
   projectId,
