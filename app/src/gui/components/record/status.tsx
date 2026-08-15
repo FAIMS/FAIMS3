@@ -21,6 +21,7 @@ import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {getViewRecordRoute} from '../../../constants/routes';
+import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
@@ -162,7 +163,7 @@ export const RecordStatus: React.FC<RecordStatusProps> = ({
     isError,
     error,
   } = useQuery({
-    queryKey: ['recordStatusReport', projectId, recordId],
+    queryKey: buildStatusReportKey({projectId, recordId}),
     queryFn: () =>
       computeRecordStatusReport({
         engine: dataEngine,

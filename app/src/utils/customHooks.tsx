@@ -328,6 +328,21 @@ export function buildHydrateKeys({
 }
 
 /**
+ * Query key for a record's Status tab report. Under the hydration prefix so
+ * removed-project cleanup ({@link cancelProjectQueries}) and the notebook
+ * refresh invalidation cover it alongside the other record hydration queries.
+ */
+export function buildStatusReportKey({
+  projectId,
+  recordId,
+}: {
+  projectId: string;
+  recordId: string;
+}) {
+  return [HYDRATION_KEY_PREFIX, projectId, recordId, 'statusReport'];
+}
+
+/**
  * Forces refetch/cache invalidation of a target record hydration. This is the
  * data fetching component of the record listing which involves many AVP
  * fetches.
