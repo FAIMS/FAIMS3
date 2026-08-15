@@ -713,23 +713,29 @@ export function getSummaryValues({
   uiSpec,
   formId,
   values,
+  visibleFields,
 }: {
   uiSpec: CompiledUiSpecModel;
   formId: string;
   values: ValuesObject;
+  /** Precomputed includeStaticallyHidden visible set, for a caller that
+   * already ran that pass (the status walk); computed here when absent. */
+  visibleFields?: ReadonlySet<string>;
 }): Record<string, unknown> {
   const {fieldNames} = getSummaryFieldInformation(uiSpec, formId);
   if (fieldNames.length === 0) {
     return {};
   }
-  const visible = visibleFieldSet(
-    currentlyVisibleMap({
-      values,
-      uiSpec,
-      viewsetId: formId,
-      includeStaticallyHidden: true,
-    })
-  );
+  const visible =
+    visibleFields ??
+    visibleFieldSet(
+      currentlyVisibleMap({
+        values,
+        uiSpec,
+        viewsetId: formId,
+        includeStaticallyHidden: true,
+      })
+    );
   const summaryValues: Record<string, unknown> = {};
   for (const fieldName of fieldNames) {
     if (!visible.has(fieldName)) continue;

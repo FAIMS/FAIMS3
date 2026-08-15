@@ -266,11 +266,22 @@ async function walk(
   const {formId, data, context} = node;
 
   const values = formDataToValues(data);
-  const visibilityMap = currentlyVisibleMap({
+  // One condition pass serves both consumers: completion excludes statically
+  // hidden fields, summary values include them (templated, recomputed at save)
+  const fullVisibilityMap = currentlyVisibleMap({
     values,
     uiSpec: engine.uiSpec,
     viewsetId: formId,
+    includeStaticallyHidden: true,
   });
+  const isStaticallyHidden = (fieldId: string) =>
+    !!engine.uiSpec.fields[fieldId]?.['component-parameters']?.hidden;
+  const visibilityMap = Object.fromEntries(
+    Object.entries(fullVisibilityMap).map(([viewId, fieldIds]) => [
+      viewId,
+      fieldIds.filter(fieldId => !isStaticallyHidden(fieldId)),
+    ])
+  );
   const rawOwnProgress = completion({
     uiSpec: engine.uiSpec,
     data,
@@ -284,6 +295,7 @@ async function walk(
     uiSpec: engine.uiSpec,
     formId,
     values,
+    visibleFields: visibleFieldSet(fullVisibilityMap),
   });
 
   const collected = collectChildFields(ctx, formId, visibleFields, data);
