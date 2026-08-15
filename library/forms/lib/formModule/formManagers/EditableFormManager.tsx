@@ -810,7 +810,7 @@ export const EditableFormManager: React.FC<
         guardInFlightRef.current = false;
       }
     },
-    [flushSave, dataEngine.uiSpec, props.formId, form, visibleMap]
+    [flushSave, dataEngine.uiSpec, form, visibleMap]
   );
 
   // Lock nav buttons while an attachment saves; finish buttons go via guardFinish.
