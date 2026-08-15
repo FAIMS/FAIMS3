@@ -1086,17 +1086,17 @@ export function RecordsTable(props: RecordsTableProps) {
     visibleTypes
   );
 
-  // Add sync status information if available
-  let filteredRows = rawFilteredRows;
-  if (recordStatus) {
-    filteredRows = rawFilteredRows.map(row => {
-      const synced = recordStatus.status[row.recordId];
-      return {
-        ...row,
-        synced,
-      };
-    });
-  }
+  // Add sync status information if available; memoized so the sorted rows
+  // and per-row summary values downstream recompute only when inputs change
+  const filteredRows = useMemo(() => {
+    if (!recordStatus) {
+      return rawFilteredRows;
+    }
+    return rawFilteredRows.map(row => ({
+      ...row,
+      synced: recordStatus.status[row.recordId],
+    }));
+  }, [rawFilteredRows, recordStatus]);
 
   // Sort and paginate
   const {allSorted, pageRows} = useSortedAndPaginatedRows(
