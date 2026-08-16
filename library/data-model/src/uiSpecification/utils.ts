@@ -1,7 +1,7 @@
 import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
-import {compileExpression, getDependantFields} from './conditionals';
+import {compileExpression} from './conditionals';
 import {
   compileComputedExpression,
   ExprType,
@@ -9,7 +9,6 @@ import {
 } from './expressions';
 import {
   CompiledUiSpecModel,
-  CompiledUiSpecSections,
   FieldDefinition,
   HridFieldMap,
   NotebookUiSpec,
@@ -542,10 +541,6 @@ export function getViewsMatchingCondition(
 
 // compile all conditional expressions in this UiSpec and store the
 // compiled versions as a property `conditionFn` on the field or view
-// also collect a Set of field names that are used in condition expressions
-// so that we can react to changes in these fields and update the visible
-// fields/views
-//
 export function compileUiSpecConditionals(
   uiSpecification: UiSpecModel | NotebookUiSpec
 ) {
@@ -554,10 +549,8 @@ export function compileUiSpecConditionals(
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
 
-  // Compiled functions and conditional_sources are attached in place: callers
-  // may read the passed-in spec directly rather than the (typed) return value.
-  const depFields: string[] = [];
-
+  // Compiled functions are attached in place: callers may read the passed-in
+  // spec directly rather than the (typed) return value.
   const expressionFieldTypes = new Map<string, ExprType>();
   for (const field in uiSpecification.fields) {
     const t =
@@ -574,7 +567,6 @@ export function compileUiSpecConditionals(
   for (const field in uiSpecification.fields) {
     const fieldDef = uiSpecification.fields[field];
     fieldDef.conditionFn = compileExpression(fieldDef.condition);
-    depFields.push(...getDependantFields(fieldDef.condition));
 
     // Compile computed field expressions at notebook load, attaching the
     // evaluator and its references in place (mirrors conditionFn above).
@@ -607,17 +599,10 @@ export function compileUiSpecConditionals(
     }
   }
 
-  const views: CompiledUiSpecSections = {};
   for (const view in uiSpecification.views) {
     const viewDef = uiSpecification.views[view];
     viewDef.conditionFn = compileExpression(viewDef.condition);
-    views[view] = viewDef;
-    depFields.push(...getDependantFields(viewDef.condition));
   }
-
-  // dependant fields are the conditional sources reacted to on value change
-  const conditional_sources = new Set(depFields);
-  uiSpecification.conditional_sources = conditional_sources;
 }
 
 export function getFieldsForViewSet(

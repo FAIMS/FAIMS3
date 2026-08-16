@@ -267,15 +267,12 @@ export const UiSpecModelSchema = z
 export type UiSpecModel = z.infer<typeof UiSpecModelSchema>;
 
 /**
- * A {@link UiSpecModel} with views compiled (conditions turned into functions)
- * and a record of which fields feed into conditional expressions.
+ * A {@link UiSpecModel} with views compiled (conditions turned into functions).
  */
 export const CompiledUiSpecModelSchema = UiSpecModelSchema.extend({
   fields: CompiledUiSpecFieldsSchema,
   // TODO Rename to sections
   views: CompiledUiSpecSectionsSchema,
-  /** Field names that are referenced as conditional sources. */
-  conditional_sources: z.set(z.string()),
 });
 export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 
@@ -337,8 +334,8 @@ export type NotebookUiSpec = z.infer<typeof NotebookUiSpecSchema>;
 
 /**
  * Compiled counterpart of {@link NotebookUiSpec}: same shape but with sections
- * compiled (conditions turned into `conditionFn`s) and `conditional_sources`
- * populated, as per {@link CompiledUiSpecModelSchema}.
+ * compiled (conditions turned into `conditionFn`s), as per
+ * {@link CompiledUiSpecModelSchema}.
  */
 export const CompiledNotebookUiSpecSchema = CompiledUiSpecModelSchema.and(
   z.object({
