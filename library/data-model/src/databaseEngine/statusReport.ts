@@ -23,7 +23,11 @@ import {
   RecordDeletedError,
   UnknownFormTypeError,
 } from './exceptions';
-import {FormUpdateData, relatedRecordFieldAvpEntrySchema} from './types';
+import {
+  FormUpdateData,
+  relatedRecordAvpEntries,
+  relatedRecordFieldAvpEntrySchema,
+} from './types';
 
 // Only the id and project tag matter here, so legacy vocab-pair drift in a
 // stored link cannot invalidate a live child
@@ -196,12 +200,8 @@ function collectChildFields(
     if (!spec) {
       continue;
     }
-    const raw = data?.[fieldId]?.data;
-    const rawEntries = Array.isArray(raw)
-      ? raw
-      : raw === null || raw === undefined
-        ? []
-        : [raw];
+    // An absent value flattens to [undefined], which the schema then rejects
+    const rawEntries = relatedRecordAvpEntries(data?.[fieldId]?.data);
     // Set: an empty id is not a child; a duplicate link is still one child
     const childIds = new Set<string>();
     for (const rawEntry of rawEntries) {

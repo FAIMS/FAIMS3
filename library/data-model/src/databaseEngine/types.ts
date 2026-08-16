@@ -93,6 +93,14 @@ export type RelatedRecordFieldAvpValue = z.infer<
   typeof relatedRecordFieldAvpValueSchema
 >;
 
+/**
+ * Flattens a RelatedRecord AVP value ({@link relatedRecordFieldAvpValueSchema}:
+ * a single link or a list of links) into a list of entries.
+ */
+export function relatedRecordAvpEntries<T>(value: T | T[]): T[] {
+  return Array.isArray(value) ? value : [value];
+}
+
 // Revision relationship field can be either a list or singleton entry
 export const relationshipSchema = z.object({
   parent: z
