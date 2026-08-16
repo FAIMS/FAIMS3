@@ -41,10 +41,18 @@ import {
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
+/** The slice of a ui-spec the parent-form scan reads. Structural, so the
+ * designer can pass its redux field/view/viewset maps directly. */
+export interface ParentScanUiSpec {
+  fields: Record<string, FieldDefinition>;
+  views: Record<string, {fields: string[]}>;
+  viewsets: Record<string, {views: string[]}>;
+}
+
 /** Field IDs across all views of a viewset; stale view ids are skipped. Lives
  * here, not in utils.ts, which imports this module via the compile pass. */
 export const fieldIdsForViewset = (
-  uiSpecification: UiSpecModel,
+  uiSpecification: ParentScanUiSpec,
   viewSetId: string
 ): string[] => {
   const viewset = uiSpecification.viewsets[viewSetId];
@@ -92,7 +100,7 @@ export const getParentFormsForForm = ({
   uiSpecification,
   formId,
 }: {
-  uiSpecification: UiSpecModel;
+  uiSpecification: ParentScanUiSpec;
   formId: string;
 }): string[] => {
   const parentForms: string[] = [];
@@ -106,6 +114,27 @@ export const getParentFormsForForm = ({
     if (isParent) parentForms.push(candidateId);
   }
   return parentForms;
+};
+
+/**
+ * Field IDs across every form that can parent the given form. The one
+ * composite behind the runtime's parent-value resolution and the designer's
+ * ParentFieldDisplay editor, so both offer the same candidate fields.
+ */
+export const getParentFormFieldIds = ({
+  uiSpecification,
+  formId,
+}: {
+  uiSpecification: ParentScanUiSpec;
+  formId: string;
+}): Set<string> => {
+  const ids = new Set<string>();
+  for (const parentFormId of getParentFormsForForm({uiSpecification, formId})) {
+    for (const id of fieldIdsForViewset(uiSpecification, parentFormId)) {
+      ids.add(id);
+    }
+  }
+  return ids;
 };
 
 /**
