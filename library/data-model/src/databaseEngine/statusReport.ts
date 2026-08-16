@@ -286,6 +286,7 @@ async function walk(
   );
   const rawOwnProgress = completion({
     uiSpec: engine.uiSpec,
+    formId,
     data,
     visibilityMap,
     isCompleteResolver: ctx.isCompleteResolver,

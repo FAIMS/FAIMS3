@@ -14,6 +14,7 @@ import {FieldVisibilityMap} from '../types';
 interface LiveFormProgressProps {
   form: FaimsForm;
   uiSpec: UiSpecModel;
+  formId: string;
   visibilityMap: FieldVisibilityMap;
 }
 
@@ -28,10 +29,11 @@ export const LiveFormProgress: React.FC<LiveFormProgressProps> = props => {
   const progress = useMemo(() => {
     return completion({
       uiSpec: props.uiSpec,
+      formId: props.formId,
       data,
       visibilityMap: props.visibilityMap,
     });
-  }, [data, props.visibilityMap]);
+  }, [data, props.formId, props.visibilityMap]);
   return <FormProgressBar completion={progress} />;
 };
 
@@ -53,6 +55,7 @@ export const StaticFormProgress: React.FC<StaticFormProgressProps> = props => {
   const progress = useMemo(() => {
     return completion({
       uiSpec: props.uiSpec,
+      formId: props.formId,
       data: props.data,
       visibilityMap: visMap,
     });

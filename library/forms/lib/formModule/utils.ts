@@ -130,6 +130,7 @@ export const fieldCompletionResolver: IsCompleteResolver = ({
  * completeness overrides.
  *
  * @param uiSpec - The UI specification of the form
+ * @param formId - The form (viewset) being scored
  * @param data - The form data entries
  * @param visibilityMap - Map of visible fields per section
  * @returns Progress fraction 0->1, required/completed counts and the required
@@ -137,6 +138,7 @@ export const fieldCompletionResolver: IsCompleteResolver = ({
  */
 export function completion(args: {
   uiSpec: UiSpecModel;
+  formId: string;
   data: FaimsFormData;
   visibilityMap: FieldVisibilityMap;
 }): CompletionResult {

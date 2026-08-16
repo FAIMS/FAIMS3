@@ -785,6 +785,7 @@ export const EditableFormManager: React.FC<
 
         const progress = completion({
           uiSpec: dataEngine.uiSpec,
+          formId: props.formId,
           data: form.state.values ?? {},
           visibilityMap: visibleMap,
         });
@@ -810,7 +811,7 @@ export const EditableFormManager: React.FC<
         guardInFlightRef.current = false;
       }
     },
-    [flushSave, dataEngine.uiSpec, form, visibleMap]
+    [flushSave, dataEngine.uiSpec, form, visibleMap, props.formId]
   );
 
   // Lock nav buttons while an attachment saves; finish buttons go via guardFinish.
@@ -988,6 +989,7 @@ export const EditableFormManager: React.FC<
       <LiveFormProgress
         form={form as FaimsForm}
         uiSpec={dataEngine.uiSpec}
+        formId={props.formId}
         visibilityMap={visibleMap}
       />
 

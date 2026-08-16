@@ -848,7 +848,7 @@ describe('Record status report', () => {
         uiSpec,
         viewsetId: formId,
       });
-      return {data, visibilityMap};
+      return {data, visibilityMap, formId};
     };
 
     test('counts only required fields', async () => {
@@ -883,6 +883,20 @@ describe('Record status report', () => {
       });
       expect(shown.requiredCount).toBe(3);
       expect(shown.incompleteRequired).toContain('special-note');
+    });
+
+    test('sections outside the form do not score', () => {
+      // Scoring Photo (no required fields) with Site's wider map must not
+      // count Site's required fields
+      const site = completionFor({});
+      const result = completion({
+        uiSpec,
+        formId: 'Photo',
+        data: {},
+        visibilityMap: site.visibilityMap,
+      });
+      expect(result.requiredCount).toBe(0);
+      expect(result.progress).toBe(1.0);
     });
 
     test('isCompleteResolver overrides the default check', async () => {

@@ -1,5 +1,5 @@
 import {UiSpecModel} from '../uiSpecification/types';
-import {FieldVisibilityMap, visibleFieldSet} from '../uiSpecification/utils';
+import {FieldVisibilityMap, getViewsForViewSet} from '../uiSpecification/utils';
 import {FormDataEntry, FormUpdateData} from './types';
 
 export type CompletionResult = {
@@ -49,6 +49,7 @@ function defaultCompletionFunction(formData: FormDataEntry): boolean {
  * calculate completion progress for a form
  *
  * @param uiSpec - The UI specification of the form
+ * @param formId - The form (viewset) being scored
  * @param data - The form data entries
  * @param visibilityMap - Map of visible fields per section
  * @param isCompleteResolver - Optional per-field-type completeness override
@@ -57,11 +58,13 @@ function defaultCompletionFunction(formData: FormDataEntry): boolean {
  */
 export function completion({
   uiSpec,
+  formId,
   data,
   visibilityMap,
   isCompleteResolver,
 }: {
   uiSpec: UiSpecModel;
+  formId: string;
   data: FormUpdateData | undefined;
   visibilityMap: FieldVisibilityMap;
   isCompleteResolver?: IsCompleteResolver;
@@ -69,7 +72,14 @@ export function completion({
   let fieldCount = 0;
   const incompleteRequired: string[] = [];
 
-  for (const fieldId of visibleFieldSet(visibilityMap)) {
+  // Only formId's own sections score, so a wider visibility map cannot leak
+  // another form's required fields into this form's progress
+  const fieldIds = new Set(
+    getViewsForViewSet(uiSpec, formId).flatMap(
+      viewId => visibilityMap[viewId] ?? []
+    )
+  );
+  for (const fieldId of fieldIds) {
     const fieldSpec = uiSpec.fields[fieldId];
     if (!fieldSpec) {
       continue; // skip unknown fields
