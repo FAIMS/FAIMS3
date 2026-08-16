@@ -328,8 +328,9 @@ export function buildHydrateKeys({
 }
 
 /**
- * Query key for a record's Status tab report. Starts with the hydration
- * prefix so cancelProjectQueries and invalidateProjectHydration match it.
+ * Query key for a record's Status tab report. The hydration prefix only adds
+ * it to project-wide cancel/reset sweeps; freshness comes from the query's
+ * refetchOnMount, not invalidation.
  */
 export function buildStatusReportKey({
   projectId,

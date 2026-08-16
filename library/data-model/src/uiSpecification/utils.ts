@@ -706,11 +706,10 @@ export function getSummaryFieldInformation(
 
 /**
  * Values of a form's summary_fields for display, keyed by field id in
- * summary_fields order. Condition-hidden fields drop out (their leftover
- * values are stale); statically hidden ones stay, since templating recomputes
- * them at save. A missing value maps to null so JSON serialization keeps the
- * key. The one definition of summary-value selection, shared by the record
- * list and the record Status tab.
+ * summary_fields order. A missing value maps to null so JSON serialization
+ * keeps the key. By default every stored value is returned (the record list
+ * shows stored data as-is); pass visibleFields to drop fields outside it (the
+ * Status tab drops condition-hidden fields, whose leftover values are stale).
  */
 export function getSummaryValues({
   uiSpec,
@@ -718,30 +717,16 @@ export function getSummaryValues({
   values,
   visibleFields,
 }: {
-  uiSpec: CompiledUiSpecModel;
+  uiSpec: UiSpecModel;
   formId: string;
   values: ValuesObject;
-  /** Precomputed includeStaticallyHidden visible set, for a caller that
-   * already ran that pass (the status walk); computed here when absent. */
+  /** When set, only fields in this set are returned. */
   visibleFields?: ReadonlySet<string>;
 }): Record<string, unknown> {
   const {fieldNames} = getSummaryFieldInformation(uiSpec, formId);
-  if (fieldNames.length === 0) {
-    return {};
-  }
-  const visible =
-    visibleFields ??
-    visibleFieldSet(
-      currentlyVisibleMap({
-        values,
-        uiSpec,
-        viewsetId: formId,
-        includeStaticallyHidden: true,
-      })
-    );
   const summaryValues: Record<string, unknown> = {};
   for (const fieldName of fieldNames) {
-    if (!visible.has(fieldName)) continue;
+    if (visibleFields && !visibleFields.has(fieldName)) continue;
     summaryValues[fieldName] = values[fieldName] ?? null;
   }
   return summaryValues;

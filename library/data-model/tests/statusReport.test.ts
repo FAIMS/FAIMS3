@@ -14,6 +14,7 @@ import {
   DocumentNotFoundError,
   formDataToValues,
   FormUpdateData,
+  getSummaryValues,
   NotebookDefinition,
   RecordDeletedError,
   RecordStatusReport,
@@ -818,6 +819,21 @@ describe('Record status report', () => {
         'site-id': 'SHOW-NOTE',
         'site-label': null,
         'special-note': null,
+      });
+    });
+
+    test('getSummaryValues without visibleFields keeps condition-hidden stored values', () => {
+      // The record list shows stored data as-is; only the Status tab gates
+      expect(
+        getSummaryValues({
+          uiSpec,
+          formId: 'Site',
+          values: {'site-id': 'S1', 'special-note': 'left over'},
+        })
+      ).toEqual({
+        'site-id': 'S1',
+        'site-label': null,
+        'special-note': 'left over',
       });
     });
 

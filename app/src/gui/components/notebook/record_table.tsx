@@ -3,6 +3,7 @@ import {
   DataDbType,
   fetchAndHydrateRecord,
   getFieldLabel,
+  getFormLabel,
   getSummaryFieldInformation,
   getSummaryValues,
   getVisibleTypes,
@@ -306,7 +307,7 @@ function getDataForColumn({
           return record.createdBy || fallback;
 
         case 'KIND':
-          return uiSpecification.viewsets[record.type]?.label ?? record.type;
+          return getFormLabel({uiSpec: uiSpecification, formId: record.type});
 
         case 'SYNC_STATUS':
           return record.synced ? 'synced' : 'pending';
@@ -336,7 +337,7 @@ function getDataForColumn({
           return record.created_by || fallback;
 
         case 'KIND':
-          return uiSpecification.viewsets[record.type]?.label ?? record.type;
+          return getFormLabel({uiSpec: uiSpecification, formId: record.type});
 
         case 'SYNC_STATUS':
           return record.synced ? 'synced' : 'pending';
@@ -999,8 +1000,8 @@ const useRowHydration = (
 ) => {
   const token = activeUser?.parsedToken;
 
-  // In select so react-query caches the visibility pass against the fetched
-  // data; same summary selection and gating as the record Status tab
+  // In select so react-query caches the summary pick against the fetched data;
+  // unlike the Status tab, the record list shows stored values unfiltered
   const withSummaryValues = useCallback(
     (rec: RecordMetadata | undefined): HydratedDisplayRecord | undefined =>
       rec && uiSpec
