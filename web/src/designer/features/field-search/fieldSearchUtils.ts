@@ -3,6 +3,7 @@
  */
 
 import {getFieldLabel} from '@/lib/conditionUtils';
+import {fieldIdsForViewset} from '@faims3/data-model';
 import type {FieldType} from '../../state/initial';
 import type {
   FieldSearchEntry,
@@ -56,17 +57,6 @@ export const buildFieldSearchEntry = (
   };
 };
 
-/** Collects field ids belonging to every section in a viewset. */
-export const getViewsetFieldIds = (
-  viewsetId: string,
-  views: ViewMap,
-  viewsets: ViewSetMap
-): string[] => {
-  const viewset = viewsets[viewsetId];
-  if (!viewset) return [];
-  return viewset.views.flatMap(sectionId => views[sectionId]?.fields ?? []);
-};
-
 /**
  * Resolves which field ids are in scope for selection.
  *
@@ -87,7 +77,7 @@ export const resolveFieldIdsInScope = (
   }
 
   if (scope.kind === 'viewset') {
-    return getViewsetFieldIds(scope.viewsetId, views, viewsets);
+    return fieldIdsForViewset({views, viewsets}, scope.viewsetId);
   }
 
   // Resolve the anchor section from either explicit sectionId or the field's section.

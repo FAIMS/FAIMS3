@@ -2,11 +2,7 @@ import {HRID_STRING} from '../datamodel';
 import {FAIMSTypeName} from '../types';
 import {slugify} from '../utils';
 import {compileExpression} from './conditionals';
-import {
-  compileComputedExpression,
-  ExprType,
-  FAIMS_TYPE_TO_EXPR_TYPE,
-} from './expressions';
+import {ExprType, FAIMS_TYPE_TO_EXPR_TYPE} from './expressions';
 import {
   CompiledUiSpecModel,
   FieldDefinition,
@@ -103,6 +99,8 @@ export const getFieldNamesForViewset = ({
   uiSpecification: UiSpecModel;
   viewSetId: string;
 }): string[] => {
+  // Validation only: the getters throw on unknown/stale ids the tolerant
+  // enumeration below would silently skip
   for (const viewId of getViewsetByViewsetId({uiSpecification, viewSetId})
     .views) {
     getViewByViewId({uiSpecification, viewId});

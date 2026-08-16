@@ -52,7 +52,7 @@ export interface ParentScanUiSpec {
 /** Field IDs across all views of a viewset; stale view ids are skipped. Lives
  * here, not in utils.ts, which imports this module via the compile pass. */
 export const fieldIdsForViewset = (
-  uiSpecification: ParentScanUiSpec,
+  uiSpecification: Pick<ParentScanUiSpec, 'views' | 'viewsets'>,
   viewSetId: string
 ): string[] => {
   const viewset = uiSpecification.viewsets[viewSetId];
@@ -117,9 +117,9 @@ export const getParentFormsForForm = ({
 };
 
 /**
- * Field IDs across every form that can parent the given form. The one
- * composite behind the runtime's parent-value resolution and the designer's
- * ParentFieldDisplay editor, so both offer the same candidate fields.
+ * Field IDs across every form that can parent the given form: the candidate
+ * set for the designer's ParentFieldDisplay picker, composed from the same
+ * scan (getParentFormsForForm, fieldIdsForViewset) the runtime infers with.
  */
 export const getParentFormFieldIds = ({
   uiSpecification,
