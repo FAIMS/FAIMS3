@@ -547,8 +547,7 @@ export function compileUiSpecConditionals(
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
 
-  // Compiled functions are attached in place: callers may read the passed-in
-  // spec directly rather than the (typed) return value.
+  // Compiled functions are attached in place; the function returns nothing.
   const expressionFieldTypes = new Map<string, ExprType>();
   for (const field in uiSpecification.fields) {
     const t =
