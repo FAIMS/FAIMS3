@@ -553,6 +553,48 @@ describe('Record status report', () => {
     });
   });
 
+  describe('conflicted heads', () => {
+    test('the walk scores the same head the record page resolves', async () => {
+      const {recordId, revisionId} = await create('Site', {
+        'site-id': {data: 'S1'},
+      });
+      // Forge a second head whose site-id differs, sharing the other AVPs
+      const revision = await rawDb.get<{avps: Record<string, string>}>(
+        revisionId
+      );
+      const avp = await rawDb.get<{data: unknown}>(revision.avps['site-id']);
+      const forkAvpId = `${avp._id}-fork`;
+      const forkRevisionId = `${revisionId}-fork`;
+      const {_rev: avpRev, ...avpFields} = avp;
+      void avpRev;
+      await rawDb.put({...avpFields, _id: forkAvpId, data: 'S2'});
+      const {_rev: revisionRev, ...revisionFields} = revision;
+      void revisionRev;
+      await rawDb.put({
+        ...revisionFields,
+        _id: forkRevisionId,
+        avps: {...revision.avps, 'site-id': forkAvpId},
+      });
+      const record = await rawDb.get<{heads: string[]; revisions: string[]}>(
+        recordId
+      );
+      await rawDb.put({
+        ...record,
+        heads: [...record.heads, forkRevisionId].sort(),
+        revisions: [...record.revisions, forkRevisionId].sort(),
+      });
+      const forked = await rawDb.get<{heads: string[]}>(recordId);
+      expect(forked.heads).toHaveLength(2);
+
+      const shown = await engine.form.getExistingFormData({recordId});
+      const result = await report(recordId);
+      expect(result.hrid).toBe(shown.context.hrid);
+      expect(result.summaryValues['site-id']).toBe(
+        (shown.data['site-id'] as {data: unknown}).data
+      );
+    });
+  });
+
   describe('hidden child fields', () => {
     test('children linked from a condition-hidden field still report', async () => {
       const {recordId: sampleId} = await create('Sample');
@@ -568,7 +610,7 @@ describe('Record status report', () => {
       expect(result.progress).toBe(0.5);
     });
 
-    test('a hidden required child field with no children adds no expected unit', async () => {
+    test('a hidden required child field with no children drops out entirely', async () => {
       const {recordId} = await create('Survey');
       const result = await report(recordId);
       expect(result.childFields).toEqual([]);
