@@ -124,7 +124,7 @@ describe('Record status report', () => {
   });
 
   describe('roll-up formula', () => {
-    test('required child field with no records counts as one expected child', async () => {
+    test('required child field with no records is charged once, in own progress', async () => {
       const {recordId} = await create('Site', {'site-id': {data: 'S1'}});
       const result = await report(recordId);
       // own: site-id complete, features incomplete -> 1/2
@@ -134,8 +134,8 @@ describe('Record status report', () => {
         children: [],
         relatedFormId: 'Feature',
       });
-      // (0.5 own + 0 children) / (1 + 1 expected child)
-      expect(result.progress).toBe(0.25);
+      // no live children, so the roll-up is own progress alone
+      expect(result.progress).toBe(0.5);
     });
 
     test('complete and incomplete children roll up per unit', async () => {
@@ -269,7 +269,7 @@ describe('Record status report', () => {
         completedCount: 0,
         progress: 0,
       });
-      // (0 own + 0 children) / (1 + 1 expected child)
+      // no live children, so the roll-up is own progress alone
       expect(result.progress).toBe(0);
     });
 
@@ -362,9 +362,9 @@ describe('Record status report', () => {
         children: [],
       });
       // a link to a deleted child scores no better than an empty field:
-      // own drops to 1/2 and the expected child unit contributes 0
+      // own drops to 1/2
       expect(result.ownProgress.incompleteRequired).toContain('features');
-      expect(result.progress).toBe(0.25);
+      expect(result.progress).toBe(0.5);
     });
 
     test('linked relations are ignored entirely', async () => {
@@ -377,7 +377,7 @@ describe('Record status report', () => {
       expect(
         result.childFields.find(f => f.fieldId === 'calibration-ref')
       ).toBeUndefined();
-      expect(result.progress).toBe(0.25);
+      expect(result.progress).toBe(0.5);
     });
 
     test('dangling child references are skipped', async () => {
@@ -388,7 +388,7 @@ describe('Record status report', () => {
       const result = await report(recordId);
       expect(childField(result, 'features').children).toHaveLength(0);
       // dangling links leave the required features field incomplete
-      expect(result.progress).toBe(0.25);
+      expect(result.progress).toBe(0.5);
     });
 
     test('an empty-array child value scores like an absent one', async () => {
@@ -398,7 +398,7 @@ describe('Record status report', () => {
       });
       const result = await report(recordId);
       expect(result.ownProgress.progress).toBe(0.5);
-      expect(result.progress).toBe(0.25);
+      expect(result.progress).toBe(0.5);
     });
 
     test('a child with an unknown form type is skipped, not scored complete', async () => {

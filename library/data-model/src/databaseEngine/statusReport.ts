@@ -50,7 +50,7 @@ export interface RecordStatusReport {
   formId: string;
   /**
    * Roll-up fraction 0->1: (own progress + sum of live child progress) /
-   * (1 + live children + required-but-empty child fields).
+   * (1 + live children).
    */
   progress: number;
   ownProgress: CompletionResult;
@@ -340,21 +340,15 @@ async function walk(
 
   const ownProgress = adjustOwnProgressForChildren(rawOwnProgress, childFields);
 
-  // Each live child is one unit alongside the record's own form; a required
-  // field with no children contributes one empty unit
+  // Each live child is one unit alongside the record's own form; an empty
+  // required child field is charged once, through ownProgress
   const liveReports = [...outcomes.values()].filter(isChildReport);
-  const units =
-    liveReports.length +
-    childFields.filter(field => field.required && field.children.length === 0)
-      .length;
   const childProgressSum = liveReports.reduce(
     (sum, child) => sum + child.progress,
     0
   );
   const progress =
-    units === 0
-      ? ownProgress.progress
-      : (ownProgress.progress + childProgressSum) / (1 + units);
+    (ownProgress.progress + childProgressSum) / (1 + liveReports.length);
 
   return {
     recordId,
