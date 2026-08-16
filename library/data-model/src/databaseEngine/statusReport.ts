@@ -87,8 +87,6 @@ interface WalkContext {
   engine: DataEngine;
   projectId: string;
   isCompleteResolver: IsCompleteResolver;
-  /** Records on the current walk path; cuts the cycles corrupt data can hold. */
-  path: Set<string>;
   /** Child-type fields resolved once per walk; the ui-spec never changes mid-walk. */
   childFieldSpecs: Map<string, ChildFieldSpec>;
 }
@@ -125,10 +123,9 @@ export async function computeRecordStatusReport({
     engine,
     projectId,
     isCompleteResolver,
-    path: new Set(),
     childFieldSpecs: resolveChildFieldSpecs(engine.uiSpec),
   };
-  const report = await walk(ctx, recordId);
+  const report = await walk(ctx, recordId, new Set());
   if (report === null) {
     throw new RecordDeletedError(recordId);
   }
@@ -247,9 +244,11 @@ const isChildReport = (
  */
 async function walk(
   ctx: WalkContext,
-  recordId: string
+  recordId: string,
+  /** Records on the path from the root; cuts the cycles corrupt data can hold. */
+  path: ReadonlySet<string>
 ): Promise<RecordStatusReport | null> {
-  if (ctx.path.has(recordId)) {
+  if (path.has(recordId)) {
     return null;
   }
   const {engine} = ctx;
@@ -305,20 +304,19 @@ async function walk(
   const distinctChildIds = new Set(collected.flatMap(field => field.childIds));
 
   // One walk per distinct child, so a child linked from several fields is
-  // fetched once and counts as one roll-up unit
+  // fetched once and counts as one roll-up unit; branches are independent
+  // (each carries its own path copy), so they walk concurrently
+  const childPath = new Set(path).add(recordId);
   const outcomes = new Map<string, RecordStatusReport | null>();
-  ctx.path.add(recordId);
-  try {
-    for (const childId of distinctChildIds) {
+  await Promise.all(
+    [...distinctChildIds].map(async childId => {
       try {
-        outcomes.set(childId, await walk(ctx, childId));
+        outcomes.set(childId, await walk(ctx, childId, childPath));
       } catch (err) {
         outcomes.set(childId, absorbSkippableChildError(err));
       }
-    }
-  } finally {
-    ctx.path.delete(recordId);
-  }
+    })
+  );
 
   const childFields = collected.flatMap((field): RecordStatusChildField[] => {
     const children = field.childIds
