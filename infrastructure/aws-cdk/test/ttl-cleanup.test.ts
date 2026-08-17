@@ -160,8 +160,7 @@ describe('FaimsTtlCleanup synth', () => {
           lastStatus: ['STOPPED'],
           containers: {
             name: [TTL_CLEANUP_CONTAINER_NAME],
-            // CDK wraps numeric anything-but as [[{ "anything-but": [0] }]]
-            exitCode: [[{'anything-but': [0]}]],
+            exitCode: [{'anything-but': [0]}],
           },
         }),
       },
