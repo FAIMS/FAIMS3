@@ -92,10 +92,7 @@ async function applyViaCdp(width: number, height: number): Promise<boolean> {
 export async function applyViewport(
   viewport = getViewportConfig()
 ): Promise<ViewportConfig> {
-  const {width, height, name} = viewport;
-  console.log(
-    `Applying viewport ${width}x${height} (${name}), devicePixelRatio=1`
-  );
+  const {width, height} = viewport;
 
   try {
     await browser.setViewport({

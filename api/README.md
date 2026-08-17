@@ -140,6 +140,27 @@ By default skips addresses matching `test` or `demo` (anywhere) or
 `--no-skip`. Disabled accounts are omitted unless `--include-disabled`. Counts
 go to stderr.
 
+## TTL cleanup (ops)
+
+One-shot job that deletes expired ephemeral CouchDB documents in `auth` and
+`invites` (refresh tokens, email codes, verification challenges, expired
+invites; optionally long-lived tokens). Rate-limit retention windows for email
+codes / verification challenges are respected. Survey tombstones and
+people/project/`data-*` docs are never touched.
+
+```bash
+pnpm run ttl-cleanup --dry-run
+pnpm run ttl-cleanup
+pnpm run ttl-cleanup --include-longlived --compact
+```
+
+Exhausted-but-unexpired invites are kept by default (uses may be raised later).
+Pass `--delete-exhausted-invites` only if you intentionally want those removed
+too. Prefer `--dry-run` first against the target Couch.
+
+Retention rules, flags, and AWS scheduling notes:
+[TtlCleanup.md](../docs/developer/docs/source/markdown/TtlCleanup.md).
+
 ## Development
 
 There is an alternate docker compose file for development that mounts the

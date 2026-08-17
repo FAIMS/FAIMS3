@@ -315,6 +315,10 @@ export interface PublicServerInfo {
   name: string;
   conductor_url: string;
   description: string;
+  /**
+   * Invite-code prefix for this server (e.g. `FAIMS` in `FAIMS-…`).
+   * Used when users manually enter an invite code and for multi-server routing.
+   */
   prefix: string;
   /**
    * The version of the server, e.g. 1.3.2. Optional for backwards

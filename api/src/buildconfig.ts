@@ -139,7 +139,9 @@ const EnvSchema = z
       }),
     /** Human-readable instance name (falls back to PROFILE_NAME / key id). */
     CONDUCTOR_INSTANCE_NAME: z.string().optional(),
-    /** Short-code prefix used when generating invite / project codes. */
+    /**
+     * Prefix used when generating invite codes (e.g. `FAIMS` → `FAIMS-…`).
+     */
     CONDUCTOR_SHORT_CODE_PREFIX: configHelpers.stringDefault(
       'FAIMS',
       'CONDUCTOR_SHORT_CODE_PREFIX'

@@ -15,7 +15,7 @@ duplicating env reads, waits, or screenshot logic in specs.
 | `artifacts.ts`  | Run id (`{stamp}-{suite}-{hex}`), dirs, manifest + gallery                 |
 | `report.ts`     | Static `index.html` gallery (failure-first) from `manifest.json`           |
 | `hooks.ts`      | WDIO hooks wired from conf files                                           |
-| `seed.ts`       | Optional API helpers for invites / project ids                             |
+| `seed.ts`       | Optional API helpers: invites, notebooks, tombstones, project roles        |
 
 ## Screenshot modes (`SCREENSHOT_MODE`)
 
