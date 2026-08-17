@@ -50,7 +50,7 @@ import {
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {getMapConfig} from '../../buildconfig';
+import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getNotebookRoute,
@@ -90,9 +90,10 @@ const DEFAULT_TAB: RecordTab = RECORD_TABS.VIEW;
  * Type guard to check if a string is a valid RecordTab
  */
 function isValidTab(value: string | null): value is RecordTab {
-  return (
-    value !== null && Object.values(RECORD_TABS).includes(value as RecordTab)
-  );
+  if (value === null) return false;
+  // A bookmarked ?tab=status must fall back once the tab is switched off.
+  if (value === RECORD_TABS.STATUS && !config.showStatusTab) return false;
+  return Object.values(RECORD_TABS).includes(value as RecordTab);
 }
 
 /**
@@ -688,7 +689,9 @@ export const ViewRecordPage: React.FC = () => {
             <Tab label="Record" value={RECORD_TABS.VIEW} />
             <Tab label="Info" value={RECORD_TABS.INFO} />
             <Tab label="History" value={RECORD_TABS.HISTORY} />
-            <Tab label="Status" value={RECORD_TABS.STATUS} />
+            {config.showStatusTab && (
+              <Tab label="Status" value={RECORD_TABS.STATUS} />
+            )}
           </TabList>
         </Box>
 
@@ -740,15 +743,17 @@ export const ViewRecordPage: React.FC = () => {
           />
         </TabPanel>
 
-        <TabPanel value={RECORD_TABS.STATUS} sx={{p: 0, pt: 2}}>
-          <RecordStatus
-            recordId={recordId}
-            projectId={projectId}
-            serverId={serverId}
-            dataEngine={getDataEngine()}
-            isDeleted={isDeleted}
-          />
-        </TabPanel>
+        {config.showStatusTab && (
+          <TabPanel value={RECORD_TABS.STATUS} sx={{p: 0, pt: 2}}>
+            <RecordStatus
+              recordId={recordId}
+              projectId={projectId}
+              serverId={serverId}
+              dataEngine={getDataEngine()}
+              isDeleted={isDeleted}
+            />
+          </TabPanel>
+        )}
       </TabContext>
     </Stack>
   );
