@@ -98,6 +98,7 @@ import {
   updateProjectOfflineMapRegion,
   updateProjectUiSpecification,
 } from '../couchdb/notebooks';
+import {createTombstoneDocument} from '../couchdb/tombstones';
 import {getTemplate} from '../couchdb/templates';
 import {
   filterPeopleUsersForList,
@@ -1100,6 +1101,9 @@ api.post(
     body: PostDestroyNotebookInputSchema,
   }),
   async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
     const {notebookId} = req.params;
     const {confirmName} = req.body;
     const project = await getProjectById(notebookId);
@@ -1108,6 +1112,14 @@ api.post(
         'Confirmation name must match the survey name exactly.'
       );
     }
+    // Record a tombstone before destroying data so deletion leaves an audit trail
+    await createTombstoneDocument(notebookId, {
+      name: project.name,
+      deletedAt: Date.now(),
+      deletedBy: req.user.user_id,
+      ownedByTeamId: project.ownedByTeamId,
+      dataDbName: project.dataDb?.db_name,
+    });
     await deleteAllInvitesForProject(notebookId);
     await stripProjectRolesForProjectId(notebookId);
     await deleteNotebook(notebookId);

@@ -9,8 +9,10 @@ FAIMS3 Developer Documentation
    markdown/Knip.md
    markdown/RulesOfHooks.md
    markdown/CouchMigrations.md
+   markdown/ProjectLifecycle.md
    markdown/PermissionModel.md
    markdown/NotebookDefinition.md
+   markdown/AppInitialisation.md
    markdown/MetadataMigrationGuide.md
    markdown/NotebookMigrations.md
    markdown/RecordsCRUDApi.md
@@ -26,7 +28,6 @@ FAIMS3 Developer Documentation
    markdown/CouchVersionUpgradeGuideAWS.md
    markdown/CouchBackupRecoveryGuideAWS.md
    markdown/IOS-Deployment.md
-   markdown/AppInitialisation.md
    markdown/forms/04-dependency-injection.md
    markdown/forms/06-field-spec.md
    markdown/forms/quickstart.md

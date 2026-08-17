@@ -1250,3 +1250,31 @@ export type PostLongLivedTokenExchangeInput = z.infer<
 export type PostLongLivedTokenExchangeResponse = z.infer<
   typeof PostLongLivedTokenExchangeResponseSchema
 >;
+
+// =====
+// TOMBSTONES
+// =====
+
+/**
+ * Tombstone document returned by GET /api/tombstones/:id
+ * (`_id` is the deleted survey / project ID).
+ */
+export const TombstoneDocumentSchema = z.object({
+  _id: z.string(),
+  _rev: z.string(),
+  name: z.string(),
+  deletedAt: z.number(),
+  deletedBy: z.string(),
+  ownedByTeamId: z.string().optional(),
+  dataDbName: z.string().optional(),
+});
+
+/**
+ * GET /api/tombstones/:id response
+ */
+export const GetTombstoneByIdResponseSchema = TombstoneDocumentSchema;
+
+export type TombstoneDocument = z.infer<typeof TombstoneDocumentSchema>;
+export type GetTombstoneByIdResponse = z.infer<
+  typeof GetTombstoneByIdResponseSchema
+>;
