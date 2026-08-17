@@ -1,11 +1,11 @@
 import {Alert, Typography} from '@mui/material';
+import {getParentFormFieldIds} from '@faims3/data-model';
 import {getFieldInfo} from '@faims3/forms';
 import {useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {FieldSearchAutocomplete} from '../field-selector/FieldSearchAutocomplete';
-import {getViewsetFieldIds} from '../../features/field-search';
 import {
   selectUiFields,
   selectUiViews,
@@ -52,28 +52,14 @@ export const ParentFieldDisplayEditor = ({fieldName, viewsetId}: PropType) => {
     (field['component-parameters'].parentFieldId as string | undefined) || '';
 
   // Fields belonging to any form that parents this one.
-  const candidateFieldIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const parentViewsetId of Object.keys(viewsets)) {
-      if (parentViewsetId === viewsetId) continue;
-      const viewsetFields = getViewsetFieldIds(
-        parentViewsetId,
-        views,
-        viewsets
-      );
-      const isParentForm = viewsetFields.some(id => {
-        const f = allFields[id];
-        return (
-          f?.['component-name'] === 'RelatedRecordSelector' &&
-          f['component-parameters']?.related_type === viewsetId &&
-          f['component-parameters']?.relation_type === 'faims-core::Child'
-        );
-      });
-      if (!isParentForm) continue;
-      for (const id of viewsetFields) ids.add(id);
-    }
-    return ids;
-  }, [viewsets, views, allFields, viewsetId]);
+  const candidateFieldIds = useMemo(
+    () =>
+      getParentFormFieldIds({
+        uiSpecification: {fields: allFields, views, viewsets},
+        formId: viewsetId,
+      }),
+    [viewsets, views, allFields, viewsetId]
+  );
 
   const updateParentFieldId = (value: string | null) => {
     const newField = withUpdatedField(field, nextField => {

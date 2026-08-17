@@ -2,6 +2,9 @@ import {
   buildParentFieldTypes,
   compileComputedExpressionForForm,
   ExpressionError,
+  fieldIdsForViewset,
+  getFieldNamesForViewset,
+  getParentFormFieldIds,
   getParentFormsForForm,
   UiSpecModel,
 } from '../src';
@@ -76,6 +79,60 @@ describe('getParentFormsForForm', () => {
     expect(
       getParentFormsForForm({uiSpecification: spec, formId: 'Feature'}).sort()
     ).toEqual(['Site', 'Trench']);
+  });
+
+  it('ignores a selector with a nonstandard namespace', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Features': {
+          ...makeChildLink('Feature'),
+          'component-namespace': 'legacy-custom',
+        },
+      },
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormsForForm({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual([]);
+  });
+
+  it('tolerates a malformed param the scan does not read', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Features': {
+          ...makeChildLink('Feature'),
+          // multiple should be a boolean, but the scan only reads
+          // related_type/relation_type
+          'component-parameters': {
+            related_type: 'Feature',
+            relation_type: 'faims-core::Child',
+            multiple: 'true',
+          },
+        },
+      },
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormsForForm({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual(['Site']);
+  });
+
+  it('ignores a selector whose relation keys fail the shared schema', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Features': {
+          ...makeChildLink('Feature'),
+          'component-parameters': {
+            related_type: 'Feature',
+            relation_type: 'faims-core::ChildOf',
+          },
+        },
+      },
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormsForForm({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual([]);
   });
 });
 
@@ -225,5 +282,65 @@ describe('compileComputedExpressionForForm', () => {
       requiredType: 'number',
     });
     expect(compiled.references).toEqual(['Feature-Count']);
+  });
+});
+
+describe('getParentFormFieldIds', () => {
+  it('collects fields from every parent form and nothing else', () => {
+    const spec = makeSpec({
+      Site: {
+        'Site-Name': makeField('faims-core::String'),
+        'Site-Features': makeChildLink('Feature'),
+      },
+      Trench: {'Trench-Finds': makeChildLink('Feature')},
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+      Photo: {'Photo-Caption': makeField('faims-core::String')},
+    });
+    expect(
+      getParentFormFieldIds({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual(new Set(['Site-Name', 'Site-Features', 'Trench-Finds']));
+  });
+
+  it('tolerates a stale view id on a parent form', () => {
+    const spec = makeSpec({
+      Site: {'Site-Features': makeChildLink('Feature')},
+      Feature: {'Feature-Note': makeField('faims-core::String')},
+    });
+    spec.viewsets['Site'].views.push('ghost-view');
+    expect(
+      getParentFormFieldIds({uiSpecification: spec, formId: 'Feature'})
+    ).toEqual(new Set(['Site-Features']));
+  });
+});
+
+// Pins the strict/tolerant split: one shared enumeration, loud failure on bad
+// ids only in the strict wrapper.
+describe('getFieldNamesForViewset (strict wrapper)', () => {
+  const spec = makeSpec({
+    Site: {'Site-Name': makeField('faims-core::String')},
+  });
+
+  it('enumerates like fieldIdsForViewset on a valid spec', () => {
+    expect(
+      getFieldNamesForViewset({uiSpecification: spec, viewSetId: 'Site'})
+    ).toEqual(fieldIdsForViewset(spec, 'Site'));
+  });
+
+  it('throws on an unknown viewset where the tolerant scan returns []', () => {
+    expect(fieldIdsForViewset(spec, 'Ghost')).toEqual([]);
+    expect(() =>
+      getFieldNamesForViewset({uiSpecification: spec, viewSetId: 'Ghost'})
+    ).toThrow();
+  });
+
+  it('throws on a stale view id where the tolerant scan skips it', () => {
+    const staleSpec = makeSpec({
+      Site: {'Site-Name': makeField('faims-core::String')},
+    });
+    staleSpec.viewsets['Site'].views.push('ghost-view');
+    expect(fieldIdsForViewset(staleSpec, 'Site')).toEqual(['Site-Name']);
+    expect(() =>
+      getFieldNamesForViewset({uiSpecification: staleSpec, viewSetId: 'Site'})
+    ).toThrow();
   });
 });

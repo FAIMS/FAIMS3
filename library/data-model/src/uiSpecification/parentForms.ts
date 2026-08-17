@@ -18,7 +18,9 @@
  *   Determines which forms can parent a given form, and types the
  *   _PARENT.<Field-ID> references usable in computed expressions on that form.
  *   Shared by the notebook-load compile pass, the designer's live expression
- *   validation, and the forms runtime.
+ *   validation, and the forms runtime. Also home of the shared child-relation
+ *   field scan (getChildRelationParams, fieldIdsForViewset) that the record
+ *   status report reuses.
  */
 
 import {
@@ -29,18 +31,28 @@ import {
   extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
 } from './expressions';
-import {UiSpecModel} from './types';
+import {
+  FieldDefinition,
+  RELATED_RECORD_SELECTOR,
+  relatedRecordSelectorComponentParamsSchema,
+  UiSpecModel,
+} from './types';
 
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
-const RELATED_RECORD_COMPONENT = 'RelatedRecordSelector';
-const CHILD_RELATION = 'faims-core::Child';
+/** The slice of a ui-spec the parent-form scan reads. Structural, so the
+ * designer can pass its redux field/view/viewset maps directly. */
+export interface ParentScanUiSpec {
+  fields: Record<string, FieldDefinition>;
+  views: Record<string, {fields: string[]}>;
+  viewsets: Record<string, {views: string[]}>;
+}
 
-/** Field IDs across all views of a viewset. Local to avoid an import cycle
- * with utils.ts, which imports this module via the compile pass. */
-const fieldIdsForViewset = (
-  uiSpecification: UiSpecModel,
+/** Field IDs across all views of a viewset; stale view ids are skipped. Lives
+ * here, not in utils.ts, which imports this module via the compile pass. */
+export const fieldIdsForViewset = (
+  uiSpecification: Pick<ParentScanUiSpec, 'views' | 'viewsets'>,
   viewSetId: string
 ): string[] => {
   const viewset = uiSpecification.viewsets[viewSetId];
@@ -52,34 +64,77 @@ const fieldIdsForViewset = (
   return ids;
 };
 
+/** The scan reads only these keys; a malformed unrelated param (e.g. a string
+ * `multiple` in a hand-edited notebook) must not hide the relation. */
+const childRelationScanSchema = relatedRecordSelectorComponentParamsSchema.pick(
+  {related_type: true, relation_type: true}
+);
+
+/**
+ * Parses a field as a Child-relation RelatedRecordSelector, null for any other
+ * field (including selectors with malformed parameters). The one definition
+ * keeps parent-form inference, the record status report, and the designer's
+ * ParentFieldDisplayEditor scanning for the same fields.
+ */
+export const getChildRelationParams = (field: FieldDefinition | undefined) => {
+  if (
+    !field ||
+    field['component-namespace'] !== RELATED_RECORD_SELECTOR.namespace ||
+    field['component-name'] !== RELATED_RECORD_SELECTOR.name
+  ) {
+    return null;
+  }
+  const params = childRelationScanSchema.safeParse(
+    field['component-parameters']
+  );
+  return params.success && params.data.relation_type === 'faims-core::Child'
+    ? params.data
+    : null;
+};
+
 /**
  * Form IDs of every form that can parent the given form: those holding a
- * Child-relation RelatedRecordSelector targeting it. Matches the designer's
- * ParentFieldDisplay editor scan.
+ * Child-relation RelatedRecordSelector targeting it.
  */
 export const getParentFormsForForm = ({
   uiSpecification,
   formId,
 }: {
-  uiSpecification: UiSpecModel;
+  uiSpecification: ParentScanUiSpec;
   formId: string;
 }): string[] => {
   const parentForms: string[] = [];
   for (const candidateId of Object.keys(uiSpecification.viewsets)) {
     if (candidateId === formId) continue;
     const isParent = fieldIdsForViewset(uiSpecification, candidateId).some(
-      id => {
-        const f = uiSpecification.fields[id];
-        return (
-          f?.['component-name'] === RELATED_RECORD_COMPONENT &&
-          f['component-parameters']?.related_type === formId &&
-          f['component-parameters']?.relation_type === CHILD_RELATION
-        );
-      }
+      id =>
+        getChildRelationParams(uiSpecification.fields[id])?.related_type ===
+        formId
     );
     if (isParent) parentForms.push(candidateId);
   }
   return parentForms;
+};
+
+/**
+ * Field IDs across every form that can parent the given form: the candidate
+ * set for the designer's ParentFieldDisplay picker, composed from the same
+ * scan (getParentFormsForForm, fieldIdsForViewset) the runtime infers with.
+ */
+export const getParentFormFieldIds = ({
+  uiSpecification,
+  formId,
+}: {
+  uiSpecification: ParentScanUiSpec;
+  formId: string;
+}): Set<string> => {
+  const ids = new Set<string>();
+  for (const parentFormId of getParentFormsForForm({uiSpecification, formId})) {
+    for (const id of fieldIdsForViewset(uiSpecification, parentFormId)) {
+      ids.add(id);
+    }
+  }
+  return ids;
 };
 
 /**

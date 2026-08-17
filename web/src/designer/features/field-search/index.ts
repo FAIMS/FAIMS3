@@ -2,7 +2,6 @@ export {
   applyFieldFilters,
   buildFieldSearchEntries,
   buildFieldSearchEntry,
-  getViewsetFieldIds,
   resolveFieldIdsInScope,
   resolveFieldLocation,
 } from './fieldSearchUtils';
