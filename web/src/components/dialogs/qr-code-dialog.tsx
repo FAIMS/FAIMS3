@@ -7,10 +7,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {config} from '@/constants';
 import {QrCode} from 'lucide-react';
 
-export const QRCodeDialog = ({src}: {src: string}) => {
+export const QRCodeDialog = ({
+  src,
+  resourceLabel,
+}: {
+  src: string;
+  /** Noun for the invite target, e.g. notebook name, "team", or "server". */
+  resourceLabel: string;
+}) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -22,7 +28,7 @@ export const QRCodeDialog = ({src}: {src: string}) => {
         <DialogHeader>
           <DialogTitle>QR Code</DialogTitle>
           <DialogDescription>
-            Share this QR code to invite others to this {config.notebookName}.
+            Share this QR code to invite others to this {resourceLabel}.
           </DialogDescription>
         </DialogHeader>
         <img className="w-full" src={src} alt="QR Code" />

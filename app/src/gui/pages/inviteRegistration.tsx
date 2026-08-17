@@ -10,11 +10,12 @@
  * Unless required by applicable law or agreed to in writing software
  * distributed under the License is distributed on an "AS IS" BASIS
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
+ * See the License, for the specific language governing permissions and
  * limitations under the License.
  *
  * Description:
- *   Defines the component to allow entering short codes for notebook registration
+ *   Components to redeem invites via QR scan (preferred) or typed invite code
+ *   (advanced fallback).
  */
 
 import {Browser} from '@capacitor/browser';
@@ -32,6 +33,12 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import {
+  INVITE_CODE_BODY_PATTERN,
+  INVITE_CODE_MAX_LENGTH,
+  INVITE_CODE_MIN_LENGTH,
+} from '@faims3/data-model';
+import {QRCodeButton} from '@faims3/forms';
 import React, {useState} from 'react';
 import {config, IS_WEB_PLATFORM} from '../../buildconfig';
 import {useNotification} from '../../context/popup';
@@ -40,42 +47,36 @@ import {Server} from '../../context/slices/projectSlice';
 import {useAppDispatch} from '../../context/store';
 import {replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
-import {QRCodeButton} from '@faims3/forms';
 
-type ShortCodeProps = {
+type InviteRegistrationProps = {
   servers: Server[];
 };
 
 /**
- * Component to render a control to register for a notebook via a short-code
- * Handles automatic prefix detection and selection while typing
- *
- * @param props component properties include only `listings`
+ * Advanced/fallback: register by typing or pasting an invite code.
  */
-export function ShortCodeRegistration(props: ShortCodeProps) {
-  const [shortCode, setShortCode] = useState('');
+export function InviteCodeRegistration(props: InviteRegistrationProps) {
+  const [inviteCodeBody, setInviteCodeBody] = useState('');
   const {showSuccess, showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
     props.servers[0]?.shortCodePrefix || ''
   );
 
-  // pattern for allowed short codes (excluding prefix, 0, O, and dash)
-  const codeChars = '^[ABCDEFGHIJKLMNPQRSTUVWXYZ123456789]*$';
-
   /**
-   * Processes input to handle prefixes and maintain valid short code format
+   * Processes input to handle prefixes and keep a valid invite-code body.
    *
    * Also strips any whitespace.
    *
    * @param input The raw input string to process
-   * @returns The cleaned short code without prefix or whitespace
+   * @returns The cleaned invite-code body without prefix or whitespace
    */
   const processInput = (input: string): string => {
-    const cleanInput = input.toUpperCase().trim();
+    // Preserve case for new alphanumeric codes; strip whitespace.
+    const cleanInput = input.trim().replace(/\s+/g, '');
 
     // Check if input starts with any known prefix (including potential dash)
     for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
-      const prefixPattern = new RegExp(`^${prefix}-?`);
+      const prefixPattern = new RegExp(`^${prefix}-?`, 'i');
       if (prefixPattern.test(cleanInput)) {
         // If found, update selected prefix and remove it from input
         setSelectedPrefix(prefix);
@@ -87,18 +88,23 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
     return cleanInput;
   };
 
-  const updateShortCode = (event: {
+  const updateInviteCode = (event: {
     target: {value: React.SetStateAction<string>};
   }) => {
     const rawValue = event.target.value as string;
     const processedValue = processInput(rawValue);
 
-    if (processedValue.length > 6) {
-      showError('Code must be exactly six characters');
-    } else if (!processedValue.match(codeChars)) {
+    if (processedValue.length > INVITE_CODE_MAX_LENGTH) {
+      showError(
+        `Invite code must be at most ${INVITE_CODE_MAX_LENGTH} characters`
+      );
+    } else if (
+      processedValue.length > 0 &&
+      !INVITE_CODE_BODY_PATTERN.test(processedValue)
+    ) {
       showError('Invalid characters detected');
     } else {
-      setShortCode(processedValue);
+      setInviteCodeBody(processedValue);
     }
   };
 
@@ -107,8 +113,11 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
   };
 
   const handleRegister = async () => {
-    if (shortCode.length !== 6) {
-      showError('Please enter a valid 6-character code');
+    if (
+      inviteCodeBody.length < INVITE_CODE_MIN_LENGTH ||
+      inviteCodeBody.length > INVITE_CODE_MAX_LENGTH
+    ) {
+      showError('Please enter a valid invite code');
       return;
     }
 
@@ -121,7 +130,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       return;
     }
 
-    const inviteCode = server.shortCodePrefix + '-' + shortCode;
+    const inviteCode = `${server.shortCodePrefix}-${inviteCodeBody}`;
     const url = `${server.serverUrl}/register?inviteId=${inviteCode}`;
 
     showSuccess('Initiating registration...');
@@ -136,28 +145,28 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
     }
   };
 
-  // only show the prefix selection dropdown if
+  // only show the prefix selection dropdown if more than one server
   const showPrefixSelector = props.servers.length > 1;
+  const canSubmit =
+    inviteCodeBody.length >= INVITE_CODE_MIN_LENGTH &&
+    inviteCodeBody.length <= INVITE_CODE_MAX_LENGTH;
 
   return (
     <MainCard
       title={
         <>
           <Typography variant="h6" gutterBottom>
-            Register for {config.notebookNamePluralCapitalized}
+            Enter invite code
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Enter the short code which was shared with you to get access to a{' '}
-            {config.notebookNameCapitalized}.
+            If you cannot scan a QR code, you can manually enter the invite code
+            here.
           </Typography>
         </>
       }
     >
       <Stack spacing={2} sx={{p: 2}}>
         <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
-          {
-            // Only show selector if condition is true i.e. more than one listing
-          }
           {showPrefixSelector && (
             <FormControl sx={{minWidth: 80, maxWidth: 120}}>
               <InputLabel
@@ -185,9 +194,9 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
           )}
 
           <OutlinedInput
-            value={shortCode}
-            placeholder="Enter code"
-            onChange={updateShortCode}
+            value={inviteCodeBody}
+            placeholder="Paste invite code"
+            onChange={updateInviteCode}
             size="small"
             fullWidth
             sx={{fontFamily: 'monospace'}}
@@ -202,7 +211,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
             onClick={handleRegister}
             variant="outlined"
             startIcon={<LoginIcon />}
-            disabled={shortCode.length !== 6}
+            disabled={!canSubmit}
             sx={{
               minWidth: '100px',
               height: '40px',
@@ -218,17 +227,14 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
 }
 
 /**
- * Component to register a button for scanning a QR code to register
- * for a notebook
- * @param props Component properties include only `listings`
- * @returns component content
+ * Preferred invite redemption: scan a QR code that encodes a register URL.
  */
-export function QRCodeRegistration(props: ShortCodeProps) {
+export function InviteQRRegistration(props: InviteRegistrationProps) {
   const dispatch = useAppDispatch();
   const handleRegister = async (url: string) => {
     // verify that this URL is one that's going to work
     // valid urls look like:
-    // http://192.168.1.2:8154/register/DEV-TMKZSM
+    // http://host/register?inviteId=PREFIX-…
     const valid_hosts = props.servers.map(server => server.serverUrl);
     const valid_re = valid_hosts.join('|') + '/register.*';
 
@@ -246,7 +252,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
     } else {
       dispatch(
         addAlert({
-          message: 'Invalid QRCode Scanned',
+          message: 'Invalid invite QR code scanned',
           severity: 'warning',
         })
       );
@@ -262,7 +268,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
               Register for {config.notebookNamePluralCapitalized}
             </Typography>
             <Typography variant={'body2'} sx={{fontWeight: 700, mb: 0}}>
-              Scan a QRCode to get access to a {config.notebookName}.
+              Scan an invite QR code to get access to a {config.notebookName}.
             </Typography>
           </Grid>
         </Grid>
@@ -276,7 +282,10 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         }}
       >
         <Grid size={{xs: 12}}>
-          <QRCodeButton label="Scan QR Code" onScanResult={handleRegister} />
+          <QRCodeButton
+            label="Scan invite QR code"
+            onScanResult={handleRegister}
+          />
         </Grid>
       </Grid>
     </MainCard>

@@ -85,8 +85,8 @@ export class EC2CouchDB extends Construct {
   private readonly ebsDeviceName: string = '/dev/xvdf';
   /** The device name for the EBS data volume */
   public readonly dataVolume: ec2.Volume;
-  /** The Alarm SNS topic being published to */
-  private readonly alarmSNSTopic: sns.Topic;
+  /** Ops alarm SNS topic (email when monitoring.alarmTopic.emailAddress is set). */
+  public readonly alarmSNSTopic: sns.Topic;
   /** The monitoring config */
   private readonly monitoringConfig?: MonitoringConfig;
   /** Path to AWS cloud watch agent config - be sure to prefix with file:*/

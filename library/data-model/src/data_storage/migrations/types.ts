@@ -34,6 +34,7 @@ export enum DatabaseType {
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
   TEAMS = 'TEAMS',
+  TOMBSTONE = 'TOMBSTONE',
 }
 
 export const DATABASE_TYPES = [
@@ -45,6 +46,7 @@ export const DATABASE_TYPES = [
   DatabaseType.PROJECTS,
   DatabaseType.TEMPLATES,
   DatabaseType.TEAMS,
+  DatabaseType.TOMBSTONE,
 ] as const;
 export type DATABASE_TYPE = (typeof DATABASE_TYPES)[number];
 
