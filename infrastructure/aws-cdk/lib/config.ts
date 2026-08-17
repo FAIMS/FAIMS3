@@ -406,7 +406,7 @@ const ConductorConfigSchema = z.object({
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
-  /** The prefix to use for the short codes in the app */
+  /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
   shortCodePrefix: z.string().default('FAIMS'),
   /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
   provisionSSOUsersPolicy: z

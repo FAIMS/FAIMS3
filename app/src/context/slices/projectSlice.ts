@@ -140,7 +140,7 @@ export interface ApiServerInfo {
   conductor_url: string;
   // A description of the server
   description: string;
-  // The short-code prefix used/expected by this server
+  // The invite-code prefix used/expected by this server
   prefix: string;
 }
 
@@ -252,7 +252,7 @@ export interface Server {
   // What is the URL of the couch database for this server?
   couchDbUrl?: string;
 
-  // Short code prefix
+  // Invite code prefix (e.g. FAIMS in FAIMS-…)
   shortCodePrefix: string;
 
   // server description

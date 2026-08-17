@@ -5,14 +5,13 @@
  */
 
 import {Browser} from '@capacitor/browser';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Stack, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
 import {config, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {getSelectedServer, Server} from '../../../context/slices/projectSlice';
 import {useIsOnline} from '../../../utils/customHooks';
-import {QRCodeButtonOnly, ShortCodeOnlyComponent} from './shortCodeOnly';
+import {InviteCodeEntry, InviteQRScanner} from './inviteCodeEntry';
 import {MultiServerSelector} from './multiServerSelector';
 import {useAppSelector} from '../../../context/store';
 
@@ -158,12 +157,8 @@ const OnboardingComponent = ({
             - or -
           </Typography>
 
-          {/* Access Code Section */}
-          {showCodeInput ? (
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-              <ShortCodeOnlyComponent servers={servers} />
-            </Box>
-          ) : (
+          {/* Preferred: scan invite QR */}
+          {scanQr && (
             <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
               <Typography
                 variant="subtitle1"
@@ -173,38 +168,57 @@ const OnboardingComponent = ({
                   fontSize: '0.95rem',
                 }}
               >
-                Enter access code to register
+                Have an invite? Scan the QR code
               </Typography>
-              <Button
-                variant="outlined"
-                fullWidth
-                data-testid="app-signin-enter-code-button"
-                onClick={() => setShowCodeInput(true)}
-                startIcon={
-                  <LockOpenIcon sx={{color: theme.palette.primary.main}} />
-                }
-                sx={{
-                  borderRadius: '12px',
-                  padding: '12px 20px',
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  color: theme.palette.primary.main,
-                  borderColor: theme.palette.primary.main,
-                  borderWidth: '1.5px',
-                  '&:hover': {
-                    borderColor: theme.palette.primary.dark,
-                    borderWidth: '1.5px',
-                    backgroundColor: theme.palette.primary.light[50],
-                  },
-                }}
-              >
-                Enter code
-              </Button>
+              <InviteQRScanner servers={servers} />
             </Box>
           )}
 
-          {/* QR Code Scanner Button (if enabled) */}
-          {scanQr && <QRCodeButtonOnly servers={servers} />}
+          {/* Advanced fallback: type/paste invite code */}
+          {showCodeInput ? (
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+              <InviteCodeEntry servers={servers} />
+              <Button
+                size="small"
+                onClick={() => setShowCodeInput(false)}
+                sx={{
+                  alignSelf: 'center',
+                  textTransform: 'none',
+                  color: theme.palette.text.secondary,
+                  minHeight: 28,
+                  py: 0,
+                }}
+              >
+                Hide
+              </Button>
+            </Box>
+          ) : (
+            <Button
+              variant="outlined"
+              fullWidth
+              data-testid="app-signin-enter-code-button"
+              onClick={() => setShowCodeInput(true)}
+              sx={{
+                textTransform: 'none',
+                fontSize: '0.9rem',
+                borderRadius: '12px',
+                padding: '10px 16px',
+                color: theme.palette.text.secondary,
+                borderColor: theme.palette.divider,
+                backgroundColor: theme.palette.background.paper,
+                justifyContent: 'center',
+                '&:hover': {
+                  borderColor: theme.palette.text.secondary,
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary,
+                },
+              }}
+            >
+              {scanQr
+                ? 'Advanced: enter invite code instead'
+                : 'Enter invite code to register'}
+            </Button>
+          )}
         </Paper>
       </Stack>
     </Box>

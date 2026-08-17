@@ -56,9 +56,9 @@ import {
 } from '../../../lib/notebookListDisplay';
 import {useIsOnline} from '../../../utils/customHooks';
 import {
-  QRCodeButtonOnly,
-  ShortCodeOnlyComponent,
-} from '../authentication/shortCodeOnly';
+  InviteCodeEntry,
+  InviteQRScanner,
+} from '../authentication/inviteCodeEntry';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
@@ -377,36 +377,39 @@ export default function NoteBooks() {
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{mb: 2}}>
               {allowQr
-                ? `Enter an access code or scan a QR code to get access to a ${config.notebookName}.`
-                : `Enter an access code to get access to a ${config.notebookName}.`}
+                ? `Scan an invite QR code to get access to a ${config.notebookName}. You can also enter an invite code if needed.`
+                : `Enter an invite code to get access to a ${config.notebookName}.`}
             </Typography>
           </Box>
           <Box sx={{px: 2.5, py: 2, borderTop: 1, borderColor: 'divider'}}>
             {servers.length > 0 && (
               <Stack spacing={3} sx={{mt: 1}}>
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{fontWeight: 'bold', mb: 1.5}}
-                  >
-                    Enter code
-                  </Typography>
-                  <ShortCodeOnlyComponent servers={servers} />
-                </Box>
                 {allowQr && (
                   <Box>
                     <Typography
                       variant="subtitle1"
                       sx={{fontWeight: 'bold', mb: 1.5}}
                     >
-                      Scan QR code
+                      Scan invite QR code
                     </Typography>
-                    <QRCodeButtonOnly
+                    <InviteQRScanner
                       servers={servers}
                       onScanStart={() => setAddDialogOpen(false)}
                     />
                   </Box>
                 )}
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    sx={{mb: 1.5}}
+                  >
+                    {allowQr
+                      ? 'Advanced: enter invite code instead'
+                      : 'Enter invite code'}
+                  </Typography>
+                  <InviteCodeEntry servers={servers} />
+                </Box>
               </Stack>
             )}
           </Box>
