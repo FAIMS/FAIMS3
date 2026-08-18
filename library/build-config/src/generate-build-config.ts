@@ -1,0 +1,399 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {parseBuildConfig} from './build-config.js';
+
+const HELP_TEXT = `Usage: pnpm --filter=@faims3/build-config run generate -- [--config path/to/config.json] [--platform all|android|ios|web] [--out path/to/.env]
+
+Generates a build environment file from the shared config JSON used by the app and web builds.
+`;
+
+type Value = string | number | boolean | undefined | null;
+
+export type SupportedPlatform = 'all' | 'android' | 'ios' | 'web';
+
+export interface GenerateBuildConfigArgs {
+  help?: boolean;
+  config?: string;
+  platform?: string;
+  target?: string;
+  out?: string;
+}
+
+export function parseArgs(argv: string[]): GenerateBuildConfigArgs {
+  const args: Record<string, string | boolean> = {};
+
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+
+    if (token === '--help' || token === '-h') {
+      args.help = true;
+      continue;
+    }
+
+    if (token.startsWith('--')) {
+      const key = token.slice(2);
+      const next = argv[i + 1];
+      if (next && !next.startsWith('-')) {
+        args[key] = next;
+        i += 1;
+      } else {
+        args[key] = true;
+      }
+      continue;
+    }
+
+    if (token.startsWith('-')) {
+      const key = token.slice(1);
+      const next = argv[i + 1];
+      if (next && !next.startsWith('-')) {
+        args[key] = next;
+        i += 1;
+      } else {
+        args[key] = true;
+      }
+    }
+  }
+
+  return args as GenerateBuildConfigArgs;
+}
+
+function coalesce<T>(...values: Array<T | undefined | null>): T | undefined {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== '') {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function boolToEnv(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true' ? 'true' : 'false';
+  }
+  return value ? 'true' : 'false';
+}
+
+function stringify(value: Value): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.join(',');
+  }
+  return '';
+}
+
+function resolveGitCommitVersion(value: unknown): string {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  const placeholderPattern = /^output\s+of\s+`?git rev-parse HEAD`?$/i;
+
+  if (raw && !placeholderPattern.test(raw)) {
+    return raw;
+  }
+
+  try {
+    const resolved = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    }).trim();
+    return resolved || 'local-build';
+  } catch {
+    return raw || 'local-build';
+  }
+}
+
+function buildEnvMap(
+  config: ReturnType<typeof parseBuildConfig>,
+  platform: SupportedPlatform
+) {
+  const {app, web, mobile, build} = config;
+  const commitVersion = resolveGitCommitVersion(build.commitVersion);
+
+  const base = {
+    VITE_APP_NAME: coalesce(app.appName, web.appName, 'FAIMS'),
+    VITE_APP_SHORT_NAME: coalesce(
+      app.appShortName,
+      app.appName,
+      web.appShortName,
+      'FAIMS'
+    ),
+    VITE_CLUSTER_ADMIN_GROUP_NAME: coalesce(
+      build.clusterAdminGroupName,
+      app.clusterAdminGroupName,
+      'cluster-admin'
+    ),
+    VITE_COMMIT_VERSION: commitVersion,
+    VITE_CONDUCTOR_URL: coalesce(
+      app.conductorUrl,
+      web.apiUrl,
+      'http://localhost:8080'
+    ),
+    VITE_API_URL: coalesce(
+      web.apiUrl,
+      app.conductorUrl,
+      'http://localhost:8080'
+    ),
+    VITE_WEB_URL: coalesce(web.webUrl, 'http://localhost:3001'),
+    VITE_APP_URL: coalesce(web.appUrl, 'http://localhost:3000'),
+    VITE_WEBSITE_TITLE: coalesce(web.websiteTitle, 'Control Centre'),
+    VITE_APP_THEME: coalesce(app.theme, web.theme, 'default'),
+    VITE_THEME: coalesce(app.theme, web.theme, 'default'),
+    VITE_NOTEBOOK_NAME: coalesce(app.notebookName, 'notebook'),
+    VITE_NOTEBOOK_LIST_TYPE: coalesce(app.notebookListType, 'tabs'),
+    VITE_APP_ID: coalesce(
+      app.appId,
+      mobile.android?.appId,
+      mobile.bundleIdentifier,
+      'org.fedarch.faims3'
+    ),
+    VITE_HEADING_APP_NAME: coalesce(
+      app.headingAppName,
+      app.appName,
+      web.appName,
+      'FAIMS'
+    ),
+    VITE_APP_PRIVACY_POLICY_URL: coalesce(
+      app.privacyPolicyUrl,
+      web.privacyPolicyUrl,
+      'https://fieldnote.au/privacy'
+    ),
+    VITE_SUPPORT_EMAIL: coalesce(app.supportEmail, 'support@fieldmark.au'),
+    VITE_APP_CONTACT_URL: coalesce(app.appContactUrl, app.contactUrl, ''),
+    VITE_APPLE_BUNDLE_IDENTIFIER: coalesce(
+      mobile.bundleIdentifier,
+      mobile.ios?.bundleIdentifier,
+      app.appId,
+      'au.edu.faims.electronicfieldnotebook'
+    ),
+    VITE_APP_STORE_CONNECT_TEAM_ID: coalesce(
+      mobile.teamId,
+      mobile.ios?.developerPortalTeamId,
+      ''
+    ),
+    VITE_MAP_SOURCE: coalesce(app.mapSource, 'maptiler'),
+    VITE_MAP_SOURCE_KEY: coalesce(app.mapSourceKey, ''),
+    VITE_SATELLITE_SOURCE: coalesce(app.satelliteSource, ''),
+    VITE_MAP_STYLE: coalesce(app.mapStyle, 'basic'),
+    VITE_OFFLINE_MAPS: boolToEnv(coalesce(app.offlineMaps, true)),
+    VITE_AUTOSUGGEST_SOURCE: coalesce(app.autosuggestSource, 'NONE'),
+    VITE_AUTOSUGGEST_MAPBOX_KEY: coalesce(app.autosuggestMapboxKey, ''),
+    VITE_AUTOSUGGEST_MAPTILER_KEY: coalesce(app.autosuggestMapTilerKey, ''),
+    VITE_MAPBOX_ADDRESS_COUNTRY: coalesce(app.mapboxAddressCountry, 'AU'),
+    VITE_MAPTILER_ADDRESS_COUNTRY: coalesce(app.maptilerAddressCountry, 'AU'),
+    VITE_MIGRATE_OLD_DATABASES: boolToEnv(
+      coalesce(app.migrateOldDatabases, build.migrateOldDatabases, false)
+    ),
+    VITE_FORCE_REMOTE_DELETION: coalesce(
+      app.forceRemoteDeletion,
+      build.forceRemoteDeletion,
+      'never'
+    ),
+    VITE_DELETE_ON_DEACTIVATION: boolToEnv(
+      coalesce(app.deleteOnDeactivation, build.deleteOnDeactivation, false)
+    ),
+    VITE_BUGSNAG_KEY: coalesce(app.bugsnagKey, build.bugsnagKey, ''),
+    VITE_SHOW_WIPE: boolToEnv(coalesce(app.showWipe, build.showWipe, true)),
+    VITE_SHOW_POUCHDB_BROWSER: boolToEnv(
+      coalesce(app.showPouchDbBrowser, build.showPouchDbBrowser, true)
+    ),
+    VITE_SHOW_NEW_NOTEBOOK: boolToEnv(
+      coalesce(app.showNewNotebook, build.showNewNotebook, true)
+    ),
+    VITE_SHOW_STATUS_TAB: boolToEnv(
+      coalesce(app.showStatusTab, build.showStatusTab, true)
+    ),
+    VITE_DEBUG_APP: boolToEnv(coalesce(app.debugApp, build.debugApp, false)),
+    VITE_DEBUG_POUCHDB: boolToEnv(
+      coalesce(app.debugPouchDb, build.debugPouchDb, false)
+    ),
+    VITE_POUCH_BATCH_SIZE: coalesce(
+      app.pouchBatchSize,
+      build.pouchBatchSize,
+      10
+    ),
+    VITE_POUCH_BATCHES_LIMIT: coalesce(
+      app.pouchBatchesLimit,
+      build.pouchBatchesLimit,
+      10
+    ),
+    VITE_DEVELOPER_MODE: boolToEnv(
+      coalesce(web.developerMode, build.developerMode, false)
+    ),
+    VITE_EXCLUDED_TEAM_ROLES: coalesce(
+      app.excludedTeamRoles,
+      build.excludedTeamRoles,
+      web.excludedTeamRoles,
+      ''
+    ),
+  };
+
+  const platformSpecific = {
+    android: {
+      ANDROID_RELEASE_STATUS: coalesce(
+        mobile.android?.releaseStatus,
+        build.androidReleaseStatus,
+        'draft'
+      ),
+      ANDROID_DEPLOY_TRACK: coalesce(
+        mobile.android?.deployTrack,
+        build.androidDeployTrack,
+        'production'
+      ),
+      APP_ID: coalesce(app.appId, mobile.android?.appId, 'org.fedarch.faims3'),
+      JAVA_KEYSTORE: coalesce(mobile.android?.keystorePath, ''),
+      JAVA_KEYSTORE_PASSWORD: coalesce(mobile.android?.keystorePassword, ''),
+      JAVA_KEY: coalesce(mobile.android?.keyAlias, ''),
+      JAVA_KEY_PASSWORD: coalesce(mobile.android?.keyPassword, ''),
+      ANDROID_JSON_KEY_FILE: coalesce(
+        mobile.android?.serviceAccountJsonPath,
+        ''
+      ),
+    },
+    ios: {
+      VITE_APPLE_BUNDLE_IDENTIFIER: base.VITE_APPLE_BUNDLE_IDENTIFIER,
+      VITE_APP_STORE_CONNECT_TEAM_ID: base.VITE_APP_STORE_CONNECT_TEAM_ID,
+      DEVELOPER_APP_ID: coalesce(mobile.ios?.developerAppId, ''),
+      DEVELOPER_PORTAL_TEAM_ID: coalesce(
+        mobile.ios?.developerPortalTeamId,
+        mobile.teamId,
+        ''
+      ),
+      FASTLANE_APPLE_ID: coalesce(mobile.ios?.appleId, ''),
+      FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: coalesce(
+        mobile.ios?.appleApplicationSpecificPassword,
+        ''
+      ),
+      MATCH_PASSWORD: coalesce(mobile.ios?.matchPassword, ''),
+      MATCH_GIT_URL: coalesce(mobile.ios?.matchGitUrl, ''),
+      GIT_AUTHORIZATION: coalesce(mobile.ios?.gitAuthorization, ''),
+      PROVISIONING_PROFILE_SPECIFIER: coalesce(
+        mobile.ios?.provisioningProfileSpecifier,
+        ''
+      ),
+      APPLE_KEY_ID: coalesce(mobile.ios?.appleKeyId, ''),
+      APPLE_ISSUER_ID: coalesce(mobile.ios?.appleIssuerId, ''),
+      APPLE_KEY_CONTENT: coalesce(mobile.ios?.appleKeyContent, ''),
+      BROWSERSTACK_USERNAME: coalesce(mobile.ios?.browserstackUsername, ''),
+      BROWSERSTACK_ACCESS_KEY: coalesce(mobile.ios?.browserstackAccessKey, ''),
+    },
+  };
+
+  const merged: Record<string, Value> = {...base};
+
+  console.log(`platform is '${platform}'`);
+
+  if (platform === 'android' || platform === 'all') {
+    Object.assign(merged, platformSpecific.android);
+  }
+
+  if (platform === 'ios' || platform === 'all') {
+    console.log('Merging iOS-specific environment variables...');
+    Object.assign(merged, platformSpecific.ios);
+  }
+
+  if (platform === 'web' || platform === 'all') {
+    merged.VITE_WEB_URL = base.VITE_WEB_URL;
+    merged.VITE_API_URL = base.VITE_API_URL;
+    merged.VITE_APP_URL = base.VITE_APP_URL;
+    merged.VITE_APP_NAME = base.VITE_APP_NAME;
+    merged.VITE_APP_THEME = base.VITE_APP_THEME;
+    merged.VITE_THEME = base.VITE_THEME;
+  }
+
+  return merged;
+}
+
+export function generateEnv({
+  config,
+  platform,
+}: {
+  config: ReturnType<typeof parseBuildConfig>;
+  platform: SupportedPlatform;
+}): string {
+  const map = buildEnvMap(config, platform);
+  return Object.entries(map)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${key}=${stringify(value)}`)
+    .join('\n');
+}
+
+export function generateBuildConfig(
+  args: GenerateBuildConfigArgs,
+  cwd = process.cwd()
+): string {
+  if (args.help) {
+    return `${HELP_TEXT}\n`;
+  }
+
+  const rawPlatform = String(
+    args.platform ?? args.target ?? 'all'
+  ).toLowerCase();
+  const validPlatforms = new Set<SupportedPlatform>([
+    'all',
+    'android',
+    'ios',
+    'web',
+  ]);
+
+  if (!validPlatforms.has(rawPlatform as SupportedPlatform)) {
+    throw new Error(
+      `Unsupported platform: ${rawPlatform}. Expected one of ${[...validPlatforms].join(', ')}`
+    );
+  }
+
+  const platform = rawPlatform as SupportedPlatform;
+
+  if (!args.config) {
+    throw new Error(
+      'A config file path is required. Pass --config path/to/config.json'
+    );
+  }
+
+  const configPath = path.resolve(cwd, String(args.config));
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config file not found: ${configPath}`);
+  }
+
+  const parsed = parseBuildConfig(
+    JSON.parse(fs.readFileSync(configPath, 'utf8'))
+  );
+  const env = generateEnv({config: parsed, platform});
+
+  if (args.out) {
+    const outPath = path.resolve(cwd, String(args.out));
+    fs.mkdirSync(path.dirname(outPath), {recursive: true});
+    fs.writeFileSync(outPath, `${env}\n`, 'utf8');
+    return `Generated build config at ${outPath}\n`;
+  }
+
+  return `${env}\n`;
+}
+
+export function main(
+  argv: string[] = process.argv.slice(2),
+  cwd = process.cwd()
+) {
+  try {
+    const args = parseArgs(argv);
+    const output = generateBuildConfig(args, cwd);
+    process.stdout.write(output);
+    return 0;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`${message}\n`);
+    return 1;
+  }
+}
+
+const isDirectExecution =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isDirectExecution) {
+  process.exit(main());
+}

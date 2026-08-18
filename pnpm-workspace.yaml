@@ -4,6 +4,7 @@ packages:
   - web
   - library/data-model
   - library/forms
+  - library/build-config
   - infrastructure/aws-cdk
   - e2e
 onlyBuiltDependencies:
