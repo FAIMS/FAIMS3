@@ -61,6 +61,19 @@ The `FaimsFrontEnd` construct manages the web applications:
 - **Build**: Uses CDK Docker bundling with the image built from `docs/Dockerfile` (Sphinx + themes). The `docs/user` tree is built with `sphinx-build -b html` and deployed to the bucket.
 - **Domain**: Served at the `docs` subdomain (e.g. `docs.your-domain.com`). Configure via `domains.docs`; pass `docsDomainName` and mobile app URLs in the frontend props.
 
+### TTL cleanup (scheduled one-shot)
+
+The `FaimsTtlCleanup` construct (gated by `ttlCleanup.enabled`) runs expired ephemeral CouchDB auth/invite document cleanup as a **separate Fargate task**, not as in-process cron on the Conductor service:
+
+- **Same image** as Conductor (`conductorDockerImage` / tag), with container **command override** to `node scripts/ttlCleanup.js` (WORKDIR `/app/api/build/src` from `Dockerfile.build` / `NODE_RUN_DIR`).
+- **EventBridge Scheduler → ECS RunTask** (`taskCount: 1`) so Conductor auto-scaling does not multiply cleanup runs.
+- **Schedule timezone:** cron hours use `ttlCleanup.scheduleExpressionTimezone` (default `Australia/Sydney`), so the default `cron(0 2 * * ? *)` is **02:00 Sydney local** (AEST/AEDT), not UTC.
+- Shares Conductor cluster, security group, env, and Couch/KEY_SOURCE secrets; logs under CloudWatch prefix `faims-ttl-cleanup`.
+- **Failure alerts:** an EventBridge rule watches ECS Task State Change for this task family; if the cleanup container exits non-zero, a clear message is published to the CouchDB ops SNS topic (`couch.monitoring.alarmTopic.emailAddress` subscribers).
+- Design notes and retention rules: [TtlCleanup.md](../../docs/developer/docs/source/markdown/TtlCleanup.md).
+
+Ship an API image that includes the script **before** setting `ttlCleanup.enabled: true`. Prefer `dryRun: true` first in non-prod; keep `compact: false` on the daily schedule. Ensure Couch monitoring alarm email is configured if you want email delivery of TTL cleanup failures.
+
 ### Auxiliary Components
 
 - **Lambda Function**: A Node.js function to deregister EC2 instances from CloudMap during termination.
@@ -315,6 +328,16 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
   - `retentionDays`: The number of days to retain backups (default: 30)
   - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
+- `ttlCleanup`: (Optional) Scheduled Conductor TTL cleanup of ephemeral CouchDB auth/invite docs. Defaults to disabled when omitted.
+  - `enabled`: When `false`, no schedule or cleanup task definition is created (default: `false`)
+  - `scheduleExpression`: EventBridge Scheduler cron/rate (default: `cron(0 2 * * ? *)` — 02:00 in `scheduleExpressionTimezone`)
+  - `scheduleExpressionTimezone`: IANA timezone for the cron (default: `Australia/Sydney`). Hours in `scheduleExpression` are local to this zone, so daily runs stay at 02:00 through AEST/AEDT. Set to `UTC` if you need a fixed UTC hour instead.
+  - `dryRun`: Pass `--dry-run` (report only; default: `false`)
+  - `compact`: Pass `--compact` after successful deletes (default: `false`; keep off on frequent schedules)
+  - `includeLongLived`: Pass `--include-longlived` for optional long-lived token sweep (default: `false`)
+  - `deleteExhaustedInvites`: Pass `--delete-exhausted-invites` for non-expired invites with exhausted uses (default: `false`; keep off so uses can be raised later)
+  - `cpu` / `memory`: Fargate size for the one-shot task (defaults: `256` / `512`)
+  - Failure alerts use the CouchDB monitoring SNS topic (`couch.monitoring.alarmTopic.emailAddress`)
 - `uiConfiguration`: UI and app build-time settings for the main FAIMS frontend.
   - `uiTheme`: The UI theme: `bubble`, `default`, `fieldmark` or `bssTheme`
   - `notebookListType`: Notebook list display mode: `tabs` or `headings`
@@ -371,7 +394,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `description`: Subheading or description for the instance
   - `conductorDockerImage`: Conductor docker image name from public registry (e.g. ghcr.io/faims/faims3-api or org/faims3-api)
   - `conductorDockerImageTag`: (default "latest") Image tag; composed with `conductorDockerImage` as `image`:`tag`.
-  - `shortCodePrefix`: (default "FAIMS") Prefix for short codes in the app
+  - `shortCodePrefix`: (default "FAIMS") Prefix for invite codes (`{prefix}-{code}`).
   - `provisionSSOUsersPolicy`: (default "reject") When an unknown user signs in via SSO: `own-team`, `general-user`, or `reject`
   - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task

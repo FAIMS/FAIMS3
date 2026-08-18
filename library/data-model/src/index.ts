@@ -28,6 +28,7 @@ export * from './types';
 export * from './utils';
 export * from './constants';
 export * from './inputLimits';
+export * from './inviteCode';
 
 // Nested folders
 export * from './datamodel';

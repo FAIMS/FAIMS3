@@ -26,10 +26,8 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {FieldSearchAutocomplete} from '../field-selector';
-import {
-  applyFieldFilters,
-  getViewsetFieldIds,
-} from '../../features/field-search';
+import {applyFieldFilters} from '../../features/field-search';
+import {fieldIdsForViewset} from '@faims3/data-model';
 import {
   selectUiFields,
   selectUiViews,
@@ -104,7 +102,7 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
   const referenceableFieldCount = useMemo(
     () =>
       applyFieldFilters(
-        getViewsetFieldIds(viewsetId, views, viewsets),
+        fieldIdsForViewset({views, viewsets}, viewsetId),
         allFields,
         referenceableFieldFilters
       ).length,

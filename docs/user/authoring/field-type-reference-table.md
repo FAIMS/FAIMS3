@@ -75,7 +75,7 @@ Whilst technically optional, we strongly recommend implementing HRIDs using Temp
 
 ### Conditional Logic Architecture
 
-Fields capable of controlling logic (marked in specifications) can trigger visibility conditions through standardised operators (equal, not-equal, greater-than, less-than). Complex conditions utilise AND/OR combinations. Note that controller fields require the `logic_select` property or inclusion in `conditional_sources` for optimal performance.
+Fields capable of controlling logic (marked in specifications) can trigger visibility conditions through standardised operators (equal, not-equal, greater-than, less-than). Complex conditions utilise AND/OR combinations.
 
 ### Platform-Specific Limitations
 
