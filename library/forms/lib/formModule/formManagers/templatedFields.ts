@@ -37,6 +37,9 @@ export interface RecordContext {
   createdBy?: string;
   // Raw field values of the parent record, if any (see resolveParentValues)
   parentValues?: ValuesObject;
+  // Raw field values of records linked through single-link Related Records
+  // fields, keyed by that field's ID (see resolveRelatedValues)
+  relatedValues?: Record<string, ValuesObject>;
 }
 
 /**
@@ -265,6 +268,30 @@ function renderTemplate({
       });
     }
     filteredValues['_PARENT'] = parent;
+  }
+  // Linked record values available as {{Rel-Field-ID.Field-ID}}. The link
+  // field's key now holds the linked record's values; a bare {{Rel-Field-ID}}
+  // still renders what it did before via the non-enumerable toString.
+  if (context.relatedValues) {
+    for (const [relFieldId, relValues] of Object.entries(
+      context.relatedValues
+    )) {
+      if (excludedFields.includes(relFieldId)) continue;
+      const related: ValuesObject = {};
+      for (const [k, v] of Object.entries(relValues)) {
+        related[k] = valueForTemplateExpansion({
+          fieldName: k,
+          value: v,
+          uiSpecification,
+        });
+      }
+      const previous = filteredValues[relFieldId];
+      Object.defineProperty(related, 'toString', {
+        value: () => (typeof previous === 'string' ? previous : ''),
+        enumerable: false,
+      });
+      filteredValues[relFieldId] = related;
+    }
   }
 
   // Render
