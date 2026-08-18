@@ -20,6 +20,11 @@ const singleLink = (raw: unknown): LinkEntry | null => {
     : null;
 };
 
+/** The record ID a single-link field value points at, or null. Used by the
+ * form manager to detect link changes without re-resolving on every edit. */
+export const linkedRecordId = (raw: unknown): string | null =>
+  singleLink(raw)?.record_id ?? null;
+
 /**
  * Resolves the raw field values of every record linked through a single-link
  * Linked Related Records field on this form, keyed by that field's ID, for
