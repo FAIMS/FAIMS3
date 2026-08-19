@@ -218,7 +218,7 @@ function fastlaneEnvKeys(): Set<string> {
  * the app and web source files and the Fastlane files.
  * @returns A set of all expected environment variable keys
  */
-function getExpectedKeys(): Set<string> {
+export function getExpectedKeys(): Set<string> {
   const appKeys = extractEnvSchemaKeys(APP_SCHEMA_PATH);
   const webKeys = extractEnvSchemaKeys(WEB_SCHEMA_PATH);
   const fastlaneKeys = fastlaneEnvKeys();
@@ -230,7 +230,7 @@ function getExpectedKeys(): Set<string> {
  * Given the text of a generated .env file, validate that it
  * contains all expected keys and no unexpected keys.
  */
-function validateGeneratedEnv({envText}: {envText: string}) {
+export function validateGeneratedEnv({envText}: {envText: string}) {
   const generatedKeys = new Set(parseEnvText(envText).keys());
   const expectedKeys = getExpectedKeys();
 

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateEnv, parseArgs} from '../src/generate-build-config.ts';
 import {
-  expectedKeysForPlatform,
+  getExpectedKeys,
   validateGeneratedEnv,
 } from '../src/validate-generated-env.ts';
 import {SharedBuildConfig} from '../src/build-config.ts';
@@ -137,7 +137,6 @@ test('validator catches missing and stale generated keys', () => {
 
   const result = validateGeneratedEnv({
     envText: generated,
-    platform: 'all',
   });
 
   assert.equal(result.ok, false);
@@ -146,7 +145,7 @@ test('validator catches missing and stale generated keys', () => {
 });
 
 test('validator derives platform env keys from fastlane files', () => {
-  const expected = expectedKeysForPlatform('ios');
+  const expected = getExpectedKeys();
 
   assert.ok(expected.has('FASTLANE_APPLE_ID'));
   assert.ok(expected.has('APPLE_KEY_ID'));
