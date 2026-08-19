@@ -42,9 +42,6 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
 const MAX_IMAGE_WIDTH = 1920;
-// Cap on how many gallery images can be attached in one pick. Keeps writes
-// bounded on low-memory devices and gives the user immediate feedback if they
-// try to select more.
 const MAX_GALLERY_BATCH = 10;
 
 /**
@@ -724,7 +721,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Track URLs that need cleanup on unmount
   const pendingUrlsRef = useRef<Set<string>>(new Set());
 
-  // User-facing error surfaced when one or more saves fail.
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Get attachment service (guaranteed to exist in full mode)
