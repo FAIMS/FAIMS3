@@ -59,18 +59,21 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 | `web/designer-basic.e2e.ts`          | Open designer from template (minimal form + text + save when available) |
 | `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control          |
 | `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search              |
+| `app/notebook-map.e2e.ts`            | Capture a point, open the Map tab, assert record geometry plots         |
 | `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace        |
 
 ### Tier 2 — Lifecycle & invites
 
-| Spec                                     | Covers                                                      |
-| ---------------------------------------- | ----------------------------------------------------------- |
-| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                        |
-| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                  |
-| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user) |
-| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav          |
-| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav   |
-| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control |
+| Spec                                     | Covers                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| `web/team-invites.e2e.ts`                | Team Invites tab, create team invite                                      |
+| `web/project-invites.e2e.ts`             | Project Invites tab, create project invite                                |
+| `conductor/register-invite.e2e.ts`       | Register via team invite (new account + existing seed-user)               |
+| `web/project-status-archive.e2e.ts`      | Close/reopen project, archive control, archive nav                        |
+| `web/project-delete-tombstone.e2e.ts`    | Permanent delete writes tombstone; GET `/api/tombstones/:id`              |
+| `web/template-visibility-archive.e2e.ts` | Template visibility dialog, archive template, archive nav                 |
+| `app/sync-settings.e2e.ts`               | Notebook Settings tab, sync mode select, deactivate control               |
+| `app/survey-remote-cleanup.e2e.ts`       | Tombstone delete removes local survey; missing without tombstone keeps it |
 
 ### Tier 3 — Admin, permissions, offline UI, exports
 
@@ -106,7 +109,7 @@ Credentials live in `e2e/.env.dist` (copy to `e2e/.env`). Dataset:
 | `TEST_MANAGER_BLUE_*` / `CROSS_*` | Team/project management                                              |
 | `TEST_MEMBER_BOTH_*`              | Create within team; projects list                                    |
 | `TEST_RED_MEMBER_CREATOR_*`       | Template creation                                                    |
-| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit (Red `e2e-minimal` notebook)                  |
+| `TEST_PROJECT_CONTRIBUTOR_*`      | App record create/edit, overview-map geometry (Red `e2e-minimal`)    |
 | `TEST_PROJECT_GUEST_*`            | Read-only / limited UI                                               |
 | `TEST_USER_*`                     | Generic member (`seed-user@faims.test`)                              |
 

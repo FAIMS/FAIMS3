@@ -10,10 +10,11 @@ This document explains in full detail how to deploy an iOS app to the **Apple Ap
 4. [GitHub Workflow Structure](#-github-workflow-structure)
 5. [Environment Configuration](#-environment-configuration)
 6. [Appfile & Fastfile Logic](#-appfile--fastfile-logic)
-7. [Multi-Org Deployment Setup](#-multi-org-deployment-setup-example-csiro--fieldmark)
-8. [Submitting the App for Review (App Store Connect)](#-submitting-the-app-for-review-app-store-connect)
-9. [Setting Up TestFlight for Internal Testing](#-setting-up-testflight-for-internal-testing)
-10. [Best Practices & Notes](#-best-practices--notes)
+7. [Fastlane Lanes: Team vs Individual](#-fastlane-lanes-team-vs-individual)
+8. [Multi-Org Deployment Setup](#-multi-org-deployment-setup-example-csiro--fieldmark)
+9. [Submitting the App for Review (App Store Connect)](#-submitting-the-app-for-review-app-store-connect)
+10. [Setting Up TestFlight for Internal Testing](#-setting-up-testflight-for-internal-testing)
+11. [Best Practices & Notes](#-best-practices--notes)
 
 ## Prerequisites
 
@@ -54,15 +55,19 @@ To **submit apps to review**, the GitHub Actions user (via API key) must be at l
 
 ## Workflows
 
-There are two workflows, one for the nightly build and one for the production build. Both
-are basically the same and use Fastlane to automate the deployment process. The
-only difference between these is that the TestFlight build is conditional on
-changes to the repository and that it uses a different Fastlane configuration
-to push to the TestFlight deployment.
+There are four App Store GitHub workflows. Each builds the React app, syncs
+Capacitor/iOS, then runs a Fastlane lane to compile and upload:
 
-Similar to the Android workflows, the workflows basically just build the
-React app adn then use Fastlane to compile the iOS app and upload it to the
-App Store.
+| Workflow                                               | Fastlane lane                       | Destination             | API key type |
+| ------------------------------------------------------ | ----------------------------------- | ----------------------- | ------------ |
+| `.github/workflows/appstore-testflight.yml`            | `closed_beta_testflight`            | TestFlight              | Team         |
+| `.github/workflows/appstore-deploy.yml`                | `production`                        | App Store (upload only) | Team         |
+| `.github/workflows/appstore-testflight_individual.yml` | `closed_beta_testflight_individual` | TestFlight              | Individual   |
+| `.github/workflows/appstore-deploy_individual.yml`     | `production_individual`             | App Store (upload only) | Individual   |
+
+Team and Individual lanes share the same build/signing shape; they differ in
+which App Store Connect API key they use and whether Match may renew certs.
+See [Fastlane Lanes: Team vs Individual](#-fastlane-lanes-team-vs-individual).
 
 ## Setting Up Fastlane Match
 
@@ -111,7 +116,11 @@ fastlane match init
 
 Enter the cert repo URL when prompted. It creates a `Matchfile`.
 
-### 4. Generate App Store Certs
+### 4. Generate App Store Certs (signing your own distribution certificate)
+
+**Note**: you can only run the below command if you are an admin in your organisation, and you have not reached the limit of distribution certificates. If your organisation has org scoped distribution certificates available, you should use this instead. You will need to run fastlane match import which prompts for a) the non password protected .p12 file b) the distribution.cer file c) the provisioning profile. These all need to be matched to the same base certificate (e.g. public and private must match) and the provisioning profile needs to be created _for_ that certificate. The most reliable way to strip the password off a key is to 'double click' open it in on a physical mac device, and add it to the login keychain. You can then navigate to the certificate and export the key to your system, leaving the password prompt empty. This is also possible using `openssl` but you need to ensure you use the legacy version of the signing algorithms since fastlane (or possibly Mac) doesn't seem to properly support the latest LTS algorithms. The recommended method is to use the Mac certificate manager since it always exports in a suitable format.
+
+If you would like to sign your own:
 
 ```bash
 fastlane match appstore
@@ -178,55 +187,103 @@ team_id("ABCDE12345")
 
 ### Secrets
 
-`DEVELOPER_PORTAL_TEAM_ID` - Developer Portal team identifier. Find this at
-<https://developer.apple.com/account>, look for Membership Details. This is an
-alphanumeric identifier.
+Shared by team and individual lanes unless noted otherwise:
 
-`APP_STORE_CONNECT_TEAM_ID` - App Store Connect team identifier. May be the same
-as the Developer Portal team identifier, find this via App Store Connect
-by looking at your personal account which will list the id of your team.
+| Secret                                              | Meaning                                                                                                                                                                                                        |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEVELOPER_PORTAL_TEAM_ID`                          | Developer Portal team identifier (Membership Details at <https://developer.apple.com/account>). Alphanumeric. Used as Xcode `team_id` in the Appfile.                                                          |
+| `APP_STORE_CONNECT_TEAM_ID`                         | App Store Connect team identifier (may match the Developer Portal id). Passed as `VITE_APP_STORE_CONNECT_TEAM_ID` into Fastlane / `update_project_team`. Must match the team that owns the Match certificates. |
+| `GIT_AUTHORIZATION`                                 | GitHub personal access token with read access to the private Match certificates repository.                                                                                                                    |
+| `MATCH_PASSWORD`                                    | Passphrase used to encrypt/decrypt certificates in the Match git repo.                                                                                                                                         |
+| `PROVISIONING_PROFILE_SPECIFIER`                    | Optional. Exact provisioning profile name to use instead of the default Match name (`match AppStore <bundle-id>`). Written into the Xcode project by `prebuildIOS.sh` and used by `gym` export.                |
+| `BROWSERSTACK_USERNAME` / `BROWSERSTACK_ACCESS_KEY` | BrowserStack credentials (used by the BrowserStack lane, not the App Store upload lanes).                                                                                                                      |
+| `MAP_SOURCE_KEY`                                    | API key for map tiles in the built web app.                                                                                                                                                                    |
 
-`FASTLANE_APPLE_ID` - Apple ID used by Fastlane to publish the app.
+**Team-key only** (workflows without `_individual`):
 
-`GIT_AUTHORIZATION` - A Github personal access token with access to the
-Fastlane certificates repository.
+| Secret                                         | Meaning                                                                                                                                                   |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APPLE_KEY_ID`                                 | Key ID of the **Team** App Store Connect API key (Users and Access → Integrations → App Store Connect API → Team Keys).                                   |
+| `APPLE_ISSUER_ID`                              | Issuer ID for that Team key. Required for Team keys; Fastlane uses it with `key_id` + `key_content` to authenticate.                                      |
+| `APPLE_KEY_CONTENT`                            | PEM contents of the Team API key `.p8` file (downloadable only at creation). Not base64-encoded.                                                          |
+| `FASTLANE_APPLE_ID`                            | Apple ID email used by Fastlane/Appfile for Team-key workflows.                                                                                           |
+| `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | App-specific password for that Apple ID (legacy upload auth path still wired in the Team workflows - API key is used preferentially so this is optional). |
 
-`APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect. Look under Users and Access > Integrations > App Store Connect API for Team Keys.
-`APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect. Look under Users and Access > Integrations > App Store Connect API for Team Keys.
-`APPLE_KEY_CONTENT` - Content of the key file (not encoded). You can only download this on creation of the key.
+**Individual-key only** (`*_individual` workflows):
 
-`BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
-`BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.
+| Secret                         | Meaning                                                                                              |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `APPLE_INDIVIDUAL_KEY_ID`      | Key ID of an **Individual** App Store Connect API key. Mapped to `APPLE_KEY_ID` in the workflow env. |
+| `APPLE_INDIVIDUAL_KEY_CONTENT` | PEM contents of that Individual key `.p8`. Mapped to `APPLE_KEY_CONTENT`.                            |
 
-`MATCH_PASSWORD` - password used to encrypt certificates in fastlane match.
-
-`MAP_SOURCE_KEY` - API key for map tiles
+Do not set `APPLE_ISSUER_ID` on individual workflows. Omitting `issuer_id` is how Fastlane treats the key as Individual. Individual workflows also omit `FASTLANE_APPLE_ID` / app-specific password.
 
 ### Variables
 
-These are not sensitive so can be variables:
+These are not sensitive so can be repository variables:
 
-`DEVELOPER_APP_ID`: numeric App identifier from App Store Connect. Go to the App
-in App Store Connect and view 'App Information', look for "Apple Id" under
-general information.
+| Variable                  | Meaning                                                                                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DEVELOPER_APP_ID`        | Numeric Apple ID of the app in App Store Connect (App Information → Apple ID). Used by `pilot` as `apple_id`.                                                                                                                  |
+| `APPLE_BUNDLE_IDENTIFIER` | iOS bundle identifier (e.g. `au.edu.faims.electronicfieldnotebook`). Passed as `VITE_APPLE_BUNDLE_IDENTIFIER` to Match, gym, pilot, and deliver. Must be unique in the App Store; can differ from the web `APP_ID` URL scheme. |
+| `MATCH_GIT_URL`           | HTTPS URL of the private git repo that stores Match certificates/profiles.                                                                                                                                                     |
 
-`APPLE_BUNDLE_IDENTIFIER`: bundle identifier for Apple build, this needs to be unique
-in the app store, can be different to APP_ID (which is used for the app URL scheme)
-`au.edu.faims.electronicfieldnotebook`.
+App branding / runtime vars used when building the web bundle before Capacitor sync (same for team and individual):
+
+- `vars.HEADING_APP_NAME` — App name on the main page (defaults to `APP_NAME`)
+- `vars.MAP_SOURCE` — Map tile source (`maptiler` or `osm`)
+- `vars.APP_PRIVACY_POLICY_URL` — Privacy policy link in the app footer
+- `vars.SUPPORT_EMAIL` — Support email shown in the app
+- `vars.APP_CONTACT_URL` — Contact link in the app footer
+- `vars.POUCH_BATCH_SIZE` — PouchDB replication batch size (defaults to 10)
 
 TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build
-process. Look at
-the Fastlane `update_app_identifier` action which can do this
-during the build. For now we will keep the Fieldmark id to the
-one that's been in use so far but when we want a BSS release
-we'll need it to be updated.
+process. Look at the Fastlane `update_app_identifier` action which can do this
+during the build. For now we will keep the Fieldmark id to the one that's been
+in use so far but when we want a BSS release we'll need it to be updated.
 
-- `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
-- `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
-- `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer
-- `vars.SUPPORT_EMAIL` - Support email address displayed in the app
-- `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
-- `vars.POUCH_BATCH_SIZE` - batch size for pouchdb replication, defaults to 10 to ensure reliable sync of large files
+## Fastlane Lanes: Team vs Individual
+
+Lanes live in `app/ios/App/fastlane/Fastfile`. Prefer the Team lanes when you
+have a Team API key with Admin/App Manager access that can manage provisioning.
+Use the Individual lanes when CI should authenticate with an Individual API
+key and must not create, renew or revoke certificates. This is a safer workflow for headless execution in a shared account environment where Team keys would necessarily leak authentication against non target applications.
+
+### Behaviour differences
+
+|                        | Team lanes (`closed_beta_testflight`, `production`)                                | Individual lanes (`*_individual`)                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| API key                | Team key: `APPLE_KEY_ID` + `APPLE_ISSUER_ID` + `APPLE_KEY_CONTENT`                 | Individual key: `APPLE_KEY_ID` + `APPLE_KEY_CONTENT` only (no issuer)                             |
+| GitHub secrets         | `APPLE_KEY_ID`, `APPLE_ISSUER_ID`, `APPLE_KEY_CONTENT` (+ optional Apple ID / ASP) | `APPLE_INDIVIDUAL_KEY_ID`, `APPLE_INDIVIDUAL_KEY_CONTENT`                                         |
+| Match                  | `readonly: false` — can fetch **and** create/renew App Store profiles via the API  | `readonly: true` — only clones existing certs/profiles from the Match git repo                    |
+| Cert renewal           | Possible in CI (needs Team key + sufficient portal rights)                         | **Not** done in CI. Renew locally (or via a Team-key run) with Admin access, then commit to Match |
+| Upload auth            | Team API key (+ Team workflows still pass Apple ID / ASP env vars)                 | Individual API key only (needs Fastlane ≥ 2.233 for altool uploads without Apple ID / ASP)        |
+| TestFlight (`pilot`)   | Waits for build processing (`skip_waiting_for_build_processing: false`)            | Skips waiting (`true`) so CI stays non-interactive                                                |
+| Production (`deliver`) | Uploads IPA; does not submit for review                                            | Same                                                                                              |
+
+Both variants still need the shared Match and team identity values:
+`MATCH_GIT_URL`, `MATCH_PASSWORD`, `GIT_AUTHORIZATION`,
+`VITE_APPLE_BUNDLE_IDENTIFIER` / `APPLE_BUNDLE_IDENTIFIER`,
+`DEVELOPER_APP_ID`, `DEVELOPER_PORTAL_TEAM_ID`, and
+`APP_STORE_CONNECT_TEAM_ID` (`VITE_APP_STORE_CONNECT_TEAM_ID`).
+
+### Creating an Individual API key
+
+In App Store Connect → Users and Access → Integrations → App Store Connect API,
+create an **Individual** key (not a Team key). Store the Key ID and `.p8`
+contents as `APPLE_INDIVIDUAL_KEY_ID` and `APPLE_INDIVIDUAL_KEY_CONTENT`.
+There is no Issuer ID for Individual keys.
+
+### Practical notes
+
+- Individual lanes assume Match already has App Store certificates and a
+  profile for `APPLE_BUNDLE_IDENTIFIER`. If Match is empty or expired, run
+  `fastlane match appstore` (or a Team lane) outside the individual workflow
+  first.
+- If your Match profile name is not the default
+  `match AppStore <bundle-id>`, set `PROVISIONING_PROFILE_SPECIFIER` to the
+  exact name (both team and individual workflows honour this).
+- Individual workflows are `workflow_dispatch` only (no nightly schedule).
 
 ## Note on Development Team
 

@@ -137,6 +137,16 @@ export class FaimsConductor extends Construct {
   public readonly conductorEndpoint: string;
   /** The Fargate Service */
   public readonly fargateService: ecs.FargateService;
+  /** ECS cluster hosting the Conductor service (and scheduled one-shot tasks). */
+  public readonly cluster: ecs.Cluster;
+  /** Security group attached to Conductor tasks (Couch egress equivalent). */
+  public readonly serviceSecurityGroup: ec2.SecurityGroup;
+  /** Conductor container image (shared with scheduled jobs such as TTL cleanup). */
+  public readonly containerImage: ecs.ContainerImage;
+  /** Non-secret environment variables applied to the Conductor container. */
+  public readonly environment: Record<string, string>;
+  /** Secrets Manager-backed secrets applied to the Conductor container. */
+  public readonly secrets: Record<string, ecs.Secret>;
 
   constructor(scope: Construct, id: string, props: FaimsConductorProps) {
     super(scope, id);
@@ -152,16 +162,15 @@ export class FaimsConductor extends Construct {
 
     // If you want to use a local build for debugging (not recommended for production, set this to false)
     const useDockerHub = true;
-    let conductorContainerImage: ecs.ContainerImage;
 
     if (useDockerHub) {
       // Setup container image from DockerHub image
-      conductorContainerImage = ecs.ContainerImage.fromRegistry(
+      this.containerImage = ecs.ContainerImage.fromRegistry(
         `${props.config.conductorDockerImage}:${props.config.conductorDockerImageTag}`
       );
     } else {
       // Build and bundle with cdk and ECR
-      conductorContainerImage = ecs.ContainerImage.fromAsset(getPathToRoot(), {
+      this.containerImage = ecs.ContainerImage.fromAsset(getPathToRoot(), {
         file: 'Dockerfile.build',
         exclude: ['infrastructure'],
       });
@@ -244,8 +253,102 @@ export class FaimsConductor extends Construct {
       });
     }
 
+    // Expose env/secrets so sibling one-shot tasks (e.g. TTL cleanup) can reuse
+    // the same Couch + KEY_SOURCE bootstrapping without duplicating the block.
+    this.environment = {
+      PROFILE_NAME: 'default',
+      CONDUCTOR_INSTANCE_NAME: props.config.name,
+      CONDUCTOR_DESCRIPTION: props.config.description,
+      COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
+      COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
+      COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+      CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
+      // Conductor API URLs
+      CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
+      CONDUCTOR_URL: this.conductorEndpoint,
+      WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
+      ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
+      IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
+      KEY_SOURCE: 'AWS_SM',
+      AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
+      NEW_CONDUCTOR_URL: props.webUrl,
+      PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
+      MIGRATE_NOTEBOOKS_ON_STARTUP: props.config.migrateNotebooksOnStartup
+        ? 'true'
+        : 'false',
+
+      // Bugsnag (optional)
+      ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
+
+      // add any auth environment variables
+      ...authEnvironment,
+
+      // disable local login if specified in config (for SSO only deployments)
+      // defaults to false if not provided in config
+      DISABLE_LOCAL_LOGIN: props.authProviders
+        ? props.authProviders.disableLocalLogin
+          ? 'true'
+          : 'false'
+        : 'false',
+
+      // Security configurations
+      MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
+        ? props.maximumLongLivedDurationDays.toString()
+        : 'infinite',
+      RATE_LIMITER_ENABLED:
+        props.rateLimiterEnabled === false ? 'false' : 'true',
+      AUTH_ATTEMPT_LIMITER_ENABLED:
+        props.authAttemptLimiterEnabled === false ? 'false' : 'true',
+
+      // Email Service Configuration
+      EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
+      EMAIL_FROM_ADDRESS: props.smtpConfig.fromEmail,
+      EMAIL_FROM_NAME: props.smtpConfig.fromName,
+      EMAIL_REPLY_TO: props.smtpConfig.replyTo || props.smtpConfig.fromEmail,
+      TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
+      SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
+
+      // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
+      REDIRECT_WHITELIST: [
+        this.conductorEndpoint,
+        props.webAppPublicUrl,
+        props.webUrl,
+        `${props.appId}://`,
+        ...(props.localhostWhitelist
+          ? [
+              'http://localhost:3000',
+              'http://localhost:3001',
+              'http://localhost:8080',
+              'http://localhost:8000',
+            ]
+          : []),
+      ].join(','),
+    };
+
+    this.secrets = {
+      COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
+        props.couchDbAdminSecret,
+        'password'
+      ),
+      COUCHDB_USER: ecs.Secret.fromSecretsManager(
+        props.couchDbAdminSecret,
+        'username'
+      ),
+      FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(props.cookieSecret),
+
+      // SMTP Credentials from Secret
+      SMTP_HOST: ecs.Secret.fromSecretsManager(smtpSecret, 'host'),
+      SMTP_PORT: ecs.Secret.fromSecretsManager(smtpSecret, 'port'),
+      SMTP_SECURE: ecs.Secret.fromSecretsManager(smtpSecret, 'secure'),
+      SMTP_USER: ecs.Secret.fromSecretsManager(smtpSecret, 'user'),
+      SMTP_PASSWORD: ecs.Secret.fromSecretsManager(smtpSecret, 'pass'),
+
+      // Include any auth config secrets
+      ...authSecrets,
+    };
+
     conductorTaskDfn.addContainer('conductor-container-dfn', {
-      image: conductorContainerImage,
+      image: this.containerImage,
       portMappings: [
         {
           containerPort: this.internalPort,
@@ -253,96 +356,8 @@ export class FaimsConductor extends Construct {
           name: 'conductor-port',
         },
       ],
-      environment: {
-        PROFILE_NAME: 'default',
-        CONDUCTOR_INSTANCE_NAME: props.config.name,
-        CONDUCTOR_DESCRIPTION: props.config.description,
-        COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-        COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
-        COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
-        CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
-        // Conductor API URLs
-        CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
-        CONDUCTOR_URL: this.conductorEndpoint,
-        WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
-        ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
-        IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-        KEY_SOURCE: 'AWS_SM',
-        AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-        NEW_CONDUCTOR_URL: props.webUrl,
-        PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
-        MIGRATE_NOTEBOOKS_ON_STARTUP: props.config.migrateNotebooksOnStartup
-          ? 'true'
-          : 'false',
-
-        // Bugsnag (optional)
-        ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
-
-        // add any auth environment variables
-        ...authEnvironment,
-
-        // disable local login if specified in config (for SSO only deployments)
-        // defaults to false if not provided in config
-        DISABLE_LOCAL_LOGIN: props.authProviders
-          ? props.authProviders.disableLocalLogin
-            ? 'true'
-            : 'false'
-          : 'false',
-
-        // Security configurations
-        MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
-          ? props.maximumLongLivedDurationDays.toString()
-          : 'infinite',
-        RATE_LIMITER_ENABLED:
-          props.rateLimiterEnabled === false ? 'false' : 'true',
-        AUTH_ATTEMPT_LIMITER_ENABLED:
-          props.authAttemptLimiterEnabled === false ? 'false' : 'true',
-
-        // Email Service Configuration
-        EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
-        EMAIL_FROM_ADDRESS: props.smtpConfig.fromEmail,
-        EMAIL_FROM_NAME: props.smtpConfig.fromName,
-        EMAIL_REPLY_TO: props.smtpConfig.replyTo || props.smtpConfig.fromEmail,
-        TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
-        SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
-
-        // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
-        REDIRECT_WHITELIST: [
-          this.conductorEndpoint,
-          props.webAppPublicUrl,
-          props.webUrl,
-          `${props.appId}://`,
-          ...(props.localhostWhitelist
-            ? [
-                'http://localhost:3000',
-                'http://localhost:3001',
-                'http://localhost:8080',
-                'http://localhost:8000',
-              ]
-            : []),
-        ].join(','),
-      },
-      secrets: {
-        COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
-          props.couchDbAdminSecret,
-          'password'
-        ),
-        COUCHDB_USER: ecs.Secret.fromSecretsManager(
-          props.couchDbAdminSecret,
-          'username'
-        ),
-        FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(props.cookieSecret),
-
-        // SMTP Credentials from Secret
-        SMTP_HOST: ecs.Secret.fromSecretsManager(smtpSecret, 'host'),
-        SMTP_PORT: ecs.Secret.fromSecretsManager(smtpSecret, 'port'),
-        SMTP_SECURE: ecs.Secret.fromSecretsManager(smtpSecret, 'secure'),
-        SMTP_USER: ecs.Secret.fromSecretsManager(smtpSecret, 'user'),
-        SMTP_PASSWORD: ecs.Secret.fromSecretsManager(smtpSecret, 'pass'),
-
-        // Include any auth config secrets
-        ...authSecrets,
-      },
+      environment: this.environment,
+      secrets: this.secrets,
       logging: ecs.LogDriver.awsLogs({
         streamPrefix: 'faims-conductor',
         logRetention: logs.RetentionDays.ONE_MONTH,
@@ -353,7 +368,7 @@ export class FaimsConductor extends Construct {
     // =========================
 
     // Create the ECS Cluster
-    const cluster = new ecs.Cluster(this, 'ConductorCluster', {
+    this.cluster = new ecs.Cluster(this, 'ConductorCluster', {
       vpc: props.vpc,
       // Enable enhanced metrics - this gives container/task level insights and
       // more metrics
@@ -365,7 +380,7 @@ export class FaimsConductor extends Construct {
     });
 
     // Create Security Group for the Fargate service
-    const serviceSecurityGroup = new ec2.SecurityGroup(
+    this.serviceSecurityGroup = new ec2.SecurityGroup(
       this,
       'ConductorServiceSG',
       {
@@ -377,12 +392,21 @@ export class FaimsConductor extends Construct {
 
     // Create Fargate Service
     this.fargateService = new ecs.FargateService(this, 'conductor-service', {
-      cluster: cluster,
+      cluster: this.cluster,
       taskDefinition: conductorTaskDfn,
       // Target number of tasks to run
       desiredCount: props.config.autoScaling.desiredCapacity,
-      securityGroups: [serviceSecurityGroup],
+      securityGroups: [this.serviceSecurityGroup],
       assignPublicIp: true, // TODO Change this if using private subnets with NAT
+      // Keep full healthy capacity during deployments (ALB-backed API).
+      // With maxHealthyPercent defaulting to 200, ECS starts replacement
+      // tasks before draining old ones.
+      minHealthyPercent: 100,
+      // Fail (and roll back) quickly when new tasks cannot start healthy.
+      circuitBreaker: {
+        enable: true,
+        rollback: true,
+      },
     });
 
     // LOAD BALANCING SETUP
@@ -452,12 +476,11 @@ export class FaimsConductor extends Construct {
     // DNS ROUTES
     // ===========
 
-    // Route from conductor domain to ALB
+    // Route from conductor domain to ALB (alias targets ignore TTL)
     new r53.ARecord(this, 'conductorRoute', {
       zone: props.hz,
       recordName: props.domainName,
       comment: `Route from ${props.domainName} to Conductor ECS service through ALB`,
-      ttl: Duration.minutes(30),
       target: r53.RecordTarget.fromAlias(
         new r53Targets.LoadBalancerTarget(props.sharedBalancer.alb)
       ),
@@ -477,7 +500,7 @@ export class FaimsConductor extends Construct {
     // ================
 
     // Allow inbound traffic from the ALB
-    serviceSecurityGroup.connections.allowFrom(
+    this.serviceSecurityGroup.connections.allowFrom(
       props.sharedBalancer.alb,
       ec2.Port.tcp(this.internalPort),
       'Allow traffic from ALB to Conductor Fargate Service'

@@ -18,7 +18,7 @@ import {
 // still accepts legacy uploads during the metadata migration window.
 const {uiSpec: rawUiSpec} = normalizeNotebookUiSpecification(sampleNotebook);
 compileUiSpecConditionals(rawUiSpec);
-// compileUiSpecConditionals attaches conditionFn/conditional_sources in place
+// compileUiSpecConditionals attaches conditionFn in place
 const uiSpec = rawUiSpec as CompiledNotebookUiSpec;
 
 const SAMPLE_VALID_DATA = {

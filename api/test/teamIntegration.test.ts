@@ -37,7 +37,7 @@ import {
   ResourceAssociation,
   Role,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {Express} from 'express';
 import request from 'supertest';
 import {
@@ -161,8 +161,8 @@ describe('Team integration with templates and projects', () => {
       .then(res => res.body);
 
     // Verify the templates were created
-    expect(templateWithoutTeam._id).to.not.be.undefined;
-    expect(templateWithTeam._id).to.not.be.undefined;
+    expect(templateWithoutTeam._id).not.toBeUndefined();
+    expect(templateWithTeam._id).not.toBeUndefined();
 
     // Verify the team association
     const actualTemplateWithTeam = await getTemplate(templateWithTeam._id);
@@ -170,8 +170,8 @@ describe('Team integration with templates and projects', () => {
       templateWithoutTeam._id
     );
 
-    expect(actualTemplateWithTeam.ownedByTeamId).to.equal(team._id);
-    expect(actualTemplateWithoutTeam.ownedByTeamId).to.be.undefined;
+    expect(actualTemplateWithTeam.ownedByTeamId).toBe(team._id);
+    expect(actualTemplateWithoutTeam.ownedByTeamId).toBeUndefined();
   });
 
   it('creates projects with and without teamId', async () => {
@@ -208,8 +208,8 @@ describe('Team integration with templates and projects', () => {
       .then(res => res.body);
 
     // Verify the projects were created
-    expect(projectWithoutTeam.notebook).to.not.be.undefined;
-    expect(projectWithTeam.notebook).to.not.be.undefined;
+    expect(projectWithoutTeam.notebook).not.toBeUndefined();
+    expect(projectWithTeam.notebook).not.toBeUndefined();
 
     // Get the project metadata
     await getProjectById(projectWithTeam.notebook);
@@ -226,8 +226,8 @@ describe('Team integration with templates and projects', () => {
       projectWithoutTeam.notebook
     );
 
-    expect(projectDocWithTeam.ownedByTeamId).to.equal(team._id);
-    expect(projectDocWithoutTeam.ownedByTeamId).to.be.undefined;
+    expect(projectDocWithTeam.ownedByTeamId).toBe(team._id);
+    expect(projectDocWithoutTeam.ownedByTeamId).toBeUndefined();
   });
 
   it('allows team members to create and retrieve resources in their team', async () => {
@@ -243,8 +243,8 @@ describe('Team integration with templates and projects', () => {
       username,
       name: 'Team User',
     });
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User creation failed ' + err);
@@ -270,7 +270,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_PROJECT,
         resourceId: undefined,
       })
-    ).to.be.false;
+    ).toBe(false);
 
     // But should also not be allowed to create projects in their team (only managers and admins can)
     expect(
@@ -279,7 +279,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_PROJECT_IN_TEAM,
         resourceId: team._id,
       })
-    ).to.be.false; // Members can't create projects, only managers and admins
+    ).toBe(false); // Members can't create projects, only managers and admins
 
     // Verify API rejects member's attempt to create a project in the team
     await requestAuthAndType(
@@ -328,7 +328,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_PROJECT_IN_TEAM,
         resourceId: team._id,
       })
-    ).to.be.true;
+    ).toBe(true);
     // Try to create a project in the team using the API
     await requestAuthAndType(
       request(app).post(`${NOTEBOOKS_API_BASE}`).send({
@@ -358,7 +358,7 @@ describe('Team integration with templates and projects', () => {
           .expect(200)
           .expect(res => {
             const project = res.body;
-            expect(project).to.not.be.null;
+            expect(project).not.toBeNull();
           });
       });
     // Try to create a template in the team using the API
@@ -389,7 +389,7 @@ describe('Team integration with templates and projects', () => {
           .expect(200)
           .expect(res => {
             const templates = res.body;
-            expect(templates).to.not.be.null;
+            expect(templates).not.toBeNull();
           });
       });
   });
@@ -418,8 +418,8 @@ describe('Team integration with templates and projects', () => {
       name: 'Template Permission Manager',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User creation failed ' + err);
@@ -498,8 +498,8 @@ describe('Team integration with templates and projects', () => {
       name: 'Outsider User',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
     if (!user) {
       throw new Error('User creation failed ' + err);
     }
@@ -525,7 +525,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_PROJECT,
         resourceId: undefined,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     // But should NOT be allowed to create projects in a team they don't belong to
     expect(
@@ -534,7 +534,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_PROJECT_IN_TEAM,
         resourceId: team._id,
       })
-    ).to.be.false;
+    ).toBe(false);
 
     // Try to create a project in the team using the API - should be denied
     await requestAuthAndType(
@@ -648,12 +648,12 @@ describe('Team integration with templates and projects', () => {
     const team2Templates = await getTemplateIdsByTeamId({teamId: team2._id});
 
     // Verify correct templates are returned
-    expect(team1Templates).to.have.lengthOf(2);
-    expect(team1Templates).to.include(template1._id);
-    expect(team1Templates).to.include(template3._id);
+    expect(team1Templates).toHaveLength(2);
+    expect(team1Templates).toContain(template1._id);
+    expect(team1Templates).toContain(template3._id);
 
-    expect(team2Templates).to.have.lengthOf(1);
-    expect(team2Templates).to.include(template2._id);
+    expect(team2Templates).toHaveLength(1);
+    expect(team2Templates).toContain(template2._id);
   });
 
   it('correctly fetches projects by team ID', async () => {
@@ -679,12 +679,12 @@ describe('Team integration with templates and projects', () => {
     const team2Projects = await getProjectIdsByTeamId({teamId: team2._id});
 
     // Verify correct projects are returned
-    expect(team1Projects).to.have.lengthOf(2);
-    expect(team1Projects).to.include(projectId1);
-    expect(team1Projects).to.include(projectId3);
+    expect(team1Projects).toHaveLength(2);
+    expect(team1Projects).toContain(projectId1);
+    expect(team1Projects).toContain(projectId3);
 
-    expect(team2Projects).to.have.lengthOf(1);
-    expect(team2Projects).to.include(projectId2);
+    expect(team2Projects).toHaveLength(1);
+    expect(team2Projects).toContain(projectId2);
   });
 
   it('virtual roles grant correct permissions to associated resources', async () => {
@@ -711,8 +711,8 @@ describe('Team integration with templates and projects', () => {
       name: 'Virtual User',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User create failed ' + err);
@@ -763,7 +763,7 @@ describe('Team integration with templates and projects', () => {
         role.resourceId === projectId && role.role === Role.PROJECT_CONTRIBUTOR
     );
 
-    expect(hasProjectContributorVirtual).to.be.true;
+    expect(hasProjectContributorVirtual).toBe(true);
 
     // Check that virtual roles include template guest role
     const hasTemplateGuestVirtual = virtualRoles.some(
@@ -771,7 +771,7 @@ describe('Team integration with templates and projects', () => {
         role.resourceId === template._id && role.role === Role.TEMPLATE_GUEST
     );
 
-    expect(hasTemplateGuestVirtual).to.be.true;
+    expect(hasTemplateGuestVirtual).toBe(true);
 
     // Test with team manager role (should grant PROJECT_MANAGER virtually)
     removeTeamRole({
@@ -804,7 +804,7 @@ describe('Team integration with templates and projects', () => {
         role.resourceId === projectId && role.role === Role.PROJECT_MANAGER
     );
 
-    expect(hasProjectManagerVirtual).to.be.true;
+    expect(hasProjectManagerVirtual).toBe(true);
 
     // Check that virtual roles include template manager role
     const hasTemplateManagerVirtual = virtualRolesManager.some(
@@ -812,7 +812,7 @@ describe('Team integration with templates and projects', () => {
         role.resourceId === template._id && role.role === Role.TEMPLATE_MANAGER
     );
 
-    expect(hasTemplateManagerVirtual).to.be.true;
+    expect(hasTemplateManagerVirtual).toBe(true);
 
     // Test with team admin role (should grant PROJECT_ADMIN and TEMPLATE_ADMIN virtually)
     removeTeamRole({
@@ -844,7 +844,7 @@ describe('Team integration with templates and projects', () => {
       role => role.resourceId === projectId && role.role === Role.PROJECT_ADMIN
     );
 
-    expect(hasProjectAdminVirtual).to.be.true;
+    expect(hasProjectAdminVirtual).toBe(true);
 
     // Check that virtual roles include template admin role
     const hasTemplateAdminVirtual = virtualRolesAdmin.some(
@@ -852,7 +852,7 @@ describe('Team integration with templates and projects', () => {
         role.resourceId === template._id && role.role === Role.TEMPLATE_ADMIN
     );
 
-    expect(hasTemplateAdminVirtual).to.be.true;
+    expect(hasTemplateAdminVirtual).toBe(true);
   });
 
   it('can update templates and projects with teamId', async () => {
@@ -907,7 +907,7 @@ describe('Team integration with templates and projects', () => {
     ).expect(200);
 
     const updatedTemplate = await getTemplate(template._id);
-    expect(updatedTemplate.ownedByTeamId).to.equal(team1._id);
+    expect(updatedTemplate.ownedByTeamId).toBe(team1._id);
 
     // Update project - teamId should persist
     await requestAuthAndType(
@@ -918,10 +918,10 @@ describe('Team integration with templates and projects', () => {
     ).expect(200);
 
     // Get project data after update
-    const projectsDb = await require('../src/couchdb').localGetProjectsDb();
+    const projectsDb = await localGetProjectsDb();
     const updatedProjectDoc = await projectsDb.get(project.notebook);
 
-    expect(updatedProjectDoc.ownedByTeamId).to.equal(team1._id);
+    expect(updatedProjectDoc.ownedByTeamId).toBe(team1._id);
   });
 
   it('can assign a project to a team after creation', async () => {
@@ -946,7 +946,7 @@ describe('Team integration with templates and projects', () => {
     // Verify project is created without teamId
     const projectsDb = localGetProjectsDb();
     const projectDoc = await projectsDb.get(project.notebook);
-    expect(projectDoc.ownedByTeamId).to.be.undefined;
+    expect(projectDoc.ownedByTeamId).toBeUndefined();
 
     // Assign the project to the team
     await requestAuthAndType(
@@ -958,7 +958,7 @@ describe('Team integration with templates and projects', () => {
 
     // Verify the project now has the teamId assigned
     const updatedProjectDoc = await projectsDb.get(project.notebook);
-    expect(updatedProjectDoc.ownedByTeamId).to.equal(team._id);
+    expect(updatedProjectDoc.ownedByTeamId).toBe(team._id);
   });
 
   it('getRelevantUserAssociations with no teams returns empty array', async () => {
@@ -968,16 +968,16 @@ describe('Team integration with templates and projects', () => {
       name: 'User Without Teams',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User create failed ' + err);
     }
 
     const associations = await getRelevantUserAssociations({dbUser: user});
-    expect(associations).to.be.an('array');
-    expect(associations).to.have.lengthOf(0);
+    expect(associations).toBeInstanceOf(Array);
+    expect(associations).toHaveLength(0);
   });
 
   it('getRelevantUserAssociations for team with no resources returns empty associated resources', async () => {
@@ -996,8 +996,8 @@ describe('Team integration with templates and projects', () => {
       name: 'User In Empty Team',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User create failed ' + err);
@@ -1012,16 +1012,16 @@ describe('Team integration with templates and projects', () => {
     await saveCouchUser(user);
 
     const associations = await getRelevantUserAssociations({dbUser: user});
-    expect(associations).to.be.an('array');
+    expect(associations).toBeInstanceOf(Array);
     // Will have two entries - one for Project associations and one for Template associations
-    expect(associations).to.have.lengthOf(2);
+    expect(associations).toHaveLength(2);
 
     // Both should have empty associated resources arrays
     associations.forEach(association => {
-      expect(association.resource.resourceId).to.equal(team._id);
-      expect(association.resource.resourceType).to.equal(Resource.TEAM);
-      expect(association.associatedResources).to.be.an('array');
-      expect(association.associatedResources).to.have.lengthOf(0);
+      expect(association.resource.resourceId).toBe(team._id);
+      expect(association.resource.resourceType).toBe(Resource.TEAM);
+      expect(association.associatedResources).toBeInstanceOf(Array);
+      expect(association.associatedResources).toHaveLength(0);
     });
   });
 
@@ -1060,8 +1060,8 @@ describe('Team integration with templates and projects', () => {
       name: 'User In Mixed Team',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User create failed ' + err);
@@ -1076,8 +1076,8 @@ describe('Team integration with templates and projects', () => {
     await saveCouchUser(user);
 
     const associations = await getRelevantUserAssociations({dbUser: user});
-    expect(associations).to.be.an('array');
-    expect(associations).to.have.lengthOf(2);
+    expect(associations).toBeInstanceOf(Array);
+    expect(associations).toHaveLength(2);
 
     // Find the project and template associations
     const projectAssociation = associations.find(
@@ -1093,31 +1093,31 @@ describe('Team integration with templates and projects', () => {
     );
 
     // Verify project associations
-    expect(projectAssociation).to.not.be.undefined;
+    expect(projectAssociation).not.toBeUndefined();
     if (projectAssociation) {
-      expect(projectAssociation.resource.resourceId).to.equal(team._id);
-      expect(projectAssociation.resource.resourceType).to.equal(Resource.TEAM);
-      expect(projectAssociation.associatedResources).to.have.lengthOf(2);
+      expect(projectAssociation.resource.resourceId).toBe(team._id);
+      expect(projectAssociation.resource.resourceType).toBe(Resource.TEAM);
+      expect(projectAssociation.associatedResources).toHaveLength(2);
 
       const projectIds = projectAssociation.associatedResources.map(
         r => r.resourceId
       );
-      expect(projectIds).to.include(project1);
-      expect(projectIds).to.include(project2);
+      expect(projectIds).toContain(project1);
+      expect(projectIds).toContain(project2);
     }
 
     // Verify template associations
-    expect(templateAssociation).to.not.be.undefined;
+    expect(templateAssociation).not.toBeUndefined();
     if (templateAssociation) {
-      expect(templateAssociation.resource.resourceId).to.equal(team._id);
-      expect(templateAssociation.resource.resourceType).to.equal(Resource.TEAM);
-      expect(templateAssociation.associatedResources).to.have.lengthOf(2);
+      expect(templateAssociation.resource.resourceId).toBe(team._id);
+      expect(templateAssociation.resource.resourceType).toBe(Resource.TEAM);
+      expect(templateAssociation.associatedResources).toHaveLength(2);
 
       const templateIds = templateAssociation.associatedResources.map(
         r => r.resourceId
       );
-      expect(templateIds).to.include(template1._id);
-      expect(templateIds).to.include(template2._id);
+      expect(templateIds).toContain(template1._id);
+      expect(templateIds).toContain(template2._id);
     }
   });
 
@@ -1176,8 +1176,8 @@ describe('Team integration with templates and projects', () => {
       name: 'User In Multiple Teams',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User create failed ' + err);
@@ -1205,10 +1205,10 @@ describe('Team integration with templates and projects', () => {
     await saveCouchUser(user);
 
     const associations = await getRelevantUserAssociations({dbUser: user});
-    expect(associations).to.be.an('array');
+    expect(associations).toBeInstanceOf(Array);
 
     // Should have 6 associations: 2 resource types × 3 teams
-    expect(associations).to.have.lengthOf(6);
+    expect(associations).toHaveLength(6);
 
     // Group associations by team
     const team1Assocs = associations.filter(
@@ -1222,9 +1222,9 @@ describe('Team integration with templates and projects', () => {
     );
 
     // Each team should have 2 associations (one for projects, one for templates)
-    expect(team1Assocs).to.have.lengthOf(2);
-    expect(team2Assocs).to.have.lengthOf(2);
-    expect(team3Assocs).to.have.lengthOf(2);
+    expect(team1Assocs).toHaveLength(2);
+    expect(team2Assocs).toHaveLength(2);
+    expect(team3Assocs).toHaveLength(2);
 
     // Check team 1 associations
     const team1ProjectAssoc = team1Assocs.find(
@@ -1234,8 +1234,8 @@ describe('Team integration with templates and projects', () => {
     );
 
     if (team1ProjectAssoc) {
-      expect(team1ProjectAssoc.associatedResources).to.have.lengthOf(1);
-      expect(team1ProjectAssoc.associatedResources[0].resourceId).to.equal(
+      expect(team1ProjectAssoc.associatedResources).toHaveLength(1);
+      expect(team1ProjectAssoc.associatedResources[0].resourceId).toBe(
         project1
       );
     }
@@ -1248,12 +1248,12 @@ describe('Team integration with templates and projects', () => {
     );
 
     if (team2ProjectAssoc) {
-      expect(team2ProjectAssoc.associatedResources).to.have.lengthOf(2);
+      expect(team2ProjectAssoc.associatedResources).toHaveLength(2);
       const projectIds = team2ProjectAssoc.associatedResources.map(
         r => r.resourceId
       );
-      expect(projectIds).to.include(project2a);
-      expect(projectIds).to.include(project2b);
+      expect(projectIds).toContain(project2a);
+      expect(projectIds).toContain(project2b);
     }
   });
 
@@ -1296,13 +1296,13 @@ describe('Team integration with templates and projects', () => {
       name: 'Team Admin User',
     });
 
-    expect(err1).to.equal('');
-    expect(err2).to.equal('');
-    expect(err3).to.equal('');
+    expect(err1).toBe('');
+    expect(err2).toBe('');
+    expect(err3).toBe('');
 
-    expect(memberUser).to.not.be.null;
-    expect(managerUser).to.not.be.null;
-    expect(adminUser).to.not.be.null;
+    expect(memberUser).not.toBeNull();
+    expect(managerUser).not.toBeNull();
+    expect(adminUser).not.toBeNull();
 
     if (!memberUser || !managerUser || !adminUser) {
       throw new Error(
@@ -1351,7 +1351,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.READ_PROJECT_METADATA,
         resourceId: projectId,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1359,7 +1359,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.READ_ALL_PROJECT_RECORDS,
         resourceId: projectId,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1367,7 +1367,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_PROJECT,
         resourceId: projectId,
       })
-    ).to.be.false;
+    ).toBe(false);
 
     expect(
       userCanDo({
@@ -1375,7 +1375,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.READ_TEMPLATE_DETAILS,
         resourceId: template._id,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1383,7 +1383,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_TEMPLATE,
         resourceId: template._id,
       })
-    ).to.be.false;
+    ).toBe(false);
 
     // Check manager permissions
     expect(
@@ -1392,7 +1392,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.UPDATE_PROJECT_DETAILS,
         resourceId: projectId,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1400,7 +1400,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_PROJECT,
         resourceId: projectId,
       })
-    ).to.be.false;
+    ).toBe(false);
 
     // Team admin has virtual PROJECT_ADMIN on team projects — may permanently destroy.
     expect(
@@ -1409,7 +1409,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_PROJECT,
         resourceId: projectId,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1417,7 +1417,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_TEMPLATE,
         resourceId: template._id,
       })
-    ).to.be.true;
+    ).toBe(true);
   });
 
   it('upgradeDbUserToExpressUser with complex resource hierarchy', async () => {
@@ -1427,8 +1427,8 @@ describe('Team integration with templates and projects', () => {
       name: 'User With Complex Hierarchy',
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    expect(err).toBe('');
+    expect(user).not.toBeNull();
 
     if (!user) {
       throw new Error('User create failed ' + err);
@@ -1531,7 +1531,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_PROJECT,
         resourceId: project1a,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1539,7 +1539,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_TEMPLATE,
         resourceId: template1._id,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     // Test permissions on team 2 resources (should have contributor access)
     expect(
@@ -1548,7 +1548,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.READ_ALL_PROJECT_RECORDS,
         resourceId: project2,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1556,7 +1556,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.DELETE_PROJECT,
         resourceId: project2,
       })
-    ).to.be.false;
+    ).toBe(false);
 
     // Test permissions on independent project (direct role)
     expect(
@@ -1565,7 +1565,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.UPDATE_PROJECT_DETAILS,
         resourceId: independentProject,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     // Test permissions on independent template - since user created it - they
     // should have admin
@@ -1575,7 +1575,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.READ_TEMPLATE_DETAILS,
         resourceId: independentTemplate._id,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     // Test global permissions
     expect(
@@ -1584,7 +1584,7 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_PROJECT,
         resourceId: undefined,
       })
-    ).to.be.true;
+    ).toBe(true);
 
     expect(
       userCanDo({
@@ -1592,6 +1592,6 @@ describe('Team integration with templates and projects', () => {
         action: Action.CREATE_TEMPLATE,
         resourceId: undefined,
       })
-    ).to.be.true;
+    ).toBe(true);
   });
 });

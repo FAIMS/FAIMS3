@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
@@ -61,9 +61,9 @@ describe('password reset tests', () => {
       adminToken
     ).expect(200);
 
-    expect(response.body.code).to.be.a('string');
-    expect(response.body.url).to.be.a('string');
-    expect(response.body.url).to.include(response.body.code);
+    expect(response.body.code).toBeTypeOf('string');
+    expect(response.body.url).toBeTypeOf('string');
+    expect(response.body.url).toContain(response.body.code);
   });
 
   it('initiate password reset fails for invalid user', async () => {
@@ -80,7 +80,7 @@ describe('password reset tests', () => {
   it('complete password reset with valid code', async () => {
     // First get a user and create a reset code
     const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-    expect(localUser).to.not.be.undefined;
+    expect(localUser).not.toBeUndefined();
 
     const {code} = await createNewEmailCode({userId: localUser!.user_id!});
 
@@ -97,7 +97,7 @@ describe('password reset tests', () => {
     // Verify the code is now marked as used
     const hashedCode = hashChallengeCode(code);
     const codeDoc = await getCodeByCode(hashedCode);
-    expect(codeDoc?.used).to.be.true;
+    expect(codeDoc?.used).toBe(true);
 
     // Try to use the same code again - should fail
     await request(app)
@@ -145,23 +145,23 @@ describe('password reset tests', () => {
 
     // Valid code check
     let validation = await validateEmailCode(code);
-    expect(validation.valid).to.be.true;
-    expect(validation.user).to.not.be.undefined;
-    expect(validation.validationError).to.be.undefined;
+    expect(validation.valid).toBe(true);
+    expect(validation.user).not.toBeUndefined();
+    expect(validation.validationError).toBeUndefined();
 
     // Check with correct user ID
     validation = await validateEmailCode(code, localUser!.user_id);
-    expect(validation.valid).to.be.true;
+    expect(validation.valid).toBe(true);
 
     // Check with wrong user ID
     const adminUser = await getExpressUserFromEmailOrUserId(adminUserName);
     validation = await validateEmailCode(code, adminUser!.user_id);
-    expect(validation.valid).to.be.false;
+    expect(validation.valid).toBe(false);
 
     // Mark code as used
     await markCodeAsUsed(code);
     validation = await validateEmailCode(code);
-    expect(validation.valid).to.be.false;
-    expect(validation.validationError).to.include('already been used');
+    expect(validation.valid).toBe(false);
+    expect(validation.validationError).toContain('already been used');
   });
 });

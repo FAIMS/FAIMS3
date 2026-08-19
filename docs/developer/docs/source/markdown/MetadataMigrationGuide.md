@@ -142,7 +142,7 @@ Inside `uiSpecification`:
 From `api/`:
 
 ```bash
-pnpm run delete-metadata-databases -- --dry-run
+pnpm run delete-metadata-databases --dry-run
 ```
 
 Review output: each `metadata-{projectId}` should show **`hasInlinedUiSpecification: true`** and ideally **`stillReferencedOnProject: false`**. Investigate any project flagged as missing `uiSpecification` before deleting.
@@ -155,7 +155,7 @@ When §3 validation passes:
 
 ```bash
 cd api
-pnpm run delete-metadata-databases -- --dry-run   # review
+pnpm run delete-metadata-databases --dry-run   # review
 pnpm run delete-metadata-databases              # interactive confirmation
 ```
 

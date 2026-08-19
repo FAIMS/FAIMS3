@@ -23,11 +23,11 @@ describe('Login Page', () => {
     await captureStep({surface: 'app', label: 'signin-page'});
   });
 
-  it('should show short code entry when button clicked', async () => {
+  it('should show invite code entry when advanced option clicked', async () => {
     await LoginPage.open();
     await LoginPage.clickEnterCode();
-    expect(await LoginPage.shortCodeInput.isDisplayed()).toBe(true);
-    await LoginPage.takeScreenshot('login', 'short-code-entry');
+    expect(await LoginPage.inviteCodeInput.isDisplayed()).toBe(true);
+    await LoginPage.takeScreenshot('login', 'invite-code-entry');
   });
 
   it('should navigate to API login page when Sign In clicked', async () => {

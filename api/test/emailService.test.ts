@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {
   createEmailService,
   EmailServiceType,
@@ -40,15 +40,15 @@ describe('Email Service', () => {
     const result = await mockEmailService.sendEmail({options});
 
     // Assert
-    expect(result).not.to.be.undefined;
-    expect(result.messageId).to.include('mock-email');
-    expect(result.envelope.from).to.equal(mockEmailConfig.fromEmail);
+    expect(result).not.toBeUndefined();
+    expect(result.messageId).toContain('mock-email');
+    expect(result.envelope.from).toBe(mockEmailConfig.fromEmail);
 
     const sentEmails = mockEmailService.getSentEmails();
-    expect(sentEmails.length).to.equal(1);
-    expect(sentEmails[0].to).to.equal(options.to);
-    expect(sentEmails[0].subject).to.equal(options.subject);
-    expect(sentEmails[0].text).to.equal(options.text);
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].to).toBe(options.to);
+    expect(sentEmails[0].subject).toBe(options.subject);
+    expect(sentEmails[0].text).toBe(options.text);
   });
 
   it('should handle multiple recipients', async () => {
@@ -68,14 +68,14 @@ describe('Email Service', () => {
     const result = await mockEmailService.sendEmail({options});
 
     // Assert
-    expect(result).not.to.be.undefined;
-    expect(result.envelope.to).to.deep.equal(recipients);
-    expect(result.accepted).to.deep.equal(recipients);
-    expect(result.rejected).to.be.empty;
+    expect(result).not.toBeUndefined();
+    expect(result.envelope.to).toEqual(recipients);
+    expect(result.accepted).toEqual(recipients);
+    expect(result.rejected).toHaveLength(0);
 
     const sentEmails = mockEmailService.getSentEmails();
-    expect(sentEmails.length).to.equal(1);
-    expect(sentEmails[0].to).to.deep.equal(recipients);
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].to).toEqual(recipients);
   });
 
   it('should handle HTML content', async () => {
@@ -94,8 +94,8 @@ describe('Email Service', () => {
 
     // Assert
     const sentEmails = mockEmailService.getSentEmails();
-    expect(sentEmails.length).to.equal(1);
-    expect(sentEmails[0].html).to.equal(htmlContent);
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].html).toBe(htmlContent);
   });
 
   it('should handle email attachments', async () => {
@@ -118,14 +118,12 @@ describe('Email Service', () => {
 
     // Assert
     const sentEmails = mockEmailService.getSentEmails();
-    expect(sentEmails.length).to.equal(1);
-    expect(sentEmails[0].attachments).to.not.be.undefined;
-    expect(sentEmails[0].attachments?.length).to.equal(1);
-    expect(sentEmails[0].attachments?.[0].filename).to.equal(
-      attachment.filename
-    );
-    expect(sentEmails[0].attachments?.[0].content).to.equal(attachment.content);
-    expect(sentEmails[0].attachments?.[0].contentType).to.equal(
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].attachments).not.toBeUndefined();
+    expect(sentEmails[0].attachments?.length).toBe(1);
+    expect(sentEmails[0].attachments?.[0].filename).toBe(attachment.filename);
+    expect(sentEmails[0].attachments?.[0].content).toBe(attachment.content);
+    expect(sentEmails[0].attachments?.[0].contentType).toBe(
       attachment.contentType
     );
   });
@@ -148,9 +146,9 @@ describe('Email Service', () => {
 
     // Assert
     const sentEmails = mockEmailService.getSentEmails();
-    expect(sentEmails.length).to.equal(1);
-    expect(sentEmails[0].cc).to.deep.equal(ccRecipients);
-    expect(sentEmails[0].bcc).to.deep.equal(bccRecipients);
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].cc).toEqual(ccRecipients);
+    expect(sentEmails[0].bcc).toEqual(bccRecipients);
   });
 
   it('should record email sending timestamp', async () => {
@@ -168,13 +166,15 @@ describe('Email Service', () => {
 
     // Assert
     const sentEmails = mockEmailService.getSentEmails();
-    expect(sentEmails.length).to.equal(1);
-    expect(sentEmails[0].timestamp).to.not.be.undefined;
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].timestamp).not.toBeUndefined();
 
     // Verify timestamp is between beforeSend and afterSend
     const emailTimestamp = sentEmails[0].timestamp;
-    expect(emailTimestamp.getTime()).to.be.at.least(beforeSend.getTime());
-    expect(emailTimestamp.getTime()).to.be.at.most(afterSend.getTime());
+    expect(emailTimestamp.getTime()).toBeGreaterThanOrEqual(
+      beforeSend.getTime()
+    );
+    expect(emailTimestamp.getTime()).toBeLessThanOrEqual(afterSend.getTime());
   });
 
   it('should clear sent emails when requested', async () => {
@@ -196,12 +196,12 @@ describe('Email Service', () => {
     await mockEmailService.sendEmail({options: options2});
 
     // Verify two emails were sent
-    expect(mockEmailService.getSentEmails().length).to.equal(2);
+    expect(mockEmailService.getSentEmails().length).toBe(2);
 
     // Clear sent emails
     mockEmailService.clearSentEmails();
 
     // Assert
-    expect(mockEmailService.getSentEmails().length).to.equal(0);
+    expect(mockEmailService.getSentEmails().length).toBe(0);
   });
 });

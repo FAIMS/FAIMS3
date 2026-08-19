@@ -3,6 +3,8 @@ import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   INPUT_LIMITS,
+  MAX_INVITE_EXPIRY_DAYS,
+  DEFAULT_INVITE_EXPIRY_DAYS,
   PostCreateInviteInput,
   projectInviteToAction,
   Resource,
@@ -14,6 +16,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {ExpirySelector} from '@/components/expiry-selector';
+import {dateDaysFromNow, dateToIso} from '@/lib/time';
 import {config, brandNotebook} from '@/constants';
 
 interface UpdateTemplateFormProps {
@@ -33,7 +36,7 @@ export function CreateProjectInviteForm({
   const {projectId} = Route.useParams();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
-    undefined
+    () => dateToIso(dateDaysFromNow(DEFAULT_INVITE_EXPIRY_DAYS))
   );
 
   const roleOptions = useMemo(() => {
@@ -166,7 +169,7 @@ export function CreateProjectInviteForm({
       footer={
         <ExpirySelector
           hints={config.inviteTokenHints}
-          maxDurationDays={365}
+          maxDurationDays={MAX_INVITE_EXPIRY_DAYS}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}
           setSelectedDateTime={setSelectedDateTime}

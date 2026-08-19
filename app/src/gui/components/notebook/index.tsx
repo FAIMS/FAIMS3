@@ -346,7 +346,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             project={project}
             maxRows={25}
             rows={records.myRecords}
-            loading={records.initialQuery.isLoading}
+            loading={records.isLoading}
             viewsets={viewsets}
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}
@@ -363,7 +363,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             project={project}
             maxRows={25}
             rows={records.otherRecords}
-            loading={records.initialQuery.isLoading}
+            loading={records.isLoading}
             viewsets={viewsets}
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}

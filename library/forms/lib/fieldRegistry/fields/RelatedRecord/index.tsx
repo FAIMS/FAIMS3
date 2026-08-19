@@ -4,6 +4,7 @@ import {
   FormRelationship,
   FormRelationshipInstance,
   HydratedRecord,
+  relatedRecordAvpEntries,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -533,10 +534,10 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     [rawValue]
   );
 
-  const normalizedLinks = useMemo(() => {
-    if (!value) return [];
-    return Array.isArray(value) ? value : [value];
-  }, [value]);
+  const normalizedLinks = useMemo(
+    () => (value ? relatedRecordAvpEntries(value) : []),
+    [value]
+  );
 
   // Display label for record type
   const relatedRecordTypeLabel = useMemo(() => {
@@ -1030,4 +1031,5 @@ export const relatedRecordFieldSpec: FieldInfo = {
     config: {},
     attributes: {singleColumn: true},
   },
+  excludeFromParentDisplay: true,
 };

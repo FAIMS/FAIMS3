@@ -16,7 +16,7 @@
  *      exercise permission-visibility scenarios.
  *
  * Usage:
- *   env-cmd ts-node src/scripts/seedTestDataset.ts
+ *   env-cmd tsx src/scripts/seedTestDataset.ts
  *
  * Environment variables:
  *   TEST_SEED_PASSWORD   Shared password for all seeded users.
@@ -24,8 +24,10 @@
  *   TEST_SEED_NOTEBOOKS  Comma-separated paths to notebook JSON files.
  *                        Defaults to "./notebooks/e2e-minimal.json,
  *                        ./notebooks/sample_notebook.json"
- *                        (Red = minimal one-field notebook for app record
- *                        CRUD e2e; Blue = sample survey).
+ *                        (Red = minimal notebook for app record CRUD e2e: a
+ *                        required note plus an optional TakePoint, so the
+ *                        overview map has geometry to plot; Blue = sample
+ *                        survey).
  *
  * Safe to re-run: seeded entities are restored to the intended state via
  * stable document IDs. Only those canonical seed documents and seed persona
