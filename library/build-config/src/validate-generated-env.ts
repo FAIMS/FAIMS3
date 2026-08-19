@@ -319,4 +319,10 @@ export function main(
   return 1;
 }
 
-process.exit(main());
+const isDirectExecution =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isDirectExecution) {
+  process.exit(main());
+}
