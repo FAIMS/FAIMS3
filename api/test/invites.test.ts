@@ -27,6 +27,9 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
+  DEFAULT_INVITE_EXPIRY_MS,
+  INPUT_LIMITS,
+  MAX_INVITE_EXPIRY_MS,
   PostRegisterInput,
   registerClient,
   Resource,
@@ -34,7 +37,7 @@ import {
   userHasGlobalRole,
   userHasProjectRole,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {config} from '../src/buildconfig';
 import {
@@ -87,16 +90,63 @@ describe('Invite Tests', () => {
         usesOriginal: 5,
       });
 
-      expect(invite).to.not.be.null;
-      expect(invite._id).to.include('-');
-      expect(invite.resourceType).to.equal(Resource.PROJECT);
-      expect(invite.resourceId).to.equal(projectId);
-      expect(invite.role).to.equal(Role.PROJECT_CONTRIBUTOR);
-      expect(invite.name).to.equal('Test Invite');
-      expect(invite.createdBy).to.equal('admin');
-      expect(invite.usesOriginal).to.equal(5);
-      expect(invite.usesConsumed).to.equal(0);
-      expect(invite.uses).to.be.an('array').that.is.empty;
+      expect(invite).not.toBeNull();
+      expect(invite._id).toContain('-');
+      // `{prefix}-{16-char nanoid body}` — long enough to resist brute force
+      const [, body] = invite._id.split('-');
+      expect(body).toHaveLength(16);
+      expect(body).toMatch(/^[0-9A-Za-z]+$/);
+      expect(invite.resourceType).toBe(Resource.PROJECT);
+      expect(invite.resourceId).toBe(projectId);
+      expect(invite.role).toBe(Role.PROJECT_CONTRIBUTOR);
+      expect(invite.name).toBe('Test Invite');
+      expect(invite.createdBy).toBe('admin');
+      expect(invite.usesOriginal).toBe(5);
+      expect(invite.usesConsumed).toBe(0);
+      expect(invite.uses).toEqual([]);
+    });
+
+    it('defaults new invites to a 5-day expiry', async () => {
+      const before = Date.now();
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      const invite = await createResourceInvite({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId!,
+        role: Role.PROJECT_CONTRIBUTOR,
+        name: 'Default expiry invite',
+        createdBy: 'admin',
+      });
+      const after = Date.now();
+      expect(invite.expiry).toBeGreaterThanOrEqual(
+        before + DEFAULT_INVITE_EXPIRY_MS
+      );
+      expect(invite.expiry).toBeLessThanOrEqual(
+        after + DEFAULT_INVITE_EXPIRY_MS
+      );
+    });
+
+    it('rejects invites with expiry beyond 90 days', async () => {
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+      await expect(
+        createResourceInvite({
+          resourceType: Resource.PROJECT,
+          resourceId: projectId!,
+          role: Role.PROJECT_CONTRIBUTOR,
+          name: 'Too long invite',
+          createdBy: 'admin',
+          expiry: Date.now() + MAX_INVITE_EXPIRY_MS + 24 * 60 * 60 * 1000,
+        })
+      ).rejects.toThrow(/at most 90 days/);
     });
 
     it('can create an invite for a team', async () => {
@@ -116,15 +166,15 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      expect(invite).to.not.be.null;
-      expect(invite._id).to.include('-');
-      expect(invite.resourceType).to.equal(Resource.TEAM);
-      expect(invite.resourceId).to.equal(team._id);
-      expect(invite.role).to.equal(Role.TEAM_MEMBER);
-      expect(invite.name).to.equal('Team Invite');
-      expect(invite.createdBy).to.equal('admin');
-      expect(invite.usesOriginal).to.be.undefined;
-      expect(invite.usesConsumed).to.equal(0);
+      expect(invite).not.toBeNull();
+      expect(invite._id).toContain('-');
+      expect(invite.resourceType).toBe(Resource.TEAM);
+      expect(invite.resourceId).toBe(team._id);
+      expect(invite.role).toBe(Role.TEAM_MEMBER);
+      expect(invite.name).toBe('Team Invite');
+      expect(invite.createdBy).toBe('admin');
+      expect(invite.usesOriginal).toBeUndefined();
+      expect(invite.usesConsumed).toBe(0);
     });
 
     it('can get an invite by ID', async () => {
@@ -143,15 +193,15 @@ describe('Invite Tests', () => {
       });
 
       const fetchedInvite = await getInvite({inviteId: invite._id});
-      expect(fetchedInvite).to.not.be.null;
-      expect(fetchedInvite?._id).to.equal(invite._id);
-      expect(fetchedInvite?.resourceType).to.equal(Resource.PROJECT);
-      expect(fetchedInvite?.resourceId).to.equal(projectId);
+      expect(fetchedInvite).not.toBeNull();
+      expect(fetchedInvite?._id).toBe(invite._id);
+      expect(fetchedInvite?.resourceType).toBe(Resource.PROJECT);
+      expect(fetchedInvite?.resourceId).toBe(projectId);
     });
 
     it('returns null when getting non-existent invite', async () => {
       const fetchedInvite = await getInvite({inviteId: 'non-existent-id'});
-      expect(fetchedInvite).to.be.null;
+      expect(fetchedInvite).toBeNull();
     });
 
     it('can get invites for a resource', async () => {
@@ -182,16 +232,15 @@ describe('Invite Tests', () => {
         resourceId: projectId!,
       });
 
-      expect(invites).to.be.an('array').with.lengthOf(2);
-      expect(invites[0].name).to.be.oneOf([
-        'Contributor Invite',
-        'Admin Invite',
-      ]);
-      expect(invites[1].name).to.be.oneOf([
-        'Contributor Invite',
-        'Admin Invite',
-      ]);
-      expect(invites[0].name).to.not.equal(invites[1].name);
+      expect(invites).toBeInstanceOf(Array);
+      expect(invites).toHaveLength(2);
+      expect(invites[0].name).toSatisfy(v =>
+        ['Contributor Invite', 'Admin Invite'].includes(v)
+      );
+      expect(invites[1].name).toSatisfy(v =>
+        ['Contributor Invite', 'Admin Invite'].includes(v)
+      );
+      expect(invites[0].name).not.toBe(invites[1].name);
     });
 
     it('can delete an invite', async () => {
@@ -210,10 +259,10 @@ describe('Invite Tests', () => {
       });
 
       const deletedInvite = await deleteInvite({invite});
-      expect(deletedInvite._id).to.equal(invite._id);
+      expect(deletedInvite._id).toBe(invite._id);
 
       const fetchedInvite = await getInvite({inviteId: invite._id});
-      expect(fetchedInvite).to.be.null;
+      expect(fetchedInvite).toBeNull();
     });
 
     it('can check if an invite is valid', async () => {
@@ -235,8 +284,8 @@ describe('Invite Tests', () => {
       });
 
       const validityCheck = isInviteValid({invite: validInvite});
-      expect(validityCheck.isValid).to.be.true;
-      expect(validityCheck.reason).to.be.undefined;
+      expect(validityCheck.isValid).toBe(true);
+      expect(validityCheck.reason).toBeUndefined();
 
       // Create expired invite
       const expiredInvite = await createResourceInvite({
@@ -249,8 +298,8 @@ describe('Invite Tests', () => {
       });
 
       const expiredCheck = isInviteValid({invite: expiredInvite});
-      expect(expiredCheck.isValid).to.be.false;
-      expect(expiredCheck.reason).to.equal('Invite has expired');
+      expect(expiredCheck.isValid).toBe(false);
+      expect(expiredCheck.reason).toBe('Invite has expired');
 
       // Create limited use invite
       const limitedInvite = await createResourceInvite({
@@ -265,7 +314,7 @@ describe('Invite Tests', () => {
 
       // Use the invite twice to reach the limit
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(localUser).to.not.be.null;
+      expect(localUser).not.toBeNull();
 
       await consumeInvite({
         invite: limitedInvite,
@@ -283,8 +332,8 @@ describe('Invite Tests', () => {
       // Check if it's now invalid due to usage limit
       const finalInvite = await getInvite({inviteId: limitedInvite._id});
       const usedUpCheck = isInviteValid({invite: finalInvite!});
-      expect(usedUpCheck.isValid).to.be.false;
-      expect(usedUpCheck.reason).to.equal(
+      expect(usedUpCheck.isValid).toBe(false);
+      expect(usedUpCheck.reason).toBe(
         'Invite has been used the maximum number of times'
       );
     });
@@ -306,18 +355,18 @@ describe('Invite Tests', () => {
       });
 
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(localUser).to.not.be.null;
+      expect(localUser).not.toBeNull();
 
       // Check initial state
-      expect(invite.usesConsumed).to.equal(0);
-      expect(invite.uses).to.be.an('array').that.is.empty;
+      expect(invite.usesConsumed).toBe(0);
+      expect(invite.uses).toEqual([]);
       expect(
         userHasProjectRole({
           user: localUser!,
           projectId: projectId!,
           role: Role.PROJECT_CONTRIBUTOR,
         })
-      ).to.be.false;
+      ).toBe(false);
 
       // Use the invite
       const updatedInvite = await consumeInvite({
@@ -327,9 +376,10 @@ describe('Invite Tests', () => {
       await saveCouchUser(localUser!);
 
       // Check results
-      expect(updatedInvite.usesConsumed).to.equal(1);
-      expect(updatedInvite.uses).to.be.an('array').with.lengthOf(1);
-      expect(updatedInvite.uses[0].userId).to.equal(localUser!.user_id);
+      expect(updatedInvite.usesConsumed).toBe(1);
+      expect(updatedInvite.uses).toBeInstanceOf(Array);
+      expect(updatedInvite.uses).toHaveLength(1);
+      expect(updatedInvite.uses[0].userId).toBe(localUser!.user_id);
 
       // Double check the role was added
       expect(
@@ -338,7 +388,7 @@ describe('Invite Tests', () => {
           projectId: projectId!,
           role: Role.PROJECT_CONTRIBUTOR,
         })
-      ).to.be.true;
+      ).toBe(true);
     });
 
     it('can get global invites', async () => {
@@ -356,16 +406,15 @@ describe('Invite Tests', () => {
 
       const invites = await getGlobalInvites();
 
-      expect(invites).to.be.an('array').with.lengthOf(2);
-      expect(invites[0].name).to.be.oneOf([
-        'Admin Invite',
-        'Another Admin Invite',
-      ]);
-      expect(invites[1].name).to.be.oneOf([
-        'Admin Invite',
-        'Another Admin Invite',
-      ]);
-      expect(invites[0].name).to.not.equal(invites[1].name);
+      expect(invites).toBeInstanceOf(Array);
+      expect(invites).toHaveLength(2);
+      expect(invites[0].name).toSatisfy(v =>
+        ['Admin Invite', 'Another Admin Invite'].includes(v)
+      );
+      expect(invites[1].name).toSatisfy(v =>
+        ['Admin Invite', 'Another Admin Invite'].includes(v)
+      );
+      expect(invites[0].name).not.toBe(invites[1].name);
     });
 
     it('can use a global invite and record usage', async () => {
@@ -377,17 +426,17 @@ describe('Invite Tests', () => {
       });
 
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      expect(localUser).to.not.be.null;
+      expect(localUser).not.toBeNull();
 
       // Check initial state
-      expect(invite.usesConsumed).to.equal(0);
-      expect(invite.uses).to.be.an('array').that.is.empty;
+      expect(invite.usesConsumed).toBe(0);
+      expect(invite.uses).toEqual([]);
       expect(
         userHasGlobalRole({
           user: localUser!,
           role: Role.OPERATIONS_ADMIN,
         })
-      ).to.be.false;
+      ).toBe(false);
 
       // Use the invite
       const updatedInvite = await consumeInvite({
@@ -397,9 +446,10 @@ describe('Invite Tests', () => {
       await saveCouchUser(localUser!);
 
       // Check results
-      expect(updatedInvite.usesConsumed).to.equal(1);
-      expect(updatedInvite.uses).to.be.an('array').with.lengthOf(1);
-      expect(updatedInvite.uses[0].userId).to.equal(localUser!.user_id);
+      expect(updatedInvite.usesConsumed).toBe(1);
+      expect(updatedInvite.uses).toBeInstanceOf(Array);
+      expect(updatedInvite.uses).toHaveLength(1);
+      expect(updatedInvite.uses[0].userId).toBe(localUser!.user_id);
 
       // Double check the role was added
       expect(
@@ -407,7 +457,7 @@ describe('Invite Tests', () => {
           user: localUser!,
           role: Role.OPERATIONS_ADMIN,
         })
-      ).to.be.true;
+      ).toBe(true);
     });
   });
 
@@ -434,13 +484,27 @@ describe('Invite Tests', () => {
         .get(`/api/invites/${invite._id}`)
         .expect(200);
 
-      expect(response.body.id).to.equal(invite._id);
-      expect(response.body.resourceType).to.equal(Resource.PROJECT);
-      expect(response.body.resourceId).to.equal(projectId);
-      expect(response.body.name).to.equal('Public Invite');
-      expect(response.body.role).to.equal(Role.PROJECT_CONTRIBUTOR);
-      expect(response.body.isValid).to.be.true;
-      expect(response.body.usesRemaining).to.equal(5);
+      expect(response.body.id).toBe(invite._id);
+      expect(response.body.resourceType).toBe(Resource.PROJECT);
+      expect(response.body.resourceId).toBe(projectId);
+      expect(response.body.name).toBe('Public Invite');
+      expect(response.body.role).toBe(Role.PROJECT_CONTRIBUTOR);
+      expect(response.body.isValid).toBe(true);
+      expect(response.body.usesRemaining).toBe(5);
+    });
+
+    it('GET /api/invites/:inviteId returns 404 for unknown codes', async () => {
+      await request(app).get('/api/invites/FAIMS-DOESNOTEXIST000').expect(404);
+    });
+
+    it('GET /api/invites/:inviteId rejects oversized invite ids', async () => {
+      const oversized = 'A'.repeat(INPUT_LIMITS.ID_MAX_LENGTH + 1);
+      const response = await request(app)
+        .get(`/api/invites/${oversized}`)
+        .expect(400);
+      expect(response.body[0].errors.issues[0].message).toMatch(
+        /at most 256 characters/i
+      );
     });
 
     it('GET /api/invites/notebook/:projectId requires authentication', async () => {
@@ -489,15 +553,14 @@ describe('Invite Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body).to.be.an('array').with.lengthOf(2);
-      expect(response.body[0].name).to.be.oneOf([
-        'Contributor Invite',
-        'Admin Invite',
-      ]);
-      expect(response.body[1].name).to.be.oneOf([
-        'Contributor Invite',
-        'Admin Invite',
-      ]);
+      expect(response.body).toBeInstanceOf(Array);
+      expect(response.body).toHaveLength(2);
+      expect(response.body[0].name).toSatisfy(v =>
+        ['Contributor Invite', 'Admin Invite'].includes(v)
+      );
+      expect(response.body[1].name).toSatisfy(v =>
+        ['Contributor Invite', 'Admin Invite'].includes(v)
+      );
     });
 
     it('GET /api/invites/team/:teamId returns team invites', async () => {
@@ -530,15 +593,14 @@ describe('Invite Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body).to.be.an('array').with.lengthOf(2);
-      expect(response.body[0].name).to.be.oneOf([
-        'Member Invite',
-        'Admin Invite',
-      ]);
-      expect(response.body[1].name).to.be.oneOf([
-        'Member Invite',
-        'Admin Invite',
-      ]);
+      expect(response.body).toBeInstanceOf(Array);
+      expect(response.body).toHaveLength(2);
+      expect(response.body[0].name).toSatisfy(v =>
+        ['Member Invite', 'Admin Invite'].includes(v)
+      );
+      expect(response.body[1].name).toSatisfy(v =>
+        ['Member Invite', 'Admin Invite'].includes(v)
+      );
     });
 
     it('POST /api/invites/notebook/:projectId creates a project invite', async () => {
@@ -560,14 +622,33 @@ describe('Invite Tests', () => {
         })
         .expect(200);
 
-      expect(response.body._id).to.exist;
-      expect(response.body.resourceType).to.equal(Resource.PROJECT);
-      expect(response.body.resourceId).to.equal(projectId);
-      expect(response.body.role).to.equal(Role.PROJECT_CONTRIBUTOR);
-      expect(response.body.name).to.equal('API Created Invite');
-      expect(response.body.usesOriginal).to.equal(3);
-      expect(response.body.usesConsumed).to.equal(0);
-      expect(response.body.createdBy).to.equal('admin');
+      expect(response.body._id).toBeDefined();
+      expect(response.body.resourceType).toBe(Resource.PROJECT);
+      expect(response.body.resourceId).toBe(projectId);
+      expect(response.body.role).toBe(Role.PROJECT_CONTRIBUTOR);
+      expect(response.body.name).toBe('API Created Invite');
+      expect(response.body.usesOriginal).toBe(3);
+      expect(response.body.usesConsumed).toBe(0);
+      expect(response.body.createdBy).toBe('admin');
+    });
+
+    it('POST /api/invites/notebook/:projectId rejects expiry beyond 90 days', async () => {
+      const projectId = await createNotebook({
+        projectName: 'test-notebook',
+        uiSpecification: EMPTY_UI_SPECIFICATION,
+        description: '',
+        createdBy: 'admin',
+      });
+
+      await request(app)
+        .post(`/api/invites/notebook/${projectId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.PROJECT_CONTRIBUTOR,
+          name: 'Too long invite',
+          expiry: Date.now() + MAX_INVITE_EXPIRY_MS + 24 * 60 * 60 * 1000,
+        })
+        .expect(400);
     });
 
     it('POST /api/invites/team/:teamId creates a team invite', async () => {
@@ -601,12 +682,12 @@ describe('Invite Tests', () => {
         })
         .expect(200);
 
-      expect(response.body._id).to.exist;
-      expect(response.body.resourceType).to.equal(Resource.TEAM);
-      expect(response.body.resourceId).to.equal(team._id);
-      expect(response.body.role).to.equal(Role.TEAM_MEMBER);
-      expect(response.body.name).to.equal('Team API Invite');
-      expect(response.body.usesOriginal).to.equal(10);
+      expect(response.body._id).toBeDefined();
+      expect(response.body.resourceType).toBe(Resource.TEAM);
+      expect(response.body.resourceId).toBe(team._id);
+      expect(response.body.role).toBe(Role.TEAM_MEMBER);
+      expect(response.body.name).toBe('Team API Invite');
+      expect(response.body.usesOriginal).toBe(10);
     });
 
     it('POST /api/invites/team/:teamId does not create team invite if role is not global', async () => {
@@ -639,7 +720,7 @@ describe('Invite Tests', () => {
           uses: 10,
         })
         .expect(400);
-      expect(response.body[0].errors.issues[0].message).to.equal(
+      expect(response.body[0].errors.issues[0].message).toBe(
         'Role must be a resource specific role to create a resource specific invite'
       );
     });
@@ -665,7 +746,7 @@ describe('Invite Tests', () => {
         .expect(200);
 
       const fetchedInvite = await getInvite({inviteId: invite._id});
-      expect(fetchedInvite).to.be.null;
+      expect(fetchedInvite).toBeNull();
     });
 
     it('DELETE /api/invites/team/:teamId/:inviteId deletes a team invite', async () => {
@@ -703,7 +784,7 @@ describe('Invite Tests', () => {
         .expect(200);
 
       const fetchedInvite = await getInvite({inviteId: invite._id});
-      expect(fetchedInvite).to.be.null;
+      expect(fetchedInvite).toBeNull();
     });
 
     it('Non-admins cannot create project admin invites', async () => {
@@ -764,15 +845,14 @@ describe('Invite Tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    expect(response.body).to.be.an('array').with.lengthOf(2);
-    expect(response.body[0].name).to.be.oneOf([
-      'Admin Invite',
-      'Another Admin Invite',
-    ]);
-    expect(response.body[1].name).to.be.oneOf([
-      'Admin Invite',
-      'Another Admin Invite',
-    ]);
+    expect(response.body).toBeInstanceOf(Array);
+    expect(response.body).toHaveLength(2);
+    expect(response.body[0].name).toSatisfy(v =>
+      ['Admin Invite', 'Another Admin Invite'].includes(v)
+    );
+    expect(response.body[1].name).toSatisfy(v =>
+      ['Admin Invite', 'Another Admin Invite'].includes(v)
+    );
   });
 
   it('POST /api/invites/global creates a global invite', async () => {
@@ -797,12 +877,12 @@ describe('Invite Tests', () => {
       })
       .expect(200);
 
-    expect(response.body._id).to.exist;
-    expect(response.body.resourceType).to.be.undefined;
-    expect(response.body.resourceId).to.be.undefined;
-    expect(response.body.role).to.equal(Role.OPERATIONS_ADMIN);
-    expect(response.body.name).to.equal('Op Admin Invite');
-    expect(response.body.usesOriginal).to.equal(10);
+    expect(response.body._id).toBeDefined();
+    expect(response.body.resourceType).toBeUndefined();
+    expect(response.body.resourceId).toBeUndefined();
+    expect(response.body.role).toBe(Role.OPERATIONS_ADMIN);
+    expect(response.body.name).toBe('Op Admin Invite');
+    expect(response.body.usesOriginal).toBe(10);
   });
 
   it('POST /api/invites/global does not create global invite if role is not global', async () => {
@@ -826,7 +906,7 @@ describe('Invite Tests', () => {
         uses: 10,
       })
       .expect(400); // Bad Request
-    expect(response.body[0].errors.issues[0].message).to.equal(
+    expect(response.body[0].errors.issues[0].message).toBe(
       'Role must be a global role to create a global invite'
     );
   });
@@ -867,7 +947,7 @@ describe('Invite Tests', () => {
       .expect(200);
 
     const fetchedInvite = await getInvite({inviteId: invite._id});
-    expect(fetchedInvite).to.be.null;
+    expect(fetchedInvite).toBeNull();
   });
 });
 
@@ -921,11 +1001,11 @@ describe('Registration', () => {
         .expect(302)
         .then(response => {
           // this would be an error condition, redirect to home
-          expect(response.header.location[0]).not.to.equal('/');
+          expect(response.header.location[0]).not.toBe('/');
           // check correct redirect
           const location = new URL(response.header.location);
-          expect(location.origin).to.equal(config.webAppPublicUrl);
-          expect(location.search).to.match(/exchangeToken/);
+          expect(location.origin).toBe(config.webAppPublicUrl);
+          expect(location.search).toMatch(/exchangeToken/);
         });
     }
   });

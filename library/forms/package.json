@@ -45,7 +45,7 @@
     "@tanstack/react-query": "^5.62.16",
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
-    "dompurify": "^3.4.11",
+    "dompurify": "^3.4.12",
     "lodash": "^4.18.1",
     "markdown-it": "^14.1.1",
     "mustache": "^4.2.0",
@@ -71,7 +71,7 @@
     "madge": "^8.0.0",
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",
-    "typescript": "^5.9.2",
+    "typescript": "^7.0.2",
     "vite": "^7.3.2",
     "vitest": "^4.1.8"
   },

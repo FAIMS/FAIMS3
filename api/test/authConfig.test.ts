@@ -18,8 +18,7 @@
  *   Tests for the auth provider configuration reading functionality
  */
 
-import {expect} from 'chai';
-import sinon from 'sinon';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {readAuthProviderConfigFromEnv} from '../src/auth/strategies/applyStrategies';
 import {
   GoogleAuthProviderConfig,
@@ -53,7 +52,7 @@ describe('readAuthProviderConfigFromEnv', () => {
 
   it('should return {} when no AUTH_ environment variables are defined', () => {
     const result = readAuthProviderConfigFromEnv();
-    expect(Object.getOwnPropertyNames(result).length).to.equal(0);
+    expect(Object.getOwnPropertyNames(result).length).toBe(0);
   });
 
   it('should parse a valid Google provider configuration', () => {
@@ -68,9 +67,9 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.not.be.null;
-    expect(result).to.have.property('google');
-    expect(result?.google).to.deep.equal({
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('google');
+    expect(result?.google).toEqual({
       id: 'google',
       index: 100, // index should be defaulted to 100
       type: 'google',
@@ -103,9 +102,9 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.not.be.null;
-    expect(result).to.have.property('aaf');
-    expect(result?.aaf).to.deep.equal({
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('aaf');
+    expect(result?.aaf).toEqual({
       id: 'aaf',
       type: 'oidc',
       index: 50, // supplied index
@@ -146,10 +145,10 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.not.be.null;
-    expect(result).to.have.property('google');
-    expect(result).to.have.property('aaf');
-    expect(Object.keys(result || {})).to.have.lengthOf(2);
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('google');
+    expect(result).toHaveProperty('aaf');
+    expect(Object.keys(result || {})).toHaveLength(2);
   });
 
   it('should properly parse array values', () => {
@@ -162,8 +161,8 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result?.goog).to.have.property('scope');
-    expect(result?.goog.scope).to.deep.equal(['profile', 'email', 'openid']);
+    expect(result?.goog).toHaveProperty('scope');
+    expect(result?.goog.scope).toEqual(['profile', 'email', 'openid']);
   });
 
   it('should ignore environment variables that do not match the pattern', () => {
@@ -176,16 +175,22 @@ describe('readAuthProviderConfigFromEnv', () => {
     process.env.AUTH_INVALID = 'this should be ignored';
 
     // Mock console.warn to verify it's called
-    const consoleWarnStub = sinon.stub(console, 'warn');
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {});
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result?.gle).to.have.property('type', 'google');
+    expect(result?.gle).toHaveProperty('type', 'google');
     expect(
-      consoleWarnStub.calledWith(sinon.match(/Ignoring unrecognized env var/))
-    ).to.be.true;
+      consoleWarnSpy.mock.calls.some(
+        call =>
+          typeof call[0] === 'string' &&
+          /Ignoring unrecognized env var/.test(call[0])
+      )
+    ).toBe(true);
 
-    consoleWarnStub.restore();
+    consoleWarnSpy.mockRestore();
   });
 
   it('maps SAML *_URL env keys from CDK to schema ...Url camelCase fields', () => {
@@ -201,15 +206,15 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.not.be.null;
+    expect(result).not.toBeNull();
     const vg = result?.vg as SAMLAuthProviderConfig;
-    expect(vg.type).to.equal('saml');
-    expect(vg.metadataErrorURL).to.equal(
+    expect(vg.type).toBe('saml');
+    expect(vg.metadataErrorURL).toBe(
       'https://conductor.example/auth/vg/sso-error'
     );
-    expect(vg.ssoErrorPageReturnURL).to.equal('https://web.example/');
+    expect(vg.ssoErrorPageReturnURL).toBe('https://web.example/');
     // Default to HTTP-POST
-    expect(vg.authnRequestBinding).to.equal('HTTP-POST');
+    expect(vg.authnRequestBinding).toBe('HTTP-POST');
   });
 
   it('parses SAML authnRequestBinding HTTP-POST from env', () => {
@@ -223,9 +228,9 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.not.be.null;
+    expect(result).not.toBeNull();
     const vg = result?.vg as SAMLAuthProviderConfig;
-    expect(vg.authnRequestBinding).to.equal('HTTP-POST');
+    expect(vg.authnRequestBinding).toBe('HTTP-POST');
   });
 
   it('parses SAML skipRequestCompression from env', () => {
@@ -239,9 +244,9 @@ describe('readAuthProviderConfigFromEnv', () => {
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.not.be.null;
+    expect(result).not.toBeNull();
     const vg = result?.vg as SAMLAuthProviderConfig;
-    expect(vg.skipRequestCompression).to.equal(true);
+    expect(vg.skipRequestCompression).toBe(true);
   });
 
   it('should return null and log errors when validation fails', () => {
@@ -250,18 +255,21 @@ describe('readAuthProviderConfigFromEnv', () => {
     process.env.AUTH_TEST_DISPLAY_NAME = 'Test Provider';
 
     // Mock console.error to verify it's called
-    const consoleErrorStub = sinon.stub(console, 'error');
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     const result = readAuthProviderConfigFromEnv();
 
-    expect(result).to.be.null;
+    expect(result).toBeNull();
     expect(
-      consoleErrorStub.calledWith(
-        sinon.match(/Error parsing auth provider config from env/),
-        sinon.match.any
+      consoleErrorSpy.mock.calls.some(
+        call =>
+          typeof call[0] === 'string' &&
+          /Error parsing auth provider config from env/.test(call[0])
       )
-    ).to.be.true;
+    ).toBe(true);
 
-    consoleErrorStub.restore();
+    consoleErrorSpy.mockRestore();
   });
 });

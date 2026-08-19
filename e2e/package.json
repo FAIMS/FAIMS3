@@ -52,8 +52,8 @@
     "chromedriver": "^138.0.4",
     "dotenv": "^16.6.1",
     "expect-webdriverio": "^5.6.8",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
+    "tsx": "^4.20.3",
+    "typescript": "^7.0.2",
     "wdio-wait-for": "^3.1.0"
   }
 }

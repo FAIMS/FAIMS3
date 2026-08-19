@@ -39,7 +39,7 @@ import {
   registerClient,
   Role,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {generateJwtFromUser} from '../src/auth/keySigning/create';
 import {keyService} from '../src/buildconfig';
@@ -83,15 +83,15 @@ describe('Records CRUD API', () => {
         ).expect(200);
 
         const body = res.body as GetListRecordsResponse;
-        expect(body).to.have.property('records');
-        expect(body.records).to.be.an('array');
-        expect(body.records.length).to.be.greaterThan(0);
+        expect(body).toHaveProperty('records');
+        expect(body.records).toBeInstanceOf(Array);
+        expect(body.records.length).toBeGreaterThan(0);
 
         const first = body.records[0] as ListRecordsItem;
-        expect(first).to.have.property('recordId');
-        expect(first).to.have.property('revisionId');
-        expect(first).to.have.property('createdBy');
-        expect(first).to.have.property('type');
+        expect(first).toHaveProperty('recordId');
+        expect(first).toHaveProperty('revisionId');
+        expect(first).toHaveProperty('createdBy');
+        expect(first).toHaveProperty('type');
       });
     });
 
@@ -113,9 +113,9 @@ describe('Records CRUD API', () => {
             .query({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(200);
         const body = res.body as GetListRecordsResponse;
-        expect(body.records).to.be.an('array');
+        expect(body.records).toBeInstanceOf(Array);
         body.records.forEach((r: ListRecordsItem) => {
-          expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
+          expect(r.type).toBe(BACKUP_FORM_IDS.FORM2);
         });
       });
     });
@@ -128,7 +128,7 @@ describe('Records CRUD API', () => {
             .query({limit: 3})
         ).expect(200);
         const body = res.body as GetListRecordsResponse;
-        expect(body.records.length).to.be.at.most(3);
+        expect(body.records.length).toBeLessThanOrEqual(3);
       });
     });
 
@@ -158,8 +158,9 @@ describe('Records CRUD API', () => {
             .query({limit: 10, startKey: cursor})
         ).expect(200);
         const body = res.body as GetListRecordsResponse;
-        expect(body.records.every((r: ListRecordsItem) => r.recordId > cursor))
-          .to.be.true;
+        expect(
+          body.records.every((r: ListRecordsItem) => r.recordId > cursor)
+        ).toBe(true);
       });
     });
 
@@ -171,9 +172,9 @@ describe('Records CRUD API', () => {
             .query({formId: BACKUP_FORM_IDS.FORM2, limit: 5})
         ).expect(200);
         const fullBody = full.body as GetListRecordsResponse;
-        expect(fullBody.records.length).to.be.at.most(5);
+        expect(fullBody.records.length).toBeLessThanOrEqual(5);
         fullBody.records.forEach((r: ListRecordsItem) => {
-          expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
+          expect(r.type).toBe(BACKUP_FORM_IDS.FORM2);
         });
         if (fullBody.records.length < 2) return;
         const cursor = fullBody.records[1].recordId;
@@ -187,10 +188,10 @@ describe('Records CRUD API', () => {
             })
         ).expect(200);
         const page2Body = page2.body as GetListRecordsResponse;
-        expect(page2Body.records.length).to.be.at.most(2);
+        expect(page2Body.records.length).toBeLessThanOrEqual(2);
         page2Body.records.forEach((r: ListRecordsItem) => {
-          expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
-          expect(r.recordId > cursor).to.be.true;
+          expect(r.type).toBe(BACKUP_FORM_IDS.FORM2);
+          expect(r.recordId > cursor).toBe(true);
         });
       });
     });
@@ -209,8 +210,8 @@ describe('Records CRUD API', () => {
         ).expect(201);
 
         const created = res.body as PostCreateRecordResponse;
-        expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
-        expect(created.revisionId).to.match(
+        expect(created.recordId).toMatch(new RegExp(`^${RECORD_ID_PREFIX}`));
+        expect(created.revisionId).toMatch(
           new RegExp(`^${REVISION_ID_PREFIX}`)
         );
 
@@ -221,9 +222,9 @@ describe('Records CRUD API', () => {
         ).expect(200);
 
         const getBody = getRes.body as GetRecordResponse;
-        expect(getBody.formId).to.equal(BACKUP_FORM_IDS.FORM2);
-        expect(getBody.revisionId).to.equal(created.revisionId);
-        expect(getBody).to.have.property('data');
+        expect(getBody.formId).toBe(BACKUP_FORM_IDS.FORM2);
+        expect(getBody.revisionId).toBe(created.revisionId);
+        expect(getBody).toHaveProperty('data');
       });
     });
 
@@ -236,7 +237,7 @@ describe('Records CRUD API', () => {
         ).expect(201);
 
         const created = res.body as PostCreateRecordResponse;
-        expect(created).to.have.property('recordId');
+        expect(created).toHaveProperty('recordId');
 
         const getRes = await requestAuthAndType(
           request(app).get(
@@ -244,7 +245,7 @@ describe('Records CRUD API', () => {
           )
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
-        expect(getBody.context.record).to.be.an('object');
+        expect(getBody.context.record).toBeTypeOf('object');
       });
     });
 
@@ -292,14 +293,14 @@ describe('Records CRUD API', () => {
           request(app).post(`/api/notebooks/${projectId}/records`).send(body)
         ).expect(201);
         const created = res.body as PostCreateRecordResponse;
-        expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
+        expect(created.recordId).toMatch(new RegExp(`^${RECORD_ID_PREFIX}`));
         const getRes = await requestAuthAndType(
           request(app).get(
             `/api/notebooks/${projectId}/records/${created.recordId}`
           )
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
-        expect(getBody.context.record).to.be.an('object');
+        expect(getBody.context.record).toBeTypeOf('object');
       });
     });
   });
@@ -323,10 +324,10 @@ describe('Records CRUD API', () => {
         ).expect(200);
 
         const body = res.body as GetRecordResponse;
-        expect(body).to.have.property('formId');
-        expect(body).to.have.property('revisionId');
-        expect(body).to.have.property('data');
-        expect(body).to.have.property('context');
+        expect(body).toHaveProperty('formId');
+        expect(body).toHaveProperty('revisionId');
+        expect(body).toHaveProperty('data');
+        expect(body).toHaveProperty('context');
       });
     });
 
@@ -377,8 +378,8 @@ describe('Records CRUD API', () => {
           request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         const headBody = getHead.body as GetRecordResponse;
-        expect(headBody.revisionId).to.equal(revisionId2);
-        expect(headBody.data.hridFORM2?.data).to.equal('UpdatedValue');
+        expect(headBody.revisionId).toBe(revisionId2);
+        expect(headBody.data.hridFORM2?.data).toBe('UpdatedValue');
 
         const getRev1 = await requestAuthAndType(
           request(app)
@@ -386,9 +387,9 @@ describe('Records CRUD API', () => {
             .query({revisionId: rev1})
         ).expect(200);
         const bodyRev1 = getRev1.body as GetRecordResponse;
-        expect(bodyRev1.revisionId).to.equal(rev1);
-        expect(bodyRev1.formId).to.equal(BACKUP_FORM_IDS.FORM2);
-        expect(bodyRev1.data).to.be.an('object');
+        expect(bodyRev1.revisionId).toBe(rev1);
+        expect(bodyRev1.formId).toBe(BACKUP_FORM_IDS.FORM2);
+        expect(bodyRev1.data).toBeTypeOf('object');
       });
     });
   });
@@ -423,15 +424,15 @@ describe('Records CRUD API', () => {
         ).expect(200);
 
         const updated = updateRes.body as PatchUpdateRecordResponse;
-        expect(updated).to.have.property('revisionId');
-        expect(updated.revisionId).to.match(
+        expect(updated).toHaveProperty('revisionId');
+        expect(updated.revisionId).toMatch(
           new RegExp(`^${REVISION_ID_PREFIX}`)
         );
         const getRes = await requestAuthAndType(
           request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
-        expect(getBody.data.hridFORM2?.data).to.equal('Element: Test-00001');
+        expect(getBody.data.hridFORM2?.data).toBe('Element: Test-00001');
       });
     });
 
@@ -509,17 +510,15 @@ describe('Records CRUD API', () => {
         ).expect(201);
 
         const forked = forkRes.body as PostCreateRevisionResponse;
-        expect(forked.revisionId).to.match(
-          new RegExp(`^${REVISION_ID_PREFIX}`)
-        );
-        expect(forked.revisionId).to.not.equal(baseRev);
+        expect(forked.revisionId).toMatch(new RegExp(`^${REVISION_ID_PREFIX}`));
+        expect(forked.revisionId).not.toBe(baseRev);
 
         const getRes = await requestAuthAndType(
           request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
-        expect(getBody.revisionId).to.equal(forked.revisionId);
-        expect(getBody.context.revision.parents).to.deep.equal([baseRev]);
+        expect(getBody.revisionId).toBe(forked.revisionId);
+        expect(getBody.context.revision.parents).toEqual([baseRev]);
       });
     });
 
@@ -554,9 +553,9 @@ describe('Records CRUD API', () => {
         const getRes = await requestAuthAndType(
           request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
-        expect(
-          (getRes.body as GetRecordResponse).data.hridFORM2?.data
-        ).to.equal('ForkedParentEdit');
+        expect((getRes.body as GetRecordResponse).data.hridFORM2?.data).toBe(
+          'ForkedParentEdit'
+        );
       });
     });
 
@@ -741,7 +740,7 @@ describe('Records CRUD API', () => {
         const deletedInList = list.find(
           (r: ListRecordsItem) => r.recordId === recordId
         );
-        expect(deletedInList).to.be.undefined;
+        expect(deletedInList).toBeUndefined();
       });
     });
 
@@ -770,8 +769,8 @@ describe('Records CRUD API', () => {
         const deletedInList = list.find(
           (r: ListRecordsItem) => r.recordId === recordId
         );
-        expect(deletedInList).to.not.be.undefined;
-        expect(deletedInList!.deleted).to.be.true;
+        expect(deletedInList).not.toBeUndefined();
+        expect(deletedInList!.deleted).toBe(true);
       });
     });
   });

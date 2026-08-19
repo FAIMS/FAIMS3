@@ -4,6 +4,7 @@ import {
   DataDocument,
   DataEngine,
   FieldSummary,
+  relatedRecordAvpEntries,
   relatedRecordFieldAvpValueSchema,
   relatedRecordSelectorComponentParamsSchema,
   CompiledNotebookUiSpec,
@@ -116,8 +117,7 @@ export async function stripDeletedRelatedRefsFromRecordData({
       continue;
     }
     relationshipFieldNames.push(fieldName);
-    const normalized = valueParsed.data;
-    const entries = Array.isArray(normalized) ? normalized : [normalized];
+    const entries = relatedRecordAvpEntries(valueParsed.data);
     for (const item of entries) {
       relatedIds.add(item.record_id);
     }
@@ -141,8 +141,7 @@ export async function stripDeletedRelatedRefsFromRecordData({
     if (!valueParsed.success) {
       continue;
     }
-    const normalized = valueParsed.data;
-    const entries = Array.isArray(normalized) ? normalized : [normalized];
+    const entries = relatedRecordAvpEntries(valueParsed.data);
 
     const kept: typeof entries = [];
     for (const item of entries) {

@@ -31,7 +31,7 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {config} from '../src/buildconfig';
 import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
@@ -81,16 +81,16 @@ describe('notebook api', () => {
     await initialiseDbAndKeys({});
 
     const directoryDB = getDirectoryDB();
-    expect(directoryDB).not.to.equal(undefined);
+    expect(directoryDB).not.toBe(undefined);
     if (directoryDB) {
       const default_document = (await directoryDB.get('default')) as any;
-      expect(default_document.name).to.equal(config.conductorInstanceName);
+      expect(default_document.name).toBe(config.conductorInstanceName);
 
       // This actually doesn't exist anymore as this record is redundant now
       //const permissions_document = (await directoryDB.get(
       //  '_design/permissions'
       //)) as any;
-      //expect(permissions_document['_id']).to.equal('_design/permissions');
+      //expect(permissions_document['_id']).toBe('_design/permissions');
     }
   });
 
@@ -126,14 +126,14 @@ describe('notebook api', () => {
           projectId: nb1,
           role: Role.PROJECT_GUEST,
         })
-      ).to.equal(true);
+      ).toBe(true);
       expect(
         userCanDo({
           user: bobalooba,
           resourceId: nb1,
           action: Action.READ_MY_PROJECT_RECORDS,
         })
-      ).to.equal(true);
+      ).toBe(true);
 
       addProjectRole({
         user: bobalooba,
@@ -150,7 +150,7 @@ describe('notebook api', () => {
           projectId: nb2,
           role: Role.PROJECT_ADMIN,
         })
-      ).to.equal(true);
+      ).toBe(true);
 
       // And inheritance
       expect(
@@ -159,14 +159,14 @@ describe('notebook api', () => {
           projectId: nb2,
           role: Role.PROJECT_MANAGER,
         })
-      ).to.equal(false);
+      ).toBe(false);
       expect(
         userHasProjectRole({
           user: bobalooba,
           projectId: nb2,
           role: Role.PROJECT_GUEST,
         })
-      ).to.equal(false);
+      ).toBe(false);
 
       // Permanent survey destroy: survey administrators (PROJECT_ADMIN) may delete.
       expect(
@@ -175,7 +175,7 @@ describe('notebook api', () => {
           resourceId: nb2,
           action: Action.DELETE_PROJECT,
         })
-      ).to.equal(true);
+      ).toBe(true);
 
       // check role inheritance too
       expect(
@@ -184,7 +184,7 @@ describe('notebook api', () => {
           resourceId: nb2,
           action: Action.READ_PROJECT_METADATA,
         })
-      ).to.equal(true);
+      ).toBe(true);
 
       removeProjectRole({
         user: bobalooba,
@@ -201,7 +201,7 @@ describe('notebook api', () => {
           resourceId: nb1,
           action: Action.READ_MY_PROJECT_RECORDS,
         })
-      ).to.equal(false);
+      ).toBe(false);
 
       // but still has admin on nb2
       expect(
@@ -210,7 +210,7 @@ describe('notebook api', () => {
           resourceId: nb2,
           action: Action.DELETE_PROJECT,
         })
-      ).to.equal(true);
+      ).toBe(true);
     }
   });
 
@@ -259,9 +259,9 @@ describe('notebook api', () => {
       bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
       const notebooks = await getUserProjectsDetailed(bobalooba);
-      expect(notebooks.length).to.equal(2);
+      expect(notebooks.length).toBe(2);
       for (const notebook of notebooks) {
-        expect(notebook).to.not.have.property('uiSpecification');
+        expect(notebook).not.toHaveProperty('uiSpecification');
       }
     } else {
       throw new Error('could not make test notebooks');
@@ -274,14 +274,14 @@ describe('notebook api', () => {
 
     const projectID = await createNotebookFromSampleFile(' Test   Nõtebõõk');
 
-    expect(projectID).not.to.equal(undefined);
-    expect(user).not.to.be.null;
+    expect(projectID).not.toBe(undefined);
+    expect(user).not.toBeNull();
 
     if (projectID && user) {
-      expect(projectID.substring(13)).to.equal('-test-notebook');
+      expect(projectID.substring(13)).toBe('-test-notebook');
 
       const notebooks = await getUserProjectsDetailed(user);
-      expect(notebooks.length).to.equal(1);
+      expect(notebooks.length).toBe(1);
     }
   });
 
@@ -296,13 +296,13 @@ describe('notebook api', () => {
       description: sample.description,
       createdBy: 'admin',
     });
-    expect(projectID).not.to.equal(undefined);
+    expect(projectID).not.toBe(undefined);
     if (projectID) {
       const project = await getProjectById(projectID);
-      expect(
-        project.uiSpecification.metadata.information.leadInstitution
-      ).to.equal(sample.uiSpecification.metadata.information.leadInstitution);
-      expect(project.name).to.equal(name);
+      expect(project.uiSpecification.metadata.information.leadInstitution).toBe(
+        sample.uiSpecification.metadata.information.leadInstitution
+      );
+      expect(project.name).toBe(name);
     }
   });
 
@@ -315,13 +315,13 @@ describe('notebook api', () => {
       description: sample.description,
       createdBy: 'admin',
     });
-    expect(projectID).not.to.equal(undefined);
+    expect(projectID).not.toBe(undefined);
     if (projectID) {
       const valid = await validateNotebookID(projectID);
-      expect(valid).to.be.true;
+      expect(valid).toBe(true);
 
       const invalid = await validateNotebookID('invalid');
-      expect(invalid).to.be.false;
+      expect(invalid).toBe(false);
     }
   });
 
@@ -337,16 +337,16 @@ describe('notebook api', () => {
       createdBy: 'admin',
     });
 
-    expect(projectID).not.to.equal(undefined);
+    expect(projectID).not.toBe(undefined);
     if (projectID) {
       const retrieved = await getUiSpecModel(projectID);
 
-      expect(retrieved).not.to.be.null;
+      expect(retrieved).not.toBeNull();
       if (retrieved) {
-        expect(Object.keys(retrieved.views).length).to.equal(
+        expect(Object.keys(retrieved.views).length).toBe(
           Object.keys(sample.uiSpecification.uiSpec.views).length
         );
-        expect(retrieved.fields).not.to.equal(undefined);
+        expect(retrieved.fields).not.toBe(undefined);
       }
     }
   });
@@ -363,10 +363,10 @@ describe('notebook api', () => {
       createdBy: 'admin',
     });
 
-    expect(projectID).not.to.equal(undefined);
+    expect(projectID).not.toBe(undefined);
     if (projectID) {
       const roles = getRolesForNotebook();
-      expect(roles.length).to.equal(resourceRoles.PROJECT.length);
+      expect(roles.length).toBe(resourceRoles.PROJECT.length);
     }
   });
 
@@ -379,8 +379,8 @@ describe('notebook api', () => {
 
     const projectID = await createNotebookFromSampleFile(' Test   Nõtebõõk');
 
-    expect(projectID).not.to.equal(undefined);
-    expect(user).not.to.be.null;
+    expect(projectID).not.toBe(undefined);
+    expect(user).not.toBeNull();
 
     if (projectID && user) {
       uiSpecification.metadata.information.projectLeadLabel = 'Bob Bobalooba';
@@ -417,21 +417,19 @@ describe('notebook api', () => {
       await updateProjectUiSpecification(projectID, uiSpecification);
       await updateProjectMetadata(projectID, {name: 'Updated Test Notebook'});
 
-      expect(projectID.substring(13)).to.equal('-test-notebook');
+      expect(projectID.substring(13)).toBe('-test-notebook');
 
       const notebooks = await getUserProjectsDetailed(user);
-      expect(notebooks.length).to.equal(1);
+      expect(notebooks.length).toBe(1);
       const newUISpec = await getUiSpecModel(projectID);
       if (newUISpec) {
-        expect(newUISpec.views['FORM1SECTION1'].label).to.equal(
-          'Updated Label'
-        );
+        expect(newUISpec.views['FORM1SECTION1'].label).toBe('Updated Label');
       }
       const project = await getProjectById(projectID);
-      expect(project.name).to.equal('Updated Test Notebook');
+      expect(project.name).toBe('Updated Test Notebook');
       expect(
         project.uiSpecification.metadata.information.projectLeadLabel
-      ).to.equal('Bob Bobalooba');
+      ).toBe('Bob Bobalooba');
     }
   });
 });

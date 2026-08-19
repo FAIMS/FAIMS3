@@ -56,6 +56,9 @@
   },
   "devDependencies": {
     "@fast-check/jest": "^1.6.0",
+    "@swc-contrib/mut-cjs-exports": "^14.15.0",
+    "@swc/core": "^1.13.3",
+    "@swc/jest": "^0.2.39",
     "@types/jest": "^29.4.0",
     "@types/lodash": "^4.14.191",
     "@types/node": "^24",
@@ -65,8 +68,7 @@
     "madge": "^8.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
     "pouchdb-find": "^9.0.0",
-    "ts-jest": "^29.0.5",
-    "typescript": "^5.9.2"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "pouchdb": "^9.0.0"

@@ -9,22 +9,25 @@ FAIMS3 Developer Documentation
    markdown/Knip.md
    markdown/RulesOfHooks.md
    markdown/CouchMigrations.md
+   markdown/ProjectLifecycle.md
    markdown/PermissionModel.md
    markdown/NotebookDefinition.md
+   markdown/AppInitialisation.md
    markdown/MetadataMigrationGuide.md
    markdown/NotebookMigrations.md
    markdown/RecordsCRUDApi.md
    markdown/GeospatialExport.md
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
+   markdown/TtlCleanup.md
    markdown/TestDatasetSeeding.md
    markdown/Configuration.md
    markdown/Android-Deployment.md
    markdown/Backup.md
    markdown/DeployingAWSStack.md
    markdown/CouchVersionUpgradeGuideAWS.md
+   markdown/CouchBackupRecoveryGuideAWS.md
    markdown/IOS-Deployment.md
-   markdown/AppInitialisation.md
    markdown/forms/04-dependency-injection.md
    markdown/forms/06-field-spec.md
    markdown/forms/quickstart.md

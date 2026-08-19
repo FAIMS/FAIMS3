@@ -466,7 +466,7 @@
     "/notebooks/{id}/delete": {
       "post": {
         "summary": "Permanently destroy notebook server data",
-        "description": "Irreversibly removes CouchDB project databases, invites, and people-db project roles for this notebook. The notebook must already be archived; requires operations-level permission. Request body must include `confirmName` exactly matching the notebook name (trimmed).",
+        "description": "Irreversibly removes CouchDB project databases, invites, and people-db project roles for this notebook. Writes a tombstone document (lookup via GET /tombstones/{id}) before destruction. Requires DELETE_PROJECT permission (survey administrators or operations staff). Request body must include `confirmName` exactly matching the notebook name (trimmed).",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -1645,6 +1645,50 @@
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/tombstones/{id}": {
+      "get": {
+        "summary": "Look up a survey deletion tombstone",
+        "description": "Returns the tombstone document for a permanently deleted survey if one exists. Document `_id` is the deleted survey / project ID. Requires READ_PROJECT_TOMBSTONE (granted to all users who can list surveys).",
+        "tags": ["Tombstones"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Deleted survey (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tombstone found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetTombstoneByIdResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          },
+          "404": {
+            "description": "No tombstone for this survey ID"
           }
         }
       }
@@ -2978,6 +3022,44 @@
           }
         }
       }
+    },
+    "TombstoneDocument": {
+      "type": "object",
+      "description": "Record that a survey was permanently deleted. `_id` is the deleted project ID.",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "description": "Deleted survey (project) identifier"
+        },
+        "_rev": {
+          "type": "string",
+          "description": "CouchDB revision identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Survey display name at deletion time"
+        },
+        "deletedAt": {
+          "type": "number",
+          "description": "Unix timestamp (ms) when the survey was deleted"
+        },
+        "deletedBy": {
+          "type": "string",
+          "description": "User ID who deleted the survey"
+        },
+        "ownedByTeamId": {
+          "type": "string",
+          "description": "Team that owned the survey, if any"
+        },
+        "dataDbName": {
+          "type": "string",
+          "description": "Couch data DB name that was destroyed, if known"
+        }
+      },
+      "required": ["_id", "_rev", "name", "deletedAt", "deletedBy"]
+    },
+    "GetTombstoneByIdResponse": {
+      "$ref": "#/definitions/TombstoneDocument"
     },
     "GetTeamByIdResponse": {
       "$ref": "#/definitions/TeamDocument"

@@ -139,7 +139,9 @@ const EnvSchema = z
       }),
     /** Human-readable instance name (falls back to PROFILE_NAME / key id). */
     CONDUCTOR_INSTANCE_NAME: z.string().optional(),
-    /** Short-code prefix used when generating invite / project codes. */
+    /**
+     * Prefix used when generating invite codes (e.g. `FAIMS` → `FAIMS-…`).
+     */
     CONDUCTOR_SHORT_CODE_PREFIX: configHelpers.stringDefault(
       'FAIMS',
       'CONDUCTOR_SHORT_CODE_PREFIX'
@@ -640,10 +642,10 @@ export function publicKeyPath(): string {
   );
 }
 
-/** Signing-key singleton. Tests may replace this export. */
+/** Signing-key singleton. */
 export const keyService: IKeyService = getKeyService(config.keySource);
 
-/** Email singleton. Tests may replace this export. */
+/** Email singleton. Tests may stub methods on this instance. */
 export const emailService: IEmailService = createEmailService({
   serviceType: emailServiceType,
   emailConfig: email,
