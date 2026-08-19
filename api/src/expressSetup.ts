@@ -194,7 +194,28 @@ app.use(flash());
 
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
-app.use(express.static('public'));
+
+// Candidate directories for Handlebars views and static files.
+// Handles running via ts-node in src, compiled in build/src, or in Docker containers with varied CWD.
+const candidateViewsDirs = [
+  join(__dirname, 'views'),
+  join(__dirname, '../views'),
+  join(__dirname, '../../views'),
+  join(process.cwd(), 'api/views'),
+  join(process.cwd(), 'views'),
+];
+app.set('views', candidateViewsDirs);
+
+const candidatePublicDirs = [
+  join(__dirname, 'public'),
+  join(__dirname, '../public'),
+  join(__dirname, '../../public'),
+  join(process.cwd(), 'api/public'),
+  join(process.cwd(), 'public'),
+];
+candidatePublicDirs.forEach(dir => {
+  app.use(express.static(dir));
+});
 app.use('/api/notebooks', notebookApi);
 app.use('/api/templates', templatesApi);
 app.use('/api/teams', teamsApi);

@@ -1,5 +1,8 @@
 FROM sphinxdoc/sphinx
 
 WORKDIR /docs
-ADD ./requirements.txt /docs
-RUN pip3 install -r requirements.txt
+COPY --chown=33:33 requirements.txt /docs/
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    chown -R 33:33 /docs
+
+USER 33:33

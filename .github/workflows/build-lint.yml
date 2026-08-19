@@ -36,6 +36,14 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
+      - name: Cache Turborepo build output
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
       - name: Configure Turborepo Remote Cache
         run: |
           mkdir -p .turbo

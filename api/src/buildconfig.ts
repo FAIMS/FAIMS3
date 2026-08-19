@@ -32,7 +32,8 @@
  */
 
 import {configHelpers, slugify} from '@faims3/data-model';
-import {existsSync} from 'fs';
+import crypto from 'crypto';
+import {existsSync, mkdirSync, writeFileSync} from 'fs';
 import {z} from 'zod';
 import {
   createEmailService,
@@ -227,20 +228,25 @@ const EnvSchema = z
      */
     AUTH_ATTEMPT_LIMITER_ENABLED: configHelpers.boolWithDefault(true),
     /**
-     * Canonical public URL of this Conductor (required). Trailing `/` is
-     * stripped.
+     * Canonical public URL of this Conductor (Control Centre / Designer UI).
+     * Trailing `/` is stripped. Unset defaults to DESIGNER_URL or
+     * http://localhost:3001.
      */
     NEW_CONDUCTOR_URL: z
-      .string({
-        error: 'You must provide a NEW_CONDUCTOR_URL in your environment.',
-      })
-      .min(1, 'You must provide a NEW_CONDUCTOR_URL in your environment.')
+      .string()
+      .optional()
       .transform(v => {
-        if (v.endsWith('/')) {
+        const val =
+          v && v.trim() !== ''
+            ? v
+            : process.env.DESIGNER_URL && process.env.DESIGNER_URL.trim() !== ''
+              ? process.env.DESIGNER_URL
+              : 'http://localhost:3001';
+        if (val.endsWith('/')) {
           console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
-          return v.substring(0, v.length - 1);
+          return val.substring(0, val.length - 1);
         }
-        return v;
+        return val;
       }),
     /**
      * Env flag to disable local username/password login. Coerced here to the
@@ -618,28 +624,61 @@ export type Config = typeof config;
 //   keys/<host>_{private,public}_key.pem
 // ---------------------------------------------------------------------------
 
+/** Ensures keypair exists on disk, auto-generating an RSA 2048 keypair if missing. */
+function ensureKeysExist(
+  keyHost: string,
+  keyDir: string
+): {privateKeyPath: string; publicKeyPath: string} {
+  const directPriv = `${keyDir}/${keyHost}_private_key.pem`;
+  const directPub = `${keyDir}/${keyHost}_public_key.pem`;
+  const nestedPriv = `${keyDir}/keys/${keyHost}_private_key.pem`;
+  const nestedPub = `${keyDir}/keys/${keyHost}_public_key.pem`;
+
+  if (existsSync(directPriv) && existsSync(directPub)) {
+    return {privateKeyPath: directPriv, publicKeyPath: directPub};
+  }
+  if (existsSync(nestedPriv) && existsSync(nestedPub)) {
+    return {privateKeyPath: nestedPriv, publicKeyPath: nestedPub};
+  }
+
+  console.log(
+    `RSA signing keys for host '${keyHost}' not found in '${keyDir}'. Auto-generating keypair...`
+  );
+  try {
+    mkdirSync(keyDir, {recursive: true});
+    const {privateKey, publicKey} = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: {type: 'spki', format: 'pem'},
+      privateKeyEncoding: {type: 'pkcs8', format: 'pem'},
+    });
+    writeFileSync(directPriv, privateKey, {mode: 0o600});
+    writeFileSync(directPub, publicKey, {mode: 0o644});
+    console.log(
+      `Successfully generated RSA keypair at:\n  Private: ${directPriv}\n  Public: ${directPub}`
+    );
+    return {privateKeyPath: directPriv, publicKeyPath: directPub};
+  } catch (err) {
+    console.error(`Failed to auto-generate RSA keypair in '${keyDir}':`, err);
+  }
+
+  if (existsSync(directPriv))
+    return {privateKeyPath: directPriv, publicKeyPath: directPub};
+  if (existsSync(nestedPriv))
+    return {privateKeyPath: nestedPriv, publicKeyPath: nestedPub};
+
+  throw new Error(
+    `Private/Public key files for host '${keyHost}' do not exist in '${keyDir}'. Please run makeInstanceKeys.sh to generate keys.`
+  );
+}
+
 /** Absolute path to the PEM private key used for JWT signing. */
 export function privateKeyPath(): string {
-  const keyfile = `${config.keyFilePath}/keys/${_keyFileHost}_private_key.pem`;
-  if (existsSync(keyfile)) {
-    console.log(`Private key file ${keyfile} exists.`);
-    return keyfile;
-  }
-  throw new Error(
-    `Private key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
-  );
+  return ensureKeysExist(_keyFileHost, config.keyFilePath).privateKeyPath;
 }
 
 /** Absolute path to the PEM public key paired with `privateKeyPath()`. */
 export function publicKeyPath(): string {
-  const keyfile = `${config.keyFilePath}/keys/${_keyFileHost}_public_key.pem`;
-  if (existsSync(keyfile)) {
-    console.log(`Public key file ${keyfile} exists.`);
-    return keyfile;
-  }
-  throw new Error(
-    `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
-  );
+  return ensureKeysExist(_keyFileHost, config.keyFilePath).publicKeyPath;
 }
 
 /** Signing-key singleton. */

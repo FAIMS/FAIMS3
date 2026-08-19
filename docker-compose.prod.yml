@@ -1,0 +1,105 @@
+name: faims3-production
+
+services:
+  couchdb:
+    image: ${COUCHDB_IMAGE:-couchdb:3}
+    container_name: faims3-couchdb
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+      - ./api/couchdb/local.ini:/opt/couchdb/etc/local.d/local.ini:rw
+    ports:
+      - '${COUCHDB_BIND_IP:-127.0.0.1}:${COUCHDB_EXTERNAL_PORT:-5984}:5984'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '5'
+
+  api:
+    image: ${API_IMAGE:-faims3-api:latest}
+    container_name: faims3-api
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      - NODE_ENV=production
+      - COUCHDB_INTERNAL_URL=http://couchdb:5984
+    volumes:
+      - ./api/keys:/app/keys:ro
+    ports:
+      - '${CONDUCTOR_BIND_IP:-127.0.0.1}:${CONDUCTOR_EXTERNAL_PORT:-8080}:8000'
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/']
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '5'
+
+  web:
+    image: ${WEB_IMAGE:-faims3-web:latest}
+    container_name: faims3-web
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      - PORT=3001
+    ports:
+      - '${WEB_BIND_IP:-127.0.0.1}:${WEB_EXTERNAL_PORT:-3001}:3001'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '5'
+
+  app:
+    image: ${APP_IMAGE:-faims3-app:latest}
+    container_name: faims3-app
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      - PORT=3000
+    ports:
+      - '${APP_BIND_IP:-127.0.0.1}:${APP_EXTERNAL_PORT:-3000}:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '5'
+
+volumes:
+  couchdb_data:
+    driver: local
