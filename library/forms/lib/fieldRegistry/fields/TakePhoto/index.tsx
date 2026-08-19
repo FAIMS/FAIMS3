@@ -42,6 +42,10 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
 const MAX_IMAGE_WIDTH = 1920;
+// Cap on how many gallery images can be attached in one pick. Keeps writes
+// bounded on low-memory devices and gives the user immediate feedback if they
+// try to select more.
+const MAX_GALLERY_BATCH = 10;
 
 /**
  * Backing out of the camera or picker rejects rather than returning empty, and
@@ -720,6 +724,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Track URLs that need cleanup on unmount
   const pendingUrlsRef = useRef<Set<string>>(new Set());
 
+  // User-facing error surfaced when one or more saves fail.
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
@@ -793,6 +800,22 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   }, []);
 
   /**
+   * Drops an optimistic preview that will never be confirmed (save failed, or
+   * batch aborted). Idempotent — safe to call after storage already succeeded.
+   */
+  const removePendingPhoto = useCallback((tempId: string) => {
+    setPendingPhotos(current => {
+      const pending = current.get(tempId);
+      if (!pending) return current;
+      URL.revokeObjectURL(pending.url);
+      pendingUrlsRef.current.delete(pending.url);
+      const updated = new Map(current);
+      updated.delete(tempId);
+      return updated;
+    });
+  }, []);
+
+  /**
    * Writes one already-previewed image to storage. `path` is only supplied for
    * camera captures: geotagging uses the *current* position, which is only
    * correct for a photo taken here and now.
@@ -836,13 +859,21 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         format,
       });
 
-      const newId = await addAttachment({
-        // Blob attachments are faster - especially on native
-        blob: photoBlob,
-        contentType: `image/${format}`,
-        type: 'photo',
-        fileFormat: format,
-      });
+      let newId: string;
+      try {
+        newId = await addAttachment({
+          // Blob attachments are faster - especially on native
+          blob: photoBlob,
+          contentType: `image/${format}`,
+          type: 'photo',
+          fileFormat: format,
+        });
+      } catch (err) {
+        // Drop the optimistic preview so the user isn't left with a photo
+        // stuck on "Saving..." forever. Rethrow so the caller can surface it.
+        removePendingPhoto(tempId);
+        throw err;
+      }
 
       // Mark storage complete; keep optimistic preview until useAttachments loads.
       // The Saving overlay hides once attachmentId is set (see PendingPhotoItem).
@@ -865,7 +896,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         attachmentId: newId,
       });
     },
-    [fieldId, addAttachment]
+    [fieldId, addAttachment, removePendingPhoto]
   );
 
   /**
@@ -926,6 +957,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
+      setSaveError(null);
       await storePhoto({
         tempId: addPendingPreview(photoBlob),
         photoBlob,
@@ -935,6 +967,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     } catch (err: any) {
       if (isCancellation(err)) return;
       logError(new Error('Failed to capture photo:'), {error: err});
+      setSaveError('Could not save the photo. Please try again.');
     } finally {
       if (attachmentLockHeld) {
         setAttachmentSaving?.(false);
@@ -963,41 +996,80 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         quality: IMAGE_QUALITY_0_100,
         width: MAX_IMAGE_WIDTH,
         correctOrientation: true,
+        limit: MAX_GALLERY_BATCH,
       });
 
       if (photos.length === 0) return;
+
+      // Defensive cap: some platforms/versions ignore `limit`. Trim here so
+      // we never process more than MAX_GALLERY_BATCH regardless of platform.
+      const overLimit = photos.length > MAX_GALLERY_BATCH;
+      const selected = overLimit
+        ? photos.slice(0, MAX_GALLERY_BATCH)
+        : photos;
+
+      setSaveError(
+        overLimit
+          ? `You can add up to ${MAX_GALLERY_BATCH} photos at once — only the first ${MAX_GALLERY_BATCH} will be added.`
+          : null
+      );
 
       setAttachmentSaving?.(true);
       attachmentLockHeld = true;
 
       // Preview the whole selection first so every thumbnail appears at once,
-      // rather than trickling in behind each write.
-      const pending = [];
-      for (const photo of photos) {
-        const response = await fetch(photo.webPath);
-        const photoBlob = await response.blob();
-        pending.push({
-          tempId: addPendingPreview(photoBlob),
-          photoBlob,
-          format: photo.format,
-        });
+      // rather than trickling in behind each write. If a fetch fails mid-batch
+      // we roll back the previews already added so nothing gets stuck.
+      const pending: {tempId: string; photoBlob: Blob; format: string}[] = [];
+      try {
+        for (const photo of selected) {
+          const response = await fetch(photo.webPath);
+          const photoBlob = await response.blob();
+          pending.push({
+            tempId: addPendingPreview(photoBlob),
+            photoBlob,
+            format: photo.format,
+          });
+        }
+      } catch (err) {
+        for (const item of pending) {
+          removePendingPhoto(item.tempId);
+        }
+        throw err;
       }
 
       // Sequential writes: concurrent PouchDB attachment writes contend, and
       // this keeps the saved order the same as the picked order. No `path` is
       // passed, so gallery images keep their original EXIF location.
+      // Per-item try/catch so one bad write doesn't strand the remaining
+      // previews on "Saving..." — storePhoto already drops its own preview
+      // on failure, we just tally and continue.
+      let failures = 0;
       for (const item of pending) {
-        await storePhoto(item);
+        try {
+          await storePhoto(item);
+        } catch (err) {
+          failures++;
+          logError(new Error('Failed to save gallery photo:'), {error: err});
+        }
+      }
+      if (failures > 0) {
+        setSaveError(
+          `Could not save ${failures} of ${pending.length} photo${
+            pending.length === 1 ? '' : 's'
+          }. Please try again.`
+        );
       }
     } catch (err: any) {
       if (isCancellation(err)) return;
       logError(new Error('Failed to add photos from gallery:'), {error: err});
+      setSaveError('Could not add photos from your gallery. Please try again.');
     } finally {
       if (attachmentLockHeld) {
         setAttachmentSaving?.(false);
       }
     }
-  }, [addPendingPreview, storePhoto, setAttachmentSaving]);
+  }, [addPendingPreview, removePendingPhoto, storePhoto, setAttachmentSaving]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
@@ -1031,6 +1103,17 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           <Alert severity="warning" sx={{mb: 2}}>
             Some photos could not be loaded. To download attachments, enable
             attachment download in Settings.
+          </Alert>
+        )}
+
+        {/* Save Error - shown when a capture or gallery pick failed to persist */}
+        {saveError && (
+          <Alert
+            severity="error"
+            sx={{mb: 2}}
+            onClose={() => setSaveError(null)}
+          >
+            {saveError}
           </Alert>
         )}
 
