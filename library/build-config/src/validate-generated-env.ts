@@ -3,11 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {parseBuildConfig} from './build-config.js';
-import {
-  generateEnv,
-  parseArgs,
-  type SupportedPlatform,
-} from './generate-build-config.js';
+import {generateEnv, parseArgs} from './generate-build-config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,13 +13,6 @@ const APP_SCHEMA_PATH = path.resolve(repoRoot, 'app/src/buildconfig.ts');
 const WEB_SCHEMA_PATH = path.resolve(repoRoot, 'web/src/constants.ts');
 const FASTLANE_ANDROID_DIR = path.resolve(repoRoot, 'app/android/fastlane');
 const FASTLANE_IOS_DIR = path.resolve(repoRoot, 'app/ios/App/fastlane');
-
-const VALID_PLATFORMS = new Set<SupportedPlatform>([
-  'all',
-  'android',
-  'ios',
-  'web',
-]);
 
 export function parseEnvText(text: string): Map<string, string> {
   const parsed = new Map<string, string>();
@@ -149,26 +138,30 @@ export function extractFastlaneEnvKeys(filePath: string): Set<string> {
   return keys;
 }
 
-export function fastlaneEnvKeysForPlatform(
-  platform: SupportedPlatform
-): Set<string> {
+/**
+ * Gather ENV keys that are used in the Fastlane files for IOS and Android builds
+ * @returns A set of ENV keys used in the Fastlane files for IOS and Android builds
+ */
+export function fastlaneEnvKeys(): Set<string> {
   const candidates: string[] = [];
 
-  if (platform === 'android' || platform === 'all') {
-    candidates.push(
-      path.join(FASTLANE_ANDROID_DIR, 'Appfile'),
-      path.join(FASTLANE_ANDROID_DIR, 'Fastfile')
-    );
-  }
+  candidates.push(
+    path.join(FASTLANE_ANDROID_DIR, 'Appfile'),
+    path.join(FASTLANE_ANDROID_DIR, 'Fastfile')
+  );
 
-  if (platform === 'ios' || platform === 'all') {
-    candidates.push(
-      path.join(FASTLANE_IOS_DIR, 'Appfile'),
-      path.join(FASTLANE_IOS_DIR, 'Fastfile')
-    );
-  }
+  candidates.push(
+    path.join(FASTLANE_IOS_DIR, 'Appfile'),
+    path.join(FASTLANE_IOS_DIR, 'Fastfile')
+  );
 
-  const keys = new Set<string>();
+  // Initialise with two special keys that don't appear explicitly but are
+  // required for Fastlane to work properly.
+  const keys = new Set([
+    'FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD',
+    'MATCH_PASSWORD',
+  ]);
+
   for (const candidate of candidates) {
     if (!fs.existsSync(candidate)) {
       continue;
@@ -181,61 +174,17 @@ export function fastlaneEnvKeysForPlatform(
   return keys;
 }
 
-const FASTLANE_EXPLICIT_EXTRA_KEYS = new Set([
-  'FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD',
-  'MATCH_PASSWORD',
-]);
-
-export function expectedKeysForPlatform(
-  platform: SupportedPlatform
-): Set<string> {
+export function getExpectedKeys(): Set<string> {
   const appKeys = extractEnvSchemaKeys(APP_SCHEMA_PATH);
   const webKeys = extractEnvSchemaKeys(WEB_SCHEMA_PATH);
-  const fastlaneKeys = fastlaneEnvKeysForPlatform(platform);
+  const fastlaneKeys = fastlaneEnvKeys();
 
-  if (platform === 'web') {
-    return webKeys;
-  }
-
-  return new Set([
-    ...appKeys,
-    ...webKeys,
-    ...fastlaneKeys,
-    ...FASTLANE_EXPLICIT_EXTRA_KEYS,
-  ]);
+  return new Set([...appKeys, ...webKeys, ...fastlaneKeys]);
 }
 
-export function validateGeneratedEnv({
-  envText,
-  config,
-  platform,
-}: {
-  envText?: string;
-  config?: ReturnType<typeof parseBuildConfig>;
-  platform: SupportedPlatform;
-}) {
-  if (!envText && !config) {
-    throw new Error('Either envText or config must be supplied.');
-  }
-
-  const generatedText =
-    envText ??
-    generateEnv({
-      config:
-        config ??
-        parseBuildConfig({
-          app: {},
-          web: {},
-          mobile: {android: {}, ios: {}},
-          build: {},
-          secrets: {},
-        }),
-      platform,
-      includeEmpty: true,
-    });
-
-  const generatedKeys = new Set(parseEnvText(generatedText).keys());
-  const expectedKeys = expectedKeysForPlatform(platform);
+export function validateGeneratedEnv({envText}: {envText: string}) {
+  const generatedKeys = new Set(parseEnvText(envText).keys());
+  const expectedKeys = getExpectedKeys();
 
   const missing = [...expectedKeys]
     .filter(key => !generatedKeys.has(key))
@@ -261,49 +210,49 @@ export function main(
 
   if (args.help) {
     console.log(
-      `Usage: pnpm --filter=@faims3/build-config run validate -- [--config path/to/config.json] [--platform all|android|ios|web] [--env path/to/.env]`
+      `Usage: pnpm --filter=@faims3/build-config run validate [--config path/to/config.json]`
     );
     return 0;
   }
 
-  const rawPlatform = String(
-    args.platform ?? args.target ?? 'all'
-  ).toLowerCase();
-  if (!VALID_PLATFORMS.has(rawPlatform as SupportedPlatform)) {
-    throw new Error(
-      `Unsupported platform: ${rawPlatform}. Expected one of ${[...VALID_PLATFORMS].join(', ')}`
-    );
-  }
-
+  // Generate the .env text either from the supplied config file or from an empty one
+  let parsed: ReturnType<typeof parseBuildConfig> | undefined = undefined;
   if (!args.config) {
-    throw new Error(
-      'A config file path is required. Pass --config path/to/config.json'
-    );
-  }
+    parsed = parseBuildConfig({
+      app: {},
+      web: {},
+      mobile: {android: {}, ios: {}},
+      build: {},
+      secrets: {},
+    });
+  } else {
+    const configPath = path.resolve(cwd, String(args.config));
+    if (!fs.existsSync(configPath)) {
+      throw new Error(`Config file not found: ${configPath}`);
+    }
 
-  const configPath = path.resolve(cwd, String(args.config));
-  if (!fs.existsSync(configPath)) {
-    throw new Error(`Config file not found: ${configPath}`);
+    parsed = parseBuildConfig(JSON.parse(fs.readFileSync(configPath, 'utf8')));
   }
-
-  const parsed = parseBuildConfig(
-    JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  );
-  const envPath = args.env ? path.resolve(cwd, String(args.env)) : undefined;
-  const envText = envPath ? fs.readFileSync(envPath, 'utf8') : undefined;
+  const envText = generateEnv({
+    config: parsed,
+    platform: 'all',
+    includeEmpty: true,
+  });
 
   const result = validateGeneratedEnv({
     envText,
-    config: parsed,
-    platform: rawPlatform as SupportedPlatform,
   });
 
   if (result.ok) {
-    console.log(
-      `Generated env matches the app/web schema for platform '${rawPlatform}'.`
-    );
+    console.log(`Generated env matches the app/web schema.`);
     return 0;
   }
+  console.error(
+    `Found a mismatch between the configuration generated 
+    by the build-config utility and the required schema in app/ or web/.  
+    Check the output below for details.  If this is a new configuration variable,
+    it will need to be added to the schema in library/build-config.`
+  );
 
   if (result.missing.length > 0) {
     console.error(`Missing expected keys (${result.missing.length}):`);
