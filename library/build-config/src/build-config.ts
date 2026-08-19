@@ -16,6 +16,27 @@ export const AppBuildConfigSchema = z
       .default('https://fieldnote.au/privacy')
       .optional(),
     appContactUrl: z.string().default('').optional(),
+    directoryUsername: z.string().optional(),
+    directoryPassword: z.string().optional(),
+    syncPushOnlyRecordThreshold: z
+      .number()
+      .int()
+      .positive()
+      .default(500)
+      .optional(),
+    tokenRefreshIntervalMs: z
+      .number()
+      .int()
+      .positive()
+      .default(15000)
+      .optional(),
+    tokenRefreshWindowMs: z.number().int().positive().default(60000).optional(),
+    loginBannerGraceMs: z.number().int().positive().default(10000).optional(),
+    ignoreTokenExp: z.boolean().default(false).optional(),
+    navigation: z.enum(['none', 'breadcrumbs']).default('none').optional(),
+    showRecordLinks: z.boolean().default(false).optional(),
+    attachmentServiceType: z.string().default('COUCH').optional(),
+    attachmentDocumentIdPrefix: z.string().optional(),
     mapSource: z.enum(['osm', 'maptiler', '']).default('maptiler').optional(),
     mapSourceKey: z.string().default('').optional(),
     satelliteSource: z.enum(['esri', 'maptiler']).optional(),
@@ -56,6 +77,15 @@ export const WebBuildConfigSchema = z
     websiteTitle: z.string().default('Control Centre').optional(),
     theme: z.string().default('default').optional(),
     developerMode: z.boolean().default(false).optional(),
+    docsUrl: z.string().default('').optional(),
+    bugsnagApiKey: z.string().optional(),
+    maxDesignFileSizeMb: z.number().int().positive().default(10).optional(),
+    maximumLongLivedDurationDays: z
+      .union([z.number().int().positive(), z.string()])
+      .optional(),
+    longLivedTokenDurationHints: z
+      .array(z.number().int().positive())
+      .optional(),
     privacyPolicyUrl: z
       .string()
       .default('https://fieldnote.au/privacy')

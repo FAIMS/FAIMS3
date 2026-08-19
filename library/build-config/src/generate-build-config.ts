@@ -109,8 +109,10 @@ function resolveGitCommitVersion(value: unknown): string {
 
 function buildEnvMap(
   config: ReturnType<typeof parseBuildConfig>,
-  platform: SupportedPlatform
+  platform: SupportedPlatform,
+  options: {includeEmpty?: boolean} = {}
 ) {
+  const {includeEmpty = false} = options;
   const {app, web, mobile, build} = config;
   const commitVersion = resolveGitCommitVersion(build.commitVersion);
 
@@ -164,6 +166,23 @@ function buildEnvMap(
     ),
     VITE_SUPPORT_EMAIL: coalesce(app.supportEmail, 'support@fieldmark.au'),
     VITE_APP_CONTACT_URL: coalesce(app.appContactUrl, app.contactUrl, ''),
+    VITE_DIRECTORY_USERNAME: coalesce(app.directoryUsername, ''),
+    VITE_DIRECTORY_PASSWORD: coalesce(app.directoryPassword, ''),
+    VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD: coalesce(
+      app.syncPushOnlyRecordThreshold,
+      500
+    ),
+    VITE_TOKEN_REFRESH_INTERVAL_MS: coalesce(app.tokenRefreshIntervalMs, 15000),
+    VITE_TOKEN_REFRESH_WINDOW_MS: coalesce(app.tokenRefreshWindowMs, 60000),
+    VITE_LOGIN_BANNER_GRACE_MS: coalesce(app.loginBannerGraceMs, 10000),
+    VITE_IGNORE_TOKEN_EXP: boolToEnv(coalesce(app.ignoreTokenExp, false)),
+    VITE_NAVIGATION: coalesce(app.navigation, 'none'),
+    VITE_SHOW_RECORD_LINKS: boolToEnv(coalesce(app.showRecordLinks, false)),
+    VITE_ATTACHMENT_SERVICE_TYPE: coalesce(app.attachmentServiceType, 'COUCH'),
+    VITE_ATTACHMENT_DOCUMENT_ID_PREFIX: coalesce(
+      app.attachmentDocumentIdPrefix,
+      ''
+    ),
     VITE_APPLE_BUNDLE_IDENTIFIER: coalesce(
       mobile.bundleIdentifier,
       mobile.ios?.bundleIdentifier,
@@ -224,11 +243,22 @@ function buildEnvMap(
     VITE_DEVELOPER_MODE: boolToEnv(
       coalesce(web.developerMode, build.developerMode, false)
     ),
+    VITE_DOCS_URL: coalesce(web.docsUrl, ''),
+    VITE_BUGSNAG_API_KEY: coalesce(web.bugsnagApiKey, ''),
+    VITE_MAX_DESIGN_FILE_SIZE_MB: coalesce(web.maxDesignFileSizeMb, 10),
+    VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: coalesce(
+      web.maximumLongLivedDurationDays,
+      90
+    ),
+    VITE_LONG_LIVED_TOKEN_DURATION_HINTS: coalesce(
+      web.longLivedTokenDurationHints,
+      [1, 5, 10, 30, 90, 365]
+    ),
     VITE_EXCLUDED_TEAM_ROLES: coalesce(
       app.excludedTeamRoles,
       build.excludedTeamRoles,
       web.excludedTeamRoles,
-      ''
+      []
     ),
   };
 
@@ -285,14 +315,11 @@ function buildEnvMap(
 
   const merged: Record<string, Value> = {...base};
 
-  console.log(`platform is '${platform}'`);
-
   if (platform === 'android' || platform === 'all') {
     Object.assign(merged, platformSpecific.android);
   }
 
   if (platform === 'ios' || platform === 'all') {
-    console.log('Merging iOS-specific environment variables...');
     Object.assign(merged, platformSpecific.ios);
   }
 
@@ -305,20 +332,32 @@ function buildEnvMap(
     merged.VITE_THEME = base.VITE_THEME;
   }
 
+  if (includeEmpty) {
+    for (const [key, value] of Object.entries(merged)) {
+      if (value === undefined || value === null) {
+        merged[key] = '';
+      }
+    }
+  }
+
   return merged;
 }
 
 export function generateEnv({
   config,
   platform,
+  includeEmpty = false,
 }: {
   config: ReturnType<typeof parseBuildConfig>;
   platform: SupportedPlatform;
+  includeEmpty?: boolean;
 }): string {
-  const map = buildEnvMap(config, platform);
+  const map = buildEnvMap(config, platform, {includeEmpty});
   return Object.entries(map)
-    .filter(([, value]) => value !== undefined && value !== null)
-    .map(([key, value]) => `${key}=${stringify(value)}`)
+    .filter(([, value]) =>
+      includeEmpty ? true : value !== undefined && value !== null
+    )
+    .map(([key, value]) => `${key}=${stringify(value ?? '')}`)
     .join('\n');
 }
 
