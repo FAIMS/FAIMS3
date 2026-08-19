@@ -39,7 +39,6 @@ import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePh
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
-// Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
 const MAX_IMAGE_WIDTH = 1920;
 const MAX_GALLERY_BATCH = 10;
@@ -1000,9 +999,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       // Defensive cap: some platforms/versions ignore `limit`. Trim here so
       // we never process more than MAX_GALLERY_BATCH regardless of platform.
       const overLimit = photos.length > MAX_GALLERY_BATCH;
-      const selected = overLimit
-        ? photos.slice(0, MAX_GALLERY_BATCH)
-        : photos;
+      const selected = overLimit ? photos.slice(0, MAX_GALLERY_BATCH) : photos;
 
       setSaveError(
         overLimit
@@ -1050,10 +1047,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         }
       }
       if (failures > 0) {
+        const plural = pending.length === 1 ? '' : 's';
         setSaveError(
-          `Could not save ${failures} of ${pending.length} photo${
-            pending.length === 1 ? '' : 's'
-          }. Please try again.`
+          `Could not save ${failures} of ${pending.length} photo${plural}. Please try again.`
         );
       }
     } catch (err: any) {
