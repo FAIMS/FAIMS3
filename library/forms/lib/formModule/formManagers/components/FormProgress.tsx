@@ -33,7 +33,7 @@ export const LiveFormProgress: React.FC<LiveFormProgressProps> = props => {
       data,
       visibilityMap: props.visibilityMap,
     });
-  }, [data, props.formId, props.form]);
+  }, [data, props.formId, props.visibilityMap]);
   return <FormProgressBar completion={progress} />;
 };
 

@@ -21,6 +21,7 @@ export const INPUT_LIMITS = {
   /** Human display names (people). */
   PERSON_NAME_MAX_LENGTH: 100,
   /** Names of projects/notebooks, templates and teams. */
+  RESOURCE_NAME_MIN_LENGTH: 5,
   RESOURCE_NAME_MAX_LENGTH: 100,
   /** Team descriptions (root project/template descriptions are capped separately at 250). */
   TEAM_DESCRIPTION_MAX_LENGTH: 500,
@@ -49,6 +50,23 @@ export const INPUT_LIMITS = {
 /** Bounded trimmed string builder for zod request schemas. */
 export const boundedString = (max: number, label = 'Value') =>
   z.string().trim().max(max, `${label} must be at most ${max} characters`);
+
+/**
+ * Name of a project/notebook, template or team. Bounded at both ends so the
+ * same min/max applies on every route that creates or edits a resource name.
+ */
+export const resourceNameString = (label = 'Name') =>
+  z
+    .string()
+    .trim()
+    .min(
+      INPUT_LIMITS.RESOURCE_NAME_MIN_LENGTH,
+      `${label} must be at least ${INPUT_LIMITS.RESOURCE_NAME_MIN_LENGTH} characters`
+    )
+    .max(
+      INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH,
+      `${label} must be at most ${INPUT_LIMITS.RESOURCE_NAME_MAX_LENGTH} characters`
+    );
 
 /** Email input: valid format and bounded length. */
 export const EmailInputSchema = z

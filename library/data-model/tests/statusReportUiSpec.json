@@ -1,0 +1,495 @@
+{
+  "uiSpec": {
+    "fields": {
+      "site-id": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Site ID",
+          "required": true,
+          "name": "site-id"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "site-label": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Site label",
+          "name": "site-label",
+          "hidden": true,
+          "template": "Site {{site-id}}"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "features": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Features",
+          "required": true,
+          "name": "features",
+          "related_type": "Feature",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "photos": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Photos",
+          "required": false,
+          "name": "photos",
+          "related_type": "Photo",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "calibration-ref": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Calibration",
+          "required": false,
+          "name": "calibration-ref",
+          "related_type": "Calibration",
+          "relation_type": "faims-core::Linked",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "special-note": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Special note",
+          "required": true,
+          "name": "special-note"
+        },
+        "condition": {
+          "operator": "equal",
+          "field": "site-id",
+          "value": "SHOW-NOTE"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "depth": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Depth",
+          "required": true,
+          "name": "depth"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "samples": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Samples",
+          "required": false,
+          "name": "samples",
+          "related_type": "Sample",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "sample-type": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Sample type",
+          "required": true,
+          "name": "sample-type"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "sub-samples": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Sub-samples",
+          "required": false,
+          "name": "sub-samples",
+          "related_type": "Sample",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "caption": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Caption",
+          "required": false,
+          "name": "caption"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "finds": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Finds",
+          "required": true,
+          "name": "finds",
+          "related_type": "Photo",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "legacy-children": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Legacy children",
+          "required": false,
+          "name": "legacy-children",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "cal-value": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Calibration value",
+          "required": true,
+          "name": "cal-value"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "mode": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Mode",
+          "name": "mode"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "both-note": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Both note",
+          "name": "both-note",
+          "hidden": true,
+          "template": "Note {{mode}}"
+        },
+        "condition": {
+          "operator": "equal",
+          "field": "mode",
+          "value": "FULL"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "survey-mode": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Survey mode",
+          "name": "survey-mode"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "survey-samples": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Survey samples",
+          "required": true,
+          "name": "survey-samples",
+          "related_type": "Sample",
+          "relation_type": "faims-core::Child",
+          "multiple": true
+        },
+        "condition": {
+          "operator": "equal",
+          "field": "survey-mode",
+          "value": "DETAILED"
+        },
+        "initialValue": [],
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      },
+      "extra-note": {
+        "component-namespace": "faims-custom",
+        "component-name": "FAIMSTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Extra note",
+          "name": "extra-note"
+        },
+        "initialValue": "",
+        "meta": {
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
+        },
+        "persistent": false,
+        "displayParent": false
+      }
+    },
+    "views": {
+      "Site-Main": {
+        "label": "Main",
+        "fields": [
+          "site-id",
+          "site-label",
+          "features",
+          "photos",
+          "calibration-ref"
+        ]
+      },
+      "Site-Extra": {
+        "label": "Extra",
+        "fields": ["special-note"]
+      },
+      "Feature-Main": {
+        "label": "Main",
+        "fields": ["depth", "samples"]
+      },
+      "Sample-Main": {
+        "label": "Main",
+        "fields": ["sample-type", "sub-samples"]
+      },
+      "Sample-Links": {
+        "label": "Links",
+        "fields": ["sub-samples"]
+      },
+      "Photo-Main": {
+        "label": "Main",
+        "fields": ["caption"]
+      },
+      "Calibration-Main": {
+        "label": "Main",
+        "fields": ["cal-value"]
+      },
+      "Trench-Main": {
+        "label": "Main",
+        "fields": ["finds"]
+      },
+      "Trench-Links": {
+        "label": "Links",
+        "fields": ["finds"]
+      },
+      "Legacy-Main": {
+        "label": "Main",
+        "fields": ["legacy-children"]
+      },
+      "Annotated-Main": {
+        "label": "Main",
+        "fields": ["mode", "both-note"]
+      },
+      "Survey-Main": {
+        "label": "Main",
+        "fields": ["survey-mode", "survey-samples"]
+      },
+      "Annotated-Extra": {
+        "label": "Extra",
+        "fields": ["extra-note"],
+        "condition": {
+          "operator": "equal",
+          "field": "mode",
+          "value": "FULL"
+        }
+      }
+    },
+    "viewsets": {
+      "Site": {
+        "label": "Site",
+        "views": ["Site-Main", "Site-Extra"],
+        "hridField": "site-id",
+        "summary_fields": ["site-id", "site-label", "special-note"]
+      },
+      "Feature": {
+        "label": "Feature",
+        "views": ["Feature-Main"]
+      },
+      "Sample": {
+        "label": "Sample",
+        "views": ["Sample-Main", "Sample-Links"]
+      },
+      "Photo": {
+        "label": "Photo",
+        "views": ["Photo-Main"]
+      },
+      "Calibration": {
+        "label": "Calibration",
+        "views": ["Calibration-Main"]
+      },
+      "Trench": {
+        "label": "Trench",
+        "views": ["Trench-Main", "Trench-Links"]
+      },
+      "Legacy": {
+        "label": "Legacy",
+        "views": ["Legacy-Main"]
+      },
+      "Annotated": {
+        "label": "Annotated",
+        "views": ["Annotated-Main", "Annotated-Extra"],
+        "summary_fields": ["mode", "both-note", "extra-note"]
+      },
+      "Survey": {
+        "label": "Survey",
+        "views": ["Survey-Main"]
+      }
+    },
+    "visible_types": [
+      "Site",
+      "Feature",
+      "Sample",
+      "Photo",
+      "Calibration",
+      "Trench",
+      "Legacy",
+      "Annotated",
+      "Survey"
+    ],
+    "settings": {
+      "showQrCodeButton": false
+    },
+    "schemaVersion": 5.0
+  },
+  "metadata": {
+    "information": {
+      "notebookVersion": "",
+      "purposeMarkdown": "",
+      "projectLeadLabel": "",
+      "leadInstitution": ""
+    }
+  }
+}

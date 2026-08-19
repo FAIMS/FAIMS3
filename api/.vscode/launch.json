@@ -4,18 +4,12 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Mocha Tests",
-      "program": "${workspaceFolder}/../node_modules/mocha/bin/_mocha",
-      "args": [
-        "--require",
-        "dotenv/config",
-        "--timeout",
-        "999999",
-        "--colors",
-        "--exit",
-        "${workspaceFolder}/test/**/*.ts"
-      ],
-      "internalConsoleOptions": "openOnSessionStart",
+      "name": "Vitest Tests",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["test"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
       "env": {
         "NODE_ENV": "test"
       }

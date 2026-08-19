@@ -136,6 +136,8 @@ const EnvSchema = z
     VITE_SHOW_WIPE: configHelpers.boolWithDefault(true),
     /** Show the "create new notebook" UI affordance. */
     VITE_SHOW_NEW_NOTEBOOK: configHelpers.boolWithDefault(true),
+    /** Show the record-view "Status" tab. */
+    VITE_SHOW_STATUS_TAB: configHelpers.boolWithDefault(true),
     /** See `batch_size` in https://pouchdb.com/api.html#replication */
     VITE_POUCH_BATCH_SIZE: configHelpers.intDefault(10),
     /** See `batches_limit` in https://pouchdb.com/api.html#replication */
@@ -402,6 +404,7 @@ const EnvSchema = z
       showPouchdbBrowser: env.VITE_SHOW_POUCHDB_BROWSER,
       showWipe: env.VITE_SHOW_WIPE,
       showNewNotebook: env.VITE_SHOW_NEW_NOTEBOOK,
+      showStatusTab: env.VITE_SHOW_STATUS_TAB,
       pouchBatchSize: env.VITE_POUCH_BATCH_SIZE,
       pouchBatchesLimit: env.VITE_POUCH_BATCHES_LIMIT,
       syncPushOnlyRecordThreshold: env.VITE_SYNC_PUSH_ONLY_RECORD_THRESHOLD,

@@ -25,6 +25,7 @@ export const GeoJSONFeatureSchema = z.object({
   geometry: GeoJSONGeometrySchema,
   properties: z.any().nullable(),
 });
+export type GeoJSONFeature = z.infer<typeof GeoJSONFeatureSchema>;
 
 /**
  * Schema for the field value - a GeoJSON FeatureCollection.

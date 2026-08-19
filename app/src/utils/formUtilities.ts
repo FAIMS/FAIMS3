@@ -114,22 +114,57 @@ export function formatTimestamp(
   }
 }
 
+/** Placeholder shown when a record value is missing or cannot be rendered. */
+export const MISSING_DATA_PLACEHOLDER = '-';
+
 /**
- * Converts field names to a more readable format by:
- * 1. Splitting CamelCase into separate words
- * 2. Replacing hyphens with spaces
- * 3. Trimming any resulting extra whitespace
+ * Converts record metadata field values to displayable strings.
  *
- * @param fieldName - The input field name to prettify
- * @returns A cleaned and formatted string
+ * @param field - The field name to extract from the data
+ * @param data - The data object containing the field
+ * @returns A string representation of the field value, or a fallback value if
+ *          the data is missing or cannot be converted
  */
-export function prettifyFieldName(fieldName: string): string {
-  return fieldName
-    .replace(/([a-z])([A-Z])/g, '$1 $2') // Split CamelCase by adding space between lower and upper case letters
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Handle consecutive capitals (e.g., APIResponse -> API Response)
-    .replace(/([a-zA-Z])(\d+)/g, '$1 $2') // Split between letters and numbers
-    .replace(/(\d+)([a-zA-Z])/g, '$1 $2') // Split between numbers and letters
-    .replace(/-/g, ' ') // Replace all hyphens with spaces
-    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-    .trim(); // Remove leading/trailing whitespace
+export function getDisplayDataFromRecordMetadata({
+  field,
+  data,
+}: {
+  field: string;
+  data: {[key: string]: any};
+}): string {
+  const fallback = MISSING_DATA_PLACEHOLDER;
+  try {
+    if (!data) return fallback;
+
+    const value = data[field];
+
+    if (value === undefined || value === null) return fallback;
+
+    switch (typeof value) {
+      case 'string':
+        return value.trim() || fallback;
+      case 'number':
+        return Number.isFinite(value) ? value.toString() : fallback;
+      case 'boolean':
+        return value.toString();
+      case 'object':
+        if (Array.isArray(value)) {
+          return value.filter(item => item !== null).join(', ') || fallback;
+        }
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        try {
+          const str = JSON.stringify(value);
+          return str === '{}' ? fallback : str;
+        } catch {
+          return fallback;
+        }
+      default:
+        return fallback;
+    }
+  } catch (error) {
+    console.warn(`Error formatting field ${field}:`, error);
+    return fallback;
+  }
 }
