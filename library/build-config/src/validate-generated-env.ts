@@ -1,3 +1,18 @@
+/**
+ * Script to validate that the generated .env file matches
+ * the expected schema in app/ and web/.
+ * Useful to check that we have not introduced any new configuration
+ * variables that are not included in the JSON configuration file.
+ *
+ * The script works by first parsing the application configuration code
+ * and the Fastlane files used to build the mobile apps to discover
+ * the environment variables that are expected to be present.
+ *
+ * These are then checked against the generated .env file to ensure that
+ * all expected variables are present and that no unexpected variables
+ * are present.
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -9,12 +24,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../../..');
 
+/**
+ * The location of source files that use environment variables
+ */
 const APP_SCHEMA_PATH = path.resolve(repoRoot, 'app/src/buildconfig.ts');
 const WEB_SCHEMA_PATH = path.resolve(repoRoot, 'web/src/constants.ts');
 const FASTLANE_ANDROID_DIR = path.resolve(repoRoot, 'app/android/fastlane');
 const FASTLANE_IOS_DIR = path.resolve(repoRoot, 'app/ios/App/fastlane');
 
-export function parseEnvText(text: string): Map<string, string> {
+/**
+ * Parse environment variable names from a .env file text.  Ignores comments and blank lines.
+ * @param text The .env file text to parse
+ * @returns A map of environment variable names to their values
+ */
+function parseEnvText(text: string): Map<string, string> {
   const parsed = new Map<string, string>();
 
   for (const rawLine of text.split(/\r?\n/)) {
@@ -39,6 +62,12 @@ export function parseEnvText(text: string): Map<string, string> {
   return parsed;
 }
 
+/**
+ * Read a TypeScript source file and extract the object literal
+ * that defines the environment variable schema.
+ * @param sourceText The text of the TypeScript source file
+ * @returns The text of the object literal that defines the environment variable schema
+ */
 function extractEnvObjectLiteral(sourceText: string): string {
   const marker = 'const EnvSchema = z';
   const markerIndex = sourceText.indexOf(marker);
@@ -112,7 +141,12 @@ function extractEnvObjectLiteral(sourceText: string): string {
   throw new Error('Unbalanced brace while scanning EnvSchema object.');
 }
 
-export function extractEnvSchemaKeys(filePath: string): Set<string> {
+/**
+ * Given a TypeScript source file, extract the keys of the EnvSchema object literal.
+ * @param filePath The path to the TypeScript source file
+ * @returns A set of keys defined in the EnvSchema object literal
+ */
+function extractEnvSchemaKeys(filePath: string): Set<string> {
   const sourceText = fs.readFileSync(filePath, 'utf8');
   const envObjectText = extractEnvObjectLiteral(sourceText);
   const keys = new Set<string>();
@@ -125,7 +159,12 @@ export function extractEnvSchemaKeys(filePath: string): Set<string> {
   return keys;
 }
 
-export function extractFastlaneEnvKeys(filePath: string): Set<string> {
+/**
+ * Given a Fastlane file, extract the keys of the environment variables used in it.
+ * @param filePath
+ * @returns A set of keys of the environment variables used in the Fastlane file
+ */
+function extractFastlaneEnvKeys(filePath: string): Set<string> {
   const sourceText = fs.readFileSync(filePath, 'utf8');
   const keys = new Set<string>();
 
@@ -142,7 +181,7 @@ export function extractFastlaneEnvKeys(filePath: string): Set<string> {
  * Gather ENV keys that are used in the Fastlane files for IOS and Android builds
  * @returns A set of ENV keys used in the Fastlane files for IOS and Android builds
  */
-export function fastlaneEnvKeys(): Set<string> {
+function fastlaneEnvKeys(): Set<string> {
   const candidates: string[] = [];
 
   candidates.push(
@@ -174,7 +213,12 @@ export function fastlaneEnvKeys(): Set<string> {
   return keys;
 }
 
-export function getExpectedKeys(): Set<string> {
+/**
+ * Find all of the expected environment variable keys from
+ * the app and web source files and the Fastlane files.
+ * @returns A set of all expected environment variable keys
+ */
+function getExpectedKeys(): Set<string> {
   const appKeys = extractEnvSchemaKeys(APP_SCHEMA_PATH);
   const webKeys = extractEnvSchemaKeys(WEB_SCHEMA_PATH);
   const fastlaneKeys = fastlaneEnvKeys();
@@ -182,7 +226,11 @@ export function getExpectedKeys(): Set<string> {
   return new Set([...appKeys, ...webKeys, ...fastlaneKeys]);
 }
 
-export function validateGeneratedEnv({envText}: {envText: string}) {
+/**
+ * Given the text of a generated .env file, validate that it
+ * contains all expected keys and no unexpected keys.
+ */
+function validateGeneratedEnv({envText}: {envText: string}) {
   const generatedKeys = new Set(parseEnvText(envText).keys());
   const expectedKeys = getExpectedKeys();
 
@@ -271,10 +319,4 @@ export function main(
   return 1;
 }
 
-const isDirectExecution =
-  process.argv[1] !== undefined &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-
-if (isDirectExecution) {
-  process.exit(main());
-}
+process.exit(main());
