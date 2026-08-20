@@ -45,3 +45,4 @@ export * from './rootMetadata';
 export * from './projectsDB';
 export * from './teamsDB';
 export * from './templatesDB';
+export * from './tombstoneDB';

@@ -91,6 +91,17 @@
     "retentionDays": 30,
     "scheduleExpression": "cron(0 3 * * ? *)"
   },
+  "ttlCleanup": {
+    "enabled": false,
+    "scheduleExpression": "cron(0 2 * * ? *)",
+    "scheduleExpressionTimezone": "Australia/Sydney",
+    "dryRun": false,
+    "compact": false,
+    "includeLongLived": false,
+    "deleteExhaustedInvites": false,
+    "cpu": 256,
+    "memory": 512
+  },
   "conductor": {
     "name": "FAIMS Server",
     "enhancedObservability": true,

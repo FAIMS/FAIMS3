@@ -28,6 +28,7 @@ import {
   fetchNotebookDetails,
   getRemoteDatabaseNameFromId,
   probeNotebookServerLifecycle,
+  probeProjectTombstone,
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
 import {databaseService} from './helpers/databaseService';
@@ -52,23 +53,6 @@ import {
 export type {SyncMode};
 
 /**
- * Per server+project: consecutive directory polls where an id is absent from the
- * active listing **and** GET `/api/notebooks/:id` reports missing (deleted / no access).
- */
-const directoryAbsentStreak = new Map<string, number>();
-
-/**
- * Successful directory polls where a local id is missing from the active listing
- * and the individual notebook probe returns `missing`. Require this many before
- * local cleanup — transient failures must not wipe local data (see
- * {@link scheduleAbsentDirectoryRetry}).
- */
-const DIRECTORY_ABSENT_STREAK_THRESHOLD = 3;
-
-/** Delay before the next directory poll while confirming a missing id. */
-const DIRECTORY_ABSENT_RETRY_DELAY_MS = 900;
-
-/**
  * Promise-queue mutex: each `runExclusive` waits for the previous job to finish
  * before running `fn`, so overlapping async work is serialized. A rejected
  * predecessor must not block the queue, hence `await prev.catch(() => {})`.
@@ -91,9 +75,9 @@ function createAsyncMutex() {
 }
 
 // `initialiseProjects` does many awaits (directory, metadata, dispatches). Without
-// a per-server lock, a user refresh, token refresh, and the timed retry below
-// could interleave: duplicate streak increments, double removal, or stale
-// `getState()` vs directory results. One flight per server keeps that linear.
+// a per-server lock, a user refresh and token refresh could interleave: double
+// removal or stale `getState()` vs directory results. One flight per server
+// keeps that linear.
 const initialiseProjectsMutexByServer = new Map<
   string,
   ReturnType<typeof createAsyncMutex>
@@ -111,22 +95,6 @@ function withInitialiseProjectsLock<T>(
   return m(fn);
 }
 
-// At most one pending "poll again soon" timer per server. Retries call
-// `initialiseProjects` again (which re-enters the mutex), so we replace any
-// existing timer when scheduling to avoid stacking duplicate polls.
-const pendingAbsentDirectoryRetryTimer = new Map<
-  string,
-  ReturnType<typeof setTimeout>
->();
-
-function clearAbsentDirectoryRetry(serverId: string) {
-  const t = pendingAbsentDirectoryRetryTimer.get(serverId);
-  if (t !== undefined) {
-    clearTimeout(t);
-    pendingAbsentDirectoryRetryTimer.delete(serverId);
-  }
-}
-
 // TYPES
 // =====
 
@@ -140,7 +108,7 @@ export interface ApiServerInfo {
   conductor_url: string;
   // A description of the server
   description: string;
-  // The short-code prefix used/expected by this server
+  // The invite-code prefix used/expected by this server
   prefix: string;
 }
 
@@ -252,7 +220,7 @@ export interface Server {
   // What is the URL of the couch database for this server?
   couchDbUrl?: string;
 
-  // Short code prefix
+  // Invite code prefix (e.g. FAIMS in FAIMS-…)
   shortCodePrefix: string;
 
   // server description
@@ -1759,8 +1727,9 @@ export const initialiseServers = createAsyncThunk<void>(
  * discovered project couchDB urls.
  *
  * When a local notebook is absent from the active directory listing, the app probes
- * GET `/api/notebooks/:id`: archived → immediate removal; missing → absent streak
- * then local teardown and {@link handleRemoteProjectRemoved} (no global snackbar).
+ * GET `/api/notebooks/:id`: archived → immediate removal; missing → confirm via
+ * GET `/api/tombstones/:id` before local teardown and {@link handleRemoteProjectRemoved}
+ * (no global snackbar). No tombstone / probe error → keep local data.
  */
 export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
   'projects/initialiseProjects',
@@ -2018,12 +1987,9 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         }
       }
 
-      // Streak / cleanup decisions must see the same project list the user would
-      // after the dispatches above (add/update), not pre-dispatch state.
-      // Streak / cleanup decisions must see the same project list the user would
-      // after the dispatches above (add/update), not pre-dispatch state.
+      // Cleanup decisions must see the same project list the user would after
+      // the dispatches above (add/update), not pre-dispatch state.
       const stateAfterDirectory = getState() as RootState;
-      const streakKey = (projectId: string) => `${serverId}:${projectId}`;
       const directoryByProjectId = new Map(
         directoryResults.map(d => [d._id, d])
       );
@@ -2050,6 +2016,26 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         ).map(({projectId, lifecycle}) => [projectId, lifecycle])
       );
 
+      // For surveys that look deleted (missing notebook), require tombstone proof
+      // before wiping local data — avoids data loss on server glitches.
+      const missingLifecycleIds = missingFromActiveDirectory.filter(
+        projectId => lifecycleByMissingId.get(projectId) === 'missing'
+      );
+      const tombstoneByMissingId = new Map(
+        (
+          await Promise.all(
+            missingLifecycleIds.map(async projectId => {
+              const tombstone = await probeProjectTombstone({
+                projectId,
+                serverUrl: server.serverUrl,
+                token,
+              });
+              return {projectId, tombstone};
+            })
+          )
+        ).map(({projectId, tombstone}) => [projectId, tombstone])
+      );
+
       const removeLocalProjectAfterRemoteLifecycle = (projectId: string) => {
         const proj = projectByIdentity(stateAfterDirectory.projects, {
           serverId,
@@ -2073,84 +2059,33 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       };
 
       // Local notebooks missing from the active directory: probe individually.
-      // Archived → remove immediately. Missing → absent streak + retry poll.
-      let needsAbsentConfirmationRetry = false;
-
+      // Archived → remove immediately. Missing → tombstone confirmation only.
       for (const projectId of localProjectIds) {
         if (directoryByProjectId.has(projectId)) {
-          directoryAbsentStreak.delete(streakKey(projectId));
           continue;
         }
 
         const lifecycle = lifecycleByMissingId.get(projectId) ?? 'unreachable';
 
-        if (lifecycle === 'unreachable') {
-          // Do not advance absent streak on probe/network failure.
-          continue;
-        }
-
-        if (lifecycle === 'active') {
-          directoryAbsentStreak.delete(streakKey(projectId));
+        if (lifecycle === 'unreachable' || lifecycle === 'active') {
+          // Keep local data: probe failed, or survey still exists server-side.
           continue;
         }
 
         if (lifecycle === 'archived') {
-          directoryAbsentStreak.delete(streakKey(projectId));
           removeLocalProjectAfterRemoteLifecycle(projectId);
           continue;
         }
 
-        // lifecycle === 'missing' — deleted or access revoked; confirm with streak.
-        const streakMapKey = streakKey(projectId);
-        const streakCount = (directoryAbsentStreak.get(streakMapKey) ?? 0) + 1;
-        directoryAbsentStreak.set(streakMapKey, streakCount);
-        if (streakCount < DIRECTORY_ABSENT_STREAK_THRESHOLD) {
-          needsAbsentConfirmationRetry = true;
-          continue;
+        // lifecycle === 'missing' — only remove when tombstone proves deletion.
+        const tombstone = tombstoneByMissingId.get(projectId) ?? 'unreachable';
+        if (tombstone === 'tombstoned') {
+          removeLocalProjectAfterRemoteLifecycle(projectId);
         }
-
-        directoryAbsentStreak.delete(streakMapKey);
-        removeLocalProjectAfterRemoteLifecycle(projectId);
-      }
-
-      // Fire at most one delayed `initialiseProjects` to bump absent streaks, or
-      // clear the timer when every absent id has either been confirmed or gone away.
-      if (needsAbsentConfirmationRetry) {
-        scheduleAbsentDirectoryRetry(serverId, appDispatch);
-      } else {
-        clearAbsentDirectoryRetry(serverId);
       }
     });
   }
 );
-
-/**
- * After a directory poll where a local id is still missing and probes report
- * `missing`, schedule another poll so the absent streak can reach
- * {@link DIRECTORY_ABSENT_STREAK_THRESHOLD} without requiring the user to refresh manually.
- *
- * Clears any prior timer first so back-to-back runs collapse to a single
- * pending retry; when the streak is satisfied or the id reappears in the active
- * directory, `clearAbsentDirectoryRetry` stops the loop.
- */
-function scheduleAbsentDirectoryRetry(
-  serverId: string,
-  appDispatch: AppDispatch
-) {
-  clearAbsentDirectoryRetry(serverId);
-  const t = setTimeout(() => {
-    pendingAbsentDirectoryRetryTimer.delete(serverId);
-    void appDispatch(initialiseProjects({serverId}))
-      .unwrap()
-      .catch(err => {
-        console.warn(
-          `Directory retry (absent id confirmation) failed for ${serverId}:`,
-          err
-        );
-      });
-  }, DIRECTORY_ABSENT_RETRY_DELAY_MS);
-  pendingAbsentDirectoryRetryTimer.set(serverId, t);
-}
 
 /**
  * Helper to find a valid token for a server

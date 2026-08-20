@@ -118,6 +118,9 @@ importers:
       multer:
         specifier: ^2.2.0
         version: 2.2.0
+      nanoid:
+        specifier: ^6.0.1
+        version: 6.0.1
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
@@ -9798,6 +9801,11 @@ packages:
   nanoid@3.3.12:
     resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  nanoid@6.0.1:
+    resolution: {integrity: sha512-3wVS3i51pE2pi1k5FFL/95BGfVS0kSsvDVuGXHOtxox/TywUmtgq+3qiTOTbs9J7KfHaXPiN171k/A6dBnaXFw==}
+    engines: {node: ^22 || ^24 || >=26}
     hasBin: true
 
   napi-macros@2.0.0:
@@ -23060,6 +23068,8 @@ snapshots:
       - supports-color
 
   nanoid@3.3.12: {}
+
+  nanoid@6.0.1: {}
 
   napi-macros@2.0.0: {}
 

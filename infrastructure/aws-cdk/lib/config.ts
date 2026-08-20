@@ -406,7 +406,7 @@ const ConductorConfigSchema = z.object({
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
-  /** The prefix to use for the short codes in the app */
+  /** Prefix for generated invite codes (e.g. `FAIMS` → `FAIMS-…`). */
   shortCodePrefix: z.string().default('FAIMS'),
   /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
   provisionSSOUsersPolicy: z
@@ -475,6 +475,42 @@ const BackupConfigSchema = z
       message: 'Either vaultName or vaultArn must be provided, but not both',
     }
   );
+
+/**
+ * Scheduled one-shot ECS task that runs Conductor TTL cleanup against CouchDB.
+ * Independent of Conductor service scaling (EventBridge Scheduler → RunTask).
+ * See docs/developer/docs/source/markdown/TtlCleanup.md.
+ */
+const TtlCleanupConfigSchema = z.object({
+  /** When false, no schedule / task definition is created. */
+  enabled: z.boolean().default(false),
+  /**
+   * EventBridge Scheduler cron/rate expression. Hours/minutes are interpreted in
+   * `scheduleExpressionTimezone` (default Australia/Sydney), not UTC.
+   */
+  scheduleExpression: z.string().default('cron(0 2 * * ? *)'),
+  /**
+   * IANA timezone for `scheduleExpression` (EventBridge Scheduler
+   * ScheduleExpressionTimezone). Default Australia/Sydney so daily runs stay at
+   * local 02:00 through AEST/AEDT.
+   */
+  scheduleExpressionTimezone: z.string().default('Australia/Sydney'),
+  /** Pass --dry-run to the cleanup script (report only). */
+  dryRun: z.boolean().default(false),
+  /** Pass --compact after successful deletes (prefer rarer cadence). */
+  compact: z.boolean().default(false),
+  /** Pass --include-longlived for optional long-lived token sweep. */
+  includeLongLived: z.boolean().default(false),
+  /**
+   * Pass --delete-exhausted-invites for non-expired invites with exhausted uses.
+   * Default false — exhausted invites may still be useful if uses are raised later.
+   */
+  deleteExhaustedInvites: z.boolean().default(false),
+  /** Fargate CPU units for the cleanup task. */
+  cpu: z.number().int().positive().default(256),
+  /** Fargate memory (MiB) for the cleanup task. */
+  memory: z.number().int().positive().default(512),
+});
 
 const AppSupportLinksSchema = z.object({
   /** The support email address */
@@ -600,6 +636,21 @@ export const ConfigSchema = z.object({
   couch: CouchConfigSchema,
   /** Backup configuration */
   backup: BackupConfigSchema,
+  /**
+   * Scheduled TTL cleanup of ephemeral auth/invite CouchDB docs.
+   * Disabled by default — enable only after the API image includes ttlCleanup.
+   */
+  ttlCleanup: TtlCleanupConfigSchema.optional().default({
+    enabled: false,
+    scheduleExpression: 'cron(0 2 * * ? *)',
+    scheduleExpressionTimezone: 'Australia/Sydney',
+    dryRun: false,
+    compact: false,
+    includeLongLived: false,
+    deleteExhaustedInvites: false,
+    cpu: 256,
+    memory: 512,
+  }),
   /** Conductor service configuration */
   conductor: ConductorConfigSchema,
   /** Domain configuration for all services */
@@ -638,6 +689,7 @@ export type BugMonitoringConfiguration = z.infer<
   typeof BugMonitoringConfigurationSchema
 >;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
+export type TtlCleanupConfig = z.infer<typeof TtlCleanupConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;

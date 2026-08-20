@@ -1,7 +1,11 @@
 import {
+  CompiledNotebookUiSpec,
   DataDbType,
   fetchAndHydrateRecord,
+  getFieldLabel,
+  getFormLabel,
   getSummaryFieldInformation,
+  getSummaryValues,
   getVisibleTypes,
   MinimalRecordMetadata,
   PostRecordStatusResponse,
@@ -43,7 +47,11 @@ import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {buildHydrateKeys} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
-import {formatDate, prettifyFieldName} from '../../../utils/formUtilities';
+import {
+  formatDate,
+  getDisplayDataFromRecordMetadata,
+  MISSING_DATA_PLACEHOLDER,
+} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
 import CircularLoading from '../ui/circular_loading';
@@ -151,7 +159,6 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
 
 /** Default values for text display, record grid labels */
 export const RECORD_GRID_LABELS = {
-  MISSING_DATA_PLACEHOLDER: '-',
   HRID_COLUMN_LABEL: 'ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
 } as const;
@@ -278,7 +285,7 @@ function getDataForColumn({
   column: ColumnType;
   uiSpecification: UiSpecModel;
 }): string | undefined {
-  const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+  const fallback = MISSING_DATA_PLACEHOLDER;
   if (!record) return fallback;
 
   try {
@@ -300,7 +307,7 @@ function getDataForColumn({
           return record.createdBy || fallback;
 
         case 'KIND':
-          return uiSpecification.viewsets[record.type]?.label ?? record.type;
+          return getFormLabel({uiSpec: uiSpecification, formId: record.type});
 
         case 'SYNC_STATUS':
           return record.synced ? 'synced' : 'pending';
@@ -330,7 +337,7 @@ function getDataForColumn({
           return record.created_by || fallback;
 
         case 'KIND':
-          return uiSpecification.viewsets[record.type]?.label ?? record.type;
+          return getFormLabel({uiSpec: uiSpecification, formId: record.type});
 
         case 'SYNC_STATUS':
           return record.synced ? 'synced' : 'pending';
@@ -367,15 +374,14 @@ export function buildColumnsFromSummaryFields({
       ({
         field: field,
         sortable: false,
-        headerName: prettifyFieldName(field),
+        headerName: getFieldLabel(uiSpecification, field),
         type: 'string',
         filterable: false,
         flex: 1,
         valueGetter: (value: any, row: any) => {
-          const data = row?.data ?? {};
           return getDisplayDataFromRecordMetadata({
             field,
-            data: data,
+            data: row?.summaryValues ?? {},
           });
         },
       }) as GridColumnType
@@ -483,58 +489,6 @@ export function buildColumnFromSystemField({
 }
 
 /**
- * Converts record metadata field values to displayable strings.
- *
- * @param field - The field name to extract from the data
- * @param data - The data object containing the field
- * @returns A string representation of the field value, or a fallback value if
- *          the data is missing or cannot be converted
- */
-function getDisplayDataFromRecordMetadata({
-  field,
-  data,
-}: {
-  field: string;
-  data: {[key: string]: any};
-}): string {
-  const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
-  try {
-    if (!data) return fallback;
-
-    const value = data[field];
-
-    if (value === undefined || value === null) return fallback;
-
-    switch (typeof value) {
-      case 'string':
-        return value.trim() || fallback;
-      case 'number':
-        return Number.isFinite(value) ? value.toString() : fallback;
-      case 'boolean':
-        return value.toString();
-      case 'object':
-        if (Array.isArray(value)) {
-          return value.filter(item => item !== null).join(', ') || fallback;
-        }
-        if (value instanceof Date) {
-          return value.toISOString();
-        }
-        try {
-          const str = JSON.stringify(value);
-          return str === '{}' ? fallback : str;
-        } catch {
-          return fallback;
-        }
-      default:
-        return fallback;
-    }
-  } catch (error) {
-    console.warn(`Error formatting field ${field}:`, error);
-    return fallback;
-  }
-}
-
-/**
  * Builds a basic column definition for the HRID (Human Readable ID) field.
  *
  * @returns Column definition for the HRID field
@@ -588,7 +542,9 @@ export function buildVerticalStackColumn({
     sortable: false,
     renderCell: (params: GridCellParams) => {
       try {
-        const kvp: {[fieldName: string]: string | ReactNode} = {};
+        // A list, not a label-keyed object: labels are not unique (two summary
+        // fields can share one, or shadow a system row label)
+        const rows: Array<{label: string; value: string | ReactNode}> = [];
 
         // Add the kind property if needed (put this first)
         if (includeKind) {
@@ -597,8 +553,10 @@ export function buildVerticalStackColumn({
             record: params.row,
             uiSpecification,
           });
-          kvp[COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type'] =
-            val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+          rows.push({
+            label: COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type',
+            value: val ?? MISSING_DATA_PLACEHOLDER,
+          });
         }
 
         // Use the summary fields if present
@@ -606,26 +564,32 @@ export function buildVerticalStackColumn({
           for (const summaryField of summaryFields) {
             const val = getDisplayDataFromRecordMetadata({
               field: summaryField,
-              data: params.row.data ?? {},
+              data: params.row.summaryValues ?? {},
             });
-            const key = prettifyFieldName(summaryField);
-            kvp[key] = val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+            rows.push({
+              label: getFieldLabel(uiSpecification, summaryField),
+              value: val ?? MISSING_DATA_PLACEHOLDER,
+            });
           }
         } else {
           // Add the HRID if available
-          kvp[RECORD_GRID_LABELS.HRID_COLUMN_LABEL] =
-            params.row.hrid ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+          rows.push({
+            label: RECORD_GRID_LABELS.HRID_COLUMN_LABEL,
+            value: params.row.hrid ?? MISSING_DATA_PLACEHOLDER,
+          });
         }
 
         // Add mandatory columns
         for (const mandatoryField of MANDATORY_COLUMNS) {
-          const key = COLUMN_TO_LABEL_MAP.get(mandatoryField) ?? 'Details';
-          kvp[key] =
-            getDataForColumn({
-              record: params.row,
-              column: mandatoryField,
-              uiSpecification,
-            }) ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+          rows.push({
+            label: COLUMN_TO_LABEL_MAP.get(mandatoryField) ?? 'Details',
+            value:
+              getDataForColumn({
+                record: params.row,
+                column: mandatoryField,
+                uiSpecification,
+              }) ?? MISSING_DATA_PLACEHOLDER,
+          });
         }
 
         // Add the conflict field if there is a conflict
@@ -636,9 +600,10 @@ export function buildVerticalStackColumn({
             uiSpecification,
           });
           if (val === 'Yes') {
-            kvp[COLUMN_TO_LABEL_MAP.get('CONFLICTS') ?? 'Conflicts'] = (
-              <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
-            );
+            rows.push({
+              label: COLUMN_TO_LABEL_MAP.get('CONFLICTS') ?? 'Conflicts',
+              value: <WarningAmberIcon color="warning" sx={{marginRight: 1}} />,
+            });
           }
         }
 
@@ -648,14 +613,17 @@ export function buildVerticalStackColumn({
           record: params.row,
           uiSpecification,
         });
-        kvp['Sync Status'] =
-          sync === 'synced' ? (
-            <CloudDoneIcon color="success" />
-          ) : (
-            <PendingIcon color="warning" />
-          );
+        rows.push({
+          label: 'Sync Status',
+          value:
+            sync === 'synced' ? (
+              <CloudDoneIcon color="success" />
+            ) : (
+              <PendingIcon color="warning" />
+            ),
+        });
 
-        return <KeyValueTable data={kvp} />;
+        return <KeyValueTable rows={rows} />;
       } catch (e) {
         console.warn(
           'Failed to render the vertical stack summary field, error: ',
@@ -811,20 +779,20 @@ function buildColumnDefinitions({
 }
 
 /**
- * A simple display for key-value pair data.
+ * A simple display for ordered label/value rows.
  * Used in vertical summary stack layout for small screens.
  */
 export const KeyValueTable = ({
-  data,
+  rows,
 }: {
-  data: {[key: string]: string | ReactNode};
+  rows: Array<{label: string; value: string | ReactNode}>;
 }) => {
   return (
     <TableContainer>
       <Table size="small">
         <TableBody>
-          {Object.entries(data).map(([key, val]) => (
-            <TableRow key={key}>
+          {rows.map((row, index) => (
+            <TableRow key={index}>
               <TableCell
                 sx={{
                   width: '30%',
@@ -833,7 +801,7 @@ export const KeyValueTable = ({
                   textAlign: 'right',
                 }}
               >
-                {key}
+                {row.label}
               </TableCell>
               <TableCell
                 sx={{
@@ -844,7 +812,7 @@ export const KeyValueTable = ({
                   textAlign: 'left',
                 }}
               >
-                {val}
+                {row.value}
               </TableCell>
             </TableRow>
           ))}
@@ -1006,6 +974,11 @@ const useSortedAndPaginatedRows = (
   }, [rows, sortOption, paginationModel]);
 };
 
+/** Hydrated record plus its precomputed summary values for display. */
+type HydratedDisplayRecord = RecordMetadata & {
+  summaryValues: Record<string, unknown>;
+};
+
 /**
  * Manages hydration of visible rows.
  * Creates React Query queries for each visible row and returns a map of
@@ -1021,11 +994,28 @@ const useSortedAndPaginatedRows = (
 const useRowHydration = (
   pageRows: MinimalRecordMetadata[],
   projectId: string,
-  uiSpec: UiSpecModel | null | undefined,
+  uiSpec: CompiledNotebookUiSpec | null | undefined,
   dataDb: DataDbType,
   activeUser: ReturnType<typeof selectActiveUser>
 ) => {
   const token = activeUser?.parsedToken;
+
+  // In select so react-query caches the summary pick against the fetched data;
+  // unlike the Status tab, the record list shows stored values unfiltered
+  const withSummaryValues = useCallback(
+    (rec: RecordMetadata | undefined): HydratedDisplayRecord | undefined =>
+      rec && uiSpec
+        ? {
+            ...rec,
+            summaryValues: getSummaryValues({
+              uiSpec,
+              formId: rec.type,
+              values: rec.data ?? {},
+            }),
+          }
+        : undefined,
+    [uiSpec]
+  );
 
   const hydratedQueries = useQueries({
     queries:
@@ -1051,6 +1041,7 @@ const useRowHydration = (
                 revisionId: undefined,
               });
             },
+            select: withSummaryValues,
             networkMode: 'always' as const,
             staleTime: 5 * 60 * 1000, // Cache for 5 minutes
             // Force a refresh on mount - this will help to ensure that the live page
@@ -1063,7 +1054,7 @@ const useRowHydration = (
 
   // Build a map of hydrated records by ID
   const hydratedMap = useMemo(() => {
-    const map = new Map<string, RecordMetadata>();
+    const map = new Map<string, HydratedDisplayRecord>();
     pageRows.forEach((row, index) => {
       const query = hydratedQueries[index];
       // Queries may be empty while pageRows is not (e.g. token briefly null)
@@ -1128,27 +1119,16 @@ export function RecordsTable(props: RecordsTableProps) {
     pageSize: pageSize(maxRows) ?? 25,
   });
 
-  // Filter rows by visible types and add sync status
+  // Filter rows by visible types
   const {rows: rawFilteredRows, hasConflict} = useFilteredRows(
     rows,
     visibleTypes
   );
 
-  // Add sync status information if available
-  let filteredRows = rawFilteredRows;
-  if (recordStatus) {
-    filteredRows = rawFilteredRows.map(row => {
-      const synced = recordStatus.status[row.recordId];
-      return {
-        ...row,
-        synced,
-      };
-    });
-  }
-
-  // Sort and paginate
+  // Sort and paginate; sync status attaches in displayRows below, so a
+  // status refresh never re-sorts
   const {allSorted, pageRows} = useSortedAndPaginatedRows(
-    filteredRows,
+    rawFilteredRows,
     sortOption,
     paginationModel
   );
@@ -1177,11 +1157,14 @@ export function RecordsTable(props: RecordsTableProps) {
 
   // Merge hydrated data into sorted rows
   const displayRows = useMemo(() => {
-    return allSorted.map(row => ({
-      ...(hydratedMap.get(row.recordId) ?? row),
-      synced: recordStatus ? recordStatus.status[row.recordId] : undefined,
-    }));
-  }, [allSorted, hydratedMap]);
+    return allSorted.map(row => {
+      const hydrated = hydratedMap.get(row.recordId);
+      const synced = recordStatus
+        ? recordStatus.status[row.recordId]
+        : undefined;
+      return hydrated ? {...hydrated, synced} : {...row, synced};
+    });
+  }, [allSorted, hydratedMap, recordStatus]);
 
   // Handle sort change - reset to first page when sort changes
   const handleSortChange = useCallback((newSort: SortOption) => {

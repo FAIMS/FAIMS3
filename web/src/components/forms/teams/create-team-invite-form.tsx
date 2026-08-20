@@ -2,8 +2,11 @@ import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
 import {config, brandNotebook} from '@/constants';
 import {userCanDo, useRequiredUser} from '@/hooks/auth-hooks';
+import {dateDaysFromNow, dateToIso} from '@/lib/time';
 import {
+  DEFAULT_INVITE_EXPIRY_DAYS,
   INPUT_LIMITS,
+  MAX_INVITE_EXPIRY_DAYS,
   PostCreateInviteInput,
   Resource,
   Role,
@@ -33,7 +36,7 @@ export function CreateTeamInviteForm({
   const user = useRequiredUser();
   const QueryClient = useQueryClient();
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
-    undefined
+    () => dateToIso(dateDaysFromNow(DEFAULT_INVITE_EXPIRY_DAYS))
   );
 
   // Memoize the role options to prevent re-computation on each render.
@@ -164,7 +167,7 @@ export function CreateTeamInviteForm({
       footer={
         <ExpirySelector
           hints={config.inviteTokenHints}
-          maxDurationDays={365}
+          maxDurationDays={MAX_INVITE_EXPIRY_DAYS}
           maximumDurationPrefix="Maximum invite duration"
           selectedDateTime={selectedDateTime}
           setSelectedDateTime={setSelectedDateTime}

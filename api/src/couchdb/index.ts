@@ -38,6 +38,7 @@ import {
   initProjectsDB,
   initTeamsDB,
   initTemplatesDB,
+  initTombstoneDB,
   InvitesDB,
   GetDbById,
   migrateDbs,
@@ -50,6 +51,7 @@ import {
   ProjectID,
   TeamsDB,
   TemplateDB,
+  TombstoneDB,
 } from '@faims3/data-model';
 import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
@@ -66,6 +68,7 @@ const PEOPLE_DB_NAME = 'people';
 const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
+const TOMBSTONE_DB_NAME = 'tombstone';
 
 let _directoryDB: DatabaseInterface | undefined;
 let _projectsDB: DatabaseInterface<ProjectDocument> | undefined;
@@ -74,6 +77,7 @@ let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
 let _teamsDB: TeamsDB | undefined;
+let _tombstoneDB: TombstoneDB | undefined;
 let _migrationsDB: MigrationsDB | undefined;
 
 const pouchOptions = () => {
@@ -278,6 +282,21 @@ export const getTeamsDB = (): TeamsDB => {
   return _teamsDB;
 };
 
+export const getTombstoneDB = (): TombstoneDB => {
+  if (!_tombstoneDB) {
+    const pouch_options = pouchOptions();
+    const dbName = config.couchdbInternalUrl + '/' + TOMBSTONE_DB_NAME;
+    try {
+      _tombstoneDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting tombstone database.'
+      );
+    }
+  }
+  return _tombstoneDB;
+};
+
 /**
  * Returns the data DB for a given project - involves fetching the project
  * doc and then fetching the corresponding data db
@@ -365,6 +384,8 @@ export const getDbById: GetDbById = async ({dbType, id}) => {
       return getTemplatesDb();
     case DatabaseType.TEAMS:
       return getTeamsDB();
+    case DatabaseType.TOMBSTONE:
+      return getTombstoneDB();
     default: {
       const _exhaustive: never = dbType;
       throw new Exceptions.InternalSystemError(
@@ -451,6 +472,9 @@ export const initialiseDbAndKeys = async ({
 
   // Teams
   const teamsDB = getTeamsDB();
+
+  // Tombstone
+  const tombstoneDB = getTombstoneDB();
 
   // Templates
   const templatesDb = getTemplatesDb();
@@ -563,6 +587,19 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
+  // Tombstone DB
+  try {
+    await couchInitialiser({
+      db: tombstoneDB,
+      content: initTombstoneDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the tombstone database!...' + e
+    );
+  }
+
   // Migrations DB
   try {
     await couchInitialiser({
@@ -640,6 +677,11 @@ export const initialiseAndMigrateDBs = async ({
       dbType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
     },
+    {
+      db: getTombstoneDB(),
+      dbType: DatabaseType.TOMBSTONE,
+      dbName: TOMBSTONE_DB_NAME,
+    },
   ];
 
   // Migrate these first
@@ -713,6 +755,12 @@ export const listCouchDatabaseNames = async (): Promise<string[]> => {
 export const destroyCouchDatabase = async (dbName: string): Promise<void> => {
   const nano = await getNanoInstance();
   await nano.db.destroy(dbName);
+};
+
+/** Compacts a CouchDB database by name (reclaims revision bodies). */
+export const compactCouchDatabase = async (dbName: string): Promise<void> => {
+  const nano = await getNanoInstance();
+  await nano.db.compact(dbName);
 };
 
 /**
