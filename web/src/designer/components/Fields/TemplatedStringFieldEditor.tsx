@@ -9,6 +9,7 @@ import DebouncedTextField from '../debounced-text-field';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {
   buildParentFieldTypes,
+  buildRelatedFieldTypes,
   PARENT_REFERENCE_PREFIX,
   UiSpecModel,
 } from '@faims3/data-model';
@@ -106,6 +107,30 @@ export const TemplatedStringFieldEditor = ({
       return {
         name: ref,
         displayName: `Parent: ${getFieldLabel(allFields[id]) || id}`,
+        type: 'field' as const,
+      };
+    });
+  }, [allFields, views, viewsets, viewsetId]);
+
+  // Fields on linked records usable as {{Rel-Field-ID.Field-ID}}.
+  const relatedVariables = useMemo(() => {
+    const {types} = buildRelatedFieldTypes({
+      uiSpecification: {
+        fields: allFields,
+        views,
+        viewsets,
+      } as unknown as UiSpecModel,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => {
+      const dot = ref.indexOf('.');
+      const relFieldId = ref.slice(0, dot);
+      const id = ref.slice(dot + 1);
+      const relLabel = getFieldLabel(allFields[relFieldId]) || relFieldId;
+      const label = getFieldLabel(allFields[id]) || id;
+      return {
+        name: ref,
+        displayName: `${relLabel} > ${label}`,
         type: 'field' as const,
       };
     });
@@ -215,7 +240,7 @@ export const TemplatedStringFieldEditor = ({
         open={isBuilderOpen}
         onClose={() => setIsBuilderOpen(false)}
         initialTemplate={state.template}
-        variables={[...fieldVariables, ...parentVariables]}
+        variables={[...fieldVariables, ...parentVariables, ...relatedVariables]}
         systemVariables={systemVariables}
         onSave={handleTemplateChange}
       />
