@@ -60,10 +60,107 @@ import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {saveExpressUser} from '../couchdb/users';
 import patch from '../utils/patchExpressAsync';
 
+import {parseXlsformBuffer} from '../utils/xlsformParsing';
+import {
+  convertXlsformToNotebookDefinition,
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+} from '@faims3/data-model';
+
+const PostCreateTemplateFromXlsformInputSchema = z.object({
+  name: z.string().min(5),
+  description: z.string().optional(),
+  teamId: z.string().optional(),
+  isPublic: z.boolean().optional(),
+  /** Base64-encoded contents of the uploaded .xlsx file. */
+  fileBase64: z.string().min(1),
+});
+type PostCreateTemplateFromXlsformInput = z.infer<
+  typeof PostCreateTemplateFromXlsformInputSchema
+>;
 // This must occur before express api is used
 patch();
 
 export const api: express.Router = express.Router();
+
+
+/**
+ * POST create new template from an uploaded XLSForm (.xlsx) file.
+ *
+ * Parses and converts the spreadsheet server-side, then creates a template
+ * the same way as POST /, reusing the same permission model. Unsupported
+ * XLSForm question types are dropped and reported back in `skipped` rather
+ * than failing the whole import.
+ */
+api.post(
+  '/from-xlsform',
+  requireAuthenticationAPI,
+  validate({
+    body: PostCreateTemplateFromXlsformInputSchema,
+  }),
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateTemplateFromXlsformInput;
+      return body.teamId
+        ? Action.CREATE_TEMPLATE_IN_TEAM
+        : Action.CREATE_TEMPLATE;
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateTemplateFromXlsformInput;
+      return body.teamId;
+    },
+  }),
+  async (req, res: Response<PostCreateTemplateResponse & {skipped: {name: string; type: string}[]}>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const body = req.body as PostCreateTemplateFromXlsformInput;
+
+    if (
+      body.isPublic === true &&
+      !isAuthorized({
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        action: Action.CREATE_PUBLIC_TEMPLATE,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to create a public template.'
+      );
+    }
+
+    // Decode and parse the uploaded spreadsheet
+    const fileBuffer = Buffer.from(body.fileBase64, 'base64');
+    const sheets = await parseXlsformBuffer(fileBuffer);
+    const {notebook, skipped} = convertXlsformToNotebookDefinition(
+      sheets,
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+
+    // Create the template the same way the JSON path does
+    const newTemplate = await createTemplate({
+      payload: {
+        name: body.name,
+        description: body.description,
+        teamId: body.teamId,
+        isPublic: body.isPublic,
+        uiSpecification: notebook as unknown as Record<string, unknown>,
+      },
+      createdBy: req.user.user_id,
+    });
+
+    addTemplateRole({
+      user: req.user,
+      role: Role.TEMPLATE_ADMIN,
+      templateId: newTemplate._id,
+    });
+    await saveExpressUser(req.user);
+
+    res.json({...newTemplate, skipped});
+  }
+);
 
 /**
  * GET list templates — lightweight summaries from a CouchDB view (no
@@ -71,6 +168,7 @@ export const api: express.Router = express.Router();
  *
  * Can filter by team; uses an index that omits the form payload.
  */
+
 api.get(
   '/',
   requireAuthenticationAPI,
