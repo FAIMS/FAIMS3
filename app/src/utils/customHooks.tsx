@@ -667,15 +667,29 @@ export const useRecordList = ({
     );
   }
 
-  // return both curated record lists and the underlying query where necessary
-  return {
-    allRecords: nonDraftRecords,
-    myRecords: myRecords,
-    otherRecords: otherRecords,
-    isLoading,
-    canReadAllRecords,
-    initialQuery: unhydratedRecordQuery,
-  };
+  // Memoized so an unchanged result set keeps its identity and a caller's own
+  // memos hold; a fresh object each render remounts whatever they build. The
+  // query's own result object is not identity stable, so this exposes its
+  // refetch (which is) rather than the query itself.
+  const refetch = unhydratedRecordQuery.refetch;
+  return useMemo(
+    () => ({
+      allRecords: nonDraftRecords,
+      myRecords: myRecords,
+      otherRecords: otherRecords,
+      isLoading,
+      canReadAllRecords,
+      refetch,
+    }),
+    [
+      nonDraftRecords,
+      myRecords,
+      otherRecords,
+      isLoading,
+      canReadAllRecords,
+      refetch,
+    ]
+  );
 };
 
 /** Poll interval for the in-memory per-project sync state. */
