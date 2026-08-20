@@ -11,7 +11,6 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
-  DocumentNotFoundError,
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
@@ -63,81 +62,37 @@ export const getGISFields = (uiSpec: NotebookUiSpec): string[] => {
 };
 
 /**
- * Extract features from a single record for the given GIS fields.
- *
- * A revision or AVP that is simply missing skips its record or field, and a
- * malformed GIS value skips its field, so one bad record cannot blank every
- * record's geometry. Any other read failure is rethrown, so a systemic fault
- * surfaces as an error rather than as an empty map.
+ * Extract features from a single record for the given GIS fields. A malformed
+ * GIS value skips its field, so one bad value cannot blank a record's geometry.
  */
 export const extractFeaturesFromRecord = async (
   dataEngine: DataEngine,
   record: MinimalRecordMetadata,
   fields: string[]
 ): Promise<RecordGeoJSONFeature[]> => {
-  const features: RecordGeoJSONFeature[] = [];
+  const values = await dataEngine.hydrated.getFieldValues({
+    recordId: record.recordId,
+    revisionId: record.revisionId,
+    fields,
+  });
 
-  if (fields.length === 0) return features;
+  const baseProperties: RecordFeatureProps = {
+    // TODO bring back HRID - or maybe only on records we click on?
+    name: record.recordId,
+    record_id: record.recordId,
+    revision_id: record.revisionId,
+    form_id: record.type,
+  };
 
-  // TODO this is not optimal for efficiency
-  const revision = await dataEngine.core
-    .getRevision(record.revisionId)
-    .catch(error => {
-      if (!(error instanceof DocumentNotFoundError)) throw error;
-      // This one record's revision is gone; keep plotting the rest
-      console.warn(
-        `Skipping record ${record.recordId}: revision ${record.revisionId} not found`
-      );
-      return undefined;
-    });
-
-  if (!revision) return features;
-
-  await Promise.all(
-    fields.map(async field => {
-      try {
-        const avpId = revision.avps[field];
-        if (!avpId) return;
-
-        const avpData = await dataEngine.core.getAvp(avpId);
-        const dataRaw = avpData?.data;
-        if (!dataRaw) return;
-
-        const {data: geoJson, success} =
-          GeoJSONFeatureOrCollectionSchema.safeParse(dataRaw);
-
-        if (!success) {
-          return;
-        }
-
-        const baseProperties: RecordFeatureProps = {
-          // TODO bring back HRID - or maybe only on records we click on?
-          name: record.recordId,
-          record_id: record.recordId,
-          revision_id: record.revisionId,
-          form_id: record.type,
-        };
-
-        // The parse guarantees each feature carries a geometry
-        const parsed =
-          geoJson.type === 'FeatureCollection' ? geoJson.features : [geoJson];
-        parsed.forEach(feature => {
-          features.push({
-            ...feature,
-            properties: baseProperties,
-          });
-        });
-      } catch (error) {
-        // A missing AVP skips only this field; anything else is systemic
-        if (!(error instanceof DocumentNotFoundError)) throw error;
-        console.warn(
-          `Skipping field ${field} of record ${record.recordId}: AVP not found`
-        );
-      }
-    })
-  );
-
-  return features;
+  return Object.values(values).flatMap(raw => {
+    const {data: geoJson, success} =
+      GeoJSONFeatureOrCollectionSchema.safeParse(raw);
+    // A malformed GIS value skips its field, not the whole record
+    if (!success) return [];
+    const parsed =
+      geoJson.type === 'FeatureCollection' ? geoJson.features : [geoJson];
+    return parsed.map(feature => ({...feature, properties: baseProperties}));
+  });
 };
 
 /** The parameters of {@link useRecordFeatures}. */

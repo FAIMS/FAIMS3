@@ -932,6 +932,60 @@ class HydratedOperations {
   }
 
   /**
+   * Read the given fields' stored values from one revision, without hydrating
+   * the whole record. For callers that need a few fields across many records,
+   * such as filtering or grouping a record list on stored data.
+   *
+   * A revision or AVP that is simply missing skips that record or field, so one
+   * bad record cannot blank a whole listing. Any other read failure is
+   * rethrown, so a systemic fault surfaces rather than reading as no data.
+   *
+   * @param recordId - The record the revision belongs to, for the skip warnings
+   * @param revisionId - The revision to read
+   * @param fields - The field names to read
+   * @returns The values found, keyed by field name; absent fields are omitted
+   */
+  async getFieldValues({
+    recordId,
+    revisionId,
+    fields,
+  }: {
+    recordId: string;
+    revisionId: string;
+    fields: string[];
+  }): Promise<Record<string, unknown>> {
+    const values: Record<string, unknown> = {};
+    if (fields.length === 0) return values;
+
+    const revision = await this.core.getRevision(revisionId).catch(error => {
+      if (!(error instanceof Exceptions.DocumentNotFoundError)) throw error;
+      console.warn(
+        `Skipping record ${recordId}: revision ${revisionId} not found`
+      );
+      return undefined;
+    });
+    if (!revision) return values;
+
+    await Promise.all(
+      fields.map(async field => {
+        const avpId = revision.avps[field];
+        if (!avpId) return;
+        try {
+          const avp = await this.core.getAvp(avpId);
+          if (avp?.data !== undefined) values[field] = avp.data;
+        } catch (error) {
+          if (!(error instanceof Exceptions.DocumentNotFoundError)) throw error;
+          console.warn(
+            `Skipping field ${field} of record ${recordId}: AVP not found`
+          );
+        }
+      })
+    );
+
+    return values;
+  }
+
+  /**
    * Update a revision using the hydrated (external) interface types.
    * Handles mapping from camelCase hydrated types to snake_case DB types.
    */
