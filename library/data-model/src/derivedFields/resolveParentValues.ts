@@ -22,7 +22,7 @@
 
 import {DataEngine} from '../databaseEngine/engine';
 import {getParentFormsForForm, ValuesObject} from '../uiSpecification';
-import {logWarn} from './logging';
+import {logWarn} from '../logging';
 
 /**
  * Resolves the raw field values of this record's parent, for use in templated

@@ -1,7 +1,6 @@
-import {describe, expect, it} from 'vitest';
 import {compileUiSpecConditionals, UiSpecModel} from '@faims3/data-model';
-import {recomputeDerivedFields} from './templatedFields';
-import {recomputeComputedFields} from '@faims3/data-model';
+import {recomputeDerivedFields} from '../src';
+import {recomputeComputedFields} from '../src';
 
 // Site parents Feature via a Child-relation Related Records field.
 const makeSpec = (): UiSpecModel => {

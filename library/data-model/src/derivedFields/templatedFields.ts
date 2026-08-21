@@ -22,7 +22,7 @@
 
 import Mustache from 'mustache';
 import {getFieldToIdsMap, UiSpecModel, ValuesObject} from '../uiSpecification';
-import {logWarn} from './logging';
+import {logWarn} from '../logging';
 import {
   contextToTemplate,
   CREATED_TIME_ID,

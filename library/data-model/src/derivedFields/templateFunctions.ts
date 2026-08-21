@@ -20,7 +20,7 @@
  */
 
 import {AddressValueSchema} from '../addressTypes';
-import {logWarn} from './logging';
+import {logWarn} from '../logging';
 
 export type TemplateFunction = (value: unknown) => string;
 

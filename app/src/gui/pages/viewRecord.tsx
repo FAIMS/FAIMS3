@@ -24,6 +24,7 @@ import {
   ProjectID,
   RecordID,
   RevisionHistoryEntry,
+  formatTimestamp,
 } from '@faims3/data-model';
 import {
   DataView,
@@ -69,7 +70,6 @@ import {RecordStatus} from '../components/record/status';
 import UGCReport from '../components/record/UGCReport';
 import BackButton from '../components/ui/BackButton';
 import {theme} from '../themes';
-import {formatTimestamp} from '../../utils/formUtilities';
 
 /**
  * Available tabs for the record view page

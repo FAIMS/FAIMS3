@@ -30,7 +30,7 @@ import {
   UiSpecModel,
   ValuesObject,
 } from '../uiSpecification';
-import {logWarn} from './logging';
+import {logWarn} from '../logging';
 import {RecordContext} from './recordContext';
 import {TEMPLATED_STRING_FIELD_NAME} from './templatedFields';
 
