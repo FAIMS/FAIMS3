@@ -382,11 +382,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         </TabPanel>
 
         <TabPanel value={tabIndex} index={3} id={'details'}>
-          <MetadataDisplayComponent
-            handleTabChange={(index: number) => setTabIndex(index as TabIndex)}
-            project={project}
-            templateId={templateId}
-          />
+          <MetadataDisplayComponent project={project} templateId={templateId} />
         </TabPanel>
 
         <TabPanel value={tabIndex} index={4} id={'settings'}>
