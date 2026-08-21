@@ -284,12 +284,9 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 // ============================================================================
 
 /**
- * UI behaviour toggles.
- *
- * `.passthrough()` like the field, section and form schemas above, so a module
- * built on top of this package can keep its own settings in the notebook design
- * and validate them itself. Namespace such a key with the owning module's name,
- * so it stays clear of settings declared here later.
+ * UI behaviour toggles. Passthrough like the schemas above, so a module built on
+ * this package can own a setting here and validate it itself; namespace the key
+ * with that module's name to stay clear of settings declared here later.
  */
 export const NotebookSettingsSchema = z
   .object({

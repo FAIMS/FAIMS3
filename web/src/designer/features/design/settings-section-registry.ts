@@ -1,10 +1,6 @@
 /**
- * @file Registry of extra sections for the designer's Settings panel.
- *
- * `NotebookSettingsSchema` passes through keys it does not declare, so a module
- * built on top of this app can own a notebook setting. This registry is how such
- * a module offers the designer UI for it: the Settings panel renders every
- * registered section after its own controls, and no key is named here.
+ * @file Registry of extra sections for the designer's Settings panel, so a
+ * module that owns a notebook setting can author it without this app naming it.
  */
 
 import type {ComponentType} from 'react';
@@ -20,19 +16,16 @@ export type SettingsSectionProps = {
 
 export type SettingsSection = ComponentType<SettingsSectionProps>;
 
-/**
- * Registered sections keyed by id, which preserves insertion order and lets a
- * re-run of the same registration replace rather than duplicate a section.
- */
+/** Keyed by id, so a repeat registration replaces rather than duplicates. */
 const settingsSections = new Map<string, SettingsSection>();
 
 /**
  * Add a section to the designer's Settings panel. The panel reads the registry
  * as it renders, so register at app start, before the designer mounts.
  *
- * @param id - Stable identifier for the section; use the owning module's name.
+ * @param id - Stable identifier; use the owning module's name.
  * @param section - Component rendered with the notebook's settings.
- * @returns Removes this registration again, for tests and hot reloads.
+ * @returns Removes this registration again.
  */
 export const registerSettingsSection = (
   id: string,
