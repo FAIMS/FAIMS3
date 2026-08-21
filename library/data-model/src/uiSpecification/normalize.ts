@@ -80,95 +80,96 @@ function assertLatestSchemaVersion(notebook: NotebookDefinition): void {
 }
 
 /**
- * Accept a legacy or current notebook template JSON bundle. When the reported schema version
- * is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}, runs
- * {@link migrateNotebook}, then validates with {@link TemplateDefinitionSchema}.
+ * Shared migrate + strict validate pass for a notebook or template JSON bundle.
+ * Both kinds carry the same uiSpec, so they share the size cap, the migration
+ * and the post-migration version assertion, and differ only in the schema they
+ * validate against and the wording of their errors.
  */
-export function normalizeNotebookTemplateUiSpecification(
-  raw: unknown
-): TemplateDefinition {
+function normalizeUiSpecificationBundle<
+  T extends {uiSpec: {schemaVersion?: unknown}},
+>({
+  raw,
+  schema,
+  label,
+}: {
+  raw: unknown;
+  schema: z.ZodType<T>;
+  /** Names the bundle kind in every error message. */
+  label: string;
+}): T {
   if (!isPlainObject(raw)) {
-    throw new Error('template uiSpecification must be a JSON object');
+    throw new Error(`${label} must be a JSON object`);
+  }
+
+  if (estimateJsonBytes(raw) > UI_SPEC_MAX_BYTES) {
+    throw new Error(
+      `${label} is too large (maximum ${Math.floor(UI_SPEC_MAX_BYTES / (1024 * 1024))} MB)`
+    );
   }
 
   let candidate: unknown = raw;
 
-  // this works for templates as well as notebooks since it's checking the uiSpec
   if (notebookUiSpecificationNeedsMigration(raw)) {
     try {
       candidate = migrateNotebook(raw).migrated;
     } catch (cause) {
       const detail =
         cause instanceof Error ? cause.message : 'unknown migration error';
-      throw new Error(`template uiSpecification migration failed: ${detail}`);
+      throw new Error(`${label} migration failed: ${detail}`);
     }
   }
 
-  const parsed = TemplateDefinitionSchema.safeParse(candidate);
+  const parsed = schema.safeParse(candidate);
   if (!parsed.success) {
-    throw new Error(
-      `Invalid template uiSpecification: ${formatZodIssues(parsed.error)}`
-    );
+    throw new Error(`Invalid ${label}: ${formatZodIssues(parsed.error)}`);
   }
 
-  // Validate the planTemplate against its own plan type's schema, if present
-  if (
-    parsed.data.planTemplate &&
-    !safeValidatePlanTemplate(parsed.data.planTemplate).success
-  ) {
-    throw new Error('Invalid plan template in template uiSpecification');
-  }
-
-  assertLatestSchemaVersion(parsed.data);
+  assertLatestSchemaVersion(parsed.data as unknown as NotebookDefinition);
 
   return parsed.data;
 }
 
 /**
- * Accept a legacy or current notebook JSON bundle. When the reported schema version
- * is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}, runs
- * {@link migrateNotebook}, then validates with {@link NotebookDefinitionSchema}.
+ * Accept a legacy or current notebook template JSON bundle, then validate its
+ * plan template, if any, against that plan type's own schema.
+ */
+export function normalizeNotebookTemplateUiSpecification(
+  raw: unknown
+): TemplateDefinition {
+  const definition = normalizeUiSpecificationBundle({
+    raw,
+    schema: TemplateDefinitionSchema,
+    label: 'template uiSpecification',
+  });
+
+  if (
+    definition.planTemplate &&
+    !safeValidatePlanTemplate(definition.planTemplate).success
+  ) {
+    throw new Error('Invalid plan template in template uiSpecification');
+  }
+
+  return definition;
+}
+
+/**
+ * Accept a legacy or current notebook JSON bundle, then validate its plan, if
+ * any, against that plan type's own schema.
  */
 export function normalizeNotebookUiSpecification(
   raw: unknown
 ): NotebookDefinition {
-  if (!isPlainObject(raw)) {
-    throw new Error('uiSpecification must be a JSON object');
-  }
+  const definition = normalizeUiSpecificationBundle({
+    raw,
+    schema: NotebookDefinitionSchema,
+    label: 'uiSpecification',
+  });
 
-  if (estimateJsonBytes(raw) > UI_SPEC_MAX_BYTES) {
-    throw new Error(
-      `uiSpecification is too large (maximum ${Math.floor(UI_SPEC_MAX_BYTES / (1024 * 1024))} MB)`
-    );
-  }
-
-  let candidate: unknown = raw;
-
-  if (notebookUiSpecificationNeedsMigration(raw)) {
-    try {
-      candidate = migrateNotebook(raw).migrated;
-    } catch (cause) {
-      const detail =
-        cause instanceof Error ? cause.message : 'unknown migration error';
-      throw new Error(`uiSpecification migration failed: ${detail}`);
-    }
-  }
-
-  const parsed = NotebookDefinitionSchema.safeParse(candidate);
-  if (!parsed.success) {
-    throw new Error(
-      `Invalid uiSpecification: ${formatZodIssues(parsed.error)}`
-    );
-  }
-
-  assertLatestSchemaVersion(parsed.data);
-
-  // Validate the plan against its own plan type's schema, if present
-  if (parsed.data.plan && !safeValidatePlan(parsed.data.plan).success) {
+  if (definition.plan && !safeValidatePlan(definition.plan).success) {
     throw new Error('Invalid plan in uiSpecification');
   }
 
-  return parsed.data;
+  return definition;
 }
 
 export type PrepareNotebookUiSpecificationInputResult =
