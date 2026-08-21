@@ -189,11 +189,7 @@ export const OfflineMapManager = () => {
                   return (
                     <Card key={tileSet.setName} variant="outlined">
                       <CardActionArea onClick={() => openMap(tileSet.setName)}>
-                        <CardContent
-                          sx={{
-                            py: 1.5,
-                          }}
-                        >
+                        <CardContent sx={{py: 1}}>
                           <Stack
                             direction="row"
                             spacing={1.5}
@@ -202,7 +198,7 @@ export const OfflineMapManager = () => {
                               alignItems: 'center',
                             }}
                           >
-                            <Box sx={{flex: 1, minWidth: 0}}>
+                            <Stack spacing={0.5} sx={{flex: 1, minWidth: 0}}>
                               <Typography
                                 variant="h5"
                                 sx={{
@@ -234,7 +230,7 @@ export const OfflineMapManager = () => {
                                   <ProgressBar completion={progress} />
                                 </Box>
                               )}
-                            </Box>
+                            </Stack>
 
                             <ArrowForwardIos color="action" />
                           </Stack>
