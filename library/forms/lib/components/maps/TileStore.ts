@@ -504,7 +504,7 @@ abstract class TileStoreBase {
         ? {offlineMapRegion: options.offlineMapRegion}
         : {}),
     };
-    this.tileStore.tileSetDB.put(tileSet);
+    await this.tileStore.tileSetDB.put(tileSet);
 
     return tileSet;
   }
@@ -542,7 +542,7 @@ abstract class TileStoreBase {
 
       // update the record with the tile count
       tileSet.expectedTileCount = tileCoords.length;
-      this.tileStore.tileSetDB.put(tileSet);
+      await this.tileStore.tileSetDB.put(tileSet);
 
       // Create batches of downloads to avoid overwhelming the browser
       const BATCH_SIZE = 10;
@@ -620,6 +620,36 @@ abstract class TileStoreBase {
     } else {
       return [];
     }
+  }
+
+  /** Get a stored tile set by its internal id. */
+  async getTileSet(setName: string): Promise<StoredTileSet | undefined> {
+    return this.tileStore.tileSetDB.get([setName]);
+  }
+
+  /** Update the user-visible name of a stored tile set. */
+  async renameTileSet(setName: string, label: string): Promise<StoredTileSet> {
+    const tileSet = await this.tileStore.tileSetDB.get([setName]);
+
+    if (!tileSet) {
+      throw new Error(`Offline map '${setName}' does not exist`);
+    }
+
+    tileSet.label = label;
+    await this.tileStore.tileSetDB.put(tileSet);
+
+    return tileSet;
+  }
+
+  /** Get the stored offline map associated with a project. */
+  async getTileSetForProject(
+    projectId: string
+  ): Promise<StoredTileSet | undefined> {
+    const tileSets = await this.tileStore.tileSetDB.getAll();
+
+    return tileSets
+      ?.filter(tileSet => tileSet.projectId === projectId)
+      .sort((a, b) => b.created.getTime() - a.created.getTime())[0];
   }
 
   async removeTileSet(setName: string) {

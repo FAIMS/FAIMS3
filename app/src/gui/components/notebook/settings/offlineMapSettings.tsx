@@ -3,7 +3,6 @@ import type {OfflineMapRegion} from '@faims3/data-model';
 import {
   ProgressBar,
   formatOfflineMapSizeBytes,
-  projectOfflineMapSetName,
   type StoredTileSet,
 } from '@faims3/forms';
 import {useCallback, useEffect, useState} from 'react';
@@ -53,11 +52,10 @@ export default function NotebookOfflineMapSettings({
     if (!mapArea) {
       return;
     }
-    const setName = projectOfflineMapSetName(project.projectId);
     // Refresh when tile batches land or when projectOfflineMap notifies completion.
     const handleDownloadProgress = (event: Event) => {
       const tileSet = (event as CustomEvent<StoredTileSet>).detail;
-      if (tileSet?.setName === setName) {
+      if (tileSet?.projectId === project.projectId) {
         void refreshStatus();
       }
     };

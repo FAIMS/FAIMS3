@@ -8,7 +8,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
@@ -36,6 +36,7 @@ export const RECORD_RECORD = '/record/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const OFFLINE_MAPS = '/offline-maps';
+export const OFFLINE_MAP_NEW = `${OFFLINE_MAPS}/new`;
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
@@ -112,4 +113,13 @@ export function getViewRecordRoute({
     recordId +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
+}
+
+/**
+ * Generates the edit route for a downloaded offline map.
+ *
+ * @returns /offline-maps/map/<offlineMapId>
+ */
+export function getOfflineMapEditRoute({offlineMapId}: {offlineMapId: string}) {
+  return `${OFFLINE_MAPS}/map/${offlineMapId}`;
 }

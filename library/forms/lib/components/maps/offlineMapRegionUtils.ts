@@ -8,8 +8,8 @@
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {boundingExtent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
-import type {MapConfig} from './types';
 import {VectorTileStore, type StoredTileSet} from './TileStore';
+import type {MapConfig} from './types';
 
 /** Download lifecycle state derived from a stored tile set record. */
 export type TileSetDownloadStatus =
@@ -60,13 +60,27 @@ export function extent4326ToOfflineMapRegion(
   };
 }
 
-/** Internal tile-set name for a project-associated offline map download. */
-export function projectOfflineMapSetName(projectId: string): string {
-  return `@project/${projectId}`;
+/** Convert a legacy stored EPSG:3857 tile-set extent into a preview region. */
+export function extent3857ToOfflineMapRegion(
+  extent3857: number[]
+): OfflineMapRegion {
+  return extent4326ToOfflineMapRegion(
+    transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326')
+  );
 }
 
-/** Whether a tile set name was created by {@link projectOfflineMapSetName}. */
-export function isProjectOfflineMapSetName(setName: string): boolean {
+/**
+ * Create a unique id for a user-created offline map.
+ *
+ * This becomes StoredTileSet.setName internally. The editable user-visible
+ * name is stored separately in StoredTileSet.label.
+ */
+export function createOfflineMapId(): string {
+  return `offline-map-${crypto.randomUUID()}`;
+}
+
+/** Whether a tile set uses the legacy `@project/:id` naming format. */
+export function isLegacyProjectOfflineMapSetName(setName: string): boolean {
   return setName.startsWith('@project/');
 }
 
