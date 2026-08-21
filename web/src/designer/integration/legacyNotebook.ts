@@ -1,7 +1,7 @@
 /**
  * @file Normalize API/upload `uiSpecification` JSON for the designer: detect schema version
  * (legacy `metadata.schema_version` or `uiSpec.schemaVersion`), migrate when needed, then
- * validate as {@link NotebookDefinition}.
+ * validate as {@link NotebookDefinition} (or {@link TemplateDefinition} in template mode).
  */
 
 import {
@@ -12,7 +12,13 @@ import {
   notebookUiSpecificationNeedsMigration,
   notebookUiSpecificationValidationMessage,
   type NotebookDefinition,
+  safeValidatePlanTemplate,
+  TemplateDefinitionSchema,
+  type PlanTemplate,
 } from '@faims3/data-model';
+
+/** Which document kind the designer is editing; templates may carry a planTemplate. */
+export type DesignerDocumentMode = 'project' | 'template';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -32,7 +38,7 @@ export class UiSpecificationNormalizeError extends Error {
 export type NormalizeApiUiSpecificationResult =
   | {
       ok: true;
-      data: NotebookDefinition;
+      data: NotebookDefinition & {planTemplate?: PlanTemplate};
       /** True when {@link migrateNotebook} ran because the version was missing or below current. */
       migrated: boolean;
       /** Present when migration ran — design was upgraded in memory before editing. */
@@ -57,10 +63,12 @@ export function readUiSpecificationSchemaVersion(
  *
  * 1. Reads version via {@link getNotebookSchemaVersion} (legacy or current field).
  * 2. Runs {@link migrateNotebook} when version is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}.
- * 3. Validates with {@link NotebookDefinitionSchema}.
+ * 3. Validates with {@link NotebookDefinitionSchema}, or {@link TemplateDefinitionSchema}
+ *    in template mode so an optional planTemplate is preserved.
  */
 export function tryNormalizeApiUiSpecification(
-  raw: unknown
+  raw: unknown,
+  mode: DesignerDocumentMode = 'project'
 ): NormalizeApiUiSpecificationResult {
   if (!isPlainObject(raw)) {
     return {ok: false, message: 'uiSpecification must be a JSON object'};
@@ -82,7 +90,10 @@ export function tryNormalizeApiUiSpecification(
     }
   }
 
-  const parsed = NotebookDefinitionSchema.safeParse(candidate);
+  // Templates carry an optional planTemplate the notebook schema would strip
+  const schema =
+    mode === 'template' ? TemplateDefinitionSchema : NotebookDefinitionSchema;
+  const parsed = schema.safeParse(candidate);
   if (!parsed.success) {
     return {
       ok: false,
@@ -106,14 +117,40 @@ export function tryNormalizeApiUiSpecification(
         : `This design used schema version ${versionBefore} and was migrated to ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}. Save to persist the updated structure.`
       : undefined;
 
-  return {ok: true, data: parsed.data, migrated, warning};
+  // Read from candidate: the ternary-selected schema's inferred type drops
+  // planTemplate, but safeValidatePlanTemplate handles unknown input anyway
+  const rawPlanTemplate =
+    mode === 'template'
+      ? (candidate as Record<string, unknown>).planTemplate
+      : undefined;
+
+  // Warn rather than fail on an invalid planTemplate so the template stays editable
+  let planWarning: string | undefined;
+  if (rawPlanTemplate) {
+    const planResult = safeValidatePlanTemplate(rawPlanTemplate);
+    if (!planResult.success) {
+      planWarning = `This template's plan failed validation and may need to be re-created: ${planResult.error.message}`;
+    }
+  }
+
+  return {
+    ok: true,
+    data: rawPlanTemplate
+      ? {...parsed.data, planTemplate: rawPlanTemplate as PlanTemplate}
+      : parsed.data,
+    migrated,
+    warning: [warning, planWarning].filter(Boolean).join(' ') || undefined,
+  };
 }
 
 /**
  * Same as {@link tryNormalizeApiUiSpecification} but throws {@link UiSpecificationNormalizeError} on failure.
  */
-export function normalizeApiUiSpecification(raw: unknown): NotebookDefinition {
-  const result = tryNormalizeApiUiSpecification(raw);
+export function normalizeApiUiSpecification(
+  raw: unknown,
+  mode: DesignerDocumentMode = 'project'
+) {
+  const result = tryNormalizeApiUiSpecification(raw, mode);
   if (result.ok === false) {
     throw new UiSpecificationNormalizeError(result.message);
   }

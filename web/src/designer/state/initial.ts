@@ -27,8 +27,10 @@ import {
   type NotebookInformation,
   type NotebookMetadata,
   type NotebookSettings,
+  type PlanTemplate,
 } from '@faims3/data-model';
 import {ConditionType} from '../types/condition';
+import type {DesignerDocumentMode} from '../integration';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 export type {
@@ -37,6 +39,7 @@ export type {
   NotebookMetadata,
   NotebookSettings,
 };
+export type {DesignerDocumentMode};
 
 /**
  * The component-parameters envelope shared by every designer field.
@@ -110,15 +113,18 @@ export type NotebookUISpec = {
 export type AppState = {
   modified: boolean;
   notebook: NotebookWithHistory;
+  mode: DesignerDocumentMode;
 };
 
 /** Flat notebook definition as persisted via PUT /uiSpecification. */
-export type Notebook = NotebookDefinition;
+export type Notebook = NotebookDefinition & {planTemplate?: PlanTemplate};
 
 /** Notebook with `uiSpec` wrapped for undo/redo in the designer. */
 export type NotebookWithHistory = {
   metadata: NotebookMetadata;
   uiSpec: StateWithHistory<NotebookUISpec>;
+  // null when absent; only templates carry a plan template
+  planTemplate: PlanTemplate | null;
 };
 
 export const defaultNotebookInformation = (): NotebookInformation => ({
@@ -151,5 +157,7 @@ export const initialState: AppState = {
       past: [],
       future: [],
     },
+    planTemplate: null,
   },
+  mode: 'project',
 };
