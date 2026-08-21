@@ -53,9 +53,8 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
     <>
       <div>
         <Alert severity="info">
-          {' '}
           <b>Counted Plan</b>: Collect {plan.numberRequired} {plan.formType}{' '}
-          records.
+          records.{' '}
           {!plan.allowExtraRecords
             ? 'Do not allow extra records'
             : 'Extra records allowed'}

@@ -82,8 +82,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   return (
     <>
       <Alert severity="info">
-        {' '}
-        <b>List of Records Plan</b>: Collect {plan.formType} records.
+        <b>List of Records Plan</b>: Collect {plan.formType} records.{' '}
         {!plan.allowExtraRecords
           ? 'Do not allow extra records'
           : 'Extra records allowed'}
