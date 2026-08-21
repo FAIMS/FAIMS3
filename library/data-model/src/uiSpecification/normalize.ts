@@ -8,8 +8,11 @@ import {
 import {
   NotebookDefinitionSchema,
   NotebookDefinitionUploadSchema,
+  TemplateDefinition,
+  TemplateDefinitionSchema,
   type NotebookDefinition,
 } from './types';
+import {safeValidatePlan, safeValidatePlanTemplate} from '../plans';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 
@@ -77,6 +80,51 @@ function assertLatestSchemaVersion(notebook: NotebookDefinition): void {
 }
 
 /**
+ * Accept a legacy or current notebook template JSON bundle. When the reported schema version
+ * is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}, runs
+ * {@link migrateNotebook}, then validates with {@link TemplateDefinitionSchema}.
+ */
+export function normalizeNotebookTemplateUiSpecification(
+  raw: unknown
+): TemplateDefinition {
+  if (!isPlainObject(raw)) {
+    throw new Error('template uiSpecification must be a JSON object');
+  }
+
+  let candidate: unknown = raw;
+
+  // this works for templates as well as notebooks since it's checking the uiSpec
+  if (notebookUiSpecificationNeedsMigration(raw)) {
+    try {
+      candidate = migrateNotebook(raw).migrated;
+    } catch (cause) {
+      const detail =
+        cause instanceof Error ? cause.message : 'unknown migration error';
+      throw new Error(`template uiSpecification migration failed: ${detail}`);
+    }
+  }
+
+  const parsed = TemplateDefinitionSchema.safeParse(candidate);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid template uiSpecification: ${formatZodIssues(parsed.error)}`
+    );
+  }
+
+  // Validate the planTemplate against its own plan type's schema, if present
+  if (
+    parsed.data.planTemplate &&
+    !safeValidatePlanTemplate(parsed.data.planTemplate).success
+  ) {
+    throw new Error('Invalid plan template in template uiSpecification');
+  }
+
+  assertLatestSchemaVersion(parsed.data);
+
+  return parsed.data;
+}
+
+/**
  * Accept a legacy or current notebook JSON bundle. When the reported schema version
  * is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}, runs
  * {@link migrateNotebook}, then validates with {@link NotebookDefinitionSchema}.
@@ -114,6 +162,11 @@ export function normalizeNotebookUiSpecification(
   }
 
   assertLatestSchemaVersion(parsed.data);
+
+  // Validate the plan against its own plan type's schema, if present
+  if (parsed.data.plan && !safeValidatePlan(parsed.data.plan).success) {
+    throw new Error('Invalid plan in uiSpecification');
+  }
 
   return parsed.data;
 }
