@@ -26,9 +26,6 @@ const planTemplateReducer = createSlice({
   name: 'planTemplate',
   initialState: null as PlanTemplateState,
   reducers: {
-    /** Replace the plan template when hydrating the store from a template record. */
-    planTemplateLoaded: (_state, action: PayloadAction<PlanTemplateState>) =>
-      action.payload,
     /** Set or replace the plan template from the designer UI. */
     planTemplateSet: (_state, action: PayloadAction<PlanTemplate>) =>
       action.payload,
@@ -37,7 +34,7 @@ const planTemplateReducer = createSlice({
   },
 });
 
-export const {planTemplateLoaded, planTemplateSet, planTemplateRemoved} =
+export const {planTemplateSet, planTemplateRemoved} =
   planTemplateReducer.actions;
 
 export default planTemplateReducer.reducer;

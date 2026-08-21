@@ -49,10 +49,11 @@ export const instantiateListPlan = ({
   if (!listPlanTemplateSchema.safeParse(template).success) {
     throw new Error('Invalid list of records plan template');
   }
-  // Filter the records to only include the fields specified in the plan
-  const records = config.recordData;
-  Object.keys(records).forEach(recordId => {
-    const record = records[recordId];
+  // Filter the records to only include the fields specified in the plan.
+  // Built into a new map: writing back into config.recordData would strip the
+  // unselected fields from the caller's own object.
+  const records: Record<string, Record<string, unknown>> = {};
+  for (const [recordId, record] of Object.entries(config.recordData)) {
     const filteredRecord: Record<string, unknown> = {};
     for (const field of template.recordFields) {
       if (field in record) {
@@ -60,7 +61,7 @@ export const instantiateListPlan = ({
       }
     }
     records[recordId] = filteredRecord;
-  });
+  }
 
   return {
     planType: LIST_OF_RECORDS_PLAN_TYPE,

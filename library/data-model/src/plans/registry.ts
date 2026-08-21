@@ -3,6 +3,7 @@ import {
   AnyPlanTypeDefinition,
   Plan,
   PlanRegistry,
+  PlanTemplate,
   PlanSchema,
   PlanTemplateSchema,
   PlanTemplateSchemaWithLiteral,
@@ -126,7 +127,7 @@ export const safeValidatePlan = (
 export const safeValidatePlanTemplate = (
   input: unknown,
   registry: PlanRegistry = defaultPlanRegistry
-): ValidationResult<Plan> => {
+): ValidationResult<PlanTemplate> => {
   if (registry === defaultPlanRegistry) {
     installBuiltInPlanTypes();
   }

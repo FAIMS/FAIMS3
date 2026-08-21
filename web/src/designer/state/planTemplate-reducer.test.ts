@@ -3,7 +3,6 @@
  */
 import {describe, expect, it} from 'vitest';
 import reducer, {
-  planTemplateLoaded,
   planTemplateRemoved,
   planTemplateSet,
 } from './planTemplate-reducer';
@@ -15,14 +14,10 @@ describe('planTemplate reducer', () => {
     expect(reducer(undefined, {type: 'noop'})).toBeNull();
   });
 
-  it('replaces state with the payload on loaded', () => {
-    expect(reducer(null, planTemplateLoaded(countedTemplate))).toEqual(
+  it('sets a plan template from nothing on set', () => {
+    expect(reducer(null, planTemplateSet(countedTemplate))).toEqual(
       countedTemplate
     );
-  });
-
-  it('clears state on loaded with null', () => {
-    expect(reducer(countedTemplate, planTemplateLoaded(null))).toBeNull();
   });
 
   it('replaces an existing plan template wholesale on set', () => {
