@@ -16,9 +16,10 @@
  * @file Smoke tests for {@link InfoPanel} with Redux + theme providers.
  */
 
-import {describe, expect, test} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {afterEach, describe, expect, test} from 'vitest';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {InfoPanel} from './info-panel';
+import {registerSettingsSection} from '../features/design/settings-section-registry';
 
 import {createDesignerStore} from '../createDesignerStore';
 import {Provider} from 'react-redux';
@@ -41,6 +42,13 @@ const WithProviders = ({
 );
 
 describe('Info Panel', () => {
+  let unregisterSection: (() => void) | undefined;
+
+  afterEach(() => {
+    unregisterSection?.();
+    unregisterSection = undefined;
+  });
+
   test('render the info panel', () => {
     const store = createDesignerStore();
     render(
@@ -71,5 +79,30 @@ describe('Info Panel', () => {
     // });
     // // after that, the new metadata field should be visible
     // expect(screen.getByTestId('extra-field-Bob')).toBeDefined();
+  });
+
+  test('renders a registered settings section and saves what it changes', () => {
+    unregisterSection = registerSettingsSection(
+      'test-module',
+      ({settings, onChange}) => (
+        <button onClick={() => onChange({'test-module/flag': true})}>
+          {`flag is ${settings['test-module/flag'] ?? 'unset'}`}
+        </button>
+      )
+    );
+
+    const store = createDesignerStore();
+    render(
+      <WithProviders store={store}>
+        <InfoPanel />
+      </WithProviders>
+    );
+
+    fireEvent.click(screen.getByText('flag is unset'));
+
+    expect(
+      store.getState().notebook.uiSpec.present.settings['test-module/flag']
+    ).toBe(true);
+    screen.getByText('flag is true');
   });
 });
