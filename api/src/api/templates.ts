@@ -82,7 +82,6 @@ patch();
 
 export const api: express.Router = express.Router();
 
-
 /**
  * POST create new template from an uploaded XLSForm (.xlsx) file.
  *
@@ -109,7 +108,12 @@ api.post(
       return body.teamId;
     },
   }),
-  async (req, res: Response<PostCreateTemplateResponse & {skipped: {name: string; type: string}[]}>) => {
+  async (
+    req,
+    res: Response<
+      PostCreateTemplateResponse & {skipped: {name: string; type: string}[]}
+    >
+  ) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }

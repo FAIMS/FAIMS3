@@ -108,13 +108,11 @@ describe('POST /api/templates/from-xlsform', () => {
     const team = await createSampleTeam(app, {teamName: 'XLSForm Team'});
 
     const res = await requestAuthAndType(
-      request(app)
-        .post(`${TEMPLATE_API_BASE}/from-xlsform`)
-        .send({
-          name: 'XLSForm Integration Test',
-          teamId: team._id,
-          fileBase64,
-        })
+      request(app).post(`${TEMPLATE_API_BASE}/from-xlsform`).send({
+        name: 'XLSForm Integration Test',
+        teamId: team._id,
+        fileBase64,
+      })
     ).expect(200);
 
     expect(res.body.name).toBe('XLSForm Integration Test');
@@ -134,9 +132,7 @@ describe('POST /api/templates/from-xlsform', () => {
     expect(fields.q3['component-name']).toBe('NumberField');
     expect(fields.q3['component-parameters'].numberType).toBe('integer');
 
-    expect(res.body.uiSpecification.uiSpec.viewsets.Main.hridField).toBe(
-      'q1'
-    );
+    expect(res.body.uiSpecification.uiSpec.viewsets.Main.hridField).toBe('q1');
     expect(res.body.uiSpecification.uiSpec.viewsets.Main.label).toBe(
       'Integration Test Form'
     );
@@ -216,13 +212,11 @@ describe('POST /api/templates/from-xlsform', () => {
     // localUserToken belongs to a user with no roles at all -- should not
     // be able to create a template in any team.
     await requestAuthAndType(
-      request(app)
-        .post(`${TEMPLATE_API_BASE}/from-xlsform`)
-        .send({
-          name: 'Unauthorized Team Template',
-          teamId: team._id,
-          fileBase64,
-        }),
+      request(app).post(`${TEMPLATE_API_BASE}/from-xlsform`).send({
+        name: 'Unauthorized Team Template',
+        teamId: team._id,
+        fileBase64,
+      }),
       localUserToken
     ).expect(401);
   });
@@ -232,14 +226,12 @@ describe('POST /api/templates/from-xlsform', () => {
     const team = await createSampleTeam(app, {teamName: 'Public Test Team'});
 
     await requestAuthAndType(
-      request(app)
-        .post(`${TEMPLATE_API_BASE}/from-xlsform`)
-        .send({
-          name: 'Unauthorized Public Template',
-          teamId: team._id,
-          isPublic: true,
-          fileBase64,
-        }),
+      request(app).post(`${TEMPLATE_API_BASE}/from-xlsform`).send({
+        name: 'Unauthorized Public Template',
+        teamId: team._id,
+        isPublic: true,
+        fileBase64,
+      }),
       localUserToken
     ).expect(401);
   });
