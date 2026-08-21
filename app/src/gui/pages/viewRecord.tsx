@@ -49,7 +49,7 @@ import {
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect} from 'react';
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router';
 import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,

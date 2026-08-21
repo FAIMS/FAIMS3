@@ -30,7 +30,7 @@ import {
   Divider,
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+import {Link as RouterLink, NavLink} from 'react-router';
 import * as ROUTES from '../../constants/routes';
 import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
 

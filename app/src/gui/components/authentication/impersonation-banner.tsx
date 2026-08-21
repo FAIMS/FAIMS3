@@ -20,7 +20,7 @@
 
 import {Button, Typography} from '@mui/material';
 import Alert from '@mui/material/Alert';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {
   selectActiveUser,

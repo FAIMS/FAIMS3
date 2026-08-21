@@ -8,7 +8,7 @@ import {
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';

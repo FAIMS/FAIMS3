@@ -45,7 +45,7 @@ import List from '@mui/material/List';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import React, {useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router';
 import {config} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {selectIsAuthenticated} from '../../context/slices/authSlice';

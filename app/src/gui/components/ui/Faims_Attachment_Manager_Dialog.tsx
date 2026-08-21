@@ -27,7 +27,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import {IconButton} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router';
 import CircularProgress from '@mui/material/CircularProgress';
 import {config} from '../../../buildconfig';
 

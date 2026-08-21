@@ -6,7 +6,7 @@
  * (e.g. {@link navigateToNotebookListIfViewingProject}) can then redirect when
  * upstream archival/deletion removes a notebook the user still has open.
  */
-import {createBrowserRouter} from 'react-router-dom';
+import {createBrowserRouter} from 'react-router';
 import {NOTEBOOK_LIST_ROUTE} from './constants/routes';
 import {parseNotebookRouteParams} from './utils/notebookRouteParams';
 

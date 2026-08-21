@@ -22,7 +22,7 @@
 import {App as CapacitorApp, URLOpenListenerEvent} from '@capacitor/app';
 import {Browser} from '@capacitor/browser';
 import {useEffect} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 
 export function AppUrlListener() {
   const navigate = useNavigate();
