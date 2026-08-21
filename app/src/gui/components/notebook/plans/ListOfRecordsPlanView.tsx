@@ -34,6 +34,12 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         uiSpecification.visible_types[0]
       : 'Record';
 
+  // A claimed entry is proof the record exists, but an unclaimed one is not
+  // proof it does not: the list can hide records the user may not read, and
+  // records still downloading have not arrived yet.
+  const unclaimedMayBeStale =
+    !status.canReadAllRecords || status.isDownloadingRecords;
+
   // work out which records we've already created from the plan
   // by checking the planReference field in the record metadata
   const existingRecords: Record<string, boolean> = useMemo(() => {
@@ -126,6 +132,12 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         </TabList>
 
         <TabPanel value="0" id="planned-tabpanel" aria-labelledby="planned-tab">
+          {unclaimedMayBeStale && (
+            <Alert severity="warning" sx={{mb: 1.5}}>
+              Some records are not visible to you yet, so an entry shown as not
+              created may already have one.
+            </Alert>
+          )}
           <Grid
             container
             spacing={{xs: 2, md: 3}}
@@ -142,6 +154,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
                       planReference={planReference}
                       created={existingRecords[planReference] ?? false}
                       createRecord={actions.createRecord}
+                      canCreateRecord={status.isAllowedToAddRecords}
                       navigateToRecord={navigateToRecord}
                     />
                   </Grid>
@@ -194,6 +207,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
  * @param type - The viewset type of the record
  * @param title - The title to display for the record card
  * @param createRecord - Function to create a new record
+ * @param canCreateRecord - Whether the user may create records in this notebook
  * @param created - Boolean indicating if the record has already been created
  * @param planReference - The unique reference for the planned record
  * @param navigateToRecord - Function to navigate to the existing record
@@ -204,6 +218,7 @@ const RecordCard = ({
   type,
   title,
   createRecord,
+  canCreateRecord,
   created,
   planReference,
   navigateToRecord,
@@ -218,6 +233,7 @@ const RecordCard = ({
     data: Record<string, any>,
     planReference?: string
   ) => void;
+  canCreateRecord: boolean;
   navigateToRecord: (planReference: string) => void;
 }) => {
   const handleCreateRecord = () => {
@@ -252,9 +268,11 @@ const RecordCard = ({
             Edit Record
           </Button>
         ) : (
-          <Button size="small" onClick={handleCreateRecord}>
-            Create Record
-          </Button>
+          canCreateRecord && (
+            <Button size="small" onClick={handleCreateRecord}>
+              Create Record
+            </Button>
+          )
         )}
       </CardActions>
     </Card>

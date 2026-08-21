@@ -34,13 +34,21 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
     record => record.type === plan.formType
   ).length;
 
+  // Records that exist may be missing from the list, so the count is a floor
+  // rather than the true total and cannot show the target as reached.
+  const countMayBeUnderstated =
+    !status.canReadAllRecords || status.isDownloadingRecords;
+
   // We can add records if the user has permission and we've not reached the target number
   // Note that this doesn't prevent their being more than the target number of records
   // because another user could be adding them at the same time. So, the plan is really
   // just a workflow guide rather than an enforced constraint on the data collected.
-  const showAddRecordButtons =
-    status.isAllowedToAddRecords &&
-    (targetRecordCount < plan.numberRequired || plan.allowExtraRecords);
+  const targetReached =
+    !countMayBeUnderstated &&
+    targetRecordCount >= plan.numberRequired &&
+    !plan.allowExtraRecords;
+
+  const showAddRecordButtons = status.isAllowedToAddRecords && !targetReached;
 
   // recordLabel based on viewsets
   const recordLabel =
@@ -64,7 +72,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
       <TabContext value={tabIndex.toString()}>
         <TabList
           onChange={(event, newValue) => setTabIndex(newValue)}
-          aria-label={`List of Records Plan tabs`}
+          aria-label={'Counted Plan tabs'}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
@@ -97,7 +105,13 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
               />
             </Box>
           )}
-          {!showAddRecordButtons && (
+          {countMayBeUnderstated && (
+            <Alert severity="warning" sx={{mb: 1.5}}>
+              Some records are not visible to you yet, so this plan's progress
+              may be further along than it looks.
+            </Alert>
+          )}
+          {targetReached && (
             <Alert severity="info">Target number of records reached.</Alert>
           )}
 
