@@ -34,7 +34,7 @@ import {
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React, {useEffect, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {
   selectActiveUser,

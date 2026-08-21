@@ -19,7 +19,7 @@
  */
 
 import {fireEvent, render, screen} from '@testing-library/react';
-import {BrowserRouter as Router} from 'react-router-dom';
+import {BrowserRouter as Router} from 'react-router';
 import AboutBuild from './about-build';
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {expect, test, vi} from 'vitest';

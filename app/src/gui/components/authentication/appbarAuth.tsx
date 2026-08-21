@@ -40,7 +40,7 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import {NavigateFunction, NavLink, useNavigate} from 'react-router-dom';
+import {NavigateFunction, NavLink, useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {
   listAllConnections,

@@ -8,7 +8,7 @@ import {
   useTheme,
 } from '@mui/material';
 import {useEffect, useRef, useState} from 'react';
-import {Navigate, Link as RouterLink} from 'react-router-dom';
+import {Navigate, Link as RouterLink} from 'react-router';
 import {useAppSelector} from '../context/store';
 import {useIsOnline} from '../utils/customHooks';
 import {config} from '../buildconfig';

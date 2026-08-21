@@ -13,8 +13,7 @@ import {
 import {QueryClient, useQuery} from '@tanstack/react-query';
 import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useNavigate} from 'react-router';
-import {useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {syncStateService} from '../context/slices/helpers/syncStateService';

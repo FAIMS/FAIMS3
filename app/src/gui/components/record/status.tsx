@@ -19,7 +19,7 @@ import {fieldCompletionResolver, ProgressBar} from '@faims3/forms';
 import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router';
 import {getViewRecordRoute} from '../../../constants/routes';
 import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';

@@ -1,6 +1,6 @@
 import {render, screen} from '@testing-library/react';
 import RecordRouteDisplay from './record_link';
-import {BrowserRouter} from 'react-router-dom';
+import {BrowserRouter} from 'react-router';
 import {test, expect} from 'vitest';
 
 /* vi.mock() */

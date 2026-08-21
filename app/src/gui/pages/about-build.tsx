@@ -52,7 +52,7 @@ import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
 import {logError} from '../../logging';
 import {databaseService} from '../../context/slices/helpers/databaseService';
-import {Link} from 'react-router-dom';
+import {Link} from 'react-router';
 
 export default function AboutBuild() {
   const breadcrumbs = [

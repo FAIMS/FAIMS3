@@ -1,7 +1,7 @@
 import React from 'react';
 import ArticleIcon from '@mui/icons-material/Article';
 import {Typography, Link} from '@mui/material';
-import {NavLink} from 'react-router-dom';
+import {NavLink} from 'react-router';
 import Chip from '@mui/material/Chip';
 
 interface PropsType {

@@ -29,7 +29,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Button, IconButton} from '@mui/material';
 import React from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
