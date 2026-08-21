@@ -34,13 +34,13 @@ import {
   useNavigationLogic,
 } from './navigation';
 import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
-import {
-  getRecordContextFromRecord,
-  onChangeTemplatedFields,
-  RecordContext,
-} from './templatedFields';
+import {onChangeTemplatedFields} from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
-import {resolveParentValues} from './resolveParentValues';
+import {
+  resolveParentValues,
+  getRecordContextFromRecord,
+  RecordContext,
+} from '@faims3/data-model';
 import {
   FieldVisibilityMap,
   FormNavigationContext,

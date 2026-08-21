@@ -25,6 +25,7 @@ import {
   MinimalRecordMetadata,
   NotebookUiSpec,
   ProjectID,
+  formatTimestamp,
 } from '@faims3/data-model';
 import {MapComponent} from '@faims3/forms';
 import {
@@ -51,7 +52,6 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {formatTimestamp} from '../../../utils/formUtilities';
 import {
   useRecordFeatures,
   type RecordFeatureCollection,

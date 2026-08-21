@@ -19,9 +19,13 @@ import {
   AddressType,
   AddressValue,
   AddressValueSchema,
-} from '../../../addressTypes';
+} from '@faims3/data-model';
 import type {FullFormConfig} from '../../../formModule/formManagers/types';
-import {BaseFieldParametersSchema, INPUT_LIMITS} from '@faims3/data-model';
+import {
+  addressValueForTemplate,
+  BaseFieldParametersSchema,
+  INPUT_LIMITS,
+} from '@faims3/data-model';
 import {FormFieldContextProps} from '../../../formModule/types';
 import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {DataViewFieldRender} from '../../../rendering/types';
@@ -619,22 +623,6 @@ const valueSchema = (props: AddressFieldProps) => {
   }
   return AddressValueNullableSchema;
 };
-
-/** Template expansion: parse with AddressValueNullableSchema, then return `display_name`. */
-function addressValueForTemplate(value: unknown): string {
-  const parsed = AddressValueNullableSchema.safeParse(value);
-  if (!parsed.success) {
-    logWarn(
-      'AddressField templateFunction: value did not match AddressValueNullableSchema:',
-      parsed.error.format()
-    );
-    return '';
-  }
-  if (parsed.data === null) {
-    return '';
-  }
-  return parsed.data.display_name.trim();
-}
 
 export const addressFieldSpec: FieldInfo<AddressFieldFullProps> = {
   namespace: 'faims-custom',
