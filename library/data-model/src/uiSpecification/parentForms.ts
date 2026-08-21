@@ -44,9 +44,6 @@ import {
 /** Prefix marking a reference to a field on the parent record. Reserved. */
 export const PARENT_REFERENCE_PREFIX = '_PARENT.';
 
-// Scan helpers live in formScan.ts; re-exported so existing importers hold.
-export {fieldIdsForViewset, type ParentScanUiSpec} from './formScan';
-
 /** The scan reads only these keys; a malformed unrelated param (e.g. a string
  * `multiple` in a hand-edited notebook) must not hide the relation. */
 const childRelationScanSchema = relatedRecordSelectorComponentParamsSchema.pick(

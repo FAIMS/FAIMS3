@@ -1,7 +1,4 @@
-import {
-  fieldIdsForViewset,
-  getChildRelationParams,
-} from '../uiSpecification/parentForms';
+import {getChildRelationParams} from '../uiSpecification/parentForms';
 import {
   currentlyVisibleMap,
   getSummaryValues,
@@ -28,6 +25,7 @@ import {
   relatedRecordAvpEntries,
   relatedRecordFieldAvpEntrySchema,
 } from './types';
+import {fieldIdsForViewset} from '../uiSpecification/formScan';
 
 // Only the id and project tag matter here, so legacy vocab-pair drift in a
 // stored link cannot invalidate a live child
