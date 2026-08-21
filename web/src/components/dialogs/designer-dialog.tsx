@@ -1,10 +1,15 @@
 import React, {useEffect, useState} from 'react';
 import {DesignerWidget} from '../../designer/DesignerWidget';
-import type {NotebookWithHistory} from '../../designer/state/initial';
+import type {
+  DesignerDocumentMode,
+  NotebookWithHistory,
+} from '../../designer/state/initial';
 
 interface DesignerDialogProps {
   open: boolean;
   notebook?: NotebookWithHistory;
+  /** Whether the designer session edits a notebook or a template. */
+  designerMode?: DesignerDocumentMode;
   /** Survey/template display name for the exported JSON filename. */
   exportBaseName?: string;
   onClose: (file?: File) => void;
@@ -15,6 +20,7 @@ interface DesignerDialogProps {
 export function DesignerDialog({
   open,
   notebook,
+  designerMode,
   exportBaseName,
   onClose,
   animationDuration = 300,
@@ -108,6 +114,7 @@ export function DesignerDialog({
           notebook={sessionNotebook}
           exportBaseName={exportBaseName}
           onClose={handleWidgetClose}
+          designerMode={designerMode}
         />
       </div>
     </div>

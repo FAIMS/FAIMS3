@@ -34,6 +34,10 @@ export const v1RecordDBFieldsSchema = z
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
+    // Optional plan reference for records created as part of a plan execution (e.g., List of Records)
+    // Might need to be an array if a record can be part of multiple plans in the future but for
+    // now we'll keep it simple and allow only one plan reference per record.
+    planReference: z.string().optional(),
   })
   .strict();
 
@@ -591,6 +595,8 @@ const baseFormRecordSchema = z.object({
   createdBy: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH),
   /** Optional relationship information if this is a related/child record */
   relationship: formRelationshipSchema.optional(),
+  /** Optional plan reference for records created as part of a plan execution (e.g., List of Records) */
+  planReference: z.string().optional(),
 });
 
 /**
@@ -888,6 +894,7 @@ export interface MinimalRecordMetadata {
   deleted: boolean;
   type: string;
   relationship?: FormRelationship;
+  planReference?: string;
 }
 
 /**

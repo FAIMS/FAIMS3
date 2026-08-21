@@ -1107,6 +1107,11 @@ class FormOperations {
       type: validated.formId,
     };
 
+    // Add the optional plan reference if provided
+    if (validated.planReference) {
+      recordDoc.planReference = validated.planReference;
+    }
+
     // Create the new record
     const rec = await this.core.createRecord(recordDoc);
 
@@ -2250,6 +2255,7 @@ class QueryOperations {
         deleted: revisionMeta.deleted ?? false,
         type: record.type,
         relationship: revisionMeta.relationship,
+        planReference: record.planReference,
       });
     }
 
