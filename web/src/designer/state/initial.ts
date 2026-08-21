@@ -28,6 +28,7 @@ import {
   type NotebookMetadata,
   type NotebookSettings,
   type PlanTemplate,
+  type RegisteredPlan,
 } from '@faims3/data-model';
 import {ConditionType} from '../types/condition';
 import type {DesignerDocumentMode} from '../integration';
@@ -125,6 +126,9 @@ export type NotebookWithHistory = {
   uiSpec: StateWithHistory<NotebookUISpec>;
   // null when absent; only templates carry a plan template
   planTemplate: PlanTemplate | null;
+  // null when absent; only notebooks carry an instantiated plan, and the
+  // designer carries it through untouched rather than editing it
+  plan: RegisteredPlan | null;
 };
 
 export const defaultNotebookInformation = (): NotebookInformation => ({
@@ -158,6 +162,7 @@ export const initialState: AppState = {
       future: [],
     },
     planTemplate: null,
+    plan: null,
   },
   mode: 'project',
 };

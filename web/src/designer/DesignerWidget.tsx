@@ -121,6 +121,7 @@ export function DesignerWidget({
         future: [],
       },
       planTemplate: notebook.planTemplate ?? null,
+      plan: notebook.plan ?? null,
     };
   }, [notebook]);
 

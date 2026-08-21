@@ -25,6 +25,7 @@ import {
   initialState as blankState,
 } from './state/initial';
 import metadataReducer from './state/metadata-reducer';
+import planReducer from './state/plan-reducer';
 import planTemplateReducer from './state/planTemplate-reducer';
 import modifiedStatusReducer from './state/modifiedStatus-reducer';
 import modeReducer from './state/mode-reducer';
@@ -54,6 +55,7 @@ export function createDesignerStore(
         metadata: metadataReducer,
         uiSpec: undoable(uiSpecificationReducer.reducer, uiSpecUndoConfig),
         planTemplate: planTemplateReducer,
+        plan: planReducer,
       }),
       modified: modifiedStatusReducer,
       mode: modeReducer,

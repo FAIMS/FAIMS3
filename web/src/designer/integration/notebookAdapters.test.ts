@@ -31,6 +31,13 @@ const createDefinition = (): Notebook => ({
 
 const countedTemplate = {planType: 'Counted', formType: 'FORM1'};
 
+const countedPlan = {
+  planType: 'Counted' as const,
+  formType: 'FORM1',
+  numberRequired: 3,
+  allowExtraRecords: false,
+};
+
 describe('notebook adapters planTemplate round-trip', () => {
   it('hydrates a definition with planTemplate into designer state', () => {
     const definition = {...createDefinition(), planTemplate: countedTemplate};
@@ -65,5 +72,42 @@ describe('notebook adapters planTemplate round-trip', () => {
       notebookDefinitionToDesignerHistory(definition)
     );
     expect(exported).toEqual(definition);
+  });
+});
+
+describe('notebook adapters plan round-trip', () => {
+  it('hydrates a definition with a plan into designer state', () => {
+    const history = notebookDefinitionToDesignerHistory({
+      ...createDefinition(),
+      plan: countedPlan,
+    });
+    expect(history.plan).toEqual(countedPlan);
+  });
+
+  it('hydrates a definition without a plan as null', () => {
+    const history = notebookDefinitionToDesignerHistory(createDefinition());
+    expect(history.plan).toBeNull();
+  });
+
+  it('keeps the plan through an edit and export', () => {
+    // Saving a design must not strip the plan the notebook was created with
+    const history = notebookDefinitionToDesignerHistory({
+      ...createDefinition(),
+      plan: countedPlan,
+    });
+    const edited = {
+      ...history,
+      uiSpec: {...history.uiSpec, present: {...history.uiSpec.present}},
+    };
+    expect(designerHistoryToNotebookDefinition(edited).plan).toEqual(
+      countedPlan
+    );
+  });
+
+  it('omits the plan key entirely when null', () => {
+    const exported = designerHistoryToNotebookDefinition(
+      notebookDefinitionToDesignerHistory(createDefinition())
+    );
+    expect('plan' in exported).toBe(false);
   });
 });
