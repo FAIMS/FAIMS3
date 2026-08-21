@@ -41,6 +41,22 @@ export const slugify = (value: string): string => {
 };
 
 /**
+ * Strip ASCII control characters from a user-supplied display label.
+ *
+ * Printable characters (including quotes) are kept for display. Callers that
+ * interpolate labels into HTTP headers or filenames must still sanitise for
+ * that context.
+ */
+export const sanitizeUserLabel = (label: string): string =>
+  Array.from(label)
+    .filter(ch => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join('')
+    .trim();
+
+/**
  * Picks a slugified field id that does not collide with existing keys.
  *
  * @param preferredName - User-facing label or desired base id.
