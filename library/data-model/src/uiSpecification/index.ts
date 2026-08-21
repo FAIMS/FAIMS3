@@ -3,4 +3,5 @@ export * from './utils';
 export * from './types';
 export * from './normalize';
 export * from './expressions';
+export * from './xlsformConverter';
 export * from './parentForms';

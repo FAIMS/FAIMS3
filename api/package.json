@@ -68,6 +68,7 @@
     "pouchdb-mapreduce": "^9.0.0",
     "pouchdb-security-helper": "^2.1.2",
     "qrcode": "^1.5.3",
+    "read-excel-file": "^9.3.4",
     "req-flash": "^0.0.3",
     "swagger-ui-dist": "^5.9.1",
     "xml-crypto": "^6.1.2",
@@ -112,7 +113,8 @@
     "supertest": "^7.1.4",
     "tsx": "^4.20.3",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "xlsx": "^0.18.5"
   },
   "engines": {
     "node": "24"
