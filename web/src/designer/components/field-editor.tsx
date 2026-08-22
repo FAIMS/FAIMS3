@@ -618,7 +618,7 @@ const FieldEditorComponent = ({
                 sx={{
                   color: theme => theme.palette.grey[900],
                   fontWeight: 700,
-                  fontSize: '1.02rem',
+                  fontSize: '0.9375rem',
                   lineHeight: 1.28,
                   letterSpacing: '0.005em',
                   width: '100%',
@@ -722,6 +722,7 @@ const FieldEditorComponent = ({
                 p: 0.35,
                 justifyContent: {sm: 'right', xs: 'left'},
                 borderRadius: 1,
+                '& .MuiSvgIcon-root': {fontSize: '1.15rem'},
               }}
             >
               <Tooltip title="Delete Field">
@@ -869,7 +870,7 @@ const FieldEditorComponent = ({
                       backgroundColor: theme =>
                         alpha(theme.palette.secondary.main, 0.1),
                     },
-                    '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
+                    '& .MuiSvgIcon-root': {fontSize: '1.3rem'},
                   }}
                 >
                   <ArrowDropUpRoundedIcon />
@@ -892,7 +893,7 @@ const FieldEditorComponent = ({
                       backgroundColor: theme =>
                         alpha(theme.palette.secondary.main, 0.1),
                     },
-                    '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
+                    '& .MuiSvgIcon-root': {fontSize: '1.3rem'},
                   }}
                 >
                   <ArrowDropDownRoundedIcon />
