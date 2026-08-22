@@ -30,7 +30,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import {Button, IconButton} from '@mui/material';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import * as ROUTES from '../../../constants/routes';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
@@ -41,12 +40,10 @@ type RecordDeleteProps = {
   projectId: ProjectID;
   /** Record document owner (`created_by`), for delete-my vs delete-all permission. */
   recordCreatedBy: string;
-  serverId: string;
   recordId: RecordID;
   hrid?: string;
   revisionId: RevisionID | null;
   showLabel: boolean;
-  handleRefresh: () => void;
 };
 
 async function deleteFromDB({
@@ -54,13 +51,11 @@ async function deleteFromDB({
   recordId,
   revisionId,
   userId,
-  callback,
 }: {
   projectId: ProjectID;
   recordId: RecordID;
   revisionId: RevisionID | null;
   userId: string;
-  callback: () => void;
 }) {
   await setRecordAsDeleted({
     dataDb: localGetDataDb(projectId),
@@ -68,12 +63,11 @@ async function deleteFromDB({
     baseRevisionId: revisionId as RevisionID,
     userId: userId,
   });
-  callback();
 }
 
 export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
-  const {projectId, serverId, recordId, revisionId, recordCreatedBy} = props;
+  const {projectId, recordId, revisionId, recordCreatedBy} = props;
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const history = useNavigate();
@@ -107,7 +101,6 @@ export default function RecordDelete(props: RecordDeleteProps) {
       recordId,
       revisionId,
       userId: activeUser.username,
-      callback: props.handleRefresh,
     })
       .then(() => {
         const message = `Record ${recordId} deleted`;
@@ -118,7 +111,9 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId);
+        // This dialog only opens on a record route, which nests under the
+        // notebook tab, so `..` is the tab the record was opened from
+        history('..');
       })
       .catch(err => {
         console.error('Failed to delete', recordId, err);

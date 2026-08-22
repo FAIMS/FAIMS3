@@ -22,7 +22,7 @@ import {
 import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
-import {useSearchParams} from 'react-router-dom';
+import {useParams, useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {syncStateService} from '../context/slices/helpers/syncStateService';
@@ -1014,4 +1014,15 @@ export const useUiSpecLayout = ({
     networkMode: 'always',
     refetchOnMount: true,
   });
+};
+
+/**
+ * The tab the notebook route names, or undefined where it names none.
+ *
+ * Record routes nest under the tab, so a component that builds one from inside
+ * a notebook carries the tab through and leaving the record with `..` lands
+ * back on it.
+ */
+export const useNotebookTab = (): string | undefined => {
+  return useParams<{tab?: string}>().tab;
 };

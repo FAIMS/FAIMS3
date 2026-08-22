@@ -15,7 +15,7 @@
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -51,11 +51,8 @@ import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {config, getMapConfig} from '../../buildconfig';
-import {
-  getEditRecordRoute,
-  getNotebookRoute,
-  getViewRecordRoute,
-} from '../../constants/routes';
+import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
+import {useNotebookTab} from '../../utils/customHooks';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -135,7 +132,6 @@ function useTabState(): [RecordTab, (tab: RecordTab) => void] {
 interface InfoTabContentProps {
   projectId: ProjectID;
   recordId: RecordID;
-  serverId: string;
   hrid: string;
   revisionId: string;
   dataEngine: DataEngine;
@@ -149,22 +145,12 @@ interface InfoTabContentProps {
 const InfoTabContent: React.FC<InfoTabContentProps> = ({
   projectId,
   recordId,
-  serverId,
   dataEngine,
   revisionId,
   hrid,
   isDeleted,
   recordCreatedBy,
 }) => {
-  const nav = useNavigate();
-
-  const handleRefresh = useCallback(() => {
-    return new Promise<void>(resolve => {
-      nav(getNotebookRoute({serverId, projectId}));
-      resolve();
-    });
-  }, [nav, serverId, projectId]);
-
   return (
     <Stack spacing={3}>
       <RecordMeta
@@ -180,9 +166,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
             hrid={hrid}
             recordId={recordId}
             revisionId={revisionId}
-            serverId={serverId}
             showLabel={true}
-            handleRefresh={handleRefresh}
           />
         </Box>
       )}
@@ -252,6 +236,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   isDeleted,
 }) => {
   const nav = useNavigate();
+  const tab = useNotebookTab();
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -265,6 +250,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
                 projectId,
                 recordId: props.recordId,
                 serverId,
+                tab,
                 mode: 'parent',
               })
             );
@@ -291,6 +277,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
           projectId,
           recordId: params.recordId,
           serverId,
+          tab,
           revisionId: params.revisionId,
         }),
       editRecordButtonComponent: nestedEditButton,
@@ -300,6 +287,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
             projectId,
             recordId: params.recordId,
             serverId,
+            tab,
             revisionId: params.revisionId,
           })
         );
@@ -328,6 +316,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
               projectId,
               recordId: relationship.recordId,
               serverId,
+              tab,
             })
           ),
       });
@@ -497,6 +486,7 @@ export const ViewRecordPage: React.FC = () => {
     projectId: ProjectID;
     recordId: RecordID;
   }>();
+  const tab = useNotebookTab();
 
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -619,8 +609,9 @@ export const ViewRecordPage: React.FC = () => {
     return <div>UI Specification not found</div>;
   }
 
-  // back button goes to the notebook list page
-  const backLink = getNotebookRoute({serverId, projectId});
+  // The record route nests under the notebook tab it was opened from, so `..`
+  // is the notebook on that tab
+  const backLink = '..';
 
   // Loading state
   if (isPending || isRefetching) {
@@ -704,6 +695,7 @@ export const ViewRecordPage: React.FC = () => {
                   projectId,
                   recordId,
                   serverId,
+                  tab,
                   mode: 'parent',
                 })
               );
@@ -725,7 +717,6 @@ export const ViewRecordPage: React.FC = () => {
               projectId={projectId}
               hrid={formData.context.hrid}
               recordId={recordId}
-              serverId={serverId}
               revisionId={revisionId}
               isDeleted={isDeleted}
               recordCreatedBy={formData.context.record.createdBy}

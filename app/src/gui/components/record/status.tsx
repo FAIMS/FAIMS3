@@ -21,7 +21,7 @@ import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {getViewRecordRoute} from '../../../constants/routes';
-import {buildStatusReportKey} from '../../../utils/customHooks';
+import {buildStatusReportKey, useNotebookTab} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
@@ -44,6 +44,7 @@ const StatusNode: React.FC<{
   /** The viewed record itself, which needs no link to where the user already is. */
   isRoot?: boolean;
 }> = ({report, uiSpec, projectId, serverId, isRoot}) => {
+  const tab = useNotebookTab();
   const {ownProgress} = report;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
@@ -68,6 +69,7 @@ const StatusNode: React.FC<{
               projectId,
               serverId,
               recordId: report.recordId,
+              tab,
             })}
             variant="body2"
           >

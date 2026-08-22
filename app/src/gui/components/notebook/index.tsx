@@ -5,7 +5,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
 import {config} from '../../../buildconfig';
-import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
@@ -15,7 +14,6 @@ import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
   useIsAuthorisedTo,
-  useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
@@ -27,7 +25,8 @@ import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
-// Define how tabs appear in the query string arguments, providing a two way map
+// This view's own tab slugs, as they appear in the `:tab` path segment, with a
+// two way map to the index MUI drives the tab strip with
 type TabIndexLabel =
   | 'my_records'
   | 'other_records'
@@ -35,6 +34,7 @@ type TabIndexLabel =
   | 'settings'
   | 'map';
 type TabIndex = 0 | 1 | 2 | 3 | 4;
+const DEFAULT_TAB: TabIndexLabel = 'my_records';
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
   ['other_records', 1],
@@ -101,6 +101,10 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: Project;
+  // The tab slug from the route; an absent or unknown one falls back to this
+  // view's default
+  tab?: string;
+  setTab: (tab: string) => void;
 };
 
 /**
@@ -110,7 +114,11 @@ type NotebookComponentProps = {
  * @param props - The properties for the NotebookComponent.
  * @returns The JSX element for the NotebookComponent.
  */
-export default function NotebookComponent({project}: NotebookComponentProps) {
+export default function NotebookComponent({
+  project,
+  tab,
+  setTab,
+}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const queryClient = useQueryClient();
@@ -133,24 +141,13 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     username: activeUser?.username ?? '',
   });
 
-  // This manages the tab using a query string arg
-  const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({
-    tab: {
-      key: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q,
-      defaultValue: 'my_records',
-    },
-  });
+  // The route is the tab state, so an unknown slug shows the default tab
+  // rather than nothing
+  const tabIndex =
+    TAB_TO_INDEX.get(tab as TabIndexLabel) ?? TAB_TO_INDEX.get(DEFAULT_TAB)!;
 
-  // This is the actual tab index state
-  const [tabIndex, setTabIndex] = React.useState<TabIndex>(
-    TAB_TO_INDEX.get(params.tab ?? 'my_records') ??
-      TAB_TO_INDEX.get('my_records') ??
-      0
-  );
-
-  // This is a function which updates the param based on the tab index
-  const setTabValue = (val: TabIndex) => {
-    setParam('tab', INDEX_TO_TAB.get(val) ?? 'my_records');
+  const setTabIndex = (val: TabIndex) => {
+    setTab(INDEX_TO_TAB.get(val) ?? DEFAULT_TAB);
   };
 
   // Fetch records from the (local) DB with configurable auto refetch.
@@ -190,15 +187,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     _event: React.SyntheticEvent,
     newValue: TabIndex
   ) => {
-    // Set the actual index on tab change
     setTabIndex(newValue);
-    // Update the param
-    setTabValue(newValue);
   };
 
   const goToSyncSettings = () => {
-    setTabIndex(4);
-    setTabValue(4);
+    setTab('settings');
   };
 
   // recordLabel based on viewsets

@@ -63,6 +63,8 @@ interface ActionProps {
   ) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
+  // Show the given tab, putting its slug in the URL
+  setTab: (tab: string) => void;
 }
 
 // Components that might be used in the notebook display
@@ -74,6 +76,10 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
+  // The tab slug from the URL, absent when the route names no tab. FAIMS3 keeps
+  // no list of tabs: a view maps its own slugs and falls back to its own
+  // default for an absent or unknown one.
+  tab?: string;
   uiSpecification: CompiledNotebookUiSpec;
   records: RecordListProps;
   actions: ActionProps;
