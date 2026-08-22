@@ -30,7 +30,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import {Button, IconButton} from '@mui/material';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import * as ROUTES from '../../../constants/routes';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
@@ -118,7 +117,9 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId);
+        // This dialog only opens on a record route, which nests under the
+        // notebook tab, so `..` is the tab the record was opened from
+        history('..');
       })
       .catch(err => {
         console.error('Failed to delete', recordId, err);

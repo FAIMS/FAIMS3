@@ -49,6 +49,7 @@ import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
+import {useNotebookTab} from '../../../utils/customHooks';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {formatTimestamp} from '../../../utils/formUtilities';
@@ -106,6 +107,7 @@ const SelectedRecordPopoverContent = ({
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
+  const tab = useNotebookTab();
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
   const [buttonInteractionAllowed, setButtonInteractionAllowed] =
@@ -162,6 +164,7 @@ const SelectedRecordPopoverContent = ({
             serverId,
             projectId: project_id,
             recordId: feature.record_id,
+            tab,
           })}
           size="small"
           variant="outlined"
@@ -192,6 +195,7 @@ const SelectedRecordPopoverContent = ({
     serverId,
     projectId: project_id,
     recordId: feature.record_id,
+    tab,
     revisionId: feature.revision_id,
   });
 

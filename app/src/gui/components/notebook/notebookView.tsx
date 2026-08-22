@@ -25,6 +25,7 @@ import {
   invalidateProjectRecordList,
   useIsAuthorisedTo,
   useIsRecordDownloadUnderway,
+  useNotebookTab,
   usePlanRecordStatusReports,
   useRecordList,
 } from '../../../utils/customHooks';
@@ -144,6 +145,21 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  const tab = useNotebookTab();
+
+  const setTab = useCallback(
+    (nextTab: string) => {
+      navigate(
+        ROUTES.getNotebookRoute({
+          serverId: project.serverId,
+          projectId: project.projectId,
+          tab: nextTab,
+        })
+      );
+    },
+    [navigate, project.serverId, project.projectId]
+  );
+
   /**
    * Create a new record - function passed in to the view component to create new records,
    *  bundles up all of the app internal access that is needed to do this so that the
@@ -188,6 +204,7 @@ function NotebookViewWithSpec({
             serverId: project.serverId,
             projectId: project.projectId,
             recordId: record._id,
+            tab,
             mode: 'new',
           })
         );
@@ -211,6 +228,7 @@ function NotebookViewWithSpec({
       navigate,
       project.serverId,
       project.projectId,
+      tab,
       dispatch,
     ]
   );
@@ -222,11 +240,12 @@ function NotebookViewWithSpec({
         serverId: project.serverId,
         projectId: record.projectId,
         recordId: record.recordId,
+        tab,
       });
 
       navigate(route);
     },
-    [navigate, project.serverId]
+    [navigate, project.serverId, tab]
   );
 
   // does this notebook have a plan, and do we have a view component for it
@@ -245,12 +264,14 @@ function NotebookViewWithSpec({
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
+      tab,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,
         setQuery,
         createRecord,
         navigateToRecord,
+        setTab,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -294,11 +315,13 @@ function NotebookViewWithSpec({
     }),
     [
       project,
+      tab,
       uiSpecification,
       refreshRecordList,
       setQuery,
       createRecord,
       navigateToRecord,
+      setTab,
       isAllowedToAddRecords,
       isDownloadingRecords,
       records,
@@ -316,5 +339,5 @@ function NotebookViewWithSpec({
   // TODO: port this component to use the same interface
   // as our custom plan view components once we have sorted
   // out what that interface looks like
-  return <NotebookComponent project={project} />;
+  return <NotebookComponent project={project} tab={tab} setTab={setTab} />;
 }

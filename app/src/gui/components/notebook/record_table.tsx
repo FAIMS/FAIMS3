@@ -45,7 +45,7 @@ import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {buildHydrateKeys} from '../../../utils/customHooks';
+import {buildHydrateKeys, useNotebookTab} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
 import {
   formatDate,
@@ -1099,6 +1099,7 @@ export function RecordsTable(props: RecordsTableProps) {
   } = props;
 
   const history = useNavigate();
+  const tab = useNotebookTab();
   const styles = useDataGridStyles();
 
   // Get UI specification
@@ -1185,12 +1186,14 @@ export function RecordsTable(props: RecordsTableProps) {
           serverId,
           projectId: project_id,
           recordId: params.row.recordId,
+          tab,
         });
       } else if (params.row.record_id) {
         route = ROUTES.getViewRecordRoute({
           serverId,
           projectId: project_id,
           recordId: params.row.record_id,
+          tab,
         });
       } else {
         // do nothing in this case - there is an issue
@@ -1198,7 +1201,7 @@ export function RecordsTable(props: RecordsTableProps) {
       }
       history(route);
     },
-    [history, project_id, serverId]
+    [history, project_id, serverId, tab]
   );
 
   if (!uiSpec) {

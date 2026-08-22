@@ -12,10 +12,14 @@ import {
   Tab,
   Typography,
 } from '@mui/material';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
+
+// This view's own tab slugs, as they appear in the `:tab` path segment
+const TABS = ['planned', 'all_records', 'details', 'settings', 'map'] as const;
+const DEFAULT_TAB = 'planned';
 
 /**
  * A view component for the list of records plan type. Shows pre-populated cards
@@ -23,9 +27,10 @@ import {config} from '../../../../buildconfig';
  *
  */
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
-  const {project, uiSpecification, records, actions, status} = props;
+  const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const [tabIndex, setTabIndex] = useState('0');
+  // An absent or unknown slug shows this view's default tab
+  const currentTab = TABS.find(t => t === tab) ?? DEFAULT_TAB;
 
   // recordLabel based on viewsets
   const recordLabel =
@@ -94,44 +99,48 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           : 'Extra records allowed'}
       </Alert>
 
-      <TabContext value={tabIndex.toString()}>
+      <TabContext value={currentTab}>
         <TabList
-          onChange={(event, newValue) => setTabIndex(newValue)}
+          onChange={(event, newValue) => actions.setTab(newValue)}
           aria-label={`List of Records Plan tabs`}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
-            value="0"
+            value="planned"
             id="planned-tab"
             aria-controls="planned-tabpanel"
           />
           <Tab
-            value="1"
+            value="all_records"
             label={`All ${recordLabel}s`}
             id="all-tab"
             aria-controls="all-tabpanel"
           />
           <Tab
-            value="2"
+            value="details"
             label="Details"
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value="3"
+            value="settings"
             label="Settings"
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
           <Tab
-            value="4"
+            value="map"
             label="Overview Map"
             id="overview-map-tab"
             aria-controls="overview-map-tabpanel"
           />
         </TabList>
 
-        <TabPanel value="0" id="planned-tabpanel" aria-labelledby="planned-tab">
+        <TabPanel
+          value="planned"
+          id="planned-tabpanel"
+          aria-labelledby="planned-tab"
+        >
           {unclaimedMayBeStale && (
             <Alert severity="warning" sx={{mb: 1.5}}>
               Some records are not visible to you yet, so an entry shown as not
@@ -163,7 +172,11 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             )}
           </Grid>
         </TabPanel>
-        <TabPanel value="1" id="all-tabpanel" aria-labelledby="all-tab">
+        <TabPanel
+          value="all_records"
+          id="all-tabpanel"
+          aria-labelledby="all-tab"
+        >
           <RecordsTable
             project={project}
             maxRows={25}
@@ -177,18 +190,22 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           />
         </TabPanel>
 
-        <TabPanel value="2" id="details-tabpanel" aria-labelledby="details-tab">
+        <TabPanel
+          value="details"
+          id="details-tabpanel"
+          aria-labelledby="details-tab"
+        >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
         <TabPanel
-          value="3"
+          value="settings"
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
           <props.components.NotebookSettings />
         </TabPanel>
         <TabPanel
-          value="4"
+          value="map"
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >

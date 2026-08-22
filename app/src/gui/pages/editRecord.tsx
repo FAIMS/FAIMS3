@@ -39,17 +39,17 @@ import {
   getAddressAutosuggestService,
   getMapConfig,
 } from '../../buildconfig';
-import {
-  getEditRecordRoute,
-  getNotebookRoute,
-  getViewRecordRoute,
-} from '../../constants/routes';
+import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
+import {
+  useIsOnline,
+  useNotebookTab,
+  useUiSpecLayout,
+} from '../../utils/customHooks';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
@@ -94,6 +94,7 @@ export const EditRecordPage = () => {
     projectId: ProjectID;
     recordId: RecordID;
   }>();
+  const tab = useNotebookTab();
 
   // Get mode=XXX from the query params
   const [searchParams] = useSearchParams();
@@ -274,9 +275,9 @@ export const EditRecordPage = () => {
         navigateToRecordList: {
           label: 'Return to record list',
           navigate: () => {
-            navigate(
-              getNotebookRoute({serverId: serverId!, projectId: projectId!})
-            );
+            // The record route nests under the notebook tab it was opened
+            // from, so `..` returns to that tab
+            navigate('..');
           },
         },
         // Takes you back to view record (note this is only shown if there are no
@@ -287,6 +288,7 @@ export const EditRecordPage = () => {
               projectId: projectId!,
               recordId: params.recordId,
               serverId: serverId!,
+              tab,
             })
           );
         },
@@ -334,6 +336,7 @@ export const EditRecordPage = () => {
               serverId: serverId!,
               projectId: projectId!,
               recordId: targetRecordId,
+              tab,
               mode: targetMode,
             }),
             // Include navigation state
@@ -345,6 +348,7 @@ export const EditRecordPage = () => {
             serverId: serverId!,
             projectId: projectId!,
             recordId: params.recordId,
+            tab,
             mode,
           });
         },
@@ -448,15 +452,14 @@ export const EditRecordPage = () => {
             <Button
               variant="outlined"
               onClick={() =>
-                navigate(getViewRecordRoute({projectId, recordId, serverId}))
+                navigate(
+                  getViewRecordRoute({projectId, recordId, serverId, tab})
+                )
               }
             >
               Open read-only view
             </Button>
-            <Button
-              variant="text"
-              onClick={() => navigate(getNotebookRoute({serverId, projectId}))}
-            >
+            <Button variant="text" onClick={() => navigate('..')}>
               {`Back to ${config.notebookName}`}
             </Button>
           </Stack>
