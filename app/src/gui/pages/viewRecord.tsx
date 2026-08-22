@@ -132,7 +132,6 @@ function useTabState(): [RecordTab, (tab: RecordTab) => void] {
 interface InfoTabContentProps {
   projectId: ProjectID;
   recordId: RecordID;
-  serverId: string;
   hrid: string;
   revisionId: string;
   dataEngine: DataEngine;
@@ -146,24 +145,12 @@ interface InfoTabContentProps {
 const InfoTabContent: React.FC<InfoTabContentProps> = ({
   projectId,
   recordId,
-  serverId,
   dataEngine,
   revisionId,
   hrid,
   isDeleted,
   recordCreatedBy,
 }) => {
-  const nav = useNavigate();
-
-  const handleRefresh = useCallback(() => {
-    return new Promise<void>(resolve => {
-      // The record route nests under the notebook tab it was opened from, so
-      // `..` returns to that tab
-      nav('..');
-      resolve();
-    });
-  }, [nav]);
-
   return (
     <Stack spacing={3}>
       <RecordMeta
@@ -179,9 +166,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
             hrid={hrid}
             recordId={recordId}
             revisionId={revisionId}
-            serverId={serverId}
             showLabel={true}
-            handleRefresh={handleRefresh}
           />
         </Box>
       )}
@@ -732,7 +717,6 @@ export const ViewRecordPage: React.FC = () => {
               projectId={projectId}
               hrid={formData.context.hrid}
               recordId={recordId}
-              serverId={serverId}
               revisionId={revisionId}
               isDeleted={isDeleted}
               recordCreatedBy={formData.context.record.createdBy}

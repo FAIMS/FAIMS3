@@ -9,6 +9,9 @@ import {byTestId} from '../../helpers/selectors.ts';
 import {waitForTestId, waitForUrl} from '../../helpers/wait.ts';
 import AppRecordsPage from '../../pageobjects/app-records.ts';
 
+/** A tab that is not the notebook's default, so a dropped tab is visible. */
+const OTHER_TAB = 'details';
+
 describe('App — notebook tab in the route', () => {
   const noteText = `E2E tab route ${Date.now()}`;
   /** The notebook route with no tab segment, e.g. /surveys/<server>/<project> */
@@ -96,5 +99,47 @@ describe('App — notebook tab in the route', () => {
         'Expected a tab-less record link to lead back to the notebook',
     });
     await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
+  });
+
+  // The steps below use `details` rather than the default tab, so a dropped tab
+  // shows up as a different URL instead of the one the default would give
+
+  it('should keep the tab when the record opens its editor', async () => {
+    await browser.url(`${notebookUrl}/${OTHER_TAB}/view-record/${recordId}`);
+    const edit = await $('button*=Edit record');
+    await edit.waitForClickable({timeout: 20000});
+    await edit.click();
+    await waitForUrl(
+      url =>
+        url.replace(/[?#].*$/, '') ===
+        `${notebookUrl}/${OTHER_TAB}/records/${recordId}`,
+      {
+        timeout: 20000,
+        timeoutMsg: `Expected the editor route to stay under the ${OTHER_TAB} tab`,
+      }
+    );
+    await captureStep({surface: 'app', label: 'tab-route-edit'});
+  });
+
+  it('should return to the tab after deleting the record', async () => {
+    await browser.url(
+      `${notebookUrl}/${OTHER_TAB}/view-record/${recordId}?tab=info`
+    );
+    await waitForTestId('delete-btn', {timeout: 20000});
+    await byTestId('delete-btn').click();
+    // The confirm button stays disabled until the acknowledgement is ticked
+    const acknowledge = await $('.MuiCheckbox-root');
+    await acknowledge.waitForClickable({timeout: 15000});
+    await acknowledge.click();
+    await waitForTestId('confirm-delete', {timeout: 15000});
+    await byTestId('confirm-delete').click();
+    await waitForUrl(
+      url => url.replace(/[?#].*$/, '') === `${notebookUrl}/${OTHER_TAB}`,
+      {
+        timeout: 20000,
+        timeoutMsg: `Expected a delete to land back on the ${OTHER_TAB} tab`,
+      }
+    );
+    await captureStep({surface: 'app', label: 'tab-route-after-delete'});
   });
 });

@@ -51,17 +51,17 @@ apply to the Fieldmark app path above. Appium (`test:e2e:android` /
 
 ### Tier 1 — Core happy paths
 
-| Spec                                 | Covers                                                                   |
-| ------------------------------------ | ------------------------------------------------------------------------ |
-| `web/teams.e2e.ts`                   | Teams list, create team, team detail tabs                                |
-| `web/templates-create.e2e.ts`        | Templates list, create template from team                                |
-| `web/projects-create.e2e.ts`         | Create project dialog                                                    |
-| `web/designer-basic.e2e.ts`          | Open designer from template (minimal form + text + save when available)  |
-| `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control           |
-| `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search               |
-| `app/notebook-map.e2e.ts`            | Capture a point, open the Map tab, assert record geometry plots          |
-| `app/notebook-tab-route.e2e.ts`      | Tab in the URL, tab opens from its URL, back from a record returns to it |
-| `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace         |
+| Spec                                 | Covers                                                                  |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| `web/teams.e2e.ts`                   | Teams list, create team, team detail tabs                               |
+| `web/templates-create.e2e.ts`        | Templates list, create template from team                               |
+| `web/projects-create.e2e.ts`         | Create project dialog                                                   |
+| `web/designer-basic.e2e.ts`          | Open designer from template (minimal form + text + save when available) |
+| `app/notebook-activate.e2e.ts`       | Notebook workspace, Active / Not Active tabs, activate control          |
+| `app/record-crud.e2e.ts`             | Open notebook, add record, create text record, list/search              |
+| `app/notebook-map.e2e.ts`            | Capture a point, open the Map tab, assert record geometry plots         |
+| `app/notebook-tab-route.e2e.ts`      | Tab in the URL, back/edit/delete from a record return to that tab       |
+| `journeys/template-to-record.e2e.ts` | Cross-surface: templates in Control Centre → Fieldmark workspace        |
 
 ### Tier 2 — Lifecycle & invites
 
