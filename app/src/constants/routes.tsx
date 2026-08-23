@@ -40,7 +40,7 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
-/** Tab slugs shared by more than one view, which a link outside one can name. */
+/** Tab slugs more than one view carries; a view without one shows its default. */
 export const SHARED_TAB = {
   map: 'map',
   details: 'details',
@@ -93,7 +93,7 @@ export function getNotebookRoute({
 /** One up from a record route: the notebook, on the tab it was opened from. */
 export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
 
-/** The notebook a record link nests under, read from `useParams`. */
+/** The notebook a record link nests under: ids from the project, tab from the route. */
 export type RecordRouteNotebook = {
   serverId: string;
   projectId: string;
