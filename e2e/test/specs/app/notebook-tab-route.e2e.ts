@@ -123,7 +123,7 @@ describe('App — notebook tab in the route', () => {
 
   it('should return to the tab after deleting the record', async () => {
     await browser.url(
-      `${notebookUrl}/${OTHER_TAB}/view-record/${recordId}?panel=info`
+      `${notebookUrl}/${OTHER_TAB}/view-record/${recordId}?tab=info`
     );
     await waitForTestId('delete-btn', {timeout: 20000});
     await byTestId('delete-btn').click();

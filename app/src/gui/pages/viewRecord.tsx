@@ -9,13 +9,13 @@
  * - Status: Completion of the record rolled up over its child-record tree.
  *
  * Features:
- * - Panel state synchronized with URL query parameter (?panel=view|info|history|status)
+ * - Tab state synchronized with URL query parameter (?tab=view|info|history|status)
  * - Fetches and caches record data via TanStack Query
  * - Resolves implied parent/linked relationships for navigation
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?panel=view|info|history|status&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -68,52 +68,52 @@ import {theme} from '../themes';
 import {formatTimestamp} from '../../utils/formUtilities';
 
 /**
- * Panels of the record view page, as they appear in the `?panel=` query param.
- * The notebook tab the record was opened from is the `:tab` path segment.
+ * Tabs of the record view page, named in the `?tab=` query param. The notebook
+ * tab it was opened from is the `:tab` path segment, a separate namespace.
  */
-const RECORD_PANELS = {
+const RECORD_TABS = {
   VIEW: 'view',
   INFO: 'info',
   HISTORY: 'history',
   STATUS: 'status',
 } as const;
 
-type RecordPanel = (typeof RECORD_PANELS)[keyof typeof RECORD_PANELS];
+type RecordTab = (typeof RECORD_TABS)[keyof typeof RECORD_TABS];
 
-const PANEL_QUERY_PARAM = 'panel';
-const DEFAULT_PANEL: RecordPanel = RECORD_PANELS.VIEW;
+const TAB_QUERY_PARAM = 'tab';
+const DEFAULT_TAB: RecordTab = RECORD_TABS.VIEW;
 
 /**
- * Type guard to check if a string is a valid RecordPanel
+ * Type guard to check if a string is a valid RecordTab
  */
-function isValidPanel(value: string | null): value is RecordPanel {
+function isValidTab(value: string | null): value is RecordTab {
   if (value === null) return false;
-  // A bookmarked ?panel=status must fall back once the panel is switched off.
-  if (value === RECORD_PANELS.STATUS && !config.showStatusTab) return false;
-  return Object.values(RECORD_PANELS).includes(value as RecordPanel);
+  // A bookmarked ?tab=status must fall back once the tab is switched off.
+  if (value === RECORD_TABS.STATUS && !config.showStatusTab) return false;
+  return Object.values(RECORD_TABS).includes(value as RecordTab);
 }
 
 /**
- * Hook to manage panel state synchronised with the `?panel=` query param
+ * Hook to manage tab state synchronized with URL query parameters
  */
-function usePanelState(): [RecordPanel, (panel: RecordPanel) => void] {
+function useTabState(): [RecordTab, (tab: RecordTab) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const currentPanel = React.useMemo(() => {
-    const panelParam = searchParams.get(PANEL_QUERY_PARAM);
-    return isValidPanel(panelParam) ? panelParam : DEFAULT_PANEL;
+  const currentTab = React.useMemo(() => {
+    const tabParam = searchParams.get(TAB_QUERY_PARAM);
+    return isValidTab(tabParam) ? tabParam : DEFAULT_TAB;
   }, [searchParams]);
 
-  const setPanel = useCallback(
-    (newPanel: RecordPanel) => {
+  const setTab = useCallback(
+    (newTab: RecordTab) => {
       setSearchParams(
         prev => {
           const updated = new URLSearchParams(prev);
-          if (newPanel === DEFAULT_PANEL) {
+          if (newTab === DEFAULT_TAB) {
             // Remove the param if it's the default to keep URL clean
-            updated.delete(PANEL_QUERY_PARAM);
+            updated.delete(TAB_QUERY_PARAM);
           } else {
-            updated.set(PANEL_QUERY_PARAM, newPanel);
+            updated.set(TAB_QUERY_PARAM, newTab);
           }
           return updated;
         },
@@ -123,7 +123,7 @@ function usePanelState(): [RecordPanel, (panel: RecordPanel) => void] {
     [setSearchParams]
   );
 
-  return [currentPanel, setPanel];
+  return [currentTab, setTab];
 }
 
 /**
@@ -470,7 +470,7 @@ export const ViewRecordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const specifiedRevisionId = searchParams.get('revisionId') ?? undefined;
 
-  const [activePanel, setActivePanel] = usePanelState();
+  const [activeTab, setActiveTab] = useTabState();
 
   const activeUser = useAppSelector(selectActiveUser);
   const project = useAppSelector(state =>
@@ -559,13 +559,14 @@ export const ViewRecordPage: React.FC = () => {
     gcTime: 0,
   });
 
-  const handlePanelChange = useCallback(
+  // Handle tab change
+  const handleTabChange = useCallback(
     (_event: React.SyntheticEvent, newValue: string) => {
-      if (isValidPanel(newValue)) {
-        setActivePanel(newValue);
+      if (isValidTab(newValue)) {
+        setActiveTab(newValue);
       }
     },
-    [setActivePanel]
+    [setActiveTab]
   );
 
   // Early returns for missing data (after hooks — see component docstring).
@@ -586,7 +587,8 @@ export const ViewRecordPage: React.FC = () => {
     return <div>UI Specification not found</div>;
   }
 
-  // `..` is the notebook tab this record was opened from
+  // The record route nests under the notebook tab it was opened from, so `..`
+  // is the notebook on that tab
   const backLink = '..';
 
   // Loading state
@@ -650,19 +652,19 @@ export const ViewRecordPage: React.FC = () => {
       )}
 
       {/* Tab Navigation */}
-      <TabContext value={activePanel}>
+      <TabContext value={activeTab}>
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-          <TabList onChange={handlePanelChange} aria-label="Record view tabs">
-            <Tab label="Record" value={RECORD_PANELS.VIEW} />
-            <Tab label="Info" value={RECORD_PANELS.INFO} />
-            <Tab label="History" value={RECORD_PANELS.HISTORY} />
+          <TabList onChange={handleTabChange} aria-label="Record view tabs">
+            <Tab label="Record" value={RECORD_TABS.VIEW} />
+            <Tab label="Info" value={RECORD_TABS.INFO} />
+            <Tab label="History" value={RECORD_TABS.HISTORY} />
             {config.showStatusTab && (
-              <Tab label="Status" value={RECORD_PANELS.STATUS} />
+              <Tab label="Status" value={RECORD_TABS.STATUS} />
             )}
           </TabList>
         </Box>
 
-        <TabPanel value={RECORD_PANELS.VIEW} sx={{p: 0, pt: 2}}>
+        <TabPanel value={RECORD_TABS.VIEW} sx={{p: 0, pt: 2}}>
           <ViewTabContent
             formData={formData}
             onEditRecord={() => {
@@ -676,7 +678,7 @@ export const ViewRecordPage: React.FC = () => {
           />
         </TabPanel>
 
-        <TabPanel value={RECORD_PANELS.INFO} sx={{p: 0, pt: 2}}>
+        <TabPanel value={RECORD_TABS.INFO} sx={{p: 0, pt: 2}}>
           {revisionId ? (
             <InfoTabContent
               dataEngine={getDataEngine()}
@@ -692,7 +694,7 @@ export const ViewRecordPage: React.FC = () => {
           )}
         </TabPanel>
 
-        <TabPanel value={RECORD_PANELS.HISTORY} sx={{p: 0, pt: 2}}>
+        <TabPanel value={RECORD_TABS.HISTORY} sx={{p: 0, pt: 2}}>
           <HistoryTabContent
             recordId={recordId}
             dataEngine={getDataEngine()}
@@ -701,7 +703,7 @@ export const ViewRecordPage: React.FC = () => {
         </TabPanel>
 
         {config.showStatusTab && (
-          <TabPanel value={RECORD_PANELS.STATUS} sx={{p: 0, pt: 2}}>
+          <TabPanel value={RECORD_TABS.STATUS} sx={{p: 0, pt: 2}}>
             <RecordStatus
               recordId={recordId}
               projectId={projectId}
