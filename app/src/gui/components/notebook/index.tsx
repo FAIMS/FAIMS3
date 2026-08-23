@@ -10,10 +10,10 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
+import {resolveTab} from '../../../constants/routes';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
-  resolveTab,
   useIsAuthorisedTo,
   useRecordList,
 } from '../../../utils/customHooks';

@@ -40,10 +40,30 @@ const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
 /** Segments the record routes spend, so a tab slug cannot take them. */
-export const RESERVED_TAB_SEGMENTS: readonly string[] = [
+export const RESERVED_TAB_SEGMENTS = [
   EDIT_RECORD_SEGMENT,
   VIEW_RECORD_SEGMENT,
-];
+] as const;
+
+type ReservedTabSegment = (typeof RESERVED_TAB_SEGMENTS)[number];
+
+/**
+ * The tab a view shows for the slug the route names: the one it matches, or its
+ * default. FAIMS3 keeps no list of tabs, so an unknown slug is not an error;
+ * a slug the record routes already spend is, and fails to compile.
+ */
+export const resolveTab = <T extends string>(
+  tabs: readonly [T, ...T[]] &
+    (Extract<T, ReservedTabSegment> extends never ? unknown : never),
+  tab?: string
+): T => {
+  const match = tabs.find(t => t === tab);
+  // Links written outside a view name a slug it may not carry, so falling back
+  // to the default tab is a link to fix rather than something the user did
+  if (tab !== undefined && match === undefined)
+    console.warn(`no '${tab}' tab in this view, showing '${tabs[0]}'`);
+  return match ?? tabs[0];
+};
 
 /**
  * The notebook route is keyed by the tab it shows, with the record routes nested

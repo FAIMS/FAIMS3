@@ -2,7 +2,7 @@ import {COUNTED_PLAN_TYPE, CountedPlan} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
 import {RecordsTable} from '../record_table';
-import {resolveTab} from '../../../../utils/customHooks';
+import {resolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import TabPanel from '@mui/lab/TabPanel';
 import TabContext from '@mui/lab/TabContext';
