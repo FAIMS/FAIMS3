@@ -73,8 +73,8 @@ import {theme} from '../themes';
 import {formatTimestamp} from '../../utils/formUtilities';
 
 /**
- * Tabs of the record view page, named in the `?tab=` query param. The notebook
- * tab it was opened from is the `:tab` path segment, a separate namespace.
+ * Tabs of the record view page, in its own `?tab=` query param rather than the
+ * notebook's `:tab` path segment.
  */
 const RECORD_TABS = {
   VIEW: 'view',

@@ -70,8 +70,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 /**
- * a11yProps returns accessibility properties for a tab, pairing it with the
- * panel TabPanel renders for the same slug.
+ * a11yProps returns accessibility props for a tab, pairing it with its panel.
  *
  * @param {string} tab - The slug of the tab.
  * @returns {object} - The accessibility properties for the tab.

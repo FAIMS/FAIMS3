@@ -103,8 +103,7 @@ export default function AddRecordButtons({
       }
     });
   };
-  // A scanned record without an id has nowhere to redirect to, so fall through
-  // to the buttons rather than build a route ending in an empty segment
+  // A scanned record without an id has nowhere to go, so show the buttons
   if (selectedRecord?.record_id) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (

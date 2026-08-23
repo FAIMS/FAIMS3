@@ -39,34 +39,24 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
-/**
- * The tab a view shows for the slug the route names: the one it matches, or its
- * default. FAIMS3 keeps no list of tabs, so an unknown slug is not an error.
- */
+/** The tab matching the route's slug, or the view's default. */
 export const resolveTab = <T extends string>(
   tabs: readonly [T, ...T[]],
   tab?: string
 ): T => {
   const match = tabs.find(t => t === tab);
-  // Links written outside a view name a slug it may not carry, so falling back
-  // to the default tab is a link to fix rather than something the user did
+  // FAIMS3 keeps no list of tabs, so an unknown slug is a link to fix
   if (tab !== undefined && match === undefined)
     console.warn(`no '${tab}' tab in this view, showing '${tabs[0]}'`);
   return match ?? tabs[0];
 };
 
-/**
- * The notebook route is keyed by the tab it shows, with the record routes nested
- * under it so leaving a record with `..` lands back on that tab. The segment is
- * optional, so a link written without a tab still resolves.
- */
+/** Keyed by the tab shown; optional, so tab-less links still resolve. */
 export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:tab?`;
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
 export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
 
 /**
- * Generates a route to a notebook, on the given tab where one is named.
- *
  * @returns /<notebook-plural>/<server>/<project>[/<tab>]
  */
 export function getNotebookRoute({
@@ -87,17 +77,10 @@ export function getNotebookRoute({
   );
 }
 
-/**
- * Leaving a record page: the record routes nest under the notebook route, which
- * is the segment carrying the tab, so one up is the notebook on the tab the
- * record was opened from.
- */
+/** One up from a record route: the notebook, on the tab it was opened from. */
 export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
 
-/**
- * The notebook the record routes nest under, which every record link needs.
- * Components rendered under `NOTEBOOK_ROUTE_PATH` read it from `useParams`.
- */
+/** The notebook a record link nests under, read from `useParams`. */
 export type RecordRouteNotebook = {
   serverId: string;
   projectId: string;
@@ -105,9 +88,6 @@ export type RecordRouteNotebook = {
 };
 
 /**
- * Generates a route to the edit page for a record, under the notebook tab it is
- * opened from.
- *
  * @returns /<notebook-plural>/<server>/<project>[/<tab>]/records/<recordId>
  */
 export function getEditRecordRoute({
@@ -125,9 +105,6 @@ export function getEditRecordRoute({
 }
 
 /**
- * Generates a route to the read-only view page for a record, under the notebook
- * tab it is opened from.
- *
  * @returns /<notebook-plural>/<server>/<project>[/<tab>]/view-record/<recordId>
  */
 export function getViewRecordRoute({
