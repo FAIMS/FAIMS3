@@ -124,6 +124,8 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
+            // Every notebook view carries a settings tab under this slug;
+            // a view that drops it lands the user on its default tab
             to={ROUTES.getNotebookRoute({
               serverId: props.serverId,
               projectId: project_id,

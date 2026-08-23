@@ -855,5 +855,10 @@ export const resolveTab = <T extends string>(
   const reserved = tabs.find(t => ROUTES.RESERVED_TAB_SEGMENTS.includes(t));
   if (reserved)
     throw new Error(`'${reserved}' is a record route segment, not a tab slug`);
-  return tabs.find(t => t === tab) ?? tabs[0];
+  const match = tabs.find(t => t === tab);
+  // Links written outside a view name a slug it may not carry, so falling back
+  // to the default tab is a link to fix rather than something the user did
+  if (tab !== undefined && match === undefined)
+    console.warn(`no '${tab}' tab in this view, showing '${tabs[0]}'`);
+  return match ?? tabs[0];
 };
