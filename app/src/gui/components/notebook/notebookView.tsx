@@ -25,7 +25,6 @@ import {
   invalidateProjectRecordList,
   useIsAuthorisedTo,
   useIsRecordDownloadUnderway,
-  useNotebookTab,
   usePlanRecordStatusReports,
   useRecordList,
 } from '../../../utils/customHooks';
@@ -37,7 +36,7 @@ import {config} from '../../../buildconfig';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import NotebookSettings from './settings';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
@@ -145,7 +144,7 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const tab = useNotebookTab();
+  const {tab} = useParams<{tab?: string}>();
 
   // Replace rather than push, so leaving a notebook costs one Back press
   const setTab = useCallback(

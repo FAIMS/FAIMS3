@@ -22,7 +22,6 @@ import {
 import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
-import {useParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {syncStateService} from '../context/slices/helpers/syncStateService';
@@ -835,9 +834,4 @@ export const useUiSpecLayout = ({
     networkMode: 'always',
     refetchOnMount: true,
   });
-};
-
-/** The tab the notebook route names, which record links built inside it carry. */
-export const useNotebookTab = (): string | undefined => {
-  return useParams<{tab?: string}>().tab;
 };
