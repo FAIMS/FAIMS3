@@ -27,7 +27,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, uiSpecificationId},
+  project: {projectId, serverId, uiSpecificationId},
   refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
@@ -40,7 +40,7 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
   const navigate = useNavigate();
-  const {serverId, tab} = useParams() as {serverId: string; tab?: string};
+  const {tab} = useParams<{tab?: string}>();
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {

@@ -1095,11 +1095,15 @@ export function RecordsTable(props: RecordsTableProps) {
     loading,
     viewsets,
     recordStatus,
-    project: {uiSpecificationId: uiSpecId, projectId: project_id},
+    project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
 
   const history = useNavigate();
-  const notebook = useParams() as ROUTES.RecordRouteNotebook;
+  const {tab} = useParams<{tab?: string}>();
+  const notebook = useMemo(
+    () => ({serverId, projectId: project_id, tab}),
+    [serverId, project_id, tab]
+  );
   const styles = useDataGridStyles();
 
   // Get UI specification

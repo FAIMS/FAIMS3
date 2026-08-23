@@ -213,6 +213,8 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
  * Props for the ViewTabContent component
  */
 interface ViewTabContentProps {
+  /** The notebook tab this page sits under, which its record links stay on. */
+  notebook: RecordRouteNotebook;
   formData: NonNullable<
     Awaited<ReturnType<DataEngine['form']['getExistingFormData']>>
   >;
@@ -228,6 +230,7 @@ interface ViewTabContentProps {
  * Content for the View tab - displays the record data
  */
 const ViewTabContent: React.FC<ViewTabContentProps> = ({
+  notebook,
   formData,
   onEditRecord,
   uiSpec,
@@ -237,7 +240,6 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   isDeleted,
 }) => {
   const nav = useNavigate();
-  const notebook = useParams() as RecordRouteNotebook;
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -635,6 +637,9 @@ export const ViewRecordPage: React.FC = () => {
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
+  // The tab the record was opened from, which its own links keep
+  const notebook: RecordRouteNotebook = {serverId, projectId, tab};
+
   return (
     <Stack spacing={2}>
       {/* Header */}
@@ -677,17 +682,10 @@ export const ViewRecordPage: React.FC = () => {
 
         <TabPanel value={RECORD_TABS.VIEW} sx={{p: 0, pt: 2}}>
           <ViewTabContent
+            notebook={notebook}
             formData={formData}
             onEditRecord={() => {
-              nav(
-                getEditRecordRoute({
-                  serverId,
-                  projectId,
-                  tab,
-                  recordId,
-                  mode: 'parent',
-                })
-              );
+              nav(getEditRecordRoute({...notebook, recordId, mode: 'parent'}));
             }}
             uiSpec={uiSpec}
             impliedRelationships={impliedRelationships}
@@ -724,6 +722,7 @@ export const ViewRecordPage: React.FC = () => {
         {config.showStatusTab && (
           <TabPanel value={RECORD_TABS.STATUS} sx={{p: 0, pt: 2}}>
             <RecordStatus
+              notebook={notebook}
               recordId={recordId}
               projectId={projectId}
               dataEngine={getDataEngine()}

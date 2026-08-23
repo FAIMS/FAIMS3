@@ -19,7 +19,7 @@ import {fieldCompletionResolver, ProgressBar} from '@faims3/forms';
 import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
-import {Link as RouterLink, useParams} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   getViewRecordRoute,
   RecordRouteNotebook,
@@ -28,6 +28,8 @@ import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
+  /** The notebook tab this page sits under, which the child links stay on. */
+  notebook: RecordRouteNotebook;
   recordId: RecordID;
   projectId: ProjectID;
   dataEngine: DataEngine;
@@ -41,10 +43,10 @@ interface RecordStatusProps {
 const StatusNode: React.FC<{
   report: RecordStatusReport;
   uiSpec: CompiledNotebookUiSpec;
+  notebook: RecordRouteNotebook;
   /** The viewed record itself, which needs no link to where the user already is. */
   isRoot?: boolean;
-}> = ({report, uiSpec, isRoot}) => {
-  const notebook = useParams() as RecordRouteNotebook;
+}> = ({report, uiSpec, notebook, isRoot}) => {
   const {ownProgress} = report;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
@@ -133,6 +135,7 @@ const StatusNode: React.FC<{
                   key={child.recordId}
                   report={child}
                   uiSpec={uiSpec}
+                  notebook={notebook}
                 />
               ))}
             </Stack>
@@ -149,6 +152,7 @@ const StatusNode: React.FC<{
  * report always walks current heads, so it ignores the page's ?revisionId.
  */
 export const RecordStatus: React.FC<RecordStatusProps> = ({
+  notebook,
   recordId,
   projectId,
   dataEngine,
@@ -212,7 +216,12 @@ export const RecordStatus: React.FC<RecordStatusProps> = ({
           Completion of this record and every record below it.
         </Typography>
       </Stack>
-      <StatusNode report={report} uiSpec={dataEngine.uiSpec} isRoot />
+      <StatusNode
+        report={report}
+        uiSpec={dataEngine.uiSpec}
+        notebook={notebook}
+        isRoot
+      />
     </Stack>
   );
 };

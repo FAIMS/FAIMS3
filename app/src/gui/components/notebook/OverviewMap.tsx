@@ -61,6 +61,7 @@ import {
 interface OverviewMapProps {
   /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
   uiSpec: CompiledNotebookUiSpec;
+  serverId: string;
   project_id: ProjectID;
   records: {allRecords: MinimalRecordMetadata[]};
 }
@@ -88,6 +89,7 @@ const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
  */
 interface SelectedRecordPopoverContentProps {
   feature: RecordFeatureProps;
+  serverId: string;
   project_id: ProjectID;
   uiSpec: NotebookUiSpec;
   dataEngine: DataEngine;
@@ -99,11 +101,13 @@ const SHORT_WAIT_CONSTANT = 400;
 
 const SelectedRecordPopoverContent = ({
   feature,
+  serverId,
   project_id,
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
-  const notebook = useParams() as ROUTES.RecordRouteNotebook;
+  const {tab} = useParams<{tab?: string}>();
+  const notebook = {serverId, projectId: project_id, tab};
 
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
@@ -243,7 +247,7 @@ const SelectedRecordPopoverContent = ({
  * Create an overview map of the records in the notebook.
  */
 export const OverviewMap = (props: OverviewMapProps) => {
-  const {uiSpec, project_id, records} = props;
+  const {uiSpec, serverId, project_id, records} = props;
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] =
     useState<RecordFeatureProps | null>(null);
@@ -593,6 +597,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
           <Box sx={{p: 1.5}}>
             <SelectedRecordPopoverContent
               feature={selectedFeature}
+              serverId={serverId}
               project_id={project_id}
               uiSpec={uiSpec}
               dataEngine={dataEngine}
