@@ -147,8 +147,7 @@ function NotebookViewWithSpec({
 
   const tab = useNotebookTab();
 
-  // Switching tabs replaces rather than pushes, matching the record page's own
-  // tab, so leaving a notebook does not cost a Back press per tab visited
+  // Replace rather than push, so leaving a notebook costs one Back press
   const setTab = useCallback(
     (nextTab: string) => {
       navigate(

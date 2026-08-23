@@ -275,8 +275,6 @@ export const EditRecordPage = () => {
         navigateToRecordList: {
           label: 'Return to record list',
           navigate: () => {
-            // The record route nests under the notebook tab it was opened
-            // from, so `..` returns to that tab
             navigate('..');
           },
         },

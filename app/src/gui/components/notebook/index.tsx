@@ -26,8 +26,7 @@ import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
-// This view's own tab slugs, as they appear in the `:tab` path segment, in the
-// order MUI drives the tab strip with. The first is this view's default.
+// This view's tab slugs, default first, in the order of the tab strip below
 const TABS = [
   'my-records',
   'other-records',
@@ -91,8 +90,6 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: Project;
-  // The tab slug from the route; an absent or unknown one falls back to this
-  // view's default
   tab?: string;
   setTab: (tab: string) => void;
 };
@@ -131,8 +128,6 @@ export default function NotebookComponent({
     username: activeUser?.username ?? '',
   });
 
-  // The route is the tab state, so an unknown slug shows the default tab
-  // rather than nothing
   const tabIndex = TABS.indexOf(resolveTab(TABS, tab));
 
   // Fetch records from the (local) DB with configurable auto refetch.

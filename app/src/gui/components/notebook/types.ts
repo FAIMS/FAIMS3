@@ -76,8 +76,7 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
-  // The tab slug from the URL, absent when the route names no tab. FAIMS3 keeps
-  // no list of tabs: a view resolves the slug against its own with `resolveTab`.
+  // The tab slug from the URL, which a view resolves with `resolveTab`
   tab?: string;
   uiSpecification: CompiledNotebookUiSpec;
   records: RecordListProps;

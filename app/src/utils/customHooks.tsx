@@ -837,24 +837,15 @@ export const useUiSpecLayout = ({
   });
 };
 
-/**
- * The tab the notebook route names, or undefined where it names none.
- *
- * Record routes nest under the tab, so a component that builds one from inside
- * a notebook carries the tab through and leaving the record with `..` lands
- * back on it.
- */
+/** The tab the notebook route names, which record links built inside it carry. */
 export const useNotebookTab = (): string | undefined => {
   return useParams<{tab?: string}>().tab;
 };
 
 /**
- * The tab a view shows for the slug the route names: the one it matches, or the
- * view's default, which is the first it lists. FAIMS3 keeps no list of tabs, so
- * a view resolves the slug against its own and an unknown one is not an error.
+ * The tab a view shows for the slug the route names: the one it matches, or its
+ * default. FAIMS3 keeps no list of tabs, so an unknown slug is not an error.
  *
- * @param tabs This view's tab slugs, most-default first
- * @param tab The slug from the route, absent where it names no tab
  * @throws Where a tab takes a segment the record routes already spend
  */
 export const resolveTab = <T extends string>(

@@ -158,9 +158,6 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        // Notebook layout route: the tab it is showing is the last segment, and
-        // record routes nest under it so leaving a record with `..` returns to
-        // the tab it was opened from
         path: ROUTES.NOTEBOOK_ROUTE_PATH,
         element: (
           <TolerantPrivateRoute>

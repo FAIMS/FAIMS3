@@ -39,27 +39,23 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
-/**
- * Segments the record routes already spend, so a view naming a tab either of
- * them would build record links that resolve to the record route instead.
- */
+/** Segments the record routes spend, so a tab slug cannot take them. */
 export const RESERVED_TAB_SEGMENTS: readonly string[] = [
   EDIT_RECORD_SEGMENT,
   VIEW_RECORD_SEGMENT,
 ];
 
 /**
- * The notebook route is keyed by the tab it is showing, with the record routes
- * nested under it so leaving a record with `..` lands back on that tab. The
- * segment is optional so links written without a tab still resolve.
+ * The notebook route is keyed by the tab it shows, with the record routes nested
+ * under it so leaving a record with `..` lands back on that tab. The segment is
+ * optional, so a link written without a tab still resolves.
  */
 export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:tab?`;
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
 export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
 
 /**
- * Generates a route to a notebook, on the given tab where one is named. The
- * record routes nest under it, so they build on this too.
+ * Generates a route to a notebook, on the given tab where one is named.
  *
  * @returns /<notebook-plural>/<server>/<project>[/<tab>]
  */

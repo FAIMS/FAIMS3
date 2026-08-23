@@ -18,8 +18,7 @@ import {resolveTab} from '../../../../utils/customHooks';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
 
-// This view's own tab slugs, as they appear in the `:tab` path segment. The
-// first is this view's default.
+// This view's tab slugs, default first
 const TABS = ['planned', 'all-records', 'details', 'settings', 'map'] as const;
 
 /**

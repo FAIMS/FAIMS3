@@ -111,8 +111,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        // This dialog only opens on a record route, which nests under the
-        // notebook tab, so `..` is the tab the record was opened from
+        // This dialog only opens on a record route, so `..` is its notebook tab
         history('..');
       })
       .catch(err => {

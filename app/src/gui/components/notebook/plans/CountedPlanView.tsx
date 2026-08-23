@@ -8,8 +8,7 @@ import TabPanel from '@mui/lab/TabPanel';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 
-// This view's own tab slugs, as they appear in the `:tab` path segment. The
-// first is this view's default.
+// This view's tab slugs, default first
 const TABS = ['planned', 'details', 'settings'] as const;
 
 /**
