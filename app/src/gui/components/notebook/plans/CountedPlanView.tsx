@@ -2,14 +2,15 @@ import {COUNTED_PLAN_TYPE, CountedPlan} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
 import {RecordsTable} from '../record_table';
+import {resolveTab} from '../../../../utils/customHooks';
 import {NotebookViewComponentProps} from '../types';
 import TabPanel from '@mui/lab/TabPanel';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 
-// This view's own tab slugs, as they appear in the `:tab` path segment
+// This view's own tab slugs, as they appear in the `:tab` path segment. The
+// first is this view's default.
 const TABS = ['planned', 'details', 'settings'] as const;
-const DEFAULT_TAB = 'planned';
 
 /**
  * A view component for the counted plan type. Shows the record
@@ -20,8 +21,7 @@ const DEFAULT_TAB = 'planned';
 export const CountedPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  // An absent or unknown slug shows this view's default tab
-  const currentTab = TABS.find(t => t === tab) ?? DEFAULT_TAB;
+  const currentTab = resolveTab(TABS, tab);
 
   // Should not need this but it guards the type cast below
   if (project.uiDefinition?.plan?.planType !== COUNTED_PLAN_TYPE) {

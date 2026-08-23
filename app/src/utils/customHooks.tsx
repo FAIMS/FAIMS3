@@ -847,3 +847,22 @@ export const useUiSpecLayout = ({
 export const useNotebookTab = (): string | undefined => {
   return useParams<{tab?: string}>().tab;
 };
+
+/**
+ * The tab a view shows for the slug the route names: the one it matches, or the
+ * view's default, which is the first it lists. FAIMS3 keeps no list of tabs, so
+ * a view resolves the slug against its own and an unknown one is not an error.
+ *
+ * @param tabs This view's tab slugs, most-default first
+ * @param tab The slug from the route, absent where it names no tab
+ * @throws Where a tab takes a segment the record routes already spend
+ */
+export const resolveTab = <T extends string>(
+  tabs: readonly [T, ...T[]],
+  tab?: string
+): T => {
+  const reserved = tabs.find(t => ROUTES.RESERVED_TAB_SEGMENTS.includes(t));
+  if (reserved)
+    throw new Error(`'${reserved}' is a record route segment, not a tab slug`);
+  return tabs.find(t => t === tab) ?? tabs[0];
+};

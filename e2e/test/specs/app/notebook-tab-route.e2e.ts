@@ -53,21 +53,21 @@ describe('App — notebook tab in the route', () => {
   it('should return to the tab a record was opened from', async () => {
     await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
     await byTestId('app-notebook-tab-my-records').click();
-    await waitForUrl(`${notebookUrl}/my_records`, {timeout: 10000});
+    await waitForUrl(`${notebookUrl}/my-records`, {timeout: 10000});
 
     await AppRecordsPage.createTextRecord(noteText);
 
     // Open the record from the my-records list: its route nests under the tab
     await byTestId('app-notebook-tab-my-records').click();
-    await waitForUrl(`${notebookUrl}/my_records`, {timeout: 10000});
+    await waitForUrl(`${notebookUrl}/my-records`, {timeout: 10000});
     const row = await $('.MuiDataGrid-row');
     await row.waitForClickable({timeout: 20000});
     await row.click();
     const recordUrl = await waitForUrl(
-      `${notebookUrl}/my_records/view-record/`,
+      `${notebookUrl}/my-records/view-record/`,
       {
         timeout: 20000,
-        timeoutMsg: 'Expected the record route nested under the my_records tab',
+        timeoutMsg: 'Expected the record route nested under the my-records tab',
       }
     );
     recordId = recordUrl.split('/view-record/')[1].replace(/[?#].*$/, '');
@@ -78,11 +78,11 @@ describe('App — notebook tab in the route', () => {
     await back.waitForClickable({timeout: 15000});
     await back.click();
     await waitForUrl(
-      url => url.replace(/\?.*$/, '') === `${notebookUrl}/my_records`,
+      url => url.replace(/\?.*$/, '') === `${notebookUrl}/my-records`,
       {
         timeout: 15000,
         timeoutMsg:
-          'Expected back from the record to land on the my_records tab',
+          'Expected back from the record to land on the my-records tab',
       }
     );
     await captureStep({surface: 'app', label: 'tab-route-back-to-list'});

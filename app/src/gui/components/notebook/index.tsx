@@ -13,6 +13,7 @@ import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
+  resolveTab,
   useIsAuthorisedTo,
   useRecordList,
 } from '../../../utils/customHooks';
@@ -25,26 +26,15 @@ import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
-// This view's own tab slugs, as they appear in the `:tab` path segment, with a
-// two way map to the index MUI drives the tab strip with
-type TabIndexLabel =
-  | 'my_records'
-  | 'other_records'
-  | 'details'
-  | 'settings'
-  | 'map';
-type TabIndex = 0 | 1 | 2 | 3 | 4;
-const DEFAULT_TAB: TabIndexLabel = 'my_records';
-const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
-  ['my_records', 0],
-  ['other_records', 1],
-  ['map', 2],
-  ['details', 3],
-  ['settings', 4],
-]);
-const INDEX_TO_TAB = new Map<TabIndex, TabIndexLabel>(
-  Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
-);
+// This view's own tab slugs, as they appear in the `:tab` path segment, in the
+// order MUI drives the tab strip with. The first is this view's default.
+const TABS = [
+  'my-records',
+  'other-records',
+  'map',
+  'details',
+  'settings',
+] as const;
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -143,12 +133,7 @@ export default function NotebookComponent({
 
   // The route is the tab state, so an unknown slug shows the default tab
   // rather than nothing
-  const tabIndex =
-    TAB_TO_INDEX.get(tab as TabIndexLabel) ?? TAB_TO_INDEX.get(DEFAULT_TAB)!;
-
-  const setTabIndex = (val: TabIndex) => {
-    setTab(INDEX_TO_TAB.get(val) ?? DEFAULT_TAB);
-  };
+  const tabIndex = TABS.indexOf(resolveTab(TABS, tab));
 
   // Fetch records from the (local) DB with configurable auto refetch.
   // Skip while the compiled UI spec is still loading.
@@ -183,11 +168,8 @@ export default function NotebookComponent({
    * change.
    * @param {number} newValue - The index of the selected tab.
    */
-  const handleTabChange = (
-    _event: React.SyntheticEvent,
-    newValue: TabIndex
-  ) => {
-    setTabIndex(newValue);
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTab(TABS[newValue]);
   };
 
   const goToSyncSettings = () => {

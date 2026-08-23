@@ -14,12 +14,13 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
+import {resolveTab} from '../../../../utils/customHooks';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
 
-// This view's own tab slugs, as they appear in the `:tab` path segment
-const TABS = ['planned', 'all_records', 'details', 'settings', 'map'] as const;
-const DEFAULT_TAB = 'planned';
+// This view's own tab slugs, as they appear in the `:tab` path segment. The
+// first is this view's default.
+const TABS = ['planned', 'all-records', 'details', 'settings', 'map'] as const;
 
 /**
  * A view component for the list of records plan type. Shows pre-populated cards
@@ -29,8 +30,7 @@ const DEFAULT_TAB = 'planned';
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  // An absent or unknown slug shows this view's default tab
-  const currentTab = TABS.find(t => t === tab) ?? DEFAULT_TAB;
+  const currentTab = resolveTab(TABS, tab);
 
   // recordLabel based on viewsets
   const recordLabel =
@@ -111,7 +111,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             aria-controls="planned-tabpanel"
           />
           <Tab
-            value="all_records"
+            value="all-records"
             label={`All ${recordLabel}s`}
             id="all-tab"
             aria-controls="all-tabpanel"
@@ -173,7 +173,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           </Grid>
         </TabPanel>
         <TabPanel
-          value="all_records"
+          value="all-records"
           id="all-tabpanel"
           aria-labelledby="all-tab"
         >
