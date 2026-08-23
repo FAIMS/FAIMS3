@@ -114,9 +114,6 @@ export function getEditRecordRoute({
   recordId: RecordID;
   mode?: AvpUpdateMode;
 }) {
-  if (!recordId) {
-    throw Error('record_id is required for this route');
-  }
   return (
     `${RECORD_LINK_PREFIX[from]}${EDIT_RECORD_SEGMENT}/${recordId}` +
     (mode ? `?mode=${mode}` : '')

@@ -100,13 +100,15 @@ export default function AddRecordButtons({
       }
     });
   };
-  if (selectedRecord) {
+  // A scanned record without an id has nowhere to redirect to, so fall through
+  // to the buttons rather than build a route ending in an empty segment
+  if (selectedRecord?.record_id) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
       <Navigate
         to={ROUTES.getEditRecordRoute({
           from: 'notebook',
-          recordId: (selectedRecord.record_id || '').toString(),
+          recordId: selectedRecord.record_id,
         })}
       />
     );
