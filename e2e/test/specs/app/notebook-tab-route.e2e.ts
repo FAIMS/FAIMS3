@@ -51,18 +51,6 @@ describe('App — notebook tab in the route', () => {
     );
   });
 
-  it("should replace an unknown tab slug with the view's default", async () => {
-    await browser.url(`${notebookUrl}/no-such-tab`);
-    await waitForUrl(
-      url => url.replace(/[?#].*$/, '') === `${notebookUrl}/my-records`,
-      {
-        timeout: 20000,
-        timeoutMsg: 'Expected an unknown tab slug to give way to the default',
-      }
-    );
-    await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
-  });
-
   it('should return to the tab a record was opened from', async () => {
     await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
     await byTestId('app-notebook-tab-my-records').click();
@@ -111,6 +99,18 @@ describe('App — notebook tab in the route', () => {
       timeoutMsg:
         'Expected a tab-less record link to lead back to the notebook',
     });
+    await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
+  });
+
+  it("should replace an unknown tab slug with the view's default", async () => {
+    await browser.url(`${notebookUrl}/no-such-tab`);
+    await waitForUrl(
+      url => url.replace(/[?#].*$/, '') === `${notebookUrl}/my-records`,
+      {
+        timeout: 20000,
+        timeoutMsg: 'Expected an unknown tab slug to give way to the default',
+      }
+    );
     await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
   });
 
