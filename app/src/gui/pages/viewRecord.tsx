@@ -241,10 +241,11 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
           startIcon={<EditIcon />}
           onClick={() => {
             nav(
-              `../${getEditRecordRoute({
+              getEditRecordRoute({
+                from: 'record',
                 recordId: props.recordId,
                 mode: 'parent',
-              })}`
+              })
             );
           }}
           sx={{flexShrink: 0}}
@@ -265,17 +266,19 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       getAttachmentService,
       getDataEngine,
       getRecordRoute: params =>
-        `../${getViewRecordRoute({
+        getViewRecordRoute({
+          from: 'record',
           recordId: params.recordId,
           revisionId: params.revisionId,
-        })}`,
+        }),
       editRecordButtonComponent: nestedEditButton,
       navigateToRecord: params => {
         nav(
-          `../${getViewRecordRoute({
+          getViewRecordRoute({
+            from: 'record',
             recordId: params.recordId,
             revisionId: params.revisionId,
-          })}`
+          })
         );
       },
       getMapConfig,
@@ -297,7 +300,12 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         } record (${relationship.formLabel})`,
         subtitle: relationship.hrid,
         onClick: () =>
-          nav(`../${getViewRecordRoute({recordId: relationship.recordId})}`),
+          nav(
+            getViewRecordRoute({
+              from: 'record',
+              recordId: relationship.recordId,
+            })
+          ),
       });
     }
   }
@@ -668,7 +676,9 @@ export const ViewRecordPage: React.FC = () => {
           <ViewTabContent
             formData={formData}
             onEditRecord={() => {
-              nav(`../${getEditRecordRoute({recordId, mode: 'parent'})}`);
+              nav(
+                getEditRecordRoute({from: 'record', recordId, mode: 'parent'})
+              );
             }}
             uiSpec={uiSpec}
             impliedRelationships={impliedRelationships}

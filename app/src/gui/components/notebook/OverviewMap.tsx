@@ -155,7 +155,10 @@ const SelectedRecordPopoverContent = ({
         </Alert>
         <Button
           component={RouterLink}
-          to={ROUTES.getViewRecordRoute({recordId: feature.record_id})}
+          to={ROUTES.getViewRecordRoute({
+            from: 'notebook',
+            recordId: feature.record_id,
+          })}
           size="small"
           variant="outlined"
           onClick={e => {
@@ -182,6 +185,7 @@ const SelectedRecordPopoverContent = ({
     hydrated.record.created;
 
   const viewUrl = ROUTES.getViewRecordRoute({
+    from: 'notebook',
     recordId: feature.record_id,
     revisionId: feature.revision_id,
   });

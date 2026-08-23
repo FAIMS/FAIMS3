@@ -1181,9 +1181,15 @@ export function RecordsTable(props: RecordsTableProps) {
       // UnhydratedRecord uses recordId
       let route = undefined;
       if (params.row.recordId) {
-        route = ROUTES.getViewRecordRoute({recordId: params.row.recordId});
+        route = ROUTES.getViewRecordRoute({
+          from: 'notebook',
+          recordId: params.row.recordId,
+        });
       } else if (params.row.record_id) {
-        route = ROUTES.getViewRecordRoute({recordId: params.row.record_id});
+        route = ROUTES.getViewRecordRoute({
+          from: 'notebook',
+          recordId: params.row.record_id,
+        });
       } else {
         // do nothing in this case - there is an issue
         return;

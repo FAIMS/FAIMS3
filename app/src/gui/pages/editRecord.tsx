@@ -276,7 +276,9 @@ export const EditRecordPage = () => {
         // Takes you back to view record (note this is only shown if there are no
         // parent navigation history)
         navigateToViewRecord: params => {
-          navigate(`../${getViewRecordRoute({recordId: params.recordId})}`);
+          navigate(
+            getViewRecordRoute({from: 'record', recordId: params.recordId})
+          );
         },
         toRecord: ({
           recordId: targetRecordId,
@@ -318,19 +320,21 @@ export const EditRecordPage = () => {
           newNavState.scrollTarget = scrollTarget;
 
           navigate(
-            `../${getEditRecordRoute({
+            getEditRecordRoute({
+              from: 'record',
               recordId: targetRecordId,
               mode: targetMode,
-            })}`,
+            }),
             // Include navigation state
             {state: newNavState}
           );
         },
         getToRecordLink(params) {
-          return `../${getEditRecordRoute({
+          return getEditRecordRoute({
+            from: 'record',
             recordId: params.recordId,
             mode,
-          })}`;
+          });
         },
         navigateToLink(to) {
           navigate(to);
@@ -431,7 +435,9 @@ export const EditRecordPage = () => {
             </Alert>
             <Button
               variant="outlined"
-              onClick={() => navigate(`../${getViewRecordRoute({recordId})}`)}
+              onClick={() =>
+                navigate(getViewRecordRoute({from: 'record', recordId}))
+              }
             >
               Open read-only view
             </Button>

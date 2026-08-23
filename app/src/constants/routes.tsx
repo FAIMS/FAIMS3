@@ -105,40 +105,58 @@ export function getNotebookRoute({
 }
 
 /**
- * Generates a route to the edit page for a record, relative to the notebook
- * route, which is the segment carrying the tab. From another record route,
- * prefix `../`.
+ * The route a record link is rendered from. The record routes nest under the
+ * notebook route, which is the segment carrying the tab, so a link from a
+ * record page has one more segment to climb than one from the notebook page.
+ */
+type RecordLinkOrigin = 'notebook' | 'record';
+
+const RECORD_LINK_PREFIX: Record<RecordLinkOrigin, string> = {
+  notebook: '',
+  record: '../',
+};
+
+/**
+ * Generates a route to the edit page for a record, relative to the route it is
+ * rendered from.
  *
- * @returns records/<recordId>
+ * @returns [../]records/<recordId>
  */
 export function getEditRecordRoute({
+  from,
   recordId,
   mode,
 }: {
+  from: RecordLinkOrigin;
   recordId: RecordID;
   mode?: AvpUpdateMode;
 }) {
   if (!recordId) {
     throw Error('record_id is required for this route');
   }
-  return `${EDIT_RECORD_SEGMENT}/${recordId}` + (mode ? `?mode=${mode}` : '');
+  return (
+    `${RECORD_LINK_PREFIX[from]}${EDIT_RECORD_SEGMENT}/${recordId}` +
+    (mode ? `?mode=${mode}` : '')
+  );
 }
 
 /**
  * Generates a route to the read-only view page for a record, relative to the
- * notebook route. From another record route, prefix `../`.
+ * route it is rendered from.
  *
- * @returns view-record/<recordId>
+ * @returns [../]view-record/<recordId>
  */
 export function getViewRecordRoute({
+  from,
   recordId,
   revisionId,
 }: {
+  from: RecordLinkOrigin;
   recordId: RecordID;
   revisionId?: RecordID;
 }) {
   return (
-    `${VIEW_RECORD_SEGMENT}/${recordId}` +
+    `${RECORD_LINK_PREFIX[from]}${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
 }

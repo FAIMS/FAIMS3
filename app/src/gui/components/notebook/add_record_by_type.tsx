@@ -72,6 +72,7 @@ export default function AddRecordButtons({
       .then(newRecord =>
         navigate(
           ROUTES.getEditRecordRoute({
+            from: 'notebook',
             recordId: newRecord.record._id,
             mode: 'new',
           })
@@ -104,6 +105,7 @@ export default function AddRecordButtons({
     return (
       <Navigate
         to={ROUTES.getEditRecordRoute({
+          from: 'notebook',
           recordId: (selectedRecord.record_id || '').toString(),
         })}
       />

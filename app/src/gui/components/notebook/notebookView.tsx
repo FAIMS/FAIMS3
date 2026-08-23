@@ -201,7 +201,11 @@ function NotebookViewWithSpec({
           planReference,
         });
         navigate(
-          ROUTES.getEditRecordRoute({recordId: record._id, mode: 'new'})
+          ROUTES.getEditRecordRoute({
+            from: 'notebook',
+            recordId: record._id,
+            mode: 'new',
+          })
         );
       } catch (err) {
         // Surface the error and resolve (do not rethrow): a caller awaiting
@@ -230,7 +234,12 @@ function NotebookViewWithSpec({
   // View/Edit an existing record by navigating to the record view page
   const navigateToRecord = useCallback(
     (record: MinimalRecordMetadata) => {
-      navigate(ROUTES.getViewRecordRoute({recordId: record.recordId}));
+      navigate(
+        ROUTES.getViewRecordRoute({
+          from: 'notebook',
+          recordId: record.recordId,
+        })
+      );
     },
     [navigate]
   );

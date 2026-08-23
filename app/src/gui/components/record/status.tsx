@@ -61,7 +61,10 @@ const StatusNode: React.FC<{
         ) : (
           <Link
             component={RouterLink}
-            to={`../${getViewRecordRoute({recordId: report.recordId})}`}
+            to={getViewRecordRoute({
+              from: 'record',
+              recordId: report.recordId,
+            })}
             variant="body2"
           >
             {report.hrid}
