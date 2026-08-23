@@ -1,7 +1,8 @@
 /**
  * Notebook tab lives in the route: selecting a tab puts it in the URL, that URL
- * opens the tab on its own, and a record opened from a tab nests under it so
- * leaving the record returns to that tab rather than the default one.
+ * opens the tab on its own, a slug no view carries gives way to the default,
+ * and a record opened from a tab nests under it so leaving the record returns
+ * to that tab rather than the default one.
  */
 import {loginAppPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
@@ -48,6 +49,18 @@ describe('App — notebook tab in the route', () => {
         timeoutMsg: 'Expected the settings tab selected from its URL alone',
       }
     );
+  });
+
+  it("should replace an unknown tab slug with the view's default", async () => {
+    await browser.url(`${notebookUrl}/no-such-tab`);
+    await waitForUrl(
+      url => url.replace(/[?#].*$/, '') === `${notebookUrl}/my-records`,
+      {
+        timeout: 20000,
+        timeoutMsg: 'Expected an unknown tab slug to give way to the default',
+      }
+    );
+    await waitForTestId('app-notebook-tab-my-records', {timeout: 15000});
   });
 
   it('should return to the tab a record was opened from', async () => {

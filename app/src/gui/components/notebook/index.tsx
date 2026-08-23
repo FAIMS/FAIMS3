@@ -10,7 +10,7 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {resolveTab, SHARED_TAB} from '../../../constants/routes';
+import {SHARED_TAB, useResolveTab} from '../../../constants/routes';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
@@ -125,7 +125,7 @@ export default function NotebookComponent({
     username: activeUser?.username ?? '',
   });
 
-  const currentTab = resolveTab(TABS, tab);
+  const currentTab = useResolveTab(TABS, tab, setTab);
 
   // Fetch records from the (local) DB with configurable auto refetch.
   // Skip while the compiled UI spec is still loading.

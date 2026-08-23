@@ -19,6 +19,7 @@
  */
 
 import {AvpUpdateMode, RecordID} from '@faims3/data-model';
+import {useEffect} from 'react';
 import {config} from '../buildconfig';
 
 export const INDEX = '/';
@@ -46,15 +47,20 @@ export const SHARED_TAB = {
   settings: 'settings',
 } as const;
 
-/** The tab matching the route's slug, or the view's default. */
-export const resolveTab = <T extends string>(
+/**
+ * The tab matching the route's slug, or the view's default. A slug the view
+ * does not carry redirects to the default, so the URL names the tab on screen
+ * and the record links built under it resolve.
+ */
+export const useResolveTab = <T extends string>(
   tabs: readonly [T, ...T[]],
-  tab?: string
+  tab: string | undefined,
+  setTab: (tab: string) => void
 ): T => {
   const match = tabs.find(t => t === tab);
-  // FAIMS3 keeps no list of tabs, so an unknown slug is a link to fix
-  if (tab !== undefined && match === undefined)
-    console.warn(`no '${tab}' tab in this view, showing '${tabs[0]}'`);
+  useEffect(() => {
+    if (tab !== undefined && match === undefined) setTab(tabs[0]);
+  }, [tab, match, setTab, tabs]);
   return match ?? tabs[0];
 };
 

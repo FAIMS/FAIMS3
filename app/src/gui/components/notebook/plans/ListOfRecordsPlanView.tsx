@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
-import {resolveTab, SHARED_TAB} from '../../../../constants/routes';
+import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
 
@@ -35,7 +35,7 @@ const TABS = [
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const currentTab = resolveTab(TABS, tab);
+  const currentTab = useResolveTab(TABS, tab, actions.setTab);
 
   // recordLabel based on viewsets
   const recordLabel =

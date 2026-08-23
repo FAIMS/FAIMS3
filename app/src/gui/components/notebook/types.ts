@@ -76,7 +76,7 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
-  // The tab slug from the URL, which a view resolves with `resolveTab`
+  // The tab slug from the URL, which a view resolves with `useResolveTab`
   tab?: string;
   uiSpecification: CompiledNotebookUiSpec;
   records: RecordListProps;
