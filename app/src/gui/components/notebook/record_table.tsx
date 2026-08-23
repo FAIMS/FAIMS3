@@ -1099,11 +1099,7 @@ export function RecordsTable(props: RecordsTableProps) {
   } = props;
 
   const history = useNavigate();
-  const {serverId, projectId, tab} = useParams() as {
-    serverId: string;
-    projectId: string;
-    tab?: string;
-  };
+  const notebook = useParams() as ROUTES.RecordRouteNotebook;
   const styles = useDataGridStyles();
 
   // Get UI specification
@@ -1187,16 +1183,12 @@ export function RecordsTable(props: RecordsTableProps) {
       let route = undefined;
       if (params.row.recordId) {
         route = ROUTES.getViewRecordRoute({
-          serverId,
-          projectId,
-          tab,
+          ...notebook,
           recordId: params.row.recordId,
         });
       } else if (params.row.record_id) {
         route = ROUTES.getViewRecordRoute({
-          serverId,
-          projectId,
-          tab,
+          ...notebook,
           recordId: params.row.record_id,
         });
       } else {
@@ -1205,7 +1197,7 @@ export function RecordsTable(props: RecordsTableProps) {
       }
       history(route);
     },
-    [history, serverId, projectId, tab]
+    [history, notebook]
   );
 
   if (!uiSpec) {

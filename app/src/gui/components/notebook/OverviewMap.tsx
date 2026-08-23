@@ -103,11 +103,7 @@ const SelectedRecordPopoverContent = ({
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
-  const {serverId, projectId, tab} = useParams() as {
-    serverId: string;
-    projectId: string;
-    tab?: string;
-  };
+  const notebook = useParams() as ROUTES.RecordRouteNotebook;
 
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
@@ -162,9 +158,7 @@ const SelectedRecordPopoverContent = ({
         <Button
           component={RouterLink}
           to={ROUTES.getViewRecordRoute({
-            serverId,
-            projectId,
-            tab,
+            ...notebook,
             recordId: feature.record_id,
           })}
           size="small"
@@ -193,9 +187,7 @@ const SelectedRecordPopoverContent = ({
     hydrated.record.created;
 
   const viewUrl = ROUTES.getViewRecordRoute({
-    serverId,
-    projectId,
-    tab,
+    ...notebook,
     recordId: feature.record_id,
     revisionId: feature.revision_id,
   });

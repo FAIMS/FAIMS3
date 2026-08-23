@@ -55,6 +55,7 @@ import {
   getEditRecordRoute,
   getViewRecordRoute,
   NOTEBOOK_FROM_RECORD_ROUTE,
+  RecordRouteNotebook,
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
@@ -236,11 +237,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   isDeleted,
 }) => {
   const nav = useNavigate();
-  const {serverId, projectId, tab} = useParams() as {
-    serverId: string;
-    projectId: string;
-    tab?: string;
-  };
+  const notebook = useParams() as RecordRouteNotebook;
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -251,9 +248,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
           onClick={() => {
             nav(
               getEditRecordRoute({
-                serverId,
-                projectId,
-                tab,
+                ...notebook,
                 recordId: props.recordId,
                 mode: 'parent',
               })
@@ -278,9 +273,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       getDataEngine,
       getRecordRoute: params =>
         getViewRecordRoute({
-          serverId,
-          projectId,
-          tab,
+          ...notebook,
           recordId: params.recordId,
           revisionId: params.revisionId,
         }),
@@ -288,9 +281,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       navigateToRecord: params => {
         nav(
           getViewRecordRoute({
-            serverId,
-            projectId,
-            tab,
+            ...notebook,
             recordId: params.recordId,
             revisionId: params.revisionId,
           })
@@ -317,9 +308,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         onClick: () =>
           nav(
             getViewRecordRoute({
-              serverId,
-              projectId,
-              tab,
+              ...notebook,
               recordId: relationship.recordId,
             })
           ),

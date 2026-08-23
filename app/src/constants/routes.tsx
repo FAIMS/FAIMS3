@@ -94,8 +94,11 @@ export function getNotebookRoute({
  */
 export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
 
-/** The notebook the record routes nest under, which every record link needs. */
-type RecordRouteNotebook = {
+/**
+ * The notebook the record routes nest under, which every record link needs.
+ * Components rendered under `NOTEBOOK_ROUTE_PATH` read it from `useParams`.
+ */
+export type RecordRouteNotebook = {
   serverId: string;
   projectId: string;
   tab?: string;

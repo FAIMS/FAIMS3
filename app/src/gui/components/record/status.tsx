@@ -20,7 +20,10 @@ import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink, useParams} from 'react-router-dom';
-import {getViewRecordRoute} from '../../../constants/routes';
+import {
+  getViewRecordRoute,
+  RecordRouteNotebook,
+} from '../../../constants/routes';
 import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
@@ -41,11 +44,7 @@ const StatusNode: React.FC<{
   /** The viewed record itself, which needs no link to where the user already is. */
   isRoot?: boolean;
 }> = ({report, uiSpec, isRoot}) => {
-  const {serverId, projectId, tab} = useParams() as {
-    serverId: string;
-    projectId: string;
-    tab?: string;
-  };
+  const notebook = useParams() as RecordRouteNotebook;
   const {ownProgress} = report;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
@@ -67,9 +66,7 @@ const StatusNode: React.FC<{
           <Link
             component={RouterLink}
             to={getViewRecordRoute({
-              serverId,
-              projectId,
-              tab,
+              ...notebook,
               recordId: report.recordId,
             })}
             variant="body2"
