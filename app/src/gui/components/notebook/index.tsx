@@ -40,7 +40,6 @@ const TABS = [
  */
 interface TabPanelProps {
   children?: React.ReactNode;
-  id: string;
   /** The tab slug this panel belongs to. */
   tab: string;
   /** The tab slug currently shown. */
@@ -55,14 +54,14 @@ interface TabPanelProps {
  * @returns {JSX.Element} - The JSX element for the TabPanel.
  */
 function TabPanel(props: TabPanelProps) {
-  const {children, id, value, tab, ...other} = props;
+  const {children, value, tab, ...other} = props;
 
   return (
     <div
       role="tabpanel"
       hidden={value !== tab}
-      id={`${id}-${tab}`}
-      aria-labelledby={`${id}-${tab}`}
+      id={`${tab}-tabpanel`}
+      aria-labelledby={`${tab}-tab`}
       {...other}
     >
       {value === tab && <Box>{children}</Box>}
@@ -71,19 +70,16 @@ function TabPanel(props: TabPanelProps) {
 }
 
 /**
- * a11yProps returns accessibility properties for a tab.
+ * a11yProps returns accessibility properties for a tab, pairing it with the
+ * panel TabPanel renders for the same slug.
  *
  * @param {string} tab - The slug of the tab.
- * @param {string} id - The id of the tab panel.
  * @returns {object} - The accessibility properties for the tab.
  */
-function a11yProps(tab: string, id: string) {
-  /**
-   * Accessibility props
-   */
+function a11yProps(tab: string) {
   return {
-    id: `${id}-tab-${tab}`,
-    'aria-controls': `${id}-tabpanel-${tab}`,
+    id: `${tab}-tab`,
+    'aria-controls': `${tab}-tabpanel`,
   };
 }
 
@@ -266,7 +262,7 @@ export default function NotebookComponent({
                 label={`My ${recordLabel}s (${visibleMyRecords.length})`}
                 value="my-records"
                 data-testid="app-notebook-tab-my-records"
-                {...a11yProps('my-records', `${config.notebookName}-myrecords`)}
+                {...a11yProps('my-records')}
               />
               {(currentTab === 'other-records' ||
                 visibleOtherRecords.length > 0) && (
@@ -274,10 +270,7 @@ export default function NotebookComponent({
                   value="other-records"
                   label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
                   data-testid="app-notebook-tab-other-records"
-                  {...a11yProps(
-                    'other-records',
-                    `${config.notebookName}-otherrecords`
-                  )}
+                  {...a11yProps('other-records')}
                 />
               )}
 
@@ -285,19 +278,19 @@ export default function NotebookComponent({
                 value="map"
                 label="Map"
                 data-testid="app-notebook-tab-map"
-                {...a11yProps('map', config.notebookName)}
+                {...a11yProps('map')}
               />
               <Tab
                 value="details"
                 label="Details"
                 data-testid="app-notebook-tab-details"
-                {...a11yProps('details', config.notebookName)}
+                {...a11yProps('details')}
               />
               <Tab
                 value="settings"
                 label="Settings"
                 data-testid="app-notebook-tab-settings"
-                {...a11yProps('settings', config.notebookName)}
+                {...a11yProps('settings')}
               />
             </Tabs>
           </Paper>
@@ -306,7 +299,7 @@ export default function NotebookComponent({
         {
           // My records
         }
-        <TabPanel value={currentTab} tab="my-records" id={'records-mine'}>
+        <TabPanel value={currentTab} tab="my-records">
           <RecordsTable
             project={project}
             maxRows={25}
@@ -323,7 +316,7 @@ export default function NotebookComponent({
           // Other records
         }
 
-        <TabPanel value={currentTab} tab="other-records" id={'records-all'}>
+        <TabPanel value={currentTab} tab="other-records">
           <RecordsTable
             project={project}
             maxRows={25}
@@ -337,7 +330,7 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab="map" id={'map'}>
+        <TabPanel value={currentTab} tab="map">
           <OverviewMap
             records={records}
             project_id={project.projectId}
@@ -345,11 +338,11 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab="details" id={'details'}>
+        <TabPanel value={currentTab} tab="details">
           <MetadataDisplayComponent project={project} templateId={templateId} />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab="settings" id={'settings'}>
+        <TabPanel value={currentTab} tab="settings">
           <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
       </Box>
