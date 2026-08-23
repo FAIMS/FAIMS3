@@ -147,6 +147,8 @@ function NotebookViewWithSpec({
 
   const tab = useNotebookTab();
 
+  // Switching tabs replaces rather than pushes, matching the record page's own
+  // tab, so leaving a notebook does not cost a Back press per tab visited
   const setTab = useCallback(
     (nextTab: string) => {
       navigate(
@@ -154,7 +156,8 @@ function NotebookViewWithSpec({
           serverId: project.serverId,
           projectId: project.projectId,
           tab: nextTab,
-        })
+        }),
+        {replace: true}
       );
     },
     [navigate, project.serverId, project.projectId]
