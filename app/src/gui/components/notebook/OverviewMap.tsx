@@ -49,7 +49,6 @@ import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {useNotebookTab} from '../../../utils/customHooks';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {formatTimestamp} from '../../../utils/formUtilities';
@@ -63,7 +62,6 @@ interface OverviewMapProps {
   /** Notebook UI spec (compiled fields/views + settings / schemaVersion for {@link DataEngine}). */
   uiSpec: CompiledNotebookUiSpec;
   project_id: ProjectID;
-  serverId: string;
   records: {allRecords: MinimalRecordMetadata[]};
 }
 
@@ -91,7 +89,6 @@ const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
 interface SelectedRecordPopoverContentProps {
   feature: RecordFeatureProps;
   project_id: ProjectID;
-  serverId: string;
   uiSpec: NotebookUiSpec;
   dataEngine: DataEngine;
 }
@@ -103,11 +100,9 @@ const SHORT_WAIT_CONSTANT = 400;
 const SelectedRecordPopoverContent = ({
   feature,
   project_id,
-  serverId,
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
-  const tab = useNotebookTab();
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
   const [buttonInteractionAllowed, setButtonInteractionAllowed] =
@@ -160,12 +155,7 @@ const SelectedRecordPopoverContent = ({
         </Alert>
         <Button
           component={RouterLink}
-          to={ROUTES.getViewRecordRoute({
-            serverId,
-            projectId: project_id,
-            recordId: feature.record_id,
-            tab,
-          })}
+          to={ROUTES.getViewRecordRoute({recordId: feature.record_id})}
           size="small"
           variant="outlined"
           onClick={e => {
@@ -192,10 +182,7 @@ const SelectedRecordPopoverContent = ({
     hydrated.record.created;
 
   const viewUrl = ROUTES.getViewRecordRoute({
-    serverId,
-    projectId: project_id,
     recordId: feature.record_id,
-    tab,
     revisionId: feature.revision_id,
   });
 
@@ -250,7 +237,7 @@ const SelectedRecordPopoverContent = ({
  * Create an overview map of the records in the notebook.
  */
 export const OverviewMap = (props: OverviewMapProps) => {
-  const {uiSpec, project_id, serverId, records} = props;
+  const {uiSpec, project_id, records} = props;
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] =
     useState<RecordFeatureProps | null>(null);
@@ -601,7 +588,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
             <SelectedRecordPopoverContent
               feature={selectedFeature}
               project_id={project_id}
-              serverId={serverId}
               uiSpec={uiSpec}
               dataEngine={dataEngine}
             />

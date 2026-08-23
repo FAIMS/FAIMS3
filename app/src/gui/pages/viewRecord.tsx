@@ -52,7 +52,6 @@ import React, {useCallback, useEffect} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {config, getMapConfig} from '../../buildconfig';
 import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
-import {useNotebookTab} from '../../utils/customHooks';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -213,8 +212,6 @@ interface ViewTabContentProps {
     Awaited<ReturnType<DataEngine['form']['getExistingFormData']>>
   >;
   uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
-  projectId: ProjectID;
-  serverId: string;
   impliedRelationships?: ImpliedRelationship[];
   getDataEngine: () => DataEngine;
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
@@ -229,15 +226,12 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   formData,
   onEditRecord,
   uiSpec,
-  projectId,
-  serverId,
   impliedRelationships,
   getDataEngine,
   getAttachmentService,
   isDeleted,
 }) => {
   const nav = useNavigate();
-  const tab = useNotebookTab();
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -247,13 +241,10 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
           startIcon={<EditIcon />}
           onClick={() => {
             nav(
-              getEditRecordRoute({
-                projectId,
+              `../${getEditRecordRoute({
                 recordId: props.recordId,
-                serverId,
-                tab,
                 mode: 'parent',
-              })
+              })}`
             );
           }}
           sx={{flexShrink: 0}}
@@ -274,23 +265,17 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       getAttachmentService,
       getDataEngine,
       getRecordRoute: params =>
-        getViewRecordRoute({
-          projectId,
+        `../${getViewRecordRoute({
           recordId: params.recordId,
-          serverId,
-          tab,
           revisionId: params.revisionId,
-        }),
+        })}`,
       editRecordButtonComponent: nestedEditButton,
       navigateToRecord: params => {
         nav(
-          getViewRecordRoute({
-            projectId,
+          `../${getViewRecordRoute({
             recordId: params.recordId,
-            serverId,
-            tab,
             revisionId: params.revisionId,
-          })
+          })}`
         );
       },
       getMapConfig,
@@ -312,14 +297,7 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         } record (${relationship.formLabel})`,
         subtitle: relationship.hrid,
         onClick: () =>
-          nav(
-            getViewRecordRoute({
-              projectId,
-              recordId: relationship.recordId,
-              serverId,
-              tab,
-            })
-          ),
+          nav(`../${getViewRecordRoute({recordId: relationship.recordId})}`),
       });
     }
   }
@@ -487,7 +465,6 @@ export const ViewRecordPage: React.FC = () => {
     projectId: ProjectID;
     recordId: RecordID;
   }>();
-  const tab = useNotebookTab();
 
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -689,19 +666,9 @@ export const ViewRecordPage: React.FC = () => {
           <ViewTabContent
             formData={formData}
             onEditRecord={() => {
-              nav(
-                getEditRecordRoute({
-                  projectId,
-                  recordId,
-                  serverId,
-                  tab,
-                  mode: 'parent',
-                })
-              );
+              nav(`../${getEditRecordRoute({recordId, mode: 'parent'})}`);
             }}
             uiSpec={uiSpec}
-            projectId={projectId}
-            serverId={serverId}
             impliedRelationships={impliedRelationships}
             getDataEngine={getDataEngine}
             getAttachmentService={getAttachmentService}
@@ -738,7 +705,6 @@ export const ViewRecordPage: React.FC = () => {
             <RecordStatus
               recordId={recordId}
               projectId={projectId}
-              serverId={serverId}
               dataEngine={getDataEngine()}
               isDeleted={isDeleted}
             />

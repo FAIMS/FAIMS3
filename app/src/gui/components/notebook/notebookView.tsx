@@ -202,13 +202,7 @@ function NotebookViewWithSpec({
           planReference,
         });
         navigate(
-          ROUTES.getEditRecordRoute({
-            serverId: project.serverId,
-            projectId: project.projectId,
-            recordId: record._id,
-            tab,
-            mode: 'new',
-          })
+          ROUTES.getEditRecordRoute({recordId: record._id, mode: 'new'})
         );
       } catch (err) {
         // Surface the error and resolve (do not rethrow): a caller awaiting
@@ -230,7 +224,6 @@ function NotebookViewWithSpec({
       navigate,
       project.serverId,
       project.projectId,
-      tab,
       dispatch,
     ]
   );
@@ -238,16 +231,9 @@ function NotebookViewWithSpec({
   // View/Edit an existing record by navigating to the record view page
   const navigateToRecord = useCallback(
     (record: MinimalRecordMetadata) => {
-      const route = ROUTES.getViewRecordRoute({
-        serverId: project.serverId,
-        projectId: record.projectId,
-        recordId: record.recordId,
-        tab,
-      });
-
-      navigate(route);
+      navigate(ROUTES.getViewRecordRoute({recordId: record.recordId}));
     },
-    [navigate, project.serverId, tab]
+    [navigate]
   );
 
   // does this notebook have a plan, and do we have a view component for it
@@ -307,7 +293,6 @@ function NotebookViewWithSpec({
         ),
         OverviewMap: () => (
           <OverviewMap
-            serverId={project.serverId}
             records={records}
             project_id={project.projectId}
             uiSpec={uiSpecification}

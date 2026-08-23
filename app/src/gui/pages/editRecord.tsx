@@ -45,11 +45,7 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {
-  useIsOnline,
-  useNotebookTab,
-  useUiSpecLayout,
-} from '../../utils/customHooks';
+import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
@@ -94,7 +90,6 @@ export const EditRecordPage = () => {
     projectId: ProjectID;
     recordId: RecordID;
   }>();
-  const tab = useNotebookTab();
 
   // Get mode=XXX from the query params
   const [searchParams] = useSearchParams();
@@ -281,14 +276,7 @@ export const EditRecordPage = () => {
         // Takes you back to view record (note this is only shown if there are no
         // parent navigation history)
         navigateToViewRecord: params => {
-          navigate(
-            getViewRecordRoute({
-              projectId: projectId!,
-              recordId: params.recordId,
-              serverId: serverId!,
-              tab,
-            })
-          );
+          navigate(`../${getViewRecordRoute({recordId: params.recordId})}`);
         },
         toRecord: ({
           recordId: targetRecordId,
@@ -330,25 +318,19 @@ export const EditRecordPage = () => {
           newNavState.scrollTarget = scrollTarget;
 
           navigate(
-            getEditRecordRoute({
-              serverId: serverId!,
-              projectId: projectId!,
+            `../${getEditRecordRoute({
               recordId: targetRecordId,
-              tab,
               mode: targetMode,
-            }),
+            })}`,
             // Include navigation state
             {state: newNavState}
           );
         },
         getToRecordLink(params) {
-          return getEditRecordRoute({
-            serverId: serverId!,
-            projectId: projectId!,
+          return `../${getEditRecordRoute({
             recordId: params.recordId,
-            tab,
             mode,
-          });
+          })}`;
         },
         navigateToLink(to) {
           navigate(to);
@@ -449,11 +431,7 @@ export const EditRecordPage = () => {
             </Alert>
             <Button
               variant="outlined"
-              onClick={() =>
-                navigate(
-                  getViewRecordRoute({projectId, recordId, serverId, tab})
-                )
-              }
+              onClick={() => navigate(`../${getViewRecordRoute({recordId})}`)}
             >
               Open read-only view
             </Button>

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
+import {AvpUpdateMode, RecordID} from '@faims3/data-model';
 import {config} from '../buildconfig';
 
 export const INDEX = '/';
@@ -78,59 +78,39 @@ export function getNotebookRoute({
 }
 
 /**
- * Generates a route to the edit page for a record.
+ * Generates a route to the edit page for a record, relative to the notebook
+ * route, which is the segment carrying the tab. From another record route,
+ * prefix `../`.
  *
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]/records/<recordId>
+ * @returns records/<recordId>
  */
 export function getEditRecordRoute({
-  serverId,
-  projectId,
   recordId,
-  tab,
   mode,
 }: {
-  serverId: string;
-  projectId: ProjectID;
   recordId: RecordID;
-  tab?: string;
   mode?: AvpUpdateMode;
 }) {
-  if (!!serverId && !!projectId && !!recordId) {
-    return (
-      getNotebookRoute({serverId, projectId, tab}) +
-      '/' +
-      `${EDIT_RECORD_SEGMENT}/${recordId}` +
-      (mode ? `?mode=${mode}` : '')
-    );
+  if (!recordId) {
+    throw Error('record_id is required for this route');
   }
-  console.error('Trying to create record route with missing details!');
-  console.error({serverId, projectId, recordId});
-  throw Error(
-    'project_id, record_id and revision_id are required for this route'
-  );
+  return `${EDIT_RECORD_SEGMENT}/${recordId}` + (mode ? `?mode=${mode}` : '');
 }
 
 /**
- * Generates a route to the read-only view page for a record.
+ * Generates a route to the read-only view page for a record, relative to the
+ * notebook route. From another record route, prefix `../`.
  *
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]/view-record/<recordId>
+ * @returns view-record/<recordId>
  */
 export function getViewRecordRoute({
-  serverId,
-  projectId,
   recordId,
-  tab,
   revisionId,
 }: {
-  serverId: string;
-  projectId: ProjectID;
   recordId: RecordID;
-  tab?: string;
   revisionId?: RecordID;
 }) {
   return (
-    getNotebookRoute({serverId, projectId, tab}) +
-    '/' +
     `${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );

@@ -21,13 +21,12 @@ import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {getViewRecordRoute} from '../../../constants/routes';
-import {buildStatusReportKey, useNotebookTab} from '../../../utils/customHooks';
+import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
   recordId: RecordID;
   projectId: ProjectID;
-  serverId: string;
   dataEngine: DataEngine;
   isDeleted: boolean;
 }
@@ -39,12 +38,9 @@ interface RecordStatusProps {
 const StatusNode: React.FC<{
   report: RecordStatusReport;
   uiSpec: CompiledNotebookUiSpec;
-  projectId: ProjectID;
-  serverId: string;
   /** The viewed record itself, which needs no link to where the user already is. */
   isRoot?: boolean;
-}> = ({report, uiSpec, projectId, serverId, isRoot}) => {
-  const tab = useNotebookTab();
+}> = ({report, uiSpec, isRoot}) => {
   const {ownProgress} = report;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
@@ -65,12 +61,7 @@ const StatusNode: React.FC<{
         ) : (
           <Link
             component={RouterLink}
-            to={getViewRecordRoute({
-              projectId,
-              serverId,
-              recordId: report.recordId,
-              tab,
-            })}
+            to={`../${getViewRecordRoute({recordId: report.recordId})}`}
             variant="body2"
           >
             {report.hrid}
@@ -135,8 +126,6 @@ const StatusNode: React.FC<{
                   key={child.recordId}
                   report={child}
                   uiSpec={uiSpec}
-                  projectId={projectId}
-                  serverId={serverId}
                 />
               ))}
             </Stack>
@@ -155,7 +144,6 @@ const StatusNode: React.FC<{
 export const RecordStatus: React.FC<RecordStatusProps> = ({
   recordId,
   projectId,
-  serverId,
   dataEngine,
   isDeleted,
 }) => {
@@ -217,13 +205,7 @@ export const RecordStatus: React.FC<RecordStatusProps> = ({
           Completion of this record and every record below it.
         </Typography>
       </Stack>
-      <StatusNode
-        report={report}
-        uiSpec={dataEngine.uiSpec}
-        projectId={projectId}
-        serverId={serverId}
-        isRoot
-      />
+      <StatusNode report={report} uiSpec={dataEngine.uiSpec} isRoot />
     </Stack>
   );
 };

@@ -13,7 +13,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
 import {Navigate, useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {useNotebookTab} from '../../../utils/customHooks';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
@@ -28,7 +27,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, serverId, uiSpecificationId},
+  project: {projectId, uiSpecificationId},
   refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
@@ -41,7 +40,6 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
   const navigate = useNavigate();
-  const tab = useNotebookTab();
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
@@ -74,10 +72,7 @@ export default function AddRecordButtons({
       .then(newRecord =>
         navigate(
           ROUTES.getEditRecordRoute({
-            serverId: serverId,
-            projectId: projectId,
             recordId: newRecord.record._id,
-            tab,
             mode: 'new',
           })
         )
@@ -109,10 +104,7 @@ export default function AddRecordButtons({
     return (
       <Navigate
         to={ROUTES.getEditRecordRoute({
-          serverId: serverId,
-          projectId: projectId || 'dummy',
           recordId: (selectedRecord.record_id || '').toString(),
-          tab,
         })}
       />
     );

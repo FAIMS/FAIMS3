@@ -344,7 +344,6 @@ export default function NotebookComponent({
 
         <TabPanel value={tabIndex} index={2} id={'map'}>
           <OverviewMap
-            serverId={project.serverId}
             records={records}
             project_id={project.projectId}
             uiSpec={uiSpecification}

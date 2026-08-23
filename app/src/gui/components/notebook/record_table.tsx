@@ -45,7 +45,7 @@ import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {buildHydrateKeys, useNotebookTab} from '../../../utils/customHooks';
+import {buildHydrateKeys} from '../../../utils/customHooks';
 import {localGetDataDb} from '../../../utils/database';
 import {
   formatDate,
@@ -1095,11 +1095,10 @@ export function RecordsTable(props: RecordsTableProps) {
     loading,
     viewsets,
     recordStatus,
-    project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
+    project: {uiSpecificationId: uiSpecId, projectId: project_id},
   } = props;
 
   const history = useNavigate();
-  const tab = useNotebookTab();
   const styles = useDataGridStyles();
 
   // Get UI specification
@@ -1182,26 +1181,16 @@ export function RecordsTable(props: RecordsTableProps) {
       // UnhydratedRecord uses recordId
       let route = undefined;
       if (params.row.recordId) {
-        route = ROUTES.getViewRecordRoute({
-          serverId,
-          projectId: project_id,
-          recordId: params.row.recordId,
-          tab,
-        });
+        route = ROUTES.getViewRecordRoute({recordId: params.row.recordId});
       } else if (params.row.record_id) {
-        route = ROUTES.getViewRecordRoute({
-          serverId,
-          projectId: project_id,
-          recordId: params.row.record_id,
-          tab,
-        });
+        route = ROUTES.getViewRecordRoute({recordId: params.row.record_id});
       } else {
         // do nothing in this case - there is an issue
         return;
       }
       history(route);
     },
-    [history, project_id, serverId, tab]
+    [history]
   );
 
   if (!uiSpec) {
