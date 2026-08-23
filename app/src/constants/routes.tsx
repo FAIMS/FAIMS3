@@ -39,29 +39,12 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
-/** Segments the record routes spend, so a tab slug cannot take them. */
-type ReservedTabSegment =
-  | typeof EDIT_RECORD_SEGMENT
-  | typeof VIEW_RECORD_SEGMENT;
-
-/**
- * A member the tab list cannot have, so intersecting it with one that names a
- * reserved segment puts the offending slug and the reason in the build error.
- */
-type ReservedTabSlug<T> = {
-  [K in Extract<
-    T,
-    ReservedTabSegment
-  > as `'${K}' is a reserved route segment`]: never;
-};
-
 /**
  * The tab a view shows for the slug the route names: the one it matches, or its
- * default. FAIMS3 keeps no list of tabs, so an unknown slug is not an error;
- * a slug the record routes already spend is, and fails to compile.
+ * default. FAIMS3 keeps no list of tabs, so an unknown slug is not an error.
  */
 export const resolveTab = <T extends string>(
-  tabs: readonly [T, ...T[]] & ReservedTabSlug<T>,
+  tabs: readonly [T, ...T[]],
   tab?: string
 ): T => {
   const match = tabs.find(t => t === tab);
