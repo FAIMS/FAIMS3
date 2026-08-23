@@ -27,9 +27,6 @@ export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${config.notebookNamePlural}/`;
 export const NOTEBOOK_LIST_ROUTE = '/';
-export const RECORD_CREATE = '/new/';
-export const RECORD_RECORD = '/record/';
-export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const OFFLINE_MAPS = '/offline-maps';
 export const AUTOINCREMENT = '/autoincrements/';
@@ -51,8 +48,13 @@ export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:proje
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
 export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
 
-/** The notebook route prefix a record route hangs off, tab segment included. */
-function notebookRoutePrefix({
+/**
+ * Generates a route to a notebook, on the given tab where one is named. The
+ * record routes nest under it, so they build on this too.
+ *
+ * @returns /<notebook-plural>/<server>/<project>[/<tab>]
+ */
+export function getNotebookRoute({
   serverId,
   projectId,
   tab,
@@ -68,23 +70,6 @@ function notebookRoutePrefix({
     projectId +
     (tab ? '/' + tab : '')
   );
-}
-
-/**
- * Generates a route to a notebook, on the given tab where one is named.
- *
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]
- */
-export function getNotebookRoute({
-  serverId,
-  projectId,
-  tab,
-}: {
-  serverId: string;
-  projectId: string;
-  tab?: string;
-}) {
-  return notebookRoutePrefix({serverId, projectId, tab});
 }
 
 /**
@@ -107,7 +92,7 @@ export function getEditRecordRoute({
 }) {
   if (!!serverId && !!projectId && !!recordId) {
     return (
-      notebookRoutePrefix({serverId, projectId, tab}) +
+      getNotebookRoute({serverId, projectId, tab}) +
       '/' +
       `${EDIT_RECORD_SEGMENT}/${recordId}` +
       (mode ? `?mode=${mode}` : '')
@@ -139,7 +124,7 @@ export function getViewRecordRoute({
   revisionId?: RecordID;
 }) {
   return (
-    notebookRoutePrefix({serverId, projectId, tab}) +
+    getNotebookRoute({serverId, projectId, tab}) +
     '/' +
     `${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
