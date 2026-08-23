@@ -202,7 +202,9 @@ function NotebookViewWithSpec({
         });
         navigate(
           ROUTES.getEditRecordRoute({
-            from: 'notebook',
+            serverId: project.serverId,
+            projectId: project.projectId,
+            tab,
             recordId: record._id,
             mode: 'new',
           })
@@ -227,6 +229,7 @@ function NotebookViewWithSpec({
       navigate,
       project.serverId,
       project.projectId,
+      tab,
       dispatch,
     ]
   );
@@ -236,12 +239,14 @@ function NotebookViewWithSpec({
     (record: MinimalRecordMetadata) => {
       navigate(
         ROUTES.getViewRecordRoute({
-          from: 'notebook',
+          serverId: project.serverId,
+          projectId: project.projectId,
+          tab,
           recordId: record.recordId,
         })
       );
     },
-    [navigate]
+    [navigate, project.serverId, project.projectId, tab]
   );
 
   // does this notebook have a plan, and do we have a view component for it

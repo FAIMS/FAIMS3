@@ -87,56 +87,49 @@ export function getNotebookRoute({
   );
 }
 
-/**
- * The route a record link is rendered from. The record routes nest under the
- * notebook route, which is the segment carrying the tab, so a link from a
- * record page has one more segment to climb than one from the notebook page.
- */
-type RecordLinkOrigin = 'notebook' | 'record';
-
-const RECORD_LINK_PREFIX: Record<RecordLinkOrigin, string> = {
-  notebook: '',
-  record: '../',
+/** The notebook the record routes nest under, which every record link needs. */
+type RecordRouteNotebook = {
+  serverId: string;
+  projectId: string;
+  tab?: string;
 };
 
 /**
- * Generates a route to the edit page for a record, relative to the route it is
- * rendered from.
+ * Generates a route to the edit page for a record, under the notebook tab it is
+ * opened from.
  *
- * @returns [../]records/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<tab>]/records/<recordId>
  */
 export function getEditRecordRoute({
-  from,
   recordId,
   mode,
-}: {
-  from: RecordLinkOrigin;
+  ...notebook
+}: RecordRouteNotebook & {
   recordId: RecordID;
   mode?: AvpUpdateMode;
 }) {
   return (
-    `${RECORD_LINK_PREFIX[from]}${EDIT_RECORD_SEGMENT}/${recordId}` +
+    `${getNotebookRoute(notebook)}/${EDIT_RECORD_SEGMENT}/${recordId}` +
     (mode ? `?mode=${mode}` : '')
   );
 }
 
 /**
- * Generates a route to the read-only view page for a record, relative to the
- * route it is rendered from.
+ * Generates a route to the read-only view page for a record, under the notebook
+ * tab it is opened from.
  *
- * @returns [../]view-record/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<tab>]/view-record/<recordId>
  */
 export function getViewRecordRoute({
-  from,
   recordId,
   revisionId,
-}: {
-  from: RecordLinkOrigin;
+  ...notebook
+}: RecordRouteNotebook & {
   recordId: RecordID;
   revisionId?: RecordID;
 }) {
   return (
-    `${RECORD_LINK_PREFIX[from]}${VIEW_RECORD_SEGMENT}/${recordId}` +
+    `${getNotebookRoute(notebook)}/${VIEW_RECORD_SEGMENT}/${recordId}` +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
 }

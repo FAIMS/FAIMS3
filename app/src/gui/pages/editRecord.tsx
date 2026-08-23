@@ -85,9 +85,10 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
  * `canLoadRecord` gating on queries.
  */
 export const EditRecordPage = () => {
-  const {serverId, projectId, recordId} = useParams<{
+  const {serverId, projectId, tab, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
+    tab?: string;
     recordId: RecordID;
   }>();
 
@@ -277,7 +278,12 @@ export const EditRecordPage = () => {
         // parent navigation history)
         navigateToViewRecord: params => {
           navigate(
-            getViewRecordRoute({from: 'record', recordId: params.recordId})
+            getViewRecordRoute({
+              serverId: serverId!,
+              projectId: projectId!,
+              tab,
+              recordId: params.recordId,
+            })
           );
         },
         toRecord: ({
@@ -321,7 +327,9 @@ export const EditRecordPage = () => {
 
           navigate(
             getEditRecordRoute({
-              from: 'record',
+              serverId: serverId!,
+              projectId: projectId!,
+              tab,
               recordId: targetRecordId,
               mode: targetMode,
             }),
@@ -331,7 +339,9 @@ export const EditRecordPage = () => {
         },
         getToRecordLink(params) {
           return getEditRecordRoute({
-            from: 'record',
+            serverId: serverId!,
+            projectId: projectId!,
+            tab,
             recordId: params.recordId,
             mode,
           });
@@ -353,6 +363,7 @@ export const EditRecordPage = () => {
     serverId,
     navigationContext,
     projectId,
+    tab,
     recordId,
     mode,
     activeUser,
@@ -436,7 +447,14 @@ export const EditRecordPage = () => {
             <Button
               variant="outlined"
               onClick={() =>
-                navigate(getViewRecordRoute({from: 'record', recordId}))
+                navigate(
+                  getViewRecordRoute({
+                    serverId,
+                    projectId,
+                    tab,
+                    recordId,
+                  })
+                )
               }
             >
               Open read-only view

@@ -19,7 +19,7 @@ import {fieldCompletionResolver, ProgressBar} from '@faims3/forms';
 import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink, useParams} from 'react-router-dom';
 import {getViewRecordRoute} from '../../../constants/routes';
 import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
@@ -41,6 +41,11 @@ const StatusNode: React.FC<{
   /** The viewed record itself, which needs no link to where the user already is. */
   isRoot?: boolean;
 }> = ({report, uiSpec, isRoot}) => {
+  const {serverId, projectId, tab} = useParams() as {
+    serverId: string;
+    projectId: string;
+    tab?: string;
+  };
   const {ownProgress} = report;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
@@ -62,7 +67,9 @@ const StatusNode: React.FC<{
           <Link
             component={RouterLink}
             to={getViewRecordRoute({
-              from: 'record',
+              serverId,
+              projectId,
+              tab,
               recordId: report.recordId,
             })}
             variant="body2"

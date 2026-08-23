@@ -232,6 +232,11 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   isDeleted,
 }) => {
   const nav = useNavigate();
+  const {serverId, projectId, tab} = useParams() as {
+    serverId: string;
+    projectId: string;
+    tab?: string;
+  };
 
   const nestedEditButton: React.FC<{recordId: string}> = isDeleted
     ? () => null
@@ -242,7 +247,9 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
           onClick={() => {
             nav(
               getEditRecordRoute({
-                from: 'record',
+                serverId,
+                projectId,
+                tab,
                 recordId: props.recordId,
                 mode: 'parent',
               })
@@ -267,7 +274,9 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       getDataEngine,
       getRecordRoute: params =>
         getViewRecordRoute({
-          from: 'record',
+          serverId,
+          projectId,
+          tab,
           recordId: params.recordId,
           revisionId: params.revisionId,
         }),
@@ -275,7 +284,9 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       navigateToRecord: params => {
         nav(
           getViewRecordRoute({
-            from: 'record',
+            serverId,
+            projectId,
+            tab,
             recordId: params.recordId,
             revisionId: params.revisionId,
           })
@@ -302,7 +313,9 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         onClick: () =>
           nav(
             getViewRecordRoute({
-              from: 'record',
+              serverId,
+              projectId,
+              tab,
               recordId: relationship.recordId,
             })
           ),
@@ -468,9 +481,10 @@ const HistoryTabContent: React.FC<{
  * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
-  const {serverId, projectId, recordId} = useParams<{
+  const {serverId, projectId, tab, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
+    tab?: string;
     recordId: RecordID;
   }>();
 
@@ -677,7 +691,13 @@ export const ViewRecordPage: React.FC = () => {
             formData={formData}
             onEditRecord={() => {
               nav(
-                getEditRecordRoute({from: 'record', recordId, mode: 'parent'})
+                getEditRecordRoute({
+                  serverId,
+                  projectId,
+                  tab,
+                  recordId,
+                  mode: 'parent',
+                })
               );
             }}
             uiSpec={uiSpec}
