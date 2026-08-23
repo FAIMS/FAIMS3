@@ -39,7 +39,11 @@ import {
   getAddressAutosuggestService,
   getMapConfig,
 } from '../../buildconfig';
-import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
+import {
+  getEditRecordRoute,
+  getViewRecordRoute,
+  NOTEBOOK_FROM_RECORD_ROUTE,
+} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -271,7 +275,7 @@ export const EditRecordPage = () => {
         navigateToRecordList: {
           label: 'Return to record list',
           navigate: () => {
-            navigate('..');
+            navigate(NOTEBOOK_FROM_RECORD_ROUTE);
           },
         },
         // Takes you back to view record (note this is only shown if there are no
@@ -459,7 +463,10 @@ export const EditRecordPage = () => {
             >
               Open read-only view
             </Button>
-            <Button variant="text" onClick={() => navigate('..')}>
+            <Button
+              variant="text"
+              onClick={() => navigate(NOTEBOOK_FROM_RECORD_ROUTE)}
+            >
               {`Back to ${config.notebookName}`}
             </Button>
           </Stack>

@@ -51,7 +51,11 @@ import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {config, getMapConfig} from '../../buildconfig';
-import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
+import {
+  getEditRecordRoute,
+  getViewRecordRoute,
+  NOTEBOOK_FROM_RECORD_ROUTE,
+} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -609,10 +613,6 @@ export const ViewRecordPage: React.FC = () => {
     return <div>UI Specification not found</div>;
   }
 
-  // The record route nests under the notebook tab it was opened from, so `..`
-  // is the notebook on that tab
-  const backLink = '..';
-
   // Loading state
   if (isPending || isRefetching) {
     return (
@@ -652,7 +652,7 @@ export const ViewRecordPage: React.FC = () => {
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           {/* Back to record link */}
-          <BackButton link={backLink} />
+          <BackButton link={NOTEBOOK_FROM_RECORD_ROUTE} />
           <Typography variant="h3" color={theme.palette.text.primary}>
             Viewing: {formLabel}
           </Typography>

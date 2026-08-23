@@ -87,6 +87,13 @@ export function getNotebookRoute({
   );
 }
 
+/**
+ * Leaving a record page: the record routes nest under the notebook route, which
+ * is the segment carrying the tab, so one up is the notebook on the tab the
+ * record was opened from.
+ */
+export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
+
 /** The notebook the record routes nest under, which every record link needs. */
 type RecordRouteNotebook = {
   serverId: string;
