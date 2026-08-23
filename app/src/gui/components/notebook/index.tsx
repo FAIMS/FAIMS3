@@ -26,7 +26,7 @@ import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
-// This view's tab slugs, default first, in the order of the tab strip below
+// This view's tab slugs, default first
 const TABS = [
   'my-records',
   'other-records',
@@ -42,7 +42,7 @@ interface TabPanelProps {
   children?: React.ReactNode;
   id: string;
   /** The tab slug this panel belongs to. */
-  index: string;
+  tab: string;
   /** The tab slug currently shown. */
   value: string;
 }
@@ -55,17 +55,17 @@ interface TabPanelProps {
  * @returns {JSX.Element} - The JSX element for the TabPanel.
  */
 function TabPanel(props: TabPanelProps) {
-  const {children, id, value, index, ...other} = props;
+  const {children, id, value, tab, ...other} = props;
 
   return (
     <div
       role="tabpanel"
-      hidden={value !== index}
-      id={`${id}-${index}`}
-      aria-labelledby={`${id}-${index}`}
+      hidden={value !== tab}
+      id={`${id}-${tab}`}
+      aria-labelledby={`${id}-${tab}`}
       {...other}
     >
-      {value === index && <Box>{children}</Box>}
+      {value === tab && <Box>{children}</Box>}
     </div>
   );
 }
@@ -73,17 +73,17 @@ function TabPanel(props: TabPanelProps) {
 /**
  * a11yProps returns accessibility properties for a tab.
  *
- * @param {string} index - The slug of the tab.
+ * @param {string} tab - The slug of the tab.
  * @param {string} id - The id of the tab panel.
  * @returns {object} - The accessibility properties for the tab.
  */
-function a11yProps(index: string, id: string) {
+function a11yProps(tab: string, id: string) {
   /**
    * Accessibility props
    */
   return {
-    id: `${id}-tab-${index}`,
-    'aria-controls': `${id}-tabpanel-${index}`,
+    id: `${id}-tab-${tab}`,
+    'aria-controls': `${id}-tabpanel-${tab}`,
   };
 }
 
@@ -157,17 +157,6 @@ export default function NotebookComponent({
   }
 
   const viewsets = uiSpecification.viewsets;
-
-  /**
-   * Handles the change event when the user switches between the tabs.
-   *
-   * @param {React.SyntheticEvent} event - The event triggered by the tab
-   * change.
-   * @param {string} newValue - The slug of the selected tab.
-   */
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
-    setTab(newValue);
-  };
 
   const goToSyncSettings = () => {
     setTab('settings');
@@ -245,7 +234,7 @@ export default function NotebookComponent({
           >
             <Tabs
               value={currentTab}
-              onChange={handleTabChange}
+              onChange={(_event, newTab: string) => setTab(newTab)}
               aria-label={`${config.notebookName} tabs`}
               indicatorColor="secondary"
               sx={{
@@ -317,7 +306,7 @@ export default function NotebookComponent({
         {
           // My records
         }
-        <TabPanel value={currentTab} index="my-records" id={'records-mine'}>
+        <TabPanel value={currentTab} tab="my-records" id={'records-mine'}>
           <RecordsTable
             project={project}
             maxRows={25}
@@ -334,7 +323,7 @@ export default function NotebookComponent({
           // Other records
         }
 
-        <TabPanel value={currentTab} index="other-records" id={'records-all'}>
+        <TabPanel value={currentTab} tab="other-records" id={'records-all'}>
           <RecordsTable
             project={project}
             maxRows={25}
@@ -348,7 +337,7 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} index="map" id={'map'}>
+        <TabPanel value={currentTab} tab="map" id={'map'}>
           <OverviewMap
             records={records}
             project_id={project.projectId}
@@ -356,11 +345,11 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} index="details" id={'details'}>
+        <TabPanel value={currentTab} tab="details" id={'details'}>
           <MetadataDisplayComponent project={project} templateId={templateId} />
         </TabPanel>
 
-        <TabPanel value={currentTab} index="settings" id={'settings'}>
+        <TabPanel value={currentTab} tab="settings" id={'settings'}>
           <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
       </Box>
