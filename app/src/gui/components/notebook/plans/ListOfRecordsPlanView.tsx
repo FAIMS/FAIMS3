@@ -14,12 +14,18 @@ import {
 } from '@mui/material';
 import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
-import {resolveTab} from '../../../../constants/routes';
+import {resolveTab, SHARED_TAB} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
 
 // This view's tab slugs, default first
-const TABS = ['planned', 'all-records', 'details', 'settings', 'map'] as const;
+const TABS = [
+  'planned',
+  'all-records',
+  SHARED_TAB.details,
+  SHARED_TAB.settings,
+  SHARED_TAB.map,
+] as const;
 
 /**
  * A view component for the list of records plan type. Shows pre-populated cards
@@ -116,19 +122,19 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             aria-controls="all-tabpanel"
           />
           <Tab
-            value="details"
+            value={SHARED_TAB.details}
             label="Details"
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value="settings"
+            value={SHARED_TAB.settings}
             label="Settings"
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
           <Tab
-            value="map"
+            value={SHARED_TAB.map}
             label="Overview Map"
             id="overview-map-tab"
             aria-controls="overview-map-tabpanel"
@@ -190,21 +196,21 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value="details"
+          value={SHARED_TAB.details}
           id="details-tabpanel"
           aria-labelledby="details-tab"
         >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
         <TabPanel
-          value="settings"
+          value={SHARED_TAB.settings}
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
           <props.components.NotebookSettings />
         </TabPanel>
         <TabPanel
-          value="map"
+          value={SHARED_TAB.map}
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >

@@ -128,7 +128,7 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             to={ROUTES.getNotebookRoute({
               serverId: props.serverId,
               projectId: project_id,
-              tab: 'settings',
+              tab: ROUTES.SHARED_TAB.settings,
             })}
           >
             Go to settings

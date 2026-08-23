@@ -39,6 +39,13 @@ export const POUCH_EXPLORER = '/pouchDB';
 const EDIT_RECORD_SEGMENT = 'records';
 const VIEW_RECORD_SEGMENT = 'view-record';
 
+/** Tab slugs shared by more than one view, which a link outside one can name. */
+export const SHARED_TAB = {
+  map: 'map',
+  details: 'details',
+  settings: 'settings',
+} as const;
+
 /** The tab matching the route's slug, or the view's default. */
 export const resolveTab = <T extends string>(
   tabs: readonly [T, ...T[]],

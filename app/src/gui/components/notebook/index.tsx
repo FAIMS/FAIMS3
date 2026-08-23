@@ -10,7 +10,7 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {resolveTab} from '../../../constants/routes';
+import {resolveTab, SHARED_TAB} from '../../../constants/routes';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
@@ -30,9 +30,9 @@ import NotebookSettings from './settings';
 const TABS = [
   'my-records',
   'other-records',
-  'map',
-  'details',
-  'settings',
+  SHARED_TAB.map,
+  SHARED_TAB.details,
+  SHARED_TAB.settings,
 ] as const;
 
 /**
@@ -154,7 +154,7 @@ export default function NotebookComponent({
   const viewsets = uiSpecification.viewsets;
 
   const goToSyncSettings = () => {
-    setTab('settings');
+    setTab(SHARED_TAB.settings);
   };
 
   // recordLabel based on viewsets
@@ -274,22 +274,22 @@ export default function NotebookComponent({
               )}
 
               <Tab
-                value="map"
+                value={SHARED_TAB.map}
                 label="Map"
                 data-testid="app-notebook-tab-map"
-                {...a11yProps('map')}
+                {...a11yProps(SHARED_TAB.map)}
               />
               <Tab
-                value="details"
+                value={SHARED_TAB.details}
                 label="Details"
                 data-testid="app-notebook-tab-details"
-                {...a11yProps('details')}
+                {...a11yProps(SHARED_TAB.details)}
               />
               <Tab
-                value="settings"
+                value={SHARED_TAB.settings}
                 label="Settings"
                 data-testid="app-notebook-tab-settings"
-                {...a11yProps('settings')}
+                {...a11yProps(SHARED_TAB.settings)}
               />
             </Tabs>
           </Paper>
@@ -329,7 +329,7 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab="map">
+        <TabPanel value={currentTab} tab={SHARED_TAB.map}>
           <OverviewMap
             records={records}
             serverId={project.serverId}
@@ -338,11 +338,11 @@ export default function NotebookComponent({
           />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab="details">
+        <TabPanel value={currentTab} tab={SHARED_TAB.details}>
           <MetadataDisplayComponent project={project} templateId={templateId} />
         </TabPanel>
 
-        <TabPanel value={currentTab} tab="settings">
+        <TabPanel value={currentTab} tab={SHARED_TAB.settings}>
           <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
       </Box>

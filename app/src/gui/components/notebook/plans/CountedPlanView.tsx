@@ -2,14 +2,14 @@ import {COUNTED_PLAN_TYPE, CountedPlan} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
 import {RecordsTable} from '../record_table';
-import {resolveTab} from '../../../../constants/routes';
+import {resolveTab, SHARED_TAB} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import TabPanel from '@mui/lab/TabPanel';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 
 // This view's tab slugs, default first
-const TABS = ['planned', 'details', 'settings'] as const;
+const TABS = ['planned', SHARED_TAB.details, SHARED_TAB.settings] as const;
 
 /**
  * A view component for the counted plan type. Shows the record
@@ -85,13 +85,13 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           />
 
           <Tab
-            value="details"
+            value={SHARED_TAB.details}
             label={`Details`}
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value="settings"
+            value={SHARED_TAB.settings}
             label={`Settings`}
             id="settings-tab"
             aria-controls="settings-tabpanel"
@@ -136,7 +136,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value="details"
+          value={SHARED_TAB.details}
           id="details-tabpanel"
           aria-labelledby="details-tab"
         >
@@ -144,7 +144,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
         </TabPanel>
 
         <TabPanel
-          value="settings"
+          value={SHARED_TAB.settings}
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
