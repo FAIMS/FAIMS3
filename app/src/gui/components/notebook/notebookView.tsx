@@ -306,8 +306,8 @@ function NotebookViewWithSpec({
         ),
         OverviewMap: () => (
           <OverviewMap
-            records={records}
             serverId={project.serverId}
+            records={records}
             project_id={project.projectId}
             uiSpec={uiSpecification}
           />

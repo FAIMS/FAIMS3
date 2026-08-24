@@ -283,10 +283,10 @@ export const EditRecordPage = () => {
         navigateToViewRecord: params => {
           navigate(
             getViewRecordRoute({
-              serverId: serverId!,
               projectId: projectId!,
-              tab,
               recordId: params.recordId,
+              serverId: serverId!,
+              tab,
             })
           );
         },
@@ -452,12 +452,7 @@ export const EditRecordPage = () => {
               variant="outlined"
               onClick={() =>
                 navigate(
-                  getViewRecordRoute({
-                    serverId,
-                    projectId,
-                    tab,
-                    recordId,
-                  })
+                  getViewRecordRoute({projectId, recordId, serverId, tab})
                 )
               }
             >
