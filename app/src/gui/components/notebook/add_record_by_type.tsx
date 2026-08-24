@@ -73,8 +73,8 @@ export default function AddRecordButtons({
       .then(newRecord =>
         navigate(
           ROUTES.getEditRecordRoute({
-            serverId,
-            projectId,
+            serverId: serverId,
+            projectId: projectId,
             tab,
             recordId: newRecord.record._id,
             mode: 'new',
@@ -103,16 +103,15 @@ export default function AddRecordButtons({
       }
     });
   };
-  // A scanned record without an id has nowhere to go, so show the buttons
-  if (selectedRecord?.record_id) {
+  if (selectedRecord) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
       <Navigate
         to={ROUTES.getEditRecordRoute({
-          serverId,
-          projectId,
+          serverId: serverId,
+          projectId: projectId || 'dummy',
           tab,
-          recordId: selectedRecord.record_id,
+          recordId: (selectedRecord.record_id || '').toString(),
         })}
       />
     );
