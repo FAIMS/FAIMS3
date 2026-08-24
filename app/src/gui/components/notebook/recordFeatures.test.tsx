@@ -160,16 +160,15 @@ describe('useRecordFeatures', () => {
       form_id: 'Site',
     });
     expect(getFieldValues).toHaveBeenCalledWith({
-      recordId: 'rec-site',
       revisionId: 'frev-site',
       fields: expect.arrayContaining(['site_location', 'orphan_location']),
     });
   });
 
-  it('keeps other records when one has no readable values', async () => {
-    getFieldValues.mockImplementation(({recordId}: {recordId: string}) =>
+  it('still builds the collection when one record contributes nothing', async () => {
+    getFieldValues.mockImplementation(({revisionId}: {revisionId: string}) =>
       Promise.resolve(
-        recordId === 'rec-obs' ? {} : {site_location: POINT_FEATURE}
+        revisionId === 'frev-obs' ? {} : {site_location: POINT_FEATURE}
       )
     );
 

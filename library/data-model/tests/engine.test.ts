@@ -589,13 +589,12 @@ describe('DataEngine', () => {
     };
 
     test('getFieldValues reads only the fields asked for', async () => {
-      const {recordId, revisionId} = await seedRecord({
+      const {revisionId} = await seedRecord({
         'First-1': 'first',
         'Second-1': 'second',
       });
 
       const values = await engine.hydrated.getFieldValues({
-        recordId,
         revisionId,
         fields: ['First-1'],
       });
@@ -604,10 +603,9 @@ describe('DataEngine', () => {
     });
 
     test('getFieldValues omits a field the revision does not hold', async () => {
-      const {recordId, revisionId} = await seedRecord({'First-1': 'first'});
+      const {revisionId} = await seedRecord({'First-1': 'first'});
 
       const values = await engine.hydrated.getFieldValues({
-        recordId,
         revisionId,
         fields: ['First-1', 'Absent-1'],
       });
@@ -617,7 +615,6 @@ describe('DataEngine', () => {
 
     test('getFieldValues returns nothing when the revision is gone', async () => {
       const values = await engine.hydrated.getFieldValues({
-        recordId: generateRecordID(),
         revisionId: generateRevisionID(),
         fields: ['First-1'],
       });
@@ -626,14 +623,13 @@ describe('DataEngine', () => {
     });
 
     test('getFieldValues rethrows a systemic read failure rather than reading as no data', async () => {
-      const {recordId, revisionId} = await seedRecord({'First-1': 'first'});
+      const {revisionId} = await seedRecord({'First-1': 'first'});
       const failing = jest
         .spyOn(engine.core, 'getAvp')
         .mockRejectedValue(new Error('database is closed'));
 
       await expect(
         engine.hydrated.getFieldValues({
-          recordId,
           revisionId,
           fields: ['First-1'],
         })
@@ -646,7 +642,6 @@ describe('DataEngine', () => {
       const getRevision = jest.spyOn(engine.core, 'getRevision');
 
       const values = await engine.hydrated.getFieldValues({
-        recordId: generateRecordID(),
         revisionId: generateRevisionID(),
         fields: [],
       });

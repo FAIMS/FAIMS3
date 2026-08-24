@@ -71,7 +71,6 @@ export const extractFeaturesFromRecord = async (
   fields: string[]
 ): Promise<RecordGeoJSONFeature[]> => {
   const values = await dataEngine.hydrated.getFieldValues({
-    recordId: record.recordId,
     revisionId: record.revisionId,
     fields,
   });

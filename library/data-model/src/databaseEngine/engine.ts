@@ -939,30 +939,25 @@ class HydratedOperations {
    * A missing revision or AVP skips that record or field; any other read
    * failure is rethrown, so a systemic fault does not read as no data.
    *
-   * TODO not optimal for efficiency: a read per revision plus one per field
-   *
-   * @param recordId - The record the revision belongs to, for the skip warnings
    * @param revisionId - The revision to read
    * @param fields - The field names to read
-   * @returns The values found, keyed by field name; absent fields are omitted
+   * @returns The values found, keyed by field name; a field the revision does
+   * not hold is omitted, while a stored empty string or zero is returned
    */
   async getFieldValues({
-    recordId,
     revisionId,
     fields,
   }: {
-    recordId: string;
     revisionId: string;
     fields: string[];
   }): Promise<Record<string, unknown>> {
     const values: Record<string, unknown> = {};
     if (fields.length === 0) return values;
 
+    // TODO this is not optimal for efficiency
     const revision = await this.core.getRevision(revisionId).catch(error => {
       if (!(error instanceof Exceptions.DocumentNotFoundError)) throw error;
-      console.warn(
-        `Skipping record ${recordId}: revision ${revisionId} not found`
-      );
+      console.warn(`Skipping revision ${revisionId}: not found`);
       return undefined;
     });
     if (!revision) return values;
@@ -979,7 +974,7 @@ class HydratedOperations {
         } catch (error) {
           if (!(error instanceof Exceptions.DocumentNotFoundError)) throw error;
           console.warn(
-            `Skipping field ${field} of record ${recordId}: AVP not found`
+            `Skipping field ${field} of revision ${revisionId}: AVP not found`
           );
         }
       })
