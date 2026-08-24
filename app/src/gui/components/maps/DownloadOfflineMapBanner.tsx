@@ -21,53 +21,67 @@ import {Alert, Button, Stack, Typography} from '@mui/material';
 
 /** Selection states shown while creating a new offline map. */
 export type DownloadOfflineMapStatus =
-  | 'drawing' //drawing mode active, no first point yet
-  | 'drawing-started' //first point placed
-  | 'pending' //drawing completed, waiting for confirmation
-  | 'confirmed'; //selection confirmedv
+  | 'drawing' // Drawing active, no first point yet.
+  | 'drawing-started' // First point placed.
+  | 'pending' // Selection completed, waiting for confirmation.
+  | 'confirmed'; // Selection confirmed.
 
 /** Props for {@link DownloadOfflineMapBanner}. */
 export type DownloadOfflineMapBannerProps = {
-  /** Current rectangle selection state. */
   status: DownloadOfflineMapStatus;
-  /** Clears the current in-progress or completed selection. */
+  /** Whether touch-based map selection is being used. */
+  isTouchDevice: boolean;
   onClear: () => void;
-  /** Confirms the completed selection. */
   onConfirm: () => void;
 };
 
 export function DownloadOfflineMapBanner({
   status,
+  isTouchDevice,
   onClear,
   onConfirm,
 }: DownloadOfflineMapBannerProps) {
-  const content = {
-    // Nothing done
-    drawing: {
-      severity: 'info' as const,
-      message:
-        'Click on the map to start your selection, then click again to complete it.',
-    },
-    // Mid way (clicked once)
-    'drawing-started': {
-      severity: 'info' as const,
-      message:
-        'Starting point selected. Click again on the map to complete your selection.',
-    },
-    // Finished uncomfirmed
-    pending: {
-      severity: 'warning' as const,
-      message:
-        'You have selected an area below. Confirm or clear your selection.',
-    },
-    // Selection confirmed
-    confirmed: {
-      severity: 'success' as const,
-      message: 'Your map selection is confirmed.',
-    },
-  }[status];
+  const content = isTouchDevice
+    ? status === 'confirmed'
+      ? {
+          severity: 'success' as const,
+          message:
+            'Your map selection is confirmed. Select Clear to adjust it again.',
+        }
+      : {
+          severity: 'info' as const,
+          message:
+            'The area inside the frame will be downloaded. Pan or pinch to adjust it, then confirm when ready.',
+        }
+    : {
+        // Nothing done
+        drawing: {
+          severity: 'info' as const,
+          message:
+            'Click on the map to start your selection, then click again to complete it.',
+        },
+        // Mid way (clicked once)
+        'drawing-started': {
+          severity: 'info' as const,
+          message:
+            'Starting point selected. Click again on the map to complete your selection.',
+        },
+        // Selection completed, waiting for confirmation.
+        pending: {
+          severity: 'warning' as const,
+          message:
+            'You have selected an area below. Confirm or clear your selection.',
+        },
+        // Selection confirmed
+        confirmed: {
+          severity: 'success' as const,
+          message: 'Your map selection is confirmed.',
+        },
+      }[status];
 
-  const canClear = status !== 'drawing';
+  const canClear = isTouchDevice
+    ? status === 'confirmed'
+    : status !== 'drawing';
   const canConfirm = status === 'pending';
   const hideConfirm = status === 'confirmed';
 

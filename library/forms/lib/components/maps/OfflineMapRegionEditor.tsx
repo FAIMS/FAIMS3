@@ -242,9 +242,12 @@ export function OfflineMapRegionEditor({
     drawRef.current?.abortDrawing();
     // Remove any completed rectangle from the vector source.
     vectorSourceRef.current.clear();
+    // Reset the parent's first point selection state.
+    onFirstPointPlacedChange?.(false);
     onRegionChange(null);
   }, [onFirstPointPlacedChange, onRegionChange]);
 
+  // Clear the drawing when a new external clear request is received.
   useEffect(() => {
     if (
       clearDrawingRequestId === undefined ||

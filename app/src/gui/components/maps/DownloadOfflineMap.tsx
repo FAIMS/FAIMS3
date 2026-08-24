@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Description:
- *   Create a named offline map download by drawing a rectangular area.
+ *   Create a named offline map download by selecting a rectangular area.
  */
 
 import type {OfflineMapRegion} from '@faims3/data-model';
@@ -38,8 +38,9 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useBlocker, useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
@@ -48,10 +49,13 @@ import {
   DownloadOfflineMapBanner,
   DownloadOfflineMapStatus,
 } from './DownloadOfflineMapBanner';
+import {MobileOfflineMapRegionSelector} from './MobileOfflineMapRegionSelector';
 
 // create/download a new offline map
 export function DownloadOfflineMap() {
   const navigate = useNavigate();
+  // Use the mobile selector on touch devices where box dragging is unreliable.
+  const isTouchDevice = useMediaQuery('(pointer: coarse)');
 
   // user-visible map name, multiple offline maps may use the same name.
   const [mapName, setMapName] = useState('');
@@ -119,16 +123,32 @@ export function DownloadOfflineMap() {
     };
   }, [mapConfig, region]);
 
-  const handleRegionChange = (nextRegion: OfflineMapRegion | null) => {
-    setRegion(nextRegion);
-    setSelectionConfirmed(false);
-  };
+  const handleRegionChange = useCallback(
+    (nextRegion: OfflineMapRegion | null) => {
+      setRegion(nextRegion);
+      setSelectionConfirmed(false);
+    },
+    []
+  );
 
-  const handleClear = () => {
+  const handleDrawingClear = () => {
     setRegion(null);
-    setSelectionConfirmed(false);
     setDrawingActive(true);
     setClearDrawingRequestId(prev => prev + 1);
+  };
+
+  const handleSelectionClear = () => {
+    setError('');
+    setSelectionConfirmed(false);
+
+    if (!isTouchDevice) {
+      handleDrawingClear();
+    }
+  };
+
+  const handleConfirm = () => {
+    setError('');
+    setSelectionConfirmed(true);
   };
 
   const handleSave = async () => {
@@ -142,12 +162,10 @@ export function DownloadOfflineMap() {
       setError('Please enter a name for your offline map.');
       return;
     }
-
     if (!region) {
       setError('Please select an area on the map.');
       return;
     }
-
     if (!selectionConfirmed) {
       setError('Please confirm the selected area before saving.');
       return;
@@ -200,13 +218,17 @@ export function DownloadOfflineMap() {
         ? formatOfflineMapSizeMb(estimatedSizeMb)
         : 'Unavailable';
 
-  const selectionStatus: DownloadOfflineMapStatus = !region
-    ? hasPlacedFirstPoint
-      ? 'drawing-started'
-      : 'drawing'
-    : selectionConfirmed
+  const selectionStatus: DownloadOfflineMapStatus = isTouchDevice
+    ? selectionConfirmed
       ? 'confirmed'
-      : 'pending';
+      : 'pending'
+    : !region
+      ? hasPlacedFirstPoint
+        ? 'drawing-started'
+        : 'drawing'
+      : selectionConfirmed
+        ? 'confirmed'
+        : 'pending';
 
   return (
     <Box
@@ -275,27 +297,32 @@ export function DownloadOfflineMap() {
           {/* Banner */}
           <DownloadOfflineMapBanner
             status={selectionStatus}
-            onClear={handleClear}
-            onConfirm={() => {
-              setError('');
-              setSelectionConfirmed(true);
-            }}
+            isTouchDevice={isTouchDevice}
+            onClear={handleSelectionClear}
+            onConfirm={handleConfirm}
           />
-
-          <OfflineMapRegionEditor
-            config={mapConfig}
-            region={region ?? undefined}
-            onRegionChange={handleRegionChange}
-            showControls={false}
-            showRegionStatus={false}
-            drawingActive={drawingActive}
-            onDrawingActiveChange={setDrawingActive}
-            onFirstPointPlacedChange={setHasPlacedFirstPoint}
-            clearDrawingRequestId={clearDrawingRequestId}
-            drawingInstruction=""
-            // TODO: may need to fix the main layout first to make this look nicer
-            mapHeight="clamp(360px, 55dvh, 620px)"
-          />
+          {isTouchDevice ? (
+            <MobileOfflineMapRegionSelector
+              config={mapConfig}
+              onRegionChange={handleRegionChange}
+              locked={selectionConfirmed}
+              mapHeight="clamp(360px, 55dvh, 800px)"
+            />
+          ) : (
+            <OfflineMapRegionEditor
+              config={mapConfig}
+              region={region ?? undefined}
+              onRegionChange={handleRegionChange}
+              showControls={false}
+              showRegionStatus={false}
+              drawingActive={drawingActive}
+              onDrawingActiveChange={setDrawingActive}
+              onFirstPointPlacedChange={setHasPlacedFirstPoint}
+              clearDrawingRequestId={clearDrawingRequestId}
+              drawingInstruction=""
+              mapHeight="clamp(360px, 55dvh, 800px)"
+            />
+          )}
         </Stack>
       </Stack>
 
