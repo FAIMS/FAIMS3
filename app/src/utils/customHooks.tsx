@@ -583,7 +583,7 @@ export const useRecordList = ({
    * Whether the list has never loaded, so an empty list means "not known yet"
    * rather than "no records".
    *
-   * Deliberately not `initialQuery.isLoading`, which goes false when the
+   * Deliberately not the query's own `isLoading`, which goes false when the
    * initial fetch fails, presenting the empty fallback as a loaded, empty
    * list.
    */
