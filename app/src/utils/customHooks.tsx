@@ -416,6 +416,9 @@ export function invalidateProjectRecordList({
   }
 }
 
+/** Shared empty list for a record query that has not loaded. */
+const NO_RECORDS: MinimalRecordMetadata[] = [];
+
 /**
  * Returns a list of all records, and active user records. This applies the
  * built in getMetadataForAllRecords filtering (which does client side
@@ -586,8 +589,9 @@ export const useRecordList = ({
    */
   const isLoading = unhydratedRecordQuery.data === undefined;
 
-  // Get all rows - defaulting to an empty list
-  const allRows = unhydratedRecordQuery.data ?? [];
+  // Get all rows - defaulting to an empty list. The fallback is shared so an
+  // unloaded query keeps the same identity across renders.
+  const allRows = unhydratedRecordQuery.data ?? NO_RECORDS;
 
   // Memoize the calculation of the non-draft rows
   const nonDraftRecords = useMemo(() => {
@@ -667,10 +671,8 @@ export const useRecordList = ({
     );
   }
 
-  // Memoized so an unchanged result set keeps its identity and a caller's own
-  // memos hold; a fresh object each render remounts whatever they build. The
-  // query's own result object is not identity stable, so this exposes its
-  // refetch (which is) rather than the query itself.
+  // Memoized so a caller's own memos hold over an unchanged result set. Exposes
+  // `refetch`, which is identity stable, rather than the query, which is not.
   const refetch = unhydratedRecordQuery.refetch;
   return useMemo(
     () => ({
