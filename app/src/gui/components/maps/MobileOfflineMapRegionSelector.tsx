@@ -88,20 +88,17 @@ export const MobileOfflineMapRegionSelector = ({
         map.getView().getProjection(),
         'EPSG:4326'
       );
-      console.debug('changegeddddddd');
       onRegionChange(extent4326ToOfflineMapRegion(extent4326));
     };
 
     // Update the selected region after the user pans or zooms the map.
     map.on('moveend', updateRegion);
-    map.on('change:size', updateRegion);
 
     // Set the initial region once the map is ready.
     updateRegion();
 
     return () => {
       map.un('moveend', updateRegion);
-      map.un('change:size', updateRegion);
     };
   }, [map, onRegionChange]);
 
