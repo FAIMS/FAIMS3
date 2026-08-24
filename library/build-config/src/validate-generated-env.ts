@@ -270,7 +270,7 @@ export function main(
       app: {},
       web: {},
       mobile: {android: {}, ios: {}},
-      build: {},
+      urls: {},
       secrets: {},
     });
   } else {

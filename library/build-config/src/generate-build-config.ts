@@ -83,7 +83,7 @@ function stringify(value: Value): string {
     return String(value);
   }
   if (Array.isArray(value)) {
-    return value.join(',');
+    return (value as Array<string | number | boolean>).join(',');
   }
   return '';
 }
@@ -113,38 +113,24 @@ function buildEnvMap(
   options: {includeEmpty?: boolean} = {}
 ) {
   const {includeEmpty = false} = options;
-  const {app, web, mobile, build} = config;
-  const commitVersion = resolveGitCommitVersion(build.commitVersion);
+  const {app, web, mobile, urls} = config;
+  const commitVersion = resolveGitCommitVersion(app.commitVersion);
 
   const base = {
     VITE_APP_NAME: coalesce(app.appName, web.appName, 'FAIMS'),
-    VITE_APP_SHORT_NAME: coalesce(
-      app.appShortName,
-      app.appName,
-      web.appShortName,
-      'FAIMS'
-    ),
+    VITE_APP_SHORT_NAME: coalesce(app.appShortName, app.appName, 'FAIMS'),
     VITE_CLUSTER_ADMIN_GROUP_NAME: coalesce(
-      build.clusterAdminGroupName,
       app.clusterAdminGroupName,
       'cluster-admin'
     ),
     VITE_COMMIT_VERSION: commitVersion,
-    VITE_CONDUCTOR_URL: coalesce(
-      app.conductorUrl,
-      web.apiUrl,
-      'http://localhost:8080'
-    ),
-    VITE_API_URL: coalesce(
-      web.apiUrl,
-      app.conductorUrl,
-      'http://localhost:8080'
-    ),
-    VITE_WEB_URL: coalesce(web.webUrl, 'http://localhost:3001'),
-    VITE_APP_URL: coalesce(web.appUrl, 'http://localhost:3000'),
+    VITE_CONDUCTOR_URL: coalesce(urls.apiUrl, 'http://localhost:8080'),
+    VITE_API_URL: coalesce(urls.apiUrl, 'http://localhost:8080'),
+    VITE_WEB_URL: coalesce(urls.webUrl, 'http://localhost:3001'),
+    VITE_APP_URL: coalesce(urls.appUrl, 'http://localhost:3000'),
     VITE_WEBSITE_TITLE: coalesce(web.websiteTitle, 'Control Centre'),
-    VITE_APP_THEME: coalesce(app.theme, web.theme, 'default'),
-    VITE_THEME: coalesce(app.theme, web.theme, 'default'),
+    VITE_APP_THEME: coalesce(app.theme, 'default'),
+    VITE_THEME: coalesce(app.theme, 'default'),
     VITE_NOTEBOOK_NAME: coalesce(app.notebookName, 'notebook'),
     VITE_NOTEBOOK_LIST_TYPE: coalesce(app.notebookListType, 'tabs'),
     VITE_APP_ID: coalesce(
@@ -187,11 +173,10 @@ function buildEnvMap(
       mobile.bundleIdentifier,
       mobile.ios?.bundleIdentifier,
       app.appId,
-      'au.edu.faims.electronicfieldnotebook'
+      'org.fedarch.faims3'
     ),
     VITE_APP_STORE_CONNECT_TEAM_ID: coalesce(
-      mobile.teamId,
-      mobile.ios?.developerPortalTeamId,
+      mobile.ios?.appStoreConnectTeamId,
       ''
     ),
     VITE_MAP_SOURCE: coalesce(app.mapSource, 'maptiler'),
@@ -205,44 +190,24 @@ function buildEnvMap(
     VITE_MAPBOX_ADDRESS_COUNTRY: coalesce(app.mapboxAddressCountry, 'AU'),
     VITE_MAPTILER_ADDRESS_COUNTRY: coalesce(app.maptilerAddressCountry, 'AU'),
     VITE_MIGRATE_OLD_DATABASES: boolToEnv(
-      coalesce(app.migrateOldDatabases, build.migrateOldDatabases, false)
+      coalesce(app.migrateOldDatabases, false)
     ),
-    VITE_FORCE_REMOTE_DELETION: coalesce(
-      app.forceRemoteDeletion,
-      build.forceRemoteDeletion,
-      'never'
-    ),
+    VITE_FORCE_REMOTE_DELETION: coalesce(app.forceRemoteDeletion, 'never'),
     VITE_DELETE_ON_DEACTIVATION: boolToEnv(
-      coalesce(app.deleteOnDeactivation, build.deleteOnDeactivation, false)
+      coalesce(app.deleteOnDeactivation, false)
     ),
-    VITE_BUGSNAG_KEY: coalesce(app.bugsnagKey, build.bugsnagKey, ''),
-    VITE_SHOW_WIPE: boolToEnv(coalesce(app.showWipe, build.showWipe, true)),
+    VITE_BUGSNAG_KEY: coalesce(app.bugsnagKey, ''),
+    VITE_SHOW_WIPE: boolToEnv(coalesce(app.showWipe, true)),
     VITE_SHOW_POUCHDB_BROWSER: boolToEnv(
-      coalesce(app.showPouchDbBrowser, build.showPouchDbBrowser, true)
+      coalesce(app.showPouchDbBrowser, true)
     ),
-    VITE_SHOW_NEW_NOTEBOOK: boolToEnv(
-      coalesce(app.showNewNotebook, build.showNewNotebook, true)
-    ),
-    VITE_SHOW_STATUS_TAB: boolToEnv(
-      coalesce(app.showStatusTab, build.showStatusTab, true)
-    ),
-    VITE_DEBUG_APP: boolToEnv(coalesce(app.debugApp, build.debugApp, false)),
-    VITE_DEBUG_POUCHDB: boolToEnv(
-      coalesce(app.debugPouchDb, build.debugPouchDb, false)
-    ),
-    VITE_POUCH_BATCH_SIZE: coalesce(
-      app.pouchBatchSize,
-      build.pouchBatchSize,
-      10
-    ),
-    VITE_POUCH_BATCHES_LIMIT: coalesce(
-      app.pouchBatchesLimit,
-      build.pouchBatchesLimit,
-      10
-    ),
-    VITE_DEVELOPER_MODE: boolToEnv(
-      coalesce(web.developerMode, build.developerMode, false)
-    ),
+    VITE_SHOW_NEW_NOTEBOOK: boolToEnv(coalesce(app.showNewNotebook, true)),
+    VITE_SHOW_STATUS_TAB: boolToEnv(coalesce(app.showStatusTab, true)),
+    VITE_DEBUG_APP: boolToEnv(coalesce(app.debugApp, false)),
+    VITE_DEBUG_POUCHDB: boolToEnv(coalesce(app.debugPouchDb, false)),
+    VITE_POUCH_BATCH_SIZE: coalesce(app.pouchBatchSize, 10),
+    VITE_POUCH_BATCHES_LIMIT: coalesce(app.pouchBatchesLimit, 10),
+    VITE_DEVELOPER_MODE: boolToEnv(coalesce(app.developerMode, false)),
     VITE_DOCS_URL: coalesce(web.docsUrl, ''),
     VITE_BUGSNAG_API_KEY: coalesce(web.bugsnagApiKey, ''),
     VITE_MAX_DESIGN_FILE_SIZE_MB: coalesce(web.maxDesignFileSizeMb, 10),
@@ -254,26 +219,13 @@ function buildEnvMap(
       web.longLivedTokenDurationHints,
       [1, 5, 10, 30, 90, 365]
     ),
-    VITE_EXCLUDED_TEAM_ROLES: coalesce(
-      app.excludedTeamRoles,
-      build.excludedTeamRoles,
-      web.excludedTeamRoles,
-      []
-    ),
+    VITE_EXCLUDED_TEAM_ROLES: coalesce(app.excludedTeamRoles, []),
   };
 
   const platformSpecific = {
     android: {
-      ANDROID_RELEASE_STATUS: coalesce(
-        mobile.android?.releaseStatus,
-        build.androidReleaseStatus,
-        'draft'
-      ),
-      ANDROID_DEPLOY_TRACK: coalesce(
-        mobile.android?.deployTrack,
-        build.androidDeployTrack,
-        'production'
-      ),
+      ANDROID_RELEASE_STATUS: coalesce(mobile.android?.releaseStatus, 'draft'),
+      ANDROID_DEPLOY_TRACK: coalesce(mobile.android?.deployTrack, 'production'),
       APP_ID: coalesce(app.appId, mobile.android?.appId, 'org.fedarch.faims3'),
       JAVA_KEYSTORE: coalesce(mobile.android?.keystorePath, ''),
       JAVA_KEYSTORE_PASSWORD: coalesce(mobile.android?.keystorePassword, ''),
@@ -290,7 +242,7 @@ function buildEnvMap(
       DEVELOPER_APP_ID: coalesce(mobile.ios?.developerAppId, ''),
       DEVELOPER_PORTAL_TEAM_ID: coalesce(
         mobile.ios?.developerPortalTeamId,
-        mobile.teamId,
+        mobile.ios?.appStoreConnectTeamId,
         ''
       ),
       FASTLANE_APPLE_ID: coalesce(mobile.ios?.appleId, ''),

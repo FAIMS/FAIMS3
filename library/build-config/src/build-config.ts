@@ -4,12 +4,15 @@ export const AppBuildConfigSchema = z
   .object({
     appName: z.string().default('FAIMS').optional(),
     appShortName: z.string().optional(),
+    commitVersion: z
+      .string()
+      .default('output of `git rev-parse HEAD`')
+      .optional(),
     headingAppName: z.string().optional(),
     appId: z.string().default('org.fedarch.faims3').optional(),
     theme: z.string().default('default').optional(),
     notebookName: z.string().default('notebook').optional(),
     notebookListType: z.enum(['tabs', 'headings']).default('tabs').optional(),
-    conductorUrl: z.string().default('http://localhost:8080').optional(),
     supportEmail: z.string().default('support@fieldmark.au').optional(),
     privacyPolicyUrl: z
       .string()
@@ -66,17 +69,19 @@ export const AppBuildConfigSchema = z
     pouchBatchesLimit: z.number().int().positive().default(10).optional(),
     excludedTeamRoles: z.array(z.string()).default([]).optional(),
     bugsnagKey: z.string().optional(),
+    developerMode: z.boolean().default(false).optional(),
   })
   .passthrough();
 
+export const UrlBuildConfigSchema = z.object({
+  webUrl: z.string().default('http://localhost:3001').optional(),
+  apiUrl: z.string().default('http://localhost:8080').optional(),
+  appUrl: z.string().default('http://localhost:3000').optional(),
+});
+
 export const WebBuildConfigSchema = z
   .object({
-    webUrl: z.string().default('http://localhost:3001').optional(),
-    apiUrl: z.string().default('http://localhost:8080').optional(),
-    appUrl: z.string().default('http://localhost:3000').optional(),
     websiteTitle: z.string().default('Control Centre').optional(),
-    theme: z.string().default('default').optional(),
-    developerMode: z.boolean().default(false).optional(),
     docsUrl: z.string().default('').optional(),
     bugsnagApiKey: z.string().optional(),
     maxDesignFileSizeMb: z.number().int().positive().default(10).optional(),
@@ -96,14 +101,9 @@ export const WebBuildConfigSchema = z
 
 export const MobileBuildConfigSchema = z
   .object({
-    bundleIdentifier: z
-      .string()
-      .default('au.edu.faims.electronicfieldnotebook')
-      .optional(),
-    teamId: z.string().optional(),
+    appId: z.string().default('org.fedarch.faims3').optional(),
     android: z
       .object({
-        appId: z.string().default('org.fedarch.faims3').optional(),
         releaseStatus: z.string().default('draft').optional(),
         deployTrack: z.string().default('production').optional(),
         keystorePath: z.string().optional(),
@@ -116,9 +116,10 @@ export const MobileBuildConfigSchema = z
       .default({}),
     ios: z
       .object({
-        bundleIdentifier: z.string().optional(),
+        bundleIdentifier: z.string().default('org.fedarch.faims3').optional(),
         developerAppId: z.string().optional(),
         developerPortalTeamId: z.string().optional(),
+        appStoreConnectTeamId: z.string().optional(),
         appleId: z.string().optional(),
         appleApplicationSpecificPassword: z.string().optional(),
         matchPassword: z.string().optional(),
@@ -138,35 +139,10 @@ export const MobileBuildConfigSchema = z
 
 export const BuildConfigSchema = z
   .object({
+    urls: UrlBuildConfigSchema,
     app: AppBuildConfigSchema,
     web: WebBuildConfigSchema,
     mobile: MobileBuildConfigSchema,
-    build: z
-      .object({
-        commitVersion: z.string().default('local-build').optional(),
-        clusterAdminGroupName: z.string().default('cluster-admin').optional(),
-        developerMode: z.boolean().default(false).optional(),
-        showWipe: z.boolean().default(true).optional(),
-        showPouchDbBrowser: z.boolean().default(true).optional(),
-        showNewNotebook: z.boolean().default(true).optional(),
-        showStatusTab: z.boolean().default(true).optional(),
-        debugApp: z.boolean().default(false).optional(),
-        debugPouchDb: z.boolean().default(false).optional(),
-        migrateOldDatabases: z.boolean().default(false).optional(),
-        forceRemoteDeletion: z
-          .enum(['allow', 'never'])
-          .default('never')
-          .optional(),
-        deleteOnDeactivation: z.boolean().default(false).optional(),
-        pouchBatchSize: z.number().int().positive().default(10).optional(),
-        pouchBatchesLimit: z.number().int().positive().default(10).optional(),
-        excludedTeamRoles: z.array(z.string()).default([]).optional(),
-        bugsnagKey: z.string().optional(),
-        androidReleaseStatus: z.string().default('draft').optional(),
-        androidDeployTrack: z.string().default('production').optional(),
-      })
-      .passthrough()
-      .default({}),
     secrets: z.record(z.string(), z.unknown()).default({}),
   })
   .passthrough();
