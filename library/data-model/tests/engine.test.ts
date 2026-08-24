@@ -643,6 +643,8 @@ describe('DataEngine', () => {
     });
 
     test('getFieldValues touches the database only when asked for a field', async () => {
+      const getRevision = jest.spyOn(engine.core, 'getRevision');
+
       const values = await engine.hydrated.getFieldValues({
         recordId: generateRecordID(),
         revisionId: generateRevisionID(),
@@ -650,6 +652,9 @@ describe('DataEngine', () => {
       });
 
       expect(values).toEqual({});
+      expect(getRevision).not.toHaveBeenCalled();
+
+      getRevision.mockRestore();
     });
 
     test('should retrieve a hydrated record with all data', async () => {

@@ -159,8 +159,26 @@ describe('useRecordFeatures', () => {
       revision_id: 'frev-site',
       form_id: 'Site',
     });
-    expect(getFieldValues).toHaveBeenCalledWith(
-      expect.objectContaining({recordId: 'rec-site', revisionId: 'frev-site'})
+    expect(getFieldValues).toHaveBeenCalledWith({
+      recordId: 'rec-site',
+      revisionId: 'frev-site',
+      fields: expect.arrayContaining(['site_location', 'orphan_location']),
+    });
+  });
+
+  it('keeps other records when one has no readable values', async () => {
+    getFieldValues.mockImplementation(({recordId}: {recordId: string}) =>
+      Promise.resolve(
+        recordId === 'rec-obs' ? {} : {site_location: POINT_FEATURE}
+      )
+    );
+
+    const result = await renderFeatures([siteRecord, obsRecord]);
+
+    expect(result.current.isError).toBe(false);
+    expect(result.current.data!.features).toHaveLength(1);
+    expect(result.current.data!.features[0].properties?.record_id).toBe(
+      'rec-site'
     );
   });
 

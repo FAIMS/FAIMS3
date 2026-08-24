@@ -933,12 +933,13 @@ class HydratedOperations {
 
   /**
    * Read the given fields' stored values from one revision, without hydrating
-   * the whole record. For callers that need a few fields across many records,
-   * such as filtering or grouping a record list on stored data.
+   * the whole record. Returns the stored values rather than the hydrated field
+   * shape, since callers of this want the value and not the AVP envelope.
    *
-   * A revision or AVP that is simply missing skips that record or field, so one
-   * bad record cannot blank a whole listing. Any other read failure is
-   * rethrown, so a systemic fault surfaces rather than reading as no data.
+   * A missing revision or AVP skips that record or field; any other read
+   * failure is rethrown, so a systemic fault does not read as no data.
+   *
+   * TODO not optimal for efficiency: a read per revision plus one per field
    *
    * @param recordId - The record the revision belongs to, for the skip warnings
    * @param revisionId - The revision to read
@@ -966,6 +967,8 @@ class HydratedOperations {
     });
     if (!revision) return values;
 
+    // Not fetchAvps: it fails the whole read on a missing AVP, which
+    // hydration wants and a per-field read does not.
     await Promise.all(
       fields.map(async field => {
         const avpId = revision.avps[field];
