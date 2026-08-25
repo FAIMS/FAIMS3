@@ -562,9 +562,6 @@ export type FormUpdateData = z.infer<typeof formUpdateDataSchema>;
  * Opt-in stamps when updating a revision or AVP. Defaults are false so callers
  * (especially the form autosave path) can choose how often to rewrite the
  * shared record document.
- *
- * Record and revision IDs come from the document being written — AVPs already
- * carry `record_id` / `revision_id`, so no reverse lookup is required.
  */
 export type TimestampBumpOptions = {
   /** Set `updatedAt` on the parent record (get-by-id + put). */

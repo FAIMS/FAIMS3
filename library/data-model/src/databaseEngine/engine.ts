@@ -566,7 +566,7 @@ export class CoreOperations {
   }
 
   /**
-   * Set `updatedAt` on a record. Uses a direct get-by-id (no reverse lookup).
+   * Set `updatedAt` on a record.
    */
   async stampRecordUpdatedAt(
     recordId: string,
@@ -577,7 +577,7 @@ export class CoreOperations {
   }
 
   /**
-   * Set `updatedAt` on a revision. Uses a direct get-by-id (no reverse lookup).
+   * Set `updatedAt` on a revision.
    */
   async stampRevisionUpdatedAt(
     revisionId: string,
@@ -621,7 +621,7 @@ export class CoreOperations {
    *
    * @param avp - The AVP document to update (must include _id and _rev)
    * @param options - Optional stamps for the AVP's record and/or revision
-   *   (IDs are taken from the AVP — no reverse lookup)
+   *   (IDs are taken from the AVP)
    * @returns The updated AVP with new _rev
    * @throws Error if update fails or document doesn't exist
    */
