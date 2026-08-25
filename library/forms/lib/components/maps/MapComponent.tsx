@@ -73,7 +73,7 @@ const MIN_ZOOM = 12;
 const LAST_LOCATION_KEY = 'last_map_center';
 
 const MAP_VIEW_ANIMATION_DURATION_MS = 800;
-const MAP_VIEW_FIT_PADDING_PX = [20, 20, 20, 20];
+const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
 // fallback to Sydney
 const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
 
