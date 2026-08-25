@@ -60,7 +60,7 @@ export function extent4326ToOfflineMapRegion(
   };
 }
 
-/** Convert a legacy stored EPSG:3857 tile-set extent into a preview region. */
+/** Convert an EPSG:3857 tile-set extent into a preview region. */
 export function extent3857ToOfflineMapRegion(
   extent3857: number[]
 ): OfflineMapRegion {
