@@ -39,6 +39,82 @@ function migrateAudit(message: string, details?: Record<string, unknown>) {
   }
 }
 
+/** Handle passed to {@link migrateDbs}. */
+export type MigrationDbHandle = {
+  dbType: DATABASE_TYPE;
+  dbName: string;
+  db: DatabaseInterface;
+};
+
+/**
+ * Minimal project shape needed to name and open a per-project data DB.
+ * Supports current `dataDb` and legacy `data_db`.
+ */
+export type ProjectDataDbRef = {
+  _id: string;
+  dataDb?: {db_name?: string};
+  data_db?: {db_name?: string};
+};
+
+export type QueuedProjectDataDb = MigrationDbHandle & {projectId: string};
+
+/**
+ * Couch database name for a project's data DB.
+ *
+ * Prefer the project document's `db_name` over `db.name`: Pouch handles opened
+ * with a full Couch URL expose the URL as `.name`, which would key the
+ * migration document incorrectly.
+ */
+export function dataDbNameForProject({
+  project,
+  fallbackName,
+}: {
+  project: ProjectDataDbRef;
+  fallbackName: string;
+}): string {
+  return project.dataDb?.db_name ?? project.data_db?.db_name ?? fallbackName;
+}
+
+/**
+ * Build the DATA migration queue from project documents.
+ *
+ * Must accumulate with push/reassign. `Array.concat` without assignment
+ * silently discards every database and `migrateDbs` becomes a no-op.
+ */
+export async function collectProjectDataDbs({
+  projects,
+  openDataDb,
+}: {
+  projects: ProjectDataDbRef[];
+  openDataDb: (projectId: string) => Promise<DatabaseInterface>;
+}): Promise<{
+  queued: QueuedProjectDataDb[];
+  skipped: {projectId: string; error: unknown}[];
+}> {
+  const queued: QueuedProjectDataDb[] = [];
+  const skipped: {projectId: string; error: unknown}[] = [];
+
+  for (const project of projects) {
+    const projectId = project._id;
+    try {
+      const dataDb = await openDataDb(projectId);
+      queued.push({
+        projectId,
+        db: dataDb,
+        dbType: DatabaseType.DATA,
+        dbName: dataDbNameForProject({
+          project,
+          fallbackName: dataDb.name,
+        }),
+      });
+    } catch (error) {
+      skipped.push({projectId, error});
+    }
+  }
+
+  return {queued, skipped};
+}
+
 /**
  * Builds a default migration document for a given database type and name.
  * This is used when initializing a database for the first time.
@@ -317,7 +393,7 @@ export async function migrateDbs({
   getDbById,
   migrationCreatedBy = DEFAULT_MIGRATION_CREATED_BY,
 }: {
-  dbs: {dbType: DatabaseType; dbName: string; db: DatabaseInterface}[];
+  dbs: MigrationDbHandle[];
   migrationDb: MigrationsDB;
   userId?: string;
   getDbById: GetDbById;

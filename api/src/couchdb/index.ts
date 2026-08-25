@@ -41,6 +41,7 @@ import {
   initTombstoneDB,
   InvitesDB,
   GetDbById,
+  collectProjectDataDbs,
   migrateDbs,
   MigrationsDB,
   PeopleDB,
@@ -698,41 +699,28 @@ export const initialiseAndMigrateDBs = async ({
     getDbById,
   });
 
-  // Per-project data DBs. `concat` returns a new array — must push or reassign
-  // or every data DB is discarded and this migrateDbs call is a no-op.
   const projects = await getAllProjectsDirectory();
-  const dataDbs: {
-    dbType: DATABASE_TYPE;
-    dbName: string;
-    db: DatabaseInterface;
-  }[] = [];
-
   console.log(
     `[migrate] Found ${projects.length} project(s); opening data DBs`
   );
 
-  for (const project of projects) {
-    const projectId = project._id;
-    try {
-      const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-      const dbName =
-        project.dataDb?.db_name ??
-        (project as {data_db?: {db_name?: string}}).data_db?.db_name ??
-        dataDb.name;
-      dataDbs.push({
-        db: dataDb,
-        dbType: DatabaseType.DATA,
-        dbName,
-      });
-      console.log(
-        `[migrate] Queued data DB for project ${projectId} (${dbName})`
-      );
-    } catch (error) {
-      console.error(
-        `[migrate] Failed to open data DB for project ${projectId}; skipping`,
-        error
-      );
-    }
+  const {queued: dataDbs, skipped: skippedDataDbs} =
+    await collectProjectDataDbs({
+      projects,
+      openDataDb: async (projectId: string) =>
+        (await getDataDb(projectId)) as DatabaseInterface,
+    });
+
+  for (const {projectId, dbName} of dataDbs) {
+    console.log(
+      `[migrate] Queued data DB for project ${projectId} (${dbName})`
+    );
+  }
+  for (const {projectId, error} of skippedDataDbs) {
+    console.error(
+      `[migrate] Failed to open data DB for project ${projectId}; skipping`,
+      error
+    );
   }
 
   if (projects.length > 0 && dataDbs.length === 0) {

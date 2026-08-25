@@ -14,7 +14,9 @@ import {
   MigrationsDBFields,
   PeopleV1Fields,
   buildDefaultMigrationDoc,
+  collectProjectDataDbs,
   couchInitialiser,
+  dataDbNameForProject,
   identifyMigrations,
   initMigrationsDB,
   initPeopleDB,
@@ -208,6 +210,109 @@ describe('Migration System Tests', () => {
       // Restore original target version
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
         originalTargetVersion;
+    });
+  });
+
+  /**
+   * Queue construction for per-project DATA DBs.
+   *
+   * The production bug was `dbs.concat([{...}])` without assignment: concat
+   * does not mutate, so every project data DB was discarded and migrateDbs
+   * ran on []. These tests fail if that pattern returns.
+   */
+  describe('collectProjectDataDbs', () => {
+    it('prefers dataDb.db_name over the Pouch handle name', () => {
+      expect(
+        dataDbNameForProject({
+          project: {_id: 'p1', dataDb: {db_name: 'data-p1'}},
+          fallbackName: 'http://localhost:5984/data-p1',
+        })
+      ).toBe('data-p1');
+    });
+
+    it('falls back to legacy data_db.db_name', () => {
+      expect(
+        dataDbNameForProject({
+          project: {_id: 'p1', data_db: {db_name: 'legacy-data-p1'}},
+          fallbackName: 'pouch-name',
+        })
+      ).toBe('legacy-data-p1');
+    });
+
+    it('queues one DATA handle per project (concat without assign drops every DB)', async () => {
+      const projects = [
+        {_id: 'proj-a', dataDb: {db_name: 'data-proj-a'}},
+        {_id: 'proj-b', dataDb: {db_name: 'data-proj-b'}},
+        {_id: 'proj-c', dataDb: {db_name: 'data-proj-c'}},
+      ];
+      const opened = new Map(
+        projects.map(project => [
+          project._id,
+          {name: `http://couch.example/${project.dataDb.db_name}`} as DatabaseInterface,
+        ])
+      );
+
+      const {queued, skipped} = await collectProjectDataDbs({
+        projects,
+        openDataDb: async projectId => {
+          const db = opened.get(projectId);
+          if (!db) {
+            throw new Error(`no db for ${projectId}`);
+          }
+          return db;
+        },
+      });
+
+      expect(skipped).toEqual([]);
+      expect(queued).toHaveLength(projects.length);
+      expect(queued.map(entry => entry.projectId)).toEqual([
+        'proj-a',
+        'proj-b',
+        'proj-c',
+      ]);
+      expect(queued.map(entry => entry.dbName)).toEqual([
+        'data-proj-a',
+        'data-proj-b',
+        'data-proj-c',
+      ]);
+      expect(queued.every(entry => entry.dbType === DatabaseType.DATA)).toBe(
+        true
+      );
+      expect(queued[0].db).toBe(opened.get('proj-a'));
+    });
+
+    it('skips a project whose data DB cannot be opened and still queues the rest', async () => {
+      const projects = [
+        {_id: 'ok-1', dataDb: {db_name: 'data-ok-1'}},
+        {_id: 'broken', dataDb: {db_name: 'data-broken'}},
+        {_id: 'ok-2', dataDb: {db_name: 'data-ok-2'}},
+      ];
+
+      const {queued, skipped} = await collectProjectDataDbs({
+        projects,
+        openDataDb: async projectId => {
+          if (projectId === 'broken') {
+            throw new Error('data DB missing');
+          }
+          return {name: `pouch-${projectId}`} as DatabaseInterface;
+        },
+      });
+
+      expect(queued.map(entry => entry.projectId)).toEqual(['ok-1', 'ok-2']);
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0].projectId).toBe('broken');
+      expect(String(skipped[0].error)).toContain('data DB missing');
+    });
+
+    it('returns an empty queue when there are no projects', async () => {
+      const {queued, skipped} = await collectProjectDataDbs({
+        projects: [],
+        openDataDb: async () => {
+          throw new Error('openDataDb should not be called');
+        },
+      });
+      expect(queued).toEqual([]);
+      expect(skipped).toEqual([]);
     });
   });
 
@@ -932,6 +1037,141 @@ describe('Migration System Tests', () => {
       } finally {
         // Clean up
         await testProjectsDb.destroy();
+      }
+    });
+
+    async function seedUnmigratedDataDb(dbName: string) {
+      const dataDb = new PouchDB(dbName, {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      await dataDb.bulkDocs([
+        {
+          _id: 'frev-head',
+          revision_format_version: 1,
+          avps: {},
+          record_id: 'rec-1',
+          parents: [],
+          created: '2020-06-01T00:00:00.000Z',
+          created_by: 'user',
+          type: 'A',
+        },
+        {
+          _id: 'rec-1',
+          record_format_version: 1,
+          created: '2020-01-01T00:00:00.000Z',
+          created_by: 'user',
+          revisions: ['frev-head'],
+          heads: ['frev-head'],
+          type: 'A',
+        },
+      ]);
+      return dataDb;
+    }
+
+    it('does nothing when the dbs list is empty (the concat-bug symptom)', async () => {
+      const orphaned = await seedUnmigratedDataDb('orphaned-data-db');
+      try {
+        await migrateDbs({
+          dbs: [],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
+        });
+
+        const record = await orphaned.get<{updatedAt?: string}>('rec-1');
+        expect(record.updatedAt).toBeUndefined();
+
+        const allDocs = await testMigrationDb.allDocs({include_docs: true});
+        const migrationDocs = allDocs.rows.filter(
+          row => !row.id.startsWith('_design/')
+        );
+        expect(migrationDocs).toHaveLength(0);
+      } finally {
+        await orphaned.destroy();
+      }
+    });
+
+    it('migrates every DATA database included in the dbs list', async () => {
+      const dataA = await seedUnmigratedDataDb('data-db-a');
+      const dataB = await seedUnmigratedDataDb('data-db-b');
+      try {
+        const {queued} = await collectProjectDataDbs({
+          projects: [
+            {_id: 'proj-a', dataDb: {db_name: 'data-db-a'}},
+            {_id: 'proj-b', dataDb: {db_name: 'data-db-b'}},
+          ],
+          openDataDb: async projectId =>
+            projectId === 'proj-a' ? dataA : dataB,
+        });
+
+        expect(queued).toHaveLength(2);
+
+        await migrateDbs({
+          dbs: queued,
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
+        });
+
+        for (const dbName of ['data-db-a', 'data-db-b']) {
+          const migrationDocs = await testMigrationDb.query(
+            MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+            {
+              key: [DatabaseType.DATA, dbName],
+              include_docs: true,
+            }
+          );
+          expect(migrationDocs.rows).toHaveLength(1);
+          expect(
+            (migrationDocs.rows[0].doc as MigrationsDBDocument).version
+          ).toBe(DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion);
+        }
+
+        const recordA = await dataA.get<{updatedAt?: string}>('rec-1');
+        const revisionA = await dataA.get<{updatedAt?: string}>('frev-head');
+        expect(recordA.updatedAt).toBe('2020-06-01T00:00:00.000Z');
+        expect(revisionA.updatedAt).toBe('2020-06-01T00:00:00.000Z');
+
+        const recordB = await dataB.get<{updatedAt?: string}>('rec-1');
+        expect(recordB.updatedAt).toBe('2020-06-01T00:00:00.000Z');
+      } finally {
+        await dataA.destroy();
+        await dataB.destroy();
+      }
+    });
+
+    it('does not migrate a DATA database that was not included in the dbs list', async () => {
+      const queuedDb = await seedUnmigratedDataDb('data-db-queued');
+      const omittedDb = await seedUnmigratedDataDb('data-db-omitted');
+      try {
+        await migrateDbs({
+          dbs: [
+            {
+              dbType: DatabaseType.DATA,
+              dbName: 'data-db-queued',
+              db: queuedDb,
+            },
+          ],
+          migrationDb: testMigrationDb as unknown as MigrationsDB,
+          getDbById,
+        });
+
+        const queuedRecord = await queuedDb.get<{updatedAt?: string}>('rec-1');
+        const omittedRecord = await omittedDb.get<{updatedAt?: string}>(
+          'rec-1'
+        );
+        expect(queuedRecord.updatedAt).toBe('2020-06-01T00:00:00.000Z');
+        expect(omittedRecord.updatedAt).toBeUndefined();
+
+        const omittedMigration = await testMigrationDb.query(
+          MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
+          {
+            key: [DatabaseType.DATA, 'data-db-omitted'],
+            include_docs: true,
+          }
+        );
+        expect(omittedMigration.rows).toHaveLength(0);
+      } finally {
+        await queuedDb.destroy();
+        await omittedDb.destroy();
       }
     });
   });
