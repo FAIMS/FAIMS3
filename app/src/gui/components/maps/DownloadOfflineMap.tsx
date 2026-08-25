@@ -44,6 +44,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useBlocker, useNavigate} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {useIsOnline} from '../../../utils/customHooks';
 import BackButton from '../ui/BackButton';
 import {
   DownloadOfflineMapBanner,
@@ -56,6 +57,7 @@ export function DownloadOfflineMap() {
   const navigate = useNavigate();
   // Use the mobile selector on touch devices where box dragging is unreliable.
   const isTouchDevice = useMediaQuery('(pointer: coarse)');
+  const {isOnline, checkIsOnline} = useIsOnline();
 
   // user-visible map name, multiple offline maps may use the same name.
   const [mapName, setMapName] = useState('');
@@ -171,6 +173,11 @@ export function DownloadOfflineMap() {
       return;
     }
 
+    if (!checkIsOnline()) {
+      setError('Please connect to the internet to download an offline map.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -256,12 +263,23 @@ export function DownloadOfflineMap() {
           >
             Download new offline map
           </Typography>
-          <Button variant="contained" disabled={saving} onClick={handleSave}>
+          <Button
+            variant="contained"
+            disabled={saving || !isOnline}
+            onClick={handleSave}
+          >
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </Stack>
 
+        {/* Error and warning alerts */}
         {error && <Alert severity="error">{error}</Alert>}
+
+        {!isOnline && (
+          <Alert severity="warning">
+            Please connect to the internet to download an offline map.
+          </Alert>
+        )}
 
         <Box>
           <Typography variant="body2">Name</Typography>
