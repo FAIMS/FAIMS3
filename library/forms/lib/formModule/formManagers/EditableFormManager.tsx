@@ -574,8 +574,17 @@ export const EditableFormManager: React.FC<
       .map(([id]) => id);
     if (linkFields.length === 0) return;
 
-    const currentValues = () =>
-      formDataExtractor({fullData: form.state.values}) as ValuesObject;
+    // Read only the link fields off the store - a full extract here would
+    // scale with form size and this runs on every store change.
+    const linkValues = (): ValuesObject => {
+      const values: ValuesObject = {};
+      for (const id of linkFields) {
+        values[id] = (
+          form.state.values as Record<string, {data?: unknown} | undefined>
+        )[id]?.data;
+      }
+      return values;
+    };
     const signatureOf = (values: ValuesObject) =>
       linkFields
         .map(id => `${id}=${linkedRecordId(values[id]) ?? ''}`)
@@ -586,7 +595,7 @@ export const EditableFormManager: React.FC<
     let lastSignature: string | null = null;
 
     const refresh = () => {
-      const values = currentValues();
+      const values = linkValues();
       const signature = signatureOf(values);
       if (signature === lastSignature) return;
       lastSignature = signature;
