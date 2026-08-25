@@ -5,14 +5,13 @@
   "type": "module",
   "scripts": {
     "generate": "tsx src/generate-build-config.ts",
-    "validate": "tsx src/validate-generated-env.ts",
+    "validate-coverage": "tsx src/validate-build-config-coverage.ts",
     "test": "tsx --test test/generate-build-config.test.ts"
   },
   "dependencies": {
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/node": "^24.13.1",
     "tsx": "^4.22.4",
     "typescript": "^7.0.2"
   },

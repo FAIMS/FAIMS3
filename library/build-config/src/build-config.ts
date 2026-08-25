@@ -106,6 +106,8 @@ export const MobileBuildConfigSchema = z
       .object({
         releaseStatus: z.string().default('draft').optional(),
         deployTrack: z.string().default('production').optional(),
+        keystoreFileBase64: z.string().optional(),
+        serviceAccountKeyJsonBase64: z.string().optional(),
         keystorePath: z.string().optional(),
         keystorePassword: z.string().optional(),
         keyAlias: z.string().optional(),
@@ -129,6 +131,8 @@ export const MobileBuildConfigSchema = z
         appleKeyId: z.string().optional(),
         appleIssuerId: z.string().optional(),
         appleKeyContent: z.string().optional(),
+        appleIndividualKeyId: z.string().optional(),
+        appleIndividualKeyContent: z.string().optional(),
         browserstackUsername: z.string().optional(),
         browserstackAccessKey: z.string().optional(),
       })

@@ -21,6 +21,23 @@ export interface GenerateBuildConfigArgs {
   out?: string;
 }
 
+function readConfigJson(configArg: string, cwd = process.cwd()): unknown {
+  if (configArg === '-') {
+    const stdin = fs.readFileSync(0, 'utf8').trim();
+    if (!stdin) {
+      throw new Error('No config JSON was provided on stdin.');
+    }
+    return JSON.parse(stdin);
+  }
+
+  const configPath = path.resolve(cwd, configArg);
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config file not found: ${configPath}`);
+  }
+
+  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+}
+
 export function parseArgs(argv: string[]): GenerateBuildConfigArgs {
   const args: Record<string, string | boolean> = {};
 
@@ -117,10 +134,14 @@ function buildEnvMap(
   const commitVersion = resolveGitCommitVersion(app.commitVersion);
 
   const base = {
-    VITE_APP_NAME: coalesce(app.appName, web.appName, 'FAIMS'),
+    VITE_APP_NAME: coalesce<string>(
+      app.appName,
+      web.appName as string | undefined,
+      'FAIMS'
+    ),
     VITE_APP_SHORT_NAME: coalesce(app.appShortName, app.appName, 'FAIMS'),
-    VITE_CLUSTER_ADMIN_GROUP_NAME: coalesce(
-      app.clusterAdminGroupName,
+    VITE_CLUSTER_ADMIN_GROUP_NAME: coalesce<string>(
+      app.clusterAdminGroupName as string | undefined,
       'cluster-admin'
     ),
     VITE_COMMIT_VERSION: commitVersion,
@@ -133,16 +154,16 @@ function buildEnvMap(
     VITE_THEME: coalesce(app.theme, 'default'),
     VITE_NOTEBOOK_NAME: coalesce(app.notebookName, 'notebook'),
     VITE_NOTEBOOK_LIST_TYPE: coalesce(app.notebookListType, 'tabs'),
-    VITE_APP_ID: coalesce(
+    VITE_APP_ID: coalesce<string>(
       app.appId,
-      mobile.android?.appId,
-      mobile.bundleIdentifier,
+      mobile.android?.appId as string | undefined,
+      mobile.ios?.bundleIdentifier as string | undefined,
       'org.fedarch.faims3'
     ),
     VITE_HEADING_APP_NAME: coalesce(
       app.headingAppName,
       app.appName,
-      web.appName,
+      web.appName as string | undefined,
       'FAIMS'
     ),
     VITE_APP_PRIVACY_POLICY_URL: coalesce(
@@ -170,7 +191,6 @@ function buildEnvMap(
       ''
     ),
     VITE_APPLE_BUNDLE_IDENTIFIER: coalesce(
-      mobile.bundleIdentifier,
       mobile.ios?.bundleIdentifier,
       app.appId,
       'org.fedarch.faims3'
@@ -227,6 +247,11 @@ function buildEnvMap(
       ANDROID_RELEASE_STATUS: coalesce(mobile.android?.releaseStatus, 'draft'),
       ANDROID_DEPLOY_TRACK: coalesce(mobile.android?.deployTrack, 'production'),
       APP_ID: coalesce(app.appId, mobile.android?.appId, 'org.fedarch.faims3'),
+      KEYSTORE_FILE: coalesce(mobile.android?.keystoreFileBase64, ''),
+      GPLAY_SERVICE_ACCOUNT_KEY_JSON: coalesce(
+        mobile.android?.serviceAccountKeyJsonBase64,
+        ''
+      ),
       JAVA_KEYSTORE: coalesce(mobile.android?.keystorePath, ''),
       JAVA_KEYSTORE_PASSWORD: coalesce(mobile.android?.keystorePassword, ''),
       JAVA_KEY: coalesce(mobile.android?.keyAlias, ''),
@@ -257,15 +282,23 @@ function buildEnvMap(
         mobile.ios?.provisioningProfileSpecifier,
         ''
       ),
-      APPLE_KEY_ID: coalesce(mobile.ios?.appleKeyId, ''),
+      APPLE_KEY_ID: coalesce(
+        mobile.ios?.appleKeyId,
+        mobile.ios?.appleIndividualKeyId,
+        ''
+      ),
       APPLE_ISSUER_ID: coalesce(mobile.ios?.appleIssuerId, ''),
-      APPLE_KEY_CONTENT: coalesce(mobile.ios?.appleKeyContent, ''),
+      APPLE_KEY_CONTENT: coalesce(
+        mobile.ios?.appleKeyContent,
+        mobile.ios?.appleIndividualKeyContent,
+        ''
+      ),
       BROWSERSTACK_USERNAME: coalesce(mobile.ios?.browserstackUsername, ''),
       BROWSERSTACK_ACCESS_KEY: coalesce(mobile.ios?.browserstackAccessKey, ''),
     },
   };
 
-  const merged: Record<string, Value> = {...base};
+  const merged: Record<string, unknown> = {...base};
 
   if (platform === 'android' || platform === 'all') {
     Object.assign(merged, platformSpecific.android);
@@ -309,7 +342,7 @@ export function generateEnv({
     .filter(([, value]) =>
       includeEmpty ? true : value !== undefined && value !== null
     )
-    .map(([key, value]) => `${key}=${stringify(value ?? '')}`)
+    .map(([key, value]) => `${key}=${stringify((value ?? '') as Value)}`)
     .join('\n');
 }
 
@@ -345,14 +378,7 @@ export function generateBuildConfig(
     );
   }
 
-  const configPath = path.resolve(cwd, String(args.config));
-  if (!fs.existsSync(configPath)) {
-    throw new Error(`Config file not found: ${configPath}`);
-  }
-
-  const parsed = parseBuildConfig(
-    JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  );
+  const parsed = parseBuildConfig(readConfigJson(String(args.config), cwd));
   const env = generateEnv({config: parsed, platform});
 
   if (args.out) {
