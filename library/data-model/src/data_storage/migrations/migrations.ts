@@ -634,6 +634,12 @@ function isIsoDatetime(value: unknown): value is string {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value));
 }
 
+function dataV1V2Warn(message: string) {
+  if (!IS_TESTING) {
+    console.warn(`[migrate] data v1→v2: ${message}`);
+  }
+}
+
 /**
  * Data DB v1 → v2: add mandatory `updatedAt` on record and revision documents.
  *
@@ -659,11 +665,17 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
     'revision_format_version' in doc
   ) {
     const created = (doc as {created?: unknown}).created;
+    const updatedAt = isIsoDatetime(created) ? created : now;
+    if (updatedAt === now) {
+      dataV1V2Warn(
+        `revision ${doc._id} has no usable created timestamp; using current time`
+      );
+    }
     return {
       action: 'update',
       updatedRecord: {
         ...doc,
-        updatedAt: isIsoDatetime(created) ? created : now,
+        updatedAt,
       },
     };
   }
@@ -680,7 +692,15 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
         : undefined;
 
     let updatedAt = now;
-    if (headId && context?.db) {
+    if (!headId) {
+      dataV1V2Warn(
+        `record ${doc._id} has no heads[0]; using current time for updatedAt`
+      );
+    } else if (!context?.db) {
+      dataV1V2Warn(
+        `record ${doc._id} has head ${headId} but no db on migration context; using current time`
+      );
+    } else {
       try {
         const head = (await context.db.get(headId)) as {
           updatedAt?: unknown;
@@ -690,9 +710,17 @@ export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
           updatedAt = head.updatedAt;
         } else if (isIsoDatetime(head.created)) {
           updatedAt = head.created;
+        } else {
+          dataV1V2Warn(
+            `record ${doc._id} head ${headId} has no usable timestamp; using current time`
+          );
         }
-      } catch {
-        // Head missing or unreadable — fall through to now.
+      } catch (err) {
+        dataV1V2Warn(
+          `record ${doc._id} head ${headId} unreadable (${
+            err instanceof Error ? err.message : String(err)
+          }); using current time`
+        );
       }
     }
 

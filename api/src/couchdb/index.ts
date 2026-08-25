@@ -686,6 +686,11 @@ export const initialiseAndMigrateDBs = async ({
 
   // Migrate these first
   const migrationsDb = getMigrationDb();
+  console.log(
+    `[migrate] Migrating ${dbs.length} global DB(s): ${dbs
+      .map(d => `${d.dbType}:${d.dbName}`)
+      .join(', ')}`
+  );
   await migrateDbs({
     dbs,
     migrationDb: migrationsDb,
@@ -693,24 +698,57 @@ export const initialiseAndMigrateDBs = async ({
     getDbById,
   });
 
-  // Now migrate all data/metadata DBs
+  // Per-project data DBs. `concat` returns a new array — must push or reassign
+  // or every data DB is discarded and this migrateDbs call is a no-op.
   const projects = await getAllProjectsDirectory();
-  dbs = [];
+  const dataDbs: {
+    dbType: DATABASE_TYPE;
+    dbName: string;
+    db: DatabaseInterface;
+  }[] = [];
+
+  console.log(
+    `[migrate] Found ${projects.length} project(s); opening data DBs`
+  );
 
   for (const project of projects) {
-    // Project ID
     const projectId = project._id;
-    const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
-    dbs.concat([
-      {
+    try {
+      const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
+      const dbName =
+        project.dataDb?.db_name ??
+        (project as {data_db?: {db_name?: string}}).data_db?.db_name ??
+        dataDb.name;
+      dataDbs.push({
         db: dataDb,
         dbType: DatabaseType.DATA,
-        dbName: dataDb.name,
-      },
-    ]);
+        dbName,
+      });
+      console.log(
+        `[migrate] Queued data DB for project ${projectId} (${dbName})`
+      );
+    } catch (error) {
+      console.error(
+        `[migrate] Failed to open data DB for project ${projectId}; skipping`,
+        error
+      );
+    }
   }
+
+  if (projects.length > 0 && dataDbs.length === 0) {
+    console.error(
+      `[migrate] ${projects.length} project(s) found but 0 data DBs queued — data migrations will not run`
+    );
+  } else {
+    console.log(
+      `[migrate] Migrating ${dataDbs.length} data DB(s): ${
+        dataDbs.map(d => d.dbName).join(', ') || '(none)'
+      }`
+    );
+  }
+
   await migrateDbs({
-    dbs,
+    dbs: dataDbs,
     migrationDb: migrationsDb,
     userId: 'system',
     getDbById,
