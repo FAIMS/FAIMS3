@@ -52,6 +52,7 @@ import {
   revisionHistoryEntry,
   RevisionHistoryEntry,
   RevisionMetadataQueryResult,
+  TimestampBumpOptions,
   toMinimalRevisionMetadata,
 } from './types';
 import {
@@ -565,32 +566,83 @@ export class CoreOperations {
   }
 
   /**
+   * Set `updatedAt` on a record. Uses a direct get-by-id (no reverse lookup).
+   */
+  async stampRecordUpdatedAt(
+    recordId: string,
+    timestamp: string = getCurrentTimestamp()
+  ): Promise<ExistingRecordDBDocument> {
+    const record = await this.getRecord(recordId);
+    return this.updateRecord({...record, updatedAt: timestamp});
+  }
+
+  /**
+   * Set `updatedAt` on a revision. Uses a direct get-by-id (no reverse lookup).
+   */
+  async stampRevisionUpdatedAt(
+    revisionId: string,
+    timestamp: string = getCurrentTimestamp()
+  ): Promise<ExistingRevisionDBDocument> {
+    const revision = await this.getRevision(revisionId);
+    return (await this.updateDocument(
+      {...revision, updatedAt: timestamp},
+      existingRevisionDocumentSchema.parse
+    ))!;
+  }
+
+  /**
    * Update an existing revision document
    *
    * @param revision - The revision document to update (must include _id and _rev)
+   * @param options - Optional stamps for this revision and/or its parent record
    * @returns The updated revision with new _rev
    * @throws Error if update fails or document doesn't exist
    */
   async updateRevision(
-    revision: ExistingRevisionDBDocument
+    revision: ExistingRevisionDBDocument,
+    options: TimestampBumpOptions = {}
   ): Promise<ExistingRevisionDBDocument> {
-    // This will throw - not be undefined
-    return (await this.updateDocument(
-      revision,
+    const timestamp = getCurrentTimestamp();
+    const toWrite = options.bumpRevisionUpdatedAt
+      ? {...revision, updatedAt: timestamp}
+      : revision;
+    const updated = (await this.updateDocument(
+      toWrite,
       existingRevisionDocumentSchema.parse
     ))!;
+    if (options.bumpRecordUpdatedAt) {
+      await this.stampRecordUpdatedAt(revision.record_id, timestamp);
+    }
+    return updated;
   }
 
   /**
    * Update an existing AVP document
    *
    * @param avp - The AVP document to update (must include _id and _rev)
+   * @param options - Optional stamps for the AVP's record and/or revision
+   *   (IDs are taken from the AVP — no reverse lookup)
    * @returns The updated AVP with new _rev
    * @throws Error if update fails or document doesn't exist
    */
-  async updateAvp(avp: ExistingAvpDBDocument): Promise<ExistingAvpDBDocument> {
-    // This will throw - not be undefined
-    return (await this.updateDocument(avp, existingAvpDocumentSchema.parse))!;
+  async updateAvp(
+    avp: ExistingAvpDBDocument,
+    options: TimestampBumpOptions = {}
+  ): Promise<ExistingAvpDBDocument> {
+    const updated = (await this.updateDocument(
+      avp,
+      existingAvpDocumentSchema.parse
+    ))!;
+    if (options.bumpRevisionUpdatedAt || options.bumpRecordUpdatedAt) {
+      const timestamp = getCurrentTimestamp();
+      if (options.bumpRevisionUpdatedAt) {
+        await this.stampRevisionUpdatedAt(avp.revision_id, timestamp);
+      }
+      if (options.bumpRecordUpdatedAt) {
+        await this.stampRecordUpdatedAt(avp.record_id, timestamp);
+      }
+    }
+    return updated;
   }
 
   /**
@@ -871,6 +923,7 @@ class HydratedOperations {
         _rev: record._rev,
         created: record.created,
         createdBy: record.created_by,
+        updatedAt: record.updatedAt,
         formId: record.type,
         heads: record.heads,
         revisions: record.revisions,
@@ -882,6 +935,7 @@ class HydratedOperations {
         avps: revision.avps,
         created: revision.created,
         createdBy: revision.created_by,
+        updatedAt: revision.updatedAt,
         formId: revision.type,
         parents: revision.parents,
         recordId: revision.record_id,
@@ -936,7 +990,8 @@ class HydratedOperations {
    * Handles mapping from camelCase hydrated types to snake_case DB types.
    */
   async updateRevision(
-    revision: HydratedRevisionDocument
+    revision: HydratedRevisionDocument,
+    options: TimestampBumpOptions = {}
   ): Promise<HydratedRevisionDocument> {
     const existing = await this.core.getRevision(revision._id);
     if (existing.deleted === true) {
@@ -960,6 +1015,7 @@ class HydratedOperations {
       _rev: revision._rev,
       avps: revision.avps,
       created: revision.created,
+      updatedAt: revision.updatedAt,
       deleted: revision.deleted,
       created_by: revision.createdBy,
       parents: revision.parents,
@@ -970,7 +1026,7 @@ class HydratedOperations {
       ugc_comment: revision.ugcComment,
     };
 
-    const updated = await this.core.updateRevision(dbRevision);
+    const updated = await this.core.updateRevision(dbRevision, options);
 
     // Map back to hydrated format
     return this.mapRevisionToHydrated(updated);
@@ -998,6 +1054,7 @@ class HydratedOperations {
       _rev: rev._rev,
       avps: rev.avps,
       created: rev.created,
+      updatedAt: rev.updatedAt,
       deleted: rev.deleted,
       createdBy: rev.created_by,
       formId: rev.type,
@@ -1092,14 +1149,16 @@ class FormOperations {
     const recordId = generateRecordID();
     // Generate new revision ID
     const revisionId = generateRevisionID();
+    const now = getCurrentTimestamp();
 
     // Step 1: Create Record document
     const recordDoc: NewRecordDBDocument = {
       _id: recordId,
       // Type marker
       record_format_version: 1,
-      created: getCurrentTimestamp(),
+      created: now,
       created_by: validated.createdBy,
+      updatedAt: now,
       // Track a single revision and this is the active head
       revisions: [revisionId],
       heads: [revisionId],
@@ -1129,8 +1188,9 @@ class FormOperations {
       avps: {},
       record_id: recordId,
       parents: [],
-      created: getCurrentTimestamp(),
+      created: now,
       created_by: validated.createdBy,
+      updatedAt: now,
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
@@ -1191,13 +1251,15 @@ class FormOperations {
 
     // Generate a new revision ID
     const childRevisionId = generateRevisionID();
+    const now = getCurrentTimestamp();
 
     // Creates a new revision
     const newRevision = await this.core.createRevision({
       _id: childRevisionId,
       avps: parentRevision.avps,
-      created: getCurrentTimestamp(),
+      created: now,
       created_by: createdBy,
+      updatedAt: now,
       // Mark the parent revision ID as the parent
       parents: [revisionId],
       record_id: recordId,
@@ -1212,6 +1274,7 @@ class FormOperations {
       recordId,
       oldHeadId: revisionId,
       newHeadId: childRevisionId,
+      updatedAt: now,
     });
 
     // All done
@@ -1242,11 +1305,13 @@ class FormOperations {
     }
 
     const newRevisionId = generateRevisionID();
+    const now = getCurrentTimestamp();
     await this.core.createRevision({
       _id: newRevisionId,
       avps: baseRevision.avps,
-      created: getCurrentTimestamp(),
+      created: now,
       created_by: userId,
+      updatedAt: now,
       parents: [baseRevisionId],
       record_id: recordId,
       revision_format_version: 1,
@@ -1260,6 +1325,7 @@ class FormOperations {
       recordId,
       oldHeadId: baseRevisionId,
       newHeadId: newRevisionId,
+      updatedAt: now,
     });
 
     return newRevisionId;
@@ -1285,6 +1351,8 @@ class FormOperations {
    * (no parents)
    * @param updatedBy - User identifier making the changes
    * @param config - Optional hydration config with conflict behavior
+   * @param bumpRecordUpdatedAt - Also stamp the parent record (default false)
+   * @param bumpRevisionUpdatedAt - Stamp this revision's updatedAt (default false)
    *
    * @returns The updated or unchanged revision document
    *
@@ -1297,6 +1365,8 @@ class FormOperations {
     mode,
     updatedBy,
     config = {conflictBehaviour: DEFAULT_CONFLICT_BEHAVIOUR},
+    bumpRecordUpdatedAt = false,
+    bumpRevisionUpdatedAt = false,
   }: {
     revisionId: string;
     recordId: string;
@@ -1304,7 +1374,7 @@ class FormOperations {
     mode: AvpUpdateMode;
     updatedBy: string;
     config?: HydratedRecordConfig;
-  }): Promise<ExistingRevisionDBDocument> {
+  } & TimestampBumpOptions): Promise<ExistingRevisionDBDocument> {
     // Step 1: Fetch the current revision
     const currentRevision = await this.core.getRevision(revisionId);
 
@@ -1356,8 +1426,9 @@ class FormOperations {
     });
 
     // This may have created new AVPs, or removed them - is there any change?
+    const timestamp = getCurrentTimestamp();
     if (changeDetected) {
-      // Change detected, create new revision
+      // Change detected, rewrite the revision (same _id) with the new AVP map
       const revisionDoc: ExistingRevisionDBDocument = {
         // Change AVP map
         avps: avpMap,
@@ -1369,15 +1440,32 @@ class FormOperations {
         parents: currentRevision.parents,
         created: currentRevision.created,
         created_by: currentRevision.created_by,
+        updatedAt: bumpRevisionUpdatedAt
+          ? timestamp
+          : currentRevision.updatedAt,
         type: currentRevision.type,
         ugc_comment: currentRevision.ugc_comment,
         relationship: currentRevision.relationship,
       };
-      return await this.core.updateRevision(revisionDoc);
-    } else {
-      // no change needed (at revision level)
-      return currentRevision;
+      const updated = await this.core.updateRevision(revisionDoc);
+      if (bumpRecordUpdatedAt) {
+        await this.core.stampRecordUpdatedAt(recordId, timestamp);
+      }
+      return updated;
     }
+
+    // No AVP-map change. Still honour explicit timestamp bumps.
+    let latestRevision = currentRevision;
+    if (bumpRevisionUpdatedAt) {
+      latestRevision = await this.core.stampRevisionUpdatedAt(
+        revisionId,
+        timestamp
+      );
+    }
+    if (bumpRecordUpdatedAt) {
+      await this.core.stampRecordUpdatedAt(recordId, timestamp);
+    }
+    return latestRevision;
   }
 
   /**
@@ -1954,10 +2042,13 @@ class FormOperations {
     recordId,
     oldHeadId,
     newHeadId,
+    updatedAt,
   }: {
     recordId: string;
     oldHeadId: string;
     newHeadId: string;
+    /** When omitted, stamped as now. Always written — this is a head fork. */
+    updatedAt?: string;
   }): Promise<void> {
     const record = await this.core.getRecord(recordId);
 
@@ -1975,6 +2066,7 @@ class FormOperations {
       ...record,
       heads: Array.from(heads).sort(),
       revisions: Array.from(revisions).sort(),
+      updatedAt: updatedAt ?? getCurrentTimestamp(),
     };
 
     await this.core.updateRecord(updatedRecord);
@@ -2122,6 +2214,9 @@ class QueryOperations {
    * records and their revision metadata is fetched. Otherwise fetches all
    * records and all revision metadata (legacy behaviour).
    *
+   * `updated` comes from the record's `updatedAt` (no date join). The revision
+   * metadata fetch is kept for deleted, relationship, and updatedBy.
+   *
    * @param projectId - The project identifier
    * @param options.recordIds - Optional array of specific record IDs to retrieve
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
@@ -2244,7 +2339,7 @@ class QueryOperations {
         revisionId,
         created: new Date(record.created),
         createdBy: record.created_by,
-        updated: new Date(revisionMeta.created),
+        updated: new Date(record.updatedAt),
         updatedBy: revisionMeta.createdBy,
         conflicts: record.heads.length > 1,
         deleted: revisionMeta.deleted ?? false,

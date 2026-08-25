@@ -182,6 +182,7 @@ export async function performMigration({
   const context: MigrationContext = buildMigrationContext({
     getDbById,
     migrationCreatedBy,
+    db,
   });
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents

@@ -31,6 +31,8 @@ export const v1RecordDBFieldsSchema = z
     record_format_version: z.number(),
     created: z.string().datetime(),
     created_by: z.string(),
+    /** When the current head revision was last created or replaced. */
+    updatedAt: z.string().datetime(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
@@ -120,6 +122,8 @@ export const v1RevisionDBFieldsSchema = z
     parents: z.array(z.string()),
     created: z.string().datetime(),
     created_by: z.string(),
+    /** When this revision document was last written (AVP map or in-place bump). */
+    updatedAt: z.string().datetime(),
     type: z.string(),
     ugc_comment: z.string().optional(),
     relationship: relationshipSchema.optional(),
@@ -554,6 +558,21 @@ export type FormDataEntry = z.infer<typeof formDataEntrySchema>;
 export const formUpdateDataSchema = z.record(z.string(), formDataEntrySchema);
 export type FormUpdateData = z.infer<typeof formUpdateDataSchema>;
 
+/**
+ * Opt-in stamps when updating a revision or AVP. Defaults are false so callers
+ * (especially the form autosave path) can choose how often to rewrite the
+ * shared record document.
+ *
+ * Record and revision IDs come from the document being written — AVPs already
+ * carry `record_id` / `revision_id`, so no reverse lookup is required.
+ */
+export type TimestampBumpOptions = {
+  /** Set `updatedAt` on the parent record (get-by-id + put). */
+  bumpRecordUpdatedAt?: boolean;
+  /** Set `updatedAt` on the revision being written, or the AVP's revision. */
+  bumpRevisionUpdatedAt?: boolean;
+};
+
 // AVP update modes
 export type AvpUpdateMode = 'new' | 'parent';
 
@@ -638,6 +657,8 @@ export const hydratedRecordDocumentSchema = z.object({
   created: z.string().datetime(),
   /** User who created the record */
   createdBy: z.string(),
+  /** ISO 8601 datetime when the current head was last created or replaced */
+  updatedAt: z.string().datetime(),
   /** Array of all revision IDs that make up this record's history */
   revisions: z.array(z.string()),
   /** Array of current head revision IDs (usually one, multiple if conflicted) */
@@ -668,6 +689,8 @@ export const hydratedRevisionDocumentSchema = z.object({
   parents: z.array(z.string()),
   /** ISO datetime when this revision was created */
   created: z.string().datetime(),
+  /** ISO datetime when this revision document was last written */
+  updatedAt: z.string().datetime(),
   /** User who created this revision */
   createdBy: z.string(),
   /** Type identifier for this form */
@@ -882,6 +905,7 @@ export interface MinimalRecordMetadata {
   revisionId: string;
   created: Date;
   createdBy: string;
+  /** Record `updatedAt` (when the current head was last created, replaced, or flushed). */
   updated: Date;
   updatedBy: string;
   conflicts: boolean;
