@@ -102,17 +102,6 @@ export const MobileOfflineMapRegionSelector = ({
     };
   }, [map, onRegionChange]);
 
-  useEffect(() => {
-    if (!map) {
-      return;
-    }
-
-    // Lock map interaction after the selection is confirmed.
-    map.getInteractions().forEach(interaction => {
-      interaction.setActive(!locked);
-    });
-  }, [locked, map]);
-
   return (
     <Box
       sx={{
@@ -126,6 +115,8 @@ export const MobileOfflineMapRegionSelector = ({
         parentSetMap={setMap}
         config={config}
         showControls={false}
+        autoFlyToCurrentLocation={false}
+        lockNavigation={locked}
       />
 
       {/* Keep the selected area visible and dim everything outside it. */}

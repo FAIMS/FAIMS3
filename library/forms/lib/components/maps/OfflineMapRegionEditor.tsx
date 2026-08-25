@@ -29,7 +29,7 @@ import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {MapComponent} from './MapComponent';
+import {MapComponent, MapComponentProps} from './MapComponent';
 import {
   extent4326ToOfflineMapRegion,
   offlineMapRegionToExtent4326,
@@ -67,6 +67,11 @@ export type OfflineMapRegionEditorProps = {
   drawingInstruction?: string;
   /** Save or clear-saved action shown beside the draw/clear controls. */
   persistenceAction?: OfflineMapPersistenceAction;
+  /** Additional props forwarded to the underlying map component. */
+  mapComponentProps?: Omit<
+    MapComponentProps,
+    'config' | 'parentSetMap' | 'extent' | 'showControls'
+  >;
 };
 
 const DEFAULT_DRAWING_INSTRUCTION =
@@ -93,6 +98,7 @@ export function OfflineMapRegionEditor({
   clearDrawingRequestId,
   drawingInstruction = DEFAULT_DRAWING_INSTRUCTION,
   persistenceAction,
+  mapComponentProps = {},
 }: OfflineMapRegionEditorProps) {
   const [map, setMap] = useState<Map | undefined>();
   const [isDrawing, setIsDrawing] = useState(false);
@@ -144,6 +150,7 @@ export function OfflineMapRegionEditor({
         source: vectorSourceRef.current,
         style: regionStyle,
         zIndex: 997,
+        updateWhileAnimating: true,
       });
       map.addLayer(layer);
       vectorLayerRef.current = layer;
@@ -342,6 +349,9 @@ export function OfflineMapRegionEditor({
           </Alert>
         )}
         <MapComponent
+          // prefer putting the spread first,
+          // so the editor-owned props can never accidentally be overridden later
+          {...mapComponentProps}
           parentSetMap={setMap}
           config={config}
           showControls={showMapControls}

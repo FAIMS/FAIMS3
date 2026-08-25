@@ -321,6 +321,7 @@ export function DownloadOfflineMap() {
               clearDrawingRequestId={clearDrawingRequestId}
               drawingInstruction=""
               mapHeight="clamp(360px, 55dvh, 800px)"
+              mapComponentProps={{autoFlyToCurrentLocation: false}}
             />
           )}
         </Stack>

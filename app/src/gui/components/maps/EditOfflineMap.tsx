@@ -297,6 +297,7 @@ export function EditOfflineMap() {
           showRegionStatus={false}
           showMapControls={false}
           mapHeight="clamp(380px, 55dvh, 650px)"
+          mapComponentProps={{autoFlyToCurrentLocation: false}}
         />
       </Stack>
 

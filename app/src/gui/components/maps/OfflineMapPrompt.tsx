@@ -262,6 +262,10 @@ export function NotebookOfflineMapPrompt() {
             showRegionStatus={false}
             showMapControls={false}
             mapHeight={mapHeight}
+            mapComponentProps={{
+              autoFlyToCurrentLocation: false,
+              lockNavigation: true,
+            }}
           />
         </Stack>
       </DialogContent>
