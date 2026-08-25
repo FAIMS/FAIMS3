@@ -407,17 +407,15 @@ const MapComponentImpl = (props: MapComponentProps) => {
       return;
     }
 
-    // Only handle the first successful current location result.
-    hasHandledFirstCurrentLocationRef.current = true;
-
     const coords = getCoordinates(currentPosition);
-
     if (!coords) {
       return;
     }
 
-    const view = map.getView();
+    // Only handle the first successful current location result.
+    hasHandledFirstCurrentLocationRef.current = true;
 
+    const view = map.getView();
     view.cancelAnimations();
     view.animate({
       center: transform(coords, 'EPSG:4326', defaultMapProjection),
