@@ -46,10 +46,10 @@ THEME=${VITE_THEME:-default}
 
 echo "Generating assets for ${THEME} theme"
 
-pnpm dlx sssf-capacitor-assets generate --assetPath "./public/base-assets/${THEME}" \
-  --pwaManifestPath ./public/manifest.json \
-  --iconBackgroundColorDark '#001d34' \
-  --splashBackgroundColorDark '#001d34'
+pnpm exec capacitor-assets generate --assetPath "./public/base-assets/${THEME}" \
+    --pwaManifestPath ./public/manifest.json \
+    --iconBackgroundColorDark '#001d34' \
+    --splashBackgroundColorDark '#001d34'
 
 ## capacitor-assets can put the pwa icons in the wrong place sometimes
 if test -f icons/icon-192.png; then

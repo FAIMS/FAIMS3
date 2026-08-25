@@ -134,6 +134,7 @@
     "jss": "^10.10.0",
     "msw": "^2.3.1",
     "node-gyp": "^9.3.1",
+    "sssf-capacitor-assets": "4.1.5",
     "type-fest": "^4.20.0",
     "typescript": "^7.0.2",
     "vite": "^7.3.2",

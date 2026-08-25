@@ -31,6 +31,8 @@ ignoreScripts: true
 overrides:
   'level': '^7.0.0'
   'sharp': '^0.34.2'
+  # 7.1.9 was published without trusted-publisher evidence; sssf-capacitor-assets asks for ^7.1.9
+  'sssf-capacitor-assets>@trapezedev/project': '7.1.8'
 
 peerDependencyRules:
   allowedVersions:
