@@ -1158,7 +1158,7 @@ export const BaseFieldEditor = ({
         aria-describedby="field-id-sync-dialog-description"
       >
         <DialogTitle id="field-id-sync-dialog-title" sx={designerDialogTitleSx}>
-          Are you sure you want to sync Field ID?
+          Are you sure you want to change this Field's ID?
         </DialogTitle>
         <DialogContent sx={designerDialogContentSx}>
           <DialogContentText
@@ -1166,9 +1166,10 @@ export const BaseFieldEditor = ({
             sx={designerDialogBodyTextSx}
           >
             This {appConfig.notebookName} already has {existingRecordCount}{' '}
-            record{existingRecordCount === 1 ? '' : 's'}. Data already collected
-            against <strong>{pendingFieldID?.from}</strong> may no longer appear
-            once this field becomes <strong>{pendingFieldID?.to}</strong>.
+            record{existingRecordCount === 1 ? '' : 's'}. Data collected in this{' '}
+            {appConfig.notebookName} for the field{' '}
+            <strong>{pendingFieldID?.from}</strong> may no longer appear once
+            this field becomes <strong>{pendingFieldID?.to}</strong>.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={designerDialogActionsSx}>
