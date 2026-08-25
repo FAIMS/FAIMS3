@@ -20,6 +20,8 @@ jobs:
         run: |
           brew update
           brew install jq
+      - name: Install sops
+        run: brew install sops
       - name: Declare some variables
         shell: bash
         run: |
@@ -49,6 +51,33 @@ jobs:
         with:
           node-version: 24
           cache: 'pnpm'
+      - name: Checkout deployment config repository
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.APP_CONFIG_REPO_SLUG }}
+          token: ${{ secrets.GIT_AUTHORIZATION }}
+          ref: ${{ vars.MOBILE_CONFIG_BRANCH || 'main' }}
+          path: config_repo
+      - name: Generate build environment from deployment config
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          set -euo pipefail
+          CONFIG_ENV="${{ vars.MOBILE_CONFIG_ENVIRONMENT }}"
+          BASE_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-config.json"
+          SECRETS_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-secrets.enc.json"
+
+          if [[ ! -f "$BASE_CONFIG" ]]; then
+            echo "Missing base config: $BASE_CONFIG" >&2
+            exit 1
+          fi
+
+          if [[ -f "$SECRETS_CONFIG" ]]; then
+            jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
+              | pnpm generate-build-config --config - --platform ios >> "$GITHUB_ENV"
+          else
+            pnpm generate-build-config --config "$BASE_CONFIG" --platform ios >> "$GITHUB_ENV"
+          fi
       - name: Use Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -57,44 +86,6 @@ jobs:
         run: |
           export platform="github-actions-ios"
           export serverprefix="fieldmark"
-          export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export VITE_COMMIT_VERSION=${{env.version_string}}
-          export VITE_SHOW_WIPE=true
-          export VITE_SHOW_POUCHDB_BROWSER=false
-          export VITE_POUCH_BATCH_SIZE=${{vars.POUCH_BATCH_SIZE}}
-          export VITE_CONDUCTOR_URL=${{vars.PRODUCTION_CONDUCTOR_URL}}
-          export VITE_TAG=prodIOS
-          export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
-          export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
-          export VITE_THEME=${{vars.THEME}}
-          export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
-          export VITE_APP_ID=${{vars.APP_ID}}
-          export VITE_APP_NAME="${{vars.APP_NAME}}"
-          export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
-          export VITE_APPLE_BUNDLE_IDENTIFIER="${{vars.APPLE_BUNDLE_IDENTIFIER}}"
-          export VITE_APP_STORE_CONNECT_TEAM_ID="${{secrets.APP_STORE_CONNECT_TEAM_ID}}"
-          # Optional; when set, prebuildIOS.sh writes this into the Xcode project
-          export PROVISIONING_PROFILE_SPECIFIER="${{secrets.PROVISIONING_PROFILE_SPECIFIER}}"
-          export VITE_APP_PRIVACY_POLICY_URL=${{vars.APP_PRIVACY_POLICY_URL}}
-          export VITE_SUPPORT_EMAIL=${{vars.SUPPORT_EMAIL}}
-          export VITE_APP_CONTACT_URL=${{vars.APP_CONTACT_URL}}
-          export VITE_MIGRATE_OLD_DATABASES=${{vars.MIGRATE_OLD_DATABASES}}
-          export VITE_FORCE_REMOTE_DELETION=${{vars.FORCE_REMOTE_DELETION}}
-          export VITE_DELETE_ON_DEACTIVATION=${{vars.DELETE_ON_DEACTIVATION}}
-
-          export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
-          export VITE_MAP_SOURCE=${{vars.MAP_SOURCE}}
-          export VITE_SATELLITE_SOURCE=${{vars.SATELLITE_SOURCE}}
-          export VITE_MAP_SOURCE_KEY="${{secrets.MAP_SOURCE_KEY}}"
-          # Address autosuggest (set repo var AUTOSUGGEST_SOURCE e.g. MAPTILER or MAPBOX; see app/.env.dist)
-          export VITE_AUTOSUGGEST_SOURCE=${{vars.AUTOSUGGEST_SOURCE}}
-          export VITE_AUTOSUGGEST_MAPBOX_KEY="${{secrets.AUTOSUGGEST_MAPBOX_KEY}}"
-          export VITE_AUTOSUGGEST_MAPTILER_KEY="${{secrets.AUTOSUGGEST_MAPTILER_KEY}}"
-          export VITE_MAPBOX_ADDRESS_COUNTRY="${{vars.MAPBOX_ADDRESS_COUNTRY}}"
-          export VITE_MAPTILER_ADDRESS_COUNTRY="${{vars.MAPTILER_ADDRESS_COUNTRY}}"
-          # could make these configurable but enable by default for now
-          export VITE_OFFLINE_MAPS=true
-          export VITE_MAP_STYLE=basic
 
           pnpm install --frozen-lockfile
           pnpm --filter=@faims3/app run configIOSbuild 
@@ -120,16 +111,16 @@ jobs:
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
-          VITE_APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
-          DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
-          VITE_APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
-          DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
-          MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
-          MATCH_GIT_URL: '${{ vars.MATCH_GIT_URL }}'
+          VITE_APP_STORE_CONNECT_TEAM_ID: '${{ env.VITE_APP_STORE_CONNECT_TEAM_ID }}'
+          DEVELOPER_APP_ID: '${{ env.DEVELOPER_APP_ID }}'
+          VITE_APPLE_BUNDLE_IDENTIFIER: '${{ env.VITE_APPLE_BUNDLE_IDENTIFIER }}'
+          DEVELOPER_PORTAL_TEAM_ID: '${{ env.DEVELOPER_PORTAL_TEAM_ID }}'
+          MATCH_PASSWORD: '${{ env.MATCH_PASSWORD }}'
+          MATCH_GIT_URL: 'https://github.com/${{ vars.APP_CONFIG_REPO_SLUG }}.git'
           GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
-          PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
+          PROVISIONING_PROFILE_SPECIFIER: '${{ env.PROVISIONING_PROFILE_SPECIFIER }}'
           # Individual key: no APPLE_ISSUER_ID / Apple ID / ASP. Team-key secrets stay on non-_individual workflows.
-          APPLE_KEY_ID: '${{ secrets.APPLE_INDIVIDUAL_KEY_ID }}'
-          APPLE_KEY_CONTENT: '${{ secrets.APPLE_INDIVIDUAL_KEY_CONTENT }}'
-          BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
-          BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'
+          APPLE_KEY_ID: '${{ env.APPLE_KEY_ID }}'
+          APPLE_KEY_CONTENT: '${{ env.APPLE_KEY_CONTENT }}'
+          BROWSERSTACK_USERNAME: '${{ env.BROWSERSTACK_USERNAME }}'
+          BROWSERSTACK_ACCESS_KEY: '${{ env.BROWSERSTACK_ACCESS_KEY }}'

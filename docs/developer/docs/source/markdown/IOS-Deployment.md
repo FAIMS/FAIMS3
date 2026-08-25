@@ -74,7 +74,8 @@ See [Fastlane Lanes: Team vs Individual](#-fastlane-lanes-team-vs-individual).
 [Fastlane match](https://docs.fastlane.tools/actions/match/) is used to store signing keys
 for the App Store. It requires that we create a new **private** repository on Github
 to store the signing certificates. Create this repository and set the value of
-MATCH_GIT_URL in the configuration environment.
+`vars.APP_CONFIG_REPO_SLUG` in GitHub Actions; workflows derive
+`MATCH_GIT_URL` as `https://github.com/<slug>.git`.
 
 To generate the secrets we need to run `fastlane match`. This requires a temporary file
 `Matchfile` to be created, this can be done outside of the project repository. First,
@@ -134,113 +135,73 @@ Certificates and provisioning profiles will be pushed to your **private repo**.
 
 ## 🧬 GitHub Workflow Structure
 
-Each org (CSIRO, Fieldmark) has its **own deployment workflow** in `.github/workflows/`.
+The current iOS deployment workflows are:
 
-```text
-.github/workflows/
-├── fieldmark-deploy.yml
-└── csiro-deploy.yml
-```
+- `.github/workflows/appstore-testflight.yml`
+- `.github/workflows/appstore-deploy.yml`
+- `.github/workflows/appstore-testflight_individual.yml`
+- `.github/workflows/appstore-deploy_individual.yml`
 
-### Example CSIRO Workflow Trigger
+All four workflows follow the same config pattern:
 
-```yaml
-on:
-  workflow_dispatch:
-
-jobs:
-  build-deploy-ios:
-    name: Build and Deploy iOS App
-    runs-on: macos-latest
-    env:
-      MATCH_PASSWORD: ${{ secrets.CSIRO_MATCH_PASSWORD }}
-      MATCH_GIT_URL: https://github.com/ranisa-gupta16/csiro-ios-certifications
-      APPLE_KEY_ID: ${{ secrets.CSIRO_APPLE_KEY_ID }}
-      APPLE_ISSUER_ID: ${{ secrets.CSIRO_APPLE_ISSUER_ID }}
-      APPLE_KEY_CONTENT: ${{ secrets.CSIRO_APPLE_KEY_CONTENT }}
-      APP_STORE_CONNECT_TEAM_ID: ${{ secrets.CSIRO_TEAM_ID }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install dependencies
-        run: bundle install
-      - name: Build and Upload
-        run: bundle exec fastlane ios appstore
-```
+1. Checkout this repository.
+2. Checkout the private config repository from `vars.APP_CONFIG_REPO_SLUG`.
+3. Read `build-config.json` and decrypt `build-secrets.enc.json`.
+4. Generate env vars with `pnpm generate-build-config --platform ios`.
+5. Run the relevant Fastlane lane.
 
 ## Settings
 
-The following settings are used in the workflows and need to be set
-up as either secrets or variables in the Github repository.
+The iOS workflows now load build settings from a private deployment-config
+repository instead of declaring most values as direct GitHub secrets/variables.
+
+Each workflow does the following:
+
+1. Checkout the config repository using `vars.APP_CONFIG_REPO_SLUG`.
+2. Read environment-specific files:
+
+- `mobile/<environment>/build-config.json`
+- `mobile/<environment>/build-secrets.enc.json`
+
+3. Decrypt `build-secrets.enc.json` in CI with `secrets.SOPS_AGE_KEY`.
+4. Merge both JSON files and run `pnpm generate-build-config --platform ios`.
+5. Export generated env vars to `GITHUB_ENV` for Fastlane.
+
+For the full field mapping between JSON keys and generated env vars, see
+[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md).
+
+### Bootstrap variables/secrets in GitHub
+
+Only a small bootstrap set is required in GitHub Actions:
+
+- `vars.APP_CONFIG_REPO_SLUG` - config repository slug in the form `owner/repo`
+- `vars.MOBILE_CONFIG_BRANCH` - config branch (defaults to `main`)
+- `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under `mobile/`
+- `secrets.GIT_AUTHORIZATION` - token with read access to the config repo
+- `secrets.SOPS_AGE_KEY` - age private key for decrypting `build-secrets.enc.json`
+
+The workflows derive:
+
+- `MATCH_GIT_URL` from `APP_CONFIG_REPO_SLUG` as `https://github.com/<slug>.git`
+
+This keeps one canonical repo setting for both config checkout and Fastlane Match.
+
+Because the same repository is also used for Fastlane Match certificates/profiles,
+follow the shared-repo safety guidance in
+[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+before changing anything outside `mobile/<environment>/`.
 
 ## 📄 Appfile & Fastfile Logic
 
 ### Appfile
 
-Can be overridden in CI via ENV variables. If not, it should define:
+Can be overridden in CI via env vars. If not, it should define:
 
 ```ruby
 app_identifier("au.csiro.bss")
 apple_id("csiro-developer@csiro.au")
 team_id("ABCDE12345")
 ```
-
-### Secrets
-
-Shared by team and individual lanes unless noted otherwise:
-
-| Secret                                              | Meaning                                                                                                                                                                                                        |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DEVELOPER_PORTAL_TEAM_ID`                          | Developer Portal team identifier (Membership Details at <https://developer.apple.com/account>). Alphanumeric. Used as Xcode `team_id` in the Appfile.                                                          |
-| `APP_STORE_CONNECT_TEAM_ID`                         | App Store Connect team identifier (may match the Developer Portal id). Passed as `VITE_APP_STORE_CONNECT_TEAM_ID` into Fastlane / `update_project_team`. Must match the team that owns the Match certificates. |
-| `GIT_AUTHORIZATION`                                 | GitHub personal access token with read access to the private Match certificates repository.                                                                                                                    |
-| `MATCH_PASSWORD`                                    | Passphrase used to encrypt/decrypt certificates in the Match git repo.                                                                                                                                         |
-| `PROVISIONING_PROFILE_SPECIFIER`                    | Optional. Exact provisioning profile name to use instead of the default Match name (`match AppStore <bundle-id>`). Written into the Xcode project by `prebuildIOS.sh` and used by `gym` export.                |
-| `BROWSERSTACK_USERNAME` / `BROWSERSTACK_ACCESS_KEY` | BrowserStack credentials (used by the BrowserStack lane, not the App Store upload lanes).                                                                                                                      |
-| `MAP_SOURCE_KEY`                                    | API key for map tiles in the built web app.                                                                                                                                                                    |
-
-**Team-key only** (workflows without `_individual`):
-
-| Secret                                         | Meaning                                                                                                                                                   |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APPLE_KEY_ID`                                 | Key ID of the **Team** App Store Connect API key (Users and Access → Integrations → App Store Connect API → Team Keys).                                   |
-| `APPLE_ISSUER_ID`                              | Issuer ID for that Team key. Required for Team keys; Fastlane uses it with `key_id` + `key_content` to authenticate.                                      |
-| `APPLE_KEY_CONTENT`                            | PEM contents of the Team API key `.p8` file (downloadable only at creation). Not base64-encoded.                                                          |
-| `FASTLANE_APPLE_ID`                            | Apple ID email used by Fastlane/Appfile for Team-key workflows.                                                                                           |
-| `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | App-specific password for that Apple ID (legacy upload auth path still wired in the Team workflows - API key is used preferentially so this is optional). |
-
-**Individual-key only** (`*_individual` workflows):
-
-| Secret                         | Meaning                                                                                              |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `APPLE_INDIVIDUAL_KEY_ID`      | Key ID of an **Individual** App Store Connect API key. Mapped to `APPLE_KEY_ID` in the workflow env. |
-| `APPLE_INDIVIDUAL_KEY_CONTENT` | PEM contents of that Individual key `.p8`. Mapped to `APPLE_KEY_CONTENT`.                            |
-
-Do not set `APPLE_ISSUER_ID` on individual workflows. Omitting `issuer_id` is how Fastlane treats the key as Individual. Individual workflows also omit `FASTLANE_APPLE_ID` / app-specific password.
-
-### Variables
-
-These are not sensitive so can be repository variables:
-
-| Variable                  | Meaning                                                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `DEVELOPER_APP_ID`        | Numeric Apple ID of the app in App Store Connect (App Information → Apple ID). Used by `pilot` as `apple_id`.                                                                                                                  |
-| `APPLE_BUNDLE_IDENTIFIER` | iOS bundle identifier (e.g. `au.edu.faims.electronicfieldnotebook`). Passed as `VITE_APPLE_BUNDLE_IDENTIFIER` to Match, gym, pilot, and deliver. Must be unique in the App Store; can differ from the web `APP_ID` URL scheme. |
-| `MATCH_GIT_URL`           | HTTPS URL of the private git repo that stores Match certificates/profiles.                                                                                                                                                     |
-
-App branding / runtime vars used when building the web bundle before Capacitor sync (same for team and individual):
-
-- `vars.HEADING_APP_NAME` — App name on the main page (defaults to `APP_NAME`)
-- `vars.MAP_SOURCE` — Map tile source (`maptiler` or `osm`)
-- `vars.APP_PRIVACY_POLICY_URL` — Privacy policy link in the app footer
-- `vars.SUPPORT_EMAIL` — Support email shown in the app
-- `vars.APP_CONTACT_URL` — Contact link in the app footer
-- `vars.POUCH_BATCH_SIZE` — PouchDB replication batch size (defaults to 10)
-
-TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build
-process. Look at the Fastlane `update_app_identifier` action which can do this
-during the build. For now we will keep the Fieldmark id to the one that's been
-in use so far but when we want a BSS release we'll need it to be updated.
 
 ## Fastlane Lanes: Team vs Individual
 

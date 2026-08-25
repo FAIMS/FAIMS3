@@ -57,9 +57,10 @@ Basically you select "Generate Signed Bundle or API" from the Build menu and fol
 prompts. This will get you to generate a new keystore file, key name and password.  
 Make a note of these, we'll create repository secrets for them on Github:
 
-- `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
-- `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
-- `secrets.JAVA_KEY` - key alias for the Java Keystore
+- `mobile.android.keystoreFileBase64` in `build-secrets.enc.json` - java key store file, base64 encoded
+- `mobile.android.keystorePassword` in `build-secrets.enc.json` - password for the Java keystore
+- `mobile.android.keyAlias` in `build-secrets.enc.json` - key alias for the Java keystore
+- `mobile.android.keyPassword` in `build-secrets.enc.json` - key password for the Java keystore
 
 Complete the build and you should have an `app-release.aab` file that you can
 upload to the Google Play console.
@@ -148,7 +149,14 @@ More details:
 
 ## Encode and Store Secrets
 
-To use secrets in GitHub Actions:
+Mobile deployment now reads settings from a private configuration repository:
+
+- `mobile/<environment>/build-config.json` (non-secret)
+- `mobile/<environment>/build-secrets.enc.json` (SOPS-encrypted)
+
+The workflow checks out that repository, decrypts the secrets file in CI using `SOPS_AGE_KEY`, merges both JSON files, and generates environment variables with `pnpm generate-build-config`.
+
+To prepare Android secrets:
 
 ```bash
 base64 my-release-key.keystore > keystore.txt
@@ -157,15 +165,17 @@ or
 base64 bushfiresurveyorsystemdeploy-63a8de61b6fb.json > gplay_key.txt
 ```
 
-Copy and paste content of these `.txt` files into GitHub Secrets.
+Copy the encoded values into `mobile.android.keystoreFileBase64` and `mobile.android.serviceAccountKeyJsonBase64` in `build-secrets.enc.json`.
 
-### Required GitHub Secrets:
+For the complete JSON field-to-env mapping used by the generator, see [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md).
 
-- `KEYSTORE_FILE` - base64 of `.keystore` file
-- `JAVA_KEY_PASSWORD` - keystore password
-- `JAVA_KEY` - key alias
-- `GPLAY_SERVICE_ACCOUNT_KEY_JSON` - base64 of service account json
-- `TURBO_TOKEN`, `BUGSNAG_KEY`, `MAP_SOURCE_KEY` (as applicable)
+### Required GitHub Secrets and Variables:
+
+- `secrets.GIT_AUTHORIZATION` - token with read access to the private config repository
+- `secrets.SOPS_AGE_KEY` - age private key used by `sops --decrypt` in workflow
+- `vars.APP_CONFIG_REPO_SLUG` - config repository slug in the form `owner/repo`
+- `vars.MOBILE_CONFIG_BRANCH` - config repository branch (defaults to `main`)
+- `vars.MOBILE_CONFIG_ENVIRONMENT` - environment folder under `mobile/` (for example `production`, `nightly`)
 
 ## Please Note: This is Important :-)
 
@@ -275,32 +285,35 @@ that I've removed for now since the result was not used.
 
 ## Variables and Secrets for deployment
 
-The following variables and secrets are set in the the Github repository
-where these workflows will run.
+The mobile workflows now use configuration JSON files (plus encrypted secrets)
+as the source of truth, not per-field GitHub secrets for Android signing values.
 
-- `vars.NIGHTLY_CONDUCTOR_URL` - URL setting for test build
-- `vars.PRODUCTION_CONDUCTOR_URL` - URL setting for production build
-- `vars.TURBO_TEAM` - Turbo cache team name for authentication
-- `vars.TURBO_API_URL` - Turbo cache URL
-- `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
-- `vars.APP_NAME` - the app name that appears in various places
-- `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
-- `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
-- `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
-- `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer
-- `vars.SUPPORT_EMAIL` - Support email address displayed in the app
-- `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
-- `vars.POUCH_BATCH_SIZE` - batch size for pouchdb replication, defaults to 10 to ensure reliable sync of large files
+### Bootstrap variables/secrets in GitHub
 
-Secrets will not be visible once added so we need to keep copies somewhere safe.
+- `vars.APP_CONFIG_REPO_SLUG`
+- `vars.MOBILE_CONFIG_BRANCH`
+- `vars.MOBILE_CONFIG_ENVIRONMENT`
+- `secrets.GIT_AUTHORIZATION`
+- `secrets.SOPS_AGE_KEY`
 
-- `secrets.TURBO_TOKEN` - authentication token for the turbo cache
-- `secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON` - bases64 encoded version of service account key, the workflow decodes this and sets `ANDROID_JSON_KEY_FILE` to point to it
-- `secrets.BUGSNAG_KEY`
-- `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
-- `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
-- `secrets.JAVA_KEY` - key alias for the Java Keystore
-- `secrets.MAP_SOURCE_KEY` - API key for map tiles
+### Build settings and secrets in JSON config files
+
+Android build values such as:
+
+- app and runtime `VITE_*` values
+- `ANDROID_RELEASE_STATUS` and `ANDROID_DEPLOY_TRACK`
+- keystore and Play service-account data
+
+are defined in `build-config.json` and `build-secrets.enc.json`, then mapped to
+env vars by `pnpm generate-build-config`.
+
+See [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+for the complete field mapping.
+
+Because this repository is also used by Fastlane Match for iOS signing assets,
+follow the shared-repo safety guidance in
+[Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+before changing anything outside `mobile/<environment>/`.
 
 ---
 

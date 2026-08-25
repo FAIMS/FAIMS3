@@ -251,7 +251,6 @@ export class FaimsFrontEnd extends Construct {
       VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
       VITE_DELETE_ON_DEACTIVATION:
         props.deleteOnDeactivation === true ? 'true' : 'false',
-      VITE_TAG: 'CDKDeployment',
 
       // offline maps configuration
       VITE_MAP_SOURCE: props.offlineMaps.mapSource,
