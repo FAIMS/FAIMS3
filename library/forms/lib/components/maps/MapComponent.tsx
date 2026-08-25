@@ -250,7 +250,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,
-      minZoom: isOnline ? 0 : 12,
+      minZoom: 0,
       maxZoom: MAX_ZOOM,
     });
 
