@@ -21,15 +21,14 @@ import {useEffect, useMemo, useState} from 'react';
 import {
   Box,
   Button,
-  Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
-  FormGroup,
   MenuItem,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -45,6 +44,7 @@ import {
   designerDialogTitleSx,
 } from '../designer-style';
 import {SimpleFieldWrapper} from '../Fields/SimpleFieldWrapper';
+import {FieldSearchAutocomplete} from '../field-selector';
 import type {PlanDialogProps} from '../../plans';
 
 /** Pick the form and pre-filled fields for a List of Records plan. */
@@ -96,12 +96,14 @@ export const ListOfRecordsPlanDialog = ({
     return typeof label === 'string' && label ? label : fieldName;
   };
 
-  const toggleField = (fieldName: string) => {
+  const addField = (fieldName: string) => {
     setRecordFields(current =>
-      current.includes(fieldName)
-        ? current.filter(f => f !== fieldName)
-        : [...current, fieldName]
+      current.includes(fieldName) ? current : [...current, fieldName]
     );
+  };
+
+  const removeField = (fieldName: string) => {
+    setRecordFields(current => current.filter(f => f !== fieldName));
   };
 
   const handleFormChange = (newFormType: string) => {
@@ -170,25 +172,60 @@ export const ListOfRecordsPlanDialog = ({
                 heading="Pre-filled fields"
                 helperText="Fields of the form that each planned record supplies values for."
               >
-                <FormGroup sx={{mt: 0.85}}>
-                  {formFields.map(fieldName => (
-                    <FormControlLabel
-                      key={fieldName}
-                      control={
-                        <Checkbox
-                          checked={recordFields.includes(fieldName)}
-                          onChange={() => toggleField(fieldName)}
-                        />
-                      }
-                      label={fieldLabel(fieldName)}
+                {formFields.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    This form has no fields yet.
+                  </Typography>
+                ) : (
+                  <Box sx={{mt: 0.85}}>
+                    {/* Picker reads the designer store, the same uiSpec the dialog is given */}
+                    <FieldSearchAutocomplete
+                      value={null}
+                      onChange={fieldName => {
+                        if (fieldName) addField(fieldName);
+                      }}
+                      scope={{kind: 'viewset', viewsetId: formType}}
+                      filters={{excludeFieldIds: recordFields}}
+                      label="Add field"
+                      placeholder="Search fields…"
+                      size="small"
+                      clearOnSelect
+                      noOptionsText="No fields left to add"
+                      data-testid="list-plan-field-add"
                     />
-                  ))}
-                  {formFields.length === 0 && (
-                    <Typography variant="body2" color="text.secondary">
-                      This form has no fields yet.
-                    </Typography>
-                  )}
-                </FormGroup>
+                    <Box
+                      sx={{display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5}}
+                    >
+                      {recordFields.map(fieldName => {
+                        // A field can be deleted from the form after the plan chose it
+                        const onForm = formFields.includes(fieldName);
+                        const chip = (
+                          <Chip
+                            key={fieldName}
+                            label={fieldLabel(fieldName)}
+                            color={onForm ? 'default' : 'warning'}
+                            onDelete={() => removeField(fieldName)}
+                          />
+                        );
+                        return onForm ? (
+                          chip
+                        ) : (
+                          <Tooltip
+                            key={fieldName}
+                            title="This field is no longer on the form"
+                          >
+                            <span>{chip}</span>
+                          </Tooltip>
+                        );
+                      })}
+                      {recordFields.length === 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                          No fields chosen yet.
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                )}
               </SimpleFieldWrapper>
             </Box>
           )}
