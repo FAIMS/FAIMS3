@@ -1,6 +1,7 @@
 import {
   Action,
   CompiledNotebookUiSpec,
+  computeRecordStatusReport,
   DatabaseInterface,
   DataDbType,
   DataDocument,
@@ -8,9 +9,16 @@ import {
   fetchAndHydrateRecord,
   isAuthorized,
   MinimalRecordMetadata,
+  RecordStatusReport,
   UiSpecModel,
 } from '@faims3/data-model';
-import {QueryClient, useQuery} from '@tanstack/react-query';
+import {fieldCompletionResolver} from '@faims3/forms';
+import {
+  QueryClient,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
@@ -328,9 +336,11 @@ export function buildHydrateKeys({
 }
 
 /**
- * Query key for a record's Status tab report. The hydration prefix only adds
- * it to project-wide cancel/reset sweeps; freshness comes from the query's
- * refetchOnMount, not invalidation.
+ * Query key for a record's status report, shared by the Status tab and
+ * {@link usePlanRecordStatusReports} so either surface serves the other's
+ * cache. The hydration prefix adds it to project-wide cancel/reset sweeps;
+ * freshness comes from the Status tab's refetchOnMount and the plan hook's
+ * revision-driven invalidation.
  */
 export function buildStatusReportKey({
   projectId,
@@ -340,6 +350,93 @@ export function buildStatusReportKey({
   recordId: string;
 }) {
   return [HYDRATION_KEY_PREFIX, projectId, recordId, 'statusReport'];
+}
+
+/**
+ * Recursive status reports for every record claiming a plan reference, for
+ * plan views that display per-record completion. One query per claiming
+ * record, on the Status tab's own key, so reports land incrementally and
+ * either surface serves the other's cache. A report spans the record's whole
+ * child subtree, so any head-revision change in the notebook invalidates every
+ * report; invalidation rather than a version in the key keeps each query's
+ * identity stable, so a recomputing entry keeps its previous result instead of
+ * flashing back to pending.
+ */
+export function usePlanRecordStatusReports({
+  projectId,
+  uiSpecification,
+  records,
+  enabled,
+}: {
+  projectId: string;
+  uiSpecification: CompiledNotebookUiSpec;
+  records: MinimalRecordMetadata[];
+  /** Pass false where no view displays the reports, to skip the walks. */
+  enabled: boolean;
+}): ReadonlyMap<string, RecordStatusReport> {
+  const queryClient = useQueryClient();
+  // Undefined while the notebook is being removed; the queries wait it out
+  const dataDb = tryLocalGetDataDb(projectId);
+  const claimingRecords = useMemo(
+    () =>
+      records.filter(
+        record => !record.deleted && record.planReference !== undefined
+      ),
+    [records]
+  );
+  // Head revisions of the whole list: unlike `updated` (the author device's
+  // clock), a synced-in edit always changes a revisionId
+  const dataVersion = useMemo(
+    () =>
+      records
+        .map(record => `${record.recordId}:${record.revisionId}`)
+        .sort()
+        .join(' '),
+    [records]
+  );
+  useEffect(() => {
+    void queryClient.invalidateQueries({
+      predicate: query =>
+        query.queryKey[0] === HYDRATION_KEY_PREFIX &&
+        query.queryKey[1] === projectId &&
+        query.queryKey[3] === 'statusReport',
+    });
+  }, [queryClient, projectId, dataVersion, uiSpecification]);
+  // Stable across renders, so an unchanged result set keeps its Map identity
+  // and downstream memos hold
+  const combineReports = useCallback(
+    (results: Array<{data: RecordStatusReport | undefined}>) => {
+      const reports = new Map<string, RecordStatusReport>();
+      results.forEach((result, index) => {
+        if (result.data) {
+          reports.set(claimingRecords[index].recordId, result.data);
+        }
+      });
+      return reports as ReadonlyMap<string, RecordStatusReport>;
+    },
+    [claimingRecords]
+  );
+  return useQueries({
+    queries: claimingRecords.map(record => ({
+      queryKey: buildStatusReportKey({projectId, recordId: record.recordId}),
+      queryFn: () =>
+        computeRecordStatusReport({
+          engine: new DataEngine({
+            dataDb: dataDb as DatabaseInterface<DataDocument>,
+            uiSpec: uiSpecification,
+          }),
+          recordId: record.recordId,
+          projectId,
+          // Same per-field scoring as the form's progress bar
+          isCompleteResolver: fieldCompletionResolver,
+        }),
+      networkMode: 'always' as const,
+      // Freshness comes from the invalidation above
+      staleTime: Infinity,
+      enabled: enabled && dataDb !== undefined,
+    })),
+    combine: combineReports,
+  });
 }
 
 /**

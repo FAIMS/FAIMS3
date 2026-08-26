@@ -117,3 +117,17 @@ describe('UiConfiguration addressAutosuggest + MapTiler key validation', () => {
     expect(() => UiConfiguration.parse(config)).not.toThrow();
   });
 });
+
+describe('UiConfiguration enablePlansInDesigner', () => {
+  it('defaults to true when omitted', () => {
+    const parsed = UiConfiguration.parse(minimalUiConfig());
+    expect(parsed.enablePlansInDesigner).toBe(true);
+  });
+
+  it('accepts an explicit false', () => {
+    const parsed = UiConfiguration.parse(
+      minimalUiConfig({enablePlansInDesigner: false})
+    );
+    expect(parsed.enablePlansInDesigner).toBe(false);
+  });
+});
