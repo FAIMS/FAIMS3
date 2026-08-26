@@ -272,6 +272,7 @@ const ProjectActions = (): JSX.Element => {
         open={editorOpen}
         notebook={initialNotebook}
         exportBaseName={data?.name}
+        existingRecordCount={data?.recordCount}
         onClose={handleEditorClose}
       />
     </>

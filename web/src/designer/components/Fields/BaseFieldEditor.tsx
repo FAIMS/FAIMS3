@@ -21,9 +21,15 @@ import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
   Box,
+  Button,
   Card,
   Checkbox,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   FormControlLabel,
   Grid,
@@ -37,9 +43,14 @@ import {
 import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {config as appConfig} from '@/constants';
 import {config} from '../../buildconfig';
 import {designerHtmlInput, INPUT_LIMITS} from '../../lib/input-limits';
 import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
+import {
+  useDesignerEditingContext,
+  useIsFieldNewInSession,
+} from '../../state/editing-context';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -56,9 +67,15 @@ import {SimpleFieldWrapper} from './SimpleFieldWrapper';
 import {getSpeechSettings, updateSpeechSettings} from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
 import {
+  designerCancelButtonSx,
   designerCheckboxSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogContentSx,
+  designerDialogTitleSx,
   designerInfoCalloutSx,
   designerInfoIconSx,
+  designerPrimaryActionButtonSx,
   designerSoftPanelCardSx,
 } from '../designer-style';
 
@@ -129,10 +146,23 @@ export const BaseFieldEditor = ({
   // Enable one-time auto-sync (Label -> Field ID) for newly added fields only.
   const autoSyncFieldIdEnabled = useRef(true);
   const initialAutoSyncDone = useRef(false);
-  // Mark renames triggered by auto-sync (not by user changing selected field).
+  // A rename changes the field's key, so this component re-renders with a new
+  // `fieldName` — indistinguishable from the user selecting another field. Set
+  // before dispatching so the `fieldName` effect can tell the two apart and skip
+  // re-arming auto-sync and re-focusing.
   const internalRenameInFlight = useRef(false);
   const labelSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localFieldName, setLocalFieldName] = useState(fieldName);
+  const [pendingFieldID, setPendingFieldID] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+  const {existingRecordCount} = useDesignerEditingContext();
+  const hasExistingRecords = (existingRecordCount ?? 0) > 0;
+  const isFieldNewInSession = useIsFieldNewInSession(field.designerIdentifier);
+  // Only an existing field in a survey that already holds records can orphan
+  // data. Gates the confirm-before-rename flow below.
+  const changingIdMayOrphanData = hasExistingRecords && !isFieldNewInSession;
 
   const debouncedRename = useCallback(
     debounce((newFieldName: string) => {
@@ -151,16 +181,9 @@ export const BaseFieldEditor = ({
     [dispatch, uiSpec, fieldName]
   );
 
-  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // User is explicitly controlling Field ID, so pause auto-sync from label.
-    autoSyncFieldIdEnabled.current = false;
-    initialAutoSyncDone.current = true;
-    setLocalFieldName(e.target.value);
-    debouncedRename(e.target.value);
-  };
-
-  const syncFieldIDToLabel = (label: string) => {
-    const desired = slugify(label || '');
+  // The single write path for a Field ID change; no-ops when blank or unchanged.
+  const commitFieldID = (newFieldName: string) => {
+    const desired = newFieldName.trim();
     const viewId = getViewIDForField(uiSpec, fieldName);
     if (viewId && desired && desired !== fieldName) {
       internalRenameInFlight.current = true;
@@ -169,12 +192,63 @@ export const BaseFieldEditor = ({
     }
   };
 
-  const syncFieldID = () => {
+  const syncFieldIDToLabel = (label: string) => {
+    commitFieldID(slugify(label || ''));
+  };
+
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // User is explicitly controlling Field ID, so pause auto-sync from label.
+    autoSyncFieldIdEnabled.current = false;
+    initialAutoSyncDone.current = true;
+    setLocalFieldName(e.target.value);
+    // Renames that could orphan data are deferred to blur, so the user confirms
+    // before anything is written.
+    if (!changingIdMayOrphanData) debouncedRename(e.target.value);
+  };
+
+  /** Stages the typed ID so the confirm dialog opens; nothing is written yet. */
+  const handleIdBlur = () => {
+    if (!changingIdMayOrphanData) return;
+    const desired = localFieldName.trim();
+    if (!desired) {
+      setLocalFieldName(fieldName);
+      return;
+    }
+    if (desired === fieldName) return;
+    setPendingFieldID({from: fieldName, to: desired});
+  };
+
+  const applyFieldIDSync = (desired: string) => {
     // Manual sync is one-shot and should not re-enable continuous auto-sync.
     autoSyncFieldIdEnabled.current = false;
     initialAutoSyncDone.current = true;
-    syncFieldIDToLabel(state.label || '');
+    commitFieldID(desired);
   };
+
+  const syncFieldID = () => {
+    const desired = slugify(state.label || '');
+    if (!desired || desired === fieldName) return;
+    if (changingIdMayOrphanData) {
+      setPendingFieldID({from: fieldName, to: desired});
+      return;
+    }
+    applyFieldIDSync(desired);
+  };
+
+  const confirmFieldIDChange = () => {
+    const pending = pendingFieldID;
+    setPendingFieldID(null);
+    // Ignore a stale confirmation if the selected field changed underneath us.
+    if (pending && pending.from === fieldName) applyFieldIDSync(pending.to);
+  };
+
+  const cancelFieldIDChange = () => {
+    setPendingFieldID(null);
+    setLocalFieldName(fieldName);
+  };
+
+  // Stops the sync button stealing blur, which would open the dialog twice.
+  const keepFocusOnMouseDown = (e: React.MouseEvent) => e.preventDefault();
 
   const handleLabelChange = (newLabel: string) => {
     updateProperty('label', newLabel);
@@ -404,6 +478,7 @@ export const BaseFieldEditor = ({
                         placeholder="Enter field ID"
                         value={localFieldName}
                         onChange={handleIdChange}
+                        onBlur={handleIdBlur}
                         inputRef={idInputRef}
                         slotProps={{
                           htmlInput: designerHtmlInput(
@@ -418,6 +493,7 @@ export const BaseFieldEditor = ({
                                     <IconButton
                                       size="small"
                                       onClick={syncFieldID}
+                                      onMouseDown={keepFocusOnMouseDown}
                                       edge="end"
                                     >
                                       <SyncIcon fontSize="small" />
@@ -455,6 +531,7 @@ export const BaseFieldEditor = ({
                             placeholder="Enter field ID"
                             value={localFieldName}
                             onChange={handleIdChange}
+                            onBlur={handleIdBlur}
                             inputRef={idInputRef}
                             slotProps={{
                               htmlInput: designerHtmlInput(
@@ -469,6 +546,7 @@ export const BaseFieldEditor = ({
                                         <IconButton
                                           size="small"
                                           onClick={syncFieldID}
+                                          onMouseDown={keepFocusOnMouseDown}
                                           edge="end"
                                         >
                                           <SyncIcon fontSize="small" />
@@ -499,6 +577,7 @@ export const BaseFieldEditor = ({
                           label="Field ID"
                           value={localFieldName}
                           onChange={handleIdChange}
+                          onBlur={handleIdBlur}
                           inputRef={idInputRef}
                           slotProps={{
                             htmlInput: designerHtmlInput(
@@ -513,6 +592,7 @@ export const BaseFieldEditor = ({
                                       <IconButton
                                         size="small"
                                         onClick={syncFieldID}
+                                        onMouseDown={keepFocusOnMouseDown}
                                         edge="end"
                                       >
                                         <SyncIcon fontSize="small" />
@@ -963,7 +1043,11 @@ export const BaseFieldEditor = ({
                       }
                       label={
                         <Box
-                          sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.4,
+                          }}
                         >
                           <Typography variant="body2">
                             Enable voice-to-text input for this field
@@ -1064,6 +1148,44 @@ export const BaseFieldEditor = ({
           </Card>
         </Grid>
       )}
+      {/* Portalled, so its position inside the grid has no layout effect. */}
+      <Dialog
+        open={pendingFieldID !== null}
+        onClose={cancelFieldIDChange}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="field-id-sync-dialog-title"
+        aria-describedby="field-id-sync-dialog-description"
+      >
+        <DialogTitle id="field-id-sync-dialog-title" sx={designerDialogTitleSx}>
+          Are you sure you want to change this Field's ID?
+        </DialogTitle>
+        <DialogContent sx={designerDialogContentSx}>
+          <DialogContentText
+            id="field-id-sync-dialog-description"
+            sx={designerDialogBodyTextSx}
+          >
+            This {appConfig.notebookName} already has {existingRecordCount}{' '}
+            record{existingRecordCount === 1 ? '' : 's'}. Data collected in this{' '}
+            {appConfig.notebookName} for the field{' '}
+            <strong>{pendingFieldID?.from}</strong> may no longer appear once
+            this field becomes <strong>{pendingFieldID?.to}</strong>.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={cancelFieldIDChange}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            sx={designerPrimaryActionButtonSx}
+            onClick={confirmFieldIDChange}
+            autoFocus
+          >
+            Sync
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 };
