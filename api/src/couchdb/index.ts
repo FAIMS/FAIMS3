@@ -643,6 +643,57 @@ export const initialiseDbAndKeys = async ({
 };
 
 /**
+ * Migrate every project's data DB to the current target version.
+ *
+ * Used after a full stack init and after backup restore (restored record
+ * documents may predate data v2 `updatedAt`).
+ */
+export const migrateAllProjectDataDbs = async () => {
+  const projects = await getAllProjectsDirectory();
+  console.log(
+    `[migrate] Found ${projects.length} project(s); opening data DBs`
+  );
+
+  const {queued: dataDbs, skipped: skippedDataDbs} =
+    await collectProjectDataDbs({
+      projects,
+      openDataDb: async (projectId: string) =>
+        (await getDataDb(projectId)) as DatabaseInterface,
+    });
+
+  for (const {projectId, dbName} of dataDbs) {
+    console.log(
+      `[migrate] Queued data DB for project ${projectId} (${dbName})`
+    );
+  }
+  for (const {projectId, error} of skippedDataDbs) {
+    console.error(
+      `[migrate] Failed to open data DB for project ${projectId}; skipping`,
+      error
+    );
+  }
+
+  if (projects.length > 0 && dataDbs.length === 0) {
+    console.error(
+      `[migrate] ${projects.length} project(s) found but 0 data DBs queued — data migrations will not run`
+    );
+  } else {
+    console.log(
+      `[migrate] Migrating ${dataDbs.length} data DB(s): ${
+        dataDbs.map(d => d.dbName).join(', ') || '(none)'
+      }`
+    );
+  }
+
+  await migrateDbs({
+    dbs: dataDbs,
+    migrationDb: getMigrationDb(),
+    userId: 'system',
+    getDbById,
+  });
+};
+
+/**
  * Initialises and then migrates all databases!
  */
 export const initialiseAndMigrateDBs = async ({
@@ -699,48 +750,7 @@ export const initialiseAndMigrateDBs = async ({
     getDbById,
   });
 
-  const projects = await getAllProjectsDirectory();
-  console.log(
-    `[migrate] Found ${projects.length} project(s); opening data DBs`
-  );
-
-  const {queued: dataDbs, skipped: skippedDataDbs} =
-    await collectProjectDataDbs({
-      projects,
-      openDataDb: async (projectId: string) =>
-        (await getDataDb(projectId)) as DatabaseInterface,
-    });
-
-  for (const {projectId, dbName} of dataDbs) {
-    console.log(
-      `[migrate] Queued data DB for project ${projectId} (${dbName})`
-    );
-  }
-  for (const {projectId, error} of skippedDataDbs) {
-    console.error(
-      `[migrate] Failed to open data DB for project ${projectId}; skipping`,
-      error
-    );
-  }
-
-  if (projects.length > 0 && dataDbs.length === 0) {
-    console.error(
-      `[migrate] ${projects.length} project(s) found but 0 data DBs queued — data migrations will not run`
-    );
-  } else {
-    console.log(
-      `[migrate] Migrating ${dataDbs.length} data DB(s): ${
-        dataDbs.map(d => d.dbName).join(', ') || '(none)'
-      }`
-    );
-  }
-
-  await migrateDbs({
-    dbs: dataDbs,
-    migrationDb: migrationsDb,
-    userId: 'system',
-    getDbById,
-  });
+  await migrateAllProjectDataDbs();
 
   // For users, we also establish an admin user, if not already present
   // do this after all migrations so we know the db is up to date
