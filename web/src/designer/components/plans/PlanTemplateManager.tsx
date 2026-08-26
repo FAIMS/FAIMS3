@@ -48,6 +48,7 @@ import {
   planTemplateRemoved,
   planTemplateSet,
 } from '../../state/planTemplate-reducer';
+import {config} from '../../buildconfig';
 import {getDesignerPlanType, getDesignerPlanTypes} from '../../plans';
 import {
   designerCancelButtonSx,
@@ -76,8 +77,12 @@ export const PlanTemplateManager = () => {
   const [editorPlanType, setEditorPlanType] = useState<string | null>(null);
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
-  // Plans are only authored on templates
+  // Plans are only authored on templates. When the feature flag is off, hide
+  // Add Plan for templates without a plan; existing plans stay editable.
   if (mode !== 'template') {
+    return null;
+  }
+  if (!config.enablePlansInDesigner && !planTemplate) {
     return null;
   }
 
@@ -107,6 +112,7 @@ export const PlanTemplateManager = () => {
           size="small"
           startIcon={<AddRoundedIcon />}
           onClick={() => setChooserOpen(true)}
+          data-testid="web-designer-add-plan-button"
           sx={{
             ...designerPrimaryActionButtonSx,
             boxShadow: 'none',
