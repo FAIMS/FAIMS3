@@ -46,8 +46,10 @@ import type {
   NotebookWithHistory,
 } from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
+import {slugify} from './domain/notebook/ids';
 import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
+import {DesignerEditingProvider} from './state/editing-context';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 
@@ -63,6 +65,8 @@ export interface DesignerWidgetProps {
   designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
+  /** Records already collected. Drives the field-ID warning; omit for templates. */
+  existingRecordCount?: number;
   /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
   /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
@@ -85,6 +89,7 @@ export function DesignerWidget({
   notebook,
   designerMode = 'project',
   exportBaseName,
+  existingRecordCount,
   onClose,
   themeOverride,
   debug = false,
@@ -124,6 +129,23 @@ export function DesignerWidget({
       plan: notebook.plan ?? null,
     };
   }, [notebook]);
+
+  // Fields present at load. Built from the same `processedNotebook` the store is
+  // created from, so fields added later are absent and skip the warning.
+  const originalFieldIdentifiers = useMemo(
+    () =>
+      new Set(
+        Object.values(processedNotebook?.uiSpec.present.fields ?? {})
+          .map(field => field.designerIdentifier)
+          .filter((id): id is string => Boolean(id))
+      ),
+    [processedNotebook]
+  );
+
+  const editingContextValue = useMemo(
+    () => ({existingRecordCount, originalFieldIdentifiers}),
+    [existingRecordCount, originalFieldIdentifiers]
+  );
 
   // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
   const [store, setStore] = useState(() =>
@@ -172,8 +194,7 @@ export function DesignerWidget({
     const blob = new Blob([JSON.stringify(exportNotebook, null, 2)], {
       type: 'application/json',
     });
-    const filename =
-      String(exportBaseName ?? 'notebook').replace(/\s+/g, '_') + '.json';
+    const filename = `${slugify(String(exportBaseName ?? 'notebook')) || 'notebook'}.json`;
     const file = new File([blob], filename, {
       type: 'application/json',
     });
@@ -181,7 +202,7 @@ export function DesignerWidget({
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(file), animationDuration);
-  }, [animationDuration, doClose, store]);
+  }, [animationDuration, doClose, exportBaseName, store]);
 
   /** Close without saving after user confirms cancel dialog. */
   const handleCancel = useCallback(() => {
@@ -242,76 +263,78 @@ export function DesignerWidget({
 
   return (
     <ReduxProvider store={store}>
-      <ThemeProvider theme={mergedTheme}>
-        <ScopedCssBaseline />
-        <Box
-          data-testid="web-designer-shell"
-          sx={{
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
-            transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-          }}
-        >
-          <AppBar position="static" color="default" elevation={1}>
-            <Toolbar sx={{justifyContent: 'space-between'}}>
-              <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-                Notebook Editor
-              </Typography>
-              <IconButton
-                aria-label="close designer"
-                data-testid="web-designer-close-button"
-                onClick={() => setCancelDialogOpen(true)}
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {color: 'text.primary'},
-                }}
-              >
-                <CloseRoundedIcon />
-              </IconButton>
-            </Toolbar>
-          </AppBar>
-
-          <Dialog
-            open={cancelDialogOpen}
-            onClose={() => setCancelDialogOpen(false)}
-            slots={{transition: Grow}}
-            transitionDuration={animationDuration}
-            aria-labelledby="cancel-dialog-title"
-            aria-describedby="cancel-dialog-description"
-            slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
+      <DesignerEditingProvider value={editingContextValue}>
+        <ThemeProvider theme={mergedTheme}>
+          <ScopedCssBaseline />
+          <Box
+            data-testid="web-designer-shell"
+            sx={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
+              transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+            }}
           >
-            <DialogTitle id="cancel-dialog-title">
-              Are you sure you want to cancel?
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="cancel-dialog-description">
-                Any changes you've made will be lost. If you're sure, hit "Yes,
-                cancel". Otherwise, choose "No, keep editing".
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button
-                variant="contained"
-                onClick={() => setCancelDialogOpen(false)}
-                autoFocus
-              >
-                No, keep editing
-              </Button>
-              <Button onClick={handleCancel} color="inherit">
-                Yes, cancel
-              </Button>
-            </DialogActions>
-          </Dialog>
+            <AppBar position="static" color="default" elevation={1}>
+              <Toolbar sx={{justifyContent: 'space-between'}}>
+                <Typography variant="h6" sx={{fontWeight: 'bold'}}>
+                  Notebook Editor
+                </Typography>
+                <IconButton
+                  aria-label="close designer"
+                  data-testid="web-designer-close-button"
+                  onClick={() => setCancelDialogOpen(true)}
+                  size="small"
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': {color: 'text.primary'},
+                  }}
+                >
+                  <CloseRoundedIcon />
+                </IconButton>
+              </Toolbar>
+            </AppBar>
 
-          <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
-            <RouterProvider router={memoryRouterInstance} />
+            <Dialog
+              open={cancelDialogOpen}
+              onClose={() => setCancelDialogOpen(false)}
+              slots={{transition: Grow}}
+              transitionDuration={animationDuration}
+              aria-labelledby="cancel-dialog-title"
+              aria-describedby="cancel-dialog-description"
+              slotProps={{paper: {sx: {transformOrigin: 'top center'}}}}
+            >
+              <DialogTitle id="cancel-dialog-title">
+                Are you sure you want to cancel?
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText id="cancel-dialog-description">
+                  Any changes you've made will be lost. If you're sure, hit
+                  "Yes, cancel". Otherwise, choose "No, keep editing".
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  variant="contained"
+                  onClick={() => setCancelDialogOpen(false)}
+                  autoFocus
+                >
+                  No, keep editing
+                </Button>
+                <Button onClick={handleCancel} color="inherit">
+                  Yes, cancel
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            <Box sx={{flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
+              <RouterProvider router={memoryRouterInstance} />
+            </Box>
           </Box>
-        </Box>
-      </ThemeProvider>
+        </ThemeProvider>
+      </DesignerEditingProvider>
     </ReduxProvider>
   );
 }

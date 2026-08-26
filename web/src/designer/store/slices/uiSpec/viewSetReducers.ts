@@ -14,7 +14,7 @@
 
 import {PayloadAction} from '@reduxjs/toolkit';
 import {NotebookUISpec} from '../../../state/initial';
-import {slugify} from '../../../domain/notebook/ids';
+import {sanitizeUserLabel, slugify} from '../../../domain/notebook/ids';
 
 /** Form (viewset) RTK reducers merged into `uiSpecificationReducer`. */
 export const viewSetReducers = {
@@ -24,11 +24,12 @@ export const viewSetReducers = {
     action: PayloadAction<{formName: string}>
   ) => {
     const {formName} = action.payload;
+    const safeFormName = sanitizeUserLabel(formName);
     const newViewSet = {
-      label: formName,
+      label: safeFormName,
       views: [],
     };
-    const formID = slugify(formName);
+    const formID = slugify(safeFormName);
     if (formID in state.viewsets) {
       throw new Error(`Form ${formID} already exists in notebook.`);
     } else {
@@ -99,7 +100,7 @@ export const viewSetReducers = {
   ) => {
     const {viewSetId, label} = action.payload;
     if (viewSetId in state.viewsets) {
-      state.viewsets[viewSetId].label = label;
+      state.viewsets[viewSetId].label = sanitizeUserLabel(label);
     }
   },
   /** Record list UI: which field ids appear in the form summary header. */
