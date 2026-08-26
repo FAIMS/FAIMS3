@@ -604,16 +604,18 @@ describe('DataEngine', () => {
       const recordId = generateRecordID();
       const revisionId = generateRevisionID();
       const avps: Record<string, string> = {};
+      const now = new Date().toISOString();
 
       await engine.core.createRecord({
         _id: recordId,
         record_format_version: 1,
-        created: new Date().toISOString(),
+        created: now,
         created_by: 'test-user',
+        updatedAt: now,
         revisions: [revisionId],
         heads: [revisionId],
         type: 'A',
-      } as NewRecordDBDocument);
+      });
 
       for (const [field, value] of Object.entries(data)) {
         const avpId = generateAvpID();
@@ -625,9 +627,9 @@ describe('DataEngine', () => {
           data: value,
           revision_id: revisionId,
           record_id: recordId,
-          created: new Date().toISOString(),
+          created: now,
           created_by: 'test-user',
-        } as NewAvpDBDocument);
+        });
       }
 
       await engine.core.createRevision({
@@ -636,11 +638,12 @@ describe('DataEngine', () => {
         avps,
         record_id: recordId,
         parents: [],
-        created: new Date().toISOString(),
+        created: now,
         created_by: 'test-user',
+        updatedAt: now,
         type: 'A',
         relationship: {},
-      } as NewRevisionDBDocument);
+      });
 
       return {recordId, revisionId};
     };
