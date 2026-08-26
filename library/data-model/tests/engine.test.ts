@@ -542,6 +542,116 @@ describe('DataEngine', () => {
   });
 
   describe('Hydrated Operations', () => {
+    /** Build a record whose single revision holds the given field values. */
+    const seedRecord = async (data: Record<string, string>) => {
+      const recordId = generateRecordID();
+      const revisionId = generateRevisionID();
+      const avps: Record<string, string> = {};
+
+      await engine.core.createRecord({
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId],
+        heads: [revisionId],
+        type: 'A',
+      } as NewRecordDBDocument);
+
+      for (const [field, value] of Object.entries(data)) {
+        const avpId = generateAvpID();
+        avps[field] = avpId;
+        await engine.core.createAvp({
+          _id: avpId,
+          avp_format_version: 1,
+          type: 'faims-core::String',
+          data: value,
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+        } as NewAvpDBDocument);
+      }
+
+      await engine.core.createRevision({
+        _id: revisionId,
+        revision_format_version: 1,
+        avps,
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      } as NewRevisionDBDocument);
+
+      return {recordId, revisionId};
+    };
+
+    test('getFieldValues reads only the fields asked for', async () => {
+      const {revisionId} = await seedRecord({
+        'First-1': 'first',
+        'Second-1': 'second',
+      });
+
+      const values = await engine.hydrated.getFieldValues({
+        revisionId,
+        fields: ['First-1'],
+      });
+
+      expect(values).toEqual({'First-1': 'first'});
+    });
+
+    test('getFieldValues omits a field the revision does not hold', async () => {
+      const {revisionId} = await seedRecord({'First-1': 'first'});
+
+      const values = await engine.hydrated.getFieldValues({
+        revisionId,
+        fields: ['First-1', 'Absent-1'],
+      });
+
+      expect(values).toEqual({'First-1': 'first'});
+    });
+
+    test('getFieldValues returns nothing when the revision is gone', async () => {
+      const values = await engine.hydrated.getFieldValues({
+        revisionId: generateRevisionID(),
+        fields: ['First-1'],
+      });
+
+      expect(values).toEqual({});
+    });
+
+    test('getFieldValues rethrows a systemic read failure rather than reading as no data', async () => {
+      const {revisionId} = await seedRecord({'First-1': 'first'});
+      const failing = jest
+        .spyOn(engine.core, 'getAvp')
+        .mockRejectedValue(new Error('database is closed'));
+
+      await expect(
+        engine.hydrated.getFieldValues({
+          revisionId,
+          fields: ['First-1'],
+        })
+      ).rejects.toThrow('database is closed');
+
+      failing.mockRestore();
+    });
+
+    test('getFieldValues touches the database only when asked for a field', async () => {
+      const getRevision = jest.spyOn(engine.core, 'getRevision');
+
+      const values = await engine.hydrated.getFieldValues({
+        revisionId: generateRevisionID(),
+        fields: [],
+      });
+
+      expect(values).toEqual({});
+      expect(getRevision).not.toHaveBeenCalled();
+
+      getRevision.mockRestore();
+    });
+
     test('should retrieve a hydrated record with all data', async () => {
       // Create a complete record with revision and AVPs
       const recordId = generateRecordID();
