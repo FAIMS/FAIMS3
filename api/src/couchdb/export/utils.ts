@@ -396,7 +396,7 @@ const CONTENT_DISPOSITION_FILENAME = /[^\w.-]/g;
  * Does not assume the filename input was pre-sanitised. Restricts the whole
  * filename to `[A-Za-z0-9._-]` so any input cannot terminate the quoted-string,
  * inject parameters, change the extension, or smuggle CR/LF into the header.
- * 
+ *
  * For security purposes this may perform some redundant sanitisation.
  */
 export const contentDispositionAttachment = (filename: string): string => {

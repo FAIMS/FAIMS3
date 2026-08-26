@@ -167,7 +167,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     uiSpecification,
     enabled: !!uiSpecification,
   });
-  const forceRecordRefresh = records.initialQuery.refetch;
+  const forceRecordRefresh = records.refetch;
 
   const templateId = useAppSelector(
     state => selectProjectById(state, project.projectId)?.templateId
