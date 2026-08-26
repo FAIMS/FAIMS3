@@ -373,6 +373,43 @@ export const slugifyLabel = (label: string, maxLength = 50): string => {
 };
 
 /**
+ * Filename stem from user-controlled text (form labels, project ids).
+ *
+ * Quotes, path separators, control characters, and other header
+ * metacharacters are stripped so the result is safe to place in
+ * Content-Disposition `filename="..."`.
+ */
+export const sanitizeDownloadFilename = (
+  label: string,
+  fallback = 'export'
+): string => {
+  const slug = slugifyLabel(label);
+  return slug.length > 0 ? slug : fallback;
+};
+
+/** Conservative token set for a Content-Disposition quoted filename. */
+const CONTENT_DISPOSITION_FILENAME = /[^\w.-]/g;
+
+/**
+ * Content-Disposition wrapper function: emits `attachment; filename="..."`.
+ *
+ * Does not assume the filename input was pre-sanitised. Restricts the whole
+ * filename to `[A-Za-z0-9._-]` so any input cannot terminate the quoted-string,
+ * inject parameters, change the extension, or smuggle CR/LF into the header.
+ * 
+ * For security purposes this may perform some redundant sanitisation.
+ */
+export const contentDispositionAttachment = (filename: string): string => {
+  const safe = filename
+    .replace(CONTENT_DISPOSITION_FILENAME, '_')
+    .replace(/^\.+/, '')
+    .replace(/_{2,}/g, '_')
+    .slice(0, 180);
+  const finalName = safe.length > 0 ? safe : 'download';
+  return `attachment; filename="${finalName}"`;
+};
+
+/**
  * Helper to ensure unique filenames in a list
  */
 export const ensureUniqueFilename = (
