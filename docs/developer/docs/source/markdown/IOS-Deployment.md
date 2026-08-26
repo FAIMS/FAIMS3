@@ -1,6 +1,9 @@
 # 📦 Deploying and setting up iOS App to Apple App Store via GitHub Actions + Fastlane
 
-This document explains in full detail how to deploy an iOS app to the **Apple App Store** using GitHub Actions and Fastlane. It includes prerequisites, setup instructions, permission roles in App Store Connect, Fastlane Match usage, environment settings, and per-org deployment structure.
+This document explains in full detail how to deploy an iOS app to the
+**Apple App Store** using GitHub Actions and Fastlane. It includes prerequisites,
+setup instructions, permission roles in App Store Connect, Fastlane Match usage,
+environment settings, and per-org deployment structure.
 
 ## Table of Contents
 
@@ -24,16 +27,23 @@ Create an account on the Apple Developer Portal.
   This will be handled by your account admin/organisation admin.
 - Access to [App Store Connect](https://appstoreconnect.apple.com)
 
-- To create a new app. First register a new App ID for your app (eg. au.edu.faims.bss); do
-  this on your Apple Developer account (under Certificates, Identifiers & Profiles). In the App page on App Store Connect click on the + button and select "New App", fill in
-  the details and select the App ID you created above as the Bundle ID. SKU can be any
-  memorable name, unique among your apps. Keep a record of the APP ID for future reference.
+- To create a new app. First register a new App ID for your app (eg. au.edu.faims.bss);
+  do this on your Apple Developer account (under Certificates, Identifiers &
+  Profiles). In the App page on App Store Connect click on the + button and
+  select "New App", fill in the details and select the App ID you created above
+  as the Bundle ID. SKU can be any memorable name, unique among your apps.
+  Keep a record of the APP ID for future reference.
 
-- Have access to or setup a private GitHub repository to store signing certificates via Fastlane Match
+- Have access to or setup a private GitHub repository to store signing
+  certificates via Fastlane Match
 
-- ## Very Important ## - You would need a Local or CI Mac system (Xcode, Fastlane installed)
+```{attention}
+**Very Important** - You would need a Local or CI Mac system (Xcode, Fastlane
+installed)
+```
 
-Complete the entry of data about your app, fill out the App Information, upload screenshots.
+Complete the entry of data about your app, fill out the App Information, upload
+screenshots.
 
 ## Apple App Store Connect Roles & Permissions
 
@@ -49,9 +59,11 @@ App Store Connect assigns **roles** to users which control what actions they can
 
 ### Example
 
-To generate certificates using `fastlane match`, your Apple account **must be an Admin** in the Developer Portal.
+To generate certificates using `fastlane match`, your Apple account **must be an
+Admin** in the Developer Portal.
 
-To **submit apps to review**, the GitHub Actions user (via API key) must be at least an **App Manager**.
+To **submit apps to review**, the GitHub Actions user (via API key) must be at
+least an **App Manager**.
 
 ## Workflows
 
@@ -85,7 +97,8 @@ create the Matchfile with:
 bundle exec fastlane match init
 ```
 
-This will prompt you for the URL of your new private repository and will generate a file `Matchfile`.
+This will prompt you for the URL of your new private repository and will
+generate a file `Matchfile`.
 Next we run the following command to initialise the signing keys for app store deployment:
 
 ```shell
@@ -119,7 +132,29 @@ Enter the cert repo URL when prompted. It creates a `Matchfile`.
 
 ### 4. Generate App Store Certs (signing your own distribution certificate)
 
-**Note**: you can only run the below command if you are an admin in your organisation, and you have not reached the limit of distribution certificates. If your organisation has org scoped distribution certificates available, you should use this instead. You will need to run fastlane match import which prompts for a) the non password protected .p12 file b) the distribution.cer file c) the provisioning profile. These all need to be matched to the same base certificate (e.g. public and private must match) and the provisioning profile needs to be created _for_ that certificate. The most reliable way to strip the password off a key is to 'double click' open it in on a physical mac device, and add it to the login keychain. You can then navigate to the certificate and export the key to your system, leaving the password prompt empty. This is also possible using `openssl` but you need to ensure you use the legacy version of the signing algorithms since fastlane (or possibly Mac) doesn't seem to properly support the latest LTS algorithms. The recommended method is to use the Mac certificate manager since it always exports in a suitable format.
+**Note**: you can only run the below command if you are an admin in your
+organisation, and you have not reached the limit of distribution certificates.
+If your organisation has org scoped distribution certificates available, you
+should use this instead. You will need to run fastlane match import which
+prompts for
+
+1. the non password protected .p12 file
+2. the distribution.cer file
+3. the provisioning profile.
+
+These all need to be matched to the
+same base certificate (e.g. public and private must match) and the
+provisioning profile needs to be created _for_ that certificate.
+
+The most reliable way to strip the password off a key is to 'double click'
+open it in on a physical mac device, and add it to the login keychain.
+You can then navigate to the certificate and export the key to
+your system, leaving the password prompt empty. This is also
+possible using `openssl` but you need to ensure you use the
+legacy version of the signing algorithms since fastlane (or possibly Mac)
+doesn't seem to properly support the latest LTS algorithms. The recommended
+method is to use the Mac certificate manager since it always exports in a
+suitable format.
 
 If you would like to sign your own:
 
@@ -191,7 +226,7 @@ follow the shared-repo safety guidance in
 [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
 before changing anything outside `mobile/<environment>/`.
 
-## 📄 Appfile & Fastfile Logic
+## Appfile & Fastfile Logic
 
 ### Appfile
 
@@ -208,9 +243,11 @@ team_id("ABCDE12345")
 Lanes live in `app/ios/App/fastlane/Fastfile`. Prefer the Team lanes when you
 have a Team API key with Admin/App Manager access that can manage provisioning.
 Use the Individual lanes when CI should authenticate with an Individual API
-key and must not create, renew or revoke certificates. This is a safer workflow for headless execution in a shared account environment where Team keys would necessarily leak authentication against non target applications.
+key and must not create, renew or revoke certificates. This is a safer workflow
+for headless execution in a shared account environment where Team keys would
+necessarily leak authentication against non target applications.
 
-### Behaviour differences
+### Behaviour Differences
 
 |                        | Team lanes (`closed_beta_testflight`, `production`)                                | Individual lanes (`*_individual`)                                                                 |
 | ---------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -235,7 +272,7 @@ create an **Individual** key (not a Team key). Store the Key ID and `.p8`
 contents as `APPLE_INDIVIDUAL_KEY_ID` and `APPLE_INDIVIDUAL_KEY_CONTENT`.
 There is no Issuer ID for Individual keys.
 
-### Practical notes
+### Practical Notes
 
 - Individual lanes assume Match already has App Store certificates and a
   profile for `APPLE_BUNDLE_IDENTIFIER`. If Match is empty or expired, run
@@ -260,7 +297,8 @@ if you want to deploy from a different team.
 
 ## Submitting the App for Review (App Store Connect)
 
-Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow these steps to submit it for review:
+Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow
+these steps to submit it for review:
 
 ### 🔹 Step-by-Step Guide
 
@@ -303,7 +341,8 @@ Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow t
 
 ## Setting Up TestFlight for Internal Testing
 
-TestFlight allows you to distribute test versions of your app to internal or external testers.
+TestFlight allows you to distribute test versions of your app to internal or
+external testers.
 
 ### 🔹 Internal Testing Setup
 

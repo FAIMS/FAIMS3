@@ -25,13 +25,15 @@ To reduce risk of breaking iOS signing, use these guardrails:
 
 1. Keep strict path ownership:
    - Edit only `mobile/<environment>/...` for config updates.
-   - Treat Match-managed paths (`certs/`, `profiles/`, and Match metadata files) as tool-managed.
+   - Treat Match-managed paths (`certs/`, `profiles/`, and Match metadata files)
+     as tool-managed.
 2. Never hand-edit Match artifacts:
    - Use `fastlane match` commands to create/renew/revoke certificates or profiles.
    - Do not rename, move, or delete files under Match-managed paths manually.
 3. Use PR review and branch protection:
    - Require pull requests for changes to this repository.
-   - Require at least one reviewer familiar with mobile signing for changes outside `mobile/`.
+   - Require at least one reviewer familiar with mobile signing for changes
+     outside `mobile/`.
 4. Avoid destructive git operations:
    - Do not force-push shared branches.
    - Do not squash away the latest known-good Match state without verification.
@@ -39,16 +41,19 @@ To reduce risk of breaking iOS signing, use these guardrails:
    - Tag known-good signing states before certificate/profile rotations.
    - If a rotation fails, restore from a known-good commit/tag and rerun workflows.
 6. Scope credentials by purpose:
-   - `GIT_AUTHORIZATION` should have least privilege needed (read for CI checkout; write only where rotation/sync workflows require it).
+   - `GIT_AUTHORIZATION` should have least privilege needed (read for CI checkout;
+     write only where rotation/sync workflows require it).
    - Keep `SOPS_AGE_KEY` limited to environments that must decrypt secrets.
 
 Operational recommendation:
 
-- Use a dedicated maintenance workflow/runbook for certificate rotations and keep routine config edits separate from signing changes.
+- Use a dedicated maintenance workflow/runbook for certificate rotations and keep
+  routine config edits separate from signing changes.
 
 ## GitHub bootstrap settings
 
-These values stay in GitHub Actions because they are needed before config files can be read/decrypted.
+These values stay in GitHub Actions because they are needed before config files
+can be read/decrypted.
 
 | GitHub setting                   | Type     | Purpose                                                                              |
 | -------------------------------- | -------- | ------------------------------------------------------------------------------------ |
