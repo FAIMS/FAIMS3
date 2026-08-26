@@ -63,7 +63,7 @@ import {
 } from './controls/map-controls';
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
 import {MapControlThemeProvider} from './mapTheme';
-import {createTileStore} from './TileStore';
+import {createTileStore} from './storage/TileStore';
 import {MapConfig} from './types';
 
 export const defaultMapProjection = 'EPSG:3857';
@@ -135,7 +135,7 @@ export interface MapComponentProps {
   /** When false, hides zoom, compass, layer toggle, and location controls. */
   showControls?: boolean;
 
-  /** Automatically move to the first current location. Defaults to true. */
+  /** Whether to auto-fly to the first valid current location. Defaults to true. */
   autoFlyToCurrentLocation?: boolean;
 
   /** When true, disables user map navigation such as pan, zoom, and rotation. */
@@ -342,7 +342,16 @@ const MapComponentImpl = (props: MapComponentProps) => {
     });
   }, [map, props.lockNavigation]);
 
-  // Fit the extent or set the center.
+  /**
+   * Apply the configured extent/center to the map view.
+   *
+   * The first run establishes the initial view:
+   * - extent takes priority over center, otherwise the cached/fallback location is used.
+   * - Initial view positioning is applied immediately without animation.
+   *
+   * On later runs, changes to extent or center are animated.
+   * If either is cleared, the current map position is preserved.
+   */
   useEffect(() => {
     if (!map) {
       return;
@@ -351,10 +360,12 @@ const MapComponentImpl = (props: MapComponentProps) => {
     const view = map.getView();
     const isInitialView = !hasInitialisedViewRef.current;
 
+    // Track the initial view separately from later prop changes.
     if (isInitialView) {
       hasInitialisedViewRef.current = true;
     }
 
+    // Extent takes priority over center. Later extent changes are animated.
     if (props.extent) {
       view.cancelAnimations();
       view.fit(
@@ -372,6 +383,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     if (props.center) {
       const center = transform(props.center, 'EPSG:4326', defaultMapProjection);
 
+      // Apply the configured center immediately on first load, then animate changes.
       if (isInitialView) {
         view.setCenter(center);
       } else {
@@ -396,7 +408,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     }
   }, [map, props.center, props.extent, props.zoom]);
 
-  // First successful current location, do auto-fly
+  // Optionally auto-fly to the first valid current GPS location.
   useEffect(() => {
     if (
       !map ||
@@ -413,6 +425,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     }
 
     // Only handle the first successful current location result.
+    // Later location updates only update the GPS marker, not the map view.
     hasHandledFirstCurrentLocationRef.current = true;
 
     const view = map.getView();
