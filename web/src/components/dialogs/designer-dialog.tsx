@@ -12,6 +12,8 @@ interface DesignerDialogProps {
   designerMode?: DesignerDocumentMode;
   /** Survey/template display name for the exported JSON filename. */
   exportBaseName?: string;
+  /** Records already collected for the survey. Omit for templates. */
+  existingRecordCount?: number;
   onClose: (file?: File) => void;
   animationDuration?: number;
   animationScale?: number;
@@ -22,6 +24,7 @@ export function DesignerDialog({
   notebook,
   designerMode,
   exportBaseName,
+  existingRecordCount,
   onClose,
   animationDuration = 300,
   animationScale = 0.95,
@@ -113,6 +116,7 @@ export function DesignerDialog({
         <DesignerWidget
           notebook={sessionNotebook}
           exportBaseName={exportBaseName}
+          existingRecordCount={existingRecordCount}
           onClose={handleWidgetClose}
           designerMode={designerMode}
         />
