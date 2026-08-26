@@ -1,7 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
-import {designFileSchema, resourceNameSchema} from '@/lib/input-limits';
 import {INPUT_LIMITS} from '@faims3/data-model';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
@@ -29,6 +28,11 @@ import {
   getTemplateTeamFieldState,
   resolveTemplateTeamId,
 } from './template-team-field';
+import {
+  designFileSchema,
+  resourceNameSchema,
+  fileToBase64,
+} from '@/lib/input-limits';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -92,8 +96,9 @@ export function CreateTemplateForm({
     optionalRootDescriptionField(),
     {
       name: 'file',
-      label: 'JSON File (optional — leave blank to create a blank template)',
-      description: `Upload a .json ${config.notebookName} file to pre-fill your template, or leave blank to use our built-in sample.`,
+      label:
+        'JSON File or XLSForm File (optional — leave blank to create a blank template)',
+      description: `Upload a .json ${config.notebookName} file or .xlsx (XLSForm) to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
       schema: designFileSchema().optional(),
     },
@@ -138,6 +143,62 @@ export function CreateTemplateForm({
     const isPublic = canCreatePublicTemplate && visibility === 'public';
     let uiSpecification: unknown = blankNotebook;
 
+    const isXlsform = !!file && file.name.toLowerCase().endsWith('.xlsx');
+    const chosenTeamId = resolveTemplateTeamId({
+      canCreateGlobally,
+      specifiedTeam,
+      possibleTeams,
+      team,
+    });
+
+    if (isXlsform) {
+      // Server-side conversion path: skip local JSON parsing entirely.
+      const fileBase64 = await fileToBase64(file!);
+      if (!fileBase64) {
+        return {type: 'submit', message: 'Error reading file'};
+      }
+
+      try {
+        const res = await fetch(`${config.apiUrl}/api/templates/from-xlsform`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify({
+            teamId: chosenTeamId,
+            name,
+            ...rootDescriptionForApi(description),
+            isPublic,
+            fileBase64,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => undefined);
+          return {
+            type: 'submit',
+            message:
+              body?.error?.message ??
+              'Failed to create template from XLSForm file',
+          };
+        }
+        const {message, status} = await refreshToken();
+        if (status === 'error') {
+          return {
+            type: 'submit',
+            message: `template created but failed to refresh user token: ${message}`,
+          };
+        }
+      } catch {
+        return {type: 'submit', message: 'Failed to create template'};
+      }
+
+      await queryClient.invalidateQueries({queryKey: ['templates']});
+      await queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
+      setDialogOpen(false);
+      return;
+    }
+
     if (file) {
       const text = await readFileAsText(file);
       if (!text) {
@@ -155,13 +216,6 @@ export function CreateTemplateForm({
       }
       uiSpecification = prepared.uiSpecification;
     }
-
-    const chosenTeamId = resolveTemplateTeamId({
-      canCreateGlobally,
-      specifiedTeam,
-      possibleTeams,
-      team,
-    });
 
     try {
       const res = await fetch(`${config.apiUrl}/api/templates/`, {

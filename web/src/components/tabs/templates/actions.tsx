@@ -214,10 +214,10 @@ const TemplateActions = () => {
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
-                <ListLabel>Replace Template JSON File</ListLabel>
+                <ListLabel>Replace Template JSON File or XLSForm</ListLabel>
                 <ListDescription>
-                  Upload a JSON design file to replace the existing template
-                  design.
+                  Upload a JSON design file or XLSForm (.xlsx) to replace the
+                  existing template design.
                 </ListDescription>
               </ListItem>
               <ListItem>

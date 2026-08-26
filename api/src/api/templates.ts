@@ -351,6 +351,51 @@ api.post(
   }
 );
 
+/*
+ * PUT replace template uiSpecification from an uploaded XLSForm (.xlsx) file.
+ */
+const PutUpdateTemplateUiSpecificationFromXlsformInputSchema = z.object({
+  /** Base64-encoded contents of the uploaded .xlsx file. */
+  fileBase64: z.string().min(1),
+});
+
+api.put(
+  '/:id/uiSpecification/from-xlsform',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  validate({
+    params: z.object({id: z.string()}),
+    body: PutUpdateTemplateUiSpecificationFromXlsformInputSchema,
+  }),
+  async (
+    req,
+    res: Response<
+      PutUpdateTemplateResponse & {skipped: {name: string; type: string}[]}
+    >
+  ) => {
+    const {fileBase64} = req.body;
+
+    const fileBuffer = Buffer.from(fileBase64, 'base64');
+    const sheets = await parseXlsformBuffer(fileBuffer);
+    const {notebook, skipped} = convertXlsformToNotebookDefinition(
+      sheets,
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
+
+    const updatedTemplate = await updateTemplateUiSpecification(
+      req.params.id,
+      notebook as unknown as Record<string, unknown>
+    );
+
+    res.json({...(await withOwnedByTeamDisplayName(updatedTemplate)), skipped});
+  }
+);
+
 /**
  * PUT set public/private visibility only.
  */

@@ -31,19 +31,38 @@ export function designFileSchema() {
         // Some browsers/OS report empty or octet-stream MIME for .json files
         const type = (file.type || '').toLowerCase();
         const name = file.name.toLowerCase();
-        return (
+
+        const isJson =
           type === 'application/json' ||
           type === 'text/json' ||
           type === '' ||
           type === 'application/octet-stream' ||
-          name.endsWith('.json')
-        );
+          name.endsWith('.json');
+        const isXlsform = name.endsWith('.xlsx');
+        return isJson || isXlsform;
       },
-      {message: 'File must be a JSON file.'}
+      {message: 'File must be a JSON (.json) or XlsForm (.xlsx) file.'}
     )
     .refine(file => file.size <= config.maxDesignFileSizeBytes, {
       message: `File must be at most ${config.maxDesignFileSizeMb} MB.`,
     });
+}
+
+/**
+ * fileToBase64 reads a file and returns a promise with its base64-encoded
+ * contents (no data-URL prefix), suitable for sending as JSON.
+ */
+export function fileToBase64(file: File): Promise<string | null> {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1] ?? null;
+      resolve(base64);
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
 }
 
 export {INPUT_LIMITS};
