@@ -42,6 +42,7 @@ import {createDesignerStore} from './createDesignerStore';
 import {createDesignerTheme} from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
+import {slugify} from './domain/notebook/ids';
 import {THEME} from '../lib/theme';
 import {NotebookEditor} from './components/notebook-editor';
 import {DesignerEditingProvider} from './state/editing-context';
@@ -184,8 +185,7 @@ export function DesignerWidget({
     const blob = new Blob([JSON.stringify(exportNotebook, null, 2)], {
       type: 'application/json',
     });
-    const filename =
-      String(exportBaseName ?? 'notebook').replace(/\s+/g, '_') + '.json';
+    const filename = `${slugify(String(exportBaseName ?? 'notebook')) || 'notebook'}.json`;
     const file = new File([blob], filename, {
       type: 'application/json',
     });
@@ -193,7 +193,7 @@ export function DesignerWidget({
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(file), animationDuration);
-  }, [animationDuration, doClose, store]);
+  }, [animationDuration, doClose, exportBaseName, store]);
 
   /** Close without saving after user confirms cancel dialog. */
   const handleCancel = useCallback(() => {
