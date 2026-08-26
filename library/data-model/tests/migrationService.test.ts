@@ -248,7 +248,9 @@ describe('Migration System Tests', () => {
       const opened = new Map(
         projects.map(project => [
           project._id,
-          {name: `http://couch.example/${project.dataDb.db_name}`} as DatabaseInterface,
+          {
+            name: `http://couch.example/${project.dataDb.db_name}`,
+          } as DatabaseInterface,
         ])
       );
 

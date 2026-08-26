@@ -478,15 +478,12 @@ export async function migrateDbs({
 
       // If no migrations are needed (this should not happen due to isDbUpToDate check, but as a safeguard)
       if (migrationsToApply.length === 0) {
-        migrateAudit(
-          'No migration steps despite version mismatch; skipping',
-          {
-            dbType,
-            dbName,
-            version: migrationDoc.version,
-            targetVersion: DB_TARGET_VERSIONS[dbType].targetVersion,
-          }
-        );
+        migrateAudit('No migration steps despite version mismatch; skipping', {
+          dbType,
+          dbName,
+          version: migrationDoc.version,
+          targetVersion: DB_TARGET_VERSIONS[dbType].targetVersion,
+        });
         skippedUpToDate++;
         continue;
       }
