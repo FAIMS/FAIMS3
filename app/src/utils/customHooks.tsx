@@ -513,6 +513,9 @@ export function invalidateProjectRecordList({
   }
 }
 
+/** Shared empty list for a record query that has not loaded. */
+const NO_RECORDS: MinimalRecordMetadata[] = [];
+
 /**
  * Returns a list of all records, and active user records. This applies the
  * built in getMetadataForAllRecords filtering (which does client side
@@ -677,14 +680,15 @@ export const useRecordList = ({
    * Whether the list has never loaded, so an empty list means "not known yet"
    * rather than "no records".
    *
-   * Deliberately not `initialQuery.isLoading`, which goes false when the
+   * Deliberately not the query's own `isLoading`, which goes false when the
    * initial fetch fails, presenting the empty fallback as a loaded, empty
    * list.
    */
   const isLoading = unhydratedRecordQuery.data === undefined;
 
-  // Get all rows - defaulting to an empty list
-  const allRows = unhydratedRecordQuery.data ?? [];
+  // Get all rows - defaulting to an empty list. The fallback is shared so an
+  // unloaded query keeps the same identity across renders.
+  const allRows = unhydratedRecordQuery.data ?? NO_RECORDS;
 
   // Memoize the calculation of the non-draft rows
   const nonDraftRecords = useMemo(() => {
@@ -764,15 +768,27 @@ export const useRecordList = ({
     );
   }
 
-  // return both curated record lists and the underlying query where necessary
-  return {
-    allRecords: nonDraftRecords,
-    myRecords: myRecords,
-    otherRecords: otherRecords,
-    isLoading,
-    canReadAllRecords,
-    initialQuery: unhydratedRecordQuery,
-  };
+  // Memoized so a caller's own memos hold over an unchanged result set. Exposes
+  // `refetch`, which is identity stable, rather than the query, which is not.
+  const refetch = unhydratedRecordQuery.refetch;
+  return useMemo(
+    () => ({
+      allRecords: nonDraftRecords,
+      myRecords: myRecords,
+      otherRecords: otherRecords,
+      isLoading,
+      canReadAllRecords,
+      refetch,
+    }),
+    [
+      nonDraftRecords,
+      myRecords,
+      otherRecords,
+      isLoading,
+      canReadAllRecords,
+      refetch,
+    ]
+  );
 };
 
 /** Poll interval for the in-memory per-project sync state. */
