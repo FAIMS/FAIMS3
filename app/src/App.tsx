@@ -18,7 +18,7 @@
  *   Main application entry point. Configures routing, theming, state management,
  *   and core providers for the FAIMS3 application.
  *
- *   This file uses React Router v6's Data Router API (createBrowserRouter) which
+ *   This file uses React Router's Data Router API (createBrowserRouter) which
  *   enables advanced features like:
  *   - useBlocker for navigation blocking (used to flush pending form saves)
  *   - Loader/action patterns for data fetching
@@ -35,7 +35,7 @@ import {
   Outlet,
   RouteObject,
   RouterProvider,
-} from 'react-router-dom';
+} from 'react-router';
 import './App.css';
 import {config} from './buildconfig';
 import {TolerantPrivateRoute} from './constants/privateRouter';
@@ -241,8 +241,10 @@ const routes: RouteObject[] = [
  * - loader/action: Colocate data fetching with routes (future enhancement)
  * - errorElement: Per-route error boundaries (future enhancement)
  *
- * @see https://reactrouter.com/en/main/routers/create-browser-router
+ * @see https://reactrouter.com/api/data-routers/createBrowserRouter
  */
+// RouterProvider comes from react-router, not react-router/dom, so the jsdom tests
+// share one route context; the deep import only adds a flushSync nothing here uses.
 const router = createBrowserRouter(routes);
 // Expose router to thunks that need to leave a removed notebook route.
 registerAppRouter(router);

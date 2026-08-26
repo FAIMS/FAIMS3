@@ -48,7 +48,7 @@ import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {formatTimestamp} from '../../../utils/formUtilities';

@@ -39,7 +39,7 @@ import {
 } from '@mui/x-data-grid';
 import {useQueries} from '@tanstack/react-query';
 import {ReactNode, useCallback, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';

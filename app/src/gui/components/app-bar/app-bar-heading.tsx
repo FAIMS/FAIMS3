@@ -1,4 +1,4 @@
-import {NavLink} from 'react-router-dom';
+import {NavLink} from 'react-router';
 import {config} from '../../../buildconfig';
 import {Box} from '@mui/material';
 

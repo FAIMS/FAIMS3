@@ -5,7 +5,7 @@ import {
   Breadcrumbs as MuiBreadcrumbs,
   IconButton,
 } from '@mui/material';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router';
 import HomeIcon from '@mui/icons-material/Home';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
