@@ -127,4 +127,17 @@ describe('ListOfRecordsPlanDialog', () => {
       expect.objectContaining({recordFields: ['Sample-Photograph']})
     );
   });
+
+  test('a field since deleted from the form is still shown, to be removed', () => {
+    const {onSave} = renderDialog(['Gone-Field', 'Identifier']);
+
+    expect(chosenFieldLabels()).toEqual(['Gone-Field', 'Identifier']);
+
+    fireEvent.click(within(chipFor('Gone-Field')).getByTestId('CancelIcon'));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({recordFields: ['Identifier']})
+    );
+  });
 });
