@@ -46,7 +46,7 @@ export const instantiateCountedPlan = ({
 }: {
   template: CountedPlanTemplate;
   config: CountedPlanTemplateConfig;
-}) => {
+}): CountedPlan => {
   if (!countedPlanTemplateSchema.safeParse(template).success) {
     throw new Error('Invalid counted plan template');
   }
@@ -55,7 +55,7 @@ export const instantiateCountedPlan = ({
     formType: template.formType,
     numberRequired: config.numberRequired,
     allowExtraRecords: config.allowExtraRecords,
-  } as CountedPlan;
+  };
 };
 
 export const countedPlanDefinition = {

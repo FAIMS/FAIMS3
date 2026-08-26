@@ -44,7 +44,7 @@ export const instantiateListPlan = ({
 }: {
   template: ListPlanTemplate;
   config: ListPlanTemplateConfig;
-}) => {
+}): ListPlan => {
   // do a local check of the template validity before we try to validate the plan
   if (!listPlanTemplateSchema.safeParse(template).success) {
     throw new Error('Invalid list of records plan template');
@@ -68,7 +68,7 @@ export const instantiateListPlan = ({
     formType: template.formType,
     records: records,
     allowExtraRecords: config.allowExtraRecords,
-  } as ListPlan;
+  };
 };
 
 export const listOfRecordsPlanDefinition = {
