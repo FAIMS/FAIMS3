@@ -52,7 +52,6 @@ import {
   PutUpdateNotebookUiSpecificationInputSchema,
   removeProjectRole,
   Role,
-  slugify,
   userCanReadTemplateDocument,
   userHasProjectRole,
 } from '@faims3/data-model';
@@ -81,6 +80,10 @@ import {
 } from '../couchdb/export/geospatialExport';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import {FullExportConfigSchema} from '../couchdb/export/types';
+import {
+  contentDispositionAttachment,
+  sanitizeDownloadFilename,
+} from '../couchdb/export/utils';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
   applyNotebookLifecycleStatus,
@@ -913,22 +916,26 @@ api.get(
           `Form with id ${payload.viewID} not found in notebook`
         );
       }
-      exportLabel = uiSpec.viewsets[payload.viewID].label ?? payload.viewID;
+      // Form labels are user-controlled; never interpolate them raw into headers.
+      exportLabel = sanitizeDownloadFilename(
+        uiSpec.viewsets[payload.viewID].label ?? payload.viewID,
+        sanitizeDownloadFilename(payload.viewID, 'export')
+      );
     } else {
-      exportLabel = slugify(payload.projectID);
+      exportLabel = sanitizeDownloadFilename(payload.projectID);
     }
 
     if (payload.format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${exportLabel}-export.csv"`
+        contentDispositionAttachment(`${exportLabel}-export.csv`)
       );
       streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
     } else if (payload.format === 'zip') {
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${exportLabel}-photos.zip"`
+        contentDispositionAttachment(`${exportLabel}-photos.zip`)
       );
       res.setHeader('Content-Type', 'application/zip');
       streamNotebookFilesAsZip({
@@ -940,14 +947,14 @@ api.get(
       res.setHeader('Content-Type', 'application/geo+json');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+        contentDispositionAttachment(`${exportLabel}-export.geojson`)
       );
       streamNotebookRecordsAsGeoJSON(payload.projectID, res);
     } else if (payload.format === 'kml') {
       res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+        contentDispositionAttachment(`${exportLabel}-export.kml`)
       );
       streamNotebookRecordsAsKML(payload.projectID, res);
     } else if (payload.format === 'geopackage') {
@@ -956,7 +963,7 @@ api.get(
       res.setHeader('Content-Type', 'application/geopackage+sqlite3');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${slugify(payload.projectID)}-export.gpkg"`
+        contentDispositionAttachment(`${exportLabel}-export.gpkg`)
       );
       await streamNotebookRecordsAsGeoPackage(payload.projectID, res);
     } else if (payload.format === 'full') {
@@ -964,7 +971,7 @@ api.get(
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${fullFilename}"`
+        contentDispositionAttachment(fullFilename)
       );
       await streamFullExport({
         projectId: payload.projectID,
