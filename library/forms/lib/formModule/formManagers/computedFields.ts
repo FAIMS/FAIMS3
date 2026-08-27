@@ -24,6 +24,7 @@ import {
   recomputeComputedFields,
   RecordContext,
   UiSpecModel,
+  CompiledUiSpecModel,
 } from '@faims3/data-model';
 import {formDataExtractor} from '../../utils';
 import {FaimsForm} from '../types';
@@ -34,7 +35,7 @@ import {FaimsForm} from '../types';
  *
  * @param form The tanstack form
  * @param formId The target form ID to update
- * @param uiSpec The decoded UI spec (with compiled expressions attached)
+ * @param uiSpec The compiled UI spec
  * @param context Record context, carrying parent values if resolved
  * @param runListeners Whether tanstack should fire listeners for the update
  * @returns True iff a change was detected
@@ -48,7 +49,7 @@ export function onChangeComputedFields({
 }: {
   form: FaimsForm;
   formId: string;
-  uiSpec: UiSpecModel;
+  uiSpec: CompiledUiSpecModel;
   context?: RecordContext;
   runListeners: boolean;
 }): boolean {

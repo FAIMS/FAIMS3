@@ -21,13 +21,12 @@
  */
 
 import {
-  CompiledFieldDefinition,
+  CompiledUiSpecModel,
   ExprType,
   ExprValue,
   FAIMS_TYPE_TO_EXPR_TYPE,
   getFieldToIdsMap,
   PARENT_REFERENCE_PREFIX,
-  UiSpecModel,
   ValuesObject,
 } from '../uiSpecification';
 import {logWarn} from '../logging';
@@ -60,7 +59,7 @@ const DERIVED_FIELD_NAMES = [
  * leaves the result blank.
  *
  * @param values Current form data values
- * @param uiSpecification The decoded UI spec (with compiled expressions attached)
+ * @param uiSpecification The compiled UI spec (see compileUiSpecConditionals)
  * @param formId The target form ID to update
  * @param context Record context, carrying parent values if resolved
  * @returns Whether anything changed, and the new values keyed by field name
@@ -72,7 +71,7 @@ export function recomputeComputedFields({
   context,
 }: {
   values: ValuesObject;
-  uiSpecification: UiSpecModel;
+  uiSpecification: CompiledUiSpecModel;
   formId: string;
   context?: RecordContext;
 }): {changes: boolean; updates: Record<string, ExprValue | null>} {
@@ -103,9 +102,8 @@ export function recomputeComputedFields({
     if (COMPUTED_FIELD_NAMES.includes(componentName)) {
       // Expression is compiled at notebook load and attached in place; read it
       // off the compiled field definition.
-      const compiledField = fieldDetails as CompiledFieldDefinition;
-      const expressionFn = compiledField.expressionFn;
-      const references = compiledField.expressionRefs;
+      const expressionFn = fieldDetails.expressionFn;
+      const references = fieldDetails.expressionRefs;
       if (!expressionFn || !references) {
         logWarn(
           `${componentName} has no compiled expression - cannot evaluate. ` +
