@@ -55,7 +55,7 @@ const createNotebookWithPlan = async (
     ...sample,
     uiSpecification: {
       ...sample.uiSpecification,
-      plan,
+      plans: [plan],
     },
   } satisfies CreateNotebookFromScratch;
 
@@ -210,7 +210,7 @@ describe('notebook creation from template with planTemplate', () => {
     ]);
   });
 
-  it('rejects notebook create when plan is malformed', async () => {
+  it('rejects notebook create when a plan is malformed', async () => {
     const sample = sampleCreateNotebookPayload('broken notebook');
     const response = await requestAuthAndType(
       request(app)
@@ -219,17 +219,21 @@ describe('notebook creation from template with planTemplate', () => {
           ...sample,
           uiSpecification: {
             ...sample.uiSpecification,
-            plan: {
-              planType: COUNTED_PLAN_TYPE,
-              formType: 'artefact-form',
-              numberRequired: 0,
-              allowExtraRecords: 'sometimes',
-            },
+            plans: [
+              {
+                planType: COUNTED_PLAN_TYPE,
+                formType: 'artefact-form',
+                numberRequired: 0,
+                allowExtraRecords: 'sometimes',
+              },
+            ],
           },
         })
     ).expect(400);
 
-    expect(response.body.error.message).toBe('Invalid plan in uiSpecification');
+    expect(response.body.error.message).toBe(
+      `Invalid plan "${COUNTED_PLAN_TYPE}" in uiSpecification`
+    );
   });
 
   it('creates a notebook and instantiates the counted plan from planConfig', async () => {

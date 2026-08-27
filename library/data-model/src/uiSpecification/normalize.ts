@@ -157,8 +157,8 @@ export function normalizeNotebookTemplateUiSpecification(
 }
 
 /**
- * Accept a legacy or current notebook JSON bundle, then validate its plan, if
- * any, against that plan type's own schema.
+ * Accept a legacy or current notebook JSON bundle, then validate each plan it
+ * carries against that plan type's own schema.
  */
 export function normalizeNotebookUiSpecification(
   raw: unknown
@@ -169,8 +169,8 @@ export function normalizeNotebookUiSpecification(
     label: 'uiSpecification',
   });
 
-  // Validate every plan the notebook carries, in either slot, so a bad plan in
-  // the list is caught at load rather than when its tab is first opened.
+  // Validate every plan the notebook carries, so a bad one is caught at load
+  // rather than when its tab is first opened.
   for (const {planId, plan} of getNotebookPlans(definition)) {
     if (!safeValidatePlan(plan).success) {
       throw new Error(`Invalid plan "${planId}" in uiSpecification`);
