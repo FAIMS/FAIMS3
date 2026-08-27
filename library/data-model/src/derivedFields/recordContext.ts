@@ -21,7 +21,11 @@
  */
 
 import {HydratedRecordDocument} from '../databaseEngine/types';
-import {ValuesObject} from '../uiSpecification';
+import {
+  CREATED_TIME_ID,
+  CREATOR_NAME_ID,
+  ValuesObject,
+} from '../uiSpecification';
 import {logWarn} from '../logging';
 import {formatTimestamp} from '../utils';
 
@@ -56,10 +60,6 @@ export function getRecordContextFromRecord({
     createdTime: time,
   };
 }
-
-// System variables injectable into templates.
-export const CREATOR_NAME_ID = '_CREATOR_NAME';
-export const CREATED_TIME_ID = '_CREATED_TIME';
 
 /**
  * Converts the RecordContext into an object mapping from key -> value for use

@@ -26,7 +26,8 @@ import {
   ExprValue,
   FAIMS_TYPE_TO_EXPR_TYPE,
   getFieldToIdsMap,
-  PARENT_REFERENCE_PREFIX,
+  decodeParentRef,
+  isParentRef,
   ValuesObject,
 } from '../uiSpecification';
 import {logWarn} from '../logging';
@@ -159,7 +160,10 @@ export function recomputeComputedFields({
   // Field IDs are globally unique in the uiSpec, so the field's type can be
   // looked up directly.
   const resolveParentRef = (ref: string): ExprValue | null => {
-    const parentFieldId = ref.slice(PARENT_REFERENCE_PREFIX.length);
+    const parentFieldId = decodeParentRef(ref);
+    if (parentFieldId === null) {
+      return null;
+    }
     return coerceValue(
       context?.parentValues?.[parentFieldId],
       FAIMS_TYPE_TO_EXPR_TYPE[
@@ -179,7 +183,7 @@ export function recomputeComputedFields({
     const scope = new Map<string, ExprValue>();
     let incomplete = false;
     for (const ref of references) {
-      if (ref.startsWith(PARENT_REFERENCE_PREFIX)) {
+      if (isParentRef(ref)) {
         const value = resolveParentRef(ref);
         if (value === null) {
           incomplete = true;

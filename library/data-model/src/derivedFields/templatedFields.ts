@@ -21,14 +21,15 @@
  */
 
 import Mustache from 'mustache';
-import {getFieldToIdsMap, UiSpecModel, ValuesObject} from '../uiSpecification';
-import {logWarn} from '../logging';
 import {
-  contextToTemplate,
   CREATED_TIME_ID,
   CREATOR_NAME_ID,
-  RecordContext,
-} from './recordContext';
+  getFieldToIdsMap,
+  UiSpecModel,
+  ValuesObject,
+} from '../uiSpecification';
+import {logWarn} from '../logging';
+import {contextToTemplate, RecordContext} from './recordContext';
 import {
   getBuiltinTemplateFunction,
   TemplateFunctionLookup,
