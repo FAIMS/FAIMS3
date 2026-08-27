@@ -36,7 +36,7 @@ import {config} from '../../../buildconfig';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import NotebookSettings from './settings';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
@@ -144,6 +144,23 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  const {tab} = useParams<{tab?: string}>();
+
+  // Replace rather than push, so leaving a notebook costs one Back press
+  const setTab = useCallback(
+    (nextTab: string) => {
+      navigate(
+        ROUTES.getNotebookRoute({
+          serverId: project.serverId,
+          projectId: project.projectId,
+          tab: nextTab,
+        }),
+        {replace: true}
+      );
+    },
+    [navigate, project.serverId, project.projectId]
+  );
+
   /**
    * Create a new record - function passed in to the view component to create new records,
    *  bundles up all of the app internal access that is needed to do this so that the
@@ -187,6 +204,7 @@ function NotebookViewWithSpec({
           ROUTES.getEditRecordRoute({
             serverId: project.serverId,
             projectId: project.projectId,
+            tab,
             recordId: record._id,
             mode: 'new',
           })
@@ -211,6 +229,7 @@ function NotebookViewWithSpec({
       navigate,
       project.serverId,
       project.projectId,
+      tab,
       dispatch,
     ]
   );
@@ -218,15 +237,16 @@ function NotebookViewWithSpec({
   // View/Edit an existing record by navigating to the record view page
   const navigateToRecord = useCallback(
     (record: MinimalRecordMetadata) => {
-      const route = ROUTES.getViewRecordRoute({
-        serverId: project.serverId,
-        projectId: record.projectId,
-        recordId: record.recordId,
-      });
-
-      navigate(route);
+      navigate(
+        ROUTES.getViewRecordRoute({
+          serverId: project.serverId,
+          projectId: project.projectId,
+          tab,
+          recordId: record.recordId,
+        })
+      );
     },
-    [navigate, project.serverId]
+    [navigate, project.serverId, project.projectId, tab]
   );
 
   // does this notebook have a plan, and do we have a view component for it
@@ -245,12 +265,14 @@ function NotebookViewWithSpec({
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
+      tab,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,
         setQuery,
         createRecord,
         navigateToRecord,
+        setTab,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -294,11 +316,13 @@ function NotebookViewWithSpec({
     }),
     [
       project,
+      tab,
       uiSpecification,
       refreshRecordList,
       setQuery,
       createRecord,
       navigateToRecord,
+      setTab,
       isAllowedToAddRecords,
       isDownloadingRecords,
       records,
@@ -316,5 +340,5 @@ function NotebookViewWithSpec({
   // TODO: port this component to use the same interface
   // as our custom plan view components once we have sorted
   // out what that interface looks like
-  return <NotebookComponent project={project} />;
+  return <NotebookComponent project={project} tab={tab} setTab={setTab} />;
 }

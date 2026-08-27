@@ -52,8 +52,7 @@ export default function HeadingProjectGrid({
   }: {
     row: Project;
   }) => {
-    if (isActivated)
-      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${serverId}/${projectId}`);
+    if (isActivated) history(ROUTES.getNotebookRoute({serverId, projectId}));
   };
 
   // we need a state variable to track pagination model since we want to use a

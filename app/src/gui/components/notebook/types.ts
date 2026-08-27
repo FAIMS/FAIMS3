@@ -63,6 +63,8 @@ interface ActionProps {
   ) => Promise<void>;
   // Navigate to the view page for the given record
   navigateToRecord: (record: MinimalRecordMetadata) => void;
+  // Show the given tab, putting its slug in the URL
+  setTab: (tab: string) => void;
 }
 
 // Components that might be used in the notebook display
@@ -74,6 +76,8 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
+  // The tab slug from the URL, which a view resolves with `useResolveTab`
+  tab?: string;
   uiSpecification: CompiledNotebookUiSpec;
   records: RecordListProps;
   actions: ActionProps;

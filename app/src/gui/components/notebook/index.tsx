@@ -5,17 +5,16 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
 import {config} from '../../../buildconfig';
-import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
+import {SHARED_TAB, useResolveTab} from '../../../constants/routes';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
   useIsAuthorisedTo,
-  useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
@@ -27,33 +26,24 @@ import PushOnlySyncBanner from './PushOnlySyncBanner';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
-// Define how tabs appear in the query string arguments, providing a two way map
-type TabIndexLabel =
-  | 'my_records'
-  | 'other_records'
-  | 'details'
-  | 'settings'
-  | 'map';
-type TabIndex = 0 | 1 | 2 | 3 | 4;
-const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
-  ['my_records', 0],
-  ['other_records', 1],
-  ['map', 2],
-  ['details', 3],
-  ['settings', 4],
-]);
-const INDEX_TO_TAB = new Map<TabIndex, TabIndexLabel>(
-  Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
-);
+// This view's tab slugs, default first
+const TABS = [
+  'my-records',
+  'other-records',
+  SHARED_TAB.map,
+  SHARED_TAB.details,
+  SHARED_TAB.settings,
+] as const;
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
  */
 interface TabPanelProps {
   children?: React.ReactNode;
-  id: string;
-  index: number;
-  value: number;
+  /** The tab slug this panel belongs to. */
+  tab: string;
+  /** The tab slug currently shown. */
+  value: string;
 }
 
 /**
@@ -64,35 +54,31 @@ interface TabPanelProps {
  * @returns {JSX.Element} - The JSX element for the TabPanel.
  */
 function TabPanel(props: TabPanelProps) {
-  const {children, id, value, index, ...other} = props;
+  const {children, value, tab, ...other} = props;
 
   return (
     <div
       role="tabpanel"
-      hidden={value !== index}
-      id={`${id}-${index}`}
-      aria-labelledby={`${id}-${index}`}
+      hidden={value !== tab}
+      id={`${tab}-tabpanel`}
+      aria-labelledby={`${tab}-tab`}
       {...other}
     >
-      {value === index && <Box>{children}</Box>}
+      {value === tab && <Box>{children}</Box>}
     </div>
   );
 }
 
 /**
- * a11yProps returns accessibility properties for a tab.
+ * a11yProps returns accessibility props for a tab, pairing it with its panel.
  *
- * @param {number} index - The index of the tab.
- * @param {string} id - The id of the tab panel.
+ * @param {string} tab - The slug of the tab.
  * @returns {object} - The accessibility properties for the tab.
  */
-function a11yProps(index: number, id: string) {
-  /**
-   * Accessibility props
-   */
+function a11yProps(tab: string) {
   return {
-    id: `${id}-tab-${index}`,
-    'aria-controls': `${id}-tabpanel-${index}`,
+    id: `${tab}-tab`,
+    'aria-controls': `${tab}-tabpanel`,
   };
 }
 
@@ -101,6 +87,8 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: Project;
+  tab?: string;
+  setTab: (tab: string) => void;
 };
 
 /**
@@ -110,7 +98,11 @@ type NotebookComponentProps = {
  * @param props - The properties for the NotebookComponent.
  * @returns The JSX element for the NotebookComponent.
  */
-export default function NotebookComponent({project}: NotebookComponentProps) {
+export default function NotebookComponent({
+  project,
+  tab,
+  setTab,
+}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const queryClient = useQueryClient();
@@ -133,25 +125,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     username: activeUser?.username ?? '',
   });
 
-  // This manages the tab using a query string arg
-  const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({
-    tab: {
-      key: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q,
-      defaultValue: 'my_records',
-    },
-  });
-
-  // This is the actual tab index state
-  const [tabIndex, setTabIndex] = React.useState<TabIndex>(
-    TAB_TO_INDEX.get(params.tab ?? 'my_records') ??
-      TAB_TO_INDEX.get('my_records') ??
-      0
-  );
-
-  // This is a function which updates the param based on the tab index
-  const setTabValue = (val: TabIndex) => {
-    setParam('tab', INDEX_TO_TAB.get(val) ?? 'my_records');
-  };
+  const currentTab = useResolveTab(TABS, tab, setTab);
 
   // Fetch records from the (local) DB with configurable auto refetch.
   // Skip while the compiled UI spec is still loading.
@@ -179,26 +153,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   const viewsets = uiSpecification.viewsets;
 
-  /**
-   * Handles the change event when the user switches between the tabs.
-   *
-   * @param {React.SyntheticEvent} event - The event triggered by the tab
-   * change.
-   * @param {number} newValue - The index of the selected tab.
-   */
-  const handleTabChange = (
-    _event: React.SyntheticEvent,
-    newValue: TabIndex
-  ) => {
-    // Set the actual index on tab change
-    setTabIndex(newValue);
-    // Update the param
-    setTabValue(newValue);
-  };
-
   const goToSyncSettings = () => {
-    setTabIndex(4);
-    setTabValue(4);
+    setTab(SHARED_TAB.settings);
   };
 
   // recordLabel based on viewsets
@@ -272,8 +228,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             }}
           >
             <Tabs
-              value={tabIndex}
-              onChange={handleTabChange}
+              value={currentTab}
+              onChange={(_event, newTab: string) => setTab(newTab)}
               aria-label={`${config.notebookName} tabs`}
               indicatorColor="secondary"
               sx={{
@@ -303,36 +259,37 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             >
               <Tab
                 label={`My ${recordLabel}s (${visibleMyRecords.length})`}
-                value={0}
+                value="my-records"
                 data-testid="app-notebook-tab-my-records"
-                {...a11yProps(0, `${config.notebookName}-myrecords`)}
+                {...a11yProps('my-records')}
               />
-              {(tabIndex === 1 || visibleOtherRecords.length > 0) && (
+              {(currentTab === 'other-records' ||
+                visibleOtherRecords.length > 0) && (
                 <Tab
-                  value={1}
+                  value="other-records"
                   label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
                   data-testid="app-notebook-tab-other-records"
-                  {...a11yProps(2, `${config.notebookName}-otherrecords`)}
+                  {...a11yProps('other-records')}
                 />
               )}
 
               <Tab
-                value={2}
+                value={SHARED_TAB.map}
                 label="Map"
                 data-testid="app-notebook-tab-map"
-                {...a11yProps(2, config.notebookName)}
+                {...a11yProps(SHARED_TAB.map)}
               />
               <Tab
-                value={3}
+                value={SHARED_TAB.details}
                 label="Details"
                 data-testid="app-notebook-tab-details"
-                {...a11yProps(3, config.notebookName)}
+                {...a11yProps(SHARED_TAB.details)}
               />
               <Tab
-                value={4}
+                value={SHARED_TAB.settings}
                 label="Settings"
                 data-testid="app-notebook-tab-settings"
-                {...a11yProps(4, config.notebookName)}
+                {...a11yProps(SHARED_TAB.settings)}
               />
             </Tabs>
           </Paper>
@@ -341,7 +298,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         {
           // My records
         }
-        <TabPanel value={tabIndex} index={0} id={'records-mine'}>
+        <TabPanel value={currentTab} tab="my-records">
           <RecordsTable
             project={project}
             maxRows={25}
@@ -358,7 +315,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           // Other records
         }
 
-        <TabPanel value={tabIndex} index={1} id={'records-all'}>
+        <TabPanel value={currentTab} tab="other-records">
           <RecordsTable
             project={project}
             maxRows={25}
@@ -372,7 +329,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           />
         </TabPanel>
 
-        <TabPanel value={tabIndex} index={2} id={'map'}>
+        <TabPanel value={currentTab} tab={SHARED_TAB.map}>
           <OverviewMap
             serverId={project.serverId}
             records={records}
@@ -381,11 +338,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           />
         </TabPanel>
 
-        <TabPanel value={tabIndex} index={3} id={'details'}>
+        <TabPanel value={currentTab} tab={SHARED_TAB.details}>
           <MetadataDisplayComponent project={project} templateId={templateId} />
         </TabPanel>
 
-        <TabPanel value={tabIndex} index={4} id={'settings'}>
+        <TabPanel value={currentTab} tab={SHARED_TAB.settings}>
           <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
       </Box>

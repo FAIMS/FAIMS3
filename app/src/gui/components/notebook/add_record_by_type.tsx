@@ -11,7 +11,7 @@ import {Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
-import {Navigate, useNavigate} from 'react-router-dom';
+import {Navigate, useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -40,6 +40,7 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
   const navigate = useNavigate();
+  const {tab} = useParams<{tab?: string}>();
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
@@ -74,6 +75,7 @@ export default function AddRecordButtons({
           ROUTES.getEditRecordRoute({
             serverId: serverId,
             projectId: projectId,
+            tab,
             recordId: newRecord.record._id,
             mode: 'new',
           })
@@ -108,6 +110,7 @@ export default function AddRecordButtons({
         to={ROUTES.getEditRecordRoute({
           serverId: serverId,
           projectId: projectId || 'dummy',
+          tab,
           recordId: (selectedRecord.record_id || '').toString(),
         })}
       />

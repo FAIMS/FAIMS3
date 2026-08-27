@@ -2,11 +2,14 @@ import {COUNTED_PLAN_TYPE, CountedPlan} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
 import {RecordsTable} from '../record_table';
+import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import TabPanel from '@mui/lab/TabPanel';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
-import {useState} from 'react';
+
+// This view's tab slugs, default first
+const TABS = ['planned', SHARED_TAB.details, SHARED_TAB.settings] as const;
 
 /**
  * A view component for the counted plan type. Shows the record
@@ -15,9 +18,9 @@ import {useState} from 'react';
  */
 
 export const CountedPlanView = (props: NotebookViewComponentProps) => {
-  const {project, uiSpecification, records, actions, status} = props;
+  const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const [tabIndex, setTabIndex] = useState('0');
+  const currentTab = useResolveTab(TABS, tab, actions.setTab);
 
   // Should not need this but it guards the type cast below
   if (project.uiDefinition?.plan?.planType !== COUNTED_PLAN_TYPE) {
@@ -69,33 +72,37 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
         </Alert>
       </div>
 
-      <TabContext value={tabIndex.toString()}>
+      <TabContext value={currentTab}>
         <TabList
-          onChange={(event, newValue) => setTabIndex(newValue)}
+          onChange={(event, newValue) => actions.setTab(newValue)}
           aria-label={'Counted Plan tabs'}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
-            value="0"
+            value="planned"
             id="planned-tab"
             aria-controls="planned-tabpanel"
           />
 
           <Tab
-            value="1"
+            value={SHARED_TAB.details}
             label={`Details`}
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value="2"
+            value={SHARED_TAB.settings}
             label={`Settings`}
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
         </TabList>
 
-        <TabPanel value="0" id="planned-tabpanel" aria-labelledby="planned-tab">
+        <TabPanel
+          value="planned"
+          id="planned-tabpanel"
+          aria-labelledby="planned-tab"
+        >
           {showAddRecordButtons && (
             <Box sx={{mb: 1.5}}>
               <AddRecordButtons
@@ -128,12 +135,16 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           />
         </TabPanel>
 
-        <TabPanel value="1" id="details-tabpanel" aria-labelledby="details-tab">
+        <TabPanel
+          value={SHARED_TAB.details}
+          id="details-tabpanel"
+          aria-labelledby="details-tab"
+        >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
 
         <TabPanel
-          value="2"
+          value={SHARED_TAB.settings}
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >

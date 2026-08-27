@@ -12,10 +12,20 @@ import {
   Tab,
   Typography,
 } from '@mui/material';
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo} from 'react';
 import {RecordsTable} from '../record_table';
+import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
+
+// This view's tab slugs, default first
+const TABS = [
+  'planned',
+  'all-records',
+  SHARED_TAB.details,
+  SHARED_TAB.settings,
+  SHARED_TAB.map,
+] as const;
 
 /**
  * A view component for the list of records plan type. Shows pre-populated cards
@@ -23,9 +33,9 @@ import {config} from '../../../../buildconfig';
  *
  */
 export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
-  const {project, uiSpecification, records, actions, status} = props;
+  const {project, tab, uiSpecification, records, actions, status} = props;
 
-  const [tabIndex, setTabIndex] = useState('0');
+  const currentTab = useResolveTab(TABS, tab, actions.setTab);
 
   // recordLabel based on viewsets
   const recordLabel =
@@ -94,44 +104,48 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           : 'Extra records allowed'}
       </Alert>
 
-      <TabContext value={tabIndex.toString()}>
+      <TabContext value={currentTab}>
         <TabList
-          onChange={(event, newValue) => setTabIndex(newValue)}
+          onChange={(event, newValue) => actions.setTab(newValue)}
           aria-label={`List of Records Plan tabs`}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
-            value="0"
+            value="planned"
             id="planned-tab"
             aria-controls="planned-tabpanel"
           />
           <Tab
-            value="1"
+            value="all-records"
             label={`All ${recordLabel}s`}
             id="all-tab"
             aria-controls="all-tabpanel"
           />
           <Tab
-            value="2"
+            value={SHARED_TAB.details}
             label="Details"
             id="details-tab"
             aria-controls="details-tabpanel"
           />
           <Tab
-            value="3"
+            value={SHARED_TAB.settings}
             label="Settings"
             id="settings-tab"
             aria-controls="settings-tabpanel"
           />
           <Tab
-            value="4"
+            value={SHARED_TAB.map}
             label="Overview Map"
             id="overview-map-tab"
             aria-controls="overview-map-tabpanel"
           />
         </TabList>
 
-        <TabPanel value="0" id="planned-tabpanel" aria-labelledby="planned-tab">
+        <TabPanel
+          value="planned"
+          id="planned-tabpanel"
+          aria-labelledby="planned-tab"
+        >
           {unclaimedMayBeStale && (
             <Alert severity="warning" sx={{mb: 1.5}}>
               Some records are not visible to you yet, so an entry shown as not
@@ -163,7 +177,11 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             )}
           </Grid>
         </TabPanel>
-        <TabPanel value="1" id="all-tabpanel" aria-labelledby="all-tab">
+        <TabPanel
+          value="all-records"
+          id="all-tabpanel"
+          aria-labelledby="all-tab"
+        >
           <RecordsTable
             project={project}
             maxRows={25}
@@ -177,18 +195,22 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           />
         </TabPanel>
 
-        <TabPanel value="2" id="details-tabpanel" aria-labelledby="details-tab">
+        <TabPanel
+          value={SHARED_TAB.details}
+          id="details-tabpanel"
+          aria-labelledby="details-tab"
+        >
           <props.components.MetadataDisplayComponent />
         </TabPanel>
         <TabPanel
-          value="3"
+          value={SHARED_TAB.settings}
           id="settings-tabpanel"
           aria-labelledby="settings-tab"
         >
           <props.components.NotebookSettings />
         </TabPanel>
         <TabPanel
-          value="4"
+          value={SHARED_TAB.map}
           id="overview-map-tabpanel"
           aria-labelledby="overview-map-tab"
         >
