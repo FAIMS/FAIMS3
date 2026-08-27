@@ -20,12 +20,7 @@
  *   those fields.
  */
 
-import {
-  CompiledUiSpecModel,
-  decodeParentRef,
-  encodeParentRef,
-  getFieldToIdsMap,
-} from '../uiSpecification';
+import {CompiledUiSpecModel, decodeParentRef} from '../uiSpecification';
 
 /** Matches {{_PARENT.Field-ID}} and {{{_PARENT.Field-ID}}} template forms. */
 const TEMPLATE_PARENT_REF = /\{\{\{?\s*_PARENT\.([^}\s]+)\s*\}?\}\}/g;
@@ -42,10 +37,9 @@ export function referencedParentFields({
   uiSpecification: CompiledUiSpecModel;
   formId: string;
 }): string[] | null {
-  const fieldMap = getFieldToIdsMap(uiSpecification);
-  const fieldIds = Object.entries(fieldMap)
-    .filter(([, ids]) => ids.viewSetId === formId)
-    .map(([fieldId]) => fieldId);
+  const fieldIds = (uiSpecification.viewsets[formId]?.views ?? []).flatMap(
+    viewId => uiSpecification.views[viewId]?.fields ?? []
+  );
   if (fieldIds.length === 0) {
     return null;
   }

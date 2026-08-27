@@ -24,7 +24,6 @@ import {
   CompiledUiSpecModel,
   ExprValue,
   FAIMS_TYPE_TO_EXPR_TYPE,
-  getFieldToIdsMap,
   decodeParentRef,
   isParentRef,
   ValuesObject,
@@ -76,7 +75,10 @@ export function recomputeComputedFields({
   formId: string;
   context?: RecordContext;
 }): {changes: boolean; updates: Record<string, ExprValue | null>} {
-  const fieldMap = getFieldToIdsMap(uiSpecification);
+  // Fields in this form: the union of its views' field lists.
+  const formFieldNames = (
+    uiSpecification.viewsets[formId]?.views ?? []
+  ).flatMap(viewId => uiSpecification.views[viewId]?.fields ?? []);
 
   // Field names in this form, the derived ones (excluded as inputs), and the
   // computed fields to evaluate (with their precompiled evaluators).
@@ -88,13 +90,12 @@ export function recomputeComputedFields({
     references: string[];
   }[] = [];
 
-  for (const [fieldName, location] of Object.entries(fieldMap)) {
-    if (location.viewSetId !== formId) {
+  for (const fieldName of formFieldNames) {
+    formFields.add(fieldName);
+    const fieldDetails = uiSpecification.fields[fieldName];
+    if (!fieldDetails) {
       continue;
     }
-    formFields.add(fieldName);
-
-    const fieldDetails = uiSpecification.fields[fieldName];
     const componentName = fieldDetails['component-name'];
 
     if (DERIVED_FIELD_NAMES.includes(componentName)) {
