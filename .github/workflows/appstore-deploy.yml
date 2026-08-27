@@ -17,16 +17,6 @@ jobs:
           brew install jq
       - name: Install sops
         run: brew install sops
-      - name: Declare some variables
-        shell: bash
-        run: |
-          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
-          echo "app_version=$(jq -r '.version' app/package.json)" >> "$GITHUB_ENV"
-      - name: Create version string
-        shell: bash
-        run: |
-          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"
-
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
         with:

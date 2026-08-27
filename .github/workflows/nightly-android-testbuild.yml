@@ -144,5 +144,4 @@ jobs:
           JAVA_KEY: ${{ env.JAVA_KEY }}
           JAVA_KEY_PASSWORD: ${{ env.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
-          serverprefix: 'testing'
-          prnum: ${{env.version_string}}
+          VERSION_NAME: ${{ env.version_string }}
