@@ -101,11 +101,10 @@ function getNestedProjects(pouchProjectList: Project[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to:
-        ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-        project_info.serverId +
-        '/' +
-        project_info.projectId,
+      to: ROUTES.getNotebookRoute({
+        serverId: project_info.serverId,
+        projectId: project_info.projectId,
+      }),
       disabled: false,
     });
   });
