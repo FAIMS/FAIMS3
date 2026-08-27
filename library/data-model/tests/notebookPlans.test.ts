@@ -115,8 +115,8 @@ describe('normalizeNotebookUiSpecification with several plans', () => {
   it('resolves the fixture to its two plans, in order', () => {
     const definition = normalizeNotebookUiSpecification(notebook());
     expect(getNotebookPlans(definition).map(p => p.planId)).toEqual([
-      'field-cells',
-      'lab-samples',
+      'site-survey',
+      'feature-list',
     ]);
   });
 
@@ -125,7 +125,7 @@ describe('normalizeNotebookUiSpecification with several plans', () => {
     // Second plan loses a field its schema requires.
     delete bundle.plans[1].formType;
     expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
-      /lab-samples/
+      /feature-list/
     );
   });
 });

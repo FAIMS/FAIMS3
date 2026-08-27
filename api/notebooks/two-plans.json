@@ -1,21 +1,21 @@
 {
   "name": "Two Plans",
-  "description": "Two plans on one notebook, one tab each, for the multi-plan seam spike. The field plan counts grid cells; the lab plan lists samples to check in.",
+  "description": "Two plans on one notebook, one tab each, for the multi-plan seam spike. One plan counts records of a form; the other lists records to collect.",
   "uiSpecification": {
     "uiSpec": {
       "fields": {
-        "hridCell": {
+        "hridSite": {
           "component-namespace": "faims-custom",
           "component-name": "TemplatedStringField",
           "type-returned": "faims-core::String",
           "component-parameters": {
-            "name": "hridCell",
-            "label": "Cell",
+            "name": "hridSite",
+            "label": "Site",
             "fullWidth": true,
             "required": true,
-            "template": "{{Cell-Id}}",
+            "template": "{{Site-Name}}",
             "InputLabelProps": {
-              "label": "Cell"
+              "label": "Site"
             }
           },
           "initialValue": "",
@@ -30,13 +30,13 @@
             }
           }
         },
-        "Cell-Id": {
+        "Site-Name": {
           "component-namespace": "faims-custom",
           "component-name": "TextField",
           "type-returned": "faims-core::String",
           "component-parameters": {
-            "name": "Cell-Id",
-            "label": "Grid cell",
+            "name": "Site-Name",
+            "label": "Site name",
             "fullWidth": true,
             "required": true
           },
@@ -52,18 +52,18 @@
             }
           }
         },
-        "hridSample": {
+        "hridFeature": {
           "component-namespace": "faims-custom",
           "component-name": "TemplatedStringField",
           "type-returned": "faims-core::String",
           "component-parameters": {
-            "name": "hridSample",
-            "label": "Sample",
+            "name": "hridFeature",
+            "label": "Feature",
             "fullWidth": true,
             "required": true,
-            "template": "{{Sample-Code}}",
+            "template": "{{Feature-Name}}",
             "InputLabelProps": {
-              "label": "Sample"
+              "label": "Feature"
             }
           },
           "initialValue": "",
@@ -78,13 +78,13 @@
             }
           }
         },
-        "Sample-Code": {
+        "Feature-Name": {
           "component-namespace": "faims-custom",
           "component-name": "TextField",
           "type-returned": "faims-core::String",
           "component-parameters": {
-            "name": "Sample-Code",
-            "label": "Sample code",
+            "name": "Feature-Name",
+            "label": "Feature name",
             "fullWidth": true,
             "required": true
           },
@@ -102,28 +102,28 @@
         }
       },
       "views": {
-        "Cell-Section": {
-          "label": "Grid cell",
-          "fields": ["hridCell", "Cell-Id"]
+        "Site-Section": {
+          "label": "Site",
+          "fields": ["hridSite", "Site-Name"]
         },
-        "Sample-Section": {
-          "label": "Sample",
-          "fields": ["hridSample", "Sample-Code"]
+        "Feature-Section": {
+          "label": "Feature",
+          "fields": ["hridFeature", "Feature-Name"]
         }
       },
       "viewsets": {
-        "Cell": {
-          "label": "Grid cell",
-          "views": ["Cell-Section"],
-          "hridField": "hridCell"
+        "Site": {
+          "label": "Site",
+          "views": ["Site-Section"],
+          "hridField": "hridSite"
         },
-        "Sample": {
-          "label": "Sample",
-          "views": ["Sample-Section"],
-          "hridField": "hridSample"
+        "Feature": {
+          "label": "Feature",
+          "views": ["Feature-Section"],
+          "hridField": "hridFeature"
         }
       },
-      "visible_types": ["Cell", "Sample"],
+      "visible_types": ["Site", "Feature"],
       "settings": {
         "showQrCodeButton": false
       },
@@ -131,24 +131,24 @@
     },
     "plans": [
       {
-        "planId": "field-cells",
+        "planId": "site-survey",
         "planType": "Counted",
-        "label": "Field",
-        "formType": "Cell",
+        "label": "Survey",
+        "formType": "Site",
         "numberRequired": 4,
         "allowExtraRecords": false
       },
       {
-        "planId": "lab-samples",
+        "planId": "feature-list",
         "planType": "ListOfRecords",
-        "label": "Lab",
-        "formType": "Sample",
+        "label": "Features",
+        "formType": "Feature",
         "records": {
-          "bag-1": {
-            "Sample-Code": "AA1-L1"
+          "f-1": {
+            "Feature-Name": "Hearth"
           },
-          "bag-2": {
-            "Sample-Code": "AA1-L2"
+          "f-2": {
+            "Feature-Name": "Posthole"
           }
         },
         "allowExtraRecords": true
