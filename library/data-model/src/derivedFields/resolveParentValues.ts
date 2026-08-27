@@ -22,7 +22,17 @@
 
 import {DataEngine} from '../databaseEngine/engine';
 import {getParentFormsForForm, ValuesObject} from '../uiSpecification';
+import {referencedParentFields} from './parentFieldScan';
 import {logWarn} from '../logging';
+
+/** Unwraps {data: ...} form entries to raw values. */
+const unwrapFormData = (data: Record<string, unknown>): ValuesObject => {
+  const values: ValuesObject = {};
+  for (const [k, v] of Object.entries(data)) {
+    values[k] = (v as {data?: unknown})?.data;
+  }
+  return values;
+};
 
 /**
  * Resolves the raw field values of this record's parent, for use in templated
@@ -55,19 +65,41 @@ export const resolveParentValues = async ({
       getParentFormsForForm({uiSpecification: engine.uiSpec, formId})
     );
 
+    // Fields the child's templates/expressions actually reference; null means
+    // the scan could not be trusted, so fetch everything as before.
+    const wanted = referencedParentFields({
+      uiSpecification: engine.uiSpec,
+      formId,
+    });
     for (const rel of parents) {
+      if (wanted !== null && wanted.length > 0) {
+        // Cheap path: check the parent's form from its record document, then
+        // fetch only the referenced fields from its head revision.
+        const parentRecord = await engine.core.getRecord(rel.recordId);
+        if (!parentForms.has(parentRecord.type)) {
+          continue;
+        }
+        const heads = parentRecord.heads ?? [];
+        if (heads.length !== 1) {
+          // No head or a conflict - use the full path, which carries the
+          // engine's head-selection semantics.
+          const parent = await engine.form.getExistingFormData({
+            recordId: rel.recordId,
+          });
+          return unwrapFormData(parent.data);
+        }
+        return await engine.hydrated.getFieldValues({
+          revisionId: heads[0],
+          fields: wanted,
+        });
+      }
       const parent = await engine.form.getExistingFormData({
         recordId: rel.recordId,
       });
       if (!parentForms.has(parent.formId)) {
         continue;
       }
-      // Unwrap {data: ...} entries to raw values.
-      const values: ValuesObject = {};
-      for (const [k, v] of Object.entries(parent.data)) {
-        values[k] = (v as {data?: unknown})?.data;
-      }
-      return values;
+      return unwrapFormData(parent.data);
     }
     return null;
   } catch (e) {
