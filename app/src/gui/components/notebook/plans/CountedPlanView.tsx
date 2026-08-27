@@ -22,15 +22,12 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
 
   const currentTab = useResolveTab(TABS, tab, actions.setTab);
 
-  // Should not need this but it guards the type cast below
-  if (project.uiDefinition?.plan?.planType !== COUNTED_PLAN_TYPE) {
+  // The notebook may carry several plans, so the one to render arrives in
+  // props rather than being read back off the project.
+  if (props.plan?.planType !== COUNTED_PLAN_TYPE) {
     return <div>CountedPlanView: Not a counted plan</div>;
   }
-  // this really is a counted plan
-  const plan: CountedPlan = project.uiDefinition.plan as CountedPlan;
-  if (!plan) {
-    return <div>No plan defined for this notebook</div>;
-  }
+  const plan: CountedPlan = props.plan as CountedPlan;
 
   // How many records of the target type have we got
   const targetRecordCount = records.allRecords.filter(

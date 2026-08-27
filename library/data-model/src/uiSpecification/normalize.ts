@@ -12,7 +12,11 @@ import {
   TemplateDefinitionSchema,
   type NotebookDefinition,
 } from './types';
-import {safeValidatePlan, safeValidatePlanTemplate} from '../plans';
+import {
+  getNotebookPlans,
+  safeValidatePlan,
+  safeValidatePlanTemplate,
+} from '../plans';
 
 export {CURRENT_NOTEBOOK_UI_SCHEMA_VERSION};
 
@@ -165,8 +169,12 @@ export function normalizeNotebookUiSpecification(
     label: 'uiSpecification',
   });
 
-  if (definition.plan && !safeValidatePlan(definition.plan).success) {
-    throw new Error('Invalid plan in uiSpecification');
+  // Validate every plan the notebook carries, in either slot, so a bad plan in
+  // the list is caught at load rather than when its tab is first opened.
+  for (const {planId, plan} of getNotebookPlans(definition)) {
+    if (!safeValidatePlan(plan).success) {
+      throw new Error(`Invalid plan "${planId}" in uiSpecification`);
+    }
   }
 
   return definition;

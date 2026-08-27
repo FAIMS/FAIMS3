@@ -19,6 +19,12 @@ export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
 export const PlanSchema = z
   .object({
     planType: z.string(),
+    /**
+     * Identifies this plan among the notebook's plans. Optional in stored
+     * notebooks so hand-written and legacy single-plan notebooks stay terse;
+     * `getNotebookPlans` assigns one where absent.
+     */
+    planId: z.string().optional(),
   })
   .passthrough();
 export type Plan = z.infer<typeof PlanSchema>;

@@ -64,6 +64,32 @@ export const useResolveTab = <T extends string>(
   return match ?? tabs[0];
 };
 
+/**
+ * Separates a plan's id from that plan's own tab slug in the route's single tab
+ * segment, e.g. `lab-samples.details`. Only used when a notebook carries more
+ * than one plan; a single-plan notebook keeps a bare slug, so every URL written
+ * before plans became a list still resolves.
+ */
+export const PLAN_TAB_SEPARATOR = '.';
+
+/**
+ * Splits a route tab segment into the plan it addresses and that plan's own
+ * slug. An unprefixed segment names no plan, which the caller reads as the
+ * first plan so a bare slug keeps working.
+ */
+export const splitPlanTab = (
+  tab: string | undefined
+): {planId?: string; slug?: string} => {
+  if (!tab) return {};
+  const at = tab.indexOf(PLAN_TAB_SEPARATOR);
+  if (at <= 0) return {slug: tab};
+  return {planId: tab.slice(0, at), slug: tab.slice(at + 1) || undefined};
+};
+
+/** Builds the route tab segment addressing one plan's tab. */
+export const joinPlanTab = (planId: string, slug: string): string =>
+  `${planId}${PLAN_TAB_SEPARATOR}${slug}`;
+
 /** Keyed by the tab shown; optional, so tab-less links still resolve. */
 export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:tab?`;
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;

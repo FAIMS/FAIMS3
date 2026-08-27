@@ -7,3 +7,5 @@ registerNotebookView(COUNTED_PLAN_TYPE, CountedPlanView);
 registerNotebookView(LIST_OF_RECORDS_PLAN_TYPE, ListOfRecordsPlanView);
 
 export * from './planViewRegistry';
+export * from './PlanSwitcher';
+export * from './resolvePlanViews';

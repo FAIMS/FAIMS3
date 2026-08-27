@@ -76,8 +76,9 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
     [records.allRecords, actions.navigateToRecord]
   );
 
-  // Should not need this but it guards the type cast below
-  if (project.uiDefinition?.plan?.planType !== LIST_OF_RECORDS_PLAN_TYPE) {
+  // The notebook may carry several plans, so the one to render arrives in
+  // props rather than being read back off the project.
+  if (props.plan?.planType !== LIST_OF_RECORDS_PLAN_TYPE) {
     return (
       <div>
         ListOfRecordsPlanView: Not a list of records plan for this{' '}
@@ -85,11 +86,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
       </div>
     );
   }
-  // this really is a list of records plan
-  const plan = project.uiDefinition.plan as ListPlan | undefined;
-  if (!plan) {
-    return <div>No plan defined for this {config.notebookName}</div>;
-  }
+  const plan = props.plan as ListPlan;
   const plannedRecords = plan.records;
   if (!plannedRecords) {
     return <div>No planned records defined for this {config.notebookName}</div>;

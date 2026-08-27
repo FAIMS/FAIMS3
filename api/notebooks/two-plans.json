@@ -1,0 +1,166 @@
+{
+  "name": "Two Plans",
+  "description": "Two plans on one notebook, one tab each, for the multi-plan seam spike. The field plan counts grid cells; the lab plan lists samples to check in.",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {
+        "hridCell": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "hridCell",
+            "label": "Cell",
+            "fullWidth": true,
+            "required": true,
+            "template": "{{Cell-Id}}",
+            "InputLabelProps": {
+              "label": "Cell"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Cell-Id": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Cell-Id",
+            "label": "Grid cell",
+            "fullWidth": true,
+            "required": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "hridSample": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "hridSample",
+            "label": "Sample",
+            "fullWidth": true,
+            "required": true,
+            "template": "{{Sample-Code}}",
+            "InputLabelProps": {
+              "label": "Sample"
+            }
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Sample-Code": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "name": "Sample-Code",
+            "label": "Sample code",
+            "fullWidth": true,
+            "required": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        }
+      },
+      "views": {
+        "Cell-Section": {
+          "label": "Grid cell",
+          "fields": ["hridCell", "Cell-Id"]
+        },
+        "Sample-Section": {
+          "label": "Sample",
+          "fields": ["hridSample", "Sample-Code"]
+        }
+      },
+      "viewsets": {
+        "Cell": {
+          "label": "Grid cell",
+          "views": ["Cell-Section"],
+          "hridField": "hridCell"
+        },
+        "Sample": {
+          "label": "Sample",
+          "views": ["Sample-Section"],
+          "hridField": "hridSample"
+        }
+      },
+      "visible_types": ["Cell", "Sample"],
+      "settings": {
+        "showQrCodeButton": false
+      },
+      "schemaVersion": "7.0"
+    },
+    "plans": [
+      {
+        "planId": "field-cells",
+        "planType": "Counted",
+        "label": "Field",
+        "formType": "Cell",
+        "numberRequired": 4,
+        "allowExtraRecords": false
+      },
+      {
+        "planId": "lab-samples",
+        "planType": "ListOfRecords",
+        "label": "Lab",
+        "formType": "Sample",
+        "records": {
+          "bag-1": {
+            "Sample-Code": "AA1-L1"
+          },
+          "bag-2": {
+            "Sample-Code": "AA1-L2"
+          }
+        },
+        "allowExtraRecords": true
+      }
+    ],
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0.0",
+        "purposeMarkdown": "Multi-plan seam spike",
+        "projectLeadLabel": "",
+        "leadInstitution": ""
+      }
+    }
+  }
+}

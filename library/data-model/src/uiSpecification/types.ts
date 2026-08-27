@@ -377,7 +377,10 @@ export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
 export const NotebookDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
+  /** Single-plan form, kept for notebooks written before `plans`. */
   plan: RegisteredPlanSchema.optional(),
+  /** The notebook's plans, one workflow each. Read via `getNotebookPlans`. */
+  plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
 
@@ -388,7 +391,10 @@ export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
 export const CompiledNotebookDefinitionSchema = z.object({
   uiSpec: CompiledNotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
+  /** Single-plan form, kept for notebooks written before `plans`. */
   plan: RegisteredPlanSchema.optional(),
+  /** The notebook's plans, one workflow each. Read via `getNotebookPlans`. */
+  plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type CompiledNotebookDefinition = z.infer<
   typeof CompiledNotebookDefinitionSchema

@@ -2,6 +2,7 @@ import {
   type CompiledNotebookUiSpec,
   type MinimalRecordMetadata,
   type RecordStatusReport,
+  type RegisteredPlan,
 } from '@faims3/data-model';
 import {Project} from '../../../context/slices/projectSlice';
 import {RecordStatus} from '../../../utils/recordAudit';
@@ -76,8 +77,15 @@ interface ComponentProps {
 
 export interface NotebookViewComponentProps {
   project: Project;
-  // The tab slug from the URL, which a view resolves with `useResolveTab`
+  // The tab slug from the URL, which a view resolves with `useResolveTab`.
+  // Scoped to this view's plan: with several plans the URL segment also names
+  // the plan, and that prefix is stripped before it reaches the view.
   tab?: string;
+  // The plan instance this view is rendering. A notebook may carry several, so
+  // a view must read this rather than reaching into the project for `plan`.
+  plan?: RegisteredPlan;
+  // Addresses `plan` within the notebook, for routes and plan references
+  planId?: string;
   uiSpecification: CompiledNotebookUiSpec;
   records: RecordListProps;
   actions: ActionProps;

@@ -29,7 +29,7 @@ import {
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
-import {getNotebookView} from './plans';
+import {getNotebookView, PlanSwitcher, resolvePlanViews} from './plans';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {useCallback, useMemo, useState} from 'react';
 import {config} from '../../../buildconfig';
@@ -40,6 +40,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import NotebookSettings from './settings';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
+import {Box} from '@mui/material';
 
 type NotebookViewProps = {
   project: Project;
@@ -249,9 +250,35 @@ function NotebookViewWithSpec({
     [navigate, project.serverId, project.projectId, tab]
   );
 
-  // does this notebook have a plan, and do we have a view component for it
-  const planType = project.uiDefinition?.plan?.planType;
-  const PlanComponent = getNotebookView(planType);
+  // Every plan the notebook carries that has a view registered for it, and
+  // which one the route addresses.
+  const {
+    plans: planViews,
+    isMultiPlan,
+    active: activePlan,
+    planTab,
+  } = useMemo(
+    () =>
+      resolvePlanViews({
+        uiDefinition: project.uiDefinition,
+        tab,
+        getView: getNotebookView,
+      }),
+    [project.uiDefinition, tab]
+  );
+
+  // A plan view sets its own slug; re-prefix it so the URL keeps naming the
+  // plan on screen.
+  const setPlanTab = useCallback(
+    (nextTab: string) => {
+      setTab(
+        isMultiPlan && activePlan
+          ? ROUTES.joinPlanTab(activePlan.planId, nextTab)
+          : nextTab
+      );
+    },
+    [setTab, isMultiPlan, activePlan]
+  );
 
   // Completion roll-up per plan-claiming record, for its cell's status; only a
   // registered plan view can display it, so gate the walks on one
@@ -259,20 +286,22 @@ function NotebookViewWithSpec({
     projectId: project.projectId,
     uiSpecification,
     records: records.allRecords,
-    enabled: PlanComponent !== undefined,
+    enabled: planViews.length > 0,
   });
 
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
-      tab,
+      tab: planTab,
+      plan: activePlan?.plan,
+      planId: activePlan?.planId,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,
         setQuery,
         createRecord,
         navigateToRecord,
-        setTab,
+        setTab: setPlanTab,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -328,12 +357,31 @@ function NotebookViewWithSpec({
       records,
       recordStatus.data,
       planRecordStatusReports,
+      planTab,
+      activePlan,
+      setPlanTab,
     ]
   );
 
   // delegate to the plan view component
-  if (PlanComponent) {
-    return <PlanComponent {...props} />;
+  if (activePlan) {
+    const {Component} = activePlan;
+    return isMultiPlan ? (
+      <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+        <PlanSwitcher
+          plans={planViews}
+          activePlanId={activePlan.planId}
+          onSelect={(planId: string) => {
+            const target = planViews.find(p => p.planId === planId);
+            // No slug: the plan resolves its own default and rewrites the URL.
+            if (target) setTab(target.planId + ROUTES.PLAN_TAB_SEPARATOR);
+          }}
+        />
+        <Component {...props} />
+      </Box>
+    ) : (
+      <Component {...props} />
+    );
   }
 
   // fallback to the default notebook component
