@@ -63,7 +63,7 @@ export const notebookDefinitionToDesignerHistory = (
     future: [],
   },
   planTemplate: definition.planTemplate ?? null,
-  plan: definition.plan ?? null,
+  plans: definition.plans ?? null,
 });
 
 /** Flat definition for API PUT / export (present UI spec only). */
@@ -74,7 +74,7 @@ export const designerHistoryToNotebookDefinition = (
   uiSpec: notebook.uiSpec.present,
   // null becomes an absent key so saved JSON stays clean
   ...(notebook.planTemplate ? {planTemplate: notebook.planTemplate} : {}),
-  // Carried through untouched: the designer does not author an instantiated
-  // plan, and dropping it here would strip it from the saved notebook
-  ...(notebook.plan ? {plan: notebook.plan} : {}),
+  // Carried through untouched: the designer does not author instantiated
+  // plans, and dropping them here would strip them from the saved notebook
+  ...(notebook.plans ? {plans: notebook.plans} : {}),
 });

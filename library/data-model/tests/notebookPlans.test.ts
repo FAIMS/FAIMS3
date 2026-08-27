@@ -27,23 +27,16 @@ const list = (extra: Record<string, unknown> = {}) =>
   }) as any;
 
 describe('getNotebookPlans', () => {
-  it('is empty for a notebook with no plan', () => {
+  it('is empty for a notebook with no plans', () => {
     expect(getNotebookPlans({})).toEqual([]);
+    expect(getNotebookPlans({plans: []})).toEqual([]);
     expect(getNotebookPlans(undefined)).toEqual([]);
   });
 
-  it('lifts a single legacy plan into the list', () => {
+  it('derives an id for a single plan', () => {
     const plan = counted();
-    expect(getNotebookPlans({plan})).toEqual([
+    expect(getNotebookPlans({plans: [plan]})).toEqual([
       {planId: COUNTED_PLAN_TYPE, plan},
-    ]);
-  });
-
-  it('prefers the list when a notebook carries both slots', () => {
-    const legacy = counted();
-    const current = list();
-    expect(getNotebookPlans({plan: legacy, plans: [current]})).toEqual([
-      {planId: LIST_OF_RECORDS_PLAN_TYPE, plan: current},
     ]);
   });
 

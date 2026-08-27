@@ -126,9 +126,9 @@ export type NotebookWithHistory = {
   uiSpec: StateWithHistory<NotebookUISpec>;
   // null when absent; only templates carry a plan template
   planTemplate: PlanTemplate | null;
-  // null when absent; only notebooks carry an instantiated plan, and the
-  // designer carries it through untouched rather than editing it
-  plan: RegisteredPlan | null;
+  // null when absent; only notebooks carry instantiated plans, and the
+  // designer carries them through untouched rather than editing them
+  plans: RegisteredPlan[] | null;
 };
 
 export const defaultNotebookInformation = (): NotebookInformation => ({
@@ -162,7 +162,7 @@ export const initialState: AppState = {
       future: [],
     },
     planTemplate: null,
-    plan: null,
+    plans: null,
   },
   mode: 'project',
 };

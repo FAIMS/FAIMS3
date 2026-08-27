@@ -75,7 +75,7 @@ export const PLAN_TAB_SEPARATOR = '.';
 /**
  * Splits a route tab segment into the plan it addresses and that plan's own
  * slug. An unprefixed segment names no plan, which the caller reads as the
- * first plan so a bare slug keeps working.
+ * notebook's first plan.
  */
 export const splitPlanTab = (
   tab: string | undefined

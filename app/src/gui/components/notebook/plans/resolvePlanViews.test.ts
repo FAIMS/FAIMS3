@@ -69,24 +69,14 @@ describe('resolvePlanViews with no plan view', () => {
 });
 
 describe('resolvePlanViews with one plan', () => {
-  it('passes the tab slug through untouched', () => {
+  it('reads the plan-qualified tab segment', () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [counted()]},
-      tab: 'details',
+      tab: `${COUNTED_PLAN_TYPE}.details`,
       getView,
     });
     expect(r.isMultiPlan).toBe(false);
     expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
-    expect(r.planTab).toBe('details');
-  });
-
-  it('treats a legacy singular plan the same way', () => {
-    const r = resolvePlanViews({
-      uiDefinition: {plan: counted()},
-      tab: 'details',
-      getView,
-    });
-    expect(r.isMultiPlan).toBe(false);
     expect(r.planTab).toBe('details');
   });
 
@@ -95,7 +85,7 @@ describe('resolvePlanViews with one plan', () => {
       uiDefinition: {
         plans: [counted(), {planType: 'Unregistered'} as RegisteredPlan],
       },
-      tab: 'details',
+      tab: `${COUNTED_PLAN_TYPE}.details`,
       getView,
     });
     expect(r.isMultiPlan).toBe(false);
@@ -138,8 +128,8 @@ describe('resolvePlanViews with several plans', () => {
     expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
   });
 
-  it('reads a bare slug as belonging to the first plan', () => {
-    // An old single-plan link keeps working when a second plan is added.
+  it('reads a slug naming no plan as belonging to the first', () => {
+    // A hand-edited or truncated URL lands somewhere rather than nowhere.
     const r = resolvePlanViews({uiDefinition, tab: 'details', getView});
     expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
     expect(r.planTab).toBe('details');

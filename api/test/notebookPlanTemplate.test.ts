@@ -182,12 +182,14 @@ describe('notebook creation from template with planTemplate', () => {
       allowExtraRecords: false,
     });
 
-    expect(project.uiSpecification.plan).toEqual({
-      planType: COUNTED_PLAN_TYPE,
-      formType: 'artefact-form',
-      numberRequired: 3,
-      allowExtraRecords: false,
-    });
+    expect(project.uiSpecification.plans).toEqual([
+      {
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'artefact-form',
+        numberRequired: 3,
+        allowExtraRecords: false,
+      },
+    ]);
   });
 
   it('creates a notebook with a list-of-records plan', async () => {
@@ -198,12 +200,14 @@ describe('notebook creation from template with planTemplate', () => {
       allowExtraRecords: true,
     });
 
-    expect(project.uiSpecification.plan).toEqual({
-      planType: LIST_OF_RECORDS_PLAN_TYPE,
-      formType: 'survey-form',
-      records: {Record1: {Name: 'Record 1', Location: 'Trench A'}},
-      allowExtraRecords: true,
-    });
+    expect(project.uiSpecification.plans).toEqual([
+      {
+        planType: LIST_OF_RECORDS_PLAN_TYPE,
+        formType: 'survey-form',
+        records: {Record1: {Name: 'Record 1', Location: 'Trench A'}},
+        allowExtraRecords: true,
+      },
+    ]);
   });
 
   it('rejects notebook create when plan is malformed', async () => {
@@ -252,12 +256,14 @@ describe('notebook creation from template with planTemplate', () => {
 
     const project = await getProjectById(notebookId);
     expect(project.templateId).toBe(template._id);
-    expect(project.uiSpecification.plan).toEqual({
-      planType: COUNTED_PLAN_TYPE,
-      formType: 'artefact-form',
-      numberRequired: 3,
-      allowExtraRecords: false,
-    });
+    expect(project.uiSpecification.plans).toEqual([
+      {
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'artefact-form',
+        numberRequired: 3,
+        allowExtraRecords: false,
+      },
+    ]);
   });
 
   it('rejects notebook creation when planConfig is missing for a planTemplate', async () => {
@@ -337,15 +343,17 @@ describe('notebook creation from template with planTemplate', () => {
       .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
 
     const project = await getProjectById(notebookId);
-    expect(project.uiSpecification.plan).toEqual({
-      planType: LIST_OF_RECORDS_PLAN_TYPE,
-      formType: 'survey-form',
-      records: {
-        Record1: {Name: 'Record 1', Location: 'Trench A'},
-        Record2: {Name: 'Record 2'},
+    expect(project.uiSpecification.plans).toEqual([
+      {
+        planType: LIST_OF_RECORDS_PLAN_TYPE,
+        formType: 'survey-form',
+        records: {
+          Record1: {Name: 'Record 1', Location: 'Trench A'},
+          Record2: {Name: 'Record 2'},
+        },
+        allowExtraRecords: true,
       },
-      allowExtraRecords: true,
-    });
+    ]);
   });
 
   it('rejects notebook creation when the stored planTemplate is malformed', async () => {
@@ -432,11 +440,13 @@ describe('notebook creation from template with planTemplate', () => {
       .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
 
     const project = await getProjectById(notebookId);
-    expect(project.uiSpecification.plan).toEqual({
-      planType: COUNTED_PLAN_TYPE,
-      formType: 'updated-form',
-      numberRequired: 4,
-      allowExtraRecords: false,
-    });
+    expect(project.uiSpecification.plans).toEqual([
+      {
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'updated-form',
+        numberRequired: 4,
+        allowExtraRecords: false,
+      },
+    ]);
   });
 });

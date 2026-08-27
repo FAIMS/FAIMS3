@@ -272,12 +272,10 @@ function NotebookViewWithSpec({
   const setPlanTab = useCallback(
     (nextTab: string) => {
       setTab(
-        isMultiPlan && activePlan
-          ? ROUTES.joinPlanTab(activePlan.planId, nextTab)
-          : nextTab
+        activePlan ? ROUTES.joinPlanTab(activePlan.planId, nextTab) : nextTab
       );
     },
-    [setTab, isMultiPlan, activePlan]
+    [setTab, activePlan]
   );
 
   // Completion roll-up per plan-claiming record, for its cell's status; only a

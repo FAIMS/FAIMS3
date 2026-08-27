@@ -7,12 +7,8 @@ export interface IdentifiedPlan {
   plan: RegisteredPlan;
 }
 
-/**
- * The plan slots a notebook definition may carry. `plans` is canonical;
- * `plan` is the single-plan form kept for notebooks written before the list.
- */
+/** The plan slot a notebook definition may carry. */
 export interface NotebookPlanSlots {
-  plan?: RegisteredPlan;
   plans?: RegisteredPlan[];
 }
 
@@ -30,22 +26,17 @@ const deriveId = (plan: RegisteredPlan, taken: Set<string>): string => {
 };
 
 /**
- * A notebook's plans as an addressable list, reading `plans` when present and
- * otherwise lifting the single `plan`. Ids come from each plan's own `planId`
- * where it has one; the rest are derived and stay stable for a given order.
+ * A notebook's plans as an addressable list. Ids come from each plan's own
+ * `planId` where it has one; the rest are derived and stay stable for a given
+ * order.
  *
- * Every consumer goes through this rather than reading either slot directly,
- * so the single-plan form has one place to disappear from later.
+ * Every consumer goes through this rather than reading the slot directly, so
+ * the id rules hold everywhere a plan is addressed.
  */
 export const getNotebookPlans = (
   definition: NotebookPlanSlots | undefined
 ): IdentifiedPlan[] => {
-  if (!definition) return [];
-  const source = definition.plans?.length
-    ? definition.plans
-    : definition.plan
-      ? [definition.plan]
-      : [];
+  const source = definition?.plans ?? [];
 
   // Explicit ids are claimed first so a derived id cannot take one of them.
   const taken = new Set<string>(

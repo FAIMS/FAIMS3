@@ -664,7 +664,7 @@ export const createNotebookFromTemplate = async ({
         `The instantiated plan for plan type ${planType} is invalid: ${planParseResult.error.message}`
       );
     }
-    uiSpecification.plan = planParseResult.data;
+    uiSpecification.plans = [planParseResult.data];
   }
 
   return await createNotebook({

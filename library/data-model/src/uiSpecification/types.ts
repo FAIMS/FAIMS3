@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {PlanTemplateSchema} from '../plans/types';
 // Barrel import (not '../plans/planTypeMap') so the per-plan PlanTypeMap
-// augmentations are in scope here, making the stored `plan` a narrowable union.
+// augmentations are in scope here, making a stored plan a narrowable union.
 import {RegisteredPlanSchema} from '../plans';
 import {ExprValue} from './expressions';
 
@@ -368,17 +368,15 @@ export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
 /*
  * Notebook definition is what is stored in the DB and downloaded/uploaded as JSON.
  *
- * Todo: the plan is attached to both templates and notebooks since they currently share the
+ * Todo: plans are attached to both templates and notebooks since they currently share the
  * same type but our intention is that templates will have a plan 'schema' while the notebook
- * has the actual plan. This means we probably want to split the NotebookDefinition type in two
+ * has the actual plans. This means we probably want to split the NotebookDefinition type in two
  * at some point. Until we work out how to do this we can use the plan slot in the template for
  * the schema.
  */
 export const NotebookDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** Single-plan form, kept for notebooks written before `plans`. */
-  plan: RegisteredPlanSchema.optional(),
   /** The notebook's plans, one workflow each. Read via `getNotebookPlans`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
@@ -391,8 +389,6 @@ export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
 export const CompiledNotebookDefinitionSchema = z.object({
   uiSpec: CompiledNotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** Single-plan form, kept for notebooks written before `plans`. */
-  plan: RegisteredPlanSchema.optional(),
   /** The notebook's plans, one workflow each. Read via `getNotebookPlans`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });

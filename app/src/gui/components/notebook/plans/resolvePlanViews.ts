@@ -11,7 +11,7 @@ export interface PlanView<C> {
 export interface ResolvedPlanViews<C> {
   /** Every plan that has a view, in the order the notebook declares them. */
   plans: PlanView<C>[];
-  /** Whether the plan id has to appear in the route's tab segment. */
+  /** Whether to offer a switcher between plans. */
   isMultiPlan: boolean;
   /** The plan on screen, absent when no plan has a registered view. */
   active?: PlanView<C>;
@@ -22,18 +22,15 @@ export interface ResolvedPlanViews<C> {
 /**
  * Works out which of a notebook's plans is on screen and which tab slug belongs
  * to it. Plans without a registered view are skipped rather than shown as an
- * empty tab, and an unknown plan id falls back to the first plan so a stale
- * link still lands somewhere.
- *
- * With one plan the tab segment stays that plan's own slug, unchanged from
- * before a notebook could carry several, so existing record links resolve.
+ * empty tab, and a tab segment naming no plan, or an unknown one, falls back to
+ * the first plan so a stale link still lands somewhere.
  */
 export const resolvePlanViews = <C>({
   uiDefinition,
   tab,
   getView,
 }: {
-  uiDefinition: {plan?: RegisteredPlan; plans?: RegisteredPlan[]} | undefined;
+  uiDefinition: {plans?: RegisteredPlan[]} | undefined;
   tab: string | undefined;
   getView: (planType: RegisteredPlan['planType']) => C | undefined;
 }): ResolvedPlanViews<C> => {
@@ -45,12 +42,7 @@ export const resolvePlanViews = <C>({
     }))
     .filter((entry): entry is PlanView<C> => entry.Component !== undefined);
 
-  const isMultiPlan = plans.length > 1;
-  if (!isMultiPlan) {
-    return {plans, isMultiPlan, active: plans[0], planTab: tab};
-  }
-
   const {planId, slug} = splitPlanTab(tab);
   const active = plans.find(p => p.planId === planId) ?? plans[0];
-  return {plans, isMultiPlan, active, planTab: slug};
+  return {plans, isMultiPlan: plans.length > 1, active, planTab: slug};
 };
