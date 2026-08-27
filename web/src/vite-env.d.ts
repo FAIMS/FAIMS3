@@ -14,4 +14,6 @@ interface ImportMetaEnv {
   readonly VITE_DELETE_ON_DEACTIVATION?: string;
   /** Comma-separated team Role enum values to hide from team-role dropdowns */
   readonly VITE_EXCLUDED_TEAM_ROLES?: string;
+  /** When false, hide Add Plan in the designer unless the template already has one */
+  readonly VITE_ENABLE_PLANS_IN_DESIGNER?: string;
 }

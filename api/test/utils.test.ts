@@ -1,5 +1,9 @@
 import {describe, expect, it} from 'vitest';
-import {simpleHash} from '../src/couchdb/export/utils';
+import {
+  contentDispositionAttachment,
+  sanitizeDownloadFilename,
+  simpleHash,
+} from '../src/couchdb/export/utils';
 
 describe('simpleHash', () => {
   it('returns deterministic results', () => {
@@ -55,5 +59,55 @@ describe('simpleHash', () => {
     const a = simpleHash('test1', 8);
     const b = simpleHash('test2', 8);
     expect(a).not.toBe(b);
+  });
+});
+
+describe('sanitizeDownloadFilename', () => {
+  it('slugifies ordinary form labels', () => {
+    expect(sanitizeDownloadFilename('Site Survey')).toBe('site_survey');
+  });
+
+  it('strips quotes used to break Content-Disposition', () => {
+    expect(sanitizeDownloadFilename('Form"; filename="evil.html')).toBe(
+      'form_filenameevilhtml'
+    );
+  });
+
+  it('strips CR/LF header-injection characters', () => {
+    expect(sanitizeDownloadFilename('Form\r\nX-Injected: yes')).toBe(
+      'form_x-injected_yes'
+    );
+  });
+
+  it('falls back when the label is only unsafe characters', () => {
+    expect(sanitizeDownloadFilename('"""')).toBe('export');
+    expect(sanitizeDownloadFilename('"""', 'form')).toBe('form');
+  });
+});
+
+describe('contentDispositionAttachment', () => {
+  it('quotes a safe filename', () => {
+    expect(contentDispositionAttachment('site_survey-export.csv')).toBe(
+      'attachment; filename="site_survey-export.csv"'
+    );
+  });
+
+  it('cannot be terminated by a double-quote in the form name', () => {
+    const header = contentDispositionAttachment('Form"; filename="pwned.html');
+    expect(header).toBe('attachment; filename="Form_filename_pwned.html"');
+    expect(header).not.toContain('"pwned');
+    expect(header.match(/filename="/g)).toHaveLength(1);
+  });
+
+  it('strips CR/LF so extra headers cannot be injected', () => {
+    const header = contentDispositionAttachment('name\r\nSet-Cookie: a=b.csv');
+    expect(header).not.toMatch(/[\r\n]/);
+    expect(header).toBe('attachment; filename="name_Set-Cookie_a_b.csv"');
+  });
+
+  it('preserves a single extension after sanitising', () => {
+    const header = contentDispositionAttachment('survey-export.csv');
+    expect(header).toMatch(/\.csv"$/);
+    expect(header).not.toMatch(/\.html/);
   });
 });

@@ -49,7 +49,7 @@ import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink, useParams} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -106,6 +106,9 @@ const SelectedRecordPopoverContent = ({
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
+  const {tab} = useParams<{tab?: string}>();
+  const notebook = {serverId, projectId: project_id, tab};
+
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
   const [buttonInteractionAllowed, setButtonInteractionAllowed] =
@@ -159,8 +162,7 @@ const SelectedRecordPopoverContent = ({
         <Button
           component={RouterLink}
           to={ROUTES.getViewRecordRoute({
-            serverId,
-            projectId: project_id,
+            ...notebook,
             recordId: feature.record_id,
           })}
           size="small"
@@ -189,8 +191,7 @@ const SelectedRecordPopoverContent = ({
     hydrated.record.created;
 
   const viewUrl = ROUTES.getViewRecordRoute({
-    serverId,
-    projectId: project_id,
+    ...notebook,
     recordId: feature.record_id,
     revisionId: feature.revision_id,
   });
