@@ -1,7 +1,9 @@
-import {describe, expect, it} from 'vitest';
-import {compileUiSpecConditionals, UiSpecModel} from '@faims3/data-model';
-import {recomputeDerivedFields} from './templatedFields';
-import {recomputeComputedFields} from './computedFields';
+import {
+  compileUiSpecConditionals,
+  UiSpecModel,
+  recomputeDerivedFields,
+  recomputeComputedFields,
+} from '../src';
 
 // Test links one Calibration record via a single-link Linked field.
 const makeSpec = (): UiSpecModel => {

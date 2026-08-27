@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type {AddressType, AddressValue} from '../addressTypes';
+import type {AddressType, AddressValue} from '@faims3/data-model';
 import type {
   AutosuggestRequestOptions,
   AutosuggestSuggestion,

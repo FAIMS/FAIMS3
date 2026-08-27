@@ -1,9 +1,28 @@
-import {
-  DataEngine,
-  getRelatedRecordFields,
-  ValuesObject,
-} from '@faims3/data-model';
-import {logWarn} from '../../logging';
+/*
+ * Copyright 2026 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: resolveRelatedValues.ts
+ * Description:
+ *   Resolves the raw values of records linked through single-link Linked
+ *   Related Records fields. Lives in @faims3/data-model so the app and
+ *   server-side evaluation share one implementation.
+ */
+
+import {DataEngine} from '../databaseEngine/engine';
+import {getRelatedRecordFields, ValuesObject} from '../uiSpecification';
+import {logWarn} from '../logging';
 
 /** A single stored link, as written by the Related Records field. */
 type LinkEntry = {record_id?: string};

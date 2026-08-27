@@ -25,6 +25,10 @@ export const logError = (error: any) => {
   console.error(error);
 };
 
+export const logWarn = (...args: unknown[]) => {
+  console.warn(...args);
+};
+
 let attachmentSaveTraceEnabled = false;
 
 /** Enable or disable attachment-save trace output (typically from DEBUG_APP). */

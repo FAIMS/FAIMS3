@@ -1,6 +1,4 @@
-import type {DataEngine, UiSpecModel} from '@faims3/data-model';
-import {describe, expect, it} from 'vitest';
-import {resolveRelatedValues} from './resolveRelatedValues';
+import {resolveRelatedValues, DataEngine, UiSpecModel} from '../src';
 
 const meta = {
   annotation: {include: false, label: 'annotation'},
