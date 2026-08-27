@@ -22,7 +22,6 @@
 
 import {
   CompiledUiSpecModel,
-  ExprType,
   ExprValue,
   FAIMS_TYPE_TO_EXPR_TYPE,
   getFieldToIdsMap,
@@ -33,6 +32,7 @@ import {
 import {logWarn} from '../logging';
 import {RecordContext} from './recordContext';
 import {TEMPLATED_STRING_FIELD_NAME} from './templatedFields';
+import {coerceToExprType, hasComputedValueChanged} from './valueUtils';
 
 // Computed field components and the value type each produces.
 const COMPUTED_FIELD_NAMES = ['ComputedNumber', 'ComputedText'];
@@ -116,39 +116,13 @@ export function recomputeComputedFields({
     }
   }
 
-  // Coerces a raw value to the given expression type, or null when missing or
-  // mistyped. Numbers may arrive as strings from form controls; other types
-  // are strict. Empty string counts as missing so partially filled forms stay
-  // blank.
-  const coerceValue = (
-    raw: unknown,
-    exprType: ExprType | undefined
-  ): ExprValue | null => {
-    if (!exprType) {
-      return null;
-    }
-    if (raw === undefined || raw === null || raw === '') {
-      return null;
-    }
-    switch (exprType) {
-      case 'number': {
-        const n = typeof raw === 'number' ? raw : Number(raw);
-        return Number.isNaN(n) ? null : n;
-      }
-      case 'string':
-        return typeof raw === 'string' ? raw : null;
-      case 'boolean':
-        return typeof raw === 'boolean' ? raw : null;
-    }
-  };
-
   // Resolves a local field name to a typed value, or null when missing,
   // mistyped, or itself derived.
   const resolveField = (name: string): ExprValue | null => {
     if (derivedFields.has(name)) {
       return null;
     }
-    return coerceValue(
+    return coerceToExprType(
       values[name],
       FAIMS_TYPE_TO_EXPR_TYPE[uiSpecification.fields[name]?.['type-returned']]
     );
@@ -164,7 +138,7 @@ export function recomputeComputedFields({
     if (parentFieldId === null) {
       return null;
     }
-    return coerceValue(
+    return coerceToExprType(
       context?.parentValues?.[parentFieldId],
       FAIMS_TYPE_TO_EXPR_TYPE[
         uiSpecification.fields[parentFieldId]?.['type-returned']
@@ -210,14 +184,7 @@ export function recomputeComputedFields({
       result = null;
     }
 
-    // Normalise previous value so null and empty compare equal.
-    const previous = values[fieldName];
-    const prev =
-      previous === undefined || previous === null || previous === ''
-        ? null
-        : (previous as ExprValue);
-
-    if (!Object.is(prev, result)) {
+    if (hasComputedValueChanged(values[fieldName], result)) {
       updates[fieldName] = result;
       changes = true;
     }
