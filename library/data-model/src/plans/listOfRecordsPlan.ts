@@ -64,6 +64,7 @@ export const instantiateListPlan = ({
   }
 
   return {
+    planId: template.planId,
     planType: LIST_OF_RECORDS_PLAN_TYPE,
     formType: template.formType,
     records: records,

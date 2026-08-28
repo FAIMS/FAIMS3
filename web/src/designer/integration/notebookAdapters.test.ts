@@ -29,9 +29,14 @@ const createDefinition = (): Notebook => ({
   },
 });
 
-const countedTemplate = {planType: 'Counted', formType: 'FORM1'};
+const countedTemplate = {
+  planId: 'Counted',
+  planType: 'Counted',
+  formType: 'FORM1',
+};
 
 const countedPlan = {
+  planId: 'Counted',
   planType: 'Counted' as const,
   formType: 'FORM1',
   numberRequired: 3,

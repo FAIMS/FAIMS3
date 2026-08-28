@@ -4,11 +4,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo, useRequiredUser} from '@/hooks/auth-hooks';
 import {useGetTeams, useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {
-  Action,
-  getPlanTemplates,
-  PostCreateNotebookInput,
-} from '@faims3/data-model';
+import {Action, PostCreateNotebookInput} from '@faims3/data-model';
 import {
   optionalRootDescriptionField,
   rootDescriptionForApi,
@@ -73,7 +69,7 @@ export function CreateProjectFromTemplateForm({
 
   // Plan templates are instantiated from configs the dashboard cannot yet
   // collect, so creating from such a template has to go through the API.
-  const planTemplates = getPlanTemplates(template?.uiSpecification);
+  const planTemplates = template?.uiSpecification?.planTemplates ?? [];
 
   const teamLabel = `Create ${config.notebookName} in this team${
     canCreateGlobally ? ' (optional)' : ''

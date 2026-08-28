@@ -314,7 +314,7 @@ export const CreateNotebookFromTemplateSchema = z.object({
   teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
   /**
    * Config for instantiating each of the template's plan templates, keyed by
-   * the plan id `getPlanTemplates` reports for it.
+   * that plan template's own `planId`.
    */
   planConfigs: z
     .record(z.string(), z.record(z.string(), z.unknown()))

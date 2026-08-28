@@ -55,6 +55,7 @@ const renderDialog = (recordFields: string[]) => {
         open
         uiSpec={store.getState().notebook.uiSpec.present}
         initialTemplate={{
+          planId: LIST_OF_RECORDS_PLAN_TYPE,
           planType: LIST_OF_RECORDS_PLAN_TYPE,
           formType: 'Primary',
           recordFields,

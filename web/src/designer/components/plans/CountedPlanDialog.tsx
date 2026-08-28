@@ -74,7 +74,7 @@ export const CountedPlanDialog = ({
   }, [open, initialTemplate, viewSets]);
 
   const handleSave = () => {
-    const result = countedPlanTemplateSchema.safeParse({
+    const result = countedPlanTemplateSchema.omit({planId: true}).safeParse({
       planType: COUNTED_PLAN_TYPE,
       formType,
     });

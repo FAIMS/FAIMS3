@@ -5,43 +5,68 @@ import z from 'zod';
 // or plan templates
 
 /**
+ * Characters that would split the route segment a plan is addressed by. `%`
+ * joins them because the router decodes an escape back into whatever it hid.
+ */
+const ROUTE_SAFE = /^[^./\\?#%]+$/;
+
+/**
  * A plan id addresses one plan within a notebook, including as a single
  * segment of a route, so it may not carry the characters that would split it.
  */
 export const PlanIdSchema = z
   .string()
   .min(1)
-  .regex(/^[^./\\?#]+$/, 'A plan id may not contain . / \\ ? or #');
+  .regex(ROUTE_SAFE, 'A plan id may not contain . / \\ ? # or %');
+
+/** A plan type keys the registry, and `derivePlanId` mints plan ids from it. */
+export const PlanTypeSchema = z
+  .string()
+  .min(1)
+  .regex(ROUTE_SAFE, 'A plan type may not contain . / \\ ? # or %');
 
 // A plan template is an optional part of a Notebook Template and will
 // be used to instantiate a plan when a notebook is created from the template.
 export const PlanTemplateSchema = z
   .object({
-    planType: z.string(),
+    planType: PlanTypeSchema,
     /**
      * Identifies this plan template among the template's plan templates, and
-     * keys the config supplied for it at notebook creation. Optional; where
-     * absent `getPlanTemplates` derives one.
+     * keys the config supplied for it at notebook creation. Minted once when
+     * the plan is authored, so reordering the list cannot re-address it.
      */
-    planId: PlanIdSchema.optional(),
+    planId: PlanIdSchema,
     /** Names the plan on the notebook's plan chooser. */
     label: z.string().optional(),
   })
   .passthrough();
 export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
 
+const AuthoredPlanTemplateSchema = PlanTemplateSchema.omit({planId: true});
+
+/**
+ * A plan template as authored, before the id that addresses it is minted. Plan
+ * dialogs produce this; the designer store mints the id and keeps it.
+ *
+ * `planId?: never` rejects a dialog that writes an id as a literal, but `omit`
+ * leaves the passthrough catchall behind, so a parsed value can still carry one
+ * past the type. The guarantee is the store: both reducers write `planId` last.
+ */
+export type AuthoredPlanTemplate = z.infer<
+  typeof AuthoredPlanTemplateSchema
+> & {planId?: never};
+
 // A plan is an optional part of a Notebook Definition and can be used
 // to guide the data collection workflow.  The plan is instantiated
 // from the plan template when a notebook is created from a template.
 export const PlanSchema = z
   .object({
-    planType: z.string(),
+    planType: PlanTypeSchema,
     /**
-     * Identifies this plan among the notebook's plans. Optional in stored
-     * notebooks so hand-written and legacy single-plan notebooks stay terse;
-     * `getNotebookPlans` assigns one where absent.
+     * Identifies this plan among the notebook's plans, and addresses it in
+     * routes and record references. Carried over from the plan template.
      */
-    planId: PlanIdSchema.optional(),
+    planId: PlanIdSchema,
     /**
      * Names the plan on the notebook's plan chooser. Carried over from the plan
      * template at instantiation; falls back to the plan type's own label.
@@ -84,6 +109,7 @@ export type PlanTypeDefinition<
   templateSchema: TTemplateSchema;
   configSchema: TConfigSchema;
   planSchema: TPlanSchema;
+  /** Builds one notebook's plan, taking its id from the plan template. */
   instantiatePlan: ({
     template,
     config,

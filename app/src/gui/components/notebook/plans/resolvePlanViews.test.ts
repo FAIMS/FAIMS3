@@ -8,9 +8,17 @@ import {joinPlanTab, splitPlanTab} from '../../../../constants/routes';
 import {resolvePlanViews} from './resolvePlanViews';
 
 const counted = (extra: Record<string, unknown> = {}) =>
-  ({planType: COUNTED_PLAN_TYPE, ...extra}) as RegisteredPlan;
+  ({
+    planId: COUNTED_PLAN_TYPE,
+    planType: COUNTED_PLAN_TYPE,
+    ...extra,
+  }) as RegisteredPlan;
 const list = (extra: Record<string, unknown> = {}) =>
-  ({planType: LIST_OF_RECORDS_PLAN_TYPE, ...extra}) as RegisteredPlan;
+  ({
+    planId: LIST_OF_RECORDS_PLAN_TYPE,
+    planType: LIST_OF_RECORDS_PLAN_TYPE,
+    ...extra,
+  }) as RegisteredPlan;
 
 /** Stands in for the app registry; returns a marker per plan type. */
 const getView = (planType: string) =>
@@ -60,7 +68,11 @@ describe('resolvePlanViews with no plan view', () => {
 
   it('skips a plan whose type has no registered view', () => {
     const r = resolvePlanViews({
-      uiDefinition: {plans: [{planType: 'Unregistered'} as RegisteredPlan]},
+      uiDefinition: {
+        plans: [
+          {planId: 'Unregistered', planType: 'Unregistered'} as RegisteredPlan,
+        ],
+      },
       tab: undefined,
       getView,
     });
@@ -78,7 +90,7 @@ describe('resolvePlanViews with one plan', () => {
       getView,
     });
     expect(r.showChooser).toBe(false);
-    expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
+    expect(r.active?.plan.planId).toBe(COUNTED_PLAN_TYPE);
     expect(r.planTab).toBe('details');
   });
 
@@ -89,13 +101,16 @@ describe('resolvePlanViews with one plan', () => {
       getView,
     });
     expect(r.showChooser).toBe(false);
-    expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
+    expect(r.active?.plan.planId).toBe(COUNTED_PLAN_TYPE);
   });
 
   it('does not offer a choice when a second plan has no view', () => {
     const r = resolvePlanViews({
       uiDefinition: {
-        plans: [counted(), {planType: 'Unregistered'} as RegisteredPlan],
+        plans: [
+          counted(),
+          {planId: 'Unregistered', planType: 'Unregistered'} as RegisteredPlan,
+        ],
       },
       tab: `${COUNTED_PLAN_TYPE}.details`,
       getView,
@@ -109,7 +124,10 @@ describe('resolvePlanViews with one plan', () => {
     // first plan's records under the second plan's URL.
     const r = resolvePlanViews({
       uiDefinition: {
-        plans: [counted(), {planType: 'Unregistered'} as RegisteredPlan],
+        plans: [
+          counted(),
+          {planId: 'Unregistered', planType: 'Unregistered'} as RegisteredPlan,
+        ],
       },
       tab: 'Unregistered.details',
       getView,
@@ -126,7 +144,7 @@ describe('resolvePlanViews with several plans', () => {
 
   it('lists every plan that has a view, in declared order', () => {
     const r = resolvePlanViews({uiDefinition, tab: undefined, getView});
-    expect(r.plans.map(p => p.planId)).toEqual([
+    expect(r.plans.map(p => p.plan.planId)).toEqual([
       COUNTED_PLAN_TYPE,
       'lab-samples',
     ]);
@@ -139,7 +157,7 @@ describe('resolvePlanViews with several plans', () => {
       tab: 'lab-samples.details',
       getView,
     });
-    expect(r.active?.planId).toBe('lab-samples');
+    expect(r.active?.plan.planId).toBe('lab-samples');
     expect(r.planTab).toBe('details');
   });
 
@@ -166,7 +184,7 @@ describe('resolvePlanViews with several plans', () => {
   it('leaves the slug undefined when the tab names a plan only', () => {
     // The view then resolves its own default and rewrites the URL.
     const r = resolvePlanViews({uiDefinition, tab: 'lab-samples.', getView});
-    expect(r.active?.planId).toBe('lab-samples');
+    expect(r.active?.plan.planId).toBe('lab-samples');
     expect(r.planTab).toBeUndefined();
   });
 

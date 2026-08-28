@@ -10,12 +10,19 @@ import reducer, {
   planTemplateSet,
 } from './planTemplates-reducer';
 
+// What a plan dialog emits: type fields only, no id.
 const counted = {planType: 'Counted', formType: 'FORM1'};
 const listed = {
   planType: 'ListOfRecords',
   formType: 'FORM2',
   recordFields: ['field-a'],
 };
+
+/** The stored row `planTemplateAdded` makes of an authored plan template. */
+const stored = (authored: {planType: string}, planId = authored.planType) => ({
+  ...authored,
+  planId,
+});
 
 describe('planTemplates reducer', () => {
   it('has an empty initial state', () => {
@@ -27,15 +34,23 @@ describe('planTemplates reducer', () => {
       reducer([], planTemplateAdded(counted)),
       planTemplateAdded(listed)
     );
-    expect(state).toEqual([counted, listed]);
+    expect(state).toEqual([stored(counted), stored(listed)]);
+  });
+
+  it('mints an id per plan, disambiguating a second of the same type', () => {
+    const state = reducer(
+      reducer([], planTemplateAdded(counted)),
+      planTemplateAdded(counted)
+    );
+    expect(state.map(p => p.planId)).toEqual(['Counted', 'Counted-2']);
   });
 
   it('replaces one plan template in place on set', () => {
     const state = reducer(
-      [counted, listed],
+      [stored(counted), stored(listed)],
       planTemplateSet({index: 0, planTemplate: listed})
     );
-    expect(state).toEqual([listed, listed]);
+    expect(state).toEqual([{...listed, planId: 'Counted'}, stored(listed)]);
   });
 
   it('keeps the label and id an edit dialog does not author', () => {
@@ -57,7 +72,7 @@ describe('planTemplates reducer', () => {
 
   it('sets and clears a label', () => {
     const labelled = reducer(
-      [counted],
+      [stored(counted)],
       planTemplateLabelled({index: 0, label: 'Artefacts'})
     );
     expect(labelled[0].label).toBe('Artefacts');
@@ -69,17 +84,20 @@ describe('planTemplates reducer', () => {
   });
 
   it('removes by index', () => {
-    expect(reducer([counted, listed], planTemplateRemoved(0))).toEqual([
-      listed,
-    ]);
+    expect(
+      reducer([stored(counted), stored(listed)], planTemplateRemoved(0))
+    ).toEqual([stored(listed)]);
   });
 
   it('moves a plan template and leaves the ends alone', () => {
-    expect(
-      reducer([counted, listed], planTemplateMoved({index: 1, delta: -1}))
-    ).toEqual([listed, counted]);
-    expect(
-      reducer([counted, listed], planTemplateMoved({index: 0, delta: -1}))
-    ).toEqual([counted, listed]);
+    // Ids ride along with their own plan, so a reorder cannot re-address one.
+    const state = [stored(counted), stored(listed)];
+    expect(reducer(state, planTemplateMoved({index: 1, delta: -1}))).toEqual([
+      stored(listed),
+      stored(counted),
+    ]);
+    expect(reducer(state, planTemplateMoved({index: 0, delta: -1}))).toEqual(
+      state
+    );
   });
 });

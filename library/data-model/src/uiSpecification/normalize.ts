@@ -14,8 +14,6 @@ import {
 } from './types';
 import {
   findDuplicatePlanIds,
-  getNotebookPlans,
-  getPlanTemplates,
   safeValidatePlan,
   safeValidatePlanTemplate,
 } from '../plans';
@@ -148,18 +146,6 @@ export function normalizeNotebookTemplateUiSpecification(
     label: 'template uiSpecification',
   });
 
-  // A template written against the single-plan shape would otherwise parse as
-  // one with no plans at all, and create plan-less notebooks without a word.
-  if (
-    raw &&
-    typeof raw === 'object' &&
-    'planTemplate' in (raw as Record<string, unknown>)
-  ) {
-    throw new Error(
-      'Template uiSpecification carries a single planTemplate; move it into the planTemplates list'
-    );
-  }
-
   const duplicateIds = findDuplicatePlanIds(definition.planTemplates);
   if (duplicateIds.length) {
     throw new Error(
@@ -167,10 +153,10 @@ export function normalizeNotebookTemplateUiSpecification(
     );
   }
 
-  for (const {planId, planTemplate} of getPlanTemplates(definition)) {
+  for (const planTemplate of definition.planTemplates ?? []) {
     if (!safeValidatePlanTemplate(planTemplate).success) {
       throw new Error(
-        `Invalid plan template "${planId}" in template uiSpecification`
+        `Invalid plan template "${planTemplate.planId}" in template uiSpecification`
       );
     }
   }
@@ -200,9 +186,9 @@ export function normalizeNotebookUiSpecification(
 
   // Validate every plan the notebook carries, so a bad one is caught at load
   // rather than when its tab is first opened.
-  for (const {planId, plan} of getNotebookPlans(definition)) {
+  for (const plan of definition.plans ?? []) {
     if (!safeValidatePlan(plan).success) {
-      throw new Error(`Invalid plan "${planId}" in uiSpecification`);
+      throw new Error(`Invalid plan "${plan.planId}" in uiSpecification`);
     }
   }
 

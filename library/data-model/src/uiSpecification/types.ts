@@ -361,7 +361,7 @@ export type CompiledNotebookUiSpec = z.infer<
 export const TemplateDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** One per workflow the template offers. Read via `getPlanTemplates`. */
+  /** One per workflow the template offers, each with its own `planId`. */
   planTemplates: z.array(PlanTemplateSchema).optional(),
 });
 export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
@@ -378,7 +378,7 @@ export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
 export const NotebookDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** The notebook's plans, one workflow each. Read via `getNotebookPlans`. */
+  /** The notebook's plans, one workflow each, addressed by `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
@@ -390,7 +390,7 @@ export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
 export const CompiledNotebookDefinitionSchema = z.object({
   uiSpec: CompiledNotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** The notebook's plans, one workflow each. Read via `getNotebookPlans`. */
+  /** The notebook's plans, one workflow each, addressed by `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type CompiledNotebookDefinition = z.infer<

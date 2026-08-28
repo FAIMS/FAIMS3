@@ -21,8 +21,12 @@
  */
 
 import type {ComponentType} from 'react';
-import type {PlanTemplate} from '@faims3/data-model';
-import {COUNTED_PLAN_TYPE, LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
+import type {AuthoredPlanTemplate, PlanTemplate} from '@faims3/data-model';
+import {
+  COUNTED_PLAN_TYPE,
+  LIST_OF_RECORDS_PLAN_TYPE,
+  PlanTypeSchema,
+} from '@faims3/data-model';
 import {CountedPlanDialog} from './components/plans/CountedPlanDialog';
 import {ListOfRecordsPlanDialog} from './components/plans/ListOfRecordsPlanDialog';
 
@@ -47,8 +51,11 @@ export type PlanDialogProps = {
   /** Present when editing an existing plan template; absent when creating. */
   initialTemplate?: PlanTemplate;
   onClose: () => void;
-  /** Called with a schema-valid plan template; the caller stores it and closes. */
-  onSave: (planTemplate: PlanTemplate) => void;
+  /**
+   * Called with a schema-valid plan template; the caller stores it and closes.
+   * The id is the store's to mint and keep, so a dialog never authors one.
+   */
+  onSave: (planTemplate: AuthoredPlanTemplate) => void;
 };
 
 export type DesignerPlanType = {
@@ -75,6 +82,16 @@ export const registerDesignerPlanType = (
       `Designer plan type ${definition.planType} is already registered`
     );
   }
+
+  // Plan ids are minted from the plan type, so it has to survive a route
+  // segment, the same rule the data-model registry holds.
+  const validType = PlanTypeSchema.safeParse(definition.planType);
+  if (!validType.success) {
+    throw new Error(
+      `Designer plan type ${definition.planType} cannot be registered: ${validType.error.issues[0].message}`
+    );
+  }
+
   registry.set(definition.planType, definition);
 };
 

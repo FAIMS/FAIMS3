@@ -51,6 +51,7 @@ export const instantiateCountedPlan = ({
     throw new Error('Invalid counted plan template');
   }
   return {
+    planId: template.planId,
     planType: template.planType,
     formType: template.formType,
     numberRequired: config.numberRequired,

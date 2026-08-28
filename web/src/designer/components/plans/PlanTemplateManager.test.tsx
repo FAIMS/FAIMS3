@@ -50,7 +50,11 @@ const WithProviders = ({
   </ThemeProvider>
 );
 
-const countedTemplate = {planType: COUNTED_PLAN_TYPE, formType: 'FORM1'};
+const countedTemplate = {
+  planId: COUNTED_PLAN_TYPE,
+  planType: COUNTED_PLAN_TYPE,
+  formType: 'FORM1',
+};
 
 const renderManager = (
   mode: AppState['mode'],

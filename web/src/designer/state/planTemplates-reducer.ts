@@ -18,32 +18,44 @@
  */
 
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import type {PlanTemplate} from '@faims3/data-model';
+import {
+  derivePlanId,
+  type AuthoredPlanTemplate,
+  type PlanTemplate,
+} from '@faims3/data-model';
 
 const planTemplatesReducer = createSlice({
   name: 'planTemplates',
   initialState: [] as PlanTemplate[],
   reducers: {
-    /** Append a plan template authored in the designer UI. */
-    planTemplateAdded: (state, action: PayloadAction<PlanTemplate>) => {
-      state.push(action.payload);
+    /**
+     * Append a plan template authored in the designer UI, minting the id that
+     * addresses it. Minted here rather than derived on read, so a later reorder
+     * cannot re-address a plan whose config a caller already keyed by id.
+     */
+    planTemplateAdded: (state, action: PayloadAction<AuthoredPlanTemplate>) => {
+      const taken = new Set(state.map(p => p.planId));
+      state.push({
+        ...action.payload,
+        planId: derivePlanId(action.payload.planType, taken),
+      });
     },
     /**
-     * Replace the plan template at an index, keeping its position. Plan
-     * dialogs author only their own type's fields, so the label and id the row
-     * carries survive an edit.
+     * Replace the plan template at an index, keeping its position. Plan dialogs
+     * author only their own type's fields, so the id and label the row carries
+     * survive an edit.
      */
     planTemplateSet: (
       state,
-      action: PayloadAction<{index: number; planTemplate: PlanTemplate}>
+      action: PayloadAction<{index: number; planTemplate: AuthoredPlanTemplate}>
     ) => {
       const {index, planTemplate} = action.payload;
       const existing = state[index];
       if (!existing) return;
       state[index] = {
-        ...(existing.planId ? {planId: existing.planId} : {}),
         ...(existing.label ? {label: existing.label} : {}),
         ...planTemplate,
+        planId: existing.planId,
       };
     },
     /** Rename the plan template at an index; a blank label clears it. */
@@ -64,7 +76,8 @@ const planTemplatesReducer = createSlice({
     /**
      * Move a plan template one place up or down. The array order is the order
      * the app's plan chooser offers the plans in, so this is how a template
-     * author sets that order.
+     * author sets that order. Ids are minted on add, so moving keeps each
+     * plan's own.
      */
     planTemplateMoved: (
       state,

@@ -26,6 +26,7 @@ describe('list of records plan definition', () => {
   test('instantiateListPlan keeps only requested record fields', () => {
     const plan = instantiateListPlan({
       template: {
+        planId: 'survey',
         planType: LIST_OF_RECORDS_PLAN_TYPE,
         formType: 'survey-form',
         recordFields: ['Name', 'Location'],
@@ -47,6 +48,7 @@ describe('list of records plan definition', () => {
     });
 
     expect(plan).toEqual({
+      planId: 'survey',
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType: 'survey-form',
       records: {

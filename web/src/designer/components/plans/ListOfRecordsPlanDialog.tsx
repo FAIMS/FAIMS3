@@ -114,7 +114,7 @@ export const ListOfRecordsPlanDialog = ({
   };
 
   const handleSave = () => {
-    const result = listPlanTemplateSchema.safeParse({
+    const result = listPlanTemplateSchema.omit({planId: true}).safeParse({
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType,
       recordFields,

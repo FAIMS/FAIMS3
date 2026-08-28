@@ -1,9 +1,8 @@
-import {RegisteredPlan, getNotebookPlans} from '@faims3/data-model';
+import {RegisteredPlan} from '@faims3/data-model';
 import {splitPlanTab} from '../../../../constants/routes';
 
 /** One of a notebook's plans together with the view registered to render it. */
 export interface PlanView<C> {
-  planId: string;
   plan: RegisteredPlan;
   Component: C;
 }
@@ -36,16 +35,12 @@ export const resolvePlanViews = <C>({
   tab: string | undefined;
   getView: (planType: RegisteredPlan['planType']) => C | undefined;
 }): ResolvedPlanViews<C> => {
-  const plans = getNotebookPlans(uiDefinition)
-    .map(({planId, plan}) => ({
-      planId,
-      plan,
-      Component: getView(plan.planType),
-    }))
+  const plans = (uiDefinition?.plans ?? [])
+    .map(plan => ({plan, Component: getView(plan.planType)}))
     .filter((entry): entry is PlanView<C> => entry.Component !== undefined);
 
   const {planId, slug} = splitPlanTab(tab);
-  const named = planId ? plans.find(p => p.planId === planId) : undefined;
+  const named = planId ? plans.find(p => p.plan.planId === planId) : undefined;
   // A tab naming a plan this build cannot render must not silently open a
   // different workflow, so it asks too.
   const namesMissingPlan = Boolean(planId) && !named;

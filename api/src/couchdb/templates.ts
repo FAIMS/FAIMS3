@@ -25,7 +25,6 @@ import {
   TEMPLATES_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEAM_ID,
   TEMPLATES_LISTING_BY_TEMPLATE_ID,
-  getPlanTemplates,
   getPlanTypeDefinition,
   normalizeNotebookTemplateUiSpecification,
   normalizeRootDescriptionForStore,
@@ -612,7 +611,7 @@ export const createNotebookFromTemplate = async ({
   };
 
   const plans: RegisteredPlan[] = [];
-  const planTemplates = getPlanTemplates(template.uiSpecification);
+  const planTemplates = template.uiSpecification.planTemplates ?? [];
 
   // A config for a plan the template does not carry means the caller read a
   // different version of it, so its other configs may target the wrong plans.
@@ -626,8 +625,8 @@ export const createNotebookFromTemplate = async ({
 
   // Instantiate every plan template the template carries, in declared order,
   // which is the order the app offers them in.
-  for (const {planId, planTemplate} of planTemplates) {
-    const planType = planTemplate.planType;
+  for (const planTemplate of planTemplates) {
+    const {planId, planType} = planTemplate;
     // Get the instantiation function for this plan type
     const planTypeDefinition = getPlanTypeDefinition(planType);
     if (!planTypeDefinition) {

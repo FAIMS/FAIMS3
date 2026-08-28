@@ -7,138 +7,57 @@ import {
 import {
   COUNTED_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
-  getNotebookPlan,
-  getNotebookPlans,
+  derivePlanId,
+  findDuplicatePlanIds,
   getPlanLabel,
-  getPlanTemplates,
 } from '../src';
 
-const counted = (extra: Record<string, unknown> = {}) =>
-  ({
-    planType: COUNTED_PLAN_TYPE,
-    formType: 'Cell',
-    numberRequired: 3,
-    allowExtraRecords: false,
-    ...extra,
-  }) as any;
-
-const list = (extra: Record<string, unknown> = {}) =>
-  ({
-    planType: LIST_OF_RECORDS_PLAN_TYPE,
-    formType: 'Sample',
-    records: {},
-    allowExtraRecords: true,
-    ...extra,
-  }) as any;
-
-describe('getNotebookPlans', () => {
-  it('is empty for a notebook with no plans', () => {
-    expect(getNotebookPlans({})).toEqual([]);
-    expect(getNotebookPlans({plans: []})).toEqual([]);
-    expect(getNotebookPlans(undefined)).toEqual([]);
+describe('derivePlanId', () => {
+  it('uses the plan type when nothing has claimed it', () => {
+    expect(derivePlanId(COUNTED_PLAN_TYPE, new Set())).toBe(COUNTED_PLAN_TYPE);
   });
 
-  it('derives an id for a single plan', () => {
-    const plan = counted();
-    expect(getNotebookPlans({plans: [plan]})).toEqual([
-      {planId: COUNTED_PLAN_TYPE, plan},
-    ]);
+  it('suffixes a second plan of the same type', () => {
+    expect(derivePlanId(COUNTED_PLAN_TYPE, new Set([COUNTED_PLAN_TYPE]))).toBe(
+      `${COUNTED_PLAN_TYPE}-2`
+    );
   });
 
-  it('derives an id per plan and keeps the declared order', () => {
-    const a = counted();
-    const b = list();
-    expect(getNotebookPlans({plans: [a, b]}).map(p => p.planId)).toEqual([
-      COUNTED_PLAN_TYPE,
-      LIST_OF_RECORDS_PLAN_TYPE,
-    ]);
-  });
-
-  it('disambiguates a second plan of the same type', () => {
-    const plans = [list(), list(), list()];
-    expect(getNotebookPlans({plans}).map(p => p.planId)).toEqual([
-      LIST_OF_RECORDS_PLAN_TYPE,
-      `${LIST_OF_RECORDS_PLAN_TYPE}-2`,
-      `${LIST_OF_RECORDS_PLAN_TYPE}-3`,
-    ]);
-  });
-
-  it('honours an explicit planId', () => {
-    const plans = [list({planId: 'lab-samples'}), counted()];
-    expect(getNotebookPlans({plans}).map(p => p.planId)).toEqual([
-      'lab-samples',
-      COUNTED_PLAN_TYPE,
-    ]);
-  });
-
-  it('never derives an id that an explicit id has already claimed', () => {
-    // The derived id for the first plan would be its plan type, which the
-    // second plan claims outright, so the first must move aside.
-    const plans = [list(), list({planId: LIST_OF_RECORDS_PLAN_TYPE})];
-    expect(getNotebookPlans({plans}).map(p => p.planId)).toEqual([
-      `${LIST_OF_RECORDS_PLAN_TYPE}-2`,
-      LIST_OF_RECORDS_PLAN_TYPE,
-    ]);
-  });
-
-  it('drops a later plan that repeats an id, so no tab is unreachable', () => {
-    const first = list({planId: 'lab'});
-    const second = counted({planId: 'lab'});
-    expect(getNotebookPlans({plans: [first, second]})).toEqual([
-      {planId: 'lab', plan: first},
-    ]);
+  it('keeps counting past ids already taken', () => {
+    const taken = new Set([COUNTED_PLAN_TYPE, `${COUNTED_PLAN_TYPE}-2`]);
+    expect(derivePlanId(COUNTED_PLAN_TYPE, taken)).toBe(
+      `${COUNTED_PLAN_TYPE}-3`
+    );
   });
 });
 
-describe('getNotebookPlan', () => {
-  it('finds a plan by id', () => {
-    const plans = [counted(), list({planId: 'lab-samples'})];
-    expect(getNotebookPlan({plans}, 'lab-samples')?.plan).toEqual(plans[1]);
+describe('findDuplicatePlanIds', () => {
+  it('is empty when every id is its own', () => {
+    expect(findDuplicatePlanIds([{planId: 'a'}, {planId: 'b'}])).toEqual([]);
+    expect(findDuplicatePlanIds(undefined)).toEqual([]);
   });
 
-  it('is undefined for an id the notebook does not carry', () => {
-    expect(getNotebookPlan({plans: [counted()]}, 'nope')).toBeUndefined();
-  });
-});
-
-describe('getPlanTemplates', () => {
-  it('is empty for a template with no plan templates', () => {
-    expect(getPlanTemplates({})).toEqual([]);
-    expect(getPlanTemplates(undefined)).toEqual([]);
-  });
-
-  it('derives the same ids the instantiated notebook will carry', () => {
-    const planTemplates = [
-      {planType: COUNTED_PLAN_TYPE, formType: 'Cell'},
-      {planType: COUNTED_PLAN_TYPE, formType: 'Sample'},
-    ];
-    expect(getPlanTemplates({planTemplates}).map(p => p.planId)).toEqual([
-      COUNTED_PLAN_TYPE,
-      `${COUNTED_PLAN_TYPE}-2`,
-    ]);
-  });
-
-  it('honours an explicit planId', () => {
-    const planTemplates = [
-      {planType: COUNTED_PLAN_TYPE, formType: 'Cell', planId: 'field-cells'},
-    ];
-    expect(getPlanTemplates({planTemplates})[0].planId).toBe('field-cells');
+  it('names each id that appears more than once', () => {
+    expect(
+      findDuplicatePlanIds([{planId: 'a'}, {planId: 'b'}, {planId: 'a'}])
+    ).toEqual(['a']);
   });
 });
 
 describe('getPlanLabel', () => {
   it("prefers the plan's own label", () => {
-    expect(getPlanLabel(counted({label: 'Field cells'}), 'x')).toBe(
+    expect(getPlanLabel({planId: 'lab', label: 'Field cells'})).toBe(
       'Field cells'
     );
   });
 
-  it("falls back to the plan type's registered label", () => {
-    expect(getPlanLabel(counted(), 'x')).toBe(COUNTED_PLAN_TYPE);
-  });
-
-  it('falls back to the id for an unregistered plan type', () => {
-    expect(getPlanLabel({planType: 'Unregistered'}, 'lab')).toBe('lab');
+  it('falls back to the id, which distinguishes plans of one type', () => {
+    expect(getPlanLabel({planId: LIST_OF_RECORDS_PLAN_TYPE})).toBe(
+      LIST_OF_RECORDS_PLAN_TYPE
+    );
+    expect(getPlanLabel({planId: `${LIST_OF_RECORDS_PLAN_TYPE}-2`})).toBe(
+      `${LIST_OF_RECORDS_PLAN_TYPE}-2`
+    );
   });
 });
 
@@ -153,7 +72,7 @@ describe('normalizeNotebookUiSpecification with several plans', () => {
 
   it('resolves the fixture to its two plans, in order', () => {
     const definition = normalizeNotebookUiSpecification(notebook());
-    expect(getNotebookPlans(definition).map(p => p.planId)).toEqual([
+    expect(definition.plans?.map(p => p.planId)).toEqual([
       'site-survey',
       'feature-list',
     ]);
@@ -186,9 +105,31 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
     );
   });
 
-  it('rejects a plan id that would not survive a route', () => {
+  it.each(['site.survey', 'site/survey', 'site%2Fsurvey'])(
+    'rejects the plan id %s, which would not survive a route',
+    bad => {
+      const bundle = notebook();
+      bundle.plans[0].planId = bad;
+      expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
+        /may not contain/
+      );
+    }
+  );
+
+  it('rejects a plan type that would not survive a route', () => {
+    // Plan ids are minted from the type, so a separator in it would name a
+    // plan no route could address. Matched on the message: an unregistered
+    // plan type throws anyway, so a bare toThrow would pass without the rule.
     const bundle = notebook();
-    bundle.plans[0].planId = 'site.survey';
+    bundle.plans[0].planType = 'lab.samples';
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
+      /may not contain/
+    );
+  });
+
+  it('rejects a plan carrying no id at all', () => {
+    const bundle = notebook();
+    delete bundle.plans[0].planId;
     expect(() => normalizeNotebookUiSpecification(bundle)).toThrow();
   });
 });
@@ -213,18 +154,6 @@ describe('normalizeNotebookTemplateUiSpecification', () => {
     expect(
       normalizeNotebookTemplateUiSpecification(template()).planTemplates
     ).toHaveLength(1);
-  });
-
-  it('rejects a template still written to the single-plan shape', () => {
-    // No migration is wanted, so an unconverted template must say so rather
-    // than quietly become a template with no plans.
-    const {planTemplates, ...rest} = template();
-    expect(() =>
-      normalizeNotebookTemplateUiSpecification({
-        ...rest,
-        planTemplate: planTemplates[0],
-      })
-    ).toThrow(/single planTemplate/);
   });
 
   it('rejects a repeated plan id in the template', () => {

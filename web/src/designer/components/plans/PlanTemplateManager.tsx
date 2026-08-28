@@ -45,7 +45,7 @@ import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import {shallowEqual} from 'react-redux';
-import type {PlanTemplate} from '@faims3/data-model';
+import type {AuthoredPlanTemplate} from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {selectDesignerMode} from '../../store/selectors';
 import {
@@ -102,7 +102,7 @@ export const PlanTemplateManager = () => {
 
   const planTypes = getDesignerPlanTypes();
 
-  const handleSave = (saved: PlanTemplate) => {
+  const handleSave = (saved: AuthoredPlanTemplate) => {
     if (editing?.index === undefined) dispatch(planTemplateAdded(saved));
     else dispatch(planTemplateSet({index: editing.index, planTemplate: saved}));
     setEditing(null);
@@ -119,7 +119,7 @@ export const PlanTemplateManager = () => {
           const formMissing = Boolean(formType && !formLabel);
           return (
             <Stack
-              key={index}
+              key={planTemplate.planId}
               direction="row"
               spacing={1}
               sx={{alignItems: 'center'}}
@@ -157,7 +157,7 @@ export const PlanTemplateManager = () => {
               <TextField
                 size="small"
                 label="Label"
-                placeholder={typeLabel}
+                placeholder={planTemplate.planId}
                 helperText="Shown when choosing a workflow"
                 value={planTemplate.label ?? ''}
                 onChange={event =>

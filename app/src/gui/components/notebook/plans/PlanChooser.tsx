@@ -1,12 +1,6 @@
 import {RegisteredPlan, getPlanLabel} from '@faims3/data-model';
 import {Box, Button, Stack, Typography} from '@mui/material';
 
-/** One selectable plan: what the chooser needs to label and address it. */
-export interface ChoosablePlan {
-  planId: string;
-  plan: RegisteredPlan;
-}
-
 /**
  * The first screen of a notebook carrying more than one plan: one button per
  * workflow, in the order the notebook declares them. Choosing one enters it for
@@ -17,7 +11,7 @@ export const PlanChooser = ({
   plans,
   onSelect,
 }: {
-  plans: ChoosablePlan[];
+  plans: {plan: RegisteredPlan}[];
   onSelect: (planId: string) => void;
 }) => (
   <Box sx={{p: 3, maxWidth: 480, mx: 'auto'}} data-testid="plan-chooser">
@@ -25,17 +19,17 @@ export const PlanChooser = ({
       Choose a workflow
     </Typography>
     <Stack spacing={2}>
-      {plans.map(({planId, plan}) => (
+      {plans.map(({plan}) => (
         <Button
-          key={planId}
+          key={plan.planId}
           data-testid="plan-chooser-option"
           variant="outlined"
           size="large"
           fullWidth
-          onClick={() => onSelect(planId)}
+          onClick={() => onSelect(plan.planId)}
           sx={{justifyContent: 'flex-start', py: 2, textTransform: 'none'}}
         >
-          {getPlanLabel(plan, planId)}
+          {getPlanLabel(plan)}
         </Button>
       ))}
     </Stack>

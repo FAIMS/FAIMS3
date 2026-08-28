@@ -81,13 +81,18 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('creates a template with a counted plan template', async () => {
     const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
     });
 
     const fetched = await getTemplateById(template._id);
     expect(fetched.uiSpecification.planTemplates).toEqual([
-      {planType: COUNTED_PLAN_TYPE, formType: 'artefact-form'},
+      {
+        planId: COUNTED_PLAN_TYPE,
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'artefact-form',
+      },
     ]);
   });
 
@@ -100,7 +105,9 @@ describe('notebook creation from template with planTemplates', () => {
           ...sample,
           uiSpecification: {
             ...sample.uiSpecification,
-            planTemplates: [{planType: COUNTED_PLAN_TYPE}],
+            planTemplates: [
+              {planId: COUNTED_PLAN_TYPE, planType: COUNTED_PLAN_TYPE},
+            ],
           },
         } satisfies PostCreateTemplateInput)
     ).expect(400);
@@ -124,6 +131,7 @@ describe('notebook creation from template with planTemplates', () => {
       ...sample.uiSpecification,
       planTemplates: [
         {
+          planId: LIST_OF_RECORDS_PLAN_TYPE,
           planType: LIST_OF_RECORDS_PLAN_TYPE,
           formType: 'survey-form',
           recordFields: ['Name', 'Location'],
@@ -140,6 +148,7 @@ describe('notebook creation from template with planTemplates', () => {
     const updatedTemplate = await getTemplateById(createdTemplate._id);
     expect(updatedTemplate.uiSpecification.planTemplates).toEqual([
       {
+        planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
         formType: 'survey-form',
         recordFields: ['Name', 'Location'],
@@ -164,6 +173,7 @@ describe('notebook creation from template with planTemplates', () => {
           ...sample.uiSpecification,
           planTemplates: [
             {
+              planId: LIST_OF_RECORDS_PLAN_TYPE,
               planType: LIST_OF_RECORDS_PLAN_TYPE,
               formType: 'survey-form',
               recordFields: ['Name', 123],
@@ -179,6 +189,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('creates a notebook with a counted plan', async () => {
     const project = await createNotebookWithPlan({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
       numberRequired: 3,
@@ -187,6 +198,7 @@ describe('notebook creation from template with planTemplates', () => {
 
     expect(project.uiSpecification.plans).toEqual([
       {
+        planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
         formType: 'artefact-form',
         numberRequired: 3,
@@ -197,6 +209,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('creates a notebook with a list-of-records plan', async () => {
     const project = await createNotebookWithPlan({
+      planId: LIST_OF_RECORDS_PLAN_TYPE,
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType: 'survey-form',
       records: {Record1: {Name: 'Record 1', Location: 'Trench A'}},
@@ -205,6 +218,7 @@ describe('notebook creation from template with planTemplates', () => {
 
     expect(project.uiSpecification.plans).toEqual([
       {
+        planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
         formType: 'survey-form',
         records: {Record1: {Name: 'Record 1', Location: 'Trench A'}},
@@ -224,6 +238,7 @@ describe('notebook creation from template with planTemplates', () => {
             ...sample.uiSpecification,
             plans: [
               {
+                planId: COUNTED_PLAN_TYPE,
                 planType: COUNTED_PLAN_TYPE,
                 formType: 'artefact-form',
                 numberRequired: 0,
@@ -241,6 +256,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('creates a notebook and instantiates the counted plan from its config', async () => {
     const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
     });
@@ -275,6 +291,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('rejects notebook creation when a plan template has no config', async () => {
     const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
     });
@@ -296,6 +313,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('rejects notebook creation when a plan config does not match its schema', async () => {
     const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
     });
@@ -323,6 +341,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('creates a notebook and instantiates the list-of-records plan from its config', async () => {
     const template = await createTemplateWithPlanTemplates({
+      planId: LIST_OF_RECORDS_PLAN_TYPE,
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType: 'survey-form',
       recordFields: ['Name', 'Location'],
@@ -370,6 +389,7 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('rejects notebook creation when a stored plan template is malformed', async () => {
     const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
     });
@@ -380,7 +400,9 @@ describe('notebook creation from template with planTemplates', () => {
       ...storedTemplate,
       uiSpecification: {
         ...storedTemplate.uiSpecification,
-        planTemplates: [{planType: COUNTED_PLAN_TYPE}],
+        planTemplates: [
+          {planId: COUNTED_PLAN_TYPE, planType: COUNTED_PLAN_TYPE},
+        ],
       },
     });
 
@@ -414,7 +436,13 @@ describe('notebook creation from template with planTemplates', () => {
 
     const updatedUiSpecification: TemplateDefinition = {
       ...sample.uiSpecification,
-      planTemplates: [{planType: COUNTED_PLAN_TYPE, formType: 'updated-form'}],
+      planTemplates: [
+        {
+          planId: COUNTED_PLAN_TYPE,
+          planType: COUNTED_PLAN_TYPE,
+          formType: 'updated-form',
+        },
+      ],
     };
 
     await requestAuthAndType(
@@ -425,7 +453,11 @@ describe('notebook creation from template with planTemplates', () => {
 
     const updatedTemplate = await getTemplateById(createdTemplate._id);
     expect(updatedTemplate.uiSpecification.planTemplates).toEqual([
-      {planType: COUNTED_PLAN_TYPE, formType: 'updated-form'},
+      {
+        planId: COUNTED_PLAN_TYPE,
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'updated-form',
+      },
     ]);
 
     const notebookId = await requestAuthAndType(
@@ -458,11 +490,13 @@ describe('notebook creation from template with planTemplates', () => {
   it('instantiates every plan template, in order, with its own config', async () => {
     const template = await createTemplateWithPlanTemplates(
       {
+        planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
         formType: 'artefact-form',
         label: 'Artefacts',
       },
       {
+        planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
         formType: 'survey-form',
         recordFields: ['Name'],
@@ -512,8 +546,13 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('rejects notebook creation when one plan template has no config', async () => {
     const template = await createTemplateWithPlanTemplates(
-      {planType: COUNTED_PLAN_TYPE, formType: 'artefact-form'},
       {
+        planId: COUNTED_PLAN_TYPE,
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'artefact-form',
+      },
+      {
+        planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
         formType: 'survey-form',
         recordFields: ['Name'],
@@ -540,8 +579,16 @@ describe('notebook creation from template with planTemplates', () => {
 
   it('keys each config by plan id when a template repeats a plan type', async () => {
     const template = await createTemplateWithPlanTemplates(
-      {planType: COUNTED_PLAN_TYPE, formType: 'artefact-form'},
-      {planType: COUNTED_PLAN_TYPE, formType: 'survey-form'}
+      {
+        planId: COUNTED_PLAN_TYPE,
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'artefact-form',
+      },
+      {
+        planId: `${COUNTED_PLAN_TYPE}-2`,
+        planType: COUNTED_PLAN_TYPE,
+        formType: 'survey-form',
+      }
     );
 
     const notebookId = await requestAuthAndType(
@@ -579,6 +626,7 @@ describe('notebook creation from template with planTemplates', () => {
     // The caller read a different version of the template, so its other
     // configs may target the wrong plans too.
     const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
     });

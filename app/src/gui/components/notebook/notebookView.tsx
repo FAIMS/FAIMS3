@@ -273,7 +273,9 @@ function NotebookViewWithSpec({
   const setPlanTab = useCallback(
     (nextTab: string) => {
       setTab(
-        activePlan ? ROUTES.joinPlanTab(activePlan.planId, nextTab) : nextTab
+        activePlan
+          ? ROUTES.joinPlanTab(activePlan.plan.planId, nextTab)
+          : nextTab
       );
     },
     [setTab, activePlan]
@@ -293,7 +295,7 @@ function NotebookViewWithSpec({
       project,
       tab: planTab,
       plan: activePlan?.plan,
-      planId: activePlan?.planId,
+      planId: activePlan?.plan.planId,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,

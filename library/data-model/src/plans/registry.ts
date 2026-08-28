@@ -8,6 +8,7 @@ import {
   PlanTemplateSchema,
   PlanTemplateSchemaWithLiteral,
   PlanTypeDefinition,
+  PlanTypeSchema,
   ValidationResult,
 } from './types';
 import {builtInPlanTypes} from './builtins';
@@ -66,6 +67,15 @@ export const registerPlanType = <
 
   if (registry.has(planType)) {
     throw new Error(`Plan type ${planType} is already registered`);
+  }
+
+  // Plan ids are minted from the plan type, so it has to survive a route
+  // segment.
+  const validType = PlanTypeSchema.safeParse(planType);
+  if (!validType.success) {
+    throw new Error(
+      `Plan type ${planType} cannot be registered: ${validType.error.issues[0].message}`
+    );
   }
 
   registry.set(planType, definition as unknown as AnyPlanTypeDefinition);

@@ -39,6 +39,7 @@ describe('counted plan definition', () => {
   test('instantiateCountedPlan combines template and config into a counted plan', () => {
     const plan = instantiateCountedPlan({
       template: {
+        planId: 'artefacts',
         planType: COUNTED_PLAN_TYPE,
         formType: 'artefact-form',
       },
@@ -49,6 +50,7 @@ describe('counted plan definition', () => {
     });
 
     expect(plan).toEqual({
+      planId: 'artefacts',
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
       numberRequired: 5,
