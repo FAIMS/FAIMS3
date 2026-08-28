@@ -66,16 +66,17 @@ export const useResolveTab = <T extends string>(
 
 /**
  * Separates a plan's id from that plan's own tab slug in the route's single tab
- * segment, e.g. `lab-samples.details`. Only used when a notebook carries more
- * than one plan; a single-plan notebook keeps a bare slug, so every URL written
- * before plans became a list still resolves.
+ * segment, e.g. `lab-samples.details`. Written whenever a plan view is on
+ * screen, a single-plan notebook included, so a link always says which plan it
+ * means. A bare slug is what the default record list writes, and is still read
+ * as a single-plan notebook's only plan, so older links resolve.
  */
 export const PLAN_TAB_SEPARATOR = '.';
 
 /**
  * Splits a route tab segment into the plan it addresses and that plan's own
- * slug. An unprefixed segment names no plan, which the caller reads as the
- * notebook's first plan.
+ * slug. An unprefixed segment names no plan; the caller reads that as the only
+ * plan where there is one, and otherwise asks which was meant.
  */
 export const splitPlanTab = (
   tab: string | undefined
