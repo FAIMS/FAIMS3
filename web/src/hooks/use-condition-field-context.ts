@@ -1,6 +1,14 @@
 import {
+  buildParentFieldTypes,
+  buildRelatedFieldTypes,
+  decodeParentRef,
+  splitRelatedReference,
+  UiSpecModel,
+} from '@faims3/data-model';
+import {
   FieldSearchScope,
   resolveFieldIdsInScope,
+  FieldSearchEntry,
 } from '@/designer/features/field-search';
 import {useAppSelector} from '@/designer/state/hooks';
 import {selectUiViews, selectUiViewSets} from '@/designer/store/selectors';
@@ -43,6 +51,81 @@ export const useConditionRuleFieldContext = (props: {
     return {kind: 'all'};
   }, [props.view, props.field]);
 
+  // Resolve the form this condition belongs to, matching the scope logic:
+  // a section condition names its section; a field condition names a field
+  // whose section we look up.
+  const viewsetId = useMemo(() => {
+    let sectionId = props.view;
+    if (!sectionId && props.field) {
+      sectionId = Object.keys(views).find(v =>
+        views[v].fields.includes(props.field!)
+      );
+    }
+    if (!sectionId) return undefined;
+    return Object.keys(viewsets).find(vs =>
+      viewsets[vs].views.includes(sectionId!)
+    );
+  }, [props.view, props.field, views, viewsets]);
+
+  const fieldLabelFor = (fieldId: string) =>
+    (allFields[fieldId]?.['component-parameters']?.label as string) ?? fieldId;
+
+  // Parent and linked-record references selectable in conditions, plus an
+  // overlay resolving each reference to its underlying field definition so
+  // operator filtering and value editors treat them like local fields.
+  const {referenceEntries, referenceFieldDefs} = useMemo(() => {
+    const entries: FieldSearchEntry[] = [];
+    const defs: typeof allFields = {};
+    if (!viewsetId)
+      return {referenceEntries: entries, referenceFieldDefs: defs};
+    const uiSpecification = {
+      fields: allFields,
+      views,
+      viewsets,
+    } as unknown as UiSpecModel;
+
+    const {types: parentTypes} = buildParentFieldTypes({
+      uiSpecification,
+      formId: viewsetId,
+    });
+    for (const ref of parentTypes.keys()) {
+      const fieldId = decodeParentRef(ref);
+      if (!fieldId || !allFields[fieldId]) continue;
+      defs[ref] = allFields[fieldId];
+      entries.push({
+        fieldId: ref,
+        field: allFields[fieldId],
+        label: `Parent › ${fieldLabelFor(fieldId)}`,
+        id: ref,
+        helperText: '',
+        advancedHelperText: '',
+        viewSetLabel: 'Parent record',
+        sectionLabel: '',
+      });
+    }
+
+    const {types: relatedTypes} = buildRelatedFieldTypes({
+      uiSpecification,
+      formId: viewsetId,
+    });
+    for (const ref of relatedTypes.keys()) {
+      const parts = splitRelatedReference(ref);
+      if (!parts || !allFields[parts.fieldId]) continue;
+      defs[ref] = allFields[parts.fieldId];
+      entries.push({
+        fieldId: ref,
+        field: allFields[parts.fieldId],
+        label: `${fieldLabelFor(parts.relFieldId)} › ${fieldLabelFor(parts.fieldId)}`,
+        id: ref,
+        helperText: '',
+        advancedHelperText: '',
+        viewSetLabel: 'Linked record',
+        sectionLabel: '',
+      });
+    }
+    return {referenceEntries: entries, referenceFieldDefs: defs};
+  }, [viewsetId, allFields, views, viewsets]);
+
   const selectableFieldCount = useMemo(
     () =>
       resolveFieldIdsInScope(allFields, views, viewsets, fieldSearchScope)
@@ -51,8 +134,9 @@ export const useConditionRuleFieldContext = (props: {
   );
 
   return {
-    allFields,
+    allFields: {...allFields, ...referenceFieldDefs},
     fieldSearchScope,
-    selectableFieldCount,
+    referenceEntries,
+    selectableFieldCount: selectableFieldCount + referenceEntries.length,
   };
 };
