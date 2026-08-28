@@ -26,6 +26,8 @@ import {
   FAIMS_TYPE_TO_EXPR_TYPE,
   decodeParentRef,
   isParentRef,
+  isRelatedRef,
+  splitRelatedReference,
   ValuesObject,
 } from '../uiSpecification';
 import {logWarn} from '../logging';
@@ -52,6 +54,9 @@ const DERIVED_FIELD_NAMES = [
  * once when the notebook loads (see compileUiSpecConditionals); this reads
  * the precompiled evaluator off each field and applies it against current
  * values. Recompute-all-and-diff, matching the templated-field recompute.
+ *
+ * <Rel-Field-ID>.<Field-ID> references resolve from the record linked through
+ * a single-link Related Records field (context.relatedValues), and
  *
  * _PARENT.<Field-ID> references resolve from the parent record's stored values
  * supplied via context.parentValues (see resolveParentValues). A referenced
@@ -147,6 +152,21 @@ export function recomputeComputedFields({
     );
   };
 
+  // Resolves a <Rel-Field-ID>.<Field-ID> reference from the linked record's
+  // stored values (see resolveRelatedValues). As with parent references, the
+  // linked record's derived fields are usable and the field's type is looked
+  // up directly by its globally unique ID.
+  const resolveRelatedRef = (ref: string): ExprValue | null => {
+    const parts = splitRelatedReference(ref);
+    if (!parts) return null;
+    return coerceToExprType(
+      context?.relatedValues?.[parts.relFieldId]?.[parts.fieldId],
+      FAIMS_TYPE_TO_EXPR_TYPE[
+        uiSpecification.fields[parts.fieldId]?.['type-returned']
+      ]
+    );
+  };
+
   let changes = false;
   const updates: Record<string, ExprValue | null> = {};
 
@@ -168,6 +188,15 @@ export function recomputeComputedFields({
         continue;
       }
       if (!formFields.has(ref)) {
+        // Not local: a related reference resolves from linked values; any
+        // other symbol is unknown and skipped.
+        if (!isRelatedRef(ref)) continue;
+        const value = resolveRelatedRef(ref);
+        if (value === null) {
+          incomplete = true;
+          break;
+        }
+        scope.set(ref, value);
         continue;
       }
       const value = resolveField(ref);

@@ -151,6 +151,31 @@ export function renderTemplate({
     }
     filteredValues['_PARENT'] = parent;
   }
+  // Linked record values available as {{Rel-Field-ID.Field-ID}}. The link
+  // field's key now holds the linked record's values; a bare {{Rel-Field-ID}}
+  // still renders what it did before via the non-enumerable toString.
+  if (context.relatedValues) {
+    for (const [relFieldId, relValues] of Object.entries(
+      context.relatedValues
+    )) {
+      if (excludedFields.includes(relFieldId)) continue;
+      const related: ValuesObject = {};
+      for (const [k, v] of Object.entries(relValues)) {
+        related[k] = valueForTemplateExpansion({
+          fieldName: k,
+          value: v,
+          uiSpecification,
+          getTemplateFunction,
+        });
+      }
+      const previous = filteredValues[relFieldId];
+      Object.defineProperty(related, 'toString', {
+        value: () => (typeof previous === 'string' ? previous : ''),
+        enumerable: false,
+      });
+      filteredValues[relFieldId] = related;
+    }
+  }
 
   return Mustache.render(template, filteredValues);
 }

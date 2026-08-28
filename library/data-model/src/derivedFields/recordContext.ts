@@ -36,6 +36,9 @@ export interface RecordContext {
   createdBy?: string;
   // Raw field values of the parent record, if any (see resolveParentValues)
   parentValues?: ValuesObject;
+  // Raw field values of records linked through single-link Related Records
+  // fields, keyed by that field's ID (see resolveRelatedValues)
+  relatedValues?: Record<string, ValuesObject>;
 }
 
 /**

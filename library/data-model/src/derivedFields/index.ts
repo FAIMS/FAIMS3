@@ -3,6 +3,7 @@ export * from './parentFieldScan';
 export * from './recordContext';
 export * from './resolveParentField';
 export * from './resolveParentValues';
+export * from './resolveRelatedValues';
 export * from './templatedFields';
 export * from './templateFunctions';
 export * from './valueUtils';
