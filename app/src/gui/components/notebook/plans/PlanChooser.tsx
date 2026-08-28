@@ -20,7 +20,7 @@ export const PlanChooser = ({
   plans: ChoosablePlan[];
   onSelect: (planId: string) => void;
 }) => (
-  <Box sx={{p: 3, maxWidth: 480, mx: 'auto'}}>
+  <Box sx={{p: 3, maxWidth: 480, mx: 'auto'}} data-testid="plan-chooser">
     <Typography variant="h6" component="h2" sx={{mb: 2}}>
       Choose a workflow
     </Typography>
@@ -28,6 +28,7 @@ export const PlanChooser = ({
       {plans.map(({planId, plan}) => (
         <Button
           key={planId}
+          data-testid="plan-chooser-option"
           variant="outlined"
           size="large"
           fullWidth

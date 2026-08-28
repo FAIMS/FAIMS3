@@ -35,10 +35,9 @@ describe('PlanChooser', () => {
 
   it('offers the plans in the order the notebook declares them', () => {
     render(<PlanChooser plans={plans} onSelect={vi.fn()} />);
-    expect(screen.getAllByRole('button').map(b => b.textContent)).toEqual([
-      'Field',
-      LIST_OF_RECORDS_PLAN_TYPE,
-    ]);
+    expect(
+      screen.getAllByTestId('plan-chooser-option').map(b => b.textContent)
+    ).toEqual(['Field', LIST_OF_RECORDS_PLAN_TYPE]);
   });
 
   it('reports the chosen plan by id', async () => {
