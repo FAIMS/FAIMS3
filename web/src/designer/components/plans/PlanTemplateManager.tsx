@@ -14,8 +14,8 @@
 
 /**
  * @file Plan template controls for the design panel: an Add Plan button in
- * template mode, a chooser for plan types, per-type authoring dialogs, and
- * edit/remove for the single existing plan template.
+ * template mode, a chooser for plan types, per-type authoring dialogs, and a
+ * row per existing plan template carrying its label, order and removal.
  */
 
 import {useState} from 'react';
@@ -31,12 +31,16 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  Stack,
+  TextField,
   Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
+import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
@@ -45,9 +49,12 @@ import type {PlanTemplate} from '@faims3/data-model';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {selectDesignerMode} from '../../store/selectors';
 import {
+  planTemplateAdded,
+  planTemplateLabelled,
+  planTemplateMoved,
   planTemplateRemoved,
   planTemplateSet,
-} from '../../state/planTemplate-reducer';
+} from '../../state/planTemplates-reducer';
 import {config} from '../../buildconfig';
 import {getDesignerPlanType, getDesignerPlanTypes} from '../../plans';
 import {
@@ -57,14 +64,17 @@ import {
   designerPrimaryActionButtonSx,
 } from '../designer-style';
 
-/** Add/edit/remove the template's single plan template; hidden outside template mode. */
+/** Which plan template an authoring dialog is open against. */
+type Editing = {planType: string; index?: number};
+
+/** Add/edit/order/remove the template's plan templates; hidden outside template mode. */
 export const PlanTemplateManager = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
 
   const mode = useAppSelector(selectDesignerMode);
-  const planTemplate = useAppSelector(
-    state => state.notebook.planTemplate,
+  const planTemplates = useAppSelector(
+    state => state.notebook.planTemplates,
     shallowEqual
   );
   const uiSpec = useAppSelector(
@@ -74,85 +84,145 @@ export const PlanTemplateManager = () => {
   const viewSets = uiSpec.viewsets;
 
   const [chooserOpen, setChooserOpen] = useState(false);
-  const [editorPlanType, setEditorPlanType] = useState<string | null>(null);
-  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const [removeIndex, setRemoveIndex] = useState<number | null>(null);
 
   // Plans are only authored on templates. When the feature flag is off, hide
   // Add Plan for templates without a plan; existing plans stay editable.
   if (mode !== 'template') {
     return null;
   }
-  if (!config.enablePlansInDesigner && !planTemplate) {
+  if (!config.enablePlansInDesigner && planTemplates.length === 0) {
     return null;
   }
 
-  const definition = planTemplate
-    ? getDesignerPlanType(planTemplate.planType)
+  const EditorDialog = editing
+    ? getDesignerPlanType(editing.planType)?.Dialog
     : undefined;
-  const EditorDialog = editorPlanType
-    ? getDesignerPlanType(editorPlanType)?.Dialog
-    : undefined;
-
-  const formType = planTemplate?.formType as string | undefined;
-  const formLabel = formType ? viewSets[formType]?.label : undefined;
-  const formMissing = Boolean(planTemplate && formType && !formLabel);
 
   const planTypes = getDesignerPlanTypes();
 
   const handleSave = (saved: PlanTemplate) => {
-    dispatch(planTemplateSet(saved));
-    setEditorPlanType(null);
+    if (editing?.index === undefined) dispatch(planTemplateAdded(saved));
+    else dispatch(planTemplateSet({index: editing.index, planTemplate: saved}));
+    setEditing(null);
   };
 
   return (
     <>
-      {!planTemplate ? (
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddRoundedIcon />}
-          onClick={() => setChooserOpen(true)}
-          data-testid="web-designer-add-plan-button"
-          sx={{
-            ...designerPrimaryActionButtonSx,
-            boxShadow: 'none',
-            whiteSpace: 'nowrap',
-            textTransform: 'none',
-            fontWeight: 700,
-          }}
-        >
-          Add Plan
-        </Button>
-      ) : (
-        <>
-          <Chip
-            icon={formMissing ? <WarningAmberRoundedIcon /> : undefined}
-            label={
-              formMissing
-                ? `${definition?.label ?? planTemplate.planType} plan: form missing`
-                : `${definition?.label ?? planTemplate.planType} plan: ${formLabel}`
-            }
-            color={formMissing ? 'warning' : 'default'}
-            onClick={() => setEditorPlanType(planTemplate.planType as string)}
-            onDelete={() => setRemoveConfirmOpen(true)}
-            deleteIcon={
-              <Tooltip title="Remove plan">
-                <DeleteOutlineRoundedIcon />
-              </Tooltip>
-            }
-            sx={{fontWeight: 600}}
-          />
-          <Tooltip title="Edit plan">
-            <IconButton
-              size="small"
-              aria-label="edit plan"
-              onClick={() => setEditorPlanType(planTemplate.planType as string)}
+      <Stack spacing={1} sx={{width: '100%'}}>
+        {planTemplates.map((planTemplate, index) => {
+          const definition = getDesignerPlanType(planTemplate.planType);
+          const typeLabel = definition?.label ?? planTemplate.planType;
+          const formType = planTemplate.formType as string | undefined;
+          const formLabel = formType ? viewSets[formType]?.label : undefined;
+          const formMissing = Boolean(formType && !formLabel);
+          return (
+            <Stack
+              key={index}
+              direction="row"
+              spacing={1}
+              sx={{alignItems: 'center'}}
+              data-testid="web-designer-plan-row"
             >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </>
-      )}
+              {/* Array order is the order the app's plan chooser offers them in */}
+              <Tooltip title="Move plan up">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label="move plan up"
+                    disabled={index === 0}
+                    onClick={() =>
+                      dispatch(planTemplateMoved({index, delta: -1}))
+                    }
+                  >
+                    <ArrowUpwardRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Move plan down">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label="move plan down"
+                    disabled={index === planTemplates.length - 1}
+                    onClick={() =>
+                      dispatch(planTemplateMoved({index, delta: 1}))
+                    }
+                  >
+                    <ArrowDownwardRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <TextField
+                size="small"
+                label="Label"
+                placeholder={typeLabel}
+                helperText="Shown when choosing a workflow"
+                value={planTemplate.label ?? ''}
+                onChange={event =>
+                  dispatch(
+                    planTemplateLabelled({index, label: event.target.value})
+                  )
+                }
+              />
+              <Chip
+                icon={formMissing ? <WarningAmberRoundedIcon /> : undefined}
+                label={
+                  formMissing
+                    ? `${typeLabel} plan: form missing`
+                    : `${typeLabel} plan: ${formLabel}`
+                }
+                color={formMissing ? 'warning' : 'default'}
+                onClick={() =>
+                  setEditing({planType: planTemplate.planType, index})
+                }
+                sx={{fontWeight: 600}}
+              />
+              <Tooltip title="Edit plan">
+                <IconButton
+                  size="small"
+                  aria-label="edit plan"
+                  onClick={() =>
+                    setEditing({planType: planTemplate.planType, index})
+                  }
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Remove plan">
+                <IconButton
+                  size="small"
+                  aria-label="remove plan"
+                  onClick={() => setRemoveIndex(index)}
+                >
+                  <DeleteOutlineRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        })}
+
+        {config.enablePlansInDesigner && (
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => setChooserOpen(true)}
+            data-testid="web-designer-add-plan-button"
+            sx={{
+              ...designerPrimaryActionButtonSx,
+              alignSelf: 'flex-start',
+              boxShadow: 'none',
+              whiteSpace: 'nowrap',
+              textTransform: 'none',
+              fontWeight: 700,
+            }}
+          >
+            Add Plan
+          </Button>
+        )}
+      </Stack>
 
       {/* Plan type chooser */}
       <Dialog
@@ -183,7 +253,7 @@ export const PlanTemplateManager = () => {
                   <CardActionArea
                     onClick={() => {
                       setChooserOpen(false);
-                      setEditorPlanType(plan.planType);
+                      setEditing({planType: plan.planType});
                     }}
                   >
                     <CardContent>
@@ -213,31 +283,30 @@ export const PlanTemplateManager = () => {
       {/* Per-type authoring dialog */}
       {EditorDialog && (
         <EditorDialog
-          open={Boolean(editorPlanType)}
+          open={Boolean(editing)}
           uiSpec={uiSpec}
           initialTemplate={
-            planTemplate?.planType === editorPlanType ? planTemplate : undefined
+            editing?.index === undefined
+              ? undefined
+              : planTemplates[editing.index]
           }
-          onClose={() => setEditorPlanType(null)}
+          onClose={() => setEditing(null)}
           onSave={handleSave}
         />
       )}
 
       {/* Remove confirmation */}
-      <Dialog
-        open={removeConfirmOpen}
-        onClose={() => setRemoveConfirmOpen(false)}
-      >
+      <Dialog open={removeIndex !== null} onClose={() => setRemoveIndex(null)}>
         <DialogTitle sx={designerDialogTitleSx}>Remove plan?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{mt: 1}}>
-            Notebooks created from this template will no longer include a data
-            collection plan.
+            Notebooks created from this template will no longer include this
+            data collection plan.
           </Typography>
         </DialogContent>
         <DialogActions sx={designerDialogActionsSx}>
           <Button
-            onClick={() => setRemoveConfirmOpen(false)}
+            onClick={() => setRemoveIndex(null)}
             sx={designerCancelButtonSx}
             autoFocus
           >
@@ -247,8 +316,9 @@ export const PlanTemplateManager = () => {
             color="error"
             variant="contained"
             onClick={() => {
-              dispatch(planTemplateRemoved());
-              setRemoveConfirmOpen(false);
+              if (removeIndex !== null)
+                dispatch(planTemplateRemoved(removeIndex));
+              setRemoveIndex(null);
             }}
           >
             Remove

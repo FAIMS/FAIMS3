@@ -17,7 +17,7 @@ import {
   type PlanTemplate,
 } from '@faims3/data-model';
 
-/** Which document kind the designer is editing; templates may carry a planTemplate. */
+/** Which document kind the designer is editing; templates may carry plan templates. */
 export type DesignerDocumentMode = 'project' | 'template';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -38,7 +38,7 @@ export class UiSpecificationNormalizeError extends Error {
 export type NormalizeApiUiSpecificationResult =
   | {
       ok: true;
-      data: NotebookDefinition & {planTemplate?: PlanTemplate};
+      data: NotebookDefinition & {planTemplates?: PlanTemplate[]};
       /** True when {@link migrateNotebook} ran because the version was missing or below current. */
       migrated: boolean;
       /** Present when migration ran — design was upgraded in memory before editing. */
@@ -64,7 +64,7 @@ export function readUiSpecificationSchemaVersion(
  * 1. Reads version via {@link getNotebookSchemaVersion} (legacy or current field).
  * 2. Runs {@link migrateNotebook} when version is missing or below {@link CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}.
  * 3. Validates with {@link NotebookDefinitionSchema}, or {@link TemplateDefinitionSchema}
- *    in template mode so an optional planTemplate is preserved.
+ *    in template mode so optional plan templates are preserved.
  */
 export function tryNormalizeApiUiSpecification(
   raw: unknown,
@@ -90,7 +90,7 @@ export function tryNormalizeApiUiSpecification(
     }
   }
 
-  // Templates carry an optional planTemplate the notebook schema would strip
+  // Templates carry optional plan templates the notebook schema would strip
   const schema =
     mode === 'template' ? TemplateDefinitionSchema : NotebookDefinitionSchema;
   const parsed = schema.safeParse(candidate);
@@ -118,26 +118,26 @@ export function tryNormalizeApiUiSpecification(
       : undefined;
 
   // Read from candidate: the ternary-selected schema's inferred type drops
-  // planTemplate, but safeValidatePlanTemplate handles unknown input anyway
-  const rawPlanTemplate =
+  // planTemplates, but safeValidatePlanTemplate handles unknown input anyway
+  const rawPlanTemplates =
     mode === 'template'
-      ? (candidate as Record<string, unknown>).planTemplate
+      ? (candidate as Record<string, unknown>).planTemplates
       : undefined;
+  const planTemplates = Array.isArray(rawPlanTemplates)
+    ? (rawPlanTemplates as PlanTemplate[])
+    : undefined;
 
-  // Warn rather than fail on an invalid planTemplate so the template stays editable
-  let planWarning: string | undefined;
-  if (rawPlanTemplate) {
-    const planResult = safeValidatePlanTemplate(rawPlanTemplate);
-    if (!planResult.success) {
-      planWarning = `This template's plan failed validation and may need to be re-created: ${planResult.error.message}`;
-    }
-  }
+  // Warn rather than fail on an invalid plan template so the template stays editable
+  const invalid = (planTemplates ?? [])
+    .map(planTemplate => safeValidatePlanTemplate(planTemplate))
+    .filter(result => !result.success);
+  const planWarning = invalid.length
+    ? `${invalid.length} of this template's plans failed validation and may need to be re-created.`
+    : undefined;
 
   return {
     ok: true,
-    data: rawPlanTemplate
-      ? {...parsed.data, planTemplate: rawPlanTemplate as PlanTemplate}
-      : parsed.data,
+    data: planTemplates?.length ? {...parsed.data, planTemplates} : parsed.data,
     migrated,
     warning: [warning, planWarning].filter(Boolean).join(' ') || undefined,
   };

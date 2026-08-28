@@ -512,7 +512,7 @@ api.post(
         description,
         teamId: req.body.teamId,
         createdBy: req.user.user_id,
-        planConfig: req.body.planConfig,
+        planConfigs: req.body.planConfigs,
       });
     } else if (isFromScratch(req.body)) {
       projectID = await createNotebook({

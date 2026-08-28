@@ -355,13 +355,14 @@ export type CompiledNotebookUiSpec = z.infer<
 
 /*
  * A template is a notebook definition that will be used to instantiate many notebooks.
- * It has the same uiSpec and metadata as a notebook but includes an optional plan template
- * that will be used to instantiate a plan when a notebook is created from the template.
+ * It has the same uiSpec and metadata as a notebook but includes optional plan templates,
+ * one per workflow, each instantiated into a plan when a notebook is created from the template.
  */
 export const TemplateDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  planTemplate: PlanTemplateSchema.optional(),
+  /** One per workflow the template offers. Read via `getPlanTemplates`. */
+  planTemplates: z.array(PlanTemplateSchema).optional(),
 });
 export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
 

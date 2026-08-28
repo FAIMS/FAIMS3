@@ -1,5 +1,5 @@
 /**
- * @file Round-trip tests for notebook adapters: planTemplate survives
+ * @file Round-trip tests for notebook adapters: planTemplates survive
  * hydration and export, and null serialises to an absent key.
  */
 import {describe, expect, it} from 'vitest';
@@ -38,36 +38,42 @@ const countedPlan = {
   allowExtraRecords: false,
 };
 
-describe('notebook adapters planTemplate round-trip', () => {
-  it('hydrates a definition with planTemplate into designer state', () => {
-    const definition = {...createDefinition(), planTemplate: countedTemplate};
+describe('notebook adapters planTemplates round-trip', () => {
+  it('hydrates a definition with planTemplates into designer state', () => {
+    const definition = {
+      ...createDefinition(),
+      planTemplates: [countedTemplate],
+    };
     const history = notebookDefinitionToDesignerHistory(definition);
-    expect(history.planTemplate).toEqual(countedTemplate);
+    expect(history.planTemplates).toEqual([countedTemplate]);
   });
 
-  it('hydrates a definition without planTemplate as null', () => {
+  it('hydrates a definition without planTemplates as empty', () => {
     const history = notebookDefinitionToDesignerHistory(createDefinition());
-    expect(history.planTemplate).toBeNull();
+    expect(history.planTemplates).toEqual([]);
   });
 
-  it('exports planTemplate when present', () => {
+  it('exports planTemplates when present', () => {
     const history = notebookDefinitionToDesignerHistory({
       ...createDefinition(),
-      planTemplate: countedTemplate,
+      planTemplates: [countedTemplate],
     });
     const exported = designerHistoryToNotebookDefinition(history);
-    expect(exported.planTemplate).toEqual(countedTemplate);
+    expect(exported.planTemplates).toEqual([countedTemplate]);
   });
 
-  it('omits the planTemplate key entirely when null', () => {
+  it('omits the planTemplates key entirely when there are none', () => {
     const history = notebookDefinitionToDesignerHistory(createDefinition());
     const exported = designerHistoryToNotebookDefinition(history);
-    // Absent key, not "planTemplate": null, so saved JSON stays clean
-    expect('planTemplate' in exported).toBe(false);
+    // Absent key, not "planTemplates": [], so saved JSON stays clean
+    expect('planTemplates' in exported).toBe(false);
   });
 
   it('round-trips a full definition unchanged', () => {
-    const definition = {...createDefinition(), planTemplate: countedTemplate};
+    const definition = {
+      ...createDefinition(),
+      planTemplates: [countedTemplate],
+    };
     const exported = designerHistoryToNotebookDefinition(
       notebookDefinitionToDesignerHistory(definition)
     );
@@ -84,9 +90,9 @@ describe('notebook adapters plan round-trip', () => {
     expect(history.plans).toEqual([countedPlan]);
   });
 
-  it('hydrates a definition without plans as null', () => {
+  it('hydrates a definition without plans as empty', () => {
     const history = notebookDefinitionToDesignerHistory(createDefinition());
-    expect(history.plans).toBeNull();
+    expect(history.plans).toEqual([]);
   });
 
   it('keeps the plans through an edit and export', () => {
@@ -104,7 +110,7 @@ describe('notebook adapters plan round-trip', () => {
     ]);
   });
 
-  it('omits the plans key entirely when null', () => {
+  it('omits the plans key entirely when there are none', () => {
     const exported = designerHistoryToNotebookDefinition(
       notebookDefinitionToDesignerHistory(createDefinition())
     );

@@ -118,17 +118,17 @@ export type AppState = {
 };
 
 /** Flat notebook definition as persisted via PUT /uiSpecification. */
-export type Notebook = NotebookDefinition & {planTemplate?: PlanTemplate};
+export type Notebook = NotebookDefinition & {planTemplates?: PlanTemplate[]};
 
 /** Notebook with `uiSpec` wrapped for undo/redo in the designer. */
 export type NotebookWithHistory = {
   metadata: NotebookMetadata;
   uiSpec: StateWithHistory<NotebookUISpec>;
-  // null when absent; only templates carry a plan template
-  planTemplate: PlanTemplate | null;
-  // null when absent; only notebooks carry instantiated plans, and the
-  // designer carries them through untouched rather than editing them
-  plans: RegisteredPlan[] | null;
+  // only templates carry plan templates; empty when there are none
+  planTemplates: PlanTemplate[];
+  // only notebooks carry instantiated plans, and the designer carries them
+  // through untouched rather than editing them
+  plans: RegisteredPlan[];
 };
 
 export const defaultNotebookInformation = (): NotebookInformation => ({
@@ -161,8 +161,8 @@ export const initialState: AppState = {
       past: [],
       future: [],
     },
-    planTemplate: null,
-    plans: null,
+    planTemplates: [],
+    plans: [],
   },
   mode: 'project',
 };

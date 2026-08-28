@@ -54,10 +54,10 @@ const countedTemplate = {planType: COUNTED_PLAN_TYPE, formType: 'FORM1'};
 
 const renderManager = (
   mode: AppState['mode'],
-  planTemplate: AppState['notebook']['planTemplate']
+  planTemplates: AppState['notebook']['planTemplates']
 ) => {
   const store = createDesignerStore(
-    {...initialState.notebook, planTemplate},
+    {...initialState.notebook, planTemplates},
     false,
     mode
   );
@@ -74,27 +74,27 @@ describe('PlanTemplateManager feature flag', () => {
   });
 
   test('shows Add Plan in template mode when the flag is on and there is no plan', () => {
-    renderManager('template', null);
+    renderManager('template', []);
     expect(screen.getByTestId('web-designer-add-plan-button')).toBeDefined();
   });
 
   test('hides Add Plan in template mode when the flag is off and there is no plan', () => {
     designerConfig.enablePlansInDesigner = false;
-    const {container} = renderManager('template', null);
+    const {container} = renderManager('template', []);
     expect(container.firstChild).toBeNull();
     expect(screen.queryByTestId('web-designer-add-plan-button')).toBeNull();
   });
 
   test('keeps existing plan controls when the flag is off', () => {
     designerConfig.enablePlansInDesigner = false;
-    renderManager('template', countedTemplate);
+    renderManager('template', [countedTemplate]);
     expect(screen.getByLabelText('edit plan')).toBeDefined();
     expect(screen.getByText(/Counted plan/)).toBeDefined();
     expect(screen.queryByTestId('web-designer-add-plan-button')).toBeNull();
   });
 
   test('hides the manager outside template mode even when the flag is on', () => {
-    const {container} = renderManager('project', countedTemplate);
+    const {container} = renderManager('project', [countedTemplate]);
     expect(container.firstChild).toBeNull();
   });
 });

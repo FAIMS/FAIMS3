@@ -14,6 +14,7 @@ import {
 } from './types';
 import {
   getNotebookPlans,
+  getPlanTemplates,
   safeValidatePlan,
   safeValidatePlanTemplate,
 } from '../plans';
@@ -134,8 +135,8 @@ function normalizeUiSpecificationBundle<
 }
 
 /**
- * Accept a legacy or current notebook template JSON bundle, then validate its
- * plan template, if any, against that plan type's own schema.
+ * Accept a legacy or current notebook template JSON bundle, then validate each
+ * plan template it carries against that plan type's own schema.
  */
 export function normalizeNotebookTemplateUiSpecification(
   raw: unknown
@@ -146,11 +147,12 @@ export function normalizeNotebookTemplateUiSpecification(
     label: 'template uiSpecification',
   });
 
-  if (
-    definition.planTemplate &&
-    !safeValidatePlanTemplate(definition.planTemplate).success
-  ) {
-    throw new Error('Invalid plan template in template uiSpecification');
+  for (const {planId, planTemplate} of getPlanTemplates(definition)) {
+    if (!safeValidatePlanTemplate(planTemplate).success) {
+      throw new Error(
+        `Invalid plan template "${planId}" in template uiSpecification`
+      );
+    }
   }
 
   return definition;

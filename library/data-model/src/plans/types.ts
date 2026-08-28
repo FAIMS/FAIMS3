@@ -9,6 +9,14 @@ import z from 'zod';
 export const PlanTemplateSchema = z
   .object({
     planType: z.string(),
+    /**
+     * Identifies this plan template among the template's plan templates, and
+     * keys the config supplied for it at notebook creation. Optional; where
+     * absent `getPlanTemplates` derives one.
+     */
+    planId: z.string().optional(),
+    /** Names the plan on the notebook's plan chooser. */
+    label: z.string().optional(),
   })
   .passthrough();
 export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
@@ -25,6 +33,11 @@ export const PlanSchema = z
      * `getNotebookPlans` assigns one where absent.
      */
     planId: z.string().optional(),
+    /**
+     * Names the plan on the notebook's plan chooser. Carried over from the plan
+     * template at instantiation; falls back to the plan type's own label.
+     */
+    label: z.string().optional(),
   })
   .passthrough();
 export type Plan = z.infer<typeof PlanSchema>;

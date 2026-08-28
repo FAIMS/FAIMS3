@@ -6,6 +6,8 @@ import {
   LIST_OF_RECORDS_PLAN_TYPE,
   getNotebookPlan,
   getNotebookPlans,
+  getPlanLabel,
+  getPlanTemplates,
 } from '../src';
 
 const counted = (extra: Record<string, unknown> = {}) =>
@@ -93,6 +95,47 @@ describe('getNotebookPlan', () => {
 
   it('is undefined for an id the notebook does not carry', () => {
     expect(getNotebookPlan({plans: [counted()]}, 'nope')).toBeUndefined();
+  });
+});
+
+describe('getPlanTemplates', () => {
+  it('is empty for a template with no plan templates', () => {
+    expect(getPlanTemplates({})).toEqual([]);
+    expect(getPlanTemplates(undefined)).toEqual([]);
+  });
+
+  it('derives the same ids the instantiated notebook will carry', () => {
+    const planTemplates = [
+      {planType: COUNTED_PLAN_TYPE, formType: 'Cell'},
+      {planType: COUNTED_PLAN_TYPE, formType: 'Sample'},
+    ];
+    expect(getPlanTemplates({planTemplates}).map(p => p.planId)).toEqual([
+      COUNTED_PLAN_TYPE,
+      `${COUNTED_PLAN_TYPE}-2`,
+    ]);
+  });
+
+  it('honours an explicit planId', () => {
+    const planTemplates = [
+      {planType: COUNTED_PLAN_TYPE, formType: 'Cell', planId: 'field-cells'},
+    ];
+    expect(getPlanTemplates({planTemplates})[0].planId).toBe('field-cells');
+  });
+});
+
+describe('getPlanLabel', () => {
+  it("prefers the plan's own label", () => {
+    expect(getPlanLabel(counted({label: 'Field cells'}), 'x')).toBe(
+      'Field cells'
+    );
+  });
+
+  it("falls back to the plan type's registered label", () => {
+    expect(getPlanLabel(counted(), 'x')).toBe(COUNTED_PLAN_TYPE);
+  });
+
+  it('falls back to the id for an unregistered plan type', () => {
+    expect(getPlanLabel({planType: 'Unregistered'}, 'lab')).toBe('lab');
   });
 });
 
