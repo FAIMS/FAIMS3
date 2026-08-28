@@ -13,6 +13,7 @@ import {
   type NotebookDefinition,
 } from './types';
 import {
+  findDuplicatePlanIds,
   getNotebookPlans,
   getPlanTemplates,
   safeValidatePlan,
@@ -147,6 +148,25 @@ export function normalizeNotebookTemplateUiSpecification(
     label: 'template uiSpecification',
   });
 
+  // A template written against the single-plan shape would otherwise parse as
+  // one with no plans at all, and create plan-less notebooks without a word.
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    'planTemplate' in (raw as Record<string, unknown>)
+  ) {
+    throw new Error(
+      'Template uiSpecification carries a single planTemplate; move it into the planTemplates list'
+    );
+  }
+
+  const duplicateIds = findDuplicatePlanIds(definition.planTemplates);
+  if (duplicateIds.length) {
+    throw new Error(
+      `Repeated plan id ${duplicateIds.join(', ')} in template uiSpecification`
+    );
+  }
+
   for (const {planId, planTemplate} of getPlanTemplates(definition)) {
     if (!safeValidatePlanTemplate(planTemplate).success) {
       throw new Error(
@@ -170,6 +190,13 @@ export function normalizeNotebookUiSpecification(
     schema: NotebookDefinitionSchema,
     label: 'uiSpecification',
   });
+
+  const duplicateIds = findDuplicatePlanIds(definition.plans);
+  if (duplicateIds.length) {
+    throw new Error(
+      `Repeated plan id ${duplicateIds.join(', ')} in uiSpecification`
+    );
+  }
 
   // Validate every plan the notebook carries, so a bad one is caught at load
   // rather than when its tab is first opened.

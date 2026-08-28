@@ -612,12 +612,21 @@ export const createNotebookFromTemplate = async ({
   };
 
   const plans: RegisteredPlan[] = [];
+  const planTemplates = getPlanTemplates(template.uiSpecification);
+
+  // A config for a plan the template does not carry means the caller read a
+  // different version of it, so its other configs may target the wrong plans.
+  const planIds = new Set(planTemplates.map(p => p.planId));
+  const stale = Object.keys(planConfigs ?? {}).filter(id => !planIds.has(id));
+  if (stale.length > 0) {
+    throw new Exceptions.InvalidRequestException(
+      `The template ${template._id} has no plan ${stale.map(id => `"${id}"`).join(', ')}; the plan configs do not match the template.`
+    );
+  }
 
   // Instantiate every plan template the template carries, in declared order,
   // which is the order the app offers them in.
-  for (const {planId, planTemplate} of getPlanTemplates(
-    template.uiSpecification
-  )) {
+  for (const {planId, planTemplate} of planTemplates) {
     const planType = planTemplate.planType;
     // Get the instantiation function for this plan type
     const planTypeDefinition = getPlanTypeDefinition(planType);
@@ -661,12 +670,11 @@ export const createNotebookFromTemplate = async ({
     // insert the plan into the uiSpecification for the notebook we're creating
     // parse it first to make sure it's valid according to the plan type's plan schema
     const planParseResult = planTypeDefinition.planSchema.safeParse({
-      // The id and label address and name the plan for the rest of its life, so
-      // they come from the template rather than from each plan type's own
-      // instantiatePlan.
+      ...instantiatedPlan,
+      // Last, so the id and label always come from the template rather than
+      // from a plan type's own instantiatePlan.
       planId,
       ...(planTemplate.label ? {label: planTemplate.label} : {}),
-      ...instantiatedPlan,
     });
     if (!planParseResult.success) {
       throw new Exceptions.InvalidRequestException(

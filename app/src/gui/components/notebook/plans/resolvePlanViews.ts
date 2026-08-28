@@ -23,8 +23,9 @@ export interface ResolvedPlanViews<C> {
  * Works out which of a notebook's plans is on screen and which tab slug belongs
  * to it. Plans without a registered view are skipped rather than offered as a
  * dead option. A single plan needs no choosing, so it opens directly; where
- * there are several and the route names none, or names one the notebook does
- * not carry, the chooser is shown rather than a guess at which was meant.
+ * there are several and the route names none, or the route names one this
+ * build cannot render, the chooser is shown rather than a guess at what was
+ * meant.
  */
 export const resolvePlanViews = <C>({
   uiDefinition,
@@ -45,11 +46,15 @@ export const resolvePlanViews = <C>({
 
   const {planId, slug} = splitPlanTab(tab);
   const named = planId ? plans.find(p => p.planId === planId) : undefined;
-  const active = named ?? (plans.length === 1 ? plans[0] : undefined);
+  // A tab naming a plan this build cannot render must not silently open a
+  // different workflow, so it asks too.
+  const namesMissingPlan = Boolean(planId) && !named;
+  const active =
+    named ?? (namesMissingPlan || plans.length !== 1 ? undefined : plans[0]);
   return {
     plans,
     active,
-    showChooser: !active && plans.length > 1,
+    showChooser: !active && plans.length > 0,
     planTab: slug,
   };
 };

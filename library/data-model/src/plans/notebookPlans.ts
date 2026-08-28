@@ -113,3 +113,21 @@ export const getPlanLabel = (
   planId: string
 ): string =>
   plan.label || getPlanTypeDefinition(plan.planType)?.label || planId;
+
+/**
+ * Explicit ids that appear more than once. Each would make two plans share one
+ * address, so a caller loading a definition rejects it rather than letting
+ * `identify` drop the later one out of sight.
+ */
+export const findDuplicatePlanIds = (
+  source: {planId?: string}[] | undefined
+): string[] => {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const {planId} of source ?? []) {
+    if (!planId) continue;
+    if (seen.has(planId)) duplicates.add(planId);
+    seen.add(planId);
+  }
+  return [...duplicates];
+};

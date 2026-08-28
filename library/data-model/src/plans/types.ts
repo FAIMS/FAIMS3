@@ -4,6 +4,15 @@ import z from 'zod';
 // for extra fields and will be used to parse JSON payloads with plans
 // or plan templates
 
+/**
+ * A plan id addresses one plan within a notebook, including as a single
+ * segment of a route, so it may not carry the characters that would split it.
+ */
+export const PlanIdSchema = z
+  .string()
+  .min(1)
+  .regex(/^[^./\\?#]+$/, 'A plan id may not contain . / \\ ? or #');
+
 // A plan template is an optional part of a Notebook Template and will
 // be used to instantiate a plan when a notebook is created from the template.
 export const PlanTemplateSchema = z
@@ -14,7 +23,7 @@ export const PlanTemplateSchema = z
      * keys the config supplied for it at notebook creation. Optional; where
      * absent `getPlanTemplates` derives one.
      */
-    planId: z.string().optional(),
+    planId: PlanIdSchema.optional(),
     /** Names the plan on the notebook's plan chooser. */
     label: z.string().optional(),
   })
@@ -32,7 +41,7 @@ export const PlanSchema = z
      * notebooks so hand-written and legacy single-plan notebooks stay terse;
      * `getNotebookPlans` assigns one where absent.
      */
-    planId: z.string().optional(),
+    planId: PlanIdSchema.optional(),
     /**
      * Names the plan on the notebook's plan chooser. Carried over from the plan
      * template at instantiation; falls back to the plan type's own label.

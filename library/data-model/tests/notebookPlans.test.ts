@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import {normalizeNotebookUiSpecification} from '../src/uiSpecification/normalize';
+import {
+  normalizeNotebookTemplateUiSpecification,
+  normalizeNotebookUiSpecification,
+} from '../src/uiSpecification/normalize';
 import {
   COUNTED_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
@@ -162,6 +165,73 @@ describe('normalizeNotebookUiSpecification with several plans', () => {
     delete bundle.plans[1].formType;
     expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
       /feature-list/
+    );
+  });
+});
+
+describe('normalizeNotebookUiSpecification plan id validation', () => {
+  const notebook = () =>
+    JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, '../../../api/notebooks/two-plans.json'),
+        'utf8'
+      )
+    ).uiSpecification;
+
+  it('rejects a repeated plan id rather than dropping the later plan', () => {
+    const bundle = notebook();
+    bundle.plans[1].planId = bundle.plans[0].planId;
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
+      /Repeated plan id/
+    );
+  });
+
+  it('rejects a plan id that would not survive a route', () => {
+    const bundle = notebook();
+    bundle.plans[0].planId = 'site.survey';
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow();
+  });
+});
+
+describe('normalizeNotebookTemplateUiSpecification', () => {
+  const template = () => {
+    const {plans, ...rest} = JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, '../../../api/notebooks/two-plans.json'),
+        'utf8'
+      )
+    ).uiSpecification;
+    return {
+      ...rest,
+      planTemplates: [
+        {planType: COUNTED_PLAN_TYPE, formType: 'Site', planId: 'site-survey'},
+      ],
+    };
+  };
+
+  it('accepts a template carrying plan templates', () => {
+    expect(
+      normalizeNotebookTemplateUiSpecification(template()).planTemplates
+    ).toHaveLength(1);
+  });
+
+  it('rejects a template still written to the single-plan shape', () => {
+    // No migration is wanted, so an unconverted template must say so rather
+    // than quietly become a template with no plans.
+    const {planTemplates, ...rest} = template();
+    expect(() =>
+      normalizeNotebookTemplateUiSpecification({
+        ...rest,
+        planTemplate: planTemplates[0],
+      })
+    ).toThrow(/single planTemplate/);
+  });
+
+  it('rejects a repeated plan id in the template', () => {
+    const bundle = template();
+    bundle.planTemplates.push({...bundle.planTemplates[0]});
+    expect(() => normalizeNotebookTemplateUiSpecification(bundle)).toThrow(
+      /Repeated plan id/
     );
   });
 });

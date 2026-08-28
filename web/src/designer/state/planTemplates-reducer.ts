@@ -28,13 +28,23 @@ const planTemplatesReducer = createSlice({
     planTemplateAdded: (state, action: PayloadAction<PlanTemplate>) => {
       state.push(action.payload);
     },
-    /** Replace the plan template at an index, keeping its position. */
+    /**
+     * Replace the plan template at an index, keeping its position. Plan
+     * dialogs author only their own type's fields, so the label and id the row
+     * carries survive an edit.
+     */
     planTemplateSet: (
       state,
       action: PayloadAction<{index: number; planTemplate: PlanTemplate}>
     ) => {
       const {index, planTemplate} = action.payload;
-      if (index in state) state[index] = planTemplate;
+      const existing = state[index];
+      if (!existing) return;
+      state[index] = {
+        ...(existing.planId ? {planId: existing.planId} : {}),
+        ...(existing.label ? {label: existing.label} : {}),
+        ...planTemplate,
+      };
     },
     /** Rename the plan template at an index; a blank label clears it. */
     planTemplateLabelled: (

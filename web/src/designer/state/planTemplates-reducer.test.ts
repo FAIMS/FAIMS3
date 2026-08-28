@@ -38,6 +38,23 @@ describe('planTemplates reducer', () => {
     expect(state).toEqual([listed, listed]);
   });
 
+  it('keeps the label and id an edit dialog does not author', () => {
+    // Plan dialogs emit only their own type's fields.
+    const state = reducer(
+      [{...counted, planId: 'field-cells', label: 'Artefacts'}],
+      planTemplateSet({
+        index: 0,
+        planTemplate: {planType: 'Counted', formType: 'FORM2'},
+      })
+    );
+    expect(state[0]).toEqual({
+      planId: 'field-cells',
+      label: 'Artefacts',
+      planType: 'Counted',
+      formType: 'FORM2',
+    });
+  });
+
   it('sets and clears a label', () => {
     const labelled = reducer(
       [counted],

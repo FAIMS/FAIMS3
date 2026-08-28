@@ -574,4 +574,34 @@ describe('notebook creation from template with planTemplates', () => {
       [`${COUNTED_PLAN_TYPE}-2`, 5],
     ]);
   });
+
+  it('rejects a plan config for a plan the template does not have', async () => {
+    // The caller read a different version of the template, so its other
+    // configs may target the wrong plans too.
+    const template = await createTemplateWithPlanTemplates({
+      planType: COUNTED_PLAN_TYPE,
+      formType: 'artefact-form',
+    });
+
+    const response = await requestAuthAndType(
+      request(app)
+        .post(NOTEBOOKS_API_BASE)
+        .send({
+          name: 'stale config notebook',
+          description: testNotebookDescription,
+          template_id: template._id,
+          planConfigs: {
+            [COUNTED_PLAN_TYPE]: {numberRequired: 2, allowExtraRecords: false},
+            [`${COUNTED_PLAN_TYPE}-2`]: {
+              numberRequired: 5,
+              allowExtraRecords: true,
+            },
+          },
+        } satisfies CreateNotebookFromTemplate)
+    ).expect(400);
+
+    expect(response.body.error.message).toContain(
+      `has no plan "${COUNTED_PLAN_TYPE}-2"`
+    );
+  });
 });

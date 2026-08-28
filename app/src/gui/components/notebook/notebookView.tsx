@@ -146,16 +146,18 @@ function NotebookViewWithSpec({
 
   const {tab} = useParams<{tab?: string}>();
 
-  // Replace rather than push, so leaving a notebook costs one Back press
+  // Replace rather than push, so leaving a notebook costs one Back press.
+  // Choosing a plan is the exception: it pushes, so Back returns to the
+  // chooser rather than leaving the notebook.
   const setTab = useCallback(
-    (nextTab: string) => {
+    (nextTab: string, {push = false}: {push?: boolean} = {}) => {
       navigate(
         ROUTES.getNotebookRoute({
           serverId: project.serverId,
           projectId: project.projectId,
           tab: nextTab,
         }),
-        {replace: true}
+        {replace: !push}
       );
     },
     [navigate, project.serverId, project.projectId]
@@ -365,9 +367,10 @@ function NotebookViewWithSpec({
     return (
       <PlanChooser
         plans={planViews}
-        // No slug: the plan resolves its own default and rewrites the URL.
+        // Keep any slug the link carried, so an unqualified deep link still
+        // lands on its tab. With none, the plan resolves its own default.
         onSelect={(planId: string) =>
-          setTab(planId + ROUTES.PLAN_TAB_SEPARATOR)
+          setTab(ROUTES.joinPlanTab(planId, planTab ?? ''), {push: true})
         }
       />
     );

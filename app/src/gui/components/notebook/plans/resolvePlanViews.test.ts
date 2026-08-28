@@ -103,6 +103,20 @@ describe('resolvePlanViews with one plan', () => {
     expect(r.showChooser).toBe(false);
     expect(r.planTab).toBe('details');
   });
+
+  it('asks rather than open a different plan than the tab names', () => {
+    // An app build without the second plan's view must not silently show the
+    // first plan's records under the second plan's URL.
+    const r = resolvePlanViews({
+      uiDefinition: {
+        plans: [counted(), {planType: 'Unregistered'} as RegisteredPlan],
+      },
+      tab: 'Unregistered.details',
+      getView,
+    });
+    expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(true);
+  });
 });
 
 describe('resolvePlanViews with several plans', () => {
