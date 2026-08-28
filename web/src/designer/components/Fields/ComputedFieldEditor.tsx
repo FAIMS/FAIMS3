@@ -15,6 +15,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {useMemo} from 'react';
 import {
   buildParentFieldTypes,
+  buildRelatedFieldTypes,
   compileComputedExpressionForForm,
   ExpressionError,
   ExprType,
@@ -121,6 +122,24 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
     }));
   }, [uiSpecForCompile, viewsetId]);
 
+  // Fields on records linked through single-link Linked Related Records
+  // fields, referenceable as {Rel-Field-ID.Field-ID}.
+  const relatedFieldOptions = useMemo(() => {
+    const {types} = buildRelatedFieldTypes({
+      uiSpecification: uiSpecForCompile,
+      formId: viewsetId,
+    });
+    return [...types.keys()].map(ref => {
+      const dot = ref.indexOf('.');
+      const relFieldId = ref.slice(0, dot);
+      const fieldId = ref.slice(dot + 1);
+      return {
+        ref,
+        label: `${getFieldLabelFor(relFieldId)} > ${getFieldLabelFor(fieldId)}`,
+      };
+    });
+  }, [uiSpecForCompile, viewsetId]);
+
   // Compile with the per-form wrapper so {_PARENT.Field-ID} references
   // validate against this form's possible parent forms.
   const validationError = useMemo(() => {
@@ -213,6 +232,11 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                   Parent record fields: {'{_PARENT.Field-ID}'} - value from the
                   record's parent
                 </li>
+                <li>
+                  Linked record fields: {'{Link-Field-ID.Field-ID}'} - value
+                  from the record linked through a single-link Related Records
+                  field
+                </li>
               </ul>
               The result must be {isText ? 'text' : 'a number'}.
             </Typography>
@@ -252,6 +276,30 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
                     }}
                   >
                     {parentFieldOptions.map(({ref, label}) => (
+                      <MenuItem key={ref} value={ref}>
+                        {label} ({ref})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+            {relatedFieldOptions.length > 0 && (
+              <Box sx={{mt: 1, maxWidth: 400}}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="related-field-insert-label">
+                    Insert linked record field
+                  </InputLabel>
+                  <Select
+                    labelId="related-field-insert-label"
+                    label="Insert linked record field"
+                    value=""
+                    data-testid="computed-related-field-insert"
+                    onChange={e => {
+                      if (e.target.value) insertFieldRef(e.target.value);
+                    }}
+                  >
+                    {relatedFieldOptions.map(({ref, label}) => (
                       <MenuItem key={ref} value={ref}>
                         {label} ({ref})
                       </MenuItem>
