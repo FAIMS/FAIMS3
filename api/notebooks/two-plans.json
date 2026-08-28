@@ -1,6 +1,6 @@
 {
   "name": "Two Plans",
-  "description": "Two plans on one notebook, one tab each, for the multi-plan seam spike. One plan counts records of a form; the other lists records to collect.",
+  "description": "Two plans on one notebook, offered as a choice when it is opened. One plan counts records of a form; the other lists records to collect.",
   "uiSpecification": {
     "uiSpec": {
       "fields": {

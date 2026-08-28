@@ -55,6 +55,7 @@ describe('resolvePlanViews with no plan view', () => {
     const r = resolvePlanViews({uiDefinition: {}, tab: undefined, getView});
     expect(r.plans).toEqual([]);
     expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(false);
   });
 
   it('skips a plan whose type has no registered view', () => {
@@ -65,6 +66,7 @@ describe('resolvePlanViews with no plan view', () => {
     });
     expect(r.plans).toEqual([]);
     expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(false);
   });
 });
 
@@ -75,12 +77,22 @@ describe('resolvePlanViews with one plan', () => {
       tab: `${COUNTED_PLAN_TYPE}.details`,
       getView,
     });
-    expect(r.isMultiPlan).toBe(false);
+    expect(r.showChooser).toBe(false);
     expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
     expect(r.planTab).toBe('details');
   });
 
-  it('does not become multi-plan when a second plan has no view', () => {
+  it('opens the plan directly, with nothing to choose between', () => {
+    const r = resolvePlanViews({
+      uiDefinition: {plans: [counted()]},
+      tab: undefined,
+      getView,
+    });
+    expect(r.showChooser).toBe(false);
+    expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
+  });
+
+  it('does not offer a choice when a second plan has no view', () => {
     const r = resolvePlanViews({
       uiDefinition: {
         plans: [counted(), {planType: 'Unregistered'} as RegisteredPlan],
@@ -88,7 +100,7 @@ describe('resolvePlanViews with one plan', () => {
       tab: `${COUNTED_PLAN_TYPE}.details`,
       getView,
     });
-    expect(r.isMultiPlan).toBe(false);
+    expect(r.showChooser).toBe(false);
     expect(r.planTab).toBe('details');
   });
 });
@@ -104,7 +116,7 @@ describe('resolvePlanViews with several plans', () => {
       COUNTED_PLAN_TYPE,
       'lab-samples',
     ]);
-    expect(r.isMultiPlan).toBe(true);
+    expect(r.showChooser).toBe(true);
   });
 
   it('shows the plan the tab names, and its own slug', () => {
@@ -117,22 +129,24 @@ describe('resolvePlanViews with several plans', () => {
     expect(r.planTab).toBe('details');
   });
 
-  it('falls back to the first plan when the tab names none', () => {
+  it('offers the chooser when the tab names no plan', () => {
     const r = resolvePlanViews({uiDefinition, tab: undefined, getView});
-    expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
-    expect(r.planTab).toBeUndefined();
+    expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(true);
   });
 
-  it('falls back to the first plan for an unknown plan id', () => {
+  it('offers the chooser for an unknown plan id', () => {
+    // A stale link names a plan the notebook no longer carries; ask rather
+    // than guess which of the others was meant.
     const r = resolvePlanViews({uiDefinition, tab: 'gone.details', getView});
-    expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
+    expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(true);
   });
 
-  it('reads a slug naming no plan as belonging to the first', () => {
-    // A hand-edited or truncated URL lands somewhere rather than nowhere.
+  it('offers the chooser for a slug naming no plan', () => {
     const r = resolvePlanViews({uiDefinition, tab: 'details', getView});
-    expect(r.active?.planId).toBe(COUNTED_PLAN_TYPE);
-    expect(r.planTab).toBe('details');
+    expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(true);
   });
 
   it('leaves the slug undefined when the tab names a plan only', () => {

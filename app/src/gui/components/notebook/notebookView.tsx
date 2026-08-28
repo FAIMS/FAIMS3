@@ -29,7 +29,7 @@ import {
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
-import {getNotebookView, PlanSwitcher, resolvePlanViews} from './plans';
+import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {useCallback, useMemo, useState} from 'react';
 import {config} from '../../../buildconfig';
@@ -40,7 +40,6 @@ import {useNavigate, useParams} from 'react-router-dom';
 import NotebookSettings from './settings';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
-import {Box} from '@mui/material';
 
 type NotebookViewProps = {
   project: Project;
@@ -254,8 +253,8 @@ function NotebookViewWithSpec({
   // which one the route addresses.
   const {
     plans: planViews,
-    isMultiPlan,
     active: activePlan,
+    showChooser,
     planTab,
   } = useMemo(
     () =>
@@ -361,25 +360,23 @@ function NotebookViewWithSpec({
     ]
   );
 
+  // more than one workflow to pick from, and none picked yet
+  if (showChooser) {
+    return (
+      <PlanChooser
+        plans={planViews}
+        // No slug: the plan resolves its own default and rewrites the URL.
+        onSelect={(planId: string) =>
+          setTab(planId + ROUTES.PLAN_TAB_SEPARATOR)
+        }
+      />
+    );
+  }
+
   // delegate to the plan view component
   if (activePlan) {
     const {Component} = activePlan;
-    return isMultiPlan ? (
-      <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-        <PlanSwitcher
-          plans={planViews}
-          activePlanId={activePlan.planId}
-          onSelect={(planId: string) => {
-            const target = planViews.find(p => p.planId === planId);
-            // No slug: the plan resolves its own default and rewrites the URL.
-            if (target) setTab(target.planId + ROUTES.PLAN_TAB_SEPARATOR);
-          }}
-        />
-        <Component {...props} />
-      </Box>
-    ) : (
-      <Component {...props} />
-    );
+    return <Component {...props} />;
   }
 
   // fallback to the default notebook component
