@@ -13,6 +13,32 @@ import {
 import {useAppSelector} from '@/designer/state/hooks';
 import {selectUiViews, selectUiViewSets} from '@/designer/store/selectors';
 import {useMemo} from 'react';
+import {getFieldLabel} from '@/lib/conditionUtils';
+import type {FieldType} from '@/designer/state/initial';
+
+/**
+ * Display label for a condition field reference: local field, parent
+ * reference (_PARENT.X) or related reference (Rel.X). Falls back to the
+ * raw ID when nothing resolves.
+ */
+export const getConditionFieldLabel = (
+  fieldId: string,
+  allFields: Record<string, FieldType>
+): string => {
+  const local = allFields[fieldId];
+  if (local) return getFieldLabel(local) ?? fieldId;
+  const labelFor = (id: string) =>
+    (allFields[id]?.['component-parameters']?.label as string) ?? id;
+  const parentField = decodeParentRef(fieldId);
+  if (parentField !== null) {
+    return `Parent › ${labelFor(parentField)}`;
+  }
+  const parts = splitRelatedReference(fieldId);
+  if (parts) {
+    return `${labelFor(parts.relFieldId)} › ${labelFor(parts.fieldId)}`;
+  }
+  return fieldId;
+};
 
 /**
  * Gets the field search scope and selectable field state for a condition rule.
