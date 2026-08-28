@@ -49,8 +49,8 @@ export const SHARED_TAB = {
 
 /**
  * The tab matching the route's slug, or the view's default. A slug the view
- * does not carry redirects to the default, so the URL names the tab on screen
- * and the record links built under it resolve.
+ * does not carry, or no slug at all, redirects to the default, so the URL names
+ * the tab on screen and the record links built under it resolve.
  */
 export const useResolveTab = <T extends string>(
   tabs: readonly [T, ...T[]],
@@ -59,8 +59,8 @@ export const useResolveTab = <T extends string>(
 ): T => {
   const match = tabs.find(t => t === tab);
   useEffect(() => {
-    if (tab !== undefined && match === undefined) setTab(tabs[0]);
-  }, [tab, match, setTab, tabs]);
+    if (match === undefined) setTab(tabs[0]);
+  }, [match, setTab, tabs]);
   return match ?? tabs[0];
 };
 
