@@ -94,13 +94,7 @@ export function getNotebookRoute({
 }) {
   return (
     INDIVIDUAL_NOTEBOOK_ROUTE +
-    serverId +
-    '/' +
-    projectId +
-    [planId, tab]
-      .filter(segment => segment)
-      .map(segment => '/' + segment)
-      .join('')
+    [serverId, projectId, planId, tab].filter(Boolean).join('/')
   );
 }
 
