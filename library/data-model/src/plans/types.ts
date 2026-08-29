@@ -40,7 +40,23 @@ export const PlanTemplateSchema = z
   .passthrough();
 export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
 
-const AuthoredPlanTemplateSchema = PlanTemplateSchema.omit({planId: true});
+/**
+ * A plan type's template schema as a dialog authors it: the id is the designer
+ * store's to mint, so a dialog validates against everything but that.
+ */
+export const authoredSchema = <
+  Shape extends z.ZodRawShape & {planId: z.ZodTypeAny},
+>(
+  schema: z.ZodObject<Shape, z.core.$ZodObjectConfig>
+) =>
+  // `Shape` carries `planId`, but the mask `omit` asks for is written against a
+  // resolved shape, which a generic one is not.
+  schema.omit({planId: true} as {planId: true} & Record<
+    Exclude<'planId', keyof Shape>,
+    never
+  >);
+
+export const AuthoredPlanTemplateSchema = authoredSchema(PlanTemplateSchema);
 
 /**
  * A plan template as authored, before the id that addresses it is minted. Plan

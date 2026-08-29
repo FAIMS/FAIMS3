@@ -30,7 +30,11 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {COUNTED_PLAN_TYPE, countedPlanTemplateSchema} from '@faims3/data-model';
+import {
+  authoredSchema,
+  COUNTED_PLAN_TYPE,
+  countedPlanTemplateSchema,
+} from '@faims3/data-model';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -74,7 +78,7 @@ export const CountedPlanDialog = ({
   }, [open, initialTemplate, viewSets]);
 
   const handleSave = () => {
-    const result = countedPlanTemplateSchema.omit({planId: true}).safeParse({
+    const result = authoredSchema(countedPlanTemplateSchema).safeParse({
       planType: COUNTED_PLAN_TYPE,
       formType,
     });

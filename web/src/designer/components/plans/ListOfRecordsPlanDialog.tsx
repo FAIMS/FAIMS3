@@ -34,6 +34,7 @@ import {
   useTheme,
 } from '@mui/material';
 import {
+  authoredSchema,
   LIST_OF_RECORDS_PLAN_TYPE,
   listPlanTemplateSchema,
 } from '@faims3/data-model';
@@ -114,7 +115,7 @@ export const ListOfRecordsPlanDialog = ({
   };
 
   const handleSave = () => {
-    const result = listPlanTemplateSchema.omit({planId: true}).safeParse({
+    const result = authoredSchema(listPlanTemplateSchema).safeParse({
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType,
       recordFields,
