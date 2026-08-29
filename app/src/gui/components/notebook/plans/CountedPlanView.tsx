@@ -1,4 +1,4 @@
-import {COUNTED_PLAN_TYPE, CountedPlan} from '@faims3/data-model';
+import {COUNTED_PLAN_TYPE} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
 import {RecordsTable} from '../record_table';
@@ -27,7 +27,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   if (props.plan?.planType !== COUNTED_PLAN_TYPE) {
     return <div>CountedPlanView: Not a counted plan</div>;
   }
-  const plan: CountedPlan = props.plan as CountedPlan;
+  const plan = props.plan;
 
   // How many records of the target type have we got
   const targetRecordCount = records.allRecords.filter(

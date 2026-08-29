@@ -1,4 +1,4 @@
-import {LIST_OF_RECORDS_PLAN_TYPE, ListPlan} from '@faims3/data-model';
+import {LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -86,7 +86,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
       </div>
     );
   }
-  const plan = props.plan as ListPlan;
+  const plan = props.plan;
   const plannedRecords = plan.records;
   if (!plannedRecords) {
     return <div>No planned records defined for this {config.notebookName}</div>;
