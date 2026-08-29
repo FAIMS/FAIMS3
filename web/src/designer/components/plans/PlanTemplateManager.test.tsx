@@ -38,6 +38,11 @@ vi.mock('../../buildconfig', () => ({
   config: designerConfig,
 }));
 
+// Branding only; the real module drags in the whole app config
+vi.mock('@/constants', () => ({
+  config: {notebookName: 'notebook', notebookNamePlural: 'notebooks'},
+}));
+
 const WithProviders = ({
   children,
   store,

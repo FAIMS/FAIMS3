@@ -20,6 +20,7 @@
 
 import {useState} from 'react';
 import {
+  Box,
   Button,
   Card,
   CardActionArea,
@@ -55,14 +56,18 @@ import {
   planTemplateRemoved,
   planTemplateSet,
 } from '../../state/planTemplates-reducer';
-import {config} from '../../buildconfig';
+import {config} from '@/constants';
+import {config as designerConfig} from '../../buildconfig';
 import {getDesignerPlanType, getDesignerPlanTypes} from '../../plans';
 import {
   designerCancelButtonSx,
+  designerControlLabelSx,
   designerDialogActionsSx,
   designerDialogTitleSx,
+  designerIconControlButtonSx,
   designerPrimaryActionButtonSx,
 } from '../designer-style';
+import {HeadingWithInfo} from '../heading-with-info';
 
 /** Which plan template an authoring dialog is open against. */
 type Editing = {planType: string; index?: number};
@@ -92,7 +97,7 @@ export const PlanTemplateManager = () => {
   if (mode !== 'template') {
     return null;
   }
-  if (!config.enablePlansInDesigner && planTemplates.length === 0) {
+  if (!designerConfig.enablePlansInDesigner && planTemplates.length === 0) {
     return null;
   }
 
@@ -110,119 +115,161 @@ export const PlanTemplateManager = () => {
 
   return (
     <>
-      <Stack spacing={1} sx={{width: '100%'}}>
-        {planTemplates.map((planTemplate, index) => {
-          const definition = getDesignerPlanType(planTemplate.planType);
-          const typeLabel = definition?.label ?? planTemplate.planType;
-          const formType = planTemplate.formType as string | undefined;
-          const formLabel = formType ? viewSets[formType]?.label : undefined;
-          const formMissing = Boolean(formType && !formLabel);
-          return (
-            <Stack
-              key={planTemplate.planId}
-              direction="row"
-              spacing={1}
-              sx={{alignItems: 'center'}}
-              data-testid="web-designer-plan-row"
+      <Box sx={{mt: 1, mb: 1.25}}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+            mb: planTemplates.length ? 1 : 0,
+          }}
+        >
+          <HeadingWithInfo
+            title="Plans"
+            tooltip={
+              <Box sx={{p: 0.25, maxWidth: 320}}>
+                <Typography
+                  variant="body2"
+                  sx={{fontWeight: 700, mb: 0.5, lineHeight: 1.35}}
+                >
+                  Plans guide data collection in the {config.notebookNamePlural}
+                  created from this template.
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{display: 'block', lineHeight: 1.45}}
+                >
+                  Each plan names the form it collects and what is expected of
+                  it. A {config.notebookName} carrying more than one plan asks
+                  which to open, offering them in the order listed here.
+                </Typography>
+              </Box>
+            }
+          />
+          {designerConfig.enablePlansInDesigner && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => setChooserOpen(true)}
+              data-testid="web-designer-add-plan-button"
+              sx={{
+                ...designerPrimaryActionButtonSx,
+                boxShadow: 'none',
+                whiteSpace: 'nowrap',
+                textTransform: 'none',
+                fontWeight: 700,
+              }}
             >
-              {/* Array order is the order the app's plan chooser offers them in */}
-              <Tooltip title="Move plan up">
-                <span>
-                  <IconButton
-                    size="small"
-                    aria-label="move plan up"
-                    disabled={index === 0}
-                    onClick={() =>
-                      dispatch(planTemplateMoved({index, direction: 'up'}))
-                    }
-                  >
-                    <ArrowUpwardRoundedIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Move plan down">
-                <span>
-                  <IconButton
-                    size="small"
-                    aria-label="move plan down"
-                    disabled={index === planTemplates.length - 1}
-                    onClick={() =>
-                      dispatch(planTemplateMoved({index, direction: 'down'}))
-                    }
-                  >
-                    <ArrowDownwardRoundedIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <TextField
-                size="small"
-                label="Label"
-                placeholder={planTemplate.planId}
-                helperText="Shown when choosing a plan"
-                value={planTemplate.label ?? ''}
-                onChange={event =>
-                  dispatch(
-                    planTemplateLabelled({index, label: event.target.value})
-                  )
-                }
-              />
-              <Chip
-                icon={formMissing ? <WarningAmberRoundedIcon /> : undefined}
-                label={
-                  formMissing
-                    ? `${typeLabel} plan: form missing`
-                    : `${typeLabel} plan: ${formLabel}`
-                }
-                color={formMissing ? 'warning' : 'default'}
-                onClick={() =>
-                  setEditing({planType: planTemplate.planType, index})
-                }
-                sx={{fontWeight: 600}}
-              />
-              <Tooltip title="Edit plan">
-                <IconButton
+              Add Plan
+            </Button>
+          )}
+        </Box>
+
+        <Stack spacing={1}>
+          {planTemplates.map((planTemplate, index) => {
+            const definition = getDesignerPlanType(planTemplate.planType);
+            const typeLabel = definition?.label ?? planTemplate.planType;
+            const formType = planTemplate.formType as string | undefined;
+            const formLabel = formType ? viewSets[formType]?.label : undefined;
+            const formMissing = Boolean(formType && !formLabel);
+            return (
+              <Stack
+                key={planTemplate.planId}
+                direction="row"
+                spacing={1}
+                sx={{alignItems: 'center'}}
+                data-testid="web-designer-plan-row"
+              >
+                {/* Array order is the order the app's plan chooser offers them in */}
+                <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+                  <Tooltip title="Move plan up">
+                    <span>
+                      <IconButton
+                        size="small"
+                        aria-label="move plan up"
+                        disabled={index === 0}
+                        onClick={() =>
+                          dispatch(planTemplateMoved({index, direction: 'up'}))
+                        }
+                        sx={designerIconControlButtonSx}
+                      >
+                        <ArrowUpwardRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title="Move plan down">
+                    <span>
+                      <IconButton
+                        size="small"
+                        aria-label="move plan down"
+                        disabled={index === planTemplates.length - 1}
+                        onClick={() =>
+                          dispatch(
+                            planTemplateMoved({index, direction: 'down'})
+                          )
+                        }
+                        sx={designerIconControlButtonSx}
+                      >
+                        <ArrowDownwardRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Typography variant="caption" sx={designerControlLabelSx}>
+                    Reorder
+                  </Typography>
+                </Stack>
+                <TextField
                   size="small"
-                  aria-label="edit plan"
+                  label="Label"
+                  placeholder={planTemplate.planId}
+                  helperText="Shown when choosing a plan"
+                  value={planTemplate.label ?? ''}
+                  onChange={event =>
+                    dispatch(
+                      planTemplateLabelled({index, label: event.target.value})
+                    )
+                  }
+                />
+                <Chip
+                  icon={formMissing ? <WarningAmberRoundedIcon /> : undefined}
+                  label={
+                    formMissing
+                      ? `${typeLabel} plan: form missing`
+                      : `${typeLabel} plan: ${formLabel}`
+                  }
+                  color={formMissing ? 'warning' : 'default'}
                   onClick={() =>
                     setEditing({planType: planTemplate.planType, index})
                   }
-                >
-                  <EditRoundedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Remove plan">
-                <IconButton
-                  size="small"
-                  aria-label="remove plan"
-                  onClick={() => setRemoveIndex(index)}
-                >
-                  <DeleteOutlineRoundedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-        })}
-
-        {config.enablePlansInDesigner && (
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setChooserOpen(true)}
-            data-testid="web-designer-add-plan-button"
-            sx={{
-              ...designerPrimaryActionButtonSx,
-              alignSelf: 'flex-start',
-              boxShadow: 'none',
-              whiteSpace: 'nowrap',
-              textTransform: 'none',
-              fontWeight: 700,
-            }}
-          >
-            Add Plan
-          </Button>
-        )}
-      </Stack>
+                  sx={{fontWeight: 600}}
+                />
+                <Tooltip title="Edit plan">
+                  <IconButton
+                    size="small"
+                    aria-label="edit plan"
+                    onClick={() =>
+                      setEditing({planType: planTemplate.planType, index})
+                    }
+                  >
+                    <EditRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Remove plan">
+                  <IconButton
+                    size="small"
+                    aria-label="remove plan"
+                    onClick={() => setRemoveIndex(index)}
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            );
+          })}
+        </Stack>
+      </Box>
 
       {/* Plan type chooser */}
       <Dialog
