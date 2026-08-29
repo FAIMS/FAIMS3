@@ -38,6 +38,8 @@ import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
 import {useNavigate, useParams} from 'react-router-dom';
 import NotebookSettings from './settings';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {Button, Stack} from '@mui/material';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
 
@@ -382,7 +384,24 @@ function NotebookViewWithSpec({
   // delegate to the plan view component
   if (activePlan) {
     const {Component} = activePlan;
-    return <Component {...props} />;
+    // Only the browser's Back returns to the chooser, so where there was a
+    // choice to make, say so on screen too.
+    return planViews.length > 1 ? (
+      <Stack spacing={1}>
+        <Button
+          size="small"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => showPlanTab({})}
+          data-testid="plan-change"
+          sx={{alignSelf: 'flex-start', textTransform: 'none'}}
+        >
+          Change plan
+        </Button>
+        <Component {...props} />
+      </Stack>
+    ) : (
+      <Component {...props} />
+    );
   }
 
   // fallback to the default notebook component
