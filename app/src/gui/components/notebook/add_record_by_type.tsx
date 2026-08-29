@@ -111,6 +111,7 @@ export default function AddRecordButtons({
         to={ROUTES.getEditRecordRoute({
           serverId: serverId,
           projectId: projectId || 'dummy',
+          planId,
           tab,
           recordId: (selectedRecord.record_id || '').toString(),
         })}
