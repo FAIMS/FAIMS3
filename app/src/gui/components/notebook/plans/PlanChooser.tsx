@@ -3,9 +3,9 @@ import {Box, Button, Stack, Typography} from '@mui/material';
 
 /**
  * The first screen of a notebook carrying more than one plan: one button per
- * workflow, in the order the notebook declares them. Choosing one enters it for
- * the rest of the visit, so the plan view owns the whole screen and any tabs
- * inside it are the plan's own.
+ * plan, in the order the notebook declares them. Choosing one enters it for the
+ * rest of the visit, so the plan view owns the whole screen and any tabs inside
+ * it are the plan's own.
  */
 export const PlanChooser = ({
   plans,
@@ -16,7 +16,7 @@ export const PlanChooser = ({
 }) => (
   <Box sx={{p: 3, maxWidth: 480, mx: 'auto'}} data-testid="plan-chooser">
     <Typography variant="h6" component="h2" sx={{mb: 2}}>
-      Choose a workflow
+      Choose a plan
     </Typography>
     <Stack spacing={2}>
       {plans.map(({plan}) => (

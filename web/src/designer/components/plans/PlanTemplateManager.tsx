@@ -158,7 +158,7 @@ export const PlanTemplateManager = () => {
                 size="small"
                 label="Label"
                 placeholder={planTemplate.planId}
-                helperText="Shown when choosing a workflow"
+                helperText="Shown when choosing a plan"
                 value={planTemplate.label ?? ''}
                 onChange={event =>
                   dispatch(
