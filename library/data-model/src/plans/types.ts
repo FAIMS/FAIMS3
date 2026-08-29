@@ -83,7 +83,7 @@ export const PlanSchema = z
     planId: PlanIdSchema,
     /**
      * Names the plan on the notebook's plan chooser. Carried over from the plan
-     * template at instantiation; falls back to the plan type's own label.
+     * template at instantiation; `getPlanLabel` falls back to the plan id.
      */
     label: z.string().optional(),
   })
