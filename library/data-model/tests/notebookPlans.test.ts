@@ -116,6 +116,17 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
     }
   );
 
+  it.each(['.', '..'])(
+    'rejects the plan id %s, which the router reads as navigation',
+    bad => {
+      const bundle = notebook();
+      bundle.plans[0].planId = bad;
+      expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
+        /may not be only dots/
+      );
+    }
+  );
+
   it('accepts a plan id carrying a dot, which the route segment keeps whole', () => {
     const bundle = notebook();
     bundle.plans[0].planId = 'site.survey';

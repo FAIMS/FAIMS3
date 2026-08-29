@@ -12,7 +12,9 @@ const routeSafeSchema = (what: string) =>
   z
     .string()
     .min(1)
-    .regex(/^[^/\\?#%]+$/, `A ${what} may not contain / \\ ? # or %`);
+    .regex(/^[^/\\?#%]+$/, `A ${what} may not contain / \\ ? # or %`)
+    // `.` and `..` are route navigation, so a segment of only dots is not one
+    .refine(value => !/^\.+$/.test(value), `A ${what} may not be only dots`);
 
 /**
  * A plan id addresses one plan within a notebook, including as a segment of a
