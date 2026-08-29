@@ -127,12 +127,16 @@ export function tryNormalizeApiUiSpecification(
     ? (rawPlanTemplates as PlanTemplate[])
     : undefined;
 
-  // Warn rather than fail on an invalid plan template so the template stays editable
-  const invalid = (planTemplates ?? [])
-    .map(planTemplate => safeValidatePlanTemplate(planTemplate))
-    .filter(result => !result.success);
+  // Warn rather than fail on an invalid plan template so the template stays
+  // editable; name each failing plan, as normalizing a template does
+  const invalid = (planTemplates ?? []).flatMap(planTemplate => {
+    const result = safeValidatePlanTemplate(planTemplate);
+    return result.success
+      ? []
+      : [`"${planTemplate.planId}": ${result.error.message}`];
+  });
   const planWarning = invalid.length
-    ? `${invalid.length} of this template's plans failed validation and may need to be re-created.`
+    ? `${invalid.length} of this template's plans failed validation and may need to be re-created. ${invalid.join(' ')}`
     : undefined;
 
   return {
