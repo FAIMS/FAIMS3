@@ -17,7 +17,7 @@ enable_cors = true
 single_node=true
 
 [log]
-writer = syslog
+writer = stderr
 level = info
 
 [chttpd_auth]
