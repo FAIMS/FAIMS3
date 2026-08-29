@@ -111,6 +111,19 @@ describe('resolvePlanViews with one plan', () => {
     expect(r.showChooser).toBe(true);
   });
 
+  it("asks rather than open this plan under an unrenderable plan's segment", () => {
+    // A lone segment, so nothing distinguishes it from a tab slug except that
+    // the notebook declares a plan by that name.
+    const r = resolvePlanViews({
+      uiDefinition: {plans: [counted(), unregistered]},
+      planId: 'Unregistered',
+      tab: undefined,
+      getView,
+    });
+    expect(r.active).toBeUndefined();
+    expect(r.showChooser).toBe(true);
+  });
+
   it("resolves a lone segment naming no plan as this plan's tab", () => {
     const r = resolvePlanViews({
       uiDefinition: {plans: [counted()]},

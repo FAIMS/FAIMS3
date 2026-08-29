@@ -40,12 +40,17 @@ export const resolvePlanViews = <C>({
   tab: string | undefined;
   getView: (planType: RegisteredPlan['planType']) => C | undefined;
 }): ResolvedPlanViews<C> => {
-  const plans = (uiDefinition?.plans ?? [])
+  const declared = uiDefinition?.plans ?? [];
+  const plans = declared
     .map(plan => ({plan, Component: getView(plan.planType)}))
     .filter((entry): entry is PlanView<C> => entry.Component !== undefined);
 
   const named = plans.find(p => p.plan.planId === planId);
-  const isBareTab = planId !== undefined && tab === undefined && !named;
+  // Matched against every declared plan, not just the ones with a view: a lone
+  // segment naming a plan this build cannot render is still naming a plan.
+  const namesPlan =
+    planId !== undefined && declared.some(p => p.planId === planId);
+  const isBareTab = planId !== undefined && tab === undefined && !namesPlan;
   // A route naming a plan this build cannot render must not silently open a
   // different plan, so it asks rather than falling back to the only one.
   const namesMissingPlan = planId !== undefined && !named && !isBareTab;
