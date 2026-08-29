@@ -40,7 +40,12 @@ export const resolvePlanViews = <C>({
     .filter((entry): entry is PlanView<C> => entry.Component !== undefined);
 
   const {planId, slug} = splitPlanTab(tab);
-  const named = planId ? plans.find(p => p.plan.planId === planId) : undefined;
+  // A segment naming a plan and nothing else is that plan's own tab-less URL,
+  // the shape a notebook without a tab already has. It carries no separator for
+  // `splitPlanTab` to read, so match it against the plans here.
+  const bare =
+    !planId && slug ? plans.find(p => p.plan.planId === slug) : undefined;
+  const named = planId ? plans.find(p => p.plan.planId === planId) : bare;
   // A tab naming a plan this build cannot render must not silently open a
   // different workflow, so it asks too.
   const namesMissingPlan = Boolean(planId) && !named;
@@ -50,6 +55,6 @@ export const resolvePlanViews = <C>({
     plans,
     active,
     showChooser: !active && plans.length > 0,
-    planTab: slug,
+    planTab: bare ? undefined : slug,
   };
 };

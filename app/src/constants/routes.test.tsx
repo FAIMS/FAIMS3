@@ -18,12 +18,12 @@ describe('useResolveTab', () => {
     await waitFor(() => expect(setTab).toHaveBeenCalledWith('records'));
   });
 
-  it('rewrites a route naming no tab, so no URL keeps a bare plan prefix', async () => {
-    // A plan chosen from the chooser lands on `<planId>.` with no slug; the
-    // view names its default so the trailing separator does not persist.
+  it('shows the default for a route naming no tab, leaving the URL alone', async () => {
+    // The notebook's own URL, and the shape a plan chosen from the chooser
+    // lands on. A record link may be written from it, so it is not rewritten.
     const setTab = vi.fn();
     const {result} = renderHook(() => useResolveTab(TABS, undefined, setTab));
     expect(result.current).toBe('records');
-    await waitFor(() => expect(setTab).toHaveBeenCalledWith('records'));
+    await waitFor(() => expect(setTab).not.toHaveBeenCalled());
   });
 });

@@ -370,9 +370,12 @@ function NotebookViewWithSpec({
       <PlanChooser
         plans={planViews}
         // Keep any slug the link carried, so an unqualified deep link still
-        // lands on its tab. With none, the plan resolves its own default.
+        // lands on its tab. With none, the plan id stands alone rather than
+        // trailing a separator with nothing after it.
         onSelect={(planId: string) =>
-          setTab(ROUTES.joinPlanTab(planId, planTab ?? ''), {push: true})
+          setTab(planTab ? ROUTES.joinPlanTab(planId, planTab) : planId, {
+            push: true,
+          })
         }
       />
     );

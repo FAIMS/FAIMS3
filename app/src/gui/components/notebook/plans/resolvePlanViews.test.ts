@@ -182,10 +182,19 @@ describe('resolvePlanViews with several plans', () => {
   });
 
   it('leaves the slug undefined when the tab names a plan only', () => {
-    // The view then resolves its own default and rewrites the URL.
+    // The view then resolves its own default without touching the URL.
     const r = resolvePlanViews({uiDefinition, tab: 'lab-samples.', getView});
     expect(r.active?.plan.planId).toBe('lab-samples');
     expect(r.planTab).toBeUndefined();
+  });
+
+  it('opens the plan a bare segment names, carrying no slug', () => {
+    // What the chooser writes when the route carried no slug: a plan id with
+    // no separator after it, which splitPlanTab reads as a bare slug.
+    const r = resolvePlanViews({uiDefinition, tab: 'lab-samples', getView});
+    expect(r.active?.plan.planId).toBe('lab-samples');
+    expect(r.planTab).toBeUndefined();
+    expect(r.showChooser).toBe(false);
   });
 
   it('carries the plan instance so a view need not read the project', () => {
