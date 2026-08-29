@@ -349,7 +349,6 @@ function NotebookViewWithSpec({
     }),
     [
       project,
-      tab,
       uiSpecification,
       refreshRecordList,
       setQuery,
