@@ -133,7 +133,7 @@ export const PlanTemplateManager = () => {
                     aria-label="move plan up"
                     disabled={index === 0}
                     onClick={() =>
-                      dispatch(planTemplateMoved({index, delta: -1}))
+                      dispatch(planTemplateMoved({index, direction: 'up'}))
                     }
                   >
                     <ArrowUpwardRoundedIcon fontSize="small" />
@@ -147,7 +147,7 @@ export const PlanTemplateManager = () => {
                     aria-label="move plan down"
                     disabled={index === planTemplates.length - 1}
                     onClick={() =>
-                      dispatch(planTemplateMoved({index, delta: 1}))
+                      dispatch(planTemplateMoved({index, direction: 'down'}))
                     }
                   >
                     <ArrowDownwardRoundedIcon fontSize="small" />

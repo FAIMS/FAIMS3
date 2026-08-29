@@ -92,12 +92,11 @@ describe('planTemplates reducer', () => {
   it('moves a plan template and leaves the ends alone', () => {
     // Ids ride along with their own plan, so a reorder cannot re-address one.
     const state = [stored(counted), stored(listed)];
-    expect(reducer(state, planTemplateMoved({index: 1, delta: -1}))).toEqual([
-      stored(listed),
-      stored(counted),
-    ]);
-    expect(reducer(state, planTemplateMoved({index: 0, delta: -1}))).toEqual(
-      state
-    );
+    expect(
+      reducer(state, planTemplateMoved({index: 1, direction: 'up'}))
+    ).toEqual([stored(listed), stored(counted)]);
+    expect(
+      reducer(state, planTemplateMoved({index: 0, direction: 'up'}))
+    ).toEqual(state);
   });
 });

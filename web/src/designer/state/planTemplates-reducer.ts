@@ -81,10 +81,10 @@ const planTemplatesReducer = createSlice({
      */
     planTemplateMoved: (
       state,
-      action: PayloadAction<{index: number; delta: number}>
+      action: PayloadAction<{index: number; direction: 'up' | 'down'}>
     ) => {
-      const {index, delta} = action.payload;
-      const to = index + delta;
+      const {index, direction} = action.payload;
+      const to = direction === 'up' ? index - 1 : index + 1;
       if (!(index in state) || !(to in state)) return;
       const [moved] = state.splice(index, 1);
       state.splice(to, 0, moved);
