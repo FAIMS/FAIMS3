@@ -142,25 +142,20 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
 });
 
 describe('normalizeNotebookTemplateUiSpecification', () => {
-  const template = () => {
-    const {plans, ...rest} = JSON.parse(
+  const template = () =>
+    JSON.parse(
       fs.readFileSync(
-        path.join(__dirname, '../../../api/notebooks/two-plans.json'),
+        path.join(__dirname, '../../../api/notebooks/two-plan-templates.json'),
         'utf8'
       )
     ).uiSpecification;
-    return {
-      ...rest,
-      planTemplates: [
-        {planType: COUNTED_PLAN_TYPE, formType: 'Site', planId: 'site-survey'},
-      ],
-    };
-  };
 
-  it('accepts a template carrying plan templates', () => {
-    expect(
-      normalizeNotebookTemplateUiSpecification(template()).planTemplates
-    ).toHaveLength(1);
+  it('resolves the fixture to its two plan templates, in order', () => {
+    const definition = normalizeNotebookTemplateUiSpecification(template());
+    expect(definition.planTemplates?.map(p => p.planId)).toEqual([
+      'site-survey',
+      'feature-list',
+    ]);
   });
 
   it('rejects a repeated plan id in the template', () => {

@@ -15,6 +15,8 @@ import {
   PostCreateTemplateResponseSchema,
 } from '@faims3/data-model';
 import {beforeEach, describe, expect, it} from 'vitest';
+import fs from 'fs';
+import path from 'path';
 import request from 'supertest';
 import {getTemplatesDb} from '../src/couchdb';
 import {getProjectById} from '../src/couchdb/notebooks';
@@ -650,6 +652,49 @@ describe('notebook creation from template with planTemplates', () => {
 
     expect(response.body.error.message).toContain(
       `has no plan "${COUNTED_PLAN_TYPE}-2"`
+    );
+  });
+});
+
+describe('the two-plan-templates fixture', () => {
+  beforeEach(beforeApiTests);
+
+  const fixture = (name: string) =>
+    JSON.parse(
+      fs.readFileSync(path.join(__dirname, '../notebooks', name), 'utf8')
+    );
+
+  it('instantiates to the plans the two-plans notebook fixture carries', async () => {
+    // The two fixtures are the same notebook either side of creation, so a
+    // reviewer can run the template path by hand and compare against the other.
+    const {planConfigs, ...templatePayload} = fixture(
+      'two-plan-templates.json'
+    );
+
+    const template = await requestAuthAndType(
+      request(app)
+        .post(TEMPLATE_API_BASE)
+        .send(templatePayload satisfies PostCreateTemplateInput)
+    )
+      .expect(200)
+      .then(res => PostCreateTemplateResponseSchema.parse(res.body));
+
+    const notebookId = await requestAuthAndType(
+      request(app)
+        .post(NOTEBOOKS_API_BASE)
+        .send({
+          name: 'two plans from a template',
+          description: testNotebookDescription,
+          template_id: template._id,
+          planConfigs,
+        } satisfies CreateNotebookFromTemplate)
+    )
+      .expect(200)
+      .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
+
+    const project = await getProjectById(notebookId);
+    expect(project.uiSpecification.plans).toEqual(
+      fixture('two-plans.json').uiSpecification.plans
     );
   });
 });
