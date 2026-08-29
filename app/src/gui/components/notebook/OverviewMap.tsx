@@ -106,8 +106,8 @@ const SelectedRecordPopoverContent = ({
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
-  const {tab} = useParams<{tab?: string}>();
-  const notebook = {serverId, projectId: project_id, tab};
+  const {planId, tab} = useParams<{planId?: string; tab?: string}>();
+  const notebook = {serverId, projectId: project_id, planId, tab};
 
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).

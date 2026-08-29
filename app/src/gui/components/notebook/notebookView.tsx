@@ -144,18 +144,21 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const {tab} = useParams<{tab?: string}>();
+  const {planId, tab} = useParams<{planId?: string; tab?: string}>();
 
   // Replace rather than push, so leaving a notebook costs one Back press.
   // Choosing a plan is the exception: it pushes, so Back returns to the
   // chooser rather than leaving the notebook.
-  const setTab = useCallback(
-    (nextTab: string, {push = false}: {push?: boolean} = {}) => {
+  const showPlanTab = useCallback(
+    (
+      next: {planId?: string; tab?: string},
+      {push = false}: {push?: boolean} = {}
+    ) => {
       navigate(
         ROUTES.getNotebookRoute({
           serverId: project.serverId,
           projectId: project.projectId,
-          tab: nextTab,
+          ...next,
         }),
         {replace: !push}
       );
@@ -206,6 +209,7 @@ function NotebookViewWithSpec({
           ROUTES.getEditRecordRoute({
             serverId: project.serverId,
             projectId: project.projectId,
+            planId,
             tab,
             recordId: record._id,
             mode: 'new',
@@ -231,6 +235,7 @@ function NotebookViewWithSpec({
       navigate,
       project.serverId,
       project.projectId,
+      planId,
       tab,
       dispatch,
     ]
@@ -243,12 +248,13 @@ function NotebookViewWithSpec({
         ROUTES.getViewRecordRoute({
           serverId: project.serverId,
           projectId: project.projectId,
+          planId,
           tab,
           recordId: record.recordId,
         })
       );
     },
-    [navigate, project.serverId, project.projectId, tab]
+    [navigate, project.serverId, project.projectId, planId, tab]
   );
 
   // Every plan the notebook carries that has a view registered for it, and
@@ -262,32 +268,30 @@ function NotebookViewWithSpec({
     () =>
       resolvePlanViews({
         uiDefinition: project.uiDefinition,
+        planId,
         tab,
         getView: getNotebookView,
       }),
-    [project.uiDefinition, tab]
+    [project.uiDefinition, planId, tab]
   );
 
-  // A plan view sets its own slug; re-prefix it so the URL keeps naming the
-  // plan on screen.
-  const setPlanTab = useCallback(
+  // A plan view sets only its own slug, so pair it with the plan on screen and
+  // the URL keeps naming both. Without a plan the slug stands alone, which is
+  // the tab-only shape the default notebook view has.
+  const setTab = useCallback(
     (nextTab: string) => {
-      setTab(
-        activePlan
-          ? ROUTES.joinPlanTab(activePlan.plan.planId, nextTab)
-          : nextTab
-      );
+      showPlanTab({planId: activePlan?.plan.planId, tab: nextTab});
     },
-    [setTab, activePlan]
+    [showPlanTab, activePlan]
   );
 
   // Completion roll-up per plan-claiming record, for its cell's status; only a
-  // registered plan view can display it, so gate the walks on one
+  // plan view on screen can display it, so gate the walks on one
   const planRecordStatusReports = usePlanRecordStatusReports({
     projectId: project.projectId,
     uiSpecification,
     records: records.allRecords,
-    enabled: planViews.length > 0,
+    enabled: activePlan !== undefined,
   });
 
   const props: NotebookViewComponentProps = useMemo(
@@ -295,14 +299,13 @@ function NotebookViewWithSpec({
       project,
       tab: planTab,
       plan: activePlan?.plan,
-      planId: activePlan?.plan.planId,
       uiSpecification: uiSpecification,
       actions: {
         refreshRecordList,
         setQuery,
         createRecord,
         navigateToRecord,
-        setTab: setPlanTab,
+        setTab,
       },
       status: {
         // Never-loaded, not merely in-flight: the hook's isLoading stays true
@@ -360,22 +363,18 @@ function NotebookViewWithSpec({
       planRecordStatusReports,
       planTab,
       activePlan,
-      setPlanTab,
     ]
   );
 
-  // more than one workflow to pick from, and none picked yet
+  // more than one plan to pick from, and none picked yet
   if (showChooser) {
     return (
       <PlanChooser
         plans={planViews}
         // Keep any slug the link carried, so an unqualified deep link still
-        // lands on its tab. With none, the plan id stands alone rather than
-        // trailing a separator with nothing after it.
-        onSelect={(planId: string) =>
-          setTab(planTab ? ROUTES.joinPlanTab(planId, planTab) : planId, {
-            push: true,
-          })
+        // lands on its tab.
+        onSelect={(chosenPlanId: string) =>
+          showPlanTab({planId: chosenPlanId, tab: planTab}, {push: true})
         }
       />
     );
@@ -391,5 +390,5 @@ function NotebookViewWithSpec({
   // TODO: port this component to use the same interface
   // as our custom plan view components once we have sorted
   // out what that interface looks like
-  return <NotebookComponent project={project} tab={tab} setTab={setTab} />;
+  return <NotebookComponent project={project} tab={planTab} setTab={setTab} />;
 }

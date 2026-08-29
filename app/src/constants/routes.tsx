@@ -67,47 +67,29 @@ export const useResolveTab = <T extends string>(
 };
 
 /**
- * Separates a plan's id from that plan's own tab slug in the route's single tab
- * segment, e.g. `lab-samples.details`. Written whenever a plan view is on
- * screen, a single-plan notebook included, so a link always says which plan it
- * means. A bare slug is what the default record list writes, and is still read
- * as a single-plan notebook's only plan, so older links resolve.
+ * The plan on screen and the tab within it, both optional so shorter links
+ * still resolve. A lone trailing segment always lands in `planId`, so the
+ * notebook views read one that names no plan as a bare tab slug.
  */
-export const PLAN_TAB_SEPARATOR = '.';
-
-/**
- * Splits a route tab segment into the plan it addresses and that plan's own
- * slug. An unprefixed segment names no plan; the caller reads that as the only
- * plan where there is one, and otherwise asks which was meant.
- */
-export const splitPlanTab = (
-  tab: string | undefined
-): {planId?: string; slug?: string} => {
-  if (!tab) return {};
-  const at = tab.indexOf(PLAN_TAB_SEPARATOR);
-  if (at <= 0) return {slug: tab};
-  return {planId: tab.slice(0, at), slug: tab.slice(at + 1) || undefined};
-};
-
-/** Builds the route tab segment addressing one plan's tab. */
-export const joinPlanTab = (planId: string, slug: string): string =>
-  `${planId}${PLAN_TAB_SEPARATOR}${slug}`;
-
-/** Keyed by the tab shown; optional, so tab-less links still resolve. */
-export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:tab?`;
+export const NOTEBOOK_ROUTE_PATH = `${INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId/:planId?/:tab?`;
 export const EDIT_RECORD_ROUTE_PATH = `${EDIT_RECORD_SEGMENT}/:recordId`;
 export const VIEW_RECORD_ROUTE_PATH = `${VIEW_RECORD_SEGMENT}/:recordId`;
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>][/<tab>]
+ *
+ * A tab named without a plan takes the plan's segment, which is where a lone
+ * trailing segment is read back from.
  */
 export function getNotebookRoute({
   serverId,
   projectId,
+  planId,
   tab,
 }: {
   serverId: string;
   projectId: string;
+  planId?: string;
   tab?: string;
 }) {
   return (
@@ -115,22 +97,26 @@ export function getNotebookRoute({
     serverId +
     '/' +
     projectId +
-    (tab ? '/' + tab : '')
+    [planId, tab]
+      .filter(segment => segment)
+      .map(segment => '/' + segment)
+      .join('')
   );
 }
 
 /** One up from a record route: the notebook, on the tab it was opened from. */
 export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
 
-/** The notebook a record link nests under: ids from the project, tab from the route. */
+/** The notebook a record link nests under: ids from the project, plan and tab from the route. */
 export type RecordRouteNotebook = {
   serverId: string;
   projectId: string;
+  planId?: string;
   tab?: string;
 };
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]/records/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>][/<tab>]/records/<recordId>
  */
 export function getEditRecordRoute({
   recordId,
@@ -147,7 +133,7 @@ export function getEditRecordRoute({
 }
 
 /**
- * @returns /<notebook-plural>/<server>/<project>[/<tab>]/view-record/<recordId>
+ * @returns /<notebook-plural>/<server>/<project>[/<plan>][/<tab>]/view-record/<recordId>
  */
 export function getViewRecordRoute({
   recordId,

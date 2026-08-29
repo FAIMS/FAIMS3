@@ -89,9 +89,10 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
  * `canLoadRecord` gating on queries.
  */
 export const EditRecordPage = () => {
-  const {serverId, projectId, tab, recordId} = useParams<{
+  const {serverId, projectId, planId, tab, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
+    planId?: string;
     tab?: string;
     recordId: RecordID;
   }>();
@@ -286,6 +287,7 @@ export const EditRecordPage = () => {
               projectId: projectId!,
               recordId: params.recordId,
               serverId: serverId!,
+              planId,
               tab,
             })
           );
@@ -333,6 +335,7 @@ export const EditRecordPage = () => {
             getEditRecordRoute({
               serverId: serverId!,
               projectId: projectId!,
+              planId,
               tab,
               recordId: targetRecordId,
               mode: targetMode,
@@ -345,6 +348,7 @@ export const EditRecordPage = () => {
           return getEditRecordRoute({
             serverId: serverId!,
             projectId: projectId!,
+            planId,
             tab,
             recordId: params.recordId,
             mode,
@@ -367,6 +371,7 @@ export const EditRecordPage = () => {
     serverId,
     navigationContext,
     projectId,
+    planId,
     tab,
     recordId,
     mode,
@@ -452,7 +457,13 @@ export const EditRecordPage = () => {
               variant="outlined"
               onClick={() =>
                 navigate(
-                  getViewRecordRoute({projectId, recordId, serverId, tab})
+                  getViewRecordRoute({
+                    projectId,
+                    recordId,
+                    serverId,
+                    planId,
+                    tab,
+                  })
                 )
               }
             >

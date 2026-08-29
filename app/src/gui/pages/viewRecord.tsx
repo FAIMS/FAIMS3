@@ -15,7 +15,7 @@
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /<notebook-plural>/:serverId/:projectId/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/:planId?/:tab?/view-record/:recordId?tab=view|info|history|status&revisionId=:revisionId
  */
 import {
   DatabaseInterface,
@@ -213,7 +213,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
  * Props for the ViewTabContent component
  */
 interface ViewTabContentProps {
-  /** The notebook tab this page sits under, which its record links stay on. */
+  /** The notebook plan and tab this page sits under, which its record links stay on. */
   notebook: RecordRouteNotebook;
   formData: NonNullable<
     Awaited<ReturnType<DataEngine['form']['getExistingFormData']>>
@@ -476,9 +476,10 @@ const HistoryTabContent: React.FC<{
  * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
-  const {serverId, projectId, tab, recordId} = useParams<{
+  const {serverId, projectId, planId, tab, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
+    planId?: string;
     tab?: string;
     recordId: RecordID;
   }>();
@@ -637,8 +638,8 @@ export const ViewRecordPage: React.FC = () => {
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
-  // The tab the record was opened from, which its own links keep
-  const notebook: RecordRouteNotebook = {serverId, projectId, tab};
+  // The plan and tab the record was opened from, which its own links keep
+  const notebook: RecordRouteNotebook = {serverId, projectId, planId, tab};
 
   return (
     <Stack spacing={2}>

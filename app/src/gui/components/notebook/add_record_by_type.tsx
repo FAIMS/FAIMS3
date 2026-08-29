@@ -40,7 +40,7 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
   const navigate = useNavigate();
-  const {tab} = useParams<{tab?: string}>();
+  const {planId, tab} = useParams<{planId?: string; tab?: string}>();
   const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpec === undefined) {
@@ -75,6 +75,7 @@ export default function AddRecordButtons({
           ROUTES.getEditRecordRoute({
             serverId: serverId,
             projectId: projectId,
+            planId,
             tab,
             recordId: newRecord.record._id,
             mode: 'new',

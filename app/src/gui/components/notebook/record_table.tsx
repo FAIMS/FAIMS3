@@ -1099,10 +1099,10 @@ export function RecordsTable(props: RecordsTableProps) {
   } = props;
 
   const history = useNavigate();
-  const {tab} = useParams<{tab?: string}>();
+  const {planId, tab} = useParams<{planId?: string; tab?: string}>();
   const notebook = useMemo(
-    () => ({serverId, projectId: project_id, tab}),
-    [serverId, project_id, tab]
+    () => ({serverId, projectId: project_id, planId, tab}),
+    [serverId, project_id, planId, tab]
   );
   const styles = useDataGridStyles();
 
