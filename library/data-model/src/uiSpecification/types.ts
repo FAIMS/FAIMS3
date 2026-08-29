@@ -287,11 +287,17 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 // the UI spec, its functional settings, and non-functional design metadata.
 // ============================================================================
 
-/** UI behaviour toggles. */
-export const NotebookSettingsSchema = z.object({
-  /** When true, show “search by QR” on the record list for this survey. */
-  showQrCodeButton: z.boolean(),
-});
+/**
+ * UI behaviour toggles. Passthrough like the schemas above, so a module built on
+ * this package can own a setting here and validate it itself; namespace the key
+ * with that module's name to stay clear of settings declared here later.
+ */
+export const NotebookSettingsSchema = z
+  .object({
+    /** When true, show “search by QR” on the record list for this survey. */
+    showQrCodeButton: z.boolean(),
+  })
+  .passthrough();
 export type NotebookSettings = z.infer<typeof NotebookSettingsSchema>;
 
 /** Non-functional **design** documentation bundled with the form definition. */
