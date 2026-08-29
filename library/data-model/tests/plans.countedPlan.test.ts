@@ -49,8 +49,8 @@ describe('counted plan definition', () => {
       },
     });
 
+    // No planId: the caller carries it over from the template
     expect(plan).toEqual({
-      planId: 'artefacts',
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',
       numberRequired: 5,

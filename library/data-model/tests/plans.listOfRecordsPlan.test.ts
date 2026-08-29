@@ -47,8 +47,8 @@ describe('list of records plan definition', () => {
       },
     });
 
+    // No planId: the caller carries it over from the template
     expect(plan).toEqual({
-      planId: 'survey',
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType: 'survey-form',
       records: {

@@ -44,7 +44,7 @@ export const instantiateListPlan = ({
 }: {
   template: ListPlanTemplate;
   config: ListPlanTemplateConfig;
-}): ListPlan => {
+}): Omit<ListPlan, 'planId'> => {
   // do a local check of the template validity before we try to validate the plan
   if (!listPlanTemplateSchema.safeParse(template).success) {
     throw new Error('Invalid list of records plan template');
@@ -64,7 +64,6 @@ export const instantiateListPlan = ({
   }
 
   return {
-    planId: template.planId,
     planType: LIST_OF_RECORDS_PLAN_TYPE,
     formType: template.formType,
     records: records,

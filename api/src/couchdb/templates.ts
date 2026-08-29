@@ -670,8 +670,7 @@ export const createNotebookFromTemplate = async ({
     // parse it first to make sure it's valid according to the plan type's plan schema
     const planParseResult = planTypeDefinition.planSchema.safeParse({
       ...instantiatedPlan,
-      // Last, so the id and label always come from the template rather than
-      // from a plan type's own instantiatePlan.
+      // The template owns both: `instantiatePlan` writes neither.
       planId,
       ...(planTemplate.label ? {label: planTemplate.label} : {}),
     });

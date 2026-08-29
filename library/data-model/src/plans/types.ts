@@ -107,14 +107,18 @@ export type PlanTypeDefinition<
   templateSchema: TTemplateSchema;
   configSchema: TConfigSchema;
   planSchema: TPlanSchema;
-  /** Builds one notebook's plan, taking its id from the plan template. */
+  /**
+   * Builds one notebook's plan from its template and config. The id is the
+   * caller's to add, from the plan template, so a new plan type has one less
+   * thing to remember.
+   */
   instantiatePlan: ({
     template,
     config,
   }: {
     template: z.infer<TTemplateSchema>;
     config: z.infer<TConfigSchema>;
-  }) => z.infer<TPlanSchema>;
+  }) => Omit<z.infer<TPlanSchema>, 'planId'>;
 };
 
 export type AnyPlanTypeDefinition = PlanTypeDefinition<any, any, any, any>;
