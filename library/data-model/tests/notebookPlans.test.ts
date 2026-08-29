@@ -105,7 +105,7 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
     );
   });
 
-  it.each(['site.survey', 'site/survey', 'site%2Fsurvey'])(
+  it.each(['site/survey', 'site%2Fsurvey', 'site?survey', 'site#survey'])(
     'rejects the plan id %s, which would not survive a route',
     bad => {
       const bundle = notebook();
@@ -116,12 +116,19 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
     }
   );
 
-  it('rejects a plan type that would not survive a route', () => {
-    // Plan ids are minted from the type, so a separator in it would name a
-    // plan no route could address. Matched on the message: an unregistered
-    // plan type throws anyway, so a bare toThrow would pass without the rule.
+  it('accepts a plan id carrying a dot, which the route segment keeps whole', () => {
     const bundle = notebook();
-    bundle.plans[0].planType = 'lab.samples';
+    bundle.plans[0].planId = 'site.survey';
+    const definition = normalizeNotebookUiSpecification(bundle);
+    expect(definition.plans?.[0].planId).toBe('site.survey');
+  });
+
+  it('rejects a plan type that would not survive a route', () => {
+    // Plan ids are minted from the type, so a slash in it would name a plan no
+    // route could address. Matched on the message: an unregistered plan type
+    // throws anyway, so a bare toThrow would pass without the rule.
+    const bundle = notebook();
+    bundle.plans[0].planType = 'lab/samples';
     expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
       /may not contain/
     );

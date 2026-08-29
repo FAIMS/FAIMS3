@@ -31,7 +31,7 @@ describe('registerDesignerPlanType', () => {
     // data-model registry rather than letting the save fail later.
     const registry = createDesignerPlanRegistry();
     expect(() =>
-      registerDesignerPlanType(definition('lab.samples'), registry)
+      registerDesignerPlanType(definition('lab/samples'), registry)
     ).toThrow(/cannot be registered/);
   });
 });

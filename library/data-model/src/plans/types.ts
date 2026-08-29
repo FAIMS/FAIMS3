@@ -5,25 +5,23 @@ import z from 'zod';
 // or plan templates
 
 /**
- * Characters that would split the route segment a plan is addressed by. `%`
- * joins them because the router decodes an escape back into whatever it hid.
+ * Anything that survives the route segment a plan is addressed by. `%` is out
+ * because the router decodes an escape back into whatever it hid.
  */
-const ROUTE_SAFE = /^[^./\\?#%]+$/;
+const routeSafeSchema = (what: string) =>
+  z
+    .string()
+    .min(1)
+    .regex(/^[^/\\?#%]+$/, `A ${what} may not contain / \\ ? # or %`);
 
 /**
- * A plan id addresses one plan within a notebook, including as a single
- * segment of a route, so it may not carry the characters that would split it.
+ * A plan id addresses one plan within a notebook, including as a segment of a
+ * route, so it may not carry the characters that would split it.
  */
-export const PlanIdSchema = z
-  .string()
-  .min(1)
-  .regex(ROUTE_SAFE, 'A plan id may not contain . / \\ ? # or %');
+export const PlanIdSchema = routeSafeSchema('plan id');
 
 /** A plan type keys the registry, and `derivePlanId` mints plan ids from it. */
-export const PlanTypeSchema = z
-  .string()
-  .min(1)
-  .regex(ROUTE_SAFE, 'A plan type may not contain . / \\ ? # or %');
+export const PlanTypeSchema = routeSafeSchema('plan type');
 
 // A plan template is an optional part of a Notebook Template and will
 // be used to instantiate a plan when a notebook is created from the template.

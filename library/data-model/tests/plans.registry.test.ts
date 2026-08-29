@@ -118,7 +118,7 @@ describe('plan registry', () => {
     );
   });
 
-  test.each(['lab.samples', 'lab/samples', 'lab%2Fsamples'])(
+  test.each(['lab/samples', 'lab%2Fsamples', 'lab?samples'])(
     'refuses to register the plan type %s, which would not survive a route',
     bad => {
       // Ids are minted from the plan type, so an unroutable type is caught
