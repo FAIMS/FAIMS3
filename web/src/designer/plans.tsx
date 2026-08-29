@@ -23,9 +23,9 @@
 import type {ComponentType} from 'react';
 import type {AuthoredPlanTemplate, PlanTemplate} from '@faims3/data-model';
 import {
+  assertRegistrablePlanType,
   COUNTED_PLAN_TYPE,
   LIST_OF_RECORDS_PLAN_TYPE,
-  PlanTypeSchema,
 } from '@faims3/data-model';
 import {CountedPlanDialog} from './components/plans/CountedPlanDialog';
 import {ListOfRecordsPlanDialog} from './components/plans/ListOfRecordsPlanDialog';
@@ -83,14 +83,7 @@ export const registerDesignerPlanType = (
     );
   }
 
-  // Plan ids are minted from the plan type, so it has to survive a route
-  // segment, the same rule the data-model registry holds.
-  const validType = PlanTypeSchema.safeParse(definition.planType);
-  if (!validType.success) {
-    throw new Error(
-      `Designer plan type ${definition.planType} cannot be registered: ${validType.error.issues[0].message}`
-    );
-  }
+  assertRegistrablePlanType(definition.planType);
 
   registry.set(definition.planType, definition);
 };
