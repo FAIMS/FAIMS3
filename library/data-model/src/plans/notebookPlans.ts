@@ -32,13 +32,20 @@ export const findDuplicatePlanIds = (
 ): string[] => findDuplicates((source ?? []).map(plan => plan.planId));
 
 /**
+ * The form a plan label is compared in. Trimmed, since the chooser renders two
+ * labels differing only in whitespace identically, and a plan is stored under
+ * this form so what is saved is what the next comparison sees.
+ */
+export const planLabelKey = (label: string): string => label.trim();
+
+/**
  * Labels that appear more than once. The chooser tells plans apart by label, so
- * a repeated one leaves the user picking blind. Compared trimmed, since the
- * chooser renders two labels differing only in whitespace identically.
+ * a repeated one leaves the user picking blind.
  */
 export const findDuplicatePlanLabels = (
   source: {label: string}[] | undefined
-): string[] => findDuplicates((source ?? []).map(plan => plan.label.trim()));
+): string[] =>
+  findDuplicates((source ?? []).map(plan => planLabelKey(plan.label)));
 
 /**
  * The `planReference` a record carries to claim it for one plan. The plan id

@@ -168,6 +168,18 @@ describe('ListOfRecordsPlanDialog', () => {
     );
   });
 
+  test('reads a stored label as taken however it is spaced', () => {
+    const {onSave} = renderDialog(['Identifier'], 'Field survey', [
+      ' Field survey ',
+    ]);
+
+    expect(screen.getByRole('button', {name: 'Save Plan'})).toHaveProperty(
+      'disabled',
+      true
+    );
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   test('a field since deleted from the form is still shown, to be removed', () => {
     const {onSave} = renderDialog(['Gone-Field', 'Identifier']);
 

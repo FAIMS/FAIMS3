@@ -20,7 +20,7 @@
 
 import {useEffect, useState} from 'react';
 import {TextField} from '@mui/material';
-import type {PlanTemplate} from '@faims3/data-model';
+import {planLabelKey, type PlanTemplate} from '@faims3/data-model';
 import {SimpleFieldWrapper} from '../Fields/SimpleFieldWrapper';
 
 export type PlanLabelState = {
@@ -52,8 +52,10 @@ export const usePlanLabel = ({
     setValue(initialTemplate?.label ?? '');
   }, [open, initialTemplate]);
 
-  const label = value.trim();
-  const isTaken = takenLabels.includes(label);
+  // Compared as the api compares before refusing the save, so the designer and
+  // the api agree on what counts as the same label
+  const label = planLabelKey(value);
+  const isTaken = takenLabels.some(taken => planLabelKey(taken) === label);
   return {value, setValue, label, isTaken, canSave: Boolean(label) && !isTaken};
 };
 
