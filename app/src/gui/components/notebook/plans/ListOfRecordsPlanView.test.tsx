@@ -40,8 +40,8 @@ const renderView = (allRecords: MinimalRecordMetadata[]) =>
       {...({
         project: {},
         plan,
-        tab: 'all-records',
-        uiSpecification: {viewsets: {}, visible_types: []},
+        tab: 'collected',
+        uiSpecification: {viewsets: {Site: {label: 'Site'}}, visible_types: []},
         records: {allRecords, syncStatus: {status: {}, recordHashes: {}}},
         actions: {
           setTab: vi.fn(),
@@ -74,5 +74,10 @@ describe('ListOfRecordsPlanView with a second plan on the same form', () => {
   it('leaves an unclaimed record out of the list', () => {
     renderView([record('unclaimed')]);
     expect(screen.getByTestId('rows')).toBeEmptyDOMElement();
+  });
+
+  it("names the records after the plan's own form", () => {
+    renderView([]);
+    expect(screen.getByRole('tab', {name: 'Planned Sites'})).toBeDefined();
   });
 });

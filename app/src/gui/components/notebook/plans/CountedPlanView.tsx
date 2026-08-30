@@ -1,10 +1,7 @@
-import {
-  claimsPlan,
-  COUNTED_PLAN_TYPE,
-  planReferenceFor,
-} from '@faims3/data-model';
+import {COUNTED_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
+import {planRecordLabel, recordsClaimedBy} from './planViewRecords';
 import {RecordsTable} from '../record_table';
 import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
@@ -36,11 +33,10 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   // Claimed by this plan, so a second plan collecting the same form counts and
   // lists its own records rather than taking this plan's target
   const planReference = planReferenceFor({planId: plan.planId});
-  const planRecords = records.allRecords.filter(
-    record =>
-      record.type === plan.formType &&
-      claimsPlan({planReference: record.planReference, planId: plan.planId})
-  );
+  const planRecords = recordsClaimedBy({
+    records: records.allRecords,
+    planId: plan.planId,
+  });
   const targetRecordCount = planRecords.length;
 
   // Records that exist may be missing from the list, so the count is a floor
@@ -59,9 +55,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
 
   const showAddRecordButtons = status.isAllowedToAddRecords && !targetReached;
 
-  // The plan collects one form, so that form names what this view lists
-  const recordLabel =
-    uiSpecification.viewsets[plan.formType]?.label || plan.formType;
+  const recordLabel = planRecordLabel({uiSpecification, plan});
 
   return (
     <>

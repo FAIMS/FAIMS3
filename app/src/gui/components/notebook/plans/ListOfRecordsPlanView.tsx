@@ -1,8 +1,4 @@
-import {
-  claimsPlan,
-  LIST_OF_RECORDS_PLAN_TYPE,
-  planReferenceFor,
-} from '@faims3/data-model';
+import {LIST_OF_RECORDS_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -21,11 +17,12 @@ import {RecordsTable} from '../record_table';
 import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
+import {planRecordLabel, recordsClaimedBy} from './planViewRecords';
 
 // This view's tab slugs, default first
 const TABS = [
   'planned',
-  'all-records',
+  'collected',
   SHARED_TAB.details,
   SHARED_TAB.settings,
   SHARED_TAB.map,
@@ -89,15 +86,14 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
     return <div>No planned records defined for this {config.notebookName}</div>;
   }
 
-  // The plan collects one form, so that form names what this view lists
-  const recordLabel =
-    uiSpecification.viewsets[plan.formType]?.label || plan.formType;
+  const recordLabel = planRecordLabel({uiSpecification, plan});
 
   // Claimed by this plan, so a second plan collecting the same form lists its
   // own records rather than this plan's
-  const planRecords = records.allRecords.filter(record =>
-    claimsPlan({planReference: record.planReference, planId: plan.planId})
-  );
+  const planRecords = recordsClaimedBy({
+    records: records.allRecords,
+    planId: plan.planId,
+  });
 
   return (
     <>
@@ -120,10 +116,10 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             aria-controls="planned-tabpanel"
           />
           <Tab
-            value="all-records"
-            label={`All ${recordLabel}s`}
-            id="all-tab"
-            aria-controls="all-tabpanel"
+            value="collected"
+            label={`Collected ${recordLabel}s`}
+            id="collected-tab"
+            aria-controls="collected-tabpanel"
           />
           <Tab
             value={SHARED_TAB.details}
@@ -188,9 +184,9 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           </Grid>
         </TabPanel>
         <TabPanel
-          value="all-records"
-          id="all-tabpanel"
-          aria-labelledby="all-tab"
+          value="collected"
+          id="collected-tabpanel"
+          aria-labelledby="collected-tab"
         >
           <RecordsTable
             project={project}
