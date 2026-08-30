@@ -19,9 +19,8 @@ import {RecordStatus} from '../../../utils/recordAudit';
 
 interface RecordListProps {
   // The records the plan on screen claims, scoped before they reach a view, so
-  // a view and the components it is handed answer alike. The whole notebook
-  // when no plan is on screen.
-  allRecords: MinimalRecordMetadata[];
+  // a view and the components it is handed answer alike.
+  planRecords: MinimalRecordMetadata[];
   // The current sync status of the records in the notebook
   syncStatus: RecordStatus;
   // Recursive completion report per record claiming a plan reference

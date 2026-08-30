@@ -33,7 +33,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   const planReference = planReferenceFor({planId: plan.planId});
   // The list arrives scoped to this plan, so a second plan collecting the same
   // form neither takes this target nor shows up in this table
-  const targetRecordCount = records.allRecords.length;
+  const targetRecordCount = records.planRecords.length;
 
   // Records that exist may be missing from the list, so the count is a floor
   // rather than the true total and cannot show the target as reached.
@@ -121,7 +121,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={records.allRecords}
+            rows={records.planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}

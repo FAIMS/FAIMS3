@@ -335,7 +335,7 @@ function NotebookViewWithSpec({
         isDownloadingRecords,
       },
       records: {
-        allRecords: planRecords,
+        planRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
         planRecordStatusReports,
       },

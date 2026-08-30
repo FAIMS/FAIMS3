@@ -30,14 +30,14 @@ const plan = {
 const record = (recordId: string): MinimalRecordMetadata =>
   ({recordId, type: 'Site'}) as MinimalRecordMetadata;
 
-const renderView = (allRecords: MinimalRecordMetadata[]) =>
+const renderView = (planRecords: MinimalRecordMetadata[]) =>
   render(
     <CountedPlanView
       {...({
         project: {},
         plan,
         uiSpecification: {viewsets: {Site: {label: 'Site'}}, visible_types: []},
-        records: {allRecords, syncStatus: {status: {}, recordHashes: {}}},
+        records: {planRecords, syncStatus: {status: {}, recordHashes: {}}},
         actions: {
           setTab: vi.fn(),
           setQuery: vi.fn(),

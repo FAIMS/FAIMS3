@@ -48,18 +48,18 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   // planReference field in the record metadata, which names the claiming plan
   const existingRecords: Record<string, boolean> = useMemo(() => {
     const existing: Record<string, boolean> = {};
-    records.allRecords.forEach(record => {
+    records.planRecords.forEach(record => {
       if (record.planReference) {
         existing[record.planReference] = true;
       }
     });
     return existing;
-  }, [records.allRecords]);
+  }, [records.planRecords]);
 
   const navigateToRecord = useCallback(
     (planReference: string) => {
       // find the record with the given planReference
-      const record = records.allRecords.find(
+      const record = records.planRecords.find(
         r => r.planReference === planReference
       );
       // and navigate to it if we found it
@@ -67,7 +67,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         actions.navigateToRecord(record);
       }
     },
-    [records.allRecords, actions.navigateToRecord]
+    [records.planRecords, actions.navigateToRecord]
   );
 
   // The notebook may carry several plans, so the one to render arrives in
@@ -183,12 +183,10 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           id="collected-tabpanel"
           aria-labelledby="collected-tab"
         >
-          {/* The list arrives scoped to this plan, so a second plan collecting
-          the same form lists its own records rather than this plan's */}
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={records.allRecords}
+            rows={records.planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}

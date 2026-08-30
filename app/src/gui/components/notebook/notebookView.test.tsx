@@ -46,7 +46,7 @@ vi.mock('./plans', async () => {
         React.createElement(
           'span',
           {'data-testid': 'handed-records'},
-          props.records.allRecords
+          props.records.planRecords
             .map((record: MinimalRecordMetadata) => record.recordId)
             .join(' ')
         ),
