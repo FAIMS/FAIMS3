@@ -367,7 +367,7 @@ function NotebookViewWithSpec({
   if (showChooser) {
     return (
       <PlanChooser
-        plans={planViews}
+        plans={planViews.map(({plan}) => plan)}
         // Keep any slug the link carried, so an unqualified deep link still
         // lands on its tab.
         onSelect={(chosenPlanId: string) =>

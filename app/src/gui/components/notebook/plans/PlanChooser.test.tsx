@@ -11,18 +11,14 @@ import {PlanChooser} from './PlanChooser';
 
 const plans = [
   {
-    plan: {
-      planId: 'field-cells',
-      planType: COUNTED_PLAN_TYPE,
-      label: 'Field',
-    } as RegisteredPlan,
-  },
+    planId: 'field-cells',
+    planType: COUNTED_PLAN_TYPE,
+    label: 'Field',
+  } as RegisteredPlan,
   {
-    plan: {
-      planId: 'lab-samples',
-      planType: LIST_OF_RECORDS_PLAN_TYPE,
-    } as RegisteredPlan,
-  },
+    planId: 'lab-samples',
+    planType: LIST_OF_RECORDS_PLAN_TYPE,
+  } as RegisteredPlan,
 ];
 
 describe('PlanChooser', () => {

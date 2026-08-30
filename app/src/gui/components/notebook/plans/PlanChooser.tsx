@@ -11,7 +11,7 @@ export const PlanChooser = ({
   plans,
   onSelect,
 }: {
-  plans: {plan: RegisteredPlan}[];
+  plans: RegisteredPlan[];
   onSelect: (planId: string) => void;
 }) => (
   // Centred by a full-width flex parent: a Stack resets its children's
@@ -25,7 +25,7 @@ export const PlanChooser = ({
         Choose a plan
       </Typography>
       <Stack spacing={2}>
-        {plans.map(({plan}) => (
+        {plans.map(plan => (
           <Button
             key={plan.planId}
             data-testid="plan-chooser-option"
