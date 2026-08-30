@@ -49,7 +49,8 @@ vi.mock('./plans', async () => {
           props.records.allRecords
             .map((record: MinimalRecordMetadata) => record.recordId)
             .join(' ')
-        )
+        ),
+        React.createElement(props.components.OverviewMap)
       ),
   };
 });
@@ -93,7 +94,18 @@ vi.mock('../../../utils/database', () => ({localGetDataDb: () => ({})}));
 vi.mock('.', () => ({default: () => <div>default notebook view</div>}));
 vi.mock('./settings', () => ({default: () => null}));
 vi.mock('./MetadataDisplay', () => ({MetadataDisplayComponent: () => null}));
-vi.mock('./OverviewMap', () => ({OverviewMap: () => null}));
+// Reports the records it plots, so the map and the lists can be held to one answer
+vi.mock('./OverviewMap', () => ({
+  OverviewMap: ({
+    records,
+  }: {
+    records: {allRecords: MinimalRecordMetadata[]};
+  }) => (
+    <span data-testid="plotted-records">
+      {records.allRecords.map(record => record.recordId).join(' ')}
+    </span>
+  ),
+}));
 
 const plans = [
   {planId: 'field', planType: 'Counted', label: 'Field'},
@@ -110,10 +122,13 @@ const project = {
   uiDefinition: {plans} as unknown as NotebookDefinition,
 } as Project;
 
-/** One record, claimed by the named plan or by nothing. */
-const record = (recordId: string, planId?: string) => ({
+/**
+ * One record, claimed by the named plan or by nothing. A reference qualifies
+ * the claim, as a plan whose records are individually planned mints it.
+ */
+const record = (recordId: string, planId?: string, reference?: string) => ({
   recordId,
-  planReference: planId && planReferenceFor({planId}),
+  planReference: planId && planReferenceFor({planId, reference}),
 });
 
 const renderNotebook = (params: {planId?: string; tab?: string}) => {
@@ -182,5 +197,26 @@ describe('NotebookView record scoping', () => {
     allRecords.current = [record('unclaimed')];
     renderNotebook({planId: 'lab'});
     expect(screen.getByTestId('handed-records')).toBeEmptyDOMElement();
+  });
+
+  it('claims a record whose reference qualifies the plan id', () => {
+    allRecords.current = [
+      record('mine', 'lab', 'site-1'),
+      record('theirs', 'field', 'site-1'),
+    ];
+    renderNotebook({planId: 'lab'});
+    expect(screen.getByTestId('handed-records')).toHaveTextContent('mine');
+    expect(screen.getByTestId('handed-records')).not.toHaveTextContent(
+      'theirs'
+    );
+  });
+
+  it('plots on the map what it hands the view, and nothing more', () => {
+    allRecords.current = [record('mine', 'lab'), record('theirs', 'field')];
+    renderNotebook({planId: 'lab'});
+    expect(screen.getByTestId('plotted-records')).toHaveTextContent('mine');
+    expect(screen.getByTestId('plotted-records')).not.toHaveTextContent(
+      'theirs'
+    );
   });
 });

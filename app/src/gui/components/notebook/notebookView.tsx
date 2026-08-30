@@ -374,6 +374,7 @@ function NotebookViewWithSpec({
       planRecordStatusReports,
       planRecords,
       planTab,
+      activePlan,
     ]
   );
 
