@@ -37,13 +37,6 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
 
   const currentTab = useResolveTab(TABS, tab, actions.setTab);
 
-  // recordLabel based on viewsets
-  const recordLabel =
-    uiSpecification.visible_types?.length === 1
-      ? uiSpecification.viewsets[uiSpecification.visible_types[0]]?.label ||
-        uiSpecification.visible_types[0]
-      : 'Record';
-
   // A claimed entry is proof the record exists, but an unclaimed one is not
   // proof it does not: the list can hide records the user may not read, and
   // records still downloading have not arrived yet.
@@ -91,6 +84,10 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   if (!plannedRecords) {
     return <div>No planned records defined for this {config.notebookName}</div>;
   }
+
+  // The plan collects one form, so that form names what this view lists
+  const recordLabel =
+    uiSpecification.viewsets[plan.formType]?.label || plan.formType;
 
   return (
     <>

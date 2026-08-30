@@ -59,12 +59,9 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
 
   const showAddRecordButtons = status.isAllowedToAddRecords && !targetReached;
 
-  // recordLabel based on viewsets
+  // The plan collects one form, so that form names what this view lists
   const recordLabel =
-    uiSpecification.visible_types?.length === 1
-      ? uiSpecification.viewsets[uiSpecification.visible_types[0]]?.label ||
-        uiSpecification.visible_types[0]
-      : 'Record';
+    uiSpecification.viewsets[plan.formType]?.label || plan.formType;
 
   return (
     <>
