@@ -1,4 +1,8 @@
-import {LIST_OF_RECORDS_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
+import {
+  claimsPlan,
+  LIST_OF_RECORDS_PLAN_TYPE,
+  planReferenceFor,
+} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -88,6 +92,12 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   // The plan collects one form, so that form names what this view lists
   const recordLabel =
     uiSpecification.viewsets[plan.formType]?.label || plan.formType;
+
+  // Claimed by this plan, so a second plan collecting the same form lists its
+  // own records rather than this plan's
+  const planRecords = records.allRecords.filter(record =>
+    claimsPlan({planReference: record.planReference, planId: plan.planId})
+  );
 
   return (
     <>
@@ -185,7 +195,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={records.allRecords ?? []}
+            rows={planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}
