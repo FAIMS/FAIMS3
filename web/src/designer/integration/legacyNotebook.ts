@@ -12,6 +12,7 @@ import {
   notebookUiSpecificationNeedsMigration,
   notebookUiSpecificationValidationMessage,
   type NotebookDefinition,
+  findDuplicatePlanIds,
   safeValidatePlanTemplate,
   TemplateDefinitionSchema,
   type PlanTemplate,
@@ -126,6 +127,17 @@ export function tryNormalizeApiUiSpecification(
   const planTemplates = Array.isArray(rawPlanTemplates)
     ? (rawPlanTemplates as PlanTemplate[])
     : undefined;
+
+  // A repeated id gives two plans one address, and the designer offers no way
+  // to change one, so refuse the template rather than open one the api will
+  // turn away on save
+  const duplicateIds = findDuplicatePlanIds(planTemplates);
+  if (duplicateIds.length) {
+    return {
+      ok: false,
+      message: `uiSpecification has more than one plan with the id ${duplicateIds.join(', ')}`,
+    };
+  }
 
   // Warn rather than fail on an invalid plan template so the template stays
   // editable; name each failing plan, as normalizing a template does
