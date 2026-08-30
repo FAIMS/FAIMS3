@@ -1,4 +1,4 @@
-import {LIST_OF_RECORDS_PLAN_TYPE} from '@faims3/data-model';
+import {LIST_OF_RECORDS_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -50,8 +50,8 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   const unclaimedMayBeStale =
     !status.canReadAllRecords || status.isDownloadingRecords;
 
-  // work out which records we've already created from the plan
-  // by checking the planReference field in the record metadata
+  // work out which records we've already created from the plan by checking the
+  // planReference field in the record metadata, which names the claiming plan
   const existingRecords: Record<string, boolean> = useMemo(() => {
     const existing: Record<string, boolean> = {};
     records.allRecords.forEach(record => {
@@ -155,9 +155,15 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
             columns={{xs: 4, sm: 8, md: 12}}
           >
             {Object.entries(plannedRecords).map(
-              ([planReference, plannedRecord]) => {
+              ([reference, plannedRecord]) => {
+                // The plan id qualifies the reference, so a record created here
+                // is claimed by this plan rather than by whichever reuses the key
+                const planReference = planReferenceFor({
+                  planId: plan.planId,
+                  reference,
+                });
                 return (
-                  <Grid key={planReference} size={4}>
+                  <Grid key={reference} size={4}>
                     <RecordCard
                       record={plannedRecord}
                       type={plan.formType}

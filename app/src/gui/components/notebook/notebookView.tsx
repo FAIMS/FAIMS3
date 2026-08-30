@@ -283,13 +283,13 @@ function NotebookViewWithSpec({
     [showPlanTab, activePlan]
   );
 
-  // Completion roll-up per plan-claiming record, for its cell's status; only a
-  // plan view on screen can display it, so gate the walks on one
+  // Completion roll-up per record the plan on screen claims, for its cell's
+  // status; only that plan's view can display it, so the walks stop at its own
   const planRecordStatusReports = usePlanRecordStatusReports({
     projectId: project.projectId,
     uiSpecification,
     records: records.allRecords,
-    enabled: activePlan !== undefined,
+    planId: activePlan?.plan.planId,
   });
 
   const props: NotebookViewComponentProps = useMemo(

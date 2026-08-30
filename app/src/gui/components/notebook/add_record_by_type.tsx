@@ -24,12 +24,15 @@ type AddRecordButtonsProps = {
   project: Project;
   recordLabel: string;
   refreshList: () => void;
+  /** Claims each record created here for the plan the buttons sit under. */
+  planReference?: string;
 };
 
 export default function AddRecordButtons({
   project: {projectId, serverId, uiSpecificationId},
   refreshList,
   recordLabel,
+  planReference,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
   // This page cannot load if no active user
@@ -69,6 +72,7 @@ export default function AddRecordButtons({
       .createRecord({
         createdBy: activeUser.username,
         formId: viewsetName,
+        planReference,
       })
       .then(newRecord =>
         navigate(

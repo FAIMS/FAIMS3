@@ -1,4 +1,8 @@
-import {COUNTED_PLAN_TYPE} from '@faims3/data-model';
+import {
+  claimsPlan,
+  COUNTED_PLAN_TYPE,
+  planReferenceFor,
+} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
 import {RecordsTable} from '../record_table';
@@ -29,9 +33,13 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   }
   const plan = props.plan;
 
-  // How many records of the target type have we got
+  // Claimed by this plan, so a second plan collecting the same form counts its
+  // own records rather than taking this plan's target
+  const planReference = planReferenceFor({planId: plan.planId});
   const targetRecordCount = records.allRecords.filter(
-    record => record.type === plan.formType
+    record =>
+      record.type === plan.formType &&
+      claimsPlan({planReference: record.planReference, planId: plan.planId})
   ).length;
 
   // Records that exist may be missing from the list, so the count is a floor
@@ -106,6 +114,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
                 project={project}
                 recordLabel={recordLabel}
                 refreshList={actions.refreshRecordList}
+                planReference={planReference}
               />
             </Box>
           )}

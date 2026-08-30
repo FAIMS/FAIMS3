@@ -4,7 +4,13 @@ import {
   normalizeNotebookTemplateUiSpecification,
   normalizeNotebookUiSpecification,
 } from '../src/uiSpecification/normalize';
-import {COUNTED_PLAN_TYPE, derivePlanId, findDuplicatePlanIds} from '../src';
+import {
+  claimsPlan,
+  COUNTED_PLAN_TYPE,
+  derivePlanId,
+  findDuplicatePlanIds,
+  planReferenceFor,
+} from '../src';
 
 describe('derivePlanId', () => {
   it('uses the plan type when nothing has claimed it', () => {
@@ -21,6 +27,39 @@ describe('derivePlanId', () => {
     const taken = new Set([COUNTED_PLAN_TYPE, `${COUNTED_PLAN_TYPE}-2`]);
     expect(derivePlanId(COUNTED_PLAN_TYPE, taken)).toBe(
       `${COUNTED_PLAN_TYPE}-3`
+    );
+  });
+});
+
+describe('planReferenceFor and claimsPlan', () => {
+  it('qualifies a planned reference with the plan id', () => {
+    expect(planReferenceFor({planId: 'survey', reference: 'cell-1'})).toBe(
+      'survey/cell-1'
+    );
+  });
+
+  it('claims a record for a plan that plans no individual records', () => {
+    expect(planReferenceFor({planId: 'survey'})).toBe('survey');
+  });
+
+  it('keeps two plans reusing a reference key apart', () => {
+    const reference = planReferenceFor({planId: 'field', reference: 'cell-1'});
+    expect(claimsPlan({planReference: reference, planId: 'field'})).toBe(true);
+    expect(claimsPlan({planReference: reference, planId: 'lab'})).toBe(false);
+  });
+
+  it('does not read one plan id as the prefix of another', () => {
+    expect(
+      claimsPlan({
+        planReference: planReferenceFor({planId: 'Counted-2'}),
+        planId: 'Counted',
+      })
+    ).toBe(false);
+  });
+
+  it('leaves an unclaimed record unclaimed', () => {
+    expect(claimsPlan({planReference: undefined, planId: 'survey'})).toBe(
+      false
     );
   });
 });

@@ -27,3 +27,28 @@ export const findDuplicatePlanIds = (
   }
   return [...duplicates];
 };
+
+/**
+ * The `planReference` a record carries to claim it for one plan. The plan id
+ * qualifies the reference, so two plans sharing a form, or reusing a reference
+ * key, do not claim each other's records. A plan id carries no `/`, so the
+ * qualification cannot be mistaken for part of the reference.
+ */
+export const planReferenceFor = ({
+  planId,
+  reference,
+}: {
+  planId: string;
+  /** Omitted by a plan whose records are not individually planned. */
+  reference?: string;
+}): string => (reference === undefined ? planId : `${planId}/${reference}`);
+
+/** Whether a record's `planReference` claims it for the given plan. */
+export const claimsPlan = ({
+  planReference,
+  planId,
+}: {
+  planReference: string | undefined;
+  planId: string;
+}): boolean =>
+  planReference === planId || Boolean(planReference?.startsWith(`${planId}/`));
