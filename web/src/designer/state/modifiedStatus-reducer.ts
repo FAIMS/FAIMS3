@@ -26,7 +26,6 @@ import {
 } from './metadata-reducer';
 import {
   planTemplateAdded,
-  planTemplateLabelled,
   planTemplateMoved,
   planTemplateRemoved,
   planTemplateSet,
@@ -85,7 +84,6 @@ const modifiedStatusReducer = createSlice({
       .addCase(formVisibilityUpdated, () => true)
       .addCase(planTemplateAdded, () => true)
       .addCase(planTemplateSet, () => true)
-      .addCase(planTemplateLabelled, () => true)
       .addCase(planTemplateRemoved, () => true)
       .addCase(planTemplateMoved, () => true);
   },

@@ -4,22 +4,29 @@
 import {describe, expect, it} from 'vitest';
 import reducer, {
   planTemplateAdded,
-  planTemplateLabelled,
   planTemplateMoved,
   planTemplateRemoved,
   planTemplateSet,
 } from './planTemplates-reducer';
 
-// What a plan dialog emits: type fields only, no id.
-const counted = {planType: 'Counted', formType: 'FORM1'};
+// What a plan dialog emits: type fields and the label, but no id.
+const counted = {
+  planType: 'Counted',
+  label: 'Field cells',
+  formType: 'FORM1',
+};
 const listed = {
   planType: 'ListOfRecords',
+  label: 'Lab samples',
   formType: 'FORM2',
   recordFields: ['field-a'],
 };
 
 /** The stored row `planTemplateAdded` makes of an authored plan template. */
-const stored = (authored: {planType: string}, planId = authored.planType) => ({
+const stored = (
+  authored: {planType: string; label: string},
+  planId = authored.planType
+) => ({
   ...authored,
   planId,
 });
@@ -53,13 +60,16 @@ describe('planTemplates reducer', () => {
     expect(state).toEqual([{...listed, planId: 'Counted'}, stored(listed)]);
   });
 
-  it('keeps the label and id an edit dialog does not author', () => {
-    // Plan dialogs emit only their own type's fields.
+  it('keeps the id an edit dialog does not author', () => {
     const state = reducer(
-      [{...counted, planId: 'field-cells', label: 'Artefacts'}],
+      [{...counted, planId: 'field-cells'}],
       planTemplateSet({
         index: 0,
-        planTemplate: {planType: 'Counted', formType: 'FORM2'},
+        planTemplate: {
+          planType: 'Counted',
+          label: 'Artefacts',
+          formType: 'FORM2',
+        },
       })
     );
     expect(state[0]).toEqual({
@@ -68,19 +78,6 @@ describe('planTemplates reducer', () => {
       planType: 'Counted',
       formType: 'FORM2',
     });
-  });
-
-  it('sets and clears a label', () => {
-    const labelled = reducer(
-      [stored(counted)],
-      planTemplateLabelled({index: 0, label: 'Artefacts'})
-    );
-    expect(labelled[0].label).toBe('Artefacts');
-    const cleared = reducer(
-      labelled,
-      planTemplateLabelled({index: 0, label: ''})
-    );
-    expect('label' in cleared[0]).toBe(false);
   });
 
   it('removes by index', () => {

@@ -151,7 +151,7 @@ describe('plan registry', () => {
   test('safeValidatePlan rejects unknown plan types', () => {
     const registry = createPlanRegistry();
     const result = safeValidatePlan(
-      {planId: 'unknown', planType: 'UnknownPlan'},
+      {planId: 'unknown', planType: 'UnknownPlan', label: 'Unknown'},
       registry
     );
 
@@ -170,6 +170,7 @@ describe('plan registry', () => {
       {
         planId: 'test',
         planType: TEST_PLAN_TYPE,
+        label: 'Test',
         formType: 'record-form',
         requiredCount: 3,
       },
@@ -181,6 +182,7 @@ describe('plan registry', () => {
       data: {
         planId: 'test',
         planType: TEST_PLAN_TYPE,
+        label: 'Test',
         formType: 'record-form',
         requiredCount: 3,
       },

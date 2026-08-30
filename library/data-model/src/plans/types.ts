@@ -37,7 +37,7 @@ export const PlanTemplateSchema = z
      */
     planId: PlanIdSchema,
     /** Names the plan on the notebook's plan chooser. */
-    label: z.string().optional(),
+    label: z.string().min(1),
   })
   .passthrough();
 export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
@@ -84,10 +84,11 @@ export const PlanSchema = z
      */
     planId: PlanIdSchema,
     /**
-     * Names the plan on the notebook's plan chooser. Carried over from the plan
-     * template at instantiation; `getPlanLabel` falls back to the plan id.
+     * Names the plan on the notebook's plan chooser, which is the one screen
+     * whose job is telling plans apart, so a plan must carry one. Carried over
+     * from the plan template at instantiation.
      */
-    label: z.string().optional(),
+    label: z.string().min(1),
   })
   .passthrough();
 export type Plan = z.infer<typeof PlanSchema>;
@@ -126,9 +127,9 @@ export type PlanTypeDefinition<
   configSchema: TConfigSchema;
   planSchema: TPlanSchema;
   /**
-   * Builds one notebook's plan from its template and config. The id is the
-   * caller's to add, from the plan template, so a new plan type has one less
-   * thing to remember.
+   * Builds one notebook's plan from its template and config. The id and label
+   * are the caller's to add, from the plan template, so a new plan type has two
+   * fewer things to remember.
    */
   instantiatePlan: ({
     template,
@@ -136,7 +137,7 @@ export type PlanTypeDefinition<
   }: {
     template: z.infer<TTemplateSchema>;
     config: z.infer<TConfigSchema>;
-  }) => Omit<z.infer<TPlanSchema>, 'planId'>;
+  }) => Omit<z.infer<TPlanSchema>, 'planId' | 'label'>;
 };
 
 export type AnyPlanTypeDefinition = PlanTypeDefinition<any, any, any, any>;

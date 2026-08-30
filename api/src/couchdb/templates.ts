@@ -672,7 +672,7 @@ export const createNotebookFromTemplate = async ({
       ...instantiatedPlan,
       // The template owns both: `instantiatePlan` writes neither.
       planId,
-      ...(planTemplate.label ? {label: planTemplate.label} : {}),
+      label: planTemplate.label,
     });
     if (!planParseResult.success) {
       throw new Exceptions.InvalidRequestException(

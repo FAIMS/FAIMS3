@@ -4,13 +4,7 @@ import {
   normalizeNotebookTemplateUiSpecification,
   normalizeNotebookUiSpecification,
 } from '../src/uiSpecification/normalize';
-import {
-  COUNTED_PLAN_TYPE,
-  LIST_OF_RECORDS_PLAN_TYPE,
-  derivePlanId,
-  findDuplicatePlanIds,
-  getPlanLabel,
-} from '../src';
+import {COUNTED_PLAN_TYPE, derivePlanId, findDuplicatePlanIds} from '../src';
 
 describe('derivePlanId', () => {
   it('uses the plan type when nothing has claimed it', () => {
@@ -41,23 +35,6 @@ describe('findDuplicatePlanIds', () => {
     expect(
       findDuplicatePlanIds([{planId: 'a'}, {planId: 'b'}, {planId: 'a'}])
     ).toEqual(['a']);
-  });
-});
-
-describe('getPlanLabel', () => {
-  it("prefers the plan's own label", () => {
-    expect(getPlanLabel({planId: 'lab', label: 'Field cells'})).toBe(
-      'Field cells'
-    );
-  });
-
-  it('falls back to the id, which distinguishes plans of one type', () => {
-    expect(getPlanLabel({planId: LIST_OF_RECORDS_PLAN_TYPE})).toBe(
-      LIST_OF_RECORDS_PLAN_TYPE
-    );
-    expect(getPlanLabel({planId: `${LIST_OF_RECORDS_PLAN_TYPE}-2`})).toBe(
-      `${LIST_OF_RECORDS_PLAN_TYPE}-2`
-    );
   });
 });
 
@@ -150,6 +127,12 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
     delete bundle.plans[0].planId;
     expect(() => normalizeNotebookUiSpecification(bundle)).toThrow();
   });
+
+  it('rejects a plan carrying no label, which the chooser has nothing to show', () => {
+    const bundle = notebook();
+    delete bundle.plans[0].label;
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow();
+  });
 });
 
 describe('normalizeNotebookTemplateUiSpecification', () => {
@@ -175,5 +158,11 @@ describe('normalizeNotebookTemplateUiSpecification', () => {
     expect(() => normalizeNotebookTemplateUiSpecification(bundle)).toThrow(
       /Repeated plan id/
     );
+  });
+
+  it('rejects a plan template carrying no label', () => {
+    const bundle = template();
+    delete bundle.planTemplates[0].label;
+    expect(() => normalizeNotebookTemplateUiSpecification(bundle)).toThrow();
   });
 });

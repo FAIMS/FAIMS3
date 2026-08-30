@@ -32,12 +32,14 @@ const createDefinition = (): Notebook => ({
 const countedTemplate = {
   planId: 'Counted',
   planType: 'Counted',
+  label: 'Field cells',
   formType: 'FORM1',
 };
 
 const countedPlan = {
   planId: 'Counted',
   planType: 'Counted' as const,
+  label: 'Field cells',
   formType: 'FORM1',
   numberRequired: 3,
   allowExtraRecords: false,

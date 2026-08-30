@@ -41,6 +41,7 @@ describe('counted plan definition', () => {
       template: {
         planId: 'artefacts',
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'artefact-form',
       },
       config: {
@@ -49,7 +50,7 @@ describe('counted plan definition', () => {
       },
     });
 
-    // No planId: the caller carries it over from the template
+    // No planId or label: the caller carries both over from the template
     expect(plan).toEqual({
       planType: COUNTED_PLAN_TYPE,
       formType: 'artefact-form',

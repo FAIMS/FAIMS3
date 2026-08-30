@@ -15,7 +15,8 @@
 /**
  * @file Plan template controls for the design panel: an Add Plan button in
  * template mode, a chooser for plan types, per-type authoring dialogs, and a
- * row per existing plan template carrying its label, order and removal.
+ * row per existing plan template carrying its label, order and removal. The
+ * label itself is authored in the plan's own dialog, which gates save on it.
  */
 
 import {useState} from 'react';
@@ -33,7 +34,6 @@ import {
   Grid,
   IconButton,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   useTheme,
@@ -51,7 +51,6 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {selectDesignerMode} from '../../store/selectors';
 import {
   planTemplateAdded,
-  planTemplateLabelled,
   planTemplateMoved,
   planTemplateRemoved,
   planTemplateSet,
@@ -220,18 +219,14 @@ export const PlanTemplateManager = () => {
                     Reorder
                   </Typography>
                 </Stack>
-                <TextField
-                  size="small"
-                  label="Label"
-                  placeholder={planTemplate.planId}
-                  helperText="Shown when choosing a plan"
-                  value={planTemplate.label ?? ''}
-                  onChange={event =>
-                    dispatch(
-                      planTemplateLabelled({index, label: event.target.value})
-                    )
-                  }
-                />
+                {/* The label the app's plan chooser shows; edited in the dialog */}
+                <Typography
+                  variant="body2"
+                  data-testid="web-designer-plan-label"
+                  sx={{fontWeight: 700}}
+                >
+                  {planTemplate.label}
+                </Typography>
                 <Chip
                   icon={formMissing ? <WarningAmberRoundedIcon /> : undefined}
                   label={

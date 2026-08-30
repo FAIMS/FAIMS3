@@ -85,6 +85,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
     });
 
@@ -93,6 +94,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'artefact-form',
       },
     ]);
@@ -108,7 +110,11 @@ describe('notebook creation from template with planTemplates', () => {
           uiSpecification: {
             ...sample.uiSpecification,
             planTemplates: [
-              {planId: COUNTED_PLAN_TYPE, planType: COUNTED_PLAN_TYPE},
+              {
+                planId: COUNTED_PLAN_TYPE,
+                planType: COUNTED_PLAN_TYPE,
+                label: 'Artefacts',
+              },
             ],
           },
         } satisfies PostCreateTemplateInput)
@@ -135,6 +141,7 @@ describe('notebook creation from template with planTemplates', () => {
         {
           planId: LIST_OF_RECORDS_PLAN_TYPE,
           planType: LIST_OF_RECORDS_PLAN_TYPE,
+          label: 'Survey points',
           formType: 'survey-form',
           recordFields: ['Name', 'Location'],
         },
@@ -152,6 +159,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
+        label: 'Survey points',
         formType: 'survey-form',
         recordFields: ['Name', 'Location'],
       },
@@ -177,6 +185,7 @@ describe('notebook creation from template with planTemplates', () => {
             {
               planId: LIST_OF_RECORDS_PLAN_TYPE,
               planType: LIST_OF_RECORDS_PLAN_TYPE,
+              label: 'Survey points',
               formType: 'survey-form',
               recordFields: ['Name', 123],
             },
@@ -193,6 +202,7 @@ describe('notebook creation from template with planTemplates', () => {
     const project = await createNotebookWithPlan({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
       numberRequired: 3,
       allowExtraRecords: false,
@@ -202,6 +212,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'artefact-form',
         numberRequired: 3,
         allowExtraRecords: false,
@@ -213,6 +224,7 @@ describe('notebook creation from template with planTemplates', () => {
     const project = await createNotebookWithPlan({
       planId: LIST_OF_RECORDS_PLAN_TYPE,
       planType: LIST_OF_RECORDS_PLAN_TYPE,
+      label: 'Survey points',
       formType: 'survey-form',
       records: {Record1: {Name: 'Record 1', Location: 'Trench A'}},
       allowExtraRecords: true,
@@ -222,6 +234,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
+        label: 'Survey points',
         formType: 'survey-form',
         records: {Record1: {Name: 'Record 1', Location: 'Trench A'}},
         allowExtraRecords: true,
@@ -242,6 +255,7 @@ describe('notebook creation from template with planTemplates', () => {
               {
                 planId: COUNTED_PLAN_TYPE,
                 planType: COUNTED_PLAN_TYPE,
+                label: 'Artefacts',
                 formType: 'artefact-form',
                 numberRequired: 0,
                 allowExtraRecords: 'sometimes',
@@ -260,6 +274,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
     });
 
@@ -271,7 +286,10 @@ describe('notebook creation from template with planTemplates', () => {
           description: testNotebookDescription,
           template_id: template._id,
           planConfigs: {
-            [COUNTED_PLAN_TYPE]: {numberRequired: 3, allowExtraRecords: false},
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 3,
+              allowExtraRecords: false,
+            },
           },
         } satisfies CreateNotebookFromTemplate)
     )
@@ -284,6 +302,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'artefact-form',
         numberRequired: 3,
         allowExtraRecords: false,
@@ -295,6 +314,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
     });
 
@@ -317,6 +337,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
     });
 
@@ -345,6 +366,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: LIST_OF_RECORDS_PLAN_TYPE,
       planType: LIST_OF_RECORDS_PLAN_TYPE,
+      label: 'Survey points',
       formType: 'survey-form',
       recordFields: ['Name', 'Location'],
     });
@@ -379,6 +401,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
+        label: 'Survey points',
         formType: 'survey-form',
         records: {
           Record1: {Name: 'Record 1', Location: 'Trench A'},
@@ -393,6 +416,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
     });
     const templatesDb = getTemplatesDb();
@@ -403,7 +427,11 @@ describe('notebook creation from template with planTemplates', () => {
       uiSpecification: {
         ...storedTemplate.uiSpecification,
         planTemplates: [
-          {planId: COUNTED_PLAN_TYPE, planType: COUNTED_PLAN_TYPE},
+          {
+            planId: COUNTED_PLAN_TYPE,
+            planType: COUNTED_PLAN_TYPE,
+            label: 'Artefacts',
+          },
         ],
       },
     });
@@ -442,6 +470,7 @@ describe('notebook creation from template with planTemplates', () => {
         {
           planId: COUNTED_PLAN_TYPE,
           planType: COUNTED_PLAN_TYPE,
+          label: 'Artefacts',
           formType: 'updated-form',
         },
       ],
@@ -458,6 +487,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'updated-form',
       },
     ]);
@@ -470,7 +500,10 @@ describe('notebook creation from template with planTemplates', () => {
           description: testNotebookDescription,
           template_id: createdTemplate._id,
           planConfigs: {
-            [COUNTED_PLAN_TYPE]: {numberRequired: 4, allowExtraRecords: false},
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 4,
+              allowExtraRecords: false,
+            },
           },
         } satisfies CreateNotebookFromTemplate)
     )
@@ -482,6 +515,7 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'updated-form',
         numberRequired: 4,
         allowExtraRecords: false,
@@ -514,7 +548,10 @@ describe('notebook creation from template with planTemplates', () => {
           description: testNotebookDescription,
           template_id: template._id,
           planConfigs: {
-            [COUNTED_PLAN_TYPE]: {numberRequired: 2, allowExtraRecords: false},
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 2,
+              allowExtraRecords: false,
+            },
             [LIST_OF_RECORDS_PLAN_TYPE]: {
               recordData: {Record1: {Name: 'Record 1'}},
               allowExtraRecords: true,
@@ -551,11 +588,13 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'artefact-form',
       },
       {
         planId: LIST_OF_RECORDS_PLAN_TYPE,
         planType: LIST_OF_RECORDS_PLAN_TYPE,
+        label: 'Survey points',
         formType: 'survey-form',
         recordFields: ['Name'],
       }
@@ -569,7 +608,10 @@ describe('notebook creation from template with planTemplates', () => {
           description: testNotebookDescription,
           template_id: template._id,
           planConfigs: {
-            [COUNTED_PLAN_TYPE]: {numberRequired: 2, allowExtraRecords: false},
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 2,
+              allowExtraRecords: false,
+            },
           },
         } satisfies CreateNotebookFromTemplate)
     ).expect(400);
@@ -584,11 +626,13 @@ describe('notebook creation from template with planTemplates', () => {
       {
         planId: COUNTED_PLAN_TYPE,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Artefacts',
         formType: 'artefact-form',
       },
       {
         planId: `${COUNTED_PLAN_TYPE}-2`,
         planType: COUNTED_PLAN_TYPE,
+        label: 'Second count',
         formType: 'survey-form',
       }
     );
@@ -601,7 +645,10 @@ describe('notebook creation from template with planTemplates', () => {
           description: testNotebookDescription,
           template_id: template._id,
           planConfigs: {
-            [COUNTED_PLAN_TYPE]: {numberRequired: 1, allowExtraRecords: false},
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 1,
+              allowExtraRecords: false,
+            },
             [`${COUNTED_PLAN_TYPE}-2`]: {
               numberRequired: 5,
               allowExtraRecords: true,
@@ -630,6 +677,7 @@ describe('notebook creation from template with planTemplates', () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,
       planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
       formType: 'artefact-form',
     });
 
@@ -641,7 +689,10 @@ describe('notebook creation from template with planTemplates', () => {
           description: testNotebookDescription,
           template_id: template._id,
           planConfigs: {
-            [COUNTED_PLAN_TYPE]: {numberRequired: 2, allowExtraRecords: false},
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 2,
+              allowExtraRecords: false,
+            },
             [`${COUNTED_PLAN_TYPE}-2`]: {
               numberRequired: 5,
               allowExtraRecords: true,

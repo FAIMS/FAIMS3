@@ -13,7 +13,8 @@
 // limitations under the License.
 
 /**
- * @file Authoring dialog for a Counted plan template: pick the target form.
+ * @file Authoring dialog for a Counted plan template: name it and pick the
+ * target form.
  */
 
 import {useEffect, useState} from 'react';
@@ -57,12 +58,14 @@ export const CountedPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
+  const [label, setLabel] = useState('');
   const [formType, setFormType] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
   // Re-derive local state each time the dialog opens
   useEffect(() => {
     if (!open) return;
+    setLabel(initialTemplate?.label ?? '');
     const initial = initialTemplate?.formType as string | undefined;
     if (initial && initial in viewSets) {
       setFormType(initial);
@@ -80,6 +83,7 @@ export const CountedPlanDialog = ({
   const handleSave = () => {
     const result = authoredSchema(countedPlanTemplateSchema).safeParse({
       planType: COUNTED_PLAN_TYPE,
+      label: label.trim(),
       formType,
     });
     if (!result.success) {
@@ -105,39 +109,58 @@ export const CountedPlanDialog = ({
       <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
         <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
           <SimpleFieldWrapper
-            heading="Form"
-            helperText={
-              alertMessage ||
-              'Records of this form count towards the plan. The number required is set when a notebook is created from this template.'
-            }
+            heading="Label"
+            helperText="Names this plan where a notebook offers a choice of plan."
           >
             <TextField
-              select
               fullWidth
-              value={formType}
-              error={Boolean(alertMessage)}
-              onChange={event => {
-                setAlertMessage('');
-                setFormType(event.target.value);
-              }}
+              value={label}
+              onChange={event => setLabel(event.target.value)}
               sx={{mt: 0.85}}
-            >
-              {Object.entries(viewSets).map(([id, viewSet]) =>
-                viewSet ? (
-                  <MenuItem key={id} value={id}>
-                    {viewSet.label}
-                  </MenuItem>
-                ) : null
-              )}
-            </TextField>
+              slotProps={{htmlInput: {'data-testid': 'plan-label'}}}
+            />
           </SimpleFieldWrapper>
+
+          <Box sx={{mt: 3}}>
+            <SimpleFieldWrapper
+              heading="Form"
+              helperText={
+                alertMessage ||
+                'Records of this form count towards the plan. The number required is set when a notebook is created from this template.'
+              }
+            >
+              <TextField
+                select
+                fullWidth
+                value={formType}
+                error={Boolean(alertMessage)}
+                onChange={event => {
+                  setAlertMessage('');
+                  setFormType(event.target.value);
+                }}
+                sx={{mt: 0.85}}
+              >
+                {Object.entries(viewSets).map(([id, viewSet]) =>
+                  viewSet ? (
+                    <MenuItem key={id} value={id}>
+                      {viewSet.label}
+                    </MenuItem>
+                  ) : null
+                )}
+              </TextField>
+            </SimpleFieldWrapper>
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions sx={designerDialogActionsSx}>
         <Button onClick={onClose} sx={designerCancelButtonSx}>
           Cancel
         </Button>
-        <Button variant="contained" disabled={!formType} onClick={handleSave}>
+        <Button
+          variant="contained"
+          disabled={!formType || !label.trim()}
+          onClick={handleSave}
+        >
           Save Plan
         </Button>
       </DialogActions>

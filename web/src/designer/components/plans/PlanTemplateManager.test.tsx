@@ -15,7 +15,7 @@
 /**
  * @file Tests for PlanTemplateManager: the feature flag hides Add Plan when a
  * template has no existing plan but leaves existing plans editable, and the
- * rows order, label and remove a plan by its position.
+ * rows show a plan's label and order and remove it by its position.
  */
 
 import {COUNTED_PLAN_TYPE} from '@faims3/data-model';
@@ -58,20 +58,20 @@ const WithProviders = ({
 const countedTemplate = {
   planId: COUNTED_PLAN_TYPE,
   planType: COUNTED_PLAN_TYPE,
+  label: 'Field cells',
   formType: 'FORM1',
 };
 
 const secondTemplate = {
   planId: `${COUNTED_PLAN_TYPE}.1`,
   planType: COUNTED_PLAN_TYPE,
+  label: 'Lab samples',
   formType: 'FORM1',
 };
 
-/** Each row's Label field holds its plan id as placeholder, so the ids read the order. */
+/** Each row names its plan, so the labels read the order. */
 const renderedOrder = () =>
-  screen
-    .getAllByRole('textbox')
-    .map(field => field.getAttribute('placeholder'));
+  screen.getAllByTestId('web-designer-plan-label').map(row => row.textContent);
 
 const renderManager = (
   mode: AppState['mode'],
@@ -139,8 +139,8 @@ describe('PlanTemplateManager rows', () => {
       secondTemplate,
     ]);
     expect(renderedOrder()).toEqual([
-      countedTemplate.planId,
-      secondTemplate.planId,
+      countedTemplate.label,
+      secondTemplate.label,
     ]);
 
     fireEvent.click(screen.getAllByLabelText('move plan down')[0]);
@@ -150,8 +150,8 @@ describe('PlanTemplateManager rows', () => {
       countedTemplate.planId,
     ]);
     expect(renderedOrder()).toEqual([
-      secondTemplate.planId,
-      countedTemplate.planId,
+      secondTemplate.label,
+      countedTemplate.label,
     ]);
   });
 
@@ -165,22 +165,6 @@ describe('PlanTemplateManager rows', () => {
       'disabled',
       true
     );
-  });
-
-  test('labels the plan the row belongs to', () => {
-    const {store} = renderManager('template', [
-      countedTemplate,
-      secondTemplate,
-    ]);
-
-    fireEvent.change(screen.getAllByRole('textbox')[1], {
-      target: {value: 'Lab'},
-    });
-
-    expect(store.getState().notebook.planTemplates.map(p => p.label)).toEqual([
-      undefined,
-      'Lab',
-    ]);
   });
 
   test('removes the plan the row belongs to, once confirmed', async () => {
@@ -197,7 +181,7 @@ describe('PlanTemplateManager rows', () => {
     ]);
     // The confirmation hides the rows from the accessibility tree until it closes
     await waitFor(() =>
-      expect(renderedOrder()).toEqual([countedTemplate.planId])
+      expect(renderedOrder()).toEqual([countedTemplate.label])
     );
   });
 });

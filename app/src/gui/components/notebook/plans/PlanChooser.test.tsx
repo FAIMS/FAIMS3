@@ -18,19 +18,16 @@ const plans = [
   {
     planId: 'lab-samples',
     planType: LIST_OF_RECORDS_PLAN_TYPE,
+    label: 'Lab samples',
   } as RegisteredPlan,
 ];
 
 describe('PlanChooser', () => {
-  it('labels a plan from its own label when it carries one', () => {
+  it('names each plan by its label', () => {
     render(<PlanChooser plans={plans} onSelect={vi.fn()} />);
     expect(screen.getByRole('button', {name: 'Field'})).toBeInTheDocument();
-  });
-
-  it('falls back to the plan id when the plan has no label', () => {
-    render(<PlanChooser plans={plans} onSelect={vi.fn()} />);
     expect(
-      screen.getByRole('button', {name: 'lab-samples'})
+      screen.getByRole('button', {name: 'Lab samples'})
     ).toBeInTheDocument();
   });
 
@@ -38,13 +35,13 @@ describe('PlanChooser', () => {
     render(<PlanChooser plans={plans} onSelect={vi.fn()} />);
     expect(
       screen.getAllByTestId('plan-chooser-option').map(b => b.textContent)
-    ).toEqual(['Field', 'lab-samples']);
+    ).toEqual(['Field', 'Lab samples']);
   });
 
   it('reports the chosen plan by id', async () => {
     const onSelect = vi.fn();
     render(<PlanChooser plans={plans} onSelect={onSelect} />);
-    await userEvent.click(screen.getByRole('button', {name: 'lab-samples'}));
+    await userEvent.click(screen.getByRole('button', {name: 'Lab samples'}));
     expect(onSelect).toHaveBeenCalledWith('lab-samples');
   });
 });

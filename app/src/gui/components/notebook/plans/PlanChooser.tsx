@@ -1,4 +1,4 @@
-import {RegisteredPlan, getPlanLabel} from '@faims3/data-model';
+import {RegisteredPlan} from '@faims3/data-model';
 import {Box, Button, Stack, Typography} from '@mui/material';
 
 /**
@@ -35,7 +35,7 @@ export const PlanChooser = ({
             onClick={() => onSelect(plan.planId)}
             sx={{justifyContent: 'flex-start', py: 2, textTransform: 'none'}}
           >
-            {getPlanLabel(plan)}
+            {plan.label}
           </Button>
         ))}
       </Stack>

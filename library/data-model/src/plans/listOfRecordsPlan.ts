@@ -44,7 +44,7 @@ export const instantiateListPlan = ({
 }: {
   template: ListPlanTemplate;
   config: ListPlanTemplateConfig;
-}): Omit<ListPlan, 'planId'> => {
+}): Omit<ListPlan, 'planId' | 'label'> => {
   // do a local check of the template validity before we try to validate the plan
   if (!listPlanTemplateSchema.safeParse(template).success) {
     throw new Error('Invalid list of records plan template');

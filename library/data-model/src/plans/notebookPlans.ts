@@ -12,13 +12,6 @@ export const derivePlanId = (planType: string, taken: Set<string>): string => {
 };
 
 /**
- * How a plan names itself to the user: its own label, else its id, which reads
- * as the plan type for the first plan of that type and distinguishes the rest.
- */
-export const getPlanLabel = (plan: {planId: string; label?: string}): string =>
-  plan.label || plan.planId;
-
-/**
  * Ids that appear more than once. Each would make two plans share one address,
  * so a caller loading a definition rejects it rather than leaving one of them
  * unreachable.

@@ -28,6 +28,7 @@ describe('list of records plan definition', () => {
       template: {
         planId: 'survey',
         planType: LIST_OF_RECORDS_PLAN_TYPE,
+        label: 'Survey',
         formType: 'survey-form',
         recordFields: ['Name', 'Location'],
       },
@@ -47,7 +48,7 @@ describe('list of records plan definition', () => {
       },
     });
 
-    // No planId: the caller carries it over from the template
+    // No planId or label: the caller carries both over from the template
     expect(plan).toEqual({
       planType: LIST_OF_RECORDS_PLAN_TYPE,
       formType: 'survey-form',

@@ -41,9 +41,8 @@ const planTemplatesReducer = createSlice({
       });
     },
     /**
-     * Replace the plan template at an index, keeping its position. Plan dialogs
-     * author only their own type's fields, so the id and label the row carries
-     * survive an edit.
+     * Replace the plan template at an index, keeping its position. The dialog
+     * authors everything but the id, which is minted once and kept.
      */
     planTemplateSet: (
       state,
@@ -52,22 +51,7 @@ const planTemplatesReducer = createSlice({
       const {index, planTemplate} = action.payload;
       const existing = state[index];
       if (!existing) return;
-      state[index] = {
-        ...(existing.label ? {label: existing.label} : {}),
-        ...planTemplate,
-        planId: existing.planId,
-      };
-    },
-    /** Rename the plan template at an index; a blank label clears it. */
-    planTemplateLabelled: (
-      state,
-      action: PayloadAction<{index: number; label: string}>
-    ) => {
-      const {index, label} = action.payload;
-      const planTemplate = state[index];
-      if (!planTemplate) return;
-      if (label) planTemplate.label = label;
-      else delete planTemplate.label;
+      state[index] = {...planTemplate, planId: existing.planId};
     },
     /** Remove the plan template at an index. */
     planTemplateRemoved: (state, action: PayloadAction<number>) => {
@@ -95,7 +79,6 @@ const planTemplatesReducer = createSlice({
 export const {
   planTemplateAdded,
   planTemplateSet,
-  planTemplateLabelled,
   planTemplateRemoved,
   planTemplateMoved,
 } = planTemplatesReducer.actions;
