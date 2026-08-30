@@ -156,7 +156,7 @@ export function tryNormalizeApiUiSpecification(
 
   return {
     ok: true,
-    data: planTemplates?.length ? {...parsed.data, planTemplates} : parsed.data,
+    data: parsed.data,
     migrated,
     warning:
       [warning, planWarning, labelWarning].filter(Boolean).join(' ') ||
