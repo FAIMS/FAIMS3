@@ -39,7 +39,7 @@ import {localGetDataDb} from '../../../utils/database';
 import {useNavigate, useParams} from 'react-router-dom';
 import NotebookSettings from './settings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import {Box, Button} from '@mui/material';
+import {Button} from '@mui/material';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
 
@@ -383,20 +383,20 @@ function NotebookViewWithSpec({
     // Back leaves the notebook, so where there was a choice of plan to make,
     // this is the way back to it.
     return planViews.length > 1 ? (
-      // A Stack here would reset the plan view's own margins, so a plan would
-      // lay out differently depending on how many plans sit beside it
-      <Box>
+      // No wrapper, so the plan view's own children stay direct children of the
+      // page's Stack and a plan lays out the same however many sit beside it
+      <>
         <Button
           size="small"
           startIcon={<ArrowBackIcon />}
           onClick={() => showPlanTab({})}
           data-testid="plan-change"
-          sx={{mb: 1, textTransform: 'none'}}
+          sx={{alignSelf: 'flex-start', textTransform: 'none'}}
         >
           Change plan
         </Button>
         <Component {...props} />
-      </Box>
+      </>
     ) : (
       <Component {...props} />
     );
