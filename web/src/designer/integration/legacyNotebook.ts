@@ -13,6 +13,7 @@ import {
   notebookUiSpecificationValidationMessage,
   type NotebookDefinition,
   findDuplicatePlanIds,
+  findDuplicatePlanLabels,
   safeValidatePlanTemplate,
   TemplateDefinitionSchema,
   type PlanTemplate,
@@ -136,6 +137,16 @@ export function tryNormalizeApiUiSpecification(
     return {
       ok: false,
       message: `uiSpecification has more than one plan with the id ${duplicateIds.join(', ')}`,
+    };
+  }
+
+  // The chooser has only the label to tell two plans apart by, so the api
+  // refuses a repeated one too
+  const duplicateLabels = findDuplicatePlanLabels(planTemplates);
+  if (duplicateLabels.length) {
+    return {
+      ok: false,
+      message: `uiSpecification has more than one plan with the label ${duplicateLabels.join(', ')}`,
     };
   }
 

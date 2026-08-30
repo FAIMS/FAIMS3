@@ -50,6 +50,8 @@ export type PlanDialogProps = {
   uiSpec: PlanDialogUiSpec;
   /** Present when editing an existing plan template; absent when creating. */
   initialTemplate?: PlanTemplate;
+  /** Labels the template's other plans already carry, which this one may not reuse. */
+  takenLabels: string[];
   onClose: () => void;
   /**
    * Called with a schema-valid plan template; the caller stores it and closes.

@@ -44,7 +44,11 @@ const WithProviders = ({
 );
 
 /** Render the dialog editing a plan on the sample notebook's one form. */
-const renderDialog = (recordFields: string[], label = 'Lab samples') => {
+const renderDialog = (
+  recordFields: string[],
+  label = 'Lab samples',
+  takenLabels: string[] = []
+) => {
   const store = createDesignerStore();
   const {migrated: notebook} = migrateNotebook(sampleNotebook);
   store.dispatch(loaded(notebook.uiSpec as NotebookUISpec));
@@ -62,6 +66,7 @@ const renderDialog = (recordFields: string[], label = 'Lab samples') => {
           formType: 'Primary',
           recordFields,
         }}
+        takenLabels={takenLabels}
         onClose={vi.fn()}
         onSave={onSave}
       />
@@ -133,6 +138,23 @@ describe('ListOfRecordsPlanDialog', () => {
 
   test('will not save a plan with no label to show on the chooser', () => {
     const {onSave} = renderDialog(['Identifier'], '');
+
+    const save = screen.getByRole('button', {name: 'Save Plan'});
+    expect(save).toHaveProperty('disabled', true);
+
+    fireEvent.change(screen.getByTestId('plan-label'), {
+      target: {value: 'Lab samples'},
+    });
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({label: 'Lab samples'})
+    );
+  });
+
+  test("will not save a plan reusing another plan's label", () => {
+    const {onSave} = renderDialog(['Identifier'], 'Field survey', [
+      'Field survey',
+    ]);
 
     const save = screen.getByRole('button', {name: 'Save Plan'});
     expect(save).toHaveProperty('disabled', true);

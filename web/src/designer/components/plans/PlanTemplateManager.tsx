@@ -332,6 +332,10 @@ export const PlanTemplateManager = () => {
               ? undefined
               : planTemplates[editing.index]
           }
+          // Every other plan's label, so the one being edited keeps its own
+          takenLabels={planTemplates
+            .filter((_, index) => index !== editing?.index)
+            .map(planTemplate => planTemplate.label)}
           onClose={() => setEditing(null)}
           onSave={handleSave}
         />

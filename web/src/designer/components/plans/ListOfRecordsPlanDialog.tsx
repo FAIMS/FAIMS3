@@ -57,6 +57,7 @@ export const ListOfRecordsPlanDialog = ({
   open,
   uiSpec,
   initialTemplate,
+  takenLabels,
   onClose,
   onSave,
 }: PlanDialogProps) => {
@@ -65,7 +66,7 @@ export const ListOfRecordsPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
-  const planLabel = usePlanLabel({open, initialTemplate});
+  const planLabel = usePlanLabel({open, initialTemplate, takenLabels});
   const [formType, setFormType] = useState('');
   const [recordFields, setRecordFields] = useState<string[]>([]);
   const [alertMessage, setAlertMessage] = useState('');

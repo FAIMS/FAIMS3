@@ -14,6 +14,7 @@ import {
 } from './types';
 import {
   findDuplicatePlanIds,
+  findDuplicatePlanLabels,
   safeValidatePlan,
   safeValidatePlanTemplate,
 } from '../plans';
@@ -134,9 +135,10 @@ function normalizeUiSpecificationBundle<
 }
 
 /**
- * Reject a set of plans or plan templates that no notebook could address: an id
- * repeated between two of them, or one that its own plan type refuses. Both are
- * caught at load rather than when the plan's tab is first opened.
+ * Reject a set of plans or plan templates a notebook could not offer: an id
+ * repeated between two of them, a label repeated between two of them, or one
+ * that its own plan type refuses. All are caught at load rather than when the
+ * plan's tab is first opened.
  */
 function assertPlansAddressable({
   plans,
@@ -144,7 +146,7 @@ function assertPlansAddressable({
   what,
   label,
 }: {
-  plans: {planId: string}[] | undefined;
+  plans: {planId: string; label: string}[] | undefined;
   validate: (plan: unknown) => {success: boolean};
   what: string;
   label: string;
@@ -152,6 +154,14 @@ function assertPlansAddressable({
   const duplicateIds = findDuplicatePlanIds(plans);
   if (duplicateIds.length) {
     throw new Error(`Repeated plan id ${duplicateIds.join(', ')} in ${label}`);
+  }
+
+  // The chooser has only the label to tell two plans apart by
+  const duplicateLabels = findDuplicatePlanLabels(plans);
+  if (duplicateLabels.length) {
+    throw new Error(
+      `Repeated plan label ${duplicateLabels.join(', ')} in ${label}`
+    );
   }
 
   for (const plan of plans ?? []) {

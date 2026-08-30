@@ -9,6 +9,7 @@ import {
   COUNTED_PLAN_TYPE,
   derivePlanId,
   findDuplicatePlanIds,
+  findDuplicatePlanLabels,
   planReferenceFor,
 } from '../src';
 
@@ -61,6 +62,19 @@ describe('planReferenceFor and claimsPlan', () => {
     expect(claimsPlan({planReference: undefined, planId: 'survey'})).toBe(
       false
     );
+  });
+});
+
+describe('findDuplicatePlanLabels', () => {
+  it('is empty when every label is its own', () => {
+    expect(findDuplicatePlanLabels([{label: 'a'}, {label: 'b'}])).toEqual([]);
+    expect(findDuplicatePlanLabels(undefined)).toEqual([]);
+  });
+
+  it('names each label that appears more than once', () => {
+    expect(
+      findDuplicatePlanLabels([{label: 'a'}, {label: 'b'}, {label: 'a'}])
+    ).toEqual(['a']);
   });
 });
 
@@ -189,6 +203,14 @@ describe('normalizeNotebookTemplateUiSpecification', () => {
       'site-survey',
       'feature-list',
     ]);
+  });
+
+  it('rejects a repeated plan label, which the chooser cannot tell apart', () => {
+    const bundle = template();
+    bundle.planTemplates[1].label = bundle.planTemplates[0].label;
+    expect(() => normalizeNotebookTemplateUiSpecification(bundle)).toThrow(
+      /Repeated plan label/
+    );
   });
 
   it('rejects a repeated plan id in the template', () => {

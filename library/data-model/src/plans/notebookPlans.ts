@@ -11,6 +11,17 @@ export const derivePlanId = (planType: string, taken: Set<string>): string => {
   return `${planType}-${n}`;
 };
 
+/** Values appearing more than once, in the order they first repeat. */
+const findDuplicates = (values: string[]): string[] => {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const value of values) {
+    if (seen.has(value)) duplicates.add(value);
+    seen.add(value);
+  }
+  return [...duplicates];
+};
+
 /**
  * Ids that appear more than once. Each would make two plans share one address,
  * so a caller loading a definition rejects it rather than leaving one of them
@@ -18,15 +29,15 @@ export const derivePlanId = (planType: string, taken: Set<string>): string => {
  */
 export const findDuplicatePlanIds = (
   source: {planId: string}[] | undefined
-): string[] => {
-  const seen = new Set<string>();
-  const duplicates = new Set<string>();
-  for (const {planId} of source ?? []) {
-    if (seen.has(planId)) duplicates.add(planId);
-    seen.add(planId);
-  }
-  return [...duplicates];
-};
+): string[] => findDuplicates((source ?? []).map(plan => plan.planId));
+
+/**
+ * Labels that appear more than once. The chooser tells plans apart by label, so
+ * a repeated one leaves the user picking blind.
+ */
+export const findDuplicatePlanLabels = (
+  source: {label: string}[] | undefined
+): string[] => findDuplicates((source ?? []).map(plan => plan.label));
 
 /**
  * The `planReference` a record carries to claim it for one plan. The plan id

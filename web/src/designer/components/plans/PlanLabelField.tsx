@@ -29,6 +29,8 @@ export type PlanLabelState = {
   setValue: (value: string) => void;
   /** The label to save, trimmed. */
   label: string;
+  /** Whether another of the template's plans already carries this label. */
+  isTaken: boolean;
   /** Whether the plan may be saved with this label. */
   canSave: boolean;
 };
@@ -37,9 +39,11 @@ export type PlanLabelState = {
 export const usePlanLabel = ({
   open,
   initialTemplate,
+  takenLabels,
 }: {
   open: boolean;
   initialTemplate?: PlanTemplate;
+  takenLabels: string[];
 }): PlanLabelState => {
   const [value, setValue] = useState('');
 
@@ -49,18 +53,24 @@ export const usePlanLabel = ({
   }, [open, initialTemplate]);
 
   const label = value.trim();
-  return {value, setValue, label, canSave: Boolean(label)};
+  const isTaken = takenLabels.includes(label);
+  return {value, setValue, label, isTaken, canSave: Boolean(label) && !isTaken};
 };
 
 /** The label block of a plan dialog, over the state {@link usePlanLabel} holds. */
 export const PlanLabelField = ({state}: {state: PlanLabelState}) => (
   <SimpleFieldWrapper
     heading="Label"
-    helperText="Names this plan where a notebook offers a choice of plan."
+    helperText={
+      state.isTaken
+        ? 'Another plan already has this label. The chooser has only the label to tell them apart by.'
+        : 'Names this plan where a notebook offers a choice of plan.'
+    }
   >
     <TextField
       fullWidth
       value={state.value}
+      error={state.isTaken}
       onChange={event => state.setValue(event.target.value)}
       sx={{mt: 0.85}}
       slotProps={{htmlInput: {'data-testid': 'plan-label'}}}

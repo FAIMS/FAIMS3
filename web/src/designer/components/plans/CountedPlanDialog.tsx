@@ -56,6 +56,7 @@ export const CountedPlanDialog = ({
   open,
   uiSpec,
   initialTemplate,
+  takenLabels,
   onClose,
   onSave,
 }: PlanDialogProps) => {
@@ -64,7 +65,7 @@ export const CountedPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
-  const planLabel = usePlanLabel({open, initialTemplate});
+  const planLabel = usePlanLabel({open, initialTemplate, takenLabels});
   const [formType, setFormType] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
