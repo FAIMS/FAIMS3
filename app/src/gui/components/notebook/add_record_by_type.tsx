@@ -25,8 +25,9 @@ type AddRecordButtonsProps = {
   recordLabel: string;
   refreshList: () => void;
   /**
-   * Claims the records of the plan's own form for it; the other forms these
-   * buttons offer are not the plan's, so they are created unclaimed.
+   * Offers the plan's own form alone and claims the records it creates for the
+   * plan. A record of another form would be claimed by no plan, so no plan
+   * would show it.
    */
   planClaim?: {planReference: string; formType: string};
 };
@@ -54,7 +55,10 @@ export default function AddRecordButtons({
   }
   const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
-  const visibleTypes = uiSpec.visible_types;
+  // A plan collects one form, so its screen offers that form alone
+  const visibleTypes = planClaim
+    ? uiSpec.visible_types.filter(type => type === planClaim.formType)
+    : uiSpec.visible_types;
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -75,10 +79,7 @@ export default function AddRecordButtons({
       .createRecord({
         createdBy: activeUser.username,
         formId: viewsetName,
-        planReference:
-          planClaim?.formType === viewsetName
-            ? planClaim.planReference
-            : undefined,
+        planReference: planClaim?.planReference,
       })
       .then(newRecord =>
         navigate(
@@ -142,7 +143,7 @@ export default function AddRecordButtons({
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {uiSpec?.visible_types.length === 1 ? (
+          {visibleTypes.length === 1 ? (
             <Button
               variant="contained"
               color="primary"
