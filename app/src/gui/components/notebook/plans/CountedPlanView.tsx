@@ -33,14 +33,15 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   }
   const plan = props.plan;
 
-  // Claimed by this plan, so a second plan collecting the same form counts its
-  // own records rather than taking this plan's target
+  // Claimed by this plan, so a second plan collecting the same form counts and
+  // lists its own records rather than taking this plan's target
   const planReference = planReferenceFor({planId: plan.planId});
-  const targetRecordCount = records.allRecords.filter(
+  const planRecords = records.allRecords.filter(
     record =>
       record.type === plan.formType &&
       claimsPlan({planReference: record.planReference, planId: plan.planId})
-  ).length;
+  );
+  const targetRecordCount = planRecords.length;
 
   // Records that exist may be missing from the list, so the count is a floor
   // rather than the true total and cannot show the target as reached.
@@ -114,7 +115,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
                 project={project}
                 recordLabel={recordLabel}
                 refreshList={actions.refreshRecordList}
-                planReference={planReference}
+                planClaim={{planReference, formType: plan.formType}}
               />
             </Box>
           )}
@@ -131,7 +132,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={records.allRecords ?? []}
+            rows={planRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}

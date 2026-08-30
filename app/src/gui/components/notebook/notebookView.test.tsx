@@ -129,7 +129,7 @@ describe('NotebookView navigation', () => {
     expect(navigate).toHaveBeenCalledWith(notebookRoute({}), {replace: true});
   });
 
-  it('never pushes, so one Back leaves the notebook', async () => {
+  it('replaces on every move within the notebook, not only the first', async () => {
     renderNotebook({planId: 'lab'});
     await userEvent.click(screen.getByRole('button', {name: 'show a tab'}));
     await userEvent.click(screen.getByRole('button', {name: 'Change plan'}));
