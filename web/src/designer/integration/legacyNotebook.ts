@@ -140,16 +140,6 @@ export function tryNormalizeApiUiSpecification(
     };
   }
 
-  // The chooser has only the label to tell two plans apart by, so the api
-  // refuses a repeated one too
-  const duplicateLabels = findDuplicatePlanLabels(planTemplates);
-  if (duplicateLabels.length) {
-    return {
-      ok: false,
-      message: `uiSpecification has more than one plan with the label ${duplicateLabels.join(', ')}`,
-    };
-  }
-
   // Warn rather than fail on an invalid plan template so the template stays
   // editable; name each failing plan, as normalizing a template does
   const invalid = (planTemplates ?? []).flatMap(planTemplate => {
@@ -162,11 +152,20 @@ export function tryNormalizeApiUiSpecification(
     ? `${invalid.length} of this template's plans failed validation and may need to be re-created. ${invalid.join(' ')}`
     : undefined;
 
+  // A repeated label is repairable here, unlike a repeated id, so the template
+  // opens and says which; the api refuses to store it until one is renamed
+  const duplicateLabels = findDuplicatePlanLabels(planTemplates);
+  const labelWarning = duplicateLabels.length
+    ? `More than one plan has the label ${duplicateLabels.join(', ')}. Rename one before saving: the plan chooser has only the label to tell them apart.`
+    : undefined;
+
   return {
     ok: true,
     data: planTemplates?.length ? {...parsed.data, planTemplates} : parsed.data,
     migrated,
-    warning: [warning, planWarning].filter(Boolean).join(' ') || undefined,
+    warning:
+      [warning, planWarning, labelWarning].filter(Boolean).join(' ') ||
+      undefined,
   };
 }
 
