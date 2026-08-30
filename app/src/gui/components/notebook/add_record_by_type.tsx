@@ -25,9 +25,8 @@ type AddRecordButtonsProps = {
   recordLabel: string;
   refreshList: () => void;
   /**
-   * Offers the plan's own form alone and claims the records it creates for the
-   * plan. A record of another form would be claimed by no plan, so no plan
-   * would show it.
+   * Restricts these buttons to the plan's own form and claims for the plan
+   * every record they create.
    */
   planClaim?: {planReference: string; formType: string};
 };
@@ -55,10 +54,9 @@ export default function AddRecordButtons({
   }
   const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
-  // A plan collects one form, so its screen offers that form alone
-  const visibleTypes = planClaim
-    ? uiSpec.visible_types.filter(type => type === planClaim.formType)
-    : uiSpec.visible_types;
+  // A plan collects one form, so its screen offers that form alone. Taken from
+  // the plan, not from the visible ones, since a plan may name a hidden form.
+  const visibleTypes = planClaim ? [planClaim.formType] : uiSpec.visible_types;
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {

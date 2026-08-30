@@ -33,7 +33,12 @@ vi.mock('../../../utils/database', () => ({localGetDataDb: () => ({})}));
 vi.mock('@faims3/forms', () => ({QRCodeButton: () => null}));
 
 const uiSpecification = {
-  viewsets: {Site: {label: 'Site'}, Feature: {label: 'Feature'}},
+  // A plan may name a form the notebook does not list among its visible ones
+  viewsets: {
+    Site: {label: 'Site'},
+    Feature: {label: 'Feature'},
+    Hidden: {label: 'Hidden'},
+  },
   visible_types: ['Site', 'Feature'],
   settings: {showQrCodeButton: false},
 };
@@ -75,6 +80,13 @@ describe('AddRecordButtons on a plan that shares its notebook', () => {
       screen.getByTestId('Site-app-record-add-button')
     ).toBeInTheDocument();
     expect(screen.queryByTestId('Feature-app-record-add-button')).toBeNull();
+  });
+
+  it('offers a plan its form even where the notebook hides it', () => {
+    renderButtons({planReference: 'field', formType: 'Hidden'});
+    expect(
+      screen.getByTestId('Hidden-app-record-add-button')
+    ).toBeInTheDocument();
   });
 
   it('claims the record it creates for the plan', async () => {
