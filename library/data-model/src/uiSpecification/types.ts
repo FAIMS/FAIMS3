@@ -356,12 +356,12 @@ export type CompiledNotebookUiSpec = z.infer<
 /*
  * A template is a notebook definition that will be used to instantiate many notebooks.
  * It has the same uiSpec and metadata as a notebook but includes optional plan templates,
- * one per workflow, each instantiated into a plan when a notebook is created from the template.
+ * one per plan, each instantiated when a notebook is created from the template.
  */
 export const TemplateDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** One per workflow the template offers, each with its own `planId`. */
+  /** One per plan the template offers, each with its own `planId`. */
   planTemplates: z.array(PlanTemplateSchema).optional(),
 });
 export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
@@ -378,7 +378,7 @@ export type TemplateDefinition = z.infer<typeof TemplateDefinitionSchema>;
 export const NotebookDefinitionSchema = z.object({
   uiSpec: NotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** The notebook's plans, one workflow each, addressed by `planId`. */
+  /** The notebook's plans, each addressed by its own `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
@@ -390,7 +390,7 @@ export type NotebookDefinition = z.infer<typeof NotebookDefinitionSchema>;
 export const CompiledNotebookDefinitionSchema = z.object({
   uiSpec: CompiledNotebookUiSpecSchema,
   metadata: NotebookMetadataSchema,
-  /** The notebook's plans, one workflow each, addressed by `planId`. */
+  /** The notebook's plans, each addressed by its own `planId`. */
   plans: z.array(RegisteredPlanSchema).optional(),
 });
 export type CompiledNotebookDefinition = z.infer<
