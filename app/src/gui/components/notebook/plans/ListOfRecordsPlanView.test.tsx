@@ -80,4 +80,12 @@ describe('ListOfRecordsPlanView with a second plan on the same form', () => {
     renderView([]);
     expect(screen.getByRole('tab', {name: 'Planned Sites'})).toBeDefined();
   });
+
+  it('names the plan, which is what tells two plans on one form apart', () => {
+    renderView([]);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Field: collect Site records'
+    );
+    expect(screen.getByRole('tablist', {name: 'Field tabs'})).toBeDefined();
+  });
 });

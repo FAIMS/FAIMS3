@@ -97,8 +97,10 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
 
   return (
     <>
+      {/* The plan's label leads, since the plan type names nothing a user has
+      seen and two plans may sit on the one form */}
       <Alert severity="info">
-        <b>List of Records Plan</b>: Collect {plan.formType} records.{' '}
+        <b>{plan.label}</b>: collect {recordLabel} records.{' '}
         {!plan.allowExtraRecords
           ? 'Do not allow extra records'
           : 'Extra records allowed'}
@@ -107,7 +109,7 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
       <TabContext value={currentTab}>
         <TabList
           onChange={(event, newValue) => actions.setTab(newValue)}
-          aria-label={`List of Records Plan tabs`}
+          aria-label={`${plan.label} tabs`}
         >
           <Tab
             label={`Planned ${recordLabel}s`}

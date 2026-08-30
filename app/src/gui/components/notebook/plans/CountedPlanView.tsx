@@ -60,8 +60,10 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   return (
     <>
       <div>
+        {/* The plan's label leads, since the plan type names nothing a user
+        has seen and two plans may sit on the one form */}
         <Alert severity="info">
-          <b>Counted Plan</b>: Collect {plan.numberRequired} {plan.formType}{' '}
+          <b>{plan.label}</b>: collect {plan.numberRequired} {recordLabel}{' '}
           records.{' '}
           {!plan.allowExtraRecords
             ? 'Do not allow extra records'
@@ -72,7 +74,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
       <TabContext value={currentTab}>
         <TabList
           onChange={(event, newValue) => actions.setTab(newValue)}
-          aria-label={'Counted Plan tabs'}
+          aria-label={`${plan.label} tabs`}
         >
           <Tab
             label={`Planned ${recordLabel}s`}
