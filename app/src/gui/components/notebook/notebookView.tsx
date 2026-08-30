@@ -336,8 +336,6 @@ function NotebookViewWithSpec({
       },
       records: {
         allRecords: planRecords,
-        myRecords: records.myRecords,
-        otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
         planRecordStatusReports,
       },

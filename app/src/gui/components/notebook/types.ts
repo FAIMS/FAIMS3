@@ -22,10 +22,6 @@ interface RecordListProps {
   // a view and the components it is handed answer alike. Every record in the
   // notebook where there is no plan.
   allRecords: MinimalRecordMetadata[];
-  // Records created by the current user
-  myRecords: MinimalRecordMetadata[];
-  // Records created by other users
-  otherRecords: MinimalRecordMetadata[];
   // The current sync status of the records in the notebook
   syncStatus: RecordStatus;
   // Recursive completion report per record claiming a plan reference
