@@ -38,6 +38,7 @@ import {
   LIST_OF_RECORDS_PLAN_TYPE,
   listPlanTemplateSchema,
 } from '@faims3/data-model';
+import {PlanLabelField, usePlanLabel} from './PlanLabelField';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -47,6 +48,9 @@ import {
 import {SimpleFieldWrapper} from '../Fields/SimpleFieldWrapper';
 import {FieldSearchAutocomplete} from '../field-selector';
 import type {PlanDialogProps} from '../../plans';
+
+// The same value every save, so it is built once rather than per save
+const authoredListPlanTemplateSchema = authoredSchema(listPlanTemplateSchema);
 
 /** Pick the form and pre-filled fields for a List of Records plan. */
 export const ListOfRecordsPlanDialog = ({
@@ -61,7 +65,7 @@ export const ListOfRecordsPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
-  const [label, setLabel] = useState('');
+  const planLabel = usePlanLabel({open, initialTemplate});
   const [formType, setFormType] = useState('');
   const [recordFields, setRecordFields] = useState<string[]>([]);
   const [alertMessage, setAlertMessage] = useState('');
@@ -77,7 +81,6 @@ export const ListOfRecordsPlanDialog = ({
   // Re-derive local state each time the dialog opens
   useEffect(() => {
     if (!open) return;
-    setLabel(initialTemplate?.label ?? '');
     const initial = initialTemplate?.formType as string | undefined;
     if (initial && initial in viewSets) {
       setFormType(initial);
@@ -117,9 +120,9 @@ export const ListOfRecordsPlanDialog = ({
   };
 
   const handleSave = () => {
-    const result = authoredSchema(listPlanTemplateSchema).safeParse({
+    const result = authoredListPlanTemplateSchema.safeParse({
       planType: LIST_OF_RECORDS_PLAN_TYPE,
-      label: label.trim(),
+      label: planLabel.label,
       formType,
       recordFields,
     });
@@ -145,18 +148,7 @@ export const ListOfRecordsPlanDialog = ({
       </DialogTitle>
       <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
         <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
-          <SimpleFieldWrapper
-            heading="Label"
-            helperText="Names this plan where a notebook offers a choice of plan."
-          >
-            <TextField
-              fullWidth
-              value={label}
-              onChange={event => setLabel(event.target.value)}
-              sx={{mt: 0.85}}
-              slotProps={{htmlInput: {'data-testid': 'plan-label'}}}
-            />
-          </SimpleFieldWrapper>
+          <PlanLabelField state={planLabel} />
 
           <Box sx={{mt: 3}}>
             <SimpleFieldWrapper
@@ -258,7 +250,7 @@ export const ListOfRecordsPlanDialog = ({
         </Button>
         <Button
           variant="contained"
-          disabled={!formType || !label.trim()}
+          disabled={!formType || !planLabel.canSave}
           onClick={handleSave}
         >
           Save Plan
