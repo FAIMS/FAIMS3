@@ -37,8 +37,9 @@ export const PlanTemplateSchema = z
      */
     planId: PlanIdSchema,
     /**
-     * Names the plan on the notebook's plan chooser. Trimmed, so two labels the
-     * chooser would render identically are not held apart by their whitespace.
+     * Names the plan wherever the app shows it, the chooser that picks it and
+     * the screen it opens alike. Trimmed, so two labels rendered identically
+     * are not held apart by their whitespace.
      */
     label: z.string().trim().min(1),
   })
@@ -87,9 +88,10 @@ export const PlanSchema = z
      */
     planId: PlanIdSchema,
     /**
-     * Names the plan on the notebook's plan chooser, which is the one screen
-     * whose job is telling plans apart, so a plan must carry one. Trimmed, and
-     * carried over from the plan template at instantiation.
+     * Names the plan wherever the app shows it, the chooser that picks it and
+     * the screen it opens, which is all a user has to tell two plans on one
+     * form apart, so a plan must carry one. Trimmed, and carried over from the
+     * plan template at instantiation.
      */
     label: z.string().trim().min(1),
   })
