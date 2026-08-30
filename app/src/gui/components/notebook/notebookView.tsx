@@ -30,6 +30,7 @@ import {
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
 import {getNotebookView, PlanChooser, resolvePlanViews} from './plans';
+import {recordsClaimedBy} from './plans/planViewRecords';
 import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {useCallback, useMemo, useState} from 'react';
 import {config} from '../../../buildconfig';
@@ -338,7 +339,15 @@ function NotebookViewWithSpec({
         OverviewMap: () => (
           <OverviewMap
             serverId={project.serverId}
-            records={records}
+            // Scoped to the plan on screen, so the map plots what its lists hold
+            records={{
+              allRecords: activePlan
+                ? recordsClaimedBy({
+                    records: records.allRecords,
+                    planId: activePlan.plan.planId,
+                  })
+                : records.allRecords,
+            }}
             project_id={project.projectId}
             uiSpec={uiSpecification}
           />
