@@ -134,6 +134,34 @@ function normalizeUiSpecificationBundle<
 }
 
 /**
+ * Reject a set of plans or plan templates that no notebook could address: an id
+ * repeated between two of them, or one that its own plan type refuses. Both are
+ * caught at load rather than when the plan's tab is first opened.
+ */
+function assertPlansAddressable({
+  plans,
+  validate,
+  what,
+  label,
+}: {
+  plans: {planId: string}[] | undefined;
+  validate: (plan: unknown) => {success: boolean};
+  what: string;
+  label: string;
+}): void {
+  const duplicateIds = findDuplicatePlanIds(plans);
+  if (duplicateIds.length) {
+    throw new Error(`Repeated plan id ${duplicateIds.join(', ')} in ${label}`);
+  }
+
+  for (const plan of plans ?? []) {
+    if (!validate(plan).success) {
+      throw new Error(`Invalid ${what} "${plan.planId}" in ${label}`);
+    }
+  }
+}
+
+/**
  * Accept a legacy or current notebook template JSON bundle, then validate each
  * plan template it carries against that plan type's own schema.
  */
@@ -146,20 +174,12 @@ export function normalizeNotebookTemplateUiSpecification(
     label: 'template uiSpecification',
   });
 
-  const duplicateIds = findDuplicatePlanIds(definition.planTemplates);
-  if (duplicateIds.length) {
-    throw new Error(
-      `Repeated plan id ${duplicateIds.join(', ')} in template uiSpecification`
-    );
-  }
-
-  for (const planTemplate of definition.planTemplates ?? []) {
-    if (!safeValidatePlanTemplate(planTemplate).success) {
-      throw new Error(
-        `Invalid plan template "${planTemplate.planId}" in template uiSpecification`
-      );
-    }
-  }
+  assertPlansAddressable({
+    plans: definition.planTemplates,
+    validate: safeValidatePlanTemplate,
+    what: 'plan template',
+    label: 'template uiSpecification',
+  });
 
   return definition;
 }
@@ -177,20 +197,12 @@ export function normalizeNotebookUiSpecification(
     label: 'uiSpecification',
   });
 
-  const duplicateIds = findDuplicatePlanIds(definition.plans);
-  if (duplicateIds.length) {
-    throw new Error(
-      `Repeated plan id ${duplicateIds.join(', ')} in uiSpecification`
-    );
-  }
-
-  // Validate every plan the notebook carries, so a bad one is caught at load
-  // rather than when its tab is first opened.
-  for (const plan of definition.plans ?? []) {
-    if (!safeValidatePlan(plan).success) {
-      throw new Error(`Invalid plan "${plan.planId}" in uiSpecification`);
-    }
-  }
+  assertPlansAddressable({
+    plans: definition.plans,
+    validate: safeValidatePlan,
+    what: 'plan',
+    label: 'uiSpecification',
+  });
 
   return definition;
 }
