@@ -92,10 +92,12 @@ export function tryNormalizeApiUiSpecification(
     }
   }
 
-  // Templates carry optional plan templates the notebook schema would strip
-  const schema =
-    mode === 'template' ? TemplateDefinitionSchema : NotebookDefinitionSchema;
-  const parsed = schema.safeParse(candidate);
+  // Templates carry optional plan templates the notebook schema would strip, so
+  // each mode parses with its own schema and reads back what that schema keeps
+  const parsed =
+    mode === 'template'
+      ? TemplateDefinitionSchema.safeParse(candidate)
+      : NotebookDefinitionSchema.safeParse(candidate);
   if (!parsed.success) {
     return {
       ok: false,
@@ -119,15 +121,8 @@ export function tryNormalizeApiUiSpecification(
         : `This design used schema version ${versionBefore} and was migrated to ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}. Save to persist the updated structure.`
       : undefined;
 
-  // Read from candidate: the ternary-selected schema's inferred type drops
-  // planTemplates, but safeValidatePlanTemplate handles unknown input anyway
-  const rawPlanTemplates =
-    mode === 'template'
-      ? (candidate as Record<string, unknown>).planTemplates
-      : undefined;
-  const planTemplates = Array.isArray(rawPlanTemplates)
-    ? (rawPlanTemplates as PlanTemplate[])
-    : undefined;
+  const planTemplates =
+    'planTemplates' in parsed.data ? parsed.data.planTemplates : undefined;
 
   // A repeated id gives two plans one address, and the designer offers no way
   // to change one, so refuse the template rather than open one the api will
