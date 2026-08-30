@@ -148,21 +148,17 @@ function NotebookViewWithSpec({
 
   const {planId, tab} = useParams<{planId?: string; tab?: string}>();
 
-  // Replace rather than push, so leaving a notebook costs one Back press.
-  // Choosing a plan is the exception: it pushes, so Back returns to the
-  // chooser rather than leaving the notebook.
+  // Every move within a notebook replaces, plan and tab alike, so leaving one
+  // costs a single Back press. Change plan is the way back to the chooser.
   const showPlanTab = useCallback(
-    (
-      next: {planId?: string; tab?: string},
-      {push = false}: {push?: boolean} = {}
-    ) => {
+    (next: {planId?: string; tab?: string}) => {
       navigate(
         ROUTES.getNotebookRoute({
           serverId: project.serverId,
           projectId: project.projectId,
           ...next,
         }),
-        {replace: !push}
+        {replace: true}
       );
     },
     [navigate, project.serverId, project.projectId]
@@ -375,7 +371,7 @@ function NotebookViewWithSpec({
         // Keep any slug the link carried, so an unqualified deep link still
         // lands on its tab.
         onSelect={(chosenPlanId: string) =>
-          showPlanTab({planId: chosenPlanId, tab: planTab}, {push: true})
+          showPlanTab({planId: chosenPlanId, tab: planTab})
         }
       />
     );
@@ -384,8 +380,8 @@ function NotebookViewWithSpec({
   // delegate to the plan view component
   if (activePlan) {
     const {Component} = activePlan;
-    // Only the browser's Back returns to the chooser, so where there was a
-    // choice to make, say so on screen too.
+    // Back leaves the notebook, so where there was a choice of plan to make,
+    // this is the way back to it.
     return planViews.length > 1 ? (
       <Stack spacing={1}>
         <Button
