@@ -36,8 +36,11 @@ export const PlanTemplateSchema = z
      * the plan is authored, so reordering the list cannot re-address it.
      */
     planId: PlanIdSchema,
-    /** Names the plan on the notebook's plan chooser. */
-    label: z.string().min(1),
+    /**
+     * Names the plan on the notebook's plan chooser. Trimmed, so two labels the
+     * chooser would render identically are not held apart by their whitespace.
+     */
+    label: z.string().trim().min(1),
   })
   .passthrough();
 export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
@@ -85,10 +88,10 @@ export const PlanSchema = z
     planId: PlanIdSchema,
     /**
      * Names the plan on the notebook's plan chooser, which is the one screen
-     * whose job is telling plans apart, so a plan must carry one. Carried over
-     * from the plan template at instantiation.
+     * whose job is telling plans apart, so a plan must carry one. Trimmed, and
+     * carried over from the plan template at instantiation.
      */
-    label: z.string().min(1),
+    label: z.string().trim().min(1),
   })
   .passthrough();
 export type Plan = z.infer<typeof PlanSchema>;

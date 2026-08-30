@@ -1,8 +1,8 @@
 import {
   Action,
+  claimsPlan,
   CompiledNotebookUiSpec,
   computeRecordStatusReport,
-  claimsPlan,
   DatabaseInterface,
   DataDbType,
   DataDocument,

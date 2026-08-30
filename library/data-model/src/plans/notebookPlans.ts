@@ -33,11 +33,12 @@ export const findDuplicatePlanIds = (
 
 /**
  * Labels that appear more than once. The chooser tells plans apart by label, so
- * a repeated one leaves the user picking blind.
+ * a repeated one leaves the user picking blind. Compared trimmed, since the
+ * chooser renders two labels differing only in whitespace identically.
  */
 export const findDuplicatePlanLabels = (
   source: {label: string}[] | undefined
-): string[] => findDuplicates((source ?? []).map(plan => plan.label));
+): string[] => findDuplicates((source ?? []).map(plan => plan.label.trim()));
 
 /**
  * The `planReference` a record carries to claim it for one plan. The plan id

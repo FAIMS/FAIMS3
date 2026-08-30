@@ -186,6 +186,36 @@ describe('normalizeNotebookUiSpecification plan id validation', () => {
     delete bundle.plans[0].label;
     expect(() => normalizeNotebookUiSpecification(bundle)).toThrow();
   });
+
+  it('rejects a repeated plan label, which the chooser cannot tell apart', () => {
+    const bundle = notebook();
+    bundle.plans[1].label = bundle.plans[0].label;
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
+      /Repeated plan label/
+    );
+  });
+
+  it('rejects two labels the chooser would render the same', () => {
+    const bundle = notebook();
+    bundle.plans[1].label = ` ${bundle.plans[0].label} `;
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow(
+      /Repeated plan label/
+    );
+  });
+
+  it('rejects a label of nothing but whitespace', () => {
+    const bundle = notebook();
+    bundle.plans[0].label = '   ';
+    expect(() => normalizeNotebookUiSpecification(bundle)).toThrow();
+  });
+
+  it('stores a label trimmed', () => {
+    const bundle = notebook();
+    bundle.plans[0].label = '  Survey  ';
+    expect(normalizeNotebookUiSpecification(bundle).plans?.[0].label).toBe(
+      'Survey'
+    );
+  });
 });
 
 describe('normalizeNotebookTemplateUiSpecification', () => {
