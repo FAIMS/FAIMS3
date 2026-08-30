@@ -17,7 +17,7 @@ import {RecordsTable} from '../record_table';
 import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
 import {config} from '../../../../buildconfig';
-import {planRecordLabel, recordsClaimedBy} from './planViewRecords';
+import {planRecordLabel} from './planViewRecords';
 
 // This view's tab slugs, default first
 const TABS = [
@@ -87,13 +87,6 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
   }
 
   const recordLabel = planRecordLabel({uiSpecification, plan});
-
-  // Claimed by this plan, so a second plan collecting the same form lists its
-  // own records rather than this plan's
-  const planRecords = recordsClaimedBy({
-    records: records.allRecords,
-    planId: plan.planId,
-  });
 
   return (
     <>
@@ -190,10 +183,12 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
           id="collected-tabpanel"
           aria-labelledby="collected-tab"
         >
+          {/* The list arrives scoped to this plan, so a second plan collecting
+          the same form lists its own records rather than this plan's */}
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={planRecords}
+            rows={records.allRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}

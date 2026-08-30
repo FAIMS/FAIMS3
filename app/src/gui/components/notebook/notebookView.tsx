@@ -293,6 +293,19 @@ function NotebookViewWithSpec({
     planId: activePlan?.plan.planId,
   });
 
+  // Every record the plan on screen claims. Scoping once here hands a plan view
+  // and the map beside it one answer, rather than each scoping again.
+  const planRecords = useMemo(
+    () =>
+      activePlan
+        ? recordsClaimedBy({
+            records: records.allRecords,
+            planId: activePlan.plan.planId,
+          })
+        : records.allRecords,
+    [records.allRecords, activePlan]
+  );
+
   const props: NotebookViewComponentProps = useMemo(
     () => ({
       project,
@@ -322,7 +335,7 @@ function NotebookViewWithSpec({
         isDownloadingRecords,
       },
       records: {
-        allRecords: records.allRecords,
+        allRecords: planRecords,
         myRecords: records.myRecords,
         otherRecords: records.otherRecords,
         syncStatus: recordStatus.data ?? {status: {}, recordHashes: {}},
@@ -339,15 +352,9 @@ function NotebookViewWithSpec({
         OverviewMap: () => (
           <OverviewMap
             serverId={project.serverId}
-            // Scoped to the plan on screen, so the map plots what its lists hold
-            records={{
-              allRecords: activePlan
-                ? recordsClaimedBy({
-                    records: records.allRecords,
-                    planId: activePlan.plan.planId,
-                  })
-                : records.allRecords,
-            }}
+            // The same records the plan's lists hold, so tapping a pin cannot
+            // open a record a list says is not there
+            records={{allRecords: planRecords}}
             project_id={project.projectId}
             uiSpec={uiSpecification}
           />
@@ -367,8 +374,8 @@ function NotebookViewWithSpec({
       records,
       recordStatus.data,
       planRecordStatusReports,
+      planRecords,
       planTab,
-      activePlan,
     ]
   );
 

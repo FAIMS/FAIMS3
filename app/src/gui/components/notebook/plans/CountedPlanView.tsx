@@ -1,7 +1,7 @@
 import {COUNTED_PLAN_TYPE, planReferenceFor} from '@faims3/data-model';
 import {Alert, Box, Tab} from '@mui/material';
 import AddRecordButtons from '../add_record_by_type';
-import {planRecordLabel, recordsClaimedBy} from './planViewRecords';
+import {planRecordLabel} from './planViewRecords';
 import {RecordsTable} from '../record_table';
 import {SHARED_TAB, useResolveTab} from '../../../../constants/routes';
 import {NotebookViewComponentProps} from '../types';
@@ -30,14 +30,10 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
   }
   const plan = props.plan;
 
-  // Claimed by this plan, so a second plan collecting the same form counts and
-  // lists its own records rather than taking this plan's target
   const planReference = planReferenceFor({planId: plan.planId});
-  const planRecords = recordsClaimedBy({
-    records: records.allRecords,
-    planId: plan.planId,
-  });
-  const targetRecordCount = planRecords.length;
+  // The list arrives scoped to this plan, so a second plan collecting the same
+  // form neither takes this target nor shows up in this table
+  const targetRecordCount = records.allRecords.length;
 
   // Records that exist may be missing from the list, so the count is a floor
   // rather than the true total and cannot show the target as reached.
@@ -125,7 +121,7 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           <RecordsTable
             project={project}
             maxRows={25}
-            rows={planRecords}
+            rows={records.allRecords}
             loading={status.isLoading}
             viewsets={uiSpecification.viewsets}
             handleQueryFunction={actions.setQuery}

@@ -2,7 +2,6 @@ import '@testing-library/jest-dom';
 import {
   COUNTED_PLAN_TYPE,
   MinimalRecordMetadata,
-  planReferenceFor,
   RegisteredPlan,
 } from '@faims3/data-model';
 import {render, screen} from '@testing-library/react';
@@ -27,13 +26,9 @@ const plan = {
   allowExtraRecords: false,
 } as RegisteredPlan;
 
-/** One record of the plan's form, claimed by the named plan or by nothing. */
-const record = (recordId: string, planId?: string): MinimalRecordMetadata =>
-  ({
-    recordId,
-    type: 'Site',
-    planReference: planId && planReferenceFor({planId}),
-  }) as MinimalRecordMetadata;
+/** One record of the plan's form, as the plan-scoped list hands it over. */
+const record = (recordId: string): MinimalRecordMetadata =>
+  ({recordId, type: 'Site'}) as MinimalRecordMetadata;
 
 const renderView = (allRecords: MinimalRecordMetadata[]) =>
   render(
@@ -63,27 +58,21 @@ const renderView = (allRecords: MinimalRecordMetadata[]) =>
     />
   );
 
-describe('CountedPlanView with a second plan on the same form', () => {
-  it('lists only the records this plan claims', () => {
-    renderView([record('mine', 'field'), record('theirs', 'lab')]);
-    expect(screen.getByTestId('rows')).toHaveTextContent('mine');
-    expect(screen.getByTestId('rows')).not.toHaveTextContent('theirs');
+describe('CountedPlanView', () => {
+  it('lists the records it is handed', () => {
+    renderView([record('mine'), record('mine-too')]);
+    expect(screen.getByTestId('rows')).toHaveTextContent('mine mine-too');
   });
 
-  it("does not let another plan's records reach this plan's target", () => {
-    renderView([record('theirs', 'lab'), record('also-theirs', 'lab')]);
-    expect(screen.queryByText('Target number of records reached.')).toBeNull();
-  });
-
-  it('reaches the target on its own records', () => {
-    renderView([record('mine', 'field'), record('mine-too', 'field')]);
+  it('reaches the target on the records it is handed', () => {
+    renderView([record('mine'), record('mine-too')]);
     expect(
       screen.getByText('Target number of records reached.')
     ).toBeInTheDocument();
   });
 
-  it('leaves an unclaimed record out of the count', () => {
-    renderView([record('mine', 'field'), record('unclaimed')]);
+  it('counts short of the target below it', () => {
+    renderView([record('mine')]);
     expect(screen.queryByText('Target number of records reached.')).toBeNull();
   });
 

@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom';
-import {NotebookDefinition, ProjectStatus} from '@faims3/data-model';
+import {
+  MinimalRecordMetadata,
+  NotebookDefinition,
+  planReferenceFor,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {cleanup, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -8,9 +13,12 @@ import * as ROUTES from '../../../constants/routes';
 import {Project} from '../../../context/slices/projectSlice';
 import {NotebookView} from './notebookView';
 
-const {navigate, routeParams} = vi.hoisted(() => ({
+const {navigate, routeParams, allRecords} = vi.hoisted(() => ({
   navigate: vi.fn(),
   routeParams: {current: {} as {planId?: string; tab?: string}},
+  allRecords: {
+    current: [] as Array<{recordId: string; planReference?: string}>,
+  },
 }));
 
 vi.mock('react-router-dom', async () => ({
@@ -19,7 +27,8 @@ vi.mock('react-router-dom', async () => ({
   useParams: () => routeParams.current,
 }));
 
-// Every plan gets a view, which reports the one tab move the contract covers
+// Every plan gets a view, which reports the tab move and the records it was
+// handed, which are the two things the props contract promises it
 vi.mock('./plans', async () => {
   const actual = await vi.importActual<object>('./plans');
   const React = await import('react');
@@ -27,9 +36,20 @@ vi.mock('./plans', async () => {
     ...actual,
     getNotebookView: () => (props: any) =>
       React.createElement(
-        'button',
-        {onClick: () => props.actions.setTab('all-records')},
-        'show a tab'
+        'div',
+        null,
+        React.createElement(
+          'button',
+          {onClick: () => props.actions.setTab('all-records')},
+          'show a tab'
+        ),
+        React.createElement(
+          'span',
+          {'data-testid': 'handed-records'},
+          props.records.allRecords
+            .map((record: MinimalRecordMetadata) => record.recordId)
+            .join(' ')
+        )
       ),
   };
 });
@@ -59,7 +79,7 @@ vi.mock('../../../utils/customHooks', () => ({
   useIsRecordDownloadUnderway: () => false,
   usePlanRecordStatusReports: () => new Map(),
   useRecordList: () => ({
-    allRecords: [],
+    allRecords: allRecords.current,
     myRecords: [],
     otherRecords: [],
     isLoading: false,
@@ -90,6 +110,12 @@ const project = {
   uiDefinition: {plans} as unknown as NotebookDefinition,
 } as Project;
 
+/** One record, claimed by the named plan or by nothing. */
+const record = (recordId: string, planId?: string) => ({
+  recordId,
+  planReference: planId && planReferenceFor({planId}),
+});
+
 const renderNotebook = (params: {planId?: string; tab?: string}) => {
   routeParams.current = params;
   render(
@@ -102,7 +128,10 @@ const renderNotebook = (params: {planId?: string; tab?: string}) => {
 const notebookRoute = (next: {planId?: string; tab?: string}) =>
   ROUTES.getNotebookRoute({serverId: 'srv', projectId: 'proj', ...next});
 
-beforeEach(() => navigate.mockClear());
+beforeEach(() => {
+  navigate.mockClear();
+  allRecords.current = [];
+});
 afterEach(() => cleanup());
 
 describe('NotebookView navigation', () => {
@@ -136,5 +165,22 @@ describe('NotebookView navigation', () => {
     for (const call of navigate.mock.calls) {
       expect(call[1]).toEqual({replace: true});
     }
+  });
+});
+
+describe('NotebookView record scoping', () => {
+  it('hands a plan view only the records that plan claims', () => {
+    allRecords.current = [record('mine', 'lab'), record('theirs', 'field')];
+    renderNotebook({planId: 'lab'});
+    expect(screen.getByTestId('handed-records')).toHaveTextContent('mine');
+    expect(screen.getByTestId('handed-records')).not.toHaveTextContent(
+      'theirs'
+    );
+  });
+
+  it('leaves a record no plan claims out', () => {
+    allRecords.current = [record('unclaimed')];
+    renderNotebook({planId: 'lab'});
+    expect(screen.getByTestId('handed-records')).toBeEmptyDOMElement();
   });
 });

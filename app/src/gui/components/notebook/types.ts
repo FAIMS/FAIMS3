@@ -18,7 +18,9 @@ import {RecordStatus} from '../../../utils/recordAudit';
  */
 
 interface RecordListProps {
-  // All records in the notebook
+  // The records the plan on screen claims, scoped before they reach a view, so
+  // a view and the components it is handed answer alike. Every record in the
+  // notebook where there is no plan.
   allRecords: MinimalRecordMetadata[];
   // Records created by the current user
   myRecords: MinimalRecordMetadata[];
