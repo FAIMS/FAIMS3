@@ -178,6 +178,21 @@ export async function getDownloadedOfflineMapRegion(
   return tileSet?.offlineMapRegion;
 }
 
+/**
+ * Read the internal offline map id for a completed or in-progress project download.
+ */
+export async function getDownloadedOfflineMapId(
+  projectId: string,
+  config: MapConfig = getMapConfig()
+): Promise<string | undefined> {
+  const tileStore = getSharedTileStore(config);
+  await tileStore.tileStore.initDB();
+
+  const tileSet = await tileStore.getTileSetForProject(projectId);
+  // setName is used as the internal offline map id.
+  return tileSet?.setName;
+}
+
 export {offlineMapRegionsEqual};
 
 /** Outcome of comparing a server plan region with local download state. */

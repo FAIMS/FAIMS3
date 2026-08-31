@@ -1,12 +1,14 @@
-import {Alert, Box, Button, Paper, Typography} from '@mui/material';
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {
-  ProgressBar,
   formatOfflineMapSizeBytes,
+  ProgressBar,
   type StoredTileSet,
 } from '@faims3/forms';
+import {Alert, Box, Button, Paper, Typography} from '@mui/material';
 import {useCallback, useEffect, useState} from 'react';
+import {useNavigate} from 'react-router';
 import {config} from '../../../../buildconfig';
+import * as ROUTES from '../../../../constants/routes';
 import {
   Project,
   setPendingOfflineMapDownloadPrompt,
@@ -14,6 +16,7 @@ import {
 import {useAppDispatch} from '../../../../context/store';
 import {
   cancelProjectOfflineMapDownload,
+  getDownloadedOfflineMapId,
   getProjectOfflineMapStatus,
   OFFLINE_MAP_DOWNLOAD_STATUS_CHANGED_EVENT,
   type ProjectOfflineMapStatus,
@@ -32,14 +35,31 @@ export default function NotebookOfflineMapSettings({
   project,
 }: NotebookOfflineMapSettingsProps) {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const mapArea = project.offlineMapRegion as OfflineMapRegion | undefined;
   const [status, setStatus] = useState<ProjectOfflineMapStatus | null>(null);
+  const [offlineMapId, setOfflineMapId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     const next = await getProjectOfflineMapStatus(project.projectId);
     setStatus(next);
   }, [project.projectId]);
+
+  useEffect(() => {
+    const loadOfflineMapId = async () => {
+      // Clear the map id unless the project map has finished downloading.
+      if (status?.state !== 'downloaded') {
+        setOfflineMapId(null);
+        return;
+      }
+      // Load the internal id for the downloaded project map.
+      const id = await getDownloadedOfflineMapId(project.projectId);
+      setOfflineMapId(id ?? null);
+    };
+    // Start the async lookup without awaiting it inside useEffect.
+    void loadOfflineMapId();
+  }, [status?.state, project.projectId]);
 
   useEffect(() => {
     if (!mapArea) {
@@ -120,10 +140,28 @@ export default function NotebookOfflineMapSettings({
       )}
 
       {status?.state === 'downloaded' && (
-        <Alert severity="success" sx={{mb: 2}}>
-          Recommended offline map area downloaded (
-          {formatOfflineMapSizeBytes(status.sizeBytes)}).
-        </Alert>
+        <Box>
+          <Alert severity="success" sx={{mb: 2}}>
+            Recommended offline map area downloaded (
+            {formatOfflineMapSizeBytes(status.sizeBytes)}).
+          </Alert>
+
+          {offlineMapId && (
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={() =>
+                navigate(
+                  ROUTES.getOfflineMapEditRoute({
+                    offlineMapId,
+                  })
+                )
+              }
+            >
+              View offline map
+            </Button>
+          )}
+        </Box>
       )}
 
       {status?.state === 'downloading' && (
