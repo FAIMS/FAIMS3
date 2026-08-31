@@ -294,7 +294,8 @@ function NotebookViewWithSpec({
   });
 
   // Every record the plan on screen claims. Scoping once here hands a plan view
-  // and the map beside it one answer, rather than each scoping again.
+  // and the map beside it one answer, rather than each scoping again. Without a
+  // plan nothing reads these: the chooser and the default view take no props.
   const planRecords = useMemo(
     () =>
       activePlan
@@ -302,7 +303,7 @@ function NotebookViewWithSpec({
             records: records.allRecords,
             planId: activePlan.plan.planId,
           })
-        : records.allRecords,
+        : [],
     [records.allRecords, activePlan]
   );
 
