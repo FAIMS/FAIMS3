@@ -39,7 +39,7 @@ import {
 } from '@mui/x-data-grid';
 import {useQueries} from '@tanstack/react-query';
 import {ReactNode, useCallback, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -1099,6 +1099,11 @@ export function RecordsTable(props: RecordsTableProps) {
   } = props;
 
   const history = useNavigate();
+  const {tab} = useParams<{tab?: string}>();
+  const notebook = useMemo(
+    () => ({serverId, projectId: project_id, tab}),
+    [serverId, project_id, tab]
+  );
   const styles = useDataGridStyles();
 
   // Get UI specification
@@ -1182,14 +1187,12 @@ export function RecordsTable(props: RecordsTableProps) {
       let route = undefined;
       if (params.row.recordId) {
         route = ROUTES.getViewRecordRoute({
-          serverId,
-          projectId: project_id,
+          ...notebook,
           recordId: params.row.recordId,
         });
       } else if (params.row.record_id) {
         route = ROUTES.getViewRecordRoute({
-          serverId,
-          projectId: project_id,
+          ...notebook,
           recordId: params.row.record_id,
         });
       } else {
@@ -1198,7 +1201,7 @@ export function RecordsTable(props: RecordsTableProps) {
       }
       history(route);
     },
-    [history, project_id, serverId]
+    [history, notebook]
   );
 
   if (!uiSpec) {

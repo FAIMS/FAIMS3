@@ -630,11 +630,117 @@ export const authV4toV5Migration: MigrationFunc = doc => {
   return {action: 'none'};
 };
 
+function isIsoDatetime(value: unknown): value is string {
+  return typeof value === 'string' && !Number.isNaN(Date.parse(value));
+}
+
+function dataV1V2Warn(message: string) {
+  if (!IS_TESTING) {
+    console.warn(`[migrate] data v1→v2: ${message}`);
+  }
+}
+
+/**
+ * Data DB v1 → v2: add mandatory `updatedAt` on record and revision documents.
+ *
+ * Records take the current head revision's `updatedAt` or `created`. Revisions
+ * take their own `created`. Last resort for either is the current time.
+ * AVPs, attachments, and docs that already have `updatedAt` are left alone.
+ */
+export const dataV1toV2Migration: MigrationFunc = async (doc, context) => {
+  if (
+    doc !== null &&
+    typeof doc === 'object' &&
+    'updatedAt' in doc &&
+    isIsoDatetime((doc as {updatedAt?: unknown}).updatedAt)
+  ) {
+    return {action: 'none'};
+  }
+
+  const now = new Date().toISOString();
+
+  if (
+    doc !== null &&
+    typeof doc === 'object' &&
+    'revision_format_version' in doc
+  ) {
+    const created = (doc as {created?: unknown}).created;
+    const updatedAt = isIsoDatetime(created) ? created : now;
+    if (updatedAt === now) {
+      dataV1V2Warn(
+        `revision ${doc._id} has no usable created timestamp; using current time`
+      );
+    }
+    return {
+      action: 'update',
+      updatedRecord: {
+        ...doc,
+        updatedAt,
+      },
+    };
+  }
+
+  if (
+    doc !== null &&
+    typeof doc === 'object' &&
+    'record_format_version' in doc
+  ) {
+    const heads = (doc as {heads?: unknown}).heads;
+    const headId =
+      Array.isArray(heads) && typeof heads[0] === 'string'
+        ? heads[0]
+        : undefined;
+
+    let updatedAt = now;
+    if (!headId) {
+      dataV1V2Warn(
+        `record ${doc._id} has no heads[0]; using current time for updatedAt`
+      );
+    } else if (!context?.db) {
+      dataV1V2Warn(
+        `record ${doc._id} has head ${headId} but no db on migration context; using current time`
+      );
+    } else {
+      try {
+        const head = (await context.db.get(headId)) as {
+          updatedAt?: unknown;
+          created?: unknown;
+        };
+        if (isIsoDatetime(head.updatedAt)) {
+          updatedAt = head.updatedAt;
+        } else if (isIsoDatetime(head.created)) {
+          updatedAt = head.created;
+        } else {
+          dataV1V2Warn(
+            `record ${doc._id} head ${headId} has no usable timestamp; using current time`
+          );
+        }
+      } catch (err) {
+        dataV1V2Warn(
+          `record ${doc._id} head ${headId} unreadable (${
+            err instanceof Error ? err.message : String(err)
+          }); using current time`
+        );
+      }
+    }
+
+    return {
+      action: 'update',
+      updatedRecord: {
+        ...doc,
+        updatedAt,
+      },
+    };
+  }
+
+  return {action: 'none'};
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
-  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
@@ -785,5 +891,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       "Introduces global invites which don't refer to a specific resource.",
     migrationFunction: invitesV3toV4Migration,
+  },
+  {
+    dbType: DatabaseType.DATA,
+    from: 1,
+    to: 2,
+    description:
+      'Adds updatedAt on record and revision documents (from head revision, else now).',
+    migrationFunction: dataV1toV2Migration,
   },
 ];

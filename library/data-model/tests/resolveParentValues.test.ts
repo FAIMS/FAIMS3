@@ -1,6 +1,5 @@
 import type {DataEngine, UiSpecModel} from '@faims3/data-model';
-import {describe, expect, it} from 'vitest';
-import {resolveParentValues} from './resolveParentValues';
+import {resolveParentValues} from '../src';
 
 const meta = {
   annotation: {include: false, label: 'annotation'},
@@ -44,11 +43,21 @@ function makeUiSpec(): UiSpecModel {
       'Site-Features': childLink('FEATURE'),
       'Other-Field': textField('Other Field', 'other-field'),
       Comments: textField('Comments', 'comments'),
+      'Feature-Label': {
+        ...textField('Feature Label', 'feature-label'),
+        'component-name': 'TemplatedStringField',
+        'component-parameters': {
+          label: 'Feature Label',
+          name: 'feature-label',
+          required: false,
+          template: '{{_PARENT.Site-Name}}',
+        },
+      },
     },
     views: {
       'SITE-v1': {label: 'Site', fields: ['Site-Name', 'Site-Features']},
       'OTHER-v1': {label: 'Other', fields: ['Other-Field']},
-      'FEATURE-v1': {label: 'Feature', fields: ['Comments']},
+      'FEATURE-v1': {label: 'Feature', fields: ['Comments', 'Feature-Label']},
     },
     viewsets: {
       SITE: {label: 'Site', views: ['SITE-v1']},
@@ -62,23 +71,47 @@ function makeUiSpec(): UiSpecModel {
 type StubRecord = {
   formId: string;
   data: Record<string, {data: unknown}>;
+  heads?: string[];
 };
 
 function makeEngine({
   parents,
   records,
+  revisionValues,
   failHydration,
 }: {
   parents: {recordId: string}[] | undefined;
   records?: Record<string, StubRecord>;
+  revisionValues?: Record<string, Record<string, unknown>>;
   failHydration?: boolean;
 }): DataEngine {
   return {
     uiSpec: makeUiSpec(),
+    core: {
+      getRecord: async (recordId: string) => {
+        const rec = records?.[recordId];
+        if (!rec) throw new Error(`no record ${recordId}`);
+        return {type: rec.formId, heads: rec.heads ?? [`frev-${recordId}`]};
+      },
+    },
     hydrated: {
       getHydratedRecord: async () => {
         if (failHydration) throw new Error('boom');
         return {revision: parents ? {relationship: {parent: parents}} : {}};
+      },
+      getFieldValues: async ({
+        revisionId,
+        fields,
+      }: {
+        revisionId: string;
+        fields: string[];
+      }) => {
+        const all = revisionValues?.[revisionId] ?? {};
+        const out: Record<string, unknown> = {};
+        for (const f of fields) {
+          if (f in all) out[f] = all[f];
+        }
+        return out;
       },
     },
     form: {
@@ -98,6 +131,7 @@ describe('resolveParentValues', () => {
           data: {'Site-Name': {data: 'Alpha'}},
         },
       },
+      revisionValues: {'frev-rec-site': {'Site-Name': 'Alpha'}},
     });
     const values = await resolveParentValues({
       engine,
@@ -121,6 +155,7 @@ describe('resolveParentValues', () => {
         'rec-other': {formId: 'OTHER', data: {'Other-Field': {data: 'x'}}},
         'rec-site': {formId: 'SITE', data: {'Site-Name': {data: 'Alpha'}}},
       },
+      revisionValues: {'frev-rec-site': {'Site-Name': 'Alpha'}},
     });
     const values = await resolveParentValues({
       engine,
@@ -147,5 +182,58 @@ describe('resolveParentValues', () => {
     expect(
       await resolveParentValues({engine, recordId: 'r', formId: 'FEATURE'})
     ).toBeNull();
+  });
+
+  it('fetches only the referenced parent fields', async () => {
+    const fetched: string[][] = [];
+    const engine = makeEngine({
+      parents: [{recordId: 'rec-site'}],
+      records: {
+        'rec-site': {
+          formId: 'SITE',
+          data: {
+            'Site-Name': {data: 'Alpha'},
+            'Site-Features': {data: null},
+          },
+        },
+      },
+      revisionValues: {'frev-rec-site': {'Site-Name': 'Alpha'}},
+    });
+    // Spy on getFieldValues to capture the requested field list.
+    const original = engine.hydrated.getFieldValues.bind(engine.hydrated);
+    engine.hydrated.getFieldValues = async args => {
+      fetched.push(args.fields);
+      return original(args);
+    };
+    const values = await resolveParentValues({
+      engine,
+      recordId: 'rec-child',
+      formId: 'FEATURE',
+    });
+    expect(values).toEqual({'Site-Name': 'Alpha'});
+    expect(fetched).toEqual([['Site-Name']]);
+  });
+
+  it('falls back to a full fetch when the parent has conflicting heads', async () => {
+    const engine = makeEngine({
+      parents: [{recordId: 'rec-site'}],
+      records: {
+        'rec-site': {
+          formId: 'SITE',
+          data: {
+            'Site-Name': {data: 'Alpha'},
+            'Site-Features': {data: 'link'},
+          },
+          heads: ['frev-a', 'frev-b'],
+        },
+      },
+    });
+    const values = await resolveParentValues({
+      engine,
+      recordId: 'rec-child',
+      formId: 'FEATURE',
+    });
+    // Full unwrapped data, via getExistingFormData.
+    expect(values).toEqual({'Site-Name': 'Alpha', 'Site-Features': 'link'});
   });
 });

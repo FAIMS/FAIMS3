@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {INPUT_LIMITS} from '@faims3/data-model';
+import {INPUT_LIMITS} from './inputLimits';
 import z from 'zod';
 
 // Bounded address part — stops maliciously long free-text entries

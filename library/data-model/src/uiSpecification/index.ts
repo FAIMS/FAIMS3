@@ -4,3 +4,6 @@ export * from './types';
 export * from './normalize';
 export * from './expressions';
 export * from './parentForms';
+export * from './relatedForms';
+export * from './formScan';
+export * from './parentReferences';

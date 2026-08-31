@@ -12,10 +12,8 @@ import {
   UiSpecForm,
   ValuesObject,
 } from './types';
-import {
-  compileComputedExpressionForForm,
-  fieldIdsForViewset,
-} from './parentForms';
+import {compileComputedExpressionForForm} from './parentForms';
+import {fieldIdsForViewset} from './formScan';
 
 /**
  * Retrieves a viewset from the UI specification by its ID

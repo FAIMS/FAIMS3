@@ -176,7 +176,7 @@ export async function getFullRecordData({
     type: revision.type,
     data: formData.data,
     updated_by: revision.created_by,
-    updated: new Date(revision.created),
+    updated: new Date(record.updatedAt),
     created: new Date(record.created),
     created_by: record.created_by,
     annotations: formData.annotations,
@@ -325,6 +325,7 @@ export async function setRecordAsDeleted({
     parents: [baseRevisionId],
     created: date.toISOString(),
     created_by: userId,
+    updatedAt: date.toISOString(),
     deleted: true,
     relationship: baseRevision.relationship,
   };
@@ -364,6 +365,7 @@ export async function setRecordAsUndeleted({
     parents: [baseRevisionId],
     created: date.toISOString(),
     created_by: userId,
+    updatedAt: date.toISOString(),
     deleted: false,
     relationship: baseRevision.relationship,
   };
@@ -404,7 +406,7 @@ export async function getRecordMetadata({
       revision_id: revisionId,
       created: new Date(record.created),
       created_by: record.created_by,
-      updated: new Date(revision.created),
+      updated: new Date(record.updatedAt),
       updated_by: revision.created_by,
       conflicts: record.heads.length > 1,
       deleted: revision.deleted ? true : false,
@@ -734,7 +736,7 @@ export const hydrateRecord = async ({
       record_id: record.record_id,
       revision_id: record.revision_id,
       created_by: record.created_by,
-      updated: new Date(record.revision.created),
+      updated: new Date(record.updatedAt),
       updated_by: record.revision.created_by,
       deleted: record.revision.deleted ? true : false,
       hrid: hrid,
@@ -759,6 +761,7 @@ export interface RecordRevisionIndexDocument {
   revision_id: string;
   created: number;
   created_by: string;
+  updatedAt: string;
   conflict: boolean;
   type: string;
   revision: Revision;
@@ -790,6 +793,7 @@ export async function getSomeRecords(
         revision_id: doc.value._id,
         created: doc.value.created,
         created_by: doc.value.created_by,
+        updatedAt: doc.value.updatedAt,
         conflict: doc.value.conflict,
         type: doc.value.type,
         revision: doc.doc,

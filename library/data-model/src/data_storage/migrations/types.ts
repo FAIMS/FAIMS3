@@ -20,6 +20,11 @@ export type MigrationContext = {
    * no creator. Defaults to {@link DEFAULT_MIGRATION_CREATED_BY}.
    */
   migrationCreatedBy?: string;
+  /**
+   * The database currently being migrated. Used for same-DB lookups (e.g. a
+   * record reading its head revision) without going through {@link getDbById}.
+   */
+  db?: DatabaseInterface;
 };
 
 // Check if we are testing

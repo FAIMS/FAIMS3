@@ -51,6 +51,7 @@
     "@types/pouchdb": "^6.4.2",
     "jsep": "^1.4.0",
     "lodash": "^4.18.1",
+    "mustache": "^4.2.0",
     "pouchdb-security-helper": "^2.1.2",
     "zod": "^4.1.12"
   },
@@ -61,6 +62,7 @@
     "@swc/jest": "^0.2.39",
     "@types/jest": "^29.4.0",
     "@types/lodash": "^4.14.191",
+    "@types/mustache": "^4.2.6",
     "@types/node": "^24",
     "fast-check": "^3.6.3",
     "gts": "^5.3.1",

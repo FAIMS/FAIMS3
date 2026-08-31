@@ -102,6 +102,13 @@ export interface FaimsFrontEndProps {
    * Team roles hidden from Control Centre team-role dropdowns (VITE_EXCLUDED_TEAM_ROLES).
    */
   excludedTeamRoles?: string[];
+
+  /**
+   * When true (default), the designer can add a plan to templates without one
+   * (VITE_ENABLE_PLANS_IN_DESIGNER). When false, only existing plans can be
+   * reconfigured.
+   */
+  enablePlansInDesigner?: boolean;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -463,6 +470,8 @@ export class FaimsFrontEnd extends Construct {
       ...(props.excludedTeamRoles?.length
         ? {VITE_EXCLUDED_TEAM_ROLES: props.excludedTeamRoles.join(',')}
         : {}),
+      VITE_ENABLE_PLANS_IN_DESIGNER:
+        props.enablePlansInDesigner === false ? 'false' : 'true',
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
     };

@@ -57,3 +57,87 @@ export function differenceSets<T>(setA: Set<T>, setB: Set<T>): Set<T> {
   }
   return result;
 }
+
+/**
+ * Formats a timestamp into a date-time string in the format "DD-MM-YY H:MMam/pm"
+ *
+ * @param timestamp - Unix timestamp in milliseconds (e.g., from Date.now())
+ * @param timezone - Optional IANA timezone; defaults to the system timezone.
+ *   Note the default makes output environment-dependent: two devices (or a
+ *   server) in different timezones render different strings.
+ * @returns Formatted date-time string or empty string if input is invalid
+ *
+ * @throws Never - Returns empty string for all error cases
+ */
+export function formatTimestamp(
+  timestamp: string | number | null | undefined,
+  timezone: string | undefined = undefined
+): string {
+  if (timestamp === null || timestamp === undefined) {
+    return '';
+  }
+
+  const timestampNum =
+    typeof timestamp === 'string' ? Number(timestamp) : timestamp;
+
+  if (isNaN(timestampNum) || !isFinite(timestampNum)) {
+    return '';
+  }
+
+  try {
+    const date = new Date(timestampNum);
+
+    if (timezone) {
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+      };
+
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(
+        date
+      );
+      const dateParts = parts.reduce(
+        (acc, part) => {
+          acc[part.type] = part.value;
+          return acc;
+        },
+        {} as {[key: string]: string}
+      );
+
+      const day = dateParts.day.padStart(2, '0');
+      const month = dateParts.month.padStart(2, '0');
+      const year = dateParts.year.slice(-2);
+
+      let hours = parseInt(dateParts.hour);
+      if (dateParts.dayPeriod === 'PM' && hours !== 12) hours += 12;
+      if (dateParts.dayPeriod === 'AM' && hours === 12) hours = 0;
+
+      hours = hours % 12 || 12;
+      const minutes = dateParts.minute.padStart(2, '0');
+      const ampm = dateParts.dayPeriod.toLowerCase();
+
+      return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
+    }
+
+    // Default behaviour using local timezone
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+
+    hours = hours % 12;
+    hours = hours || 12;
+
+    return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
+  } catch (error) {
+    return '';
+  }
+}
