@@ -186,7 +186,9 @@ export function CreateProjectFromTemplateForm({
           planTemplates.length
             ? {
                 disabled: true,
-                reason: `This template defines ${planTemplates.length === 1 ? 'a plan' : `${planTemplates.length} plans`}. Create the ${config.notebookName} through the API, which takes each plan's configuration.`,
+                // Named, since a caller preparing the configs has to know
+                // which plans they are for
+                reason: `This template defines ${planTemplates.length === 1 ? 'a plan' : `${planTemplates.length} plans`} (${planTemplates.map(planTemplate => planTemplate.label).join(', ')}). Create the ${config.notebookName} through the API, which takes each plan's configuration.`,
               }
             : undefined
         }
