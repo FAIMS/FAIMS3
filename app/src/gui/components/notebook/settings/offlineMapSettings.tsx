@@ -158,7 +158,7 @@ export default function NotebookOfflineMapSettings({
                 )
               }
             >
-              View offline map
+              Manage download
             </Button>
           )}
         </Box>
