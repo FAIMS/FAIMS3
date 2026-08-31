@@ -5,13 +5,23 @@ import {config} from '@/constants';
  */
 export default function Logo() {
   return (
-    <div className="flex items-center gap-2">
-      <div>
+    <div className="flex min-w-0 items-center gap-2">
+      <div className="shrink-0">
         <LogoIcon size={48} />
       </div>
-      <div className="flex flex-col text-left text-sm leading-none">
-        <span className="truncate font-semibold">{config.appName}</span>
-        <span className="truncate text-xs">{config.websiteTitle}</span>
+      <div className="flex flex-col text-left text-sm leading-none min-w-0 flex-1 gap-1">
+        <span
+          className="whitespace-normal break-words font-semibold"
+          title={config.appName}
+        >
+          {config.appName}
+        </span>
+        <span
+          className="whitespace-normal break-words text-xs"
+          title={config.websiteTitle}
+        >
+          {config.websiteTitle}
+        </span>
       </div>
     </div>
   );
