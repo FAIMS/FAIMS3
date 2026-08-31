@@ -5,3 +5,4 @@ export * from './offlineMapRegionUtils';
 export * from './styles';
 export * from './TileStore';
 export * from './types';
+export * from './tileStoreUtils';

@@ -8,8 +8,9 @@
 import type {OfflineMapRegion} from '@faims3/data-model';
 import {boundingExtent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
-import {VectorTileStore, type StoredTileSet} from './TileStore';
+import {VectorTileStore} from './TileStore';
 import type {MapConfig} from './types';
+import {StoredTileSet} from './tileStoreUtils';
 
 /** Download lifecycle state derived from a stored tile set record. */
 export type TileSetDownloadStatus =
@@ -67,17 +68,6 @@ export function extent3857ToOfflineMapRegion(
   return extent4326ToOfflineMapRegion(
     transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326')
   );
-}
-
-/**
- * Create a unique id for a user-created offline map.
- *
- * This becomes StoredTileSet.setName internally. The editable user-visible
- * name is stored separately in StoredTileSet.label.
- */
-export const OFFLINE_MAP_ID_PREFIX = 'offline-map-';
-export function createOfflineMapId(): string {
-  return `${OFFLINE_MAP_ID_PREFIX}${crypto.randomUUID()}`;
 }
 
 /** User-visible label for a stored tile set. */

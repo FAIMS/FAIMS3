@@ -25,9 +25,9 @@
 
 import 'fake-indexeddb/auto';
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
-import {OFFLINE_MAP_ID_PREFIX} from '../../offlineMapRegionUtils';
-import {requestAsPromise} from '../runner';
+import {OFFLINE_MAP_ID_PREFIX} from '../../tileStoreUtils';
 import {migrateV1ToV2, validateV2} from './migrateV2';
+import {requestAsPromise} from '../idbUtils';
 
 const DB_NAME = 'tiles_db-migrate-v2-test';
 

@@ -29,6 +29,7 @@
  * IndexedDB transaction saves none of its writes.
  */
 
+import {requestAsPromise} from './idbUtils';
 import {TILE_DB_MIGRATIONS, TILE_DB_TARGET_VERSIONS} from './migrations';
 import {
   TILE_DB_MIGRATION_STATE_KEY,
@@ -38,14 +39,6 @@ import {
   type TileDbMigrationState,
 } from './types';
 import {validateV2} from './versions/migrateV2';
-
-// Convert an IndexedDB request into a Promise so it can be awaited.
-export function requestAsPromise<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
 
 // Runs the migrations required to bring tiles_db to the target migration version.
 class TileDbMigrationRunner {

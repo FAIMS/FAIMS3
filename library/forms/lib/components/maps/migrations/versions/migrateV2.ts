@@ -24,10 +24,10 @@
  */
 
 import {z} from 'zod';
-import {createOfflineMapId} from '../../offlineMapRegionUtils';
-import type {StoredTile, StoredTileSet} from '../../TileStore';
-import {requestAsPromise} from '../runner';
+import {createOfflineMapId} from '../../tileStoreUtils';
+import type {StoredTile, StoredTileSet} from '../../tileStoreUtils';
 import type {TileDbMigrationFunction} from '../types';
+import {requestAsPromise} from '../idbUtils';
 
 // Prefix used by legacy project-associated tile-set IDs.
 const LEGACY_PROJECT_SET_PREFIX = '@project/';

@@ -41,6 +41,7 @@ import {
   TileDbMigrationState,
 } from './migrations';
 import {getMapStylesheet} from './styles';
+import {StoredTile, StoredTileSet} from './tileStoreUtils';
 import {MapConfig} from './types';
 
 // When downloading maps we start at this zoom level
@@ -90,38 +91,6 @@ const TILE_URL_MAP: {
     },
   },
 };
-
-// Types stored in the map tile database
-// StoredTile is the raw tile cache, basically a URL and the blob
-// returned when we request it.  The sets property records which
-// tile-sets this belongs to so that when we're deleting sets
-// we don't remove this stored tile if it belongs to another one as well
-export interface StoredTile {
-  url: string;
-  data: Blob;
-  sets: string[];
-}
-
-// StoreTileSet is a collection of stored tiles. We record the extent and the min/max
-// zoom levels.  The size is calculated after download and cached for future reporting.
-// the expected tile count is stored to be able to show the progress loading bar
-// tileKeys references the individual StoredTile records.
-export interface StoredTileSet {
-  setName: string;
-  extent: number[];
-  minZoom: number;
-  maxZoom: number;
-  size: number;
-  expectedTileCount: number;
-  created: Date;
-  tileKeys: IDBValidKey[];
-  /** When set, this tile set is removed when the project is deactivated. */
-  projectId?: string;
-  /** Optional display label (defaults to setName in UI). */
-  label?: string;
-  /** Source offline map region this tile set was downloaded for. */
-  offlineMapRegion?: import('@faims3/data-model').OfflineMapRegion;
-}
 
 // MapTileDatabase - a singleton class holding the tile database references
 // manages creation of the IndexedDB database and object stores.  Used by TileStoreBase
