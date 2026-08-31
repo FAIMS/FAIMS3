@@ -216,7 +216,7 @@ function buildEnvMap(
     VITE_DELETE_ON_DEACTIVATION: boolToEnv(
       coalesce(app.deleteOnDeactivation, false)
     ),
-    VITE_BUGSNAG_KEY: coalesce(app.bugsnagKey, ''),
+    VITE_BUGSNAG_KEY: coalesce(app.bugsnagApiKey, ''),
     VITE_SHOW_WIPE: boolToEnv(coalesce(app.showWipe, true)),
     VITE_SHOW_POUCHDB_BROWSER: boolToEnv(
       coalesce(app.showPouchDbBrowser, true)
@@ -229,7 +229,7 @@ function buildEnvMap(
     VITE_POUCH_BATCHES_LIMIT: coalesce(app.pouchBatchesLimit, 10),
     VITE_DEVELOPER_MODE: boolToEnv(coalesce(app.developerMode, false)),
     VITE_DOCS_URL: coalesce(web.docsUrl, ''),
-    VITE_BUGSNAG_API_KEY: coalesce(web.bugsnagApiKey, ''),
+    VITE_BUGSNAG_API_KEY: coalesce(app.bugsnagApiKey, ''),
     VITE_MAX_DESIGN_FILE_SIZE_MB: coalesce(web.maxDesignFileSizeMb, 10),
     VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS: coalesce(
       web.maximumLongLivedDurationDays,
@@ -245,7 +245,6 @@ function buildEnvMap(
   const platformSpecific = {
     android: {
       ANDROID_RELEASE_STATUS: coalesce(mobile.android?.releaseStatus, 'draft'),
-      ANDROID_DEPLOY_TRACK: coalesce(mobile.android?.deployTrack, 'production'),
       APP_ID: coalesce(app.appId, mobile.android?.appId, 'org.fedarch.faims3'),
       KEYSTORE_FILE: coalesce(mobile.android?.keystoreFileBase64, ''),
       GPLAY_SERVICE_ACCOUNT_KEY_JSON: coalesce(

@@ -55,7 +55,6 @@ test('generator supports platform-specific export selection', () => {
       android: {
         appId: 'org.fedarch.faims3',
         releaseStatus: 'draft',
-        deployTrack: 'production',
       },
     },
   };

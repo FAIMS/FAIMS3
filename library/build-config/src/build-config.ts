@@ -68,7 +68,7 @@ export const AppBuildConfigSchema = z
     pouchBatchSize: z.number().int().positive().default(10).optional(),
     pouchBatchesLimit: z.number().int().positive().default(10).optional(),
     excludedTeamRoles: z.array(z.string()).default([]).optional(),
-    bugsnagKey: z.string().optional(),
+    bugsnagApiKey: z.string().optional(),
     developerMode: z.boolean().default(false).optional(),
   })
   .passthrough();
@@ -105,7 +105,6 @@ export const MobileBuildConfigSchema = z
     android: z
       .object({
         releaseStatus: z.string().default('draft').optional(),
-        deployTrack: z.string().default('production').optional(),
         keystoreFileBase64: z.string().optional(),
         serviceAccountKeyJsonBase64: z.string().optional(),
         keystorePath: z.string().optional(),

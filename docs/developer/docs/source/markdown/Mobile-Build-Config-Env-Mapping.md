@@ -65,31 +65,30 @@ can be read/decrypted.
 
 ## Shared app fields (both Android and iOS)
 
-| JSON field               | Generated env var                    |
-| ------------------------ | ------------------------------------ |
-| `app.appName`            | `VITE_APP_NAME`                      |
-| `app.appShortName`       | `VITE_APP_SHORT_NAME`                |
-| `app.appId`              | `VITE_APP_ID`                        |
-| `app.headingAppName`     | `VITE_HEADING_APP_NAME`              |
-| `app.privacyPolicyUrl`   | `VITE_APP_PRIVACY_POLICY_URL`        |
-| `app.supportEmail`       | `VITE_SUPPORT_EMAIL`                 |
-| `app.appContactUrl`      | `VITE_APP_CONTACT_URL`               |
-| `app.mapSource`          | `VITE_MAP_SOURCE`                    |
-| `app.mapSourceKey`       | `VITE_MAP_SOURCE_KEY`                |
-| `app.pouchBatchSize`     | `VITE_POUCH_BATCH_SIZE`              |
-| `app.pouchBatchesLimit`  | `VITE_POUCH_BATCHES_LIMIT`           |
-| `app.showPouchDbBrowser` | `VITE_SHOW_POUCHDB_BROWSER`          |
-| `app.bugsnagKey`         | `VITE_BUGSNAG_KEY`                   |
-| `urls.apiUrl`            | `VITE_CONDUCTOR_URL`, `VITE_API_URL` |
-| `urls.webUrl`            | `VITE_WEB_URL`                       |
-| `urls.appUrl`            | `VITE_APP_URL`                       |
+| JSON field               | Generated env var                          |
+| ------------------------ | ------------------------------------------ |
+| `app.appName`            | `VITE_APP_NAME`                            |
+| `app.appShortName`       | `VITE_APP_SHORT_NAME`                      |
+| `app.appId`              | `VITE_APP_ID`                              |
+| `app.headingAppName`     | `VITE_HEADING_APP_NAME`                    |
+| `app.privacyPolicyUrl`   | `VITE_APP_PRIVACY_POLICY_URL`              |
+| `app.supportEmail`       | `VITE_SUPPORT_EMAIL`                       |
+| `app.appContactUrl`      | `VITE_APP_CONTACT_URL`                     |
+| `app.mapSource`          | `VITE_MAP_SOURCE`                          |
+| `app.mapSourceKey`       | `VITE_MAP_SOURCE_KEY`                      |
+| `app.pouchBatchSize`     | `VITE_POUCH_BATCH_SIZE`                    |
+| `app.pouchBatchesLimit`  | `VITE_POUCH_BATCHES_LIMIT`                 |
+| `app.showPouchDbBrowser` | `VITE_SHOW_POUCHDB_BROWSER`                |
+| `app.bugsnagApiKey`      | `VITE_BUGSNAG_KEY`, `VITE_BUGSNAG_API_KEY` |
+| `urls.apiUrl`            | `VITE_CONDUCTOR_URL`, `VITE_API_URL`       |
+| `urls.webUrl`            | `VITE_WEB_URL`                             |
+| `urls.appUrl`            | `VITE_APP_URL`                             |
 
 ## Android mapping
 
 | JSON field                                    | Generated env var                | Typical file                   |
 | --------------------------------------------- | -------------------------------- | ------------------------------ |
 | `mobile.android.releaseStatus`                | `ANDROID_RELEASE_STATUS`         | `build-config.json`            |
-| `mobile.android.deployTrack`                  | `ANDROID_DEPLOY_TRACK`           | `build-config.json`            |
 | `app.appId` (fallback `mobile.android.appId`) | `APP_ID`                         | `build-config.json`            |
 | `mobile.android.keystoreFileBase64`           | `KEYSTORE_FILE`                  | `build-secrets.enc.json`       |
 | `mobile.android.serviceAccountKeyJsonBase64`  | `GPLAY_SERVICE_ACCOUNT_KEY_JSON` | `build-secrets.enc.json`       |

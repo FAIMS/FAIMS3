@@ -47,18 +47,15 @@
   "web": {
     "websiteTitle": "Control Centre",
     "docsUrl": "https://docs.fieldmark.app",
-    "bugsnagApiKey": "",
     "maxDesignFileSizeMb": 10,
     "maximumLongLivedDurationDays": 90,
     "longLivedTokenDurationHints": [1, 5, 10, 30, 90, 365],
-    "privacyPolicyUrl": "https://fieldnote.au/privacy",
-    "excludedTeamRoles": []
+    "privacyPolicyUrl": "https://fieldnote.au/privacy"
   },
   "mobile": {
     "appId": "org.fedarch.faims3",
     "android": {
       "releaseStatus": "draft",
-      "deployTrack": "production",
       "keystorePath": "",
       "keystorePassword": "",
       "keyAlias": "",
@@ -87,10 +84,5 @@
     "webUrl": "http://localhost:3001",
     "apiUrl": "http://localhost:8080",
     "appUrl": "http://localhost:3000"
-  },
-  "secrets": {
-    "mapSourceKey": "<your api key>",
-    "bugsnagKey": "",
-    "appleKeyContent": ""
   }
 }

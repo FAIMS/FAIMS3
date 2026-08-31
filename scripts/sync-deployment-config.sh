@@ -1,11 +1,15 @@
-#!/usr/bin/env bash
+#\!/usr/bin/env bash
 
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEFAULT_LOCAL_CONFIG_ROOT="${ROOT_DIR}/config"
+
 usage() {
-  cat <<EOF
+  cat <<EOF_USAGE
 Usage:
-  $0 <environment> <local_secrets_file> [options]
+  $0 <push|pull> <environment> [options]
+  $0 <environment> <local_secrets_file> [options]   # legacy push form
 
 Options:
   --repo-path <path>      Path to an already-cloned private config/match repo
@@ -14,13 +18,15 @@ Options:
   --message <text>        Commit message (default: update mobile secrets for <environment>)
   --target <path>         Target encrypted file path in repo
                           (default: mobile/<environment>/build-secrets.enc.json)
-  --force                 Overwrite target file without prompt
+  --local-root <path>     Local mirror root for the private config repo (default: ${DEFAULT_LOCAL_CONFIG_ROOT})
+  --source <path>         Local plaintext secrets JSON to push (push mode only)
+  --force                 Overwrite target file or local mirror without prompt
   --help                  Show this help text
 
 Behaviour:
-  - Validates the local JSON file.
-  - Decrypts existing encrypted file if present, merges existing + local JSON.
-  - Re-encrypts with sops and commits/pushes to the chosen branch.
+  - push: validates a local JSON secret bundle, merges it with the repo copy, re-encrypts it, and updates the local mirror under config/<environment>/.
+  - pull: clones or reuses the private repo, decrypts build-secrets.enc.json into config/<environment>/build-secrets.json, and mirrors the repo config files locally.
+  - The script keeps a local copy of the repo contents under config/<environment>/ by default so the app workspace can work with a checked-out mirror.
 
 Notes:
   - Requires: git, jq, sops
@@ -30,7 +36,7 @@ Notes:
       * Default local age key locations
   - Keep private keys out of command arguments and repository files.
   - The script never prints secret values.
-EOF
+EOF_USAGE
 }
 
 confirm_action() {
@@ -51,7 +57,7 @@ require_tool() {
 }
 
 sops_key_help() {
-  cat >&2 <<EOF
+  cat >&2 <<'EOF_SOPS'
 SOPS could not decrypt the target file.
 
 Make sure your decryption key is available to sops, for example via:
@@ -61,7 +67,7 @@ Make sure your decryption key is available to sops, for example via:
 
 In CI, provide the private key through a bootstrap secret and export it as
 SOPS_AGE_KEY before running this script.
-EOF
+EOF_SOPS
 }
 
 preflight_sops() {
@@ -77,7 +83,6 @@ preflight_sops() {
     return
   fi
 
-  # New file path: make sure encryption policy is likely available.
   if [[ ! -f "$repo_path/.sops.yaml" ]]; then
     echo "Warning: no .sops.yaml found at repo root ($repo_path)." >&2
     echo "Warning: encryption will rely on other sops key configuration." >&2
@@ -107,7 +112,6 @@ validate_local_json() {
     exit 1
   fi
 
-  # Guardrail: expected top-level structure for mobile secret updates.
   if ! jq -e 'type == "object" and (.app? or .mobile?)' "$json_file" >/dev/null 2>&1; then
     echo "Error: local secrets JSON should contain at least one of top-level keys: app, mobile" >&2
     exit 1
@@ -130,8 +134,12 @@ prepare_repository() {
 
     pushd "$WORK_REPO_PATH" >/dev/null
     git fetch origin
-    git checkout "$branch"
-    git pull --ff-only origin "$branch"
+    if git rev-parse --verify "$branch" >/dev/null 2>&1; then
+      git checkout "$branch"
+    else
+      git checkout -b "$branch"
+    fi
+    git pull --ff-only origin "$branch" || true
     popd >/dev/null
     return
   fi
@@ -160,19 +168,162 @@ cleanup() {
   fi
 }
 
+mirror_repo_to_local() {
+  local repo_root="$1"
+  local environment="$2"
+  local local_root="$3"
+  local repo_env_dir="$repo_root/mobile/$environment"
+
+  mkdir -p "$local_root/$environment"
+
+  if [[ -d "$repo_env_dir" ]]; then
+    cp -R "$repo_env_dir"/. "$local_root/$environment/"
+  else
+    echo "Error: environment folder not found in repo: $repo_env_dir" >&2
+    exit 1
+  fi
+
+  if [[ -f "$local_root/$environment/build-secrets.enc.json" ]]; then
+    if sops --decrypt "$local_root/$environment/build-secrets.enc.json" >/dev/null 2>&1; then
+      sops --decrypt "$local_root/$environment/build-secrets.enc.json" > "$local_root/$environment/build-secrets.json"
+    fi
+  fi
+}
+
+write_mirror_after_push() {
+  local target_file="$1"
+  local local_root="$2"
+  local environment="$3"
+
+  mkdir -p "$local_root/$environment"
+  cp "$target_file" "$local_root/$environment/build-secrets.enc.json"
+
+  if sops --decrypt "$target_file" >/dev/null 2>&1; then
+    sops --decrypt "$target_file" > "$local_root/$environment/build-secrets.json"
+  fi
+}
+
+push_config() {
+  local environment="$1"
+  local local_root="$2"
+  local repo_path="$3"
+  local repo_url="$4"
+  local branch="$5"
+  local commit_message="$6"
+  local target_override="$7"
+  local force="$8"
+  local source_file="$9"
+
+  require_tool git
+  require_tool jq
+  require_tool sops
+  validate_local_json "$source_file"
+
+  prepare_repository "$branch" "$repo_path" "$repo_url"
+  trap cleanup EXIT
+
+  local target_relative_path="${target_override:-mobile/${environment}/build-secrets.enc.json}"
+  local target_absolute_path="${WORK_REPO_PATH}/${target_relative_path}"
+  local target_dir
+  target_dir="$(dirname "$target_absolute_path")"
+
+  preflight_sops "$WORK_REPO_PATH" "$target_absolute_path"
+  mkdir -p "$target_dir"
+
+  local tmp_existing
+  local tmp_merged
+  tmp_existing="$(mktemp)"
+  tmp_merged="$(mktemp)"
+  trap 'rm -f "$tmp_existing" "$tmp_merged"; cleanup' EXIT
+
+  if [[ -f "$target_absolute_path" ]]; then
+    if [[ "$force" != true ]]; then
+      if ! confirm_action "Target file exists: ${target_relative_path}. Overwrite"; then
+        echo "Cancelled."
+        exit 0
+      fi
+    fi
+    sops --decrypt "$target_absolute_path" > "$tmp_existing"
+    jq -s '.[0] * .[1]' "$tmp_existing" "$source_file" > "$tmp_merged"
+  else
+    cp "$source_file" "$tmp_merged"
+  fi
+
+  if ! jq empty "$tmp_merged" >/dev/null 2>&1; then
+    echo "Error: merged JSON is invalid; aborting." >&2
+    exit 1
+  fi
+
+  mkdir -p "$local_root/$environment"
+  cp "$source_file" "$local_root/$environment/build-secrets.json"
+
+  sops --encrypt --input-type json --output-type json --output "$target_absolute_path" "$tmp_merged"
+  write_mirror_after_push "$target_absolute_path" "$local_root" "$environment"
+
+  pushd "$WORK_REPO_PATH" >/dev/null
+  git add "$target_relative_path"
+
+  if git diff --cached --quiet; then
+    echo "No secret changes detected for ${target_relative_path}."
+    popd >/dev/null
+    exit 0
+  fi
+
+  if git diff --cached --name-only | grep -E '\.json$' | grep -v "${target_relative_path}" >/dev/null 2>&1; then
+    echo "Error: unexpected JSON files staged. Refusing to commit." >&2
+    git reset
+    popd >/dev/null
+    exit 1
+  fi
+
+  echo "Updated encrypted keys:"
+  jq -r 'paths(scalars) | map(tostring) | join(".")' "$tmp_merged" | sed 's/^/  - /'
+
+  git commit -m "$commit_message"
+  git push origin "$branch"
+
+  popd >/dev/null
+  echo "Done: ${target_relative_path} updated and pushed on branch ${branch}."
+}
+
+pull_config() {
+  local environment="$1"
+  local local_root="$2"
+  local repo_path="$3"
+  local repo_url="$4"
+  local branch="$5"
+
+  prepare_repository "$branch" "$repo_path" "$repo_url"
+  trap cleanup EXIT
+
+  local repo_env_dir="${WORK_REPO_PATH}/mobile/${environment}"
+  if [[ ! -d "$repo_env_dir" ]]; then
+    echo "Error: environment directory not found in repo: $repo_env_dir" >&2
+    exit 1
+  fi
+
+  mkdir -p "$local_root/$environment"
+  mirror_repo_to_local "$WORK_REPO_PATH" "$environment" "$local_root"
+  echo "Pulled config mirror into ${local_root}/${environment}"
+}
+
 ENVIRONMENT=""
-LOCAL_SECRETS_FILE=""
+COMMAND="push"
+LOCAL_ROOT="$DEFAULT_LOCAL_CONFIG_ROOT"
 REPO_PATH=""
 CONFIG_REPO=""
 BRANCH="main"
 COMMIT_MESSAGE=""
 TARGET_OVERRIDE=""
 FORCE=false
-TEMP_DIR=""
-WORK_REPO_PATH=""
+SOURCE_FILE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    push|pull)
+      COMMAND="$1"
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -197,6 +348,14 @@ while [[ $# -gt 0 ]]; do
       TARGET_OVERRIDE="$2"
       shift 2
       ;;
+    --local-root)
+      LOCAL_ROOT="$2"
+      shift 2
+      ;;
+    --source)
+      SOURCE_FILE="$2"
+      shift 2
+      ;;
     --force)
       FORCE=true
       shift
@@ -204,8 +363,8 @@ while [[ $# -gt 0 ]]; do
     *)
       if [[ -z "$ENVIRONMENT" ]]; then
         ENVIRONMENT="$1"
-      elif [[ -z "$LOCAL_SECRETS_FILE" ]]; then
-        LOCAL_SECRETS_FILE="$1"
+      elif [[ -z "$SOURCE_FILE" && "$COMMAND" == "push" ]]; then
+        SOURCE_FILE="$1"
       else
         echo "Error: unexpected argument '$1'" >&2
         usage
@@ -216,7 +375,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$ENVIRONMENT" || -z "$LOCAL_SECRETS_FILE" ]]; then
+if [[ -z "$ENVIRONMENT" ]]; then
   usage
   exit 1
 fi
@@ -226,76 +385,24 @@ if [[ -n "$REPO_PATH" && -n "$CONFIG_REPO" ]]; then
   exit 1
 fi
 
-require_tool git
-require_tool jq
-require_tool sops
-validate_local_json "$LOCAL_SECRETS_FILE"
-
 if [[ -z "$COMMIT_MESSAGE" ]]; then
   COMMIT_MESSAGE="update mobile secrets for ${ENVIRONMENT}"
 fi
 
-prepare_repository "$BRANCH" "$REPO_PATH" "$CONFIG_REPO"
-trap cleanup EXIT
+mkdir -p "$LOCAL_ROOT"
 
-TARGET_RELATIVE_PATH="${TARGET_OVERRIDE:-mobile/${ENVIRONMENT}/build-secrets.enc.json}"
-TARGET_ABSOLUTE_PATH="${WORK_REPO_PATH}/${TARGET_RELATIVE_PATH}"
-TARGET_DIR="$(dirname "$TARGET_ABSOLUTE_PATH")"
-
-preflight_sops "$WORK_REPO_PATH" "$TARGET_ABSOLUTE_PATH"
-
-mkdir -p "$TARGET_DIR"
-
-TMP_EXISTING="$(mktemp)"
-TMP_MERGED="$(mktemp)"
-trap 'rm -f "$TMP_EXISTING" "$TMP_MERGED"; cleanup' EXIT
-
-if [[ -f "$TARGET_ABSOLUTE_PATH" ]]; then
-  if [[ "$FORCE" != true ]]; then
-    if ! confirm_action "Target file exists: ${TARGET_RELATIVE_PATH}. Overwrite"; then
-      echo "Cancelled."
-      exit 0
-    fi
+if [[ "$COMMAND" == "push" ]]; then
+  if [[ -z "$SOURCE_FILE" ]]; then
+    SOURCE_FILE="${LOCAL_ROOT}/${ENVIRONMENT}/build-secrets.json"
   fi
 
-  sops --decrypt "$TARGET_ABSOLUTE_PATH" > "$TMP_EXISTING"
-  jq -s '.[0] * .[1]' "$TMP_EXISTING" "$LOCAL_SECRETS_FILE" > "$TMP_MERGED"
+  if [[ ! -f "$SOURCE_FILE" ]]; then
+    echo "Error: no local JSON source found at ${SOURCE_FILE}." >&2
+    echo "Create ${LOCAL_ROOT}/${ENVIRONMENT}/build-secrets.json or pass --source <path>." >&2
+    exit 1
+  fi
+
+  push_config "$ENVIRONMENT" "$LOCAL_ROOT" "$REPO_PATH" "$CONFIG_REPO" "$BRANCH" "$COMMIT_MESSAGE" "$TARGET_OVERRIDE" "$FORCE" "$SOURCE_FILE"
 else
-  cp "$LOCAL_SECRETS_FILE" "$TMP_MERGED"
+  pull_config "$ENVIRONMENT" "$LOCAL_ROOT" "$REPO_PATH" "$CONFIG_REPO" "$BRANCH"
 fi
-
-if ! jq empty "$TMP_MERGED" >/dev/null 2>&1; then
-  echo "Error: merged JSON is invalid; aborting." >&2
-  exit 1
-fi
-
-sops --encrypt --input-type json --output-type json --output "$TARGET_ABSOLUTE_PATH" "$TMP_MERGED"
-
-pushd "$WORK_REPO_PATH" >/dev/null
-
-# Ensure we only stage the encrypted target file.
-git add "$TARGET_RELATIVE_PATH"
-
-if git diff --cached --quiet; then
-  echo "No secret changes detected for ${TARGET_RELATIVE_PATH}."
-  popd >/dev/null
-  exit 0
-fi
-
-# Guardrail against accidentally staging plaintext secret files.
-if git diff --cached --name-only | grep -E '\.json$' | grep -v "${TARGET_RELATIVE_PATH}" >/dev/null 2>&1; then
-  echo "Error: unexpected JSON files staged. Refusing to commit." >&2
-  git reset
-  popd >/dev/null
-  exit 1
-fi
-
-echo "Updated encrypted keys:"
-jq -r 'paths(scalars) | map(tostring) | join(".")' "$TMP_MERGED" | sed 's/^/  - /'
-
-git commit -m "$COMMIT_MESSAGE"
-git push origin "$BRANCH"
-
-popd >/dev/null
-
-echo "Done: ${TARGET_RELATIVE_PATH} updated and pushed on branch ${BRANCH}."

@@ -19,6 +19,8 @@ environment settings, and per-org deployment structure.
 10. [Setting Up TestFlight for Internal Testing](#-setting-up-testflight-for-internal-testing)
 11. [Best Practices & Notes](#-best-practices--notes)
 
+See [Mobile-Deployment-Setup-Guide.md](Mobile-Deployment-Setup-Guide.md) for the step-by-step process to create the local config files, choose an environment slug, and sync the encrypted bundle into the private config repo.
+
 ## Prerequisites
 
 Create an account on the Apple Developer Portal.

@@ -3,6 +3,8 @@
 Here we document the process of deployment of the Android app on the Play Store.
 Based on the example given in [this Runway blog post](https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions).
 
+See [Mobile-Deployment-Setup-Guide.md](Mobile-Deployment-Setup-Guide.md) for the step-by-step process to create the local config files, choose an environment slug, and sync the encrypted bundle into the private config repo.
+
 ## Pre-requisites
 
 ### Create Google Play App
