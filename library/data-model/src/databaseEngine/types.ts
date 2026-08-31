@@ -29,10 +29,10 @@ export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 export const v1RecordDBFieldsSchema = z
   .object({
     record_format_version: z.number(),
-    created: z.string().datetime(),
+    created: z.iso.datetime(),
     created_by: z.string(),
     /** When the current head revision was last created or replaced. */
-    updatedAt: z.string().datetime(),
+    updatedAt: z.iso.datetime(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
@@ -124,10 +124,10 @@ export const v1RevisionDBFieldsSchema = z
     avps: z.record(z.string(), z.string()),
     record_id: z.string(),
     parents: z.array(z.string()),
-    created: z.string().datetime(),
+    created: z.iso.datetime(),
     created_by: z.string(),
     /** When this revision document was last written (AVP map or in-place bump). */
-    updatedAt: z.string().datetime(),
+    updatedAt: z.iso.datetime(),
     type: z.string(),
     ugc_comment: z.string().optional(),
     relationship: relationshipSchema.optional(),
@@ -181,7 +181,7 @@ export const v1AvpDBFieldsSchema = z
     revision_id: z.string(),
     record_id: z.string(),
     annotations: annotationsSchema.optional(),
-    created: z.string().datetime(),
+    created: z.iso.datetime(),
     created_by: z.string(),
     faims_attachments: z.array(attachmentSchema).optional(),
   })
@@ -239,7 +239,7 @@ const v1AttachmentDBFieldsBaseSchema = z.object({
   avp_id: z.string().optional(),
   revision_id: z.string(),
   record_id: z.string(),
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   created_by: z.string(),
   filename: z.string(),
 });
@@ -639,7 +639,7 @@ export const hydratedDataFieldSchema = z.object({
   /** Optional annotations for this field value */
   annotations: formAnnotationSchema.optional(),
   /** ISO datetime when this AVP was created */
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   /** User who created this AVP */
   createdBy: z.string(),
   /** Optional array of file attachments associated with this field */
@@ -657,11 +657,11 @@ export const hydratedRecordDocumentSchema = z.object({
   /** Current revision string from PouchDB */
   _rev: z.string(),
   /** ISO 8601 datetime when the record was created */
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   /** User who created the record */
   createdBy: z.string(),
   /** ISO 8601 datetime when the current head was last created or replaced */
-  updatedAt: z.string().datetime(),
+  updatedAt: z.iso.datetime(),
   /** Array of all revision IDs that make up this record's history */
   revisions: z.array(z.string()),
   /** Array of current head revision IDs (usually one, multiple if conflicted) */
@@ -691,9 +691,9 @@ export const hydratedRevisionDocumentSchema = z.object({
   /** Array of parent revision IDs (for tracking revision history) */
   parents: z.array(z.string()),
   /** ISO datetime when this revision was created */
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   /** ISO datetime when this revision document was last written */
-  updatedAt: z.string().datetime(),
+  updatedAt: z.iso.datetime(),
   /** User who created this revision */
   createdBy: z.string(),
   /** Type identifier for this form */
@@ -768,7 +768,7 @@ export type InitialFormData = z.infer<typeof initialFormData>;
  */
 export const revisionHistoryEntry = z.object({
   revisionId: z.string(),
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   createdBy: z.string(),
   changedFields: z.record(z.string(), z.array(z.string())),
   deleted: z.boolean().optional(),
@@ -816,7 +816,7 @@ export interface HydratedRecordQueryResult {
  */
 export const minimalRevisionMetadataInternalSchema = z.object({
   _id: z.string(),
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   created_by: z.string(),
   deleted: z.boolean().optional(),
   relationship: relationshipSchema.optional(),
@@ -830,7 +830,7 @@ export type MinimalRevisionMetadataInternal = z.infer<
  * External representation (camelCase) - for application use
  */
 export const minimalRevisionMetadataSchema = z.object({
-  created: z.string().datetime(),
+  created: z.iso.datetime(),
   createdBy: z.string(),
   deleted: z.boolean().optional(),
   relationship: formRelationshipSchema.optional(),
