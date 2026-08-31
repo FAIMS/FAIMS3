@@ -63,8 +63,8 @@ import {
 } from './controls/map-controls';
 import {MapControlsOverlay, MapControlStack} from './controls/primitives';
 import {MapControlThemeProvider} from './mapTheme';
-import {createTileStore} from './storage/TileStore';
 import {MapConfig} from './types';
+import {createTileStore} from './TileStore';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;

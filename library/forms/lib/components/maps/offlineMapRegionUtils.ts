@@ -75,13 +75,9 @@ export function extent3857ToOfflineMapRegion(
  * This becomes StoredTileSet.setName internally. The editable user-visible
  * name is stored separately in StoredTileSet.label.
  */
+export const OFFLINE_MAP_ID_PREFIX = 'offline-map-';
 export function createOfflineMapId(): string {
-  return `offline-map-${crypto.randomUUID()}`;
-}
-
-/** Whether a tile set uses the legacy `@project/:id` naming format. */
-export function isLegacyProjectOfflineMapSetName(setName: string): boolean {
-  return setName.startsWith('@project/');
+  return `${OFFLINE_MAP_ID_PREFIX}${crypto.randomUUID()}`;
 }
 
 /** User-visible label for a stored tile set. */

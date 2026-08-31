@@ -14,7 +14,6 @@ import {
   VectorTileStore,
   createOfflineMapId,
   deriveTileSetDownloadStatus,
-  isLegacyProjectOfflineMapSetName,
   isOfflineMapDownloadCancelledError,
   offlineMapRegionToExtent3857,
   offlineMapRegionsEqual,
@@ -179,29 +178,6 @@ export async function getDownloadedOfflineMapRegion(
   return tileSet?.offlineMapRegion;
 }
 
-/**
- * Remove a legacy project offline map using the old `@project/:id` set name.
- *
- * Returns true when a legacy map was found and removed so the project can
- * download it again using a unique offline map id.
- */
-async function removeLegacyProjectOfflineMap(
-  projectId: string,
-  config: MapConfig = getMapConfig()
-): Promise<boolean> {
-  const tileStore = getSharedTileStore(config);
-  await tileStore.tileStore.initDB();
-
-  const tileSet = await tileStore.getTileSetForProject(projectId);
-
-  if (!tileSet?.setName || !isLegacyProjectOfflineMapSetName(tileSet.setName)) {
-    return false;
-  }
-
-  await removeProjectOfflineMaps(projectId);
-  return true;
-}
-
 export {offlineMapRegionsEqual};
 
 /** Outcome of comparing a server plan region with local download state. */
@@ -298,19 +274,11 @@ export async function reconcileOfflineMapRegionPlanChange({
  *
  * Returns true when a completed download exists and its stored region matches
  * the current plan region.
- *
- * Legacy project maps using the old `@project/:id` set name are removed so
- * they can be downloaded again with a unique offline map id.
  */
 export async function shouldSkipOfflineMapActivationPrompt(
   projectId: string,
   region: OfflineMapRegion
 ): Promise<boolean> {
-  // Legacy project maps need to be re-downloaded using the new unique id format.
-  if (await removeLegacyProjectOfflineMap(projectId)) {
-    return false;
-  }
-
   const status = await getProjectOfflineMapStatus(projectId);
   if (status.state !== 'downloaded') {
     return false;

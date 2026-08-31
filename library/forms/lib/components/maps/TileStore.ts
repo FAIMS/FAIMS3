@@ -25,6 +25,7 @@ import MVT from 'ol/format/MVT';
 import {Geometry} from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
+import {XYZ} from 'ol/source';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
@@ -32,10 +33,15 @@ import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {MapConfig} from './types';
 import {IDBObjectStore} from './IDBObjectStore';
+import {
+  runTileDbUpgradeMigrations,
+  TILE_DB_MIGRATION_STORE,
+  TILE_DB_TARGET_VERSIONS,
+  TileDbMigrationState,
+} from './migrations';
 import {getMapStylesheet} from './styles';
-import {XYZ} from 'ol/source';
+import {MapConfig} from './types';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -90,7 +96,7 @@ const TILE_URL_MAP: {
 // returned when we request it.  The sets property records which
 // tile-sets this belongs to so that when we're deleting sets
 // we don't remove this stored tile if it belongs to another one as well
-interface StoredTile {
+export interface StoredTile {
   url: string;
   data: Blob;
   sets: string[];
@@ -131,9 +137,12 @@ class MapTileDatabase {
   // references to the individual object stores within the database
   tileDB!: IDBObjectStore<StoredTile>;
   tileSetDB!: IDBObjectStore<StoredTileSet>;
+  migrationDB!: IDBObjectStore<TileDbMigrationState>;
 
   constructor() {
-    this.initDB();
+    this.initDB().catch(error => {
+      console.error('Failed to initialise tile database', error);
+    });
   }
 
   static getInstance(): MapTileDatabase {
@@ -143,30 +152,43 @@ class MapTileDatabase {
     return MapTileDatabase.#instance;
   }
 
-  // Initialise the database and the two object stores that we'll rely on
+  // Initialise the database and the object stores that we'll rely on
   // called from the constructor but could also be awaited by a client if
   // they wanted to ensure that the db is ready
   initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
-      // incrementing the version number will allow update to the schema
-      const DB_VERSION = 1;
-      const request = indexedDB.open(MapTileDatabase.DB_NAME, DB_VERSION);
+      // Open the tile database at the expected database version.
+      // A higher version triggers onupgradeneeded so migrations can run.
+      const request = indexedDB.open(
+        MapTileDatabase.DB_NAME,
+        TILE_DB_TARGET_VERSIONS.databaseVersion
+      );
+
       request.onerror = () => reject(request.error);
       // fired on every run, call makeDatabases to initialise this object
       request.onsuccess = () => {
         this.makeDatabases(request.result);
         resolve();
       };
-      // event fired after the initial creation of the database, here we
-      // create the object stores. Note we also call makeDatabases because this
-      // method runs before onsuccess above but only when DB_NAME doesn't exist
-      request.onupgradeneeded = (event: any) => {
-        if (event.target) {
-          const db = event.target.result;
-          this.makeDatabases(db);
-          if (this.tileDB) this.tileDB.createObjectStore();
-          if (this.tileSetDB) this.tileSetDB.createObjectStore();
+      // Fired when the database is first created or its version increases.
+      // Create any required object stores and run database migrations here.
+      request.onupgradeneeded = event => {
+        const db = request.result;
+        // Get the versionchange transaction created by IndexedDB for this upgrade.
+        // Schema changes and migrations should use this same transaction.
+        const transaction = request.transaction;
+        // The upgrade transaction should always be available in onupgradeneeded.
+        if (!transaction) {
+          throw new Error('Tile database upgrade transaction is unavailable');
         }
+
+        this.makeDatabases(db);
+        if (this.tileDB) this.tileDB.createObjectStore();
+        if (this.tileSetDB) this.tileSetDB.createObjectStore();
+        if (this.migrationDB) this.migrationDB.createObjectStore();
+
+        // Run the required database migrations for this version upgrade.
+        this.runDatabaseUpgrade(db, transaction, event.oldVersion);
       };
     });
   }
@@ -182,12 +204,40 @@ class MapTileDatabase {
       this.tileSetDB = new IDBObjectStore<StoredTileSet>(db, 'tileSets', [
         'setName',
       ]);
+    if (!this.migrationDB) {
+      this.migrationDB = new IDBObjectStore<TileDbMigrationState>(
+        db,
+        TILE_DB_MIGRATION_STORE,
+        'id'
+      );
+    }
+  }
+
+  // Run any required data migrations using the active IndexedDB
+  // versionchange transaction so all upgrade changes commit together.
+  private runDatabaseUpgrade(
+    db: IDBDatabase,
+    transaction: IDBTransaction,
+    oldVersion: number
+  ): void {
+    // IndexedDB keeps the upgrade transaction active while these requests run.
+    void runTileDbUpgradeMigrations(db, transaction, oldVersion).catch(
+      error => {
+        console.error('[tiles_db] Database upgrade failed', error);
+        // Abort the whole upgrade so partial migration changes are rolled back.
+        try {
+          transaction.abort();
+        } catch {
+          // The transaction may already be aborting.
+        }
+      }
+    );
   }
 }
 
 export const initialiseMaps = () => {
   // initialise the tile store used for offline maps
-  MapTileDatabase.getInstance().initDB();
+  MapTileDatabase.getInstance();
 };
 
 /**
@@ -322,9 +372,10 @@ abstract class TileStoreBase {
     // don't want the map key in the stored URL
     const cleanURL = url.replace(this.config.mapSourceKey, '');
     const tile = {url: cleanURL, data, sets: [set]};
-    const existingTile = await this.tileStore.tileDB.get(url);
+    const existingTile = await this.tileStore.tileDB.get([cleanURL]);
     if (existingTile) {
-      tile.sets = [...existingTile.sets, set];
+      // setName should already be unique, but avoid storing duplicate references
+      tile.sets = [...new Set([...existingTile.sets, set])];
     }
     const tileKey = await this.tileStore.tileDB.put(tile);
     const size = tile.data.size;
