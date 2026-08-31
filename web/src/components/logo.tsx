@@ -9,11 +9,17 @@ export default function Logo() {
       <div className="shrink-0">
         <LogoIcon size={48} />
       </div>
-      <div className="flex flex-col text-left text-sm leading-none min-w-0 flex-1">
-        <span className="truncate font-semibold" title={config.appName}>
+      <div className="flex flex-col text-left text-sm leading-none min-w-0 flex-1 gap-1">
+        <span
+          className="whitespace-normal break-words font-semibold"
+          title={config.appName}
+        >
           {config.appName}
         </span>
-        <span className="truncate text-xs" title={config.websiteTitle}>
+        <span
+          className="whitespace-normal break-words text-xs"
+          title={config.websiteTitle}
+        >
           {config.websiteTitle}
         </span>
       </div>
