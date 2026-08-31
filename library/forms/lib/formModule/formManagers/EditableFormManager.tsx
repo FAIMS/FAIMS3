@@ -186,6 +186,8 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const pendingValuesRef = useRef(false);
   const isSavingRef = useRef(false);
+  /** True after a successful content save this session — flush then stamps the record. */
+  const contentSavedThisSessionRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   /** Drives save-status UI; refs alone do not trigger re-renders. */
   const [hasPendingSave, setHasPendingSave] = useState(false);
@@ -309,8 +311,10 @@ export const EditableFormManager: React.FC<
         updatedBy: props.activeUser,
         update: form.state.values ?? {},
         mode: props.mode,
+        bumpRevisionUpdatedAt: true,
       });
 
+      contentSavedThisSessionRef.current = true;
       pendingValuesRef.current = false;
       setHasPendingSave(false);
       attachmentSaveTrace('performSave:complete', {
@@ -407,8 +411,18 @@ export const EditableFormManager: React.FC<
       }
       await new Promise(resolve => setTimeout(resolve, 50));
     }
+
+    // Record stamp only on flush (nav / Finish), not every debounced keystroke.
+    if (contentSavedThisSessionRef.current) {
+      try {
+        await dataEngine.core.stampRecordUpdatedAt(props.recordId);
+        contentSavedThisSessionRef.current = false;
+      } catch (error) {
+        logError(new Error('Failed to stamp record updatedAt:'), {error});
+      }
+    }
     attachmentSaveTrace('flushSave:complete', {waitIterations});
-  }, [debouncedSave, debugMode]);
+  }, [debouncedSave, debugMode, dataEngine, props.recordId]);
 
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;

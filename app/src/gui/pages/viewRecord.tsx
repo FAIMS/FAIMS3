@@ -200,7 +200,10 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
                 ? `${updated.ugcComment};${val}`
                 : val;
               // save the update
-              await dataEngine.hydrated.updateRevision(updated);
+              await dataEngine.hydrated.updateRevision(updated, {
+                bumpRevisionUpdatedAt: true,
+                bumpRecordUpdatedAt: true,
+              });
             }}
           />
         </Stack>

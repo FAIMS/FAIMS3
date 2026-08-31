@@ -59,11 +59,13 @@ describe('Form Operations', () => {
       expect(result.record.type).toBe('A');
       expect(result.record.created_by).toBe('test-user');
       expect(result.record.created).toBeDefined();
+      expect(result.record.updatedAt).toBe(result.record.created);
 
       expect(result.revision._id).toBeDefined();
       expect(result.revision._rev).toBeDefined();
       expect(result.revision.type).toBe('A');
       expect(result.revision.created_by).toBe('test-user');
+      expect(result.revision.updatedAt).toBe(result.revision.created);
       expect(result.revision.record_id).toBe(result.record._id);
     });
 
@@ -401,6 +403,29 @@ describe('Form Operations', () => {
       expect(updatedRecord.revisions).toContain(oldHeadId);
       expect(updatedRecord.revisions).toContain(childRevision._id);
       expect(updatedRecord.revisions).toHaveLength(2);
+    });
+
+    test('should stamp record updatedAt when forking a head', async () => {
+      const initialResult = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const createdUpdatedAt = initialResult.record.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const childRevision = await engine.form.createRevision({
+        recordId: initialResult.record._id,
+        revisionId: initialResult.revision._id,
+        createdBy: 'user-2',
+      });
+
+      const updatedRecord = await engine.core.getRecord(
+        initialResult.record._id
+      );
+
+      expect(updatedRecord.updatedAt).toBe(childRevision.updatedAt);
+      expect(updatedRecord.updatedAt).not.toBe(createdUpdatedAt);
     });
 
     test('should throw error if revision does not belong to record', async () => {
@@ -1272,6 +1297,75 @@ describe('Form Operations', () => {
       expect(Object.values(history[0].changedFields).flat()).toContain(
         'First-1'
       );
+    });
+  });
+
+  describe('updatedAt bump flags', () => {
+    test('updateRevision without flags leaves record and revision stamps', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const recordStamp = created.record.updatedAt;
+      const revisionStamp = created.revision.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const updated = await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      expect(record.updatedAt).toBe(recordStamp);
+      expect(updated.updatedAt).toBe(revisionStamp);
+    });
+
+    test('updateRevision can bump revision updatedAt only', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const recordStamp = created.record.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const updated = await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRevisionUpdatedAt: true,
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      expect(record.updatedAt).toBe(recordStamp);
+      expect(updated.updatedAt).not.toBe(created.revision.updatedAt);
+    });
+
+    test('updateRevision can bump record updatedAt', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      await engine.form.updateRevision({
+        revisionId: created.revision._id,
+        recordId: created.record._id,
+        update: {'First-1': {data: 'changed'}},
+        mode: 'new',
+        updatedBy: 'user-1',
+        bumpRecordUpdatedAt: true,
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      expect(record.updatedAt).not.toBe(created.record.updatedAt);
     });
   });
 });
