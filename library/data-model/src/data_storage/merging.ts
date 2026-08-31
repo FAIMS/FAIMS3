@@ -361,6 +361,7 @@ async function do3WayMerge({
       parents: parents,
       created: creation_time.toISOString(),
       created_by: creator,
+      updatedAt: creation_time.toISOString(),
       deleted: us.deleted && them.deleted ? true : false,
       // TODO: Work out how to handle changing types if that's going to be a
       // thing
@@ -716,6 +717,7 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
     parents: parents,
     created: updated.toISOString(),
     created_by: updated_by,
+    updatedAt: updated.toISOString(),
     deleted: false,
     type: type,
     relationship: merge_result.relationship,

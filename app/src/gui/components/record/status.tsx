@@ -20,14 +20,18 @@ import {Box, CircularProgress, Link, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {getViewRecordRoute} from '../../../constants/routes';
+import {
+  getViewRecordRoute,
+  RecordRouteNotebook,
+} from '../../../constants/routes';
 import {buildStatusReportKey} from '../../../utils/customHooks';
 import {getDisplayDataFromRecordMetadata} from '../../../utils/formUtilities';
 
 interface RecordStatusProps {
+  /** The notebook tab this page sits under, which the child links stay on. */
+  notebook: RecordRouteNotebook;
   recordId: RecordID;
   projectId: ProjectID;
-  serverId: string;
   dataEngine: DataEngine;
   isDeleted: boolean;
 }
@@ -39,11 +43,10 @@ interface RecordStatusProps {
 const StatusNode: React.FC<{
   report: RecordStatusReport;
   uiSpec: CompiledNotebookUiSpec;
-  projectId: ProjectID;
-  serverId: string;
+  notebook: RecordRouteNotebook;
   /** The viewed record itself, which needs no link to where the user already is. */
   isRoot?: boolean;
-}> = ({report, uiSpec, projectId, serverId, isRoot}) => {
+}> = ({report, uiSpec, notebook, isRoot}) => {
   const {ownProgress} = report;
   const summaryFieldIds = Object.keys(report.summaryValues);
 
@@ -65,8 +68,7 @@ const StatusNode: React.FC<{
           <Link
             component={RouterLink}
             to={getViewRecordRoute({
-              projectId,
-              serverId,
+              ...notebook,
               recordId: report.recordId,
             })}
             variant="body2"
@@ -133,8 +135,7 @@ const StatusNode: React.FC<{
                   key={child.recordId}
                   report={child}
                   uiSpec={uiSpec}
-                  projectId={projectId}
-                  serverId={serverId}
+                  notebook={notebook}
                 />
               ))}
             </Stack>
@@ -151,9 +152,9 @@ const StatusNode: React.FC<{
  * report always walks current heads, so it ignores the page's ?revisionId.
  */
 export const RecordStatus: React.FC<RecordStatusProps> = ({
+  notebook,
   recordId,
   projectId,
-  serverId,
   dataEngine,
   isDeleted,
 }) => {
@@ -218,8 +219,7 @@ export const RecordStatus: React.FC<RecordStatusProps> = ({
       <StatusNode
         report={report}
         uiSpec={dataEngine.uiSpec}
-        projectId={projectId}
-        serverId={serverId}
+        notebook={notebook}
         isRoot
       />
     </Stack>

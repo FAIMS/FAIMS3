@@ -567,6 +567,13 @@ export const UiConfiguration = z
         ])
       )
       .optional(),
+    /**
+     * When true (default), the designer can add a plan to templates that do
+     * not already have one. When false, Add Plan is hidden; templates that
+     * already have a plan can still be reconfigured. Passed to the web build
+     * as VITE_ENABLE_PLANS_IN_DESIGNER.
+     */
+    enablePlansInDesigner: z.boolean().default(true),
   })
   .refine(
     data => {

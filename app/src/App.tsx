@@ -40,7 +40,6 @@ import './App.css';
 import {config} from './buildconfig';
 import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
-import {getEditRecordRoute} from './constants/routes';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
@@ -161,42 +160,29 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId`,
+        path: ROUTES.NOTEBOOK_ROUTE_PATH,
         element: (
           <TolerantPrivateRoute>
-            <Notebook />
+            <Outlet />
           </TolerantPrivateRoute>
         ),
-      },
+        children: [
+          {index: true, element: <Notebook />},
 
-      // =========================================================================
-      // PROTECTED ROUTES - RECORD MANAGEMENT
-      // =========================================================================
-      {
-        // Edit an existing record
-        path: getEditRecordRoute({
-          serverId: ':serverId',
-          projectId: ':projectId',
-          recordId: ':recordId',
-        }),
-        element: (
-          <TolerantPrivateRoute>
-            <EditRecordPage />
-          </TolerantPrivateRoute>
-        ),
-      },
-      {
-        // View a record (read-only)
-        path: ROUTES.getViewRecordRoute({
-          serverId: ':serverId',
-          projectId: ':projectId',
-          recordId: ':recordId',
-        }),
-        element: (
-          <TolerantPrivateRoute>
-            <ViewRecordPage />
-          </TolerantPrivateRoute>
-        ),
+          // =====================================================================
+          // PROTECTED ROUTES - RECORD MANAGEMENT
+          // =====================================================================
+          {
+            // Edit an existing record
+            path: ROUTES.EDIT_RECORD_ROUTE_PATH,
+            element: <EditRecordPage />,
+          },
+          {
+            // View a record (read-only)
+            path: ROUTES.VIEW_RECORD_ROUTE_PATH,
+            element: <ViewRecordPage />,
+          },
+        ],
       },
 
       // =========================================================================

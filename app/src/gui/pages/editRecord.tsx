@@ -41,8 +41,8 @@ import {
 } from '../../buildconfig';
 import {
   getEditRecordRoute,
-  getNotebookRoute,
   getViewRecordRoute,
+  NOTEBOOK_FROM_RECORD_ROUTE,
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
@@ -89,9 +89,10 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
  * `canLoadRecord` gating on queries.
  */
 export const EditRecordPage = () => {
-  const {serverId, projectId, recordId} = useParams<{
+  const {serverId, projectId, tab, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
+    tab?: string;
     recordId: RecordID;
   }>();
 
@@ -274,9 +275,7 @@ export const EditRecordPage = () => {
         navigateToRecordList: {
           label: 'Return to record list',
           navigate: () => {
-            navigate(
-              getNotebookRoute({serverId: serverId!, projectId: projectId!})
-            );
+            navigate(NOTEBOOK_FROM_RECORD_ROUTE);
           },
         },
         // Takes you back to view record (note this is only shown if there are no
@@ -287,6 +286,7 @@ export const EditRecordPage = () => {
               projectId: projectId!,
               recordId: params.recordId,
               serverId: serverId!,
+              tab,
             })
           );
         },
@@ -333,6 +333,7 @@ export const EditRecordPage = () => {
             getEditRecordRoute({
               serverId: serverId!,
               projectId: projectId!,
+              tab,
               recordId: targetRecordId,
               mode: targetMode,
             }),
@@ -344,6 +345,7 @@ export const EditRecordPage = () => {
           return getEditRecordRoute({
             serverId: serverId!,
             projectId: projectId!,
+            tab,
             recordId: params.recordId,
             mode,
           });
@@ -365,6 +367,7 @@ export const EditRecordPage = () => {
     serverId,
     navigationContext,
     projectId,
+    tab,
     recordId,
     mode,
     activeUser,
@@ -448,14 +451,16 @@ export const EditRecordPage = () => {
             <Button
               variant="outlined"
               onClick={() =>
-                navigate(getViewRecordRoute({projectId, recordId, serverId}))
+                navigate(
+                  getViewRecordRoute({projectId, recordId, serverId, tab})
+                )
               }
             >
               Open read-only view
             </Button>
             <Button
               variant="text"
-              onClick={() => navigate(getNotebookRoute({serverId, projectId}))}
+              onClick={() => navigate(NOTEBOOK_FROM_RECORD_ROUTE)}
             >
               {`Back to ${config.notebookName}`}
             </Button>

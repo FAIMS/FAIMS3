@@ -4,6 +4,7 @@ import {
   currentlyVisibleMap,
   FormDataEntry,
   getFormLabel,
+  getRelatedRecordFields,
   HydratedRecordDocument,
   ValuesObject,
 } from '@faims3/data-model';
@@ -34,13 +35,15 @@ import {
   useNavigationLogic,
 } from './navigation';
 import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
-import {
-  getRecordContextFromRecord,
-  onChangeTemplatedFields,
-  RecordContext,
-} from './templatedFields';
+import {onChangeTemplatedFields} from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
-import {resolveParentValues} from './resolveParentValues';
+import {
+  resolveParentValues,
+  resolveRelatedValues,
+  linkedRecordId,
+  getRecordContextFromRecord,
+  RecordContext,
+} from '@faims3/data-model';
 import {
   FieldVisibilityMap,
   FormNavigationContext,
@@ -146,11 +149,15 @@ export const EditableFormManager: React.FC<
   // parent-only derived fields fill without waiting for user input.
   // ---------------------------------------------------------------------------
   const parentValuesRef = useRef<ValuesObject | null>(null);
+  // Values of records linked through single-link Related Records fields, keyed
+  // by field ID. Re-resolved whenever a link changes (see the effect below).
+  const relatedValuesRef = useRef<Record<string, ValuesObject>>({});
 
   const buildContext = useCallback(
     (): RecordContext => ({
       ...getRecordContextFromRecord({record: props.existingRecord}),
       parentValues: parentValuesRef.current ?? undefined,
+      relatedValues: relatedValuesRef.current,
     }),
     [props.existingRecord]
   );
@@ -179,6 +186,8 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const pendingValuesRef = useRef(false);
   const isSavingRef = useRef(false);
+  /** True after a successful content save this session — flush then stamps the record. */
+  const contentSavedThisSessionRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   /** Drives save-status UI; refs alone do not trigger re-renders. */
   const [hasPendingSave, setHasPendingSave] = useState(false);
@@ -302,8 +311,10 @@ export const EditableFormManager: React.FC<
         updatedBy: props.activeUser,
         update: form.state.values ?? {},
         mode: props.mode,
+        bumpRevisionUpdatedAt: true,
       });
 
+      contentSavedThisSessionRef.current = true;
       pendingValuesRef.current = false;
       setHasPendingSave(false);
       attachmentSaveTrace('performSave:complete', {
@@ -400,8 +411,18 @@ export const EditableFormManager: React.FC<
       }
       await new Promise(resolve => setTimeout(resolve, 50));
     }
+
+    // Record stamp only on flush (nav / Finish), not every debounced keystroke.
+    if (contentSavedThisSessionRef.current) {
+      try {
+        await dataEngine.core.stampRecordUpdatedAt(props.recordId);
+        contentSavedThisSessionRef.current = false;
+      } catch (error) {
+        logError(new Error('Failed to stamp record updatedAt:'), {error});
+      }
+    }
     attachmentSaveTrace('flushSave:complete', {waitIterations});
-  }, [debouncedSave, debugMode]);
+  }, [debouncedSave, debugMode, dataEngine, props.recordId]);
 
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;
@@ -549,6 +570,88 @@ export const EditableFormManager: React.FC<
       cancelled = true;
     };
     // Mount-only: record and form identity are fixed for a mounted manager.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Resolve linked record values at mount and again whenever a single-link
+  // Related Records field's link changes, then recompute derived fields and
+  // schedule a save if anything changed - the same contract as the parent
+  // effect above. Watching a signature of the link IDs keeps this from firing
+  // on unrelated edits.
+  useEffect(() => {
+    const linkFields = [
+      ...getRelatedRecordFields({
+        uiSpecification: dataEngine.uiSpec,
+        formId: props.formId,
+      }),
+    ]
+      .filter(([, info]) => !info.multiple)
+      .map(([id]) => id);
+    if (linkFields.length === 0) return;
+
+    // Read only the link fields off the store - a full extract here would
+    // scale with form size and this runs on every store change.
+    const linkValues = (): ValuesObject => {
+      const values: ValuesObject = {};
+      for (const id of linkFields) {
+        values[id] = (
+          form.state.values as Record<string, {data?: unknown} | undefined>
+        )[id]?.data;
+      }
+      return values;
+    };
+    const signatureOf = (values: ValuesObject) =>
+      linkFields
+        .map(id => `${id}=${linkedRecordId(values[id]) ?? ''}`)
+        .join('|');
+
+    let cancelled = false;
+    let latest = 0;
+    let lastSignature: string | null = null;
+
+    const refresh = () => {
+      const values = linkValues();
+      const signature = signatureOf(values);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      const token = ++latest;
+      resolveRelatedValues({
+        engine: dataEngine,
+        values,
+        formId: props.formId,
+      }).then(resolved => {
+        // Drop stale responses if the link changed again mid-flight.
+        if (cancelled || token !== latest) return;
+        relatedValuesRef.current = resolved;
+        const computedChanged = onChangeComputedFields({
+          form: form as FaimsForm,
+          formId: props.formId,
+          uiSpec: dataEngine.uiSpec,
+          runListeners: false,
+          context: buildContext(),
+        });
+        const templatedChanged = onChangeTemplatedFields({
+          form: form as FaimsForm,
+          formId: props.formId,
+          uiSpec: dataEngine.uiSpec,
+          runListeners: false,
+          context: buildContext(),
+        });
+        if (computedChanged || templatedChanged) {
+          pendingValuesRef.current = true;
+          setHasPendingSave(true);
+          debouncedSave();
+        }
+      });
+    };
+
+    refresh();
+    const subscription = form.store.subscribe(refresh);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+    // Mount-only, as above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

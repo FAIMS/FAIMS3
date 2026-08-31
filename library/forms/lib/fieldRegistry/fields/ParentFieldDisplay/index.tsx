@@ -6,7 +6,7 @@ import {FormFieldContextProps} from '../../../formModule/types';
 import {ParentFieldDisplayRenderer} from '../../../rendering/fields/view/specialised/ParentFieldDisplay';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {resolveParentFieldValue} from './resolveParentField';
+import {resolveParentFieldValue} from '@faims3/data-model';
 import {logWarn} from '../../../logging';
 import {useEffect} from 'react';
 
