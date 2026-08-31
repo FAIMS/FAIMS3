@@ -6,6 +6,7 @@ import {
   HydratedDataRecord,
   notebookRecordIterator,
   ProjectID,
+  UpdatedTimeFilter,
   slugify,
 } from '@faims3/data-model';
 import archiver from 'archiver';
@@ -204,10 +205,12 @@ export const appendAllCSVsToArchive = async ({
   projectId,
   archive,
   pathPrefix = '',
+  exportFilter,
 }: {
   projectId: ProjectID;
   archive: archiver.Archiver;
   pathPrefix?: string;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<MultiViewCSVAppendStats> => {
   // Fetch DB and UI spec
   const dataDb = await getDataDb(projectId);
@@ -275,6 +278,7 @@ export const appendAllCSVsToArchive = async ({
     // No viewID - iterate all records
     includeAttachments: false,
     viewID: undefined,
+    ...exportFilter,
   });
 
   let {record, done} = await iterator.next();
@@ -398,12 +402,14 @@ export const appendCSVToArchive = async ({
   viewLabel,
   archive,
   pathPrefix = '',
+  exportFilter,
 }: {
   projectId: ProjectID;
   viewID: string;
   viewLabel: string;
   archive: archiver.Archiver;
   pathPrefix?: string;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<CSVAppendStats> => {
   const stats: CSVAppendStats = {
     viewId: viewID,
@@ -450,6 +456,7 @@ export const appendCSVToArchive = async ({
     uiSpecification,
     viewID,
     includeAttachments: false,
+    ...exportFilter,
   });
 
   // Track generated filenames (for attachment references in CSV)
@@ -527,7 +534,8 @@ export const appendCSVToArchive = async ({
 export const streamNotebookRecordsAsCSV = async (
   projectId: ProjectID,
   viewID: string,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ) => {
   // Fetch the data DB
   const dataDb = await getDataDb(projectId);
@@ -544,6 +552,7 @@ export const streamNotebookRecordsAsCSV = async (
     // Don't use the attachment loader to download attachments - we don't need
     // the actual data, just the HRID of the record + fieldname is sufficient
     includeAttachments: false,
+    ...exportFilter,
   });
 
   // Get information about the fields

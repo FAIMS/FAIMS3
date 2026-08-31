@@ -195,6 +195,186 @@ describe('Records CRUD API', () => {
         });
       });
     });
+
+    it('filters exclusively by updatedAfter and updatedBefore', async () => {
+      await withRecordsBackup(async projectId => {
+        const full = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
+        ).expect(200);
+        const all = (full.body as GetListRecordsResponse).records;
+        expect(all.length).toBeGreaterThan(1);
+        const target = all[0];
+        const targetMs = Date.parse(target.updated);
+        expect(Number.isNaN(targetMs)).toBe(false);
+
+        const afterRes = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedAfter: String(targetMs)})
+        ).expect(200);
+        const afterIds = (afterRes.body as GetListRecordsResponse).records.map(
+          r => r.recordId
+        );
+        expect(afterIds).not.toContain(target.recordId);
+        afterIds.forEach(id => {
+          const rec = all.find(r => r.recordId === id);
+          expect(rec).toBeDefined();
+          expect(Date.parse(rec!.updated)).toBeGreaterThan(targetMs);
+        });
+
+        const beforeRes = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedBefore: String(targetMs)})
+        ).expect(200);
+        const beforeIds = (
+          beforeRes.body as GetListRecordsResponse
+        ).records.map(r => r.recordId);
+        expect(beforeIds).not.toContain(target.recordId);
+        beforeIds.forEach(id => {
+          const rec = all.find(r => r.recordId === id);
+          expect(rec).toBeDefined();
+          expect(Date.parse(rec!.updated)).toBeLessThan(targetMs);
+        });
+
+        const tight = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({
+              updatedAfter: String(targetMs - 1),
+              updatedBefore: String(targetMs + 1),
+            })
+        ).expect(200);
+        const tightIds = (tight.body as GetListRecordsResponse).records.map(
+          r => r.recordId
+        );
+        expect(tightIds).toContain(target.recordId);
+      });
+    });
+
+    it('paginates time-filtered results with nextStartKey', async () => {
+      await withRecordsBackup(async projectId => {
+        const full = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedAfter: '0'})
+        ).expect(200);
+        const all = (full.body as GetListRecordsResponse).records;
+        expect(all.length).toBeGreaterThan(1);
+
+        const page1 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedAfter: '0', limit: 1})
+        ).expect(200);
+        const page1Body = page1.body as GetListRecordsResponse;
+        expect(page1Body.records).toHaveLength(1);
+        expect(page1Body.nextStartKey).toBeDefined();
+
+        const page2 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({
+              updatedAfter: '0',
+              limit: 1,
+              startKey: page1Body.nextStartKey,
+            })
+        ).expect(200);
+        const page2Body = page2.body as GetListRecordsResponse;
+        expect(page2Body.records).toHaveLength(1);
+        expect(page2Body.records[0].recordId).not.toBe(
+          page1Body.records[0].recordId
+        );
+      });
+    });
+
+    it('returns 400 when updatedAfter is greater than or equal to updatedBefore', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedAfter: '100', updatedBefore: '50'})
+        ).expect(400);
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedAfter: '50', updatedBefore: '50'})
+        ).expect(400);
+      });
+    });
+
+    it('returns 400 when updatedAfter or updatedBefore is not numeric', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedAfter: 'not-a-number'})
+        ).expect(400);
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({updatedBefore: '1.5'})
+        ).expect(400);
+      });
+    });
+  });
+
+  describe('export time range', () => {
+    it('puts exclusive bounds on the download JWT and streams a tight CSV window', async () => {
+      await withRecordsBackup(async projectId => {
+        const listed = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({formId: BACKUP_FORM_IDS.FORM2})
+        ).expect(200);
+        const formRecords = (listed.body as GetListRecordsResponse).records;
+        expect(formRecords.length).toBeGreaterThan(1);
+
+        const byUpdated = [...formRecords].sort(
+          (a, b) => Date.parse(a.updated) - Date.parse(b.updated)
+        );
+        const target = byUpdated[0];
+        const outsider = byUpdated.find(
+          r => Date.parse(r.updated) !== Date.parse(target.updated)
+        );
+        expect(outsider).toBeDefined();
+
+        const targetMs = Date.parse(target.updated);
+        const updatedAfter = String(targetMs - 1);
+        const updatedBefore = String(targetMs + 1);
+
+        const issued = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/export`).query({
+            format: 'csv',
+            viewID: BACKUP_FORM_IDS.FORM2,
+            updatedAfter,
+            updatedBefore,
+          })
+        ).expect(200);
+
+        const downloadUrl = (issued.body as {url: string}).url;
+        const token = downloadUrl.split('/').pop()!;
+        const payload = JSON.parse(
+          Buffer.from(token.split('.')[1], 'base64url').toString()
+        ) as {
+          updatedAfter?: number;
+          updatedBefore?: number;
+          format: string;
+          viewID?: string;
+        };
+        expect(payload.updatedAfter).toBe(targetMs - 1);
+        expect(payload.updatedBefore).toBe(targetMs + 1);
+        expect(payload.format).toBe('csv');
+        expect(payload.viewID).toBe(BACKUP_FORM_IDS.FORM2);
+
+        const urlPath = downloadUrl.startsWith('http')
+          ? new URL(downloadUrl).pathname
+          : downloadUrl;
+        const csv = await request(app).get(urlPath).expect(200);
+        expect(csv.text).toContain(target.recordId);
+        expect(csv.text).not.toContain(outsider!.recordId);
+      });
+    });
   });
 
   describeMutations('create record', () => {

@@ -65,12 +65,32 @@ Returns a permission-filtered list of minimal record metadata (no field values).
 
 **Query parameters**:
 
-| Parameter       | Type   | Required | Description                                                                       |
-| --------------- | ------ | -------- | --------------------------------------------------------------------------------- |
-| `formId`        | string | No       | Filter by record type (form/viewset ID).                                          |
-| `limit`         | number | No       | Max number of records (1–500).                                                    |
-| `startKey`      | string | No       | Pagination cursor from a previous response.                                       |
-| `filterDeleted` | string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included. |
+| Parameter       | Type   | Required | Description                                                                                      |
+| --------------- | ------ | -------- | ------------------------------------------------------------------------------------------------ |
+| `formId`        | string | No       | Filter by record type (form/viewset ID).                                                         |
+| `limit`         | number | No       | Max number of records (1–500).                                                                   |
+| `startKey`      | string | No       | Pagination cursor from a previous response.                                                      |
+| `filterDeleted` | string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included.                |
+| `updatedAfter`  | string | No       | Exclusive lower bound on last-updated time, as epoch **milliseconds** (record `updated` > this). |
+| `updatedBefore` | string | No       | Exclusive upper bound on last-updated time, as epoch **milliseconds** (record `updated` < this). |
+
+When both `updatedAfter` and `updatedBefore` are set they must satisfy `updatedAfter < updatedBefore`; otherwise the API returns **400**. Either bound may be omitted. With neither bound, all records are listed (current behaviour). Soft-delete filtering is unchanged (`filterDeleted` still defaults to hiding deletes).
+
+The document `updated` field is an ISO timestamp; the query arguments are millisecond integers as strings (same pattern as `limit`). Example:
+
+```
+GET /api/notebooks/:id/records/metadata?updatedAfter=1700000000000&updatedBefore=1710000000000
+```
+
+When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]` rather than a bare record id.
+
+**Legacy dump** **GET** `/api/notebooks/:id/records/` accepts the same `updatedAfter` / `updatedBefore` exclusive-ms query parameters and returns only records in that window.
+
+**Export** **GET** `/api/notebooks/:id/records/export` accepts the same bounds (plus `format`, `viewID`, and full-export include flags). They are stored on the download JWT and applied when **GET** `/api/notebooks/download/:downloadToken` streams CSV, ZIP, GeoJSON, KML, GeoPackage, or a full ZIP.
+
+```
+GET /api/notebooks/:id/records/export?format=csv&viewID=FORM2&updatedAfter=1700000000000&updatedBefore=1710000000000
+```
 
 **Response** (200 OK):
 

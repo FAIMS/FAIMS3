@@ -59,6 +59,10 @@ import {
   normalizeRelationshipInstances,
   toDbRelationshipInstances,
 } from './utils';
+import {
+  hasUpdatedTimeFilter,
+  queryRecordIdsByUpdated,
+} from '../data_storage/updatedTimeFilter';
 
 // =======
 // HELPERS
@@ -2279,8 +2283,10 @@ class QueryOperations {
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
    * @param options.filterFunction - Custom optional filter function e.g. permissions
    * @param options.limit - Max records to return (DB-level pagination when used with startKey)
-   * @param options.startKey - Cursor for next page (recordId); use nextStartKey from previous response
+   * @param options.startKey - Cursor for next page (recordId, or JSON [updatedMs, recordId] when time-filtered)
    * @param options.formId - Optional form type filter (applied after join when paginating)
+   * @param options.updatedAfter - Exclusive lower bound on record.updatedAt (epoch ms)
+   * @param options.updatedBefore - Exclusive upper bound on record.updatedAt (epoch ms)
    *
    * @returns Minimal record metadata for listing pages; nextStartKey set when more results exist
    */
@@ -2292,6 +2298,8 @@ class QueryOperations {
     limit,
     startKey,
     formId,
+    updatedAfter,
+    updatedBefore,
   }: {
     projectId: string;
     recordIds?: string[];
@@ -2300,20 +2308,65 @@ class QueryOperations {
     limit?: number;
     startKey?: string;
     formId?: string;
+    updatedAfter?: number;
+    updatedBefore?: number;
   }): Promise<MinimalRecordMetadataResult> {
     let errorCount = 0;
     const usePagination =
       ((limit !== undefined && limit !== null) ||
         (startKey !== undefined && startKey !== '')) &&
       recordIds === undefined;
+    const timeFilter = {updatedAfter, updatedBefore};
+    const useTimeIndex = hasUpdatedTimeFilter(timeFilter);
 
     const startTime = performance.now();
 
     // Step 1: Fetch all revision metadata (optimised view - no full docs)
     let recordViewResult: PouchDB.Query.Response<RecordDBDocument>;
     let revisionMetadataResult: RevisionMetadataQueryResult;
+    let timeNextStartKey: string | undefined;
 
-    if (usePagination) {
+    if (useTimeIndex) {
+      const pageSize = usePagination ? (limit ?? 25) : undefined;
+      const timed = await queryRecordIdsByUpdated({
+        dataDb: this.db,
+        updatedAfter,
+        updatedBefore,
+        limit: pageSize,
+        startKey: usePagination ? startKey : undefined,
+      });
+      timeNextStartKey = timed.nextStartKey;
+      let timedIds = timed.recordIds;
+      if (recordIds) {
+        const allowed = new Set(recordIds);
+        timedIds = timedIds.filter(id => allowed.has(id));
+      }
+      recordViewResult =
+        timedIds.length > 0
+          ? await this.db.query<RecordDBDocument>('index/record', {
+              include_docs: true,
+              keys: timedIds,
+            })
+          : {rows: [], total_rows: 0, offset: 0};
+      const ordered = new Map(
+        recordViewResult.rows.map(row => [row.id, row] as const)
+      );
+      recordViewResult = {
+        ...recordViewResult,
+        rows: timedIds
+          .map(id => ordered.get(id))
+          .filter((row): row is (typeof recordViewResult.rows)[number] =>
+            Boolean(row)
+          ),
+      };
+      const headRevisionIds = recordViewResult.rows
+        .map(row => row.doc?.heads?.[0])
+        .filter((id): id is string => id !== undefined && id !== null);
+      revisionMetadataResult =
+        headRevisionIds.length > 0
+          ? await this.listRevisionMetadata({keys: headRevisionIds})
+          : {revisions: [], count: 0};
+    } else if (usePagination) {
       // Pagination path: fetch only a page of records, then revision metadata for those heads only
       const pageSize = limit ?? 25;
       recordViewResult = await this.db.query<RecordDBDocument>('index/record', {
@@ -2414,9 +2467,11 @@ class QueryOperations {
       filteredRecords = filteredRecords.filter(r => r.type === formId);
     }
 
-    // Order matches index/record (emit doc._id); keep it for correct startKey/nextStartKey.
+    // Id-index order matches emit(doc._id). Time-index cursor is JSON [ms, id].
     let nextStartKey: string | undefined;
-    if (
+    if (useTimeIndex) {
+      nextStartKey = timeNextStartKey;
+    } else if (
       usePagination &&
       limit !== undefined &&
       limit !== null &&
@@ -2425,6 +2480,7 @@ class QueryOperations {
       nextStartKey = recordViewResult.rows[limit].id;
     }
     const pageRecords =
+      !useTimeIndex &&
       usePagination &&
       limit !== undefined &&
       limit !== null &&

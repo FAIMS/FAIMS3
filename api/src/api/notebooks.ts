@@ -33,6 +33,10 @@ import {
   getRecordListAudit,
   getRecordsWithRegex,
   isPeopleUserAccountDisabled,
+  UpdatedTimeFilter,
+  updatedAfterMsSchema,
+  updatedBeforeMsSchema,
+  updatedTimeQueryRefine,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
@@ -121,6 +125,7 @@ import {
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 import {recordsRouter} from './records';
+import {parseUpdatedTimeFilterFromQuery} from './updatedTimeQuery';
 
 // This must occur before express api is used
 patch();
@@ -175,8 +180,19 @@ const DownloadTokenPayloadSchema = z.object({
   userID: z.string(),
   // Full export config (only present when format === 'full')
   fullConfig: FullExportConfigSchema.optional(),
+  updatedAfter: z.number().optional(),
+  updatedBefore: z.number().optional(),
 });
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+
+const UpdatedTimeQuerySchema = z
+  .object({
+    updatedAfter: updatedAfterMsSchema,
+    updatedBefore: updatedBeforeMsSchema,
+  })
+  .refine(updatedTimeQueryRefine, {
+    message: 'updatedAfter must be less than updatedBefore',
+  });
 
 // Formats requiring a view ID
 const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
@@ -259,17 +275,23 @@ api.get(
     },
   }),
   validate({
-    query: z.object({
-      viewID: z.string().optional(),
-      format: DownloadFormatSchema,
-      // Full export options
-      includeTabular: z.string().optional().default('true'),
-      includeAttachments: z.string().optional().default('true'),
-      includeGeoJSON: z.string().optional().default('true'),
-      includeKML: z.string().optional().default('true'),
-      includeGeoPackage: z.string().optional().default('true'),
-      includeMetadata: z.string().optional().default('true'),
-    }),
+    query: z
+      .object({
+        viewID: z.string().optional(),
+        format: DownloadFormatSchema,
+        // Full export options
+        includeTabular: z.string().optional().default('true'),
+        includeAttachments: z.string().optional().default('true'),
+        includeGeoJSON: z.string().optional().default('true'),
+        includeKML: z.string().optional().default('true'),
+        includeGeoPackage: z.string().optional().default('true'),
+        includeMetadata: z.string().optional().default('true'),
+        updatedAfter: updatedAfterMsSchema,
+        updatedBefore: updatedBeforeMsSchema,
+      })
+      .refine(updatedTimeQueryRefine, {
+        message: 'updatedAfter must be less than updatedBefore',
+      }),
     params: z.object({
       id: z.string(),
     }),
@@ -279,10 +301,13 @@ api.get(
       throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
 
+    const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
+
     const payload: DownloadTokenPayload = {
       projectID: req.params.id,
       format: req.query.format,
       userID: req.user.user_id,
+      ...updatedFilter,
     };
 
     // Handle full export
@@ -761,6 +786,7 @@ api.get(
   }),
   validate({
     params: z.object({id: z.string()}),
+    query: UpdatedTimeQuerySchema,
   }),
   // TODO complete type annotations for this method
   async (req, res: Response<{records: any}>) => {
@@ -769,6 +795,7 @@ api.get(
     }
     const tokenContents = mockTokenContentsForUser(req.user);
     const {id: projectId} = req.params;
+    const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
     const uiSpecification = await getCompiledUiSpecModel(req.params.id);
     compileUiSpecConditionals(uiSpecification);
     const dataDb = await getDataDb(projectId);
@@ -779,6 +806,7 @@ api.get(
       regex: '.*',
       tokenContents,
       uiSpecification,
+      ...updatedFilter,
     });
     if (records) {
       const filenames: string[] = [];
@@ -922,13 +950,27 @@ api.get(
       exportLabel = sanitizeDownloadFilename(payload.projectID);
     }
 
+    const exportFilter: UpdatedTimeFilter = {
+      ...(payload.updatedAfter !== undefined
+        ? {updatedAfter: payload.updatedAfter}
+        : {}),
+      ...(payload.updatedBefore !== undefined
+        ? {updatedBefore: payload.updatedBefore}
+        : {}),
+    };
+
     if (payload.format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.csv`)
       );
-      streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
+      streamNotebookRecordsAsCSV(
+        payload.projectID,
+        payload.viewID!,
+        res,
+        exportFilter
+      );
     } else if (payload.format === 'zip') {
       res.setHeader(
         'Content-Disposition',
@@ -939,6 +981,7 @@ api.get(
         projectId: payload.projectID,
         targetViewID: payload.viewID,
         res,
+        exportFilter,
       });
     } else if (payload.format === 'geojson') {
       res.setHeader('Content-Type', 'application/geo+json');
@@ -946,14 +989,14 @@ api.get(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.geojson`)
       );
-      streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+      streamNotebookRecordsAsGeoJSON(payload.projectID, res, exportFilter);
     } else if (payload.format === 'kml') {
       res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
       res.setHeader(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.kml`)
       );
-      streamNotebookRecordsAsKML(payload.projectID, res);
+      streamNotebookRecordsAsKML(payload.projectID, res, exportFilter);
     } else if (payload.format === 'geopackage') {
       // Layers grouped by form + geometry type; built via temp GeoJSON + ogr2ogr.
       await assertGdalAvailable();
@@ -962,7 +1005,11 @@ api.get(
         'Content-Disposition',
         contentDispositionAttachment(`${exportLabel}-export.gpkg`)
       );
-      await streamNotebookRecordsAsGeoPackage(payload.projectID, res);
+      await streamNotebookRecordsAsGeoPackage(
+        payload.projectID,
+        res,
+        exportFilter
+      );
     } else if (payload.format === 'full') {
       const fullFilename = generateFullExportFilename(payload.projectID);
       res.setHeader('Content-Type', 'application/zip');
@@ -975,6 +1022,7 @@ api.get(
         userId: payload.userID,
         config: payload.fullConfig,
         res,
+        exportFilter,
       });
     } else {
       throw new Exceptions.InvalidRequestException(

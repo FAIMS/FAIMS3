@@ -55,6 +55,7 @@ import {getCompiledUiSpecModel} from '../couchdb/notebooks';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {canDeleteRecord, canEditRecord, canReadRecord} from '../recordAuth';
+import {parseUpdatedTimeFilterFromQuery} from './updatedTimeQuery';
 
 /**
  * When `true`, registers mutation routes: POST `/` (create), POST `/:recordId/revisions` (fork),
@@ -184,6 +185,7 @@ recordsRouter.get(
     // Omitted or any value other than the string "false" keeps deleted records out.
     const filterDeleted = req.query.filterDeleted === 'false' ? false : true;
     const {formId, limit, startKey} = req.query;
+    const updatedFilter = parseUpdatedTimeFilterFromQuery(req.query);
     const rawLimit =
       limit !== undefined && limit !== '' ? parseInt(limit, 10) : NaN;
     // Cap page size; invalid or missing limit leaves choice to the data engine.
@@ -212,6 +214,7 @@ recordsRouter.get(
         limit: limitNum,
         startKey,
         formId,
+        ...updatedFilter,
       });
 
       const records = result.records.map(r => ({

@@ -22,6 +22,7 @@ import {
   ProjectID,
   buildViewsetFieldSummaries,
   notebookRecordIterator,
+  UpdatedTimeFilter,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {createReadStream, createWriteStream} from 'fs';
@@ -68,6 +69,7 @@ interface SpatialExportContext {
   uiSpecification: CompiledNotebookUiSpec;
   viewFieldsMap: Record<string, FieldSummary[]>;
   hasSpatialFields: boolean;
+  exportFilter?: UpdatedTimeFilter;
 }
 
 /**
@@ -90,7 +92,8 @@ interface ProcessedRecord {
  * @returns Context object with database, UI spec, field map, and spatial field status
  */
 async function initSpatialExportContext(
-  projectId: ProjectID
+  projectId: ProjectID,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<SpatialExportContext> {
   const dataDb = await getDataDb(projectId);
   const uiSpecification = await getCompiledUiSpecModel(projectId);
@@ -100,7 +103,13 @@ async function initSpatialExportContext(
     viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
   );
 
-  return {dataDb, uiSpecification, viewFieldsMap, hasSpatialFields};
+  return {
+    dataDb,
+    uiSpecification,
+    viewFieldsMap,
+    hasSpatialFields,
+    exportFilter,
+  };
 }
 
 /**
@@ -119,6 +128,7 @@ async function createRecordIterator(
     projectId,
     uiSpecification: context.uiSpecification,
     includeAttachments: false,
+    ...context.exportFilter,
   });
 }
 
@@ -838,12 +848,14 @@ export const appendSpatialFormatsToArchive = async ({
   projectId,
   archive,
   formats,
+  exportFilter,
 }: {
   projectId: ProjectID;
   archive: archiver.Archiver;
   formats: SpatialArchiveFormatConfig;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<SpatialArchiveExportResult> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
   const result: SpatialArchiveExportResult = {
     hasSpatialFields: context.hasSpatialFields,
   };
@@ -1157,9 +1169,10 @@ async function buildGeoPackageFromProject(
  */
 export const streamNotebookRecordsAsGeoJSON = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<void> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
 
   if (!context.hasSpatialFields) {
     res.end();
@@ -1193,9 +1206,10 @@ export const streamNotebookRecordsAsGeoJSON = async (
  */
 export const streamNotebookRecordsAsGeoPackage = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<void> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
 
   if (!context.hasSpatialFields) {
     res.end();
@@ -1237,9 +1251,10 @@ export const streamNotebookRecordsAsGeoPackage = async (
  */
 export const streamNotebookRecordsAsKML = async (
   projectId: ProjectID,
-  res: NodeJS.WritableStream
+  res: NodeJS.WritableStream,
+  exportFilter?: UpdatedTimeFilter
 ): Promise<void> => {
-  const context = await initSpatialExportContext(projectId);
+  const context = await initSpatialExportContext(projectId, exportFilter);
 
   if (!context.hasSpatialFields) {
     res.end();

@@ -42,10 +42,17 @@ import {
   initialiseRecordForNewRevision,
   listRecordMetadata,
   queryCouch,
+  RECORD_REVISIONS_INDEX,
   REVISIONS_INDEX,
   updateHeads,
 } from './internals';
 import {getAllRecordsWithRegex} from './queries';
+import {
+  hasUpdatedTimeFilter,
+  queryRecordIdsByUpdated,
+  recordUpdatedInWindow,
+  UpdatedTimeFilter,
+} from './updatedTimeFilter';
 
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + randomUuid();
@@ -582,6 +589,8 @@ export async function getRecordsWithRegex({
   filterDeleted,
   uiSpecification,
   dataDb,
+  updatedAfter,
+  updatedBefore,
 }: {
   tokenContents: TokenContents;
   projectId: ProjectID;
@@ -589,14 +598,37 @@ export async function getRecordsWithRegex({
   filterDeleted: boolean;
   uiSpecification: UiSpecModel;
   dataDb: DataDbType;
+  updatedAfter?: number;
+  updatedBefore?: number;
 }): Promise<RecordMetadata[]> {
   try {
-    const recordList = await getAllRecordsWithRegex({
-      dataDb,
-      regex,
-      uiSpecification,
-      projectId,
-    });
+    const timeFilter = {updatedAfter, updatedBefore};
+    let recordList: RecordMetadata[];
+    if (hasUpdatedTimeFilter(timeFilter) && (regex === '.*' || regex === '')) {
+      const {recordIds} = await queryRecordIdsByUpdated({
+        dataDb,
+        updatedAfter,
+        updatedBefore,
+      });
+      recordList = await listRecordMetadata({
+        dataDb,
+        projectId,
+        recordIds,
+        uiSpecification,
+      });
+    } else {
+      recordList = await getAllRecordsWithRegex({
+        dataDb,
+        regex,
+        uiSpecification,
+        projectId,
+      });
+      if (hasUpdatedTimeFilter(timeFilter)) {
+        recordList = recordList.filter(record =>
+          recordUpdatedInWindow(record.updated, timeFilter)
+        );
+      }
+    }
     return await filterRecordMetadata({
       tokenContents,
       projectId,
@@ -767,51 +799,93 @@ export interface RecordRevisionIndexDocument {
   revision: Revision;
 }
 
+function mapRecordRevisionRows(
+  rows: Array<{id: string; value: any; doc?: any}>
+): RecordRevisionIndexDocument[] {
+  return rows.map(doc => ({
+    record_id: doc.id,
+    revision_id: doc.value._id,
+    created: doc.value.created,
+    created_by: doc.value.created_by,
+    updatedAt: doc.value.updatedAt,
+    conflict: doc.value.conflict,
+    type: doc.value.type,
+    revision: doc.doc,
+  }));
+}
+
 export async function getSomeRecords(
   project_id: ProjectID,
   limit: number,
   bookmark: string | null = null,
-  filter_deleted = true
-): Promise<RecordRevisionIndexDocument[]> {
+  filter_deleted = true,
+  updatedFilter?: UpdatedTimeFilter
+): Promise<{
+  records: RecordRevisionIndexDocument[];
+  nextStartKey?: string;
+}> {
   const dataDB: DatabaseInterface<ProjectDataObject> | undefined =
     await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
-  const options: {[key: string]: any} = {
-    limit: limit,
-    include_docs: true,
-  };
-  // if we have a bookmark, start from there
-  if (bookmark !== null) {
-    options.startkey = bookmark;
-  }
   try {
-    const res = await dataDB.query('index/recordRevisions', options);
-    let record_list = res.rows.map((doc: any) => {
-      return {
-        record_id: doc.id,
-        revision_id: doc.value._id,
-        created: doc.value.created,
-        created_by: doc.value.created_by,
-        updatedAt: doc.value.updatedAt,
-        conflict: doc.value.conflict,
-        type: doc.value.type,
-        revision: doc.doc,
-      };
-    });
-    if (filter_deleted) {
-      record_list = record_list.filter((record: any) => {
-        // guarding against there being no revision which should not happen but has
-        return !record.revision?.deleted;
+    if (hasUpdatedTimeFilter(updatedFilter)) {
+      const timed = await queryRecordIdsByUpdated({
+        dataDb: dataDB,
+        updatedAfter: updatedFilter?.updatedAfter,
+        updatedBefore: updatedFilter?.updatedBefore,
+        limit,
+        startKey: bookmark ?? undefined,
       });
+      if (timed.recordIds.length === 0) {
+        return {records: [], nextStartKey: timed.nextStartKey};
+      }
+      const res = await dataDB.query(RECORD_REVISIONS_INDEX, {
+        keys: timed.recordIds,
+        include_docs: true,
+      });
+      const byId = new Map(
+        res.rows.map((row: {id: string}) => [row.id, row] as const)
+      );
+      let record_list = mapRecordRevisionRows(
+        timed.recordIds
+          .map(id => byId.get(id))
+          .filter((row): row is {id: string; value: any; doc?: any} =>
+            Boolean(row)
+          )
+      );
+      if (filter_deleted) {
+        record_list = record_list.filter(record => !record.revision?.deleted);
+      }
+      return {
+        records: record_list,
+        nextStartKey: timed.nextStartKey,
+      };
     }
-    // don't return the first record if we have a bookmark
-    // as it will be the bookmarked record
-    if (bookmark !== null) return record_list.slice(1);
-    else return record_list;
+
+    const options: {[key: string]: any} = {
+      limit: limit,
+      include_docs: true,
+    };
+    if (bookmark !== null) {
+      options.startkey = bookmark;
+    }
+    const res = await dataDB.query(RECORD_REVISIONS_INDEX, options);
+    let record_list = mapRecordRevisionRows(res.rows);
+    if (filter_deleted) {
+      record_list = record_list.filter(record => !record.revision?.deleted);
+    }
+    if (bookmark !== null) {
+      record_list = record_list.slice(1);
+    }
+    const lastId = record_list[record_list.length - 1]?.record_id;
+    return {
+      records: record_list,
+      ...(lastId !== undefined ? {nextStartKey: lastId} : {}),
+    };
   } catch (err) {
     console.log('failed to get some records', err);
-    return [];
+    return {records: []};
   }
 }
 
@@ -826,6 +900,8 @@ export const notebookRecordIterator = async ({
   uiSpecification,
   includeAttachments = true,
   dataDb,
+  updatedAfter,
+  updatedBefore,
 }: {
   projectId: string;
   dataDb: DataDbType;
@@ -836,27 +912,36 @@ export const notebookRecordIterator = async ({
   // response. Use the nano couchdb node client to use attachment.getAsStream
   includeAttachments?: boolean;
   uiSpecification: UiSpecModel;
+  updatedAfter?: number;
+  updatedBefore?: number;
 }) => {
   const batchSize = 20;
+  const updatedFilter: UpdatedTimeFilter = {updatedAfter, updatedBefore};
+  const timeFilterActive = hasUpdatedTimeFilter(updatedFilter);
   const getNextBatch = async (bookmark: string | null) => {
-    const records = await getSomeRecords(
+    const {records, nextStartKey} = await getSomeRecords(
       projectId,
       batchSize,
       bookmark,
-      filterDeleted
+      filterDeleted,
+      timeFilterActive ? updatedFilter : undefined
     );
-    // select just those in this view
     const result = viewID
-      ? records.filter((record: any) => {
-          return record.type === viewID;
-        })
+      ? records.filter(record => record.type === viewID)
       : records;
-    if (records.length > 0 && result.length === 0) {
-      // skip to next batch since none of these match our view
-      const newBookmark = records[records.length - 1].record_id;
-      return getNextBatch(newBookmark);
+    if (records.length === 0) {
+      if (timeFilterActive && nextStartKey) {
+        return getNextBatch(nextStartKey);
+      }
+      return {done: true, records: [] as typeof records, nextStartKey};
     }
-    return {done: records.length === 0, records: result};
+    if (result.length === 0) {
+      if (!nextStartKey) {
+        return {done: true, records: result, nextStartKey: undefined};
+      }
+      return getNextBatch(nextStartKey);
+    }
+    return {done: false, records: result, nextStartKey};
   };
 
   let batch = await getNextBatch(null);
@@ -872,16 +957,13 @@ export const notebookRecordIterator = async ({
         record = batch.records[index];
         index++;
       } else {
-        // Explicit cleanup before fetching next batch
-        const lastRecordId = batch.records[batch.records.length - 1]?.record_id;
-        batch.records.length = 0; // Clear the array
+        batch.records.length = 0;
 
-        if (!lastRecordId) {
+        if (!batch.nextStartKey) {
           return {record: null, done: true};
         }
 
-        // Fetch next batch
-        batch = await getNextBatch(lastRecordId);
+        batch = await getNextBatch(batch.nextStartKey);
         if (batch.records.length > 0) {
           record = batch.records[0];
           index = 1;

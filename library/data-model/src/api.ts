@@ -1057,6 +1057,63 @@ export type PostCreateRecordResponse = z.infer<
   typeof PostCreateRecordResponseSchema
 >;
 
+/** Epoch-ms bound as a query string (parsed after validate — no z.preprocess). */
+export const updatedAfterMsSchema = z.string().max(16).optional();
+export const updatedBeforeMsSchema = z.string().max(16).optional();
+
+export class InvalidUpdatedMsQueryError extends Error {
+  constructor(
+    message = 'updatedAfter/updatedBefore must be an integer millisecond timestamp'
+  ) {
+    super(message);
+    this.name = 'InvalidUpdatedMsQueryError';
+  }
+}
+
+/** Parse an optional epoch-ms query string. Empty/omitted → undefined. */
+export function parseUpdatedMsQuery(
+  value: string | undefined
+): number | undefined {
+  if (value === undefined || value === '') return undefined;
+  if (!/^-?\d+$/.test(value)) {
+    throw new InvalidUpdatedMsQueryError();
+  }
+  const n = Number(value);
+  if (!Number.isSafeInteger(n)) {
+    throw new InvalidUpdatedMsQueryError();
+  }
+  return n;
+}
+
+/** Exclusive bounds must satisfy after < before when both are present. */
+export function updatedBoundsAreOrdered(
+  after?: number,
+  before?: number
+): boolean {
+  if (after !== undefined && before !== undefined) {
+    return after < before;
+  }
+  return true;
+}
+
+export function updatedTimeQueryRefine(data: {
+  updatedAfter?: string;
+  updatedBefore?: string;
+}): boolean {
+  if (
+    data.updatedAfter === undefined ||
+    data.updatedAfter === '' ||
+    data.updatedBefore === undefined ||
+    data.updatedBefore === ''
+  ) {
+    return true;
+  }
+  const after = Number(data.updatedAfter);
+  const before = Number(data.updatedBefore);
+  if (!Number.isFinite(after) || !Number.isFinite(before)) return true;
+  return after < before;
+}
+
 /** GET list records query (all values are strings from query string) */
 export const GetListRecordsQuerySchema = z
   .object({
@@ -1064,6 +1121,8 @@ export const GetListRecordsQuerySchema = z
     limit: z.string().max(16).optional(),
     startKey: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
     filterDeleted: z.enum(['true', 'false']).optional(),
+    updatedAfter: updatedAfterMsSchema,
+    updatedBefore: updatedBeforeMsSchema,
   })
   .refine(
     data => {
@@ -1072,7 +1131,10 @@ export const GetListRecordsQuerySchema = z
       return !Number.isNaN(n) && n >= 1 && n <= 500;
     },
     {message: 'limit must be between 1 and 500'}
-  );
+  )
+  .refine(updatedTimeQueryRefine, {
+    message: 'updatedAfter must be less than updatedBefore',
+  });
 export type GetListRecordsQuery = z.infer<typeof GetListRecordsQuerySchema>;
 
 /** Single record entry in list response (dates as ISO strings) */
@@ -1094,6 +1156,7 @@ export type ListRecordsItem = z.infer<typeof ListRecordsItemSchema>;
 /** GET list records response */
 export const GetListRecordsResponseSchema = z.object({
   records: z.array(ListRecordsItemSchema),
+  nextStartKey: z.string().optional(),
 });
 export type GetListRecordsResponse = z.infer<
   typeof GetListRecordsResponseSchema

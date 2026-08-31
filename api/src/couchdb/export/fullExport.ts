@@ -14,7 +14,7 @@
  * KML, GeoPackage) share a single record iteration when exported together.
  */
 
-import {ProjectID} from '@faims3/data-model';
+import {ProjectID, UpdatedTimeFilter} from '@faims3/data-model';
 import {isoDateOnly, nowIso} from '../../time';
 import {getUiSpecModel} from '../notebooks';
 import {
@@ -65,11 +65,13 @@ export const streamFullExport = async ({
   userId,
   config = DEFAULT_FULL_EXPORT_CONFIG,
   res,
+  exportFilter,
 }: {
   projectId: ProjectID;
   userId: string;
   config?: FullExportConfig;
   res: NodeJS.WritableStream;
+  exportFilter?: UpdatedTimeFilter;
 }): Promise<void> => {
   console.log(
     `[FULL] Starting export for project ${projectId} with config:`,
@@ -111,6 +113,7 @@ export const streamFullExport = async ({
           projectId,
           archive,
           pathPrefix: 'records/',
+          exportFilter,
         });
 
         // Process stats for each view
@@ -162,6 +165,7 @@ export const streamFullExport = async ({
           projectId,
           archive,
           pathPrefix: 'attachments/',
+          exportFilter,
         });
 
         // Update view-level attachment counts
@@ -223,6 +227,7 @@ export const streamFullExport = async ({
           projectId,
           archive,
           formats,
+          exportFilter,
         });
 
         if (!spatialResult.hasSpatialFields) {

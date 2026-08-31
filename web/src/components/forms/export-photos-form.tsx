@@ -7,6 +7,10 @@ import {useState} from 'react';
 import {z} from 'zod';
 import {Field, Form} from '../form';
 import {config} from '@/constants';
+import {
+  ExportTimeRangeFields,
+  useExportTimeRange,
+} from './export-time-range-fields';
 
 type ExportScope = 'all' | 'single';
 
@@ -19,6 +23,7 @@ const ExportPhotosForm = () => {
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
   const [exportScope, setExportScope] = useState<ExportScope | null>(null);
+  const timeRange = useExportTimeRange();
 
   if (!data) {
     return null;
@@ -46,7 +51,9 @@ const ExportPhotosForm = () => {
    */
   const handleSingleFormSubmit = async ({form}: {form: string}) => {
     if (user) {
-      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=zip&viewID=${form}`;
+      const params = new URLSearchParams({format: 'zip', viewID: form});
+      timeRange.appendTo(params);
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
@@ -66,7 +73,9 @@ const ExportPhotosForm = () => {
    */
   const handleAllFormsSubmit = async () => {
     if (user) {
-      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=zip`;
+      const params = new URLSearchParams({format: 'zip'});
+      timeRange.appendTo(params);
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
       const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
@@ -95,6 +104,7 @@ const ExportPhotosForm = () => {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => setExportScope('all')}
+            data-testid="web-export-photos-all"
             className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group"
           >
             <div className="flex-1">
@@ -141,9 +151,12 @@ const ExportPhotosForm = () => {
             be organized in a ZIP file.
           </p>
         </div>
+        <ExportTimeRangeFields {...timeRange} />
         <button
           onClick={handleAllFormsSubmit}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          disabled={Boolean(timeRange.error)}
+          data-testid="web-export-photos-download"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Download All Photos
         </button>
@@ -173,6 +186,13 @@ const ExportPhotosForm = () => {
         fields={singleFormFields}
         onSubmit={handleSingleFormSubmit}
         submitButtonText="Download Photos"
+        submitButtonTestId="web-export-photos-download"
+        footer={<ExportTimeRangeFields {...timeRange} />}
+        disableSubmission={
+          timeRange.error
+            ? {disabled: true, reason: timeRange.error}
+            : undefined
+        }
       />
     </div>
   );

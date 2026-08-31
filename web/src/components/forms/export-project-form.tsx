@@ -10,6 +10,10 @@ import {z} from 'zod';
 import {Field, Form} from '../form';
 import {ChevronRight} from 'lucide-react';
 import {config} from '@/constants';
+import {
+  ExportTimeRangeFields,
+  useExportTimeRange,
+} from './export-time-range-fields';
 
 export type ExportType = 'csv' | 'geojson' | 'kml' | 'geopackage';
 type ExportCategory = 'tabular' | 'geospatial';
@@ -25,6 +29,7 @@ const ExportProjectForm = () => {
   const [exportCategory, setExportCategory] = useState<ExportCategory | null>(
     null
   );
+  const timeRange = useExportTimeRange();
 
   const uiSpec = data?.uiSpecification.uiSpec;
 
@@ -95,7 +100,9 @@ const ExportProjectForm = () => {
     format: ExportType;
   }) => {
     if (user) {
-      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
+      const params = new URLSearchParams({format, viewID: form});
+      timeRange.appendTo(params);
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
 
       const response = await fetch(exportUrl, {
         headers: {
@@ -113,7 +120,9 @@ const ExportProjectForm = () => {
 
   const handleGeospatialSubmit = async ({format}: {format: ExportType}) => {
     if (user) {
-      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?format=${format}`;
+      const params = new URLSearchParams({format});
+      timeRange.appendTo(params);
+      const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
 
       const response = await fetch(exportUrl, {
         headers: {
@@ -154,6 +163,7 @@ const ExportProjectForm = () => {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => setExportCategory('tabular')}
+            data-testid="web-export-data-tabular"
             className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group"
           >
             <div className="flex-1">
@@ -209,7 +219,14 @@ const ExportProjectForm = () => {
           fields={tabularFields}
           onSubmit={handleTabularSubmit}
           submitButtonText="Download CSV"
+          submitButtonTestId="web-export-data-download"
           defaultValues={tabularDefaultValues}
+          footer={<ExportTimeRangeFields {...timeRange} />}
+          disableSubmission={
+            timeRange.error
+              ? {disabled: true, reason: timeRange.error}
+              : undefined
+          }
         />
       </div>
     );
@@ -237,6 +254,12 @@ const ExportProjectForm = () => {
         onSubmit={handleGeospatialSubmit}
         submitButtonText="Download"
         defaultValues={geospatialDefaultValues}
+        footer={<ExportTimeRangeFields {...timeRange} />}
+        disableSubmission={
+          timeRange.error
+            ? {disabled: true, reason: timeRange.error}
+            : undefined
+        }
       />
     </div>
   );
