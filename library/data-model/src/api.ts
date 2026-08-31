@@ -35,6 +35,7 @@ import {
 import {
   NotebookDefinitionSchema,
   NotebookUiSpecificationInputSchema,
+  TemplateDefinition,
 } from './uiSpecification';
 import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {
@@ -311,6 +312,8 @@ export const CreateNotebookFromTemplateSchema = z.object({
   description: CreateRootDescriptionSchema,
   template_id: IdInputSchema,
   teamId: z.string().min(1).max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
+  /** Config for instantiating the template's plan template, if it has one. */
+  planConfig: z.record(z.string(), z.unknown()).optional(),
 });
 export type CreateNotebookFromTemplate = z.infer<
   typeof CreateNotebookFromTemplateSchema
@@ -545,10 +548,8 @@ export type PutChangeTemplateTeamInput = z.infer<
 /** PUT /api/templates/:id/uiSpecification — full replace of the design bundle (loose input; migrated server-side). */
 export const PutUpdateTemplateUiSpecificationInputSchema =
   NotebookUiSpecificationInputSchema;
-/** Normalized notebook definition after migrate + strict validation. */
-export type PutUpdateTemplateUiSpecificationInput = z.infer<
-  typeof NotebookDefinitionSchema
->;
+/** Normalized template definition after migrate + strict validation. */
+export type PutUpdateTemplateUiSpecificationInput = TemplateDefinition;
 export const PutUpdateTemplateResponseSchema = ExistingTemplateDocumentSchema;
 export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema

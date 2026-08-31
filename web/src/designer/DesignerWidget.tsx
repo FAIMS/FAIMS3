@@ -40,7 +40,11 @@ import {
 } from 'react-router-dom';
 import {createDesignerStore} from './createDesignerStore';
 import {createDesignerTheme} from './theme';
-import type {Notebook, NotebookWithHistory} from './state/initial';
+import type {
+  DesignerDocumentMode,
+  Notebook,
+  NotebookWithHistory,
+} from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
 import {slugify} from './domain/notebook/ids';
 import {THEME} from '../lib/theme';
@@ -57,6 +61,8 @@ import {DesignPanel} from './components/design-panel';
 export interface DesignerWidgetProps {
   /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
+  /** Whether this session edits a notebook or a template (templates may carry a planTemplate). */
+  designerMode?: DesignerDocumentMode;
   /** Used for the exported JSON filename (survey/template display name). */
   exportBaseName?: string;
   /** Records already collected. Drives the field-ID warning; omit for templates. */
@@ -81,6 +87,7 @@ export interface DesignerWidgetProps {
  */
 export function DesignerWidget({
   notebook,
+  designerMode = 'project',
   exportBaseName,
   existingRecordCount,
   onClose,
@@ -118,6 +125,8 @@ export function DesignerWidget({
         past: [],
         future: [],
       },
+      planTemplate: notebook.planTemplate ?? null,
+      plan: notebook.plan ?? null,
     };
   }, [notebook]);
 
@@ -140,12 +149,12 @@ export function DesignerWidget({
 
   // 2. Keep one Redux store for a notebook identity; do not reset on same-notebook refetch.
   const [store, setStore] = useState(() =>
-    createDesignerStore(processedNotebook, debug)
+    createDesignerStore(processedNotebook, debug, designerMode)
   );
 
   useEffect(() => {
-    setStore(createDesignerStore(processedNotebook, debug));
-  }, [notebookIdentity, debug]);
+    setStore(createDesignerStore(processedNotebook, debug, designerMode));
+  }, [notebookIdentity, debug, designerMode]);
 
   // Local UI state
   const [loading, setLoading] = useState(true);

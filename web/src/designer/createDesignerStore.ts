@@ -20,11 +20,15 @@ import {configureStore, combineReducers, Middleware} from '@reduxjs/toolkit';
 import undoable from 'redux-undo';
 import {
   AppState,
+  DesignerDocumentMode,
   NotebookWithHistory,
   initialState as blankState,
 } from './state/initial';
 import metadataReducer from './state/metadata-reducer';
+import planReducer from './state/plan-reducer';
+import planTemplateReducer from './state/planTemplate-reducer';
 import modifiedStatusReducer from './state/modifiedStatus-reducer';
+import modeReducer from './state/mode-reducer';
 import {uiSpecificationReducer} from './store/slices/uiSpec';
 import {uiSpecUndoConfig} from './store/undoConfig';
 
@@ -34,7 +38,8 @@ import {uiSpecUndoConfig} from './store/undoConfig';
  */
 export function createDesignerStore(
   notebook?: NotebookWithHistory,
-  debug = false
+  debug = false,
+  mode: DesignerDocumentMode = 'project'
 ) {
   const logger: Middleware<object, AppState> = () => next => action => {
     if (debug) console.log('[designer]', action);
@@ -43,14 +48,17 @@ export function createDesignerStore(
 
   return configureStore({
     preloadedState: notebook
-      ? ({...blankState, notebook} as AppState)
-      : undefined,
+      ? ({...blankState, notebook, mode} as AppState)
+      : ({...blankState, mode} as AppState),
     reducer: {
       notebook: combineReducers<NotebookWithHistory>({
         metadata: metadataReducer,
         uiSpec: undoable(uiSpecificationReducer.reducer, uiSpecUndoConfig),
+        planTemplate: planTemplateReducer,
+        plan: planReducer,
       }),
       modified: modifiedStatusReducer,
+      mode: modeReducer,
     },
     middleware: g => g().concat(logger),
   });

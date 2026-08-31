@@ -1334,8 +1334,12 @@ async function loadAttributeValuePair({
 }): Promise<AttributeValuePair> {
   // Proceed with attachment loading where applicable
   const attachmentRefs = avp.faims_attachments;
-  if (attachmentRefs === null || attachmentRefs === undefined) {
-    // No attachments
+  if (
+    attachmentRefs === null ||
+    attachmentRefs === undefined ||
+    attachmentRefs.length === 0
+  ) {
+    // No attachments - leave the AVP's data untouched
     return avp;
   }
 

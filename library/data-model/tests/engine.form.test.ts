@@ -248,6 +248,29 @@ describe('Form Operations', () => {
       expect(firstAvp.faims_attachments?.[0].filename).toBe('initial.txt');
       expect(firstAvp.faims_attachments?.[0].file_type).toBe('text/plain');
     });
+
+    test('should create record with planReference', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        planReference: 'plan-123',
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+
+      expect(result.record.planReference).toBe('plan-123');
+    });
+
+    test('should not include planReference if not provided', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+      };
+
+      const result = await engine.form.createRecord(formRecord);
+
+      expect(result.record.planReference).toBeUndefined();
+    });
   });
 
   describe('createRevision', () => {
