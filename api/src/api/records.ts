@@ -241,7 +241,7 @@ recordsRouter.get(
 
 /**
  * GET /api/notebooks/:id/records/hydrated — paginated metadata stubs plus
- * GET-one form data (`data[fieldId] = { data, annotation?, attachments? }`).
+ * hydrated form data (`data[fieldId] = { data, annotation?, attachments? }`).
  *
  * Same auth and listing semantics as GET `/metadata` (`READ_MY_PROJECT_RECORDS`
  * at the project gate, then `canReadRecord` per row). Not `EXPORT_PROJECT_DATA`

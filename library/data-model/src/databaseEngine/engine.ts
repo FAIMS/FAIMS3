@@ -164,7 +164,7 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-/** Map a hydrated record into the GET-one / list-hydrated form payload. */
+/** Map a hydrated record into the hydrated form payload. */
 function initialFormDataFromHydrated(
   hydrated: HydratedRecord
 ): InitialFormData {
@@ -1022,8 +1022,25 @@ class HydratedOperations {
   }
 
   /**
-   * Hydrate a page of metadata stubs with two bulk waves: records+revisions,
-   * then all AVPs. Avoids one Couch GET per field (the GET-one path).
+   * Bulk-hydrate a page of {@link MinimalRecordMetadata} stubs into the same
+   * {@link InitialFormData} shape as {@link getExistingFormData}.
+   *
+   * Two `allDocs({keys})` waves, not one GET per record or field:
+   * 1. All record + revision documents in parallel. Each stub already names
+   *    the revision to use (listing resolved the head).
+   * 2. Every AVP id referenced by those revisions.
+   *
+   * Each stub is then assembled independently. Conflict metadata comes from
+   * `stub.conflicts`; resolution is always `'pickFirst'` because the revision
+   * is already chosen. This does **not** re-resolve heads.
+   *
+   * Failures are per-row, never page-level: a missing record, revision, or
+   * AVP (or a parse error) yields `{ok: false, recordId, revisionId}` so a
+   * listing cursor can still advance. See {@link listHydratedRecords}.
+   *
+   * @param stubs - Listing stubs in page order. Empty input returns `[]`.
+   * @returns One result per stub, same order: `{ok: true, stub, formData}` or
+   * `{ok: false, recordId, revisionId}`.
    */
   async hydrateListedRecords(
     stubs: MinimalRecordMetadata[]
@@ -1832,7 +1849,7 @@ class FormOperations {
   }
 
   /**
-   * Paginated list of metadata stubs plus GET-one form data.
+   * Paginated list of metadata stubs plus hydrated form data.
    *
    * Uses {@link QueryOperations.listMinimalRecordMetadata} (including the
    * time index when `updatedAfter` / `updatedBefore` are set) then hydrates

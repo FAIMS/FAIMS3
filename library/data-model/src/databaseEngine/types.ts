@@ -933,7 +933,7 @@ export interface MinimalRecordMetadataResult {
 }
 
 /**
- * One row of a paginated hydrated list: metadata stub plus GET-one form data.
+ * One row of a paginated hydrated list: metadata stub plus hydrated form data.
  * `data[fieldId]` is `{ data, annotation?, attachments? }`, not a raw value.
  */
 export type HydratedListRecord = MinimalRecordMetadata & {
