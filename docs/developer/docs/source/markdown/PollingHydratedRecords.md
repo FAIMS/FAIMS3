@@ -53,7 +53,7 @@ POST /api/auth/exchange-long-lived-token
 
 Access JWTs last on the order of five minutes. Cache the JWT, refresh a bit early, and re-exchange once on `401`. Sending the long-lived token as `Authorization: Bearer` on `/records/…` will 401.
 
-Do not put the long-lived token in a `VITE_` / `import.meta.env` variable or a frontend bundle. Hold it on a small backend or dev-server proxy and inject the short-lived JWT on proxied `/api/*` (and Couch, if you fetch attachments that way). 
+Do not put the long-lived token in a `VITE_` / `import.meta.env` variable or a frontend bundle. Hold it on a small backend or dev-server proxy and inject the short-lived JWT on proxied `/api/*` (and Couch, if you fetch attachments that way).
 
 Alternatively, you can use the normal login flow (user/pass -> access token -> regular refresh) - however you'll need to ensure CORS allows this in your API, and that your API is configured with an allowed redirect whitelist for your deployed dashboard.
 
