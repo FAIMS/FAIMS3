@@ -71,6 +71,7 @@ import {
 // HELPERS
 // =======
 
+/** ISO-8601 UTC timestamp for `created` / `updatedAt` writes. */
 function getCurrentTimestamp(): string {
   return new Date().toISOString();
 }
@@ -112,10 +113,11 @@ export function generateAttID(): string {
 }
 
 /**
- * A utility function to easily created mapped version of hydrated data
- * @param data The record data to map through
- * @param mapFn The function to apply to each
- * @returns The mapped data
+ * Apply `mapFn` to each field of a hydrated data map, preserving keys.
+ *
+ * @param data - Hydrated field map
+ * @param mapFn - Transform for each field
+ * @returns A new object with the same keys
  */
 export function dataMap<T>({
   data,
@@ -164,7 +166,10 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-/** Map a hydrated record into the hydrated form payload. */
+/**
+ * Map a {@link HydratedRecord} into {@link InitialFormData} — the payload
+ * used to load a form (`data[field]` is `{data, annotation, attachments}`).
+ */
 function initialFormDataFromHydrated(
   hydrated: HydratedRecord
 ): InitialFormData {
@@ -192,7 +197,9 @@ function initialFormDataFromHydrated(
 // CONSTANTS
 // =========
 
+/** Default when resolving multiple heads ({@link ConflictBehaviour}). */
 const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
+/** Field `type` when the UI spec has no `type-returned` for that field. */
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
 /** CouchDB `allDocs({keys})` batch size — keeps the keys body modest. */
 const ALL_DOCS_KEY_CHUNK = 200;
@@ -210,19 +217,23 @@ type AvpStrategy =
   | 'update_inplace'; // Update existing AVP in-place
 
 /**
- * Configuration options for the DataEngine
+ * Couch data DB plus the compiled notebook UI spec for this project.
  */
 export interface DataEngineConfig {
-  // The name of the PouchDB database
+  /** Pouch/Couch interface for the project data database. */
   dataDb: DatabaseInterface<DataDocument>;
-  // UI Specification related to this project
+  /** Compiled UI spec (HRID fields, field types, …). */
   uiSpec: CompiledNotebookUiSpec;
 }
 
-// What options for conflict?
+/**
+ * How to choose a head when a record has more than one.
+ * - `'throw'` — raise a conflict error
+ * - `'pickFirst'` / `'pickLast'` — use `heads[0]` or the last head
+ */
 export type ConflictBehaviour = 'throw' | 'pickFirst' | 'pickLast';
 
-// The configuration provided when hydrating a record
+/** Options for {@link HydratedOperations.getHydratedRecord}. */
 export interface HydratedRecordConfig {
   conflictBehaviour: ConflictBehaviour;
 }
@@ -266,9 +277,10 @@ export class DataEngine {
   public readonly query: QueryOperations;
 
   /**
-   * Create a new DataEngine instance
+   * Create a new DataEngine instance and wire Core, Hydrated, Query, and Form
+   * submodules against the same data DB.
    *
-   * @param config - Database configuration including name and project ID
+   * @param config - Project data DB and compiled UI spec
    */
   constructor(config: DataEngineConfig) {
     this.db = config.dataDb;
@@ -285,8 +297,13 @@ export class DataEngine {
   }
 
   /**
-   * Deletes a record by appending a new head revision with {@link deleted} set.
-   * Existing field data and relationship are carried forward from {@link baseRevisionId}.
+   * Soft-delete a record by appending a new head revision with `deleted` set.
+   * Field data and relationship are copied from `baseRevisionId`.
+   *
+   * @param recordId - Record to delete
+   * @param baseRevisionId - Head to fork the deleted revision from
+   * @param userId - Marked as creator of the deleted revision
+   * @returns The new head revision id
    */
   async deleteRecord({
     recordId,
@@ -324,10 +341,10 @@ export class CoreOperations {
    * Generic get operation with type checking and validation
    *
    * @param id - The document ID to retrieve
-   * @param config - The document type configuration for validation
-   * @returns The validated document with _rev
+   * @param validator - Parse/validate the raw document (typically a Zod `.parse`)
+   * @returns The validated document with `_rev`
    * @throws DocumentNotFoundError if document doesn't exist
-   * @throws InvalidDocumentTypeError if document has wrong type
+   * @throws DocumentValidationError if the document fails `validator`
    */
   private async getDocumentOfType<T>(
     id: string,
@@ -359,10 +376,11 @@ export class CoreOperations {
   /**
    * Generic create operation with validation
    *
-   * @param doc - The document to create (without _rev)
-   * @param config - The document type configuration for validation
-   * @returns The created document with _rev
-   * @throws Error if creation fails
+   * @param doc - The document to create (without `_rev`)
+   * @param validator - Parse/validate before write (typically a Zod `.parse`)
+   * @returns The created document with `_rev`
+   * @throws DocumentValidationError if `doc` fails `validator`
+   * @throws Error if the put is not `ok`
    */
   private async createDocument<T extends NewPouchDocument>(
     doc: T,
@@ -543,7 +561,14 @@ export class CoreOperations {
 
   /**
    * Fetch many documents in chunked `allDocs({keys})` calls (one HTTP request
-   * per chunk) instead of one `get` per id. Missing or invalid rows are omitted.
+   * per chunk, bounded concurrency) instead of one `get` per id.
+   *
+   * Missing rows, Couch errors, and documents that fail `validator` are
+   * omitted (invalid docs are logged). Duplicate and empty ids are ignored.
+   *
+   * @param ids - Document ids to fetch
+   * @param validator - Parse/validate each raw doc (typically a Zod `.parse`)
+   * @returns Map of id → validated document for rows that succeeded
    */
   async getDocumentsByIds<T>(
     ids: string[],
@@ -677,7 +702,11 @@ export class CoreOperations {
   }
 
   /**
-   * Set `updatedAt` on a record.
+   * Write `updatedAt` on a record (fetch-then-put).
+   *
+   * @param recordId - Record to stamp
+   * @param timestamp - ISO timestamp (defaults to now)
+   * @returns The updated record
    */
   async stampRecordUpdatedAt(
     recordId: string,
@@ -688,7 +717,11 @@ export class CoreOperations {
   }
 
   /**
-   * Set `updatedAt` on a revision.
+   * Write `updatedAt` on a revision (fetch-then-put).
+   *
+   * @param revisionId - Revision to stamp
+   * @param timestamp - ISO timestamp (defaults to now)
+   * @returns The updated revision
    */
   async stampRevisionUpdatedAt(
     revisionId: string,
@@ -889,12 +922,14 @@ export class CoreOperations {
 // ============================================================================
 
 /**
- * Hydrated record operations that fetch records with all their relationships loaded.
- * This includes the record, its head revision, and all AVPs (field data) in a single call.
+ * Load records with their chosen revision and all AVPs assembled into
+ * {@link HydratedRecord}. Single-record path: {@link getHydratedRecord}.
+ * Listing-page path: {@link hydrateListedRecords} (two bulk waves).
  */
 class HydratedOperations {
   private readonly hridFieldMap: HridFieldMap;
 
+  /** Build the formId → HRID field map from `uiSpec`. */
   constructor(
     private readonly core: CoreOperations,
     private readonly uiSpec: CompiledNotebookUiSpec
@@ -903,11 +938,11 @@ class HydratedOperations {
   }
 
   /**
-   * Fetch all AVP documents for a revision efficiently in parallel
+   * Bulk-fetch AVPs for a revision via {@link CoreOperations.getDocumentsByIds}.
    *
-   * @param avpIds - Map of field names to AVP document IDs
-   * @returns Map of field names to fully loaded AVP documents
-   * @throws Error if any AVP cannot be retrieved
+   * @param avpIds - Field name → AVP document id
+   * @returns Field name → loaded AVP document
+   * @throws DocumentNotFoundError if any AVP id is missing from the bulk fetch
    */
   private async fetchAvps(
     avpIds: Record<string, string>
@@ -930,6 +965,22 @@ class HydratedOperations {
     return data;
   }
 
+  /**
+   * Assemble an already-fetched record, revision, and AVP set into a
+   * {@link HydratedRecord}. Does not touch the database.
+   *
+   * Maps snake_case DB fields to the public camelCase shape, normalizes
+   * parent/linked relationships, derives HRID from the UI-spec HRID field
+   * (falls back to the record id), and attaches conflict metadata. Used by
+   * {@link getHydratedRecord} and {@link hydrateListedRecords}.
+   *
+   * @param record - Record document
+   * @param revision - Revision to expose (already chosen; heads are not resolved here)
+   * @param avps - Field name → AVP document (every `revision.avps` entry)
+   * @param hadConflict - Whether the record had multiple heads at fetch time
+   * @param conflictBehaviour - Recorded in metadata when `hadConflict` is true
+   * @returns Public hydrated record (field values, attachment metadata, HRID)
+   */
   private assembleHydratedRecord({
     record,
     revision,
@@ -943,6 +994,7 @@ class HydratedOperations {
     hadConflict: boolean;
     conflictBehaviour?: ConflictBehaviour;
   }): HydratedRecord {
+    // Public field shape: camelCase + attachment metadata (no blobs).
     const mappedData: Record<string, HydratedDataField> = {};
     for (const [fieldName, val] of Object.entries(avps)) {
       mappedData[fieldName] = {
@@ -965,6 +1017,7 @@ class HydratedOperations {
       };
     }
 
+    // DB stores snake_case relationship instances; clients want camelCase.
     const relationship = revision.relationship;
     const formRelationship: FormRelationship | undefined =
       relationship && ('linked' in relationship || 'parent' in relationship)
@@ -978,6 +1031,7 @@ class HydratedOperations {
           }
         : undefined;
 
+    // Prefer the configured HRID field when it is a non-empty string.
     const hridFieldName = this.hridFieldMap[revision.type];
     const rawHridData = hridFieldName ? avps[hridFieldName]?.data : undefined;
     let finalHrid = record._id;
@@ -1117,17 +1171,20 @@ class HydratedOperations {
   }
 
   /**
-   * Get a fully hydrated record with its latest revision and all AVPs loaded
+   * Fetch one record, resolve its head (unless `revisionId` is given), load
+   * that revision's AVPs, and assemble a {@link HydratedRecord}.
    *
-   * @param recordId - The record ID to hydrate
-   * @param revisionId - The revision to target (or use head according to
-   * conflict resolution)
-   * @param conflictBehaviour - Configuration for conflict resolution
-   * @returns Hydrated record with all data and metadata
-   * @throws DocumentNotFoundError if record doesn't exist
-   * @throws RecordConflictError if conflict behavior is 'throw' and multiple
+   * Prefer {@link hydrateListedRecords} when hydrating a listing page — this
+   * path is one GET per record plus one bulk AVP fetch per record.
+   *
+   * @param recordId - The record to hydrate
+   * @param revisionId - Specific revision; omitted → resolve from `record.heads`
+   * @param config - Conflict behaviour used when resolving heads (`pickFirst` default)
+   * @returns Hydrated record with field data and conflict metadata
+   * @throws DocumentNotFoundError if the record, revision, or an AVP is missing
+   * @throws RecordConflictError if conflict behaviour is `'throw'` and multiple
    * heads exist
-   * @throws NoHeadsError if record has no heads
+   * @throws NoHeadsError if the record has no heads
    */
   async getHydratedRecord({
     recordId,
@@ -1159,6 +1216,7 @@ class HydratedOperations {
     // Step 3: Fetch the revision
     const revision = await this.core.getRevision(targetRevisionId);
 
+    // Step 4: Fetch AVPs, then assemble the public HydratedRecord
     const avps = await this.fetchAvps(revision.avps);
     return this.assembleHydratedRecord({
       record,
@@ -1170,12 +1228,13 @@ class HydratedOperations {
   }
 
   /**
-   * Get multiple hydrated records, continuing even if some fail.
-   * Returns results in the same order as input IDs.
+   * Hydrate many records via {@link getHydratedRecord}, continuing if some fail.
+   * Results stay in input order. Prefer {@link hydrateListedRecords} for a
+   * listing page (two bulk waves instead of one GET per record).
    *
-   * @param recordIds - Array of record IDs to hydrate
-   * @param config - Configuration for conflict resolution
-   * @returns Array of hydration results (success or failure) in input order
+   * @param recordIds - Record ids to hydrate
+   * @param config - Conflict behaviour passed to each {@link getHydratedRecord}
+   * @returns Per-id {@link HydrationResult} (success or failure) in input order
    */
   async hydrateMultipleRecords(
     recordIds: string[],
@@ -1255,8 +1314,13 @@ class HydratedOperations {
   }
 
   /**
-   * Update a revision using the hydrated (external) interface types.
-   * Handles mapping from camelCase hydrated types to snake_case DB types.
+   * Persist a hydrated revision (camelCase) by mapping to the DB document
+   * (snake_case) and writing through {@link CoreOperations.updateRevision}.
+   *
+   * @param revision - Hydrated revision to write (must include `_id` and `_rev`)
+   * @param options - Optional record/revision `updatedAt` stamps
+   * @returns The stored revision mapped back to the hydrated shape
+   * @throws RecordDeletedError if the stored revision is already deleted
    */
   async updateRevision(
     revision: HydratedRevisionDocument,
@@ -1301,7 +1365,10 @@ class HydratedOperations {
     return this.mapRevisionToHydrated(updated);
   }
 
-  // Helper to map DB revision -> hydrated revision
+  /**
+   * Map a DB revision document (snake_case, raw relationship) to the
+   * public {@link HydratedRevisionDocument} shape.
+   */
   private mapRevisionToHydrated(
     rev: ExistingRevisionDBDocument
   ): HydratedRevisionDocument {
@@ -1376,16 +1443,25 @@ class FormOperations {
   ) {}
 
   /**
+   * Return the unique head revision id for a record.
    *
-   * @param recordId record Id of interest
-   * @returns the current
+   * @param recordId - The record to inspect
+   * @returns The sole head revision id
+   * @throws NoHeadsError if the record has no heads
+   * @throws RecordConflictError if more than one head exists
    */
   async getCurrentRevisionId({recordId}: {recordId: string}): Promise<string> {
     const heads = await this.hydrated.getHeads(recordId);
     return this.getRevisionHead({heads, recordId});
   }
 
-  /** Helper to get the latest head (where there is no conflict) */
+  /**
+   * Return the sole head from a heads array. Throws if empty or conflicting —
+   * unlike {@link CoreOperations.resolveHead}, this never picks a winner.
+   *
+   * @throws NoHeadsError if `heads` is empty
+   * @throws RecordConflictError if more than one head is present
+   */
   getRevisionHead({heads, recordId}: {heads: string[]; recordId: string}) {
     if (heads.length === 0) {
       throw new Exceptions.NoHeadsError(recordId);
@@ -1428,11 +1504,10 @@ class FormOperations {
    *
    * a) Record b) Revision
    *
-   * @param formRecord - Basic information about the new record to create - does
-   * not include data
-   * @returns The ID of the newly created revision
-   * @throws Error if revision_id is not null (should use updateRecord instead)
-   * @throws Error if record creation fails
+   * @param formRecord - Basic information about the new record to create
+   * (optional `initial` data is written after the empty revision exists)
+   * @returns The created record and revision documents
+   * @throws Error if record or revision creation fails
    */
   async createRecord(formRecord: NewFormRecord): Promise<{
     record: ExistingRecordDBDocument;
@@ -1732,7 +1807,7 @@ class FormOperations {
       const revisionDoc: ExistingRevisionDBDocument = {
         // Change AVP map
         avps: avpMap,
-        // Everythinge else inherited
+        // Everything else inherited
         _id: currentRevision._id,
         _rev: currentRevision._rev,
         revision_format_version: currentRevision.revision_format_version,
@@ -1818,17 +1893,17 @@ class FormOperations {
   }
 
   /**
-   * Given a record ID, and optionally a revision ID, gets the hydrated data,
-   * then maps it into the existing form data format. This is a nice utility
-   * function for loading data into a form for updated existing records in the
-   * app.  Also included are the revision ID and the form ID which are needed
-   * to set up the form.
+   * Load a record as {@link InitialFormData} for opening an existing form
+   * (`revisionId`, `formId`, field values, and record/revision context).
    *
-   * @param recordId The record
-   * @param revisionId The revision if using specific one, otherwise head
-   * according to hydration config
-   * @param config The settings for hydration
-   * @returns The ready to go existing form data + revision/form IDs
+   * Delegates to {@link getHydratedRecord} then
+   * {@link initialFormDataFromHydrated}. Prefer {@link listHydratedRecords}
+   * when loading a listing page.
+   *
+   * @param recordId - The record to load
+   * @param revisionId - Specific revision; omitted → resolve head via `config`
+   * @param config - Conflict behaviour for head resolution
+   * @returns Form payload plus revision/form ids
    */
   async getExistingFormData({
     recordId,
@@ -1861,6 +1936,16 @@ class FormOperations {
    * omitted, counted in `errorCount`, and listed in `errors` as
    * `{recordId, revisionId}`. The page still returns; `nextStartKey` comes from
    * the metadata listing so the cursor does not stall.
+   *
+   * @param projectId - Project id copied onto each stub
+   * @param filterDeleted - Exclude soft-deleted rows (default false)
+   * @param filterFunction - Optional post-join filter (e.g. permissions)
+   * @param limit - Page size
+   * @param startKey - Cursor from a previous `nextStartKey`
+   * @param formId - Optional form/viewset filter
+   * @param updatedAfter - Exclusive lower bound on `updated` (epoch ms)
+   * @param updatedBefore - Exclusive upper bound on `updated` (epoch ms)
+   * @returns Hydrated page; failed rows are in `errors`, cursor from the metadata list
    */
   async listHydratedRecords({
     projectId,
@@ -1996,15 +2081,14 @@ class FormOperations {
   }
 
   /**
-   * Query records with optional filtering by form type and pagination.
-   * Uses the 'index/record' view to efficiently list records.
+   * Paginated record list via {@link QueryOperations.getRecords}, then
+   * {@link hydrateMultipleRecords} (per-record GET). No time window — use
+   * {@link listHydratedRecords} when you need `updatedAfter` / `updatedBefore`.
    *
-   * @param params.formId - Optional form type to filter by (e.g., 'SurveyArea')
-   * @param params.limit - Maximum number of records to return (default: 25)
-   * @param params.startKey - Pagination cursor from previous query's `nextStartKey`
-   * @param params.includeHrid - Whether to hydrate records to get HRID (default: true, slower)
-   *
-   * @returns Paginated list of record summaries with metadata
+   * @param formId - Optional form type to filter by (e.g. `'SurveyArea'`)
+   * @param limit - Maximum number of records to return (default 25)
+   * @param startKey - Pagination cursor from a previous `nextStartKey`
+   * @returns Paginated hydration results (`HydrationResult` per id)
    */
   async getHydratedRecords({
     formId,
@@ -2031,16 +2115,15 @@ class FormOperations {
   }
 
   /**
-   * Create new AVPs for changed fields, reuse AVP IDs for unchanged fields.
-   * This optimizes storage by only creating new AVPs when data actually changes.
+   * For each field in `newData`, reuse, revert, create, or in-place update the
+   * AVP so unchanged values keep their existing document id.
    *
-   * @param params.formRecord - The validated form record with changes
-   * @param params.parentRevision - The parent revision to compare against
-   * @param params.newRevisionId - The new revision ID being created
-   * @param params.updatedBy - Who updated - this is marked as creator of AVP
-   * @returns Map of field names to AVP IDs (new or reused)
-   * @throws Error if equality function not configured
-   * @throws Error if AVP operations fail
+   * @param currentRevision - Revision being written
+   * @param newData - Incoming form field map
+   * @param parentRevision - Parent revision when mode is `'parent'` (revert / first-divergence)
+   * @param updatedBy - Marked as creator on newly created AVPs
+   * @param config - Passed through to hydration when comparing current vs parent
+   * @returns The new field → AVP id map, and whether the revision's AVP map changed
    */
   private async createOrReuseAvps({
     currentRevision,
@@ -2106,9 +2189,8 @@ class FormOperations {
     await this.bulkPutAvps(avpsToCreate);
     await this.bulkPutAvps(avpsToUpdate);
 
-    // Updating inplace AVPs doesn't necessarily, however we may have a
-    // situation where we removed data completely - check for missing keys from
-    // the prior data
+    // In-place AVP updates do not flip changeDetected. Still treat a removed
+    // field (key on the old revision, absent from newData) as a change.
     if (!changeDetected) {
       // Build sets of the old/new keys
       const oldKeys = new Set(Object.keys(currentRevision.avps));
@@ -2124,8 +2206,8 @@ class FormOperations {
   }
 
   /**
-   * Fetch and hydrate both current and parent revisions, extracting their data
-   * into a comparable format.
+   * Hydrate current (and optional parent) revisions and flatten each into
+   * `{data, annotation, attachments}` per field for equality checks.
    */
   private async fetchHydratedData(
     currentRevision: ExistingRevisionDBDocument,
@@ -2155,7 +2237,8 @@ class FormOperations {
   }
 
   /**
-   * Extract data, annotations, and attachments into a comparable format.
+   * Flatten a hydrated record's fields into {@link FormDataEntry}s for
+   * {@link isEqualFormData}.
    */
   private extractComparableData(
     hydratedRecord: any
@@ -2310,7 +2393,8 @@ class FormOperations {
   }
 
   /**
-   * Apply the determined AVP strategy, updating the appropriate collections.
+   * Mutate `outputAvpMap` / the create-or-update batches according to
+   * {@link AvpStrategy}. Does not persist; {@link bulkPutAvps} runs after.
    */
   private async applyAvpStrategy({
     strategy,
@@ -2364,7 +2448,8 @@ class FormOperations {
   }
 
   /**
-   * Build a new AVP document.
+   * Allocate a new AVP id and populate it from form data. Field `type` comes
+   * from the UI spec (`type-returned`), or {@link UNKNOWN_TYPE_FALLBACK}.
    */
   private buildNewAvp(
     fieldname: string,
@@ -2394,7 +2479,9 @@ class FormOperations {
   }
 
   /**
-   * Build an updated AVP document (fetches existing and applies changes).
+   * Fetch an existing AVP and apply new value/annotation/attachments.
+   * Refreshes `created` so finish/flush can see this write as newer than
+   * the last record/revision stamp.
    */
   private async buildUpdatedAvp(
     avpId: string,
@@ -2418,7 +2505,8 @@ class FormOperations {
   }
 
   /**
-   * Compare two FormDataEntry objects for equality.
+   * Deep-compare two form field entries (value, annotation, and attachments)
+   * via {@link isEqualFAIMS}.
    */
   private async isEqualFormData(
     a: FormDataEntry,
@@ -2500,16 +2588,19 @@ class QueryOperations {
   constructor(private readonly db: DatabaseInterface) {}
 
   /**
-   * List revision metadata using the optimised 'index/revisionMetadata' view.
+   * List revision metadata using the optimised `index/revisionMetadata` view.
    * Returns only essential fields (created, createdBy, deleted, relationship)
    * without fetching full revision documents.
+   *
+   * When `keys` is set, those revision ids are fetched and range/`limit` are
+   * ignored (used to join a page of record heads).
    *
    * @param options.startKey - Optional start key for pagination
    * @param options.endKey - Optional end key for filtering
    * @param options.limit - Maximum number of results (default: no limit)
    * @param options.descending - Whether to return results in descending order (default: false)
-   *
-   * @returns Paginated list of minimal revision metadata
+   * @param options.keys - Fetch only these revision ids (e.g. a page of heads)
+   * @returns Minimal revision metadata for the matched rows
    */
   async listRevisionMetadata(
     options: {
@@ -2557,14 +2648,13 @@ class QueryOperations {
 
   /**
    * Query records with optional filtering by form type and pagination.
-   * Uses the 'index/record' view to efficiently list records.
+   * Uses the `index/record` view. `formId` is applied after the page is
+   * fetched, so a filtered page can be shorter than `limit`.
    *
-   * @param params.formId - Optional form type to filter by (e.g., 'SurveyArea')
-   * @param params.limit - Maximum number of records to return (default: 25)
-   * @param params.startKey - Pagination cursor from previous query's `nextStartKey`
-   * @param params.includeHrid - Whether to hydrate records to get HRID (default: true, slower)
-   *
-   * @returns Paginated list of record summaries with metadata
+   * @param formId - Optional form type to filter by (e.g. `'SurveyArea'`)
+   * @param limit - Maximum number of records to return (default 25)
+   * @param startKey - Pagination cursor from a previous `nextStartKey`
+   * @returns Paginated record documents (`hasMore` / `nextStartKey` from the unfiltered page)
    */
   async getRecords({
     formId,
@@ -2679,7 +2769,7 @@ class QueryOperations {
 
     const startTime = performance.now();
 
-    // Step 1: Fetch all revision metadata (optimised view - no full docs)
+    // Fetch a page (or all) of records, then only those records' head revision metadata.
     let recordViewResult: PouchDB.Query.Response<RecordDBDocument>;
     let revisionMetadataResult: RevisionMetadataQueryResult;
     let timeNextStartKey: string | undefined;
