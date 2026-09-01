@@ -27,8 +27,13 @@ PouchDB.plugin(require('pouchdb-adapter-memory'));
 
 import {
   addProjectRole,
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
+  GetListHydratedRecordsResponse,
   GetListRecordsResponse,
   GetRecordResponse,
+  ListHydratedRecordsItem,
   ListRecordsItem,
   PatchUpdateRecordInput,
   PatchUpdateRecordResponse,
@@ -42,7 +47,9 @@ import {
 import {beforeEach, describe, expect, it} from 'vitest';
 import request from 'supertest';
 import {generateJwtFromUser} from '../src/auth/keySigning/create';
-import {keyService} from '../src/buildconfig';
+import {config, keyService} from '../src/buildconfig';
+import {getDataDb} from '../src/couchdb';
+import {getCompiledUiSpecModel} from '../src/couchdb/notebooks';
 import {
   getCouchUserFromEmailOrUserId,
   getExpressUserFromEmailOrUserId,
@@ -71,6 +78,28 @@ import {
 } from './utils';
 
 registerClient(callbackObject);
+
+async function softDeleteRecord({
+  projectId,
+  recordId,
+  revisionId,
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId: string;
+}): Promise<void> {
+  const dataDb = await getDataDb(projectId);
+  const uiSpec = await getCompiledUiSpecModel(projectId);
+  const engine = new DataEngine({
+    dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+    uiSpec,
+  });
+  await engine.deleteRecord({
+    recordId,
+    baseRevisionId: revisionId,
+    userId: 'admin',
+  });
+}
 
 describe('Records CRUD API', () => {
   beforeEach(beforeApiTests);
@@ -315,6 +344,365 @@ describe('Records CRUD API', () => {
             .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({updatedBefore: '1.5'})
         ).expect(400);
+      });
+    });
+  });
+
+  describe('list hydrated records', () => {
+    it('returns permission-filtered hydrated items only', async () => {
+      await withRecordsBackup(async projectId => {
+        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+        if (!couchUser) throw new Error('Local user not found');
+        addProjectRole({
+          user: couchUser,
+          projectId: RECORDS_BACKUP_PROJECT_ID,
+          role: Role.PROJECT_GUEST,
+        });
+        await saveCouchUser(couchUser);
+
+        const expressUser =
+          await getExpressUserFromEmailOrUserId(localUserName);
+        if (!expressUser) throw new Error('Local user not found');
+        const signingKey = await keyService.getSigningKey();
+        const guestToken = await generateJwtFromUser({
+          user: expressUser,
+          signingKey,
+        });
+
+        const adminRes = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/hydrated`)
+        ).expect(200);
+        const adminBody = adminRes.body as GetListHydratedRecordsResponse;
+        expect(adminBody.records.length).toBeGreaterThan(0);
+        const adminOwned = adminBody.records.filter(
+          (r: ListHydratedRecordsItem) => r.createdBy === 'admin'
+        );
+        expect(adminOwned.length).toBeGreaterThan(0);
+
+        const guestRes = await request(app)
+          .get(`/api/notebooks/${projectId}/records/hydrated`)
+          .set('Authorization', `Bearer ${guestToken}`)
+          .set('Content-Type', 'application/json')
+          .expect(200);
+        const guestBody = guestRes.body as GetListHydratedRecordsResponse;
+        expect(
+          guestBody.records.every(
+            (r: ListHydratedRecordsItem) => r.createdBy === localUserName
+          )
+        ).toBe(true);
+        expect(
+          guestBody.records.some(
+            (r: ListHydratedRecordsItem) => r.createdBy === 'admin'
+          )
+        ).toBe(false);
+      });
+    });
+
+    it('includes stub fields and wrapped data matching GET one record', async () => {
+      await withRecordsBackup(async projectId => {
+        const listRes = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/hydrated`)
+        ).expect(200);
+        const body = listRes.body as GetListHydratedRecordsResponse;
+        expect(body.records.length).toBeGreaterThan(0);
+
+        const item = body.records[0];
+        expect(item).toHaveProperty('recordId');
+        expect(item).toHaveProperty('revisionId');
+        expect(item).toHaveProperty('createdBy');
+        expect(item).toHaveProperty('type');
+        expect(item).toHaveProperty('deleted');
+        expect(item).toHaveProperty('formId');
+        expect(item.formId).toBe(item.type);
+        expect(item.data).toBeTypeOf('object');
+        expect(item.context).toHaveProperty('hrid');
+
+        const fieldId = Object.keys(item.data)[0];
+        if (fieldId) {
+          expect(item.data[fieldId]).toBeTypeOf('object');
+          expect(item.data[fieldId]).toHaveProperty('data');
+        }
+
+        const oneRes = await requestAuthAndType(
+          request(app).get(
+            `/api/notebooks/${projectId}/records/${item.recordId}`
+          )
+        ).expect(200);
+        const one = oneRes.body as GetRecordResponse;
+        expect(item.revisionId).toBe(one.revisionId);
+        expect(item.formId).toBe(one.formId);
+        if (fieldId) {
+          expect(item.data[fieldId]?.data).toEqual(one.data[fieldId]?.data);
+        }
+      });
+    });
+
+    it('defaults to the env page size and paginates with nextStartKey', async () => {
+      await withRecordsBackup(async projectId => {
+        const original = config.recordsHydratedPageLimit;
+        config.recordsHydratedPageLimit = 2;
+        try {
+          const defaultPage = await requestAuthAndType(
+            request(app).get(`/api/notebooks/${projectId}/records/hydrated`)
+          ).expect(200);
+          const defaultBody =
+            defaultPage.body as GetListHydratedRecordsResponse;
+          expect(defaultBody.records.length).toBeLessThanOrEqual(2);
+          expect(defaultBody.nextStartKey).toBeDefined();
+
+          const page1 = await requestAuthAndType(
+            request(app)
+              .get(`/api/notebooks/${projectId}/records/hydrated`)
+              .query({limit: 1})
+          ).expect(200);
+          const page1Body = page1.body as GetListHydratedRecordsResponse;
+          expect(page1Body.records).toHaveLength(1);
+          expect(page1Body.nextStartKey).toBeDefined();
+
+          const page2 = await requestAuthAndType(
+            request(app)
+              .get(`/api/notebooks/${projectId}/records/hydrated`)
+              .query({limit: 1, startKey: page1Body.nextStartKey})
+          ).expect(200);
+          const page2Body = page2.body as GetListHydratedRecordsResponse;
+          expect(page2Body.records).toHaveLength(1);
+          expect(page2Body.records[0].recordId).not.toBe(
+            page1Body.records[0].recordId
+          );
+        } finally {
+          config.recordsHydratedPageLimit = original;
+        }
+      });
+    });
+
+    it('paginates hydrated rows when no time params are set', async () => {
+      await withRecordsBackup(async projectId => {
+        const page1 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({limit: 1})
+        ).expect(200);
+        const page1Body = page1.body as GetListHydratedRecordsResponse;
+        expect(page1Body.records).toHaveLength(1);
+        expect(page1Body.records[0].data).toBeTypeOf('object');
+        expect(page1Body.nextStartKey).toBeDefined();
+        expect(() => JSON.parse(page1Body.nextStartKey as string)).toThrow();
+
+        const page2 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({limit: 1, startKey: page1Body.nextStartKey})
+        ).expect(200);
+        const page2Body = page2.body as GetListHydratedRecordsResponse;
+        expect(page2Body.records[0].recordId).not.toBe(
+          page1Body.records[0].recordId
+        );
+      });
+    });
+
+    it('filters exclusively by updatedAfter and updatedBefore', async () => {
+      await withRecordsBackup(async projectId => {
+        const full = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
+        ).expect(200);
+        const all = (full.body as GetListRecordsResponse).records;
+        expect(all.length).toBeGreaterThan(1);
+        const target = all[0];
+        const targetMs = Date.parse(target.updated);
+        expect(Number.isNaN(targetMs)).toBe(false);
+
+        const afterRes = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: String(targetMs)})
+        ).expect(200);
+        const afterIds = (
+          afterRes.body as GetListHydratedRecordsResponse
+        ).records.map(r => r.recordId);
+        expect(afterIds).not.toContain(target.recordId);
+        afterIds.forEach(id => {
+          const rec = all.find(r => r.recordId === id);
+          expect(rec).toBeDefined();
+          expect(Date.parse(rec!.updated)).toBeGreaterThan(targetMs);
+        });
+
+        const beforeRes = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedBefore: String(targetMs)})
+        ).expect(200);
+        const beforeIds = (
+          beforeRes.body as GetListHydratedRecordsResponse
+        ).records.map(r => r.recordId);
+        expect(beforeIds).not.toContain(target.recordId);
+        beforeIds.forEach(id => {
+          const rec = all.find(r => r.recordId === id);
+          expect(rec).toBeDefined();
+          expect(Date.parse(rec!.updated)).toBeLessThan(targetMs);
+        });
+
+        const tight = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({
+              updatedAfter: String(targetMs - 1),
+              updatedBefore: String(targetMs + 1),
+            })
+        ).expect(200);
+        const tightIds = (
+          tight.body as GetListHydratedRecordsResponse
+        ).records.map(r => r.recordId);
+        expect(tightIds).toContain(target.recordId);
+      });
+    });
+
+    it('paginates time-filtered results with nextStartKey', async () => {
+      await withRecordsBackup(async projectId => {
+        const full = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: '0'})
+        ).expect(200);
+        const all = (full.body as GetListHydratedRecordsResponse).records;
+        expect(all.length).toBeGreaterThan(1);
+
+        const page1 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: '0', limit: 1})
+        ).expect(200);
+        const page1Body = page1.body as GetListHydratedRecordsResponse;
+        expect(page1Body.records).toHaveLength(1);
+        expect(page1Body.nextStartKey).toBeDefined();
+
+        const page2 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({
+              updatedAfter: '0',
+              limit: 1,
+              startKey: page1Body.nextStartKey,
+            })
+        ).expect(200);
+        const page2Body = page2.body as GetListHydratedRecordsResponse;
+        expect(page2Body.records).toHaveLength(1);
+        expect(page2Body.records[0].recordId).not.toBe(
+          page1Body.records[0].recordId
+        );
+      });
+    });
+
+    it('encodes time-filtered nextStartKey as [updatedMs, recordId]', async () => {
+      await withRecordsBackup(async projectId => {
+        const page1 = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: '0', limit: 1})
+        ).expect(200);
+        const cursor = (page1.body as GetListHydratedRecordsResponse)
+          .nextStartKey;
+        expect(cursor).toBeDefined();
+        const parsed = JSON.parse(cursor as string);
+        expect(parsed).toHaveLength(2);
+        expect(typeof parsed[0]).toBe('number');
+        expect(typeof parsed[1]).toBe('string');
+      });
+    });
+
+    it('returns 400 when updatedAfter is greater than or equal to updatedBefore', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: '100', updatedBefore: '50'})
+        ).expect(400);
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: '50', updatedBefore: '50'})
+        ).expect(400);
+      });
+    });
+
+    it('returns 400 when updatedAfter or updatedBefore is not numeric', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedAfter: 'not-a-number'})
+        ).expect(400);
+        await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({updatedBefore: '1.5'})
+        ).expect(400);
+      });
+    });
+
+    it('includes soft-deletes only when filterDeleted is false', async () => {
+      await withRecordsBackup(async projectId => {
+        const listed = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/metadata`)
+            .query({formId: BACKUP_FORM_IDS.FORM2})
+        ).expect(200);
+        const sample = (listed.body as GetListRecordsResponse).records[0];
+        expect(sample).toBeDefined();
+
+        await softDeleteRecord({
+          projectId,
+          recordId: sample.recordId,
+          revisionId: sample.revisionId,
+        });
+
+        const hidden = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({formId: BACKUP_FORM_IDS.FORM2})
+        ).expect(200);
+        expect(
+          (hidden.body as GetListHydratedRecordsResponse).records.find(
+            r => r.recordId === sample.recordId
+          )
+        ).toBeUndefined();
+
+        const shown = await requestAuthAndType(
+          request(app)
+            .get(`/api/notebooks/${projectId}/records/hydrated`)
+            .query({formId: BACKUP_FORM_IDS.FORM2, filterDeleted: 'false'})
+        ).expect(200);
+        const deleted = (
+          shown.body as GetListHydratedRecordsResponse
+        ).records.find(r => r.recordId === sample.recordId);
+        expect(deleted).toBeDefined();
+        expect(deleted!.deleted).toBe(true);
+      });
+    });
+
+    it('returns 400 when limit is above the env max', async () => {
+      await withRecordsBackup(async projectId => {
+        const original = config.recordsHydratedPageLimit;
+        config.recordsHydratedPageLimit = 2;
+        try {
+          await requestAuthAndType(
+            request(app)
+              .get(`/api/notebooks/${projectId}/records/hydrated`)
+              .query({limit: 3})
+          ).expect(400);
+        } finally {
+          config.recordsHydratedPageLimit = original;
+        }
+      });
+    });
+
+    it('does not treat hydrated as a record id', async () => {
+      await withRecordsBackup(async projectId => {
+        const res = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/hydrated`)
+        ).expect(200);
+        const body = res.body as GetListHydratedRecordsResponse;
+        expect(body).toHaveProperty('records');
+        expect(body.records).toBeInstanceOf(Array);
       });
     });
   });

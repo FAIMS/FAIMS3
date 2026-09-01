@@ -25,6 +25,8 @@ import {
   FormRelationship,
   FormUpdateData,
   HydratedDataField,
+  HydratedListRecord,
+  HydratedListRecordResult,
   HydratedRecord,
   HydratedRecordQueryResult,
   HydratedRevisionDocument,
@@ -126,12 +128,72 @@ export function dataMap<T>({
   );
 }
 
+function chunkArray<T>(items: T[], size: number): T[][] {
+  if (size < 1) return [items];
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
+ * Run `mapper` over `items` with at most `concurrency` promises in flight.
+ * Result order matches input order.
+ */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const results: R[] = Array.from({length: items.length});
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  };
+  await Promise.all(
+    Array.from({length: Math.min(concurrency, items.length)}, () => worker())
+  );
+  return results;
+}
+
+function initialFormDataFromHydrated(
+  hydrated: HydratedRecord
+): InitialFormData {
+  return {
+    revisionId: hydrated.revision._id,
+    formId: hydrated.record.formId,
+    data: dataMap({
+      data: hydrated.data,
+      mapFn: d => ({
+        annotation: d.annotations,
+        attachments: d.faimsAttachments,
+        data: d.data,
+      }),
+    }),
+    context: {
+      record: hydrated.record,
+      revision: hydrated.revision,
+      hrid: hydrated.hrid,
+    },
+  };
+}
+
 // =========
 // CONSTANTS
 // =========
 
 const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
+/** CouchDB `allDocs({keys})` batch size — keeps the keys body modest. */
+const ALL_DOCS_KEY_CHUNK = 200;
+/** In-flight `allDocs` chunks. Node's per-host socket pool is small (~15). */
+const ALL_DOCS_CHUNK_CONCURRENCY = 4;
 
 // ============================================================================
 // Configuration Schemas and Types
@@ -475,6 +537,47 @@ export class CoreOperations {
     return this.getDocumentOfType(id, existingAttachmentDocumentSchema.parse);
   }
 
+  /**
+   * Fetch many documents in chunked `allDocs({keys})` calls (one HTTP request
+   * per chunk) instead of one `get` per id. Missing or invalid rows are omitted.
+   */
+  async getDocumentsByIds<T>(
+    ids: string[],
+    validator: (doc: unknown) => T
+  ): Promise<Map<string, T>> {
+    const unique = [...new Set(ids.filter(id => id.length > 0))];
+    const found = new Map<string, T>();
+    if (unique.length === 0) return found;
+
+    const chunks = chunkArray(unique, ALL_DOCS_KEY_CHUNK);
+    const chunkResults = await mapWithConcurrency(
+      chunks,
+      ALL_DOCS_CHUNK_CONCURRENCY,
+      chunk =>
+        this.db.allDocs({
+          keys: chunk,
+          include_docs: true,
+        })
+    );
+
+    for (const result of chunkResults) {
+      for (const row of result.rows) {
+        if ('error' in row || !('doc' in row) || !row.doc) continue;
+        const id = row.id ?? (row as {key?: string}).key;
+        if (!id) continue;
+        try {
+          found.set(id, validator(row.doc));
+        } catch (err) {
+          console.warn(
+            `[getDocumentsByIds] skipping invalid document ${id}:`,
+            err instanceof Error ? err.message : err
+          );
+        }
+      }
+    }
+    return found;
+  }
+
   // ============================================================================
   // CREATE Operations
   // ============================================================================
@@ -806,22 +909,186 @@ class HydratedOperations {
     avpIds: Record<string, string>
   ): Promise<Record<string, ExistingAvpDBDocument>> {
     const entries = Object.entries(avpIds);
+    const docs = await this.core.getDocumentsByIds(
+      entries.map(([, avpId]) => avpId),
+      existingAvpDocumentSchema.parse
+    );
 
-    // Fetch all AVPs in parallel for efficiency
-    const avpPromises = entries.map(async ([fieldName, avpId]) => {
-      const avp = await this.core.getAvp(avpId);
-      return {fieldName, avp};
-    });
-
-    const results = await Promise.all(avpPromises);
-
-    // Build the data object
     const data: Record<string, ExistingAvpDBDocument> = {};
-    for (const {fieldName, avp} of results) {
+    for (const [fieldName, avpId] of entries) {
+      const avp = docs.get(avpId);
+      if (!avp) {
+        throw new Exceptions.DocumentNotFoundError(avpId);
+      }
       data[fieldName] = avp;
     }
 
     return data;
+  }
+
+  private assembleHydratedRecord({
+    record,
+    revision,
+    avps,
+    hadConflict,
+    conflictBehaviour,
+  }: {
+    record: ExistingRecordDBDocument;
+    revision: ExistingRevisionDBDocument;
+    avps: Record<string, ExistingAvpDBDocument>;
+    hadConflict: boolean;
+    conflictBehaviour?: ConflictBehaviour;
+  }): HydratedRecord {
+    const mappedData: Record<string, HydratedDataField> = {};
+    for (const [fieldName, val] of Object.entries(avps)) {
+      mappedData[fieldName] = {
+        _id: val._id,
+        _rev: val._rev,
+        created: val.created,
+        createdBy: val.created_by,
+        recordId: val.record_id,
+        revisionId: val.revision_id,
+        type: val.type,
+        annotations: val.annotations,
+        data: val.data,
+        faimsAttachments: val.faims_attachments
+          ? val.faims_attachments.map(att => ({
+              attachmentId: att.attachment_id,
+              filename: att.filename,
+              fileType: att.file_type,
+            }))
+          : undefined,
+      };
+    }
+
+    const relationship = revision.relationship;
+    const formRelationship: FormRelationship | undefined =
+      relationship && ('linked' in relationship || 'parent' in relationship)
+        ? {
+            ...(relationship.linked
+              ? {linked: normalizeRelationshipInstances(relationship.linked)}
+              : {}),
+            ...(relationship.parent
+              ? {parent: normalizeRelationshipInstances(relationship.parent)}
+              : {}),
+          }
+        : undefined;
+
+    const hridFieldName = this.hridFieldMap[revision.type];
+    const rawHridData = hridFieldName ? avps[hridFieldName]?.data : undefined;
+    let finalHrid = record._id;
+    if (rawHridData && typeof rawHridData === 'string') {
+      finalHrid = rawHridData;
+    }
+
+    return {
+      hrid: finalHrid,
+      record: {
+        _id: record._id,
+        _rev: record._rev,
+        created: record.created,
+        createdBy: record.created_by,
+        updatedAt: record.updatedAt,
+        formId: record.type,
+        heads: record.heads,
+        revisions: record.revisions,
+        deleted: revision.deleted ?? false,
+      },
+      revision: {
+        _id: revision._id,
+        _rev: revision._rev,
+        avps: revision.avps,
+        created: revision.created,
+        createdBy: revision.created_by,
+        updatedAt: revision.updatedAt,
+        formId: revision.type,
+        parents: revision.parents,
+        recordId: revision.record_id,
+        relationship: formRelationship,
+        deleted: revision.deleted ?? false,
+        ugcComment: revision.ugc_comment,
+      },
+      data: mappedData,
+      metadata: {
+        hadConflict,
+        conflictResolution: hadConflict ? conflictBehaviour : undefined,
+        allHeads: record.heads,
+      },
+    };
+  }
+
+  /**
+   * Hydrate a page of metadata stubs with two bulk waves: records+revisions,
+   * then all AVPs. Avoids one Couch GET per field (the GET-one path).
+   */
+  async hydrateListedRecords(
+    stubs: MinimalRecordMetadata[]
+  ): Promise<
+    Array<
+      | {ok: true; stub: MinimalRecordMetadata; formData: InitialFormData}
+      | {ok: false}
+    >
+  > {
+    if (stubs.length === 0) return [];
+
+    const [records, revisions] = await Promise.all([
+      this.core.getDocumentsByIds(
+        stubs.map(s => s.recordId),
+        existingRecordDocumentSchema.parse
+      ),
+      this.core.getDocumentsByIds(
+        stubs.map(s => s.revisionId),
+        existingRevisionDocumentSchema.parse
+      ),
+    ]);
+
+    const avpIds: string[] = [];
+    for (const stub of stubs) {
+      const revision = revisions.get(stub.revisionId);
+      if (!revision) continue;
+      avpIds.push(...Object.values(revision.avps));
+    }
+
+    const avpDocs = await this.core.getDocumentsByIds(
+      avpIds,
+      existingAvpDocumentSchema.parse
+    );
+
+    return stubs.map(stub => {
+      try {
+        const record = records.get(stub.recordId);
+        const revision = revisions.get(stub.revisionId);
+        if (!record || !revision) {
+          throw new Error('record or revision missing from bulk fetch');
+        }
+        const avps: Record<string, ExistingAvpDBDocument> = {};
+        for (const [fieldName, avpId] of Object.entries(revision.avps)) {
+          const avp = avpDocs.get(avpId);
+          if (!avp) {
+            throw new Exceptions.DocumentNotFoundError(avpId);
+          }
+          avps[fieldName] = avp;
+        }
+        const hydrated = this.assembleHydratedRecord({
+          record,
+          revision,
+          avps,
+          hadConflict: stub.conflicts,
+          conflictBehaviour: 'pickFirst',
+        });
+        return {
+          ok: true as const,
+          stub,
+          formData: initialFormDataFromHydrated(hydrated),
+        };
+      } catch (err) {
+        console.warn(
+          `[hydrateListedRecords] skipping ${stub.recordId}:`,
+          err instanceof Error ? err.message : err
+        );
+        return {ok: false as const};
+      }
+    });
   }
 
   /**
@@ -867,93 +1134,14 @@ class HydratedOperations {
     // Step 3: Fetch the revision
     const revision = await this.core.getRevision(targetRevisionId);
 
-    // Step 4: Fetch all AVPs efficiently
-    const data = await this.fetchAvps(revision.avps);
-
-    // Map the AVPs into our preferred external interface
-    const mappedData: Record<string, HydratedDataField> = {};
-    Array.from(Object.keys(data)).forEach(k => {
-      const val = data[k];
-      mappedData[k] = {
-        _id: val._id,
-        _rev: val._rev,
-        created: val.created,
-        createdBy: val.created_by,
-        recordId: val.record_id,
-        revisionId: val.revision_id,
-        type: val.type,
-        annotations: val.annotations,
-        data: val.data,
-        faimsAttachments: val.faims_attachments
-          ? val.faims_attachments.map(att => ({
-              attachmentId: att.attachment_id,
-              filename: att.filename,
-              fileType: att.file_type,
-            }))
-          : undefined,
-      };
+    const avps = await this.fetchAvps(revision.avps);
+    return this.assembleHydratedRecord({
+      record,
+      revision,
+      avps,
+      hadConflict,
+      conflictBehaviour: config.conflictBehaviour,
     });
-
-    // Get the correct relationship data
-    const relationship = revision.relationship;
-
-    // Map to formRelationshipSchema type
-    const formRelationship: FormRelationship | undefined =
-      relationship && ('linked' in relationship || 'parent' in relationship)
-        ? {
-            ...(relationship.linked
-              ? {linked: normalizeRelationshipInstances(relationship.linked)}
-              : {}),
-            ...(relationship.parent
-              ? {parent: normalizeRelationshipInstances(relationship.parent)}
-              : {}),
-          }
-        : undefined;
-
-    const hridFieldName = this.hridFieldMap[revision.type];
-    const rawHridData = hridFieldName ? data[hridFieldName]?.data : undefined;
-    let finalHrid = record._id;
-    if (rawHridData) {
-      if (typeof rawHridData === 'string') {
-        finalHrid = rawHridData;
-      }
-    }
-
-    // Step 5: Build the hydrated record (in our external interface)
-    return {
-      hrid: finalHrid,
-      record: {
-        _id: record._id,
-        _rev: record._rev,
-        created: record.created,
-        createdBy: record.created_by,
-        updatedAt: record.updatedAt,
-        formId: record.type,
-        heads: record.heads,
-        revisions: record.revisions,
-        deleted: revision.deleted ?? false,
-      },
-      revision: {
-        _id: revision._id,
-        _rev: revision._rev,
-        avps: revision.avps,
-        created: revision.created,
-        createdBy: revision.created_by,
-        updatedAt: revision.updatedAt,
-        formId: revision.type,
-        parents: revision.parents,
-        recordId: revision.record_id,
-        relationship: formRelationship,
-        deleted: revision.deleted ?? false,
-        ugcComment: revision.ugc_comment,
-      },
-      data: mappedData,
-      metadata: {
-        hadConflict,
-        conflictResolution: hadConflict ? config.conflictBehaviour : undefined,
-        allHeads: record.heads,
-      },
-    };
   }
 
   /**
@@ -1606,26 +1794,88 @@ class FormOperations {
       revisionId,
       config,
     });
+    return initialFormDataFromHydrated(hydrated);
+  }
 
-    const data = dataMap({
-      data: hydrated.data,
-      mapFn: d => ({
-        annotation: d.annotations,
-        attachments: d.faimsAttachments,
-        data: d.data,
-      }),
+  /**
+   * Paginated list of metadata stubs plus GET-one form data.
+   *
+   * Uses {@link QueryOperations.listMinimalRecordMetadata} (including the
+   * time index when `updatedAfter` / `updatedBefore` are set) then hydrates
+   * the page with chunked `allDocs({keys})` (records + revisions, then AVPs).
+   * Does **not** use {@link getHydratedRecords} (no time window) and does **not**
+   * call {@link getExistingFormData} once per row (that is one GET per field).
+   *
+   * If one id fails to hydrate (corrupt AVP, missing revision, …), that row is
+   * omitted and counted in `errorCount`. The page still returns; `nextStartKey`
+   * comes from the metadata listing so the cursor does not stall.
+   */
+  async listHydratedRecords({
+    projectId,
+    filterDeleted = false,
+    filterFunction,
+    limit,
+    startKey,
+    formId,
+    updatedAfter,
+    updatedBefore,
+  }: {
+    projectId: string;
+    filterDeleted?: boolean;
+    filterFunction?: (rec: MinimalRecordMetadata) => boolean;
+    limit?: number;
+    startKey?: string;
+    formId?: string;
+    updatedAfter?: number;
+    updatedBefore?: number;
+  }): Promise<HydratedListRecordResult> {
+    const listStarted = performance.now();
+    const metadataResult = await this.query.listMinimalRecordMetadata({
+      projectId,
+      filterDeleted,
+      filterFunction,
+      limit,
+      startKey,
+      formId,
+      updatedAfter,
+      updatedBefore,
     });
+    const listedAt = performance.now();
+
+    // Bulk allDocs (chunked, bounded concurrency) — not N× getExistingFormData.
+    // Unbounded per-record GET of every AVP saturates Couch and takes seconds.
+    const hydrations = await this.hydrated.hydrateListedRecords(
+      metadataResult.records
+    );
+    console.log(
+      `[listHydratedRecords] list ${metadataResult.records.length} stubs ${(
+        listedAt - listStarted
+      ).toFixed(0)}ms, hydrate ${(performance.now() - listedAt).toFixed(0)}ms`
+    );
+
+    const records: HydratedListRecord[] = [];
+    let hydrateErrors = 0;
+    for (const result of hydrations) {
+      if (!result.ok) {
+        hydrateErrors++;
+        continue;
+      }
+      records.push({
+        ...result.stub,
+        formId: result.formData.formId,
+        data: result.formData.data,
+        context: result.formData.context,
+        revisionId: result.stub.revisionId,
+      });
+    }
 
     return {
-      revisionId: hydrated.revision._id,
-      formId: hydrated.record.formId,
-      data,
-      // Additional context
-      context: {
-        record: hydrated.record,
-        revision: hydrated.revision,
-        hrid: hydrated.hrid,
-      },
+      records,
+      count: records.length,
+      errorCount: metadataResult.errorCount + hydrateErrors,
+      ...(metadataResult.nextStartKey !== undefined
+        ? {nextStartKey: metadataResult.nextStartKey}
+        : {}),
     };
   }
 

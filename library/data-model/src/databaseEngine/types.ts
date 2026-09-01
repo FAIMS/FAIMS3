@@ -932,6 +932,27 @@ export interface MinimalRecordMetadataResult {
   nextStartKey?: string;
 }
 
+/**
+ * One row of a paginated hydrated list: metadata stub plus GET-one form data.
+ * `data[fieldId]` is `{ data, annotation?, attachments? }`, not a raw value.
+ */
+export type HydratedListRecord = MinimalRecordMetadata & {
+  formId: string;
+  data: FormUpdateData;
+  context: InitialFormData['context'];
+};
+
+/**
+ * Result from listing hydrated records. Failed hydrates are omitted (not a
+ * page-level error); `errorCount` includes those skips.
+ */
+export interface HydratedListRecordResult {
+  records: HydratedListRecord[];
+  count: number;
+  errorCount: number;
+  nextStartKey?: string;
+}
+
 // ============================================================================
 // Search Types
 // ============================================================================

@@ -1114,28 +1114,53 @@ export function updatedTimeQueryRefine(data: {
   return after < before;
 }
 
+const listRecordsQueryFields = {
+  formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
+  limit: z.string().max(16).optional(),
+  startKey: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
+  filterDeleted: z.enum(['true', 'false']).optional(),
+  updatedAfter: updatedAfterMsSchema,
+  updatedBefore: updatedBeforeMsSchema,
+};
+
+function listRecordsLimitRefine(max: number) {
+  return (data: {limit?: string}) => {
+    if (data.limit === undefined || data.limit === '') return true;
+    const n = parseInt(data.limit, 10);
+    return !Number.isNaN(n) && n >= 1 && n <= max;
+  };
+}
+
 /** GET list records query (all values are strings from query string) */
 export const GetListRecordsQuerySchema = z
-  .object({
-    formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
-    limit: z.string().max(16).optional(),
-    startKey: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
-    filterDeleted: z.enum(['true', 'false']).optional(),
-    updatedAfter: updatedAfterMsSchema,
-    updatedBefore: updatedBeforeMsSchema,
+  .object(listRecordsQueryFields)
+  .refine(listRecordsLimitRefine(500), {
+    message: 'limit must be between 1 and 500',
   })
-  .refine(
-    data => {
-      if (data.limit === undefined || data.limit === '') return true;
-      const n = parseInt(data.limit, 10);
-      return !Number.isNaN(n) && n >= 1 && n <= 500;
-    },
-    {message: 'limit must be between 1 and 500'}
-  )
   .refine(updatedTimeQueryRefine, {
     message: 'updatedAfter must be less than updatedBefore',
   });
 export type GetListRecordsQuery = z.infer<typeof GetListRecordsQuerySchema>;
+
+/**
+ * Default / absolute-ceiling page size for GET …/records/hydrated.
+ * Heavier than metadata (full field payloads); keep well below the 500 metadata cap.
+ */
+export const RECORDS_HYDRATED_PAGE_LIMIT_DEFAULT = 150;
+export const RECORDS_HYDRATED_PAGE_LIMIT_MAX = 500;
+
+/** GET hydrated records query — same names as metadata, smaller limit ceiling. */
+export const GetListHydratedRecordsQuerySchema = z
+  .object(listRecordsQueryFields)
+  .refine(listRecordsLimitRefine(RECORDS_HYDRATED_PAGE_LIMIT_MAX), {
+    message: `limit must be between 1 and ${RECORDS_HYDRATED_PAGE_LIMIT_MAX}`,
+  })
+  .refine(updatedTimeQueryRefine, {
+    message: 'updatedAfter must be less than updatedBefore',
+  });
+export type GetListHydratedRecordsQuery = z.infer<
+  typeof GetListHydratedRecordsQuerySchema
+>;
 
 /** Single record entry in list response (dates as ISO strings) */
 export const ListRecordsItemSchema = z.object({
@@ -1160,6 +1185,29 @@ export const GetListRecordsResponseSchema = z.object({
 });
 export type GetListRecordsResponse = z.infer<
   typeof GetListRecordsResponseSchema
+>;
+
+/** Metadata stub plus the single-record GET payload (wrapped field data). */
+export const ListHydratedRecordsItemSchema = ListRecordsItemSchema.extend({
+  formId: z.string(),
+  data: formUpdateDataSchema,
+  context: z.object({
+    hrid: z.string(),
+    record: hydratedRecordDocumentSchema,
+    revision: hydratedRevisionDocumentSchema,
+  }),
+});
+export type ListHydratedRecordsItem = z.infer<
+  typeof ListHydratedRecordsItemSchema
+>;
+
+/** GET paginated hydrated records response */
+export const GetListHydratedRecordsResponseSchema = z.object({
+  records: z.array(ListHydratedRecordsItemSchema),
+  nextStartKey: z.string().optional(),
+});
+export type GetListHydratedRecordsResponse = z.infer<
+  typeof GetListHydratedRecordsResponseSchema
 >;
 
 /** GET one record query (revisionId for specific revision) */
