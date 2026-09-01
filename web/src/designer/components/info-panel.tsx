@@ -41,17 +41,66 @@ import {
   informationUpdated,
 } from '../state/metadata-reducer';
 import {settingsUpdated} from '../store/slices/uiSpec';
+import {encodeMetadataRef} from '@faims3/data-model';
+import {
+  findFieldDependencyReferences,
+  type FieldDependencyReference,
+} from '@/lib/conditionUtils';
+import {
+  selectUiViews,
+  selectUiViewSets,
+  selectCustomMetadata,
+} from '../store/selectors';
+
+/** Short description of a reference for the blocked-removal message. */
+const describeReference = (ref: FieldDependencyReference): string => {
+  switch (ref.type) {
+    case 'section-condition':
+      return `section condition on ${ref.sectionLabel ?? 'unknown section'}`;
+    case 'templated-string':
+      return `templated string ${ref.fieldLabel ?? ref.fieldId ?? 'unknown field'}`;
+    case 'computed-expression':
+      return `computed expression ${ref.fieldLabel ?? ref.fieldId ?? 'unknown field'}`;
+    default:
+      return `field condition on ${ref.fieldLabel ?? ref.fieldId ?? 'unknown field'}`;
+  }
+};
 
 /** Notebook design info: settings toggles, typed metadata, and custom key/value pairs. */
 export const InfoPanel = () => {
   const information = useAppSelector(
     state => state.notebook.metadata.information
   );
-  const custom = useAppSelector(state => state.notebook.metadata.custom ?? {});
+  const custom = useAppSelector(selectCustomMetadata);
   const settings = useAppSelector(
     state => state.notebook.uiSpec.present.settings
   );
+  const allFields = useAppSelector(
+    state => state.notebook.uiSpec.present.fields
+  );
+  const views = useAppSelector(selectUiViews);
+  const viewsets = useAppSelector(selectUiViewSets);
   const dispatch = useAppDispatch();
+
+  // Removing a key that conditions, templates or expressions reference would
+  // silently blank them, so block it the way field deletion is blocked.
+  const removeCustomField = (key: string) => {
+    const usage = findFieldDependencyReferences(
+      encodeMetadataRef(key),
+      allFields,
+      views,
+      viewsets
+    );
+    if (usage.length === 0) {
+      dispatch(customFieldRemoved({key}));
+      return;
+    }
+    setAlert(
+      `Cannot remove "${key}": it is referenced by ${usage
+        .map(describeReference)
+        .join(', ')}.`
+    );
+  };
 
   const purposeRef = useRef<MDXEditorMethods>(null);
 
@@ -281,7 +330,7 @@ export const InfoPanel = () => {
                     size="small"
                     color="secondary"
                     sx={{mt: 0.5}}
-                    onClick={() => dispatch(customFieldRemoved({key}))}
+                    onClick={() => removeCustomField(key)}
                   >
                     Remove
                   </Button>

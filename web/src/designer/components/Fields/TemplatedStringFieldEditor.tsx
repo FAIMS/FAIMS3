@@ -7,9 +7,11 @@ import {FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {selectCustomMetadata} from '../../store/selectors';
 import {
   buildParentFieldTypes,
   buildRelatedFieldTypes,
+  encodeMetadataRef,
   PARENT_REFERENCE_PREFIX,
   UiSpecModel,
 } from '@faims3/data-model';
@@ -34,6 +36,7 @@ export const TemplatedStringFieldEditor = ({
   const allFields = useAppSelector(
     state => state.notebook.uiSpec.present.fields
   );
+  const custom = useAppSelector(selectCustomMetadata);
   const dispatch = useAppDispatch();
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
 
@@ -111,6 +114,17 @@ export const TemplatedStringFieldEditor = ({
       };
     });
   }, [allFields, views, viewsets, viewsetId]);
+
+  // Notebook metadata usable as {{_METADATA.key}}.
+  const metadataVariables = useMemo(
+    () =>
+      Object.keys(custom).map(key => ({
+        name: encodeMetadataRef(key),
+        displayName: `Notebook: ${key}`,
+        type: 'field' as const,
+      })),
+    [custom]
+  );
 
   // Fields on linked records usable as {{Rel-Field-ID.Field-ID}}.
   const relatedVariables = useMemo(() => {
@@ -240,7 +254,12 @@ export const TemplatedStringFieldEditor = ({
         open={isBuilderOpen}
         onClose={() => setIsBuilderOpen(false)}
         initialTemplate={state.template}
-        variables={[...fieldVariables, ...parentVariables, ...relatedVariables]}
+        variables={[
+          ...fieldVariables,
+          ...parentVariables,
+          ...relatedVariables,
+          ...metadataVariables,
+        ]}
         systemVariables={systemVariables}
         onSave={handleTemplateChange}
       />

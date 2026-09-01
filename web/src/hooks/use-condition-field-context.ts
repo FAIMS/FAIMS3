@@ -4,6 +4,8 @@ import {
   decodeParentRef,
   splitRelatedReference,
   UiSpecModel,
+  decodeMetadataRef,
+  encodeMetadataRef,
 } from '@faims3/data-model';
 import {
   FieldSearchScope,
@@ -11,15 +13,19 @@ import {
   FieldSearchEntry,
 } from '@/designer/features/field-search';
 import {useAppSelector} from '@/designer/state/hooks';
-import {selectUiViews, selectUiViewSets} from '@/designer/store/selectors';
+import {
+  selectUiViews,
+  selectUiViewSets,
+  selectCustomMetadata,
+} from '@/designer/store/selectors';
 import {useMemo} from 'react';
 import {getFieldLabel} from '@/lib/conditionUtils';
 import type {FieldType} from '@/designer/state/initial';
 
 /**
  * Display label for a condition field reference: local field, parent
- * reference (_PARENT.X) or related reference (Rel.X). Falls back to the
- * raw ID when nothing resolves.
+ * reference (_PARENT.X), metadata reference (_METADATA.key) or related
+ * reference (Rel.X). Falls back to the raw ID when nothing resolves.
  */
 export const getConditionFieldLabel = (
   fieldId: string,
@@ -33,12 +39,25 @@ export const getConditionFieldLabel = (
   if (parentField !== null) {
     return `Parent › ${labelFor(parentField)}`;
   }
+  const metadataKey = decodeMetadataRef(fieldId);
+  if (metadataKey !== null) {
+    return `Notebook › ${metadataKey}`;
+  }
   const parts = splitRelatedReference(fieldId);
   if (parts) {
     return `${labelFor(parts.relFieldId)} › ${labelFor(parts.fieldId)}`;
   }
   return fieldId;
 };
+
+/** Stand-in definition for a metadata reference: every value is text. */
+const metadataFieldDef = (key: string): FieldType =>
+  ({
+    'component-namespace': 'faims-custom',
+    'component-name': 'TextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {label: key},
+  }) as FieldType;
 
 /**
  * Gets the field search scope and selectable field state for a condition rule.
@@ -56,6 +75,7 @@ export const useConditionRuleFieldContext = (props: {
 
   const views = useAppSelector(selectUiViews);
   const viewsets = useAppSelector(selectUiViewSets);
+  const custom = useAppSelector(selectCustomMetadata);
 
   // Work out which fields to show in the field selector. Conditions can only
   // reference fields within the same form, so scope the list to the current
@@ -96,9 +116,10 @@ export const useConditionRuleFieldContext = (props: {
   const fieldLabelFor = (fieldId: string) =>
     (allFields[fieldId]?.['component-parameters']?.label as string) ?? fieldId;
 
-  // Parent and linked-record references selectable in conditions, plus an
-  // overlay resolving each reference to its underlying field definition so
-  // operator filtering and value editors treat them like local fields.
+  // Parent, linked-record and notebook metadata references selectable in
+  // conditions, plus an overlay resolving each reference
+  // to its underlying field definition so operator filtering
+  // and value editors treat them like local fields.
   const {referenceEntries, referenceFieldDefs} = useMemo(() => {
     const entries: FieldSearchEntry[] = [];
     const defs: typeof allFields = {};
@@ -149,8 +170,23 @@ export const useConditionRuleFieldContext = (props: {
         sectionLabel: '',
       });
     }
+    // Notebook metadata keys, referenceable as _METADATA.<key>.
+    for (const key of Object.keys(custom)) {
+      const ref = encodeMetadataRef(key);
+      defs[ref] = metadataFieldDef(key);
+      entries.push({
+        fieldId: ref,
+        field: defs[ref],
+        label: `Notebook › ${key}`,
+        id: ref,
+        helperText: '',
+        advancedHelperText: '',
+        viewSetLabel: 'Notebook metadata',
+        sectionLabel: '',
+      });
+    }
     return {referenceEntries: entries, referenceFieldDefs: defs};
-  }, [viewsetId, allFields, views, viewsets]);
+  }, [viewsetId, allFields, views, viewsets, custom]);
 
   const selectableFieldCount = useMemo(
     () =>
