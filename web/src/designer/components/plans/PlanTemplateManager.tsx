@@ -132,16 +132,16 @@ export const PlanTemplateManager = () => {
                   variant="body2"
                   sx={{fontWeight: 700, mb: 0.5, lineHeight: 1.35}}
                 >
-                  Plans guide data collection in the {config.notebookNamePlural}
-                  created from this template.
+                  A plan defines a pre-defined way to collect data and may
+                  present a customised user interface for the{' '}
+                  {config.notebookName}.
                 </Typography>
                 <Typography
                   variant="caption"
                   sx={{display: 'block', lineHeight: 1.45}}
                 >
-                  Each plan names the form it collects and what is expected of
-                  it. A {config.notebookName} carrying more than one plan asks
-                  which to open, offering them in the order listed here.
+                  If there is more than one plan, the user will be offered a
+                  choice of which to follow in the order listed here.
                 </Typography>
               </Box>
             }
