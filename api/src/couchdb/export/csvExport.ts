@@ -199,6 +199,7 @@ interface ViewCSVState {
  * @param projectId - Project ID
  * @param archive - Archiver instance to append to
  * @param pathPrefix - Path prefix in the archive (e.g., 'records/')
+ * @param exportFilter - Optional exclusive updatedAt window
  * @returns Statistics about all exported CSVs
  */
 export const appendAllCSVsToArchive = async ({
@@ -394,6 +395,7 @@ export const appendAllCSVsToArchive = async ({
  * @param viewLabel - Human-readable label for the view (used in filename)
  * @param archive - Archiver instance to append to
  * @param pathPrefix - Path prefix in the archive (e.g., 'records/')
+ * @param exportFilter - Optional exclusive updatedAt window
  * @returns Statistics about the exported CSV
  */
 export const appendCSVToArchive = async ({
@@ -530,6 +532,7 @@ export const appendCSVToArchive = async ({
  * @param projectId Project ID
  * @param viewID View ID
  * @param res writeable stream
+ * @param exportFilter Optional exclusive updatedAt window
  */
 export const streamNotebookRecordsAsCSV = async (
   projectId: ProjectID,

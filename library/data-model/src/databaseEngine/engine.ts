@@ -128,6 +128,7 @@ export function dataMap<T>({
   );
 }
 
+/** Split `items` into contiguous chunks of at most `size`. */
 function chunkArray<T>(items: T[], size: number): T[][] {
   if (size < 1) return [items];
   const chunks: T[][] = [];
@@ -162,6 +163,7 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
+/** Map a hydrated record into the GET-one / list-hydrated form payload. */
 function initialFormDataFromHydrated(
   hydrated: HydratedRecord
 ): InitialFormData {
@@ -176,6 +178,7 @@ function initialFormDataFromHydrated(
         data: d.data,
       }),
     }),
+    // Additional context
     context: {
       record: hydrated.record,
       revision: hydrated.revision,

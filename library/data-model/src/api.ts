@@ -1061,6 +1061,7 @@ export type PostCreateRecordResponse = z.infer<
 export const updatedAfterMsSchema = z.string().max(16).optional();
 export const updatedBeforeMsSchema = z.string().max(16).optional();
 
+/** Thrown when `updatedAfter` / `updatedBefore` is not a safe integer ms string. */
 export class InvalidUpdatedMsQueryError extends Error {
   constructor(
     message = 'updatedAfter/updatedBefore must be an integer millisecond timestamp'
@@ -1096,6 +1097,10 @@ export function updatedBoundsAreOrdered(
   return true;
 }
 
+/**
+ * Zod refine for string query bounds: skip empty/unparseable pairs (those
+ * fail later in {@link parseUpdatedMsQuery}); otherwise require after < before.
+ */
 export function updatedTimeQueryRefine(data: {
   updatedAfter?: string;
   updatedBefore?: string;
@@ -1114,6 +1119,7 @@ export function updatedTimeQueryRefine(data: {
   return after < before;
 }
 
+/** Shared query fields for GET …/records/metadata and …/records/hydrated. */
 const listRecordsQueryFields = {
   formId: z.string().max(INPUT_LIMITS.ID_MAX_LENGTH).optional(),
   limit: z.string().max(16).optional(),
@@ -1123,6 +1129,7 @@ const listRecordsQueryFields = {
   updatedBefore: updatedBeforeMsSchema,
 };
 
+/** Zod refine: omitted/empty `limit` is ok; otherwise 1…`max`. */
 function listRecordsLimitRefine(max: number) {
   return (data: {limit?: string}) => {
     if (data.limit === undefined || data.limit === '') return true;

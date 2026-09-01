@@ -59,6 +59,7 @@ import {slugifyLabel} from './utils';
  * @param userId - The user ID initiating the export (for metadata)
  * @param config - Export configuration (which components to include)
  * @param res - Writable stream (typically HTTP response) for the ZIP archive
+ * @param exportFilter - Optional exclusive updatedAt window applied to all parts
  */
 export const streamFullExport = async ({
   projectId,

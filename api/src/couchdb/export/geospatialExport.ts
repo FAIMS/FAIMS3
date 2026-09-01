@@ -69,6 +69,7 @@ interface SpatialExportContext {
   uiSpecification: CompiledNotebookUiSpec;
   viewFieldsMap: Record<string, FieldSummary[]>;
   hasSpatialFields: boolean;
+  /** Exclusive updatedAt window forwarded to {@link notebookRecordIterator}. */
   exportFilter?: UpdatedTimeFilter;
 }
 
@@ -89,6 +90,7 @@ interface ProcessedRecord {
  * Initializes the context required for spatial export operations.
  *
  * @param projectId - The project identifier
+ * @param exportFilter - Optional exclusive updatedAt window applied to record iteration
  * @returns Context object with database, UI spec, field map, and spatial field status
  */
 async function initSpatialExportContext(
@@ -842,6 +844,7 @@ function createInitialStats(
  * @param projectId - Project identifier
  * @param archive - Archiver instance to append to
  * @param formats - Which output formats to produce (at least one required)
+ * @param exportFilter - Optional exclusive updatedAt window
  * @returns Statistics per requested format and whether the project has spatial fields
  */
 export const appendSpatialFormatsToArchive = async ({
@@ -1165,6 +1168,7 @@ async function buildGeoPackageFromProject(
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output
+ * @param exportFilter - Optional exclusive updatedAt window
  * @throws Error if no spatial fields exist in the project
  */
 export const streamNotebookRecordsAsGeoJSON = async (
@@ -1202,6 +1206,7 @@ export const streamNotebookRecordsAsGeoJSON = async (
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output
+ * @param exportFilter - Optional exclusive updatedAt window
  * @throws Error if no spatial fields exist or GDAL is unavailable
  */
 export const streamNotebookRecordsAsGeoPackage = async (
@@ -1247,6 +1252,7 @@ export const streamNotebookRecordsAsGeoPackage = async (
  *
  * @param projectId - Project identifier
  * @param res - Writable stream for output
+ * @param exportFilter - Optional exclusive updatedAt window
  * @throws Error if no spatial fields exist in the project
  */
 export const streamNotebookRecordsAsKML = async (

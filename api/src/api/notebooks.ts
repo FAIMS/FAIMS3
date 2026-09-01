@@ -180,11 +180,13 @@ const DownloadTokenPayloadSchema = z.object({
   userID: z.string(),
   // Full export config (only present when format === 'full')
   fullConfig: FullExportConfigSchema.optional(),
+  // Exclusive epoch-ms window copied onto the download JWT
   updatedAfter: z.number().optional(),
   updatedBefore: z.number().optional(),
 });
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
+/** Optional exclusive `updatedAfter` / `updatedBefore` query (epoch-ms strings). */
 const UpdatedTimeQuerySchema = z
   .object({
     updatedAfter: updatedAfterMsSchema,
@@ -264,6 +266,12 @@ const validateDownloadToken = async ({
  * - includeKML (default: true)
  * - includeGeoPackage (default: true)
  * - includeMetadata (default: true)
+ *
+ * Optional exclusive time window (epoch-ms strings), stored on the download JWT:
+ * - updatedAfter — record.updatedAt > this
+ * - updatedBefore — record.updatedAt < this
+ * Both may be omitted. When both are set, updatedAfter must be less than
+ * updatedBefore.
  */
 api.get(
   '/:id/records/export',
@@ -774,7 +782,8 @@ api.post(
   }
 );
 
-// export current versions of all records in this notebook
+// Legacy unpaginated dump of current record versions (export-shaped).
+// Accepts the same exclusive updatedAfter / updatedBefore query as /metadata.
 api.get(
   '/:id/records/',
   requireAuthenticationAPI,
@@ -908,7 +917,8 @@ api.get(
  * Download route - validates JWT and streams the appropriate export format.
  *
  * This route handles the actual file streaming for all export formats.
- * The JWT contains all necessary information about what to export.
+ * The JWT contains all necessary information about what to export,
+ * including optional updatedAfter / updatedBefore exclusive-ms bounds.
  */
 api.get(
   '/download/:downloadToken',

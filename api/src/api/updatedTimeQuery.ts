@@ -6,6 +6,10 @@ import {
 } from '@faims3/data-model';
 import * as Exceptions from '../exceptions';
 
+/**
+ * Parse exclusive `updatedAfter` / `updatedBefore` query strings into epoch-ms
+ * bounds. Invalid integers or `after >= before` become 400s.
+ */
 export function parseUpdatedTimeFilterFromQuery(query: {
   updatedAfter?: string;
   updatedBefore?: string;

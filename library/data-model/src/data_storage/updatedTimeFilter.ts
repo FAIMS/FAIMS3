@@ -9,13 +9,16 @@ import {DatabaseInterface} from '../types';
 
 export const RECORD_BY_UPDATED_INDEX = 'index/recordByUpdated';
 
+/** Exclusive epoch-ms window on record `updatedAt`. Either bound may be omitted. */
 export type UpdatedTimeFilter = {
   updatedAfter?: number;
   updatedBefore?: number;
 };
 
+/** Couch view key / page cursor: `[updatedMs, recordId]`. */
 export type UpdatedTimeCursor = [number, string];
 
+/** True when at least one exclusive bound is set. */
 export function hasUpdatedTimeFilter(
   filter?: UpdatedTimeFilter | null
 ): boolean {
@@ -24,6 +27,7 @@ export function hasUpdatedTimeFilter(
   );
 }
 
+/** Whether `updated` falls strictly inside the exclusive window. */
 export function recordUpdatedInWindow(
   updated: Date | string | number,
   filter: UpdatedTimeFilter
@@ -44,6 +48,7 @@ export function recordUpdatedInWindow(
   return true;
 }
 
+/** Encode a page cursor as JSON `[updatedMs, recordId]`. */
 export function encodeUpdatedTimeCursor(
   updatedMs: number,
   recordId: string

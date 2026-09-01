@@ -110,9 +110,12 @@ GET /api/notebooks/:id/records/export?format=csv&viewID=FORM2&updatedAfter=17000
       "type": "FORM2",
       "relationship": null
     }
-  ]
+  ],
+  "nextStartKey": "rec-abc123-..."
 }
 ```
+
+When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]` instead of a bare record id.
 
 ---
 
@@ -488,3 +491,4 @@ If the head already has exactly one parent (e.g. you forked earlier), you can us
 - [PermissionModel](PermissionModel.md) — Actions, roles, and resource-specific permissions.
 - [Long-lived-tokens](Long-lived-tokens.md) — Obtaining and using access tokens for API calls.
 - [Forms overview](forms/01-overview.md) — UI specification, viewsets, and field definitions (form IDs and field IDs come from the project UI spec).
+- OpenAPI: `api/public/swagger.json` (paths under `/notebooks/{id}/records/…`).

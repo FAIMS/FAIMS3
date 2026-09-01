@@ -9,6 +9,7 @@ import {
 } from '@/lib/export-time-range';
 import {useId, useState} from 'react';
 
+/** Inclusive From/To picker state plus `appendTo` for export query strings. */
 export function useExportTimeRange() {
   const [enabled, setEnabled] = useState(false);
   const [from, setFrom] = useState('');
@@ -32,6 +33,7 @@ export function useExportTimeRange() {
   };
 }
 
+/** Checkbox + From/To fields shared by full, tabular, and photo export forms. */
 export function ExportTimeRangeFields({
   enabled: enabledProp,
   from: fromProp,

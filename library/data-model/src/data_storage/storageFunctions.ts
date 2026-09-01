@@ -582,6 +582,14 @@ export async function getMetadataForAllRecords({
   }
 }
 
+/**
+ * List records matching `regex` (legacy export dump). When `regex` is `.*` or
+ * empty and a time window is set, uses {@link queryRecordIdsByUpdated} instead
+ * of a full scan; otherwise filters the regex result in memory.
+ *
+ * @param updatedAfter exclusive lower bound on record.updated (epoch ms)
+ * @param updatedBefore exclusive upper bound on record.updated (epoch ms)
+ */
 export async function getRecordsWithRegex({
   tokenContents,
   projectId,
@@ -799,6 +807,7 @@ export interface RecordRevisionIndexDocument {
   revision: Revision;
 }
 
+/** Map Couch `recordRevisions` view rows into the iterator's record shape. */
 function mapRecordRevisionRows(
   rows: Array<{id: string; value: any; doc?: any}>
 ): RecordRevisionIndexDocument[] {
@@ -814,6 +823,13 @@ function mapRecordRevisionRows(
   }));
 }
 
+/**
+ * Fetch a page of record+head-revision stubs for {@link notebookRecordIterator}.
+ * Without a time filter, `bookmark` is a record id (the previous page's last
+ * id); that row is skipped so it is not returned twice. With a time filter,
+ * `bookmark` is a JSON `[updatedMs, recordId]` cursor from
+ * {@link queryRecordIdsByUpdated}.
+ */
 export async function getSomeRecords(
   project_id: ProjectID,
   limit: number,
@@ -855,6 +871,7 @@ export async function getSomeRecords(
           )
       );
       if (filter_deleted) {
+        // guarding against there being no revision which should not happen but has
         record_list = record_list.filter(record => !record.revision?.deleted);
       }
       return {
@@ -867,14 +884,18 @@ export async function getSomeRecords(
       limit: limit,
       include_docs: true,
     };
+    // if we have a bookmark, start from there
     if (bookmark !== null) {
       options.startkey = bookmark;
     }
     const res = await dataDB.query(RECORD_REVISIONS_INDEX, options);
     let record_list = mapRecordRevisionRows(res.rows);
     if (filter_deleted) {
+      // guarding against there being no revision which should not happen but has
       record_list = record_list.filter(record => !record.revision?.deleted);
     }
+    // don't return the first record if we have a bookmark
+    // as it will be the bookmarked record
     if (bookmark !== null) {
       record_list = record_list.slice(1);
     }
@@ -890,8 +911,10 @@ export async function getSomeRecords(
 }
 
 /**
- * Return an iterator over the records in a notebook
+ * Return an iterator over the records in a notebook.
  * @param projectId project identifier
+ * @param updatedAfter exclusive lower bound on record.updatedAt (epoch ms)
+ * @param updatedBefore exclusive upper bound on record.updatedAt (epoch ms)
  */
 export const notebookRecordIterator = async ({
   projectId,
@@ -926,6 +949,7 @@ export const notebookRecordIterator = async ({
       filterDeleted,
       timeFilterActive ? updatedFilter : undefined
     );
+    // select just those in this view
     const result = viewID
       ? records.filter(record => record.type === viewID)
       : records;
@@ -936,6 +960,7 @@ export const notebookRecordIterator = async ({
       return {done: true, records: [] as typeof records, nextStartKey};
     }
     if (result.length === 0) {
+      // skip to next batch since none of these match our view
       if (!nextStartKey) {
         return {done: true, records: result, nextStartKey: undefined};
       }
@@ -957,12 +982,14 @@ export const notebookRecordIterator = async ({
         record = batch.records[index];
         index++;
       } else {
-        batch.records.length = 0;
+        // Explicit cleanup before fetching next batch
+        batch.records.length = 0; // Clear the array
 
         if (!batch.nextStartKey) {
           return {record: null, done: true};
         }
 
+        // Fetch next batch
         batch = await getNextBatch(batch.nextStartKey);
         if (batch.records.length > 0) {
           record = batch.records[0];

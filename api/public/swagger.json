@@ -21,7 +21,7 @@
   "tags": [
     {
       "name": "Records",
-      "description": "Notebook record metadata and full-record reads; mutating routes are omitted from this spec until records CRUD is enabled in the API."
+      "description": "Notebook record metadata, paginated hydrated field values, and full-record reads. Optional exclusive updatedAfter / updatedBefore (epoch ms) filter list and export routes. Mutating routes are omitted from this spec until records CRUD is enabled in the API."
     }
   ],
   "components": {
@@ -514,7 +514,7 @@
     "/notebooks/{id}/records": {
       "get": {
         "summary": "List all records (legacy full export shape)",
-        "description": "Returns `{ records }` with full export-oriented payloads for every record in the notebook (internal regex listing). Requires export permission on the project. Related-record fields omit references to soft-deleted records when building the export payload. For paginated, permission-filtered **metadata** only, use GET `/notebooks/{id}/records/metadata` instead. For single-record CRUD, use GET `/notebooks/{id}/records/{recordId}`.",
+        "description": "Returns `{ records }` with full export-oriented payloads for every record in the notebook (internal regex listing). Requires export permission on the project. Related-record fields omit references to soft-deleted records when building the export payload. Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) restrict the dump to records last updated in that window. For paginated, permission-filtered **metadata** only, use GET `/notebooks/{id}/records/metadata` instead. For paginated field values, use GET `/notebooks/{id}/records/hydrated`. For single-record CRUD, use GET `/notebooks/{id}/records/{recordId}`.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -525,6 +525,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "updatedAfter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive lower bound on last-updated time, as epoch milliseconds (record updatedAt > this). When both bounds are set, updatedAfter must be less than updatedBefore."
+          },
+          {
+            "name": "updatedBefore",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive upper bound on last-updated time, as epoch milliseconds (record updatedAt < this)."
           }
         ],
         "security": [
@@ -555,7 +573,7 @@
     "/notebooks/{id}/records/metadata": {
       "get": {
         "summary": "List record metadata (CRUD API)",
-        "description": "Paginated metadata for records the caller may read (filters, soft-delete handling). For legacy export-shaped data use GET /notebooks/{id}/records instead.",
+        "description": "Paginated metadata for records the caller may read (filters, soft-delete handling). Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) restrict the page to records last updated in that window; when a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]`. For paginated field values use GET /notebooks/{id}/records/hydrated. For legacy export-shaped data use GET /notebooks/{id}/records instead.",
         "tags": ["Records"],
         "parameters": [
           {
@@ -603,6 +621,24 @@
               "enum": ["true", "false"]
             },
             "description": "When false, include soft-deleted records (default true)"
+          },
+          {
+            "name": "updatedAfter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive lower bound on last-updated time, as epoch milliseconds (record updatedAt > this). When both bounds are set, updatedAfter must be less than updatedBefore."
+          },
+          {
+            "name": "updatedBefore",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive upper bound on last-updated time, as epoch milliseconds (record updatedAt < this)."
           }
         ],
         "security": [
@@ -617,6 +653,102 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/definitions/RecordsCRUDListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/records/hydrated": {
+      "get": {
+        "summary": "List hydrated records (CRUD API)",
+        "description": "Paginated metadata stubs plus GET-one form data (`data[fieldId] = { data, annotation?, attachments? }`) for records the caller may read. Same auth as GET /notebooks/{id}/records/metadata (`READ_MY_PROJECT_RECORDS` then per-row read). Does not require export permission. A failed hydrate omits that row (200 still returned). When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]`.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Restrict to records for this form / viewset id"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–configured max; default RECORDS_HYDRATED_PAGE_LIMIT / 150, absolute ceiling 500). Values above the configured max return 400."
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor from a previous response’s nextStartKey"
+          },
+          {
+            "name": "filterDeleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When false, include soft-deleted records (default true)"
+          },
+          {
+            "name": "updatedAfter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive lower bound on last-updated time, as epoch milliseconds (record updatedAt > this). When both bounds are set, updatedAfter must be less than updatedBefore."
+          },
+          {
+            "name": "updatedBefore",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive upper bound on last-updated time, as epoch milliseconds (record updatedAt < this)."
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordsCRUDHydratedListResponse"
                 }
               }
             }
@@ -695,7 +827,7 @@
     "/notebooks/{id}/records/export": {
       "get": {
         "summary": "Request signed URL for notebook records export",
-        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeGeoPackage, includeMetadata.",
+        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeGeoPackage, includeMetadata. Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) are stored on the JWT and applied when the download streams.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -785,6 +917,24 @@
               "enum": ["true", "false"]
             },
             "description": "When format is full: include metadata (default true)"
+          },
+          {
+            "name": "updatedAfter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive lower bound on last-updated time, as epoch milliseconds (record updatedAt > this). Stored on the download JWT. When both bounds are set, updatedAfter must be less than updatedBefore."
+          },
+          {
+            "name": "updatedBefore",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclusive upper bound on last-updated time, as epoch milliseconds (record updatedAt < this). Stored on the download JWT."
           }
         ],
         "security": [
@@ -872,7 +1022,7 @@
     "/notebooks/download/{downloadToken}": {
       "get": {
         "summary": "Download notebook records using JWT token",
-        "description": "Downloads notebook records in the format specified by the JWT token. Token expires in 5 minutes. Supports CSV, ZIP, GeoJSON, and KML formats.",
+        "description": "Downloads notebook records in the format specified by the JWT token. Token expires in 5 minutes. Supports CSV, ZIP, GeoJSON, KML, GeoPackage, and FULL. Optional updatedAfter / updatedBefore exclusive-ms bounds from the export request are applied when streaming.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -882,7 +1032,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Signed JWT download token containing download parameters (projectID, format, viewID, userID)"
+            "description": "Signed JWT download token containing download parameters (projectID, format, viewID, userID, optional updatedAfter / updatedBefore)"
           }
         ],
         "responses": {
@@ -2646,7 +2796,50 @@
         },
         "nextStartKey": {
           "type": "string",
-          "description": "Present when more results exist; pass as startKey on the next request"
+          "description": "Present when more results exist; pass as startKey on the next request. With a time window this is a JSON cursor [updatedMs, recordId]."
+        }
+      },
+      "required": ["records"]
+    },
+    "RecordsCRUDHydratedListItem": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/RecordsCRUDListItem"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "formId": {
+              "type": "string",
+              "description": "Form / viewset id (same as type)"
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Map of field id → { data, annotation?, attachments? } (same shape as GET /records/{recordId})"
+            },
+            "context": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Includes hrid, record, and revision documents"
+            }
+          },
+          "required": ["formId", "data", "context"]
+        }
+      ]
+    },
+    "RecordsCRUDHydratedListResponse": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RecordsCRUDHydratedListItem"
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when more results exist; pass as startKey on the next request. With a time window this is a JSON cursor [updatedMs, recordId]."
         }
       },
       "required": ["records"]
