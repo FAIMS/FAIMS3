@@ -26,8 +26,11 @@ export interface ResolvedPlanViews<C> {
  * meant.
  *
  * The route's two trailing segments are optional, so a lone one lands in
- * `planId` whether it was written as a plan or as a plain tab. One matching no
+ * `planId` whether it was written as a plan or as a plain tab. A plan takes it
+ * where the notebook declares one by that name, and only a segment matching no
  * plan is read as the tab, which is the shape a notebook with no plan view has.
+ * So a plan id that also reads as a tab slug resolves to the plan, whose own
+ * tabs stay reachable as the second segment.
  */
 export const resolvePlanViews = <C>({
   uiDefinition,

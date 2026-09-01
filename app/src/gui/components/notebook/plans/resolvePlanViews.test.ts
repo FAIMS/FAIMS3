@@ -208,6 +208,31 @@ describe('resolvePlanViews with several plans', () => {
     expect(r.showChooser).toBe(false);
   });
 
+  it('reads a lone segment naming a plan as the plan, not as a tab', () => {
+    // The only ambiguity a lone segment carries: a plan id that also reads as
+    // a tab slug. The plan takes it, so the segment always names what the
+    // route's first optional param is for.
+    const r = resolvePlanViews({
+      uiDefinition: {plans: [counted(), list({planId: 'details'})]},
+      planId: 'details',
+      tab: undefined,
+      getView,
+    });
+    expect(r.active?.plan.planId).toBe('details');
+    expect(r.planTab).toBeUndefined();
+  });
+
+  it("leaves that plan's own tabs reachable under it", () => {
+    const r = resolvePlanViews({
+      uiDefinition: {plans: [counted(), list({planId: 'details'})]},
+      planId: 'details',
+      tab: 'details',
+      getView,
+    });
+    expect(r.active?.plan.planId).toBe('details');
+    expect(r.planTab).toBe('details');
+  });
+
   it('carries the plan instance so a view need not read the project', () => {
     const r = resolvePlanViews({
       uiDefinition,
