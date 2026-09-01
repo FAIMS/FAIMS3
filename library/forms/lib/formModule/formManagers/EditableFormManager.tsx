@@ -81,6 +81,8 @@ export interface EditableFormManagerProps {
   initialData?: FaimsFormData;
   /** The existing record - this helps build contextual infills */
   existingRecord: HydratedRecordDocument;
+  /** The notebook's custom metadata, referenced as _METADATA.<key> */
+  metadataValues?: Record<string, string>;
   /** The initial revision ID to work on */
   revisionId: string;
   /** The form we are editing */
@@ -159,8 +161,9 @@ export const EditableFormManager: React.FC<
       ...getRecordContextFromRecord({record: props.existingRecord}),
       parentValues: parentValuesRef.current ?? undefined,
       relatedValues: relatedValuesRef.current,
+      metadataValues: props.metadataValues,
     }),
-    [props.existingRecord]
+    [props.existingRecord, props.metadataValues]
   );
 
   // ---------------------------------------------------------------------------

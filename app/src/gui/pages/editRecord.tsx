@@ -490,6 +490,7 @@ export const EditRecordPage = () => {
               initialData={formData!.data}
               revisionId={formData!.revisionId}
               existingRecord={formData!.context.record}
+              metadataValues={project?.uiDefinition.metadata.custom}
               formId={formData!.formId}
               activeUser={activeUser.username}
               recordId={recordId}
