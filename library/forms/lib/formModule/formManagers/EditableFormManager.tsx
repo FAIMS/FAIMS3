@@ -282,6 +282,11 @@ export const EditableFormManager: React.FC<
 
     isSavingRef.current = true;
     setIsSaving(true);
+    // Clear pending at the start so an onChange during this save can re-raise
+    // it. Clearing at the end would drop a location (or other) edit that
+    // landed while the previous snapshot was being written.
+    pendingValuesRef.current = false;
+    setHasPendingSave(false);
 
     try {
       const revisionToUpdate = await ensureWorkingRevision();
@@ -315,12 +320,12 @@ export const EditableFormManager: React.FC<
       });
 
       contentSavedThisSessionRef.current = true;
-      pendingValuesRef.current = false;
-      setHasPendingSave(false);
       attachmentSaveTrace('performSave:complete', {
         revisionId: revisionToUpdate,
       });
     } catch (error) {
+      pendingValuesRef.current = true;
+      setHasPendingSave(true);
       attachmentSaveTrace('performSave:error', {error: String(error)});
       logError(new Error('Failed to update revision:'), {error});
     } finally {
@@ -395,12 +400,8 @@ export const EditableFormManager: React.FC<
 
     debouncedSave.cancel();
 
-    if (pendingValuesRef.current) {
-      attachmentSaveTrace('flushSave:awaiting-performSave');
-      await performSaveRef.current();
-    }
-
-    // Poll the saving ref
+    // Drain an in-flight autosave first so we can then write the latest
+    // in-memory values (a later location pin can arrive mid-save).
     let waitIterations = 0;
     while (isSavingRef.current) {
       waitIterations += 1;
@@ -412,17 +413,45 @@ export const EditableFormManager: React.FC<
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    // Record stamp only on flush (nav / Finish), not every debounced keystroke.
-    if (contentSavedThisSessionRef.current) {
-      try {
-        await dataEngine.core.stampRecordUpdatedAt(props.recordId);
-        contentSavedThisSessionRef.current = false;
-      } catch (error) {
-        logError(new Error('Failed to stamp record updatedAt:'), {error});
+    // Finish / nav must persist current form state when this session edited.
+    // `pending` alone is not enough: an overlapping save used to clear it
+    // after a newer location change was already in memory.
+    const shouldWriteCurrentValues =
+      pendingValuesRef.current ||
+      edited ||
+      contentSavedThisSessionRef.current;
+    if (shouldWriteCurrentValues) {
+      attachmentSaveTrace('flushSave:awaiting-performSave', {
+        pendingValues: pendingValuesRef.current,
+        edited,
+      });
+      await performSaveRef.current();
+    }
+
+    while (pendingValuesRef.current || isSavingRef.current) {
+      waitIterations += 1;
+      if (pendingValuesRef.current && !isSavingRef.current) {
+        attachmentSaveTrace('flushSave:draining-pending-after-save');
+        await performSaveRef.current();
+        continue;
       }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    // Stamp record + revision on flush (nav / Finish) when this session wrote
+    // data, or when persisted AVP/revision times are already ahead of the
+    // current stamps. Use the current head, not a possibly-stale working id.
+    try {
+      await dataEngine.form.stampUpdatedAtIfNewer({
+        recordId: props.recordId,
+        force: contentSavedThisSessionRef.current,
+      });
+      contentSavedThisSessionRef.current = false;
+    } catch (error) {
+      logError(new Error('Failed to stamp updatedAt on flush:'), {error});
     }
     attachmentSaveTrace('flushSave:complete', {waitIterations});
-  }, [debouncedSave, debugMode, dataEngine, props.recordId]);
+  }, [debouncedSave, debugMode, dataEngine, props.recordId, edited]);
 
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;
@@ -1128,6 +1157,13 @@ export const EditableFormManager: React.FC<
           setConfirmFinishOpen(false);
           const fn = pendingFinishRef.current;
           pendingFinishRef.current = null;
+          // Finish anyway: persist + stamp again in case a location (or other)
+          // edit landed after the first Finish click opened this dialog.
+          try {
+            await flushSave();
+          } catch (err) {
+            logWarn('[Finish anyway] flushSave failed', {err});
+          }
           if (fn) await fn();
         }}
         title={`Are you sure you want to finish ${formLabel}?`}

@@ -1530,6 +1530,55 @@ class FormOperations {
   }
 
   /**
+   * Stamp record and revision `updatedAt` when persisted changes are newer than
+   * the current stamps. Used by the form finish/flush path so a later field
+   * write (for example setting location after an earlier field already stamped)
+   * still moves the timestamps on.
+   *
+   * Newest change is the later of the revision stamp and every AVP `created`.
+   * When that is ahead of either stamp, both documents are written to `now`.
+   * `force` stamps even when times already match (this session wrote data).
+   *
+   * @returns Whether stamps were written, and the timestamp used
+   */
+  async stampUpdatedAtIfNewer({
+    recordId,
+    revisionId,
+    force = false,
+  }: {
+    recordId: string;
+    revisionId?: string;
+    force?: boolean;
+  }): Promise<{stamped: boolean; timestamp?: string}> {
+    const record = await this.core.getRecord(recordId);
+    const resolvedRevisionId =
+      revisionId ?? (await this.getCurrentRevisionId({recordId}));
+    const revision = await this.core.getRevision(resolvedRevisionId);
+
+    const avps = await Promise.all(
+      Object.values(revision.avps).map(id => this.core.getAvp(id))
+    );
+
+    let newestChange = revision.updatedAt;
+    for (const avp of avps) {
+      if (avp.created > newestChange) {
+        newestChange = avp.created;
+      }
+    }
+
+    const recordStale = newestChange > record.updatedAt;
+    const revisionStale = newestChange > revision.updatedAt;
+    if (!force && !recordStale && !revisionStale) {
+      return {stamped: false};
+    }
+
+    const timestamp = getCurrentTimestamp();
+    await this.core.stampRevisionUpdatedAt(resolvedRevisionId, timestamp);
+    await this.core.stampRecordUpdatedAt(recordId, timestamp);
+    return {stamped: true, timestamp};
+  }
+
+  /**
    * Given a record ID, and optionally a revision ID, gets the hydrated data,
    * then maps it into the existing form data format. This is a nice utility
    * function for loading data into a form for updated existing records in the
@@ -2049,6 +2098,9 @@ class FormOperations {
 
     return {
       ...currentAvp,
+      // In-place writes keep the AVP id; refresh created so finish/flush can
+      // see this change as newer than the last record/revision stamp.
+      created: getCurrentTimestamp(),
       annotations: newData.annotation,
       data: newData.data,
       faims_attachments: newData.attachments?.map(a => ({

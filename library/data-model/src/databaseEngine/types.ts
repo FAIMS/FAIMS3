@@ -31,7 +31,7 @@ export const v1RecordDBFieldsSchema = z
     record_format_version: z.number(),
     created: z.iso.datetime(),
     created_by: z.string(),
-    /** When the current head revision was last created or replaced. */
+    /** When the current head was last created, replaced, or finish/flush-stamped. */
     updatedAt: z.iso.datetime(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
@@ -908,7 +908,7 @@ export interface MinimalRecordMetadata {
   revisionId: string;
   created: Date;
   createdBy: string;
-  /** Record `updatedAt` (when the current head was last created, replaced, or flushed). */
+  /** Record `updatedAt` (when the current head was last created, replaced, or finish/flush-stamped). */
   updated: Date;
   updatedBy: string;
   conflicts: boolean;
