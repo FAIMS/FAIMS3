@@ -94,6 +94,10 @@ export const getRelatedRecordFields = ({
   return fields;
 };
 
+/** Encodes a related reference (<Rel-Field-ID>.<Field-ID>). */
+export const encodeRelatedRef = (relFieldId: string, fieldId: string): string =>
+  `${relFieldId}${RELATED_REFERENCE_SEPARATOR}${fieldId}`;
+
 /**
  * Splits a dotted reference at its first separator into the Related Records
  * field ID and the field on the linked form. Null when there is no separator

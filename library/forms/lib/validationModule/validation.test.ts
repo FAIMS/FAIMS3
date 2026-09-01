@@ -4,6 +4,9 @@ import {
   getFieldNamesForViewset,
   normalizeNotebookUiSpecification,
   type CompiledNotebookUiSpec,
+  buildConditionValues,
+  encodeParentRef,
+  encodeRelatedRef,
 } from '@faims3/data-model';
 import {describe, expect, it} from 'vitest';
 import {z} from 'zod';
@@ -104,6 +107,67 @@ describe('FormValidation', () => {
           config: {visibleBehaviour: 'ignore'},
         })
       ).toThrow('Data is required when visibleBehaviour is not "include"');
+    });
+  });
+
+  describe('getRelevantFields with parent and related references', () => {
+    // Clone the sample spec and repoint the conditional field's condition at
+    // a parent reference, then a related reference.
+    const specWithCondition = (field: string) => {
+      const {uiSpec: clone} = normalizeNotebookUiSpecification(
+        JSON.parse(JSON.stringify(sampleNotebook))
+      );
+      clone.fields['Female-conditional'].condition = {
+        operator: 'equal',
+        field,
+        value: 'match',
+      };
+      compileUiSpecConditionals(clone);
+      return clone as CompiledNotebookUiSpec;
+    };
+
+    it('includes a field conditioned on a parent value when context matches', () => {
+      const spec = specWithCondition(encodeParentRef('Grid-Square'));
+      const data = buildConditionValues({
+        values: SAMPLE_VALID_DATA,
+        context: {parentValues: {'Grid-Square': 'match'}},
+      });
+      const result = FormValidation.getRelevantFields({
+        uiSpec: spec,
+        formId: 'Person',
+        data,
+        config: {visibleBehaviour: 'ignore'},
+      });
+      expect(result).toContain('Female-conditional');
+    });
+
+    it('excludes a field conditioned on a parent value when there is no context', () => {
+      const spec = specWithCondition(encodeParentRef('Grid-Square'));
+      const data = buildConditionValues({values: SAMPLE_VALID_DATA});
+      const result = FormValidation.getRelevantFields({
+        uiSpec: spec,
+        formId: 'Person',
+        data,
+        config: {visibleBehaviour: 'ignore'},
+      });
+      expect(result).not.toContain('Female-conditional');
+    });
+
+    it('includes a field conditioned on a related value when context matches', () => {
+      const spec = specWithCondition(
+        encodeRelatedRef('Core-Calibration', 'Status')
+      );
+      const data = buildConditionValues({
+        values: SAMPLE_VALID_DATA,
+        context: {relatedValues: {'Core-Calibration': {Status: 'match'}}},
+      });
+      const result = FormValidation.getRelevantFields({
+        uiSpec: spec,
+        formId: 'Person',
+        data,
+        config: {visibleBehaviour: 'ignore'},
+      });
+      expect(result).toContain('Female-conditional');
     });
   });
 

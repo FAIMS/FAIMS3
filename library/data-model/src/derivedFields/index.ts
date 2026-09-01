@@ -1,4 +1,5 @@
 export * from './computedFields';
+export * from './conditionValues';
 export * from './parentFieldScan';
 export * from './recordContext';
 export * from './resolveParentField';
