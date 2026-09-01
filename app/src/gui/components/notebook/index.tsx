@@ -193,6 +193,7 @@ export default function NotebookComponent({
             <AddRecordButtons
               project={project}
               recordLabel={recordLabel}
+              formTypes={visibleTypes}
               refreshList={() => {
                 invalidateProjectRecordList({
                   client: queryClient,

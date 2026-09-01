@@ -47,7 +47,13 @@ vi.mock('../../../context/slices/helpers/compiledSpecService', () => ({
   compiledSpecService: {getSpec: () => uiSpecification},
 }));
 
-const renderButtons = (planClaim?: {planReference: string; formType: string}) =>
+const renderButtons = ({
+  formTypes,
+  planReference,
+}: {
+  formTypes: string[];
+  planReference?: string;
+}) =>
   render(
     <ThemeProvider theme={theme}>
       <AddRecordButtons
@@ -56,7 +62,8 @@ const renderButtons = (planClaim?: {planReference: string; formType: string}) =>
         }
         recordLabel="Record"
         refreshList={vi.fn()}
-        planClaim={planClaim}
+        formTypes={formTypes}
+        planReference={planReference}
       />
     </ThemeProvider>
   );
@@ -64,8 +71,8 @@ const renderButtons = (planClaim?: {planReference: string; formType: string}) =>
 afterEach(cleanup);
 
 describe('AddRecordButtons on a plan that shares its notebook', () => {
-  it('offers every visible form where no plan claims the records', () => {
-    renderButtons();
+  it('offers a button per form it is given', () => {
+    renderButtons({formTypes: uiSpecification.visible_types});
     expect(
       screen.getByTestId('Site-app-record-add-button')
     ).toBeInTheDocument();
@@ -74,26 +81,44 @@ describe('AddRecordButtons on a plan that shares its notebook', () => {
     ).toBeInTheDocument();
   });
 
-  it("offers the plan's own form alone", () => {
-    renderButtons({planReference: 'field', formType: 'Site'});
+  it('offers no form it was not given', () => {
+    renderButtons({formTypes: ['Site'], planReference: 'field'});
     expect(
       screen.getByTestId('Site-app-record-add-button')
     ).toBeInTheDocument();
     expect(screen.queryByTestId('Feature-app-record-add-button')).toBeNull();
   });
 
+  it('offers every form of a plan collecting more than one', () => {
+    renderButtons({formTypes: ['Site', 'Hidden'], planReference: 'field'});
+    expect(
+      screen.getByTestId('Site-app-record-add-button')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('Hidden-app-record-add-button')
+    ).toBeInTheDocument();
+  });
+
   it('offers a plan its form even where the notebook hides it', () => {
-    renderButtons({planReference: 'field', formType: 'Hidden'});
+    renderButtons({formTypes: ['Hidden'], planReference: 'field'});
     expect(
       screen.getByTestId('Hidden-app-record-add-button')
     ).toBeInTheDocument();
   });
 
   it('claims the record it creates for the plan', async () => {
-    renderButtons({planReference: 'field', formType: 'Site'});
+    renderButtons({formTypes: ['Site'], planReference: 'field'});
     await userEvent.click(screen.getByTestId('Site-app-record-add-button'));
     expect(createRecord).toHaveBeenCalledWith(
       expect.objectContaining({formId: 'Site', planReference: 'field'})
+    );
+  });
+
+  it('claims nothing where no plan asked for the buttons', async () => {
+    renderButtons({formTypes: ['Site']});
+    await userEvent.click(screen.getByTestId('Site-app-record-add-button'));
+    expect(createRecord).toHaveBeenCalledWith(
+      expect.objectContaining({formId: 'Site', planReference: undefined})
     );
   });
 });

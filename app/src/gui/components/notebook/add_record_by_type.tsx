@@ -25,17 +25,21 @@ type AddRecordButtonsProps = {
   recordLabel: string;
   refreshList: () => void;
   /**
-   * Restricts these buttons to the plan's own form and claims for the plan
-   * every record they create.
+   * The forms to offer a button for, in the order to offer them. The caller
+   * decides: the notebook's visible forms, or the forms a plan collects, which
+   * a plan may carry several of and need not list among the visible ones.
    */
-  planClaim?: {planReference: string; formType: string};
+  formTypes: string[];
+  /** Claims for a plan every record these buttons create. */
+  planReference?: string;
 };
 
 export default function AddRecordButtons({
   project: {projectId, serverId, uiSpecificationId},
   refreshList,
   recordLabel,
-  planClaim,
+  formTypes,
+  planReference,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
   // This page cannot load if no active user
@@ -54,9 +58,6 @@ export default function AddRecordButtons({
   }
   const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
-  // A plan collects one form, so its screen offers that form alone. Taken from
-  // the plan, not from the visible ones, since a plan may name a hidden form.
-  const visibleTypes = planClaim ? [planClaim.formType] : uiSpec.visible_types;
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -77,7 +78,7 @@ export default function AddRecordButtons({
       .createRecord({
         createdBy: activeUser.username,
         formId: viewsetName,
-        planReference: planClaim?.planReference,
+        planReference,
       })
       .then(newRecord =>
         navigate(
@@ -141,7 +142,7 @@ export default function AddRecordButtons({
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {visibleTypes.length === 1 ? (
+          {formTypes.length === 1 ? (
             <Button
               variant="contained"
               color="primary"
@@ -155,34 +156,31 @@ export default function AddRecordButtons({
               }}
               startIcon={<AddCircleSharpIcon />}
               key="newRecord"
-              data-testid={`${visibleTypes[0]}-app-record-add-button`}
-              onClick={handleNewRecord(visibleTypes[0])}
+              data-testid={`${formTypes[0]}-app-record-add-button`}
+              onClick={handleNewRecord(formTypes[0])}
             >
               Add new {recordLabel}
             </Button>
           ) : (
-            visibleTypes.map(
-              (viewset_name: string) =>
-                viewsets[viewset_name].is_visible !== false && (
-                  <Button
-                    key={viewset_name}
-                    startIcon={<AddCircleSharpIcon />}
-                    variant="contained"
-                    data-testid={`${viewset_name}-app-record-add-button`}
-                    sx={{
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      backgroundColor: theme.palette.icon.main,
-                      '&:hover': {
-                        backgroundColor: theme.palette.secondary.dark,
-                      },
-                    }}
-                    onClick={handleNewRecord(viewset_name)}
-                  >
-                    {viewsets[viewset_name].label || `New ${viewset_name}`}
-                  </Button>
-                )
-            )
+            formTypes.map((viewset_name: string) => (
+              <Button
+                key={viewset_name}
+                startIcon={<AddCircleSharpIcon />}
+                variant="contained"
+                data-testid={`${viewset_name}-app-record-add-button`}
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  backgroundColor: theme.palette.icon.main,
+                  '&:hover': {
+                    backgroundColor: theme.palette.secondary.dark,
+                  },
+                }}
+                onClick={handleNewRecord(viewset_name)}
+              >
+                {viewsets[viewset_name].label || `New ${viewset_name}`}
+              </Button>
+            ))
           )}
         </ButtonGroup>
 

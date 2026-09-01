@@ -104,7 +104,8 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
                 project={project}
                 recordLabel={recordLabel}
                 refreshList={actions.refreshRecordList}
-                planClaim={{planReference, formType: plan.formType}}
+                formTypes={[plan.formType]}
+                planReference={planReference}
               />
             </Box>
           )}
