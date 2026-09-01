@@ -11,6 +11,8 @@ import {
   initDataDB,
   NotebookDefinition,
   parseUpdatedTimeCursor,
+  queryRecordIdsByUpdated,
+  UpdatedTimeIndexError,
 } from '../src';
 
 PouchDB.plugin(PouchDBFind);
@@ -120,6 +122,19 @@ describe('listHydratedRecords', () => {
     page2.records.forEach(r => expect(seen.has(r.recordId)).toBe(false));
   });
 
+  test('throws UpdatedTimeIndexError when the time index view is missing', async () => {
+    const design = await db.get('_design/index');
+    await db.remove(design);
+
+    await expect(
+      queryRecordIdsByUpdated({
+        dataDb: db,
+        updatedAfter: 0,
+        limit: 1,
+      })
+    ).rejects.toBeInstanceOf(UpdatedTimeIndexError);
+  });
+
   test('omits a failed hydrate and still returns the rest of the page', async () => {
     const a = await createTimedRecord(0);
     const b = await createTimedRecord(1);
@@ -140,6 +155,9 @@ describe('listHydratedRecords', () => {
       c.record._id,
     ]);
     expect(result.errorCount).toBeGreaterThan(0);
+    expect(result.errors).toEqual([
+      {recordId: b.record._id, revisionId: b.revision._id},
+    ]);
     expect(result.records.every(r => r.data['First-1']?.data)).toBe(true);
   });
 });

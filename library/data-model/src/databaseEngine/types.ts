@@ -942,14 +942,22 @@ export type HydratedListRecord = MinimalRecordMetadata & {
   context: InitialFormData['context'];
 };
 
+/** One row that listed as metadata but failed to hydrate. */
+export type HydratedListHydrationError = {
+  recordId: string;
+  revisionId: string;
+};
+
 /**
  * Result from listing hydrated records. Failed hydrates are omitted (not a
- * page-level error); `errorCount` includes those skips.
+ * page-level error); `errorCount` includes those skips and `errors` lists
+ * `{recordId, revisionId}` for each failed hydrate.
  */
 export interface HydratedListRecordResult {
   records: HydratedListRecord[];
   count: number;
   errorCount: number;
+  errors?: HydratedListHydrationError[];
   nextStartKey?: string;
 }
 

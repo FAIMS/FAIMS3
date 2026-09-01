@@ -32,7 +32,9 @@ import {
   GetNotebookUsersResponse,
   getRecordListAudit,
   getRecordsWithRegex,
+  hasUpdatedTimeFilter,
   isPeopleUserAccountDisabled,
+  queryRecordIdsByUpdated,
   UpdatedTimeFilter,
   updatedAfterMsSchema,
   updatedBeforeMsSchema,
@@ -360,6 +362,15 @@ api.get(
       (await projectHasSpatialFields(req.params.id))
     ) {
       await assertGdalAvailable();
+    }
+
+    if (hasUpdatedTimeFilter(updatedFilter)) {
+      const dataDb = await getDataDb(req.params.id);
+      await queryRecordIdsByUpdated({
+        dataDb,
+        ...updatedFilter,
+        limit: 1,
+      });
     }
 
     // Build the download token

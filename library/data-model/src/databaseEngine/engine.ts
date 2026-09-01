@@ -25,6 +25,7 @@ import {
   FormRelationship,
   FormUpdateData,
   HydratedDataField,
+  HydratedListHydrationError,
   HydratedListRecord,
   HydratedListRecordResult,
   HydratedRecord,
@@ -1029,7 +1030,7 @@ class HydratedOperations {
   ): Promise<
     Array<
       | {ok: true; stub: MinimalRecordMetadata; formData: InitialFormData}
-      | {ok: false}
+      | {ok: false; recordId: string; revisionId: string}
     >
   > {
     if (stubs.length === 0) return [];
@@ -1089,7 +1090,11 @@ class HydratedOperations {
           `[hydrateListedRecords] skipping ${stub.recordId}:`,
           err instanceof Error ? err.message : err
         );
-        return {ok: false as const};
+        return {
+          ok: false as const,
+          recordId: stub.recordId,
+          revisionId: stub.revisionId,
+        };
       }
     });
   }
@@ -1371,6 +1376,32 @@ class FormOperations {
       throw new Exceptions.RecordConflictError(recordId, heads);
     }
     return heads[0];
+  }
+
+  /**
+   * Head used for finish/flush stamps. One head → that id. Several heads →
+   * the revision with the latest `updatedAt` (conflict: record stamp follows
+   * the newest branch).
+   */
+  private async latestHeadRevisionId(
+    record: ExistingRecordDBDocument
+  ): Promise<string> {
+    if (record.heads.length === 0) {
+      throw new Exceptions.NoHeadsError(record._id);
+    }
+    if (record.heads.length === 1) {
+      return record.heads[0];
+    }
+    const revisions = await Promise.all(
+      record.heads.map(id => this.core.getRevision(id))
+    );
+    return revisions.reduce((latest, rev) => {
+      const latestMs = Date.parse(latest.updatedAt);
+      const revMs = Date.parse(rev.updatedAt);
+      const latestOk = Number.isNaN(latestMs) ? 0 : latestMs;
+      const revOk = Number.isNaN(revMs) ? 0 : revMs;
+      return revOk >= latestOk ? rev : latest;
+    })._id;
   }
 
   /**
@@ -1743,7 +1774,7 @@ class FormOperations {
   }): Promise<{stamped: boolean; timestamp?: string}> {
     const record = await this.core.getRecord(recordId);
     const resolvedRevisionId =
-      revisionId ?? (await this.getCurrentRevisionId({recordId}));
+      revisionId ?? (await this.latestHeadRevisionId(record));
     const revision = await this.core.getRevision(resolvedRevisionId);
 
     const avps = await Promise.all(
@@ -1810,8 +1841,9 @@ class FormOperations {
    * call {@link getExistingFormData} once per row (that is one GET per field).
    *
    * If one id fails to hydrate (corrupt AVP, missing revision, …), that row is
-   * omitted and counted in `errorCount`. The page still returns; `nextStartKey`
-   * comes from the metadata listing so the cursor does not stall.
+   * omitted, counted in `errorCount`, and listed in `errors` as
+   * `{recordId, revisionId}`. The page still returns; `nextStartKey` comes from
+   * the metadata listing so the cursor does not stall.
    */
   async listHydratedRecords({
     projectId,
@@ -1857,10 +1889,13 @@ class FormOperations {
     );
 
     const records: HydratedListRecord[] = [];
-    let hydrateErrors = 0;
+    const errors: HydratedListHydrationError[] = [];
     for (const result of hydrations) {
       if (!result.ok) {
-        hydrateErrors++;
+        errors.push({
+          recordId: result.recordId,
+          revisionId: result.revisionId,
+        });
         continue;
       }
       records.push({
@@ -1875,7 +1910,8 @@ class FormOperations {
     return {
       records,
       count: records.length,
-      errorCount: metadataResult.errorCount + hydrateErrors,
+      errorCount: metadataResult.errorCount + errors.length,
+      ...(errors.length > 0 ? {errors} : {}),
       ...(metadataResult.nextStartKey !== undefined
         ? {nextStartKey: metadataResult.nextStartKey}
         : {}),

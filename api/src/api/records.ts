@@ -249,7 +249,8 @@ recordsRouter.get(
  *
  * Registered before `/:recordId` so Express does not treat `hydrated` as an id.
  *
- * A failed hydrate omits that row (does not 500 the page). `nextStartKey` still
+ * A failed hydrate omits that row (does not 500 the page) and lists
+ * `{recordId, revisionId}` in optional `errors`. `nextStartKey` still
  * comes from the metadata listing. Time-window cursors are JSON
  * `[updatedMs, recordId]` — same as metadata.
  */
@@ -313,6 +314,9 @@ recordsRouter.get(
         records,
         ...(result.nextStartKey !== undefined
           ? {nextStartKey: result.nextStartKey}
+          : {}),
+        ...(result.errors !== undefined && result.errors.length > 0
+          ? {errors: result.errors}
           : {}),
       });
     } catch (err) {

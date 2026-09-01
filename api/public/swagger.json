@@ -573,7 +573,7 @@
     "/notebooks/{id}/records/metadata": {
       "get": {
         "summary": "List record metadata (CRUD API)",
-        "description": "Paginated metadata for records the caller may read (filters, soft-delete handling). Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) restrict the page to records last updated in that window; when a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]`. For paginated field values use GET /notebooks/{id}/records/hydrated. For legacy export-shaped data use GET /notebooks/{id}/records instead.",
+        "description": "Paginated metadata for records the caller may read (filters, soft-delete handling). Optional exclusive `updatedAfter` / `updatedBefore` (epoch ms) restrict the page to records last updated in that window; when a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]`. Database paging (limit/startKey/time index) runs first; formId, permissions, and filterDeleted are applied after, so a page may be empty or short while nextStartKey is still set — keep paging until nextStartKey is absent. For paginated field values use GET /notebooks/{id}/records/hydrated. For legacy export-shaped data use GET /notebooks/{id}/records instead.",
         "tags": ["Records"],
         "parameters": [
           {
@@ -669,7 +669,7 @@
     "/notebooks/{id}/records/hydrated": {
       "get": {
         "summary": "List hydrated records (CRUD API)",
-        "description": "Paginated metadata stubs plus GET-one form data (`data[fieldId] = { data, annotation?, attachments? }`) for records the caller may read. Same auth as GET /notebooks/{id}/records/metadata (`READ_MY_PROJECT_RECORDS` then per-row read). Does not require export permission. A failed hydrate omits that row (200 still returned). When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]`.",
+        "description": "Paginated metadata stubs plus GET-one form data (`data[fieldId] = { data, annotation?, attachments? }`) for records the caller may read. Same auth as GET /notebooks/{id}/records/metadata (`READ_MY_PROJECT_RECORDS` then per-row read). Does not require export permission. A failed hydrate omits that row (200 still returned) and lists `{recordId, revisionId}` in optional `errors`. Database paging runs first; formId, permissions, and filterDeleted are applied after — keep paging while `nextStartKey` is present, including on empty pages. When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]`.",
         "tags": ["Records"],
         "parameters": [
           {
@@ -2840,6 +2840,22 @@
         "nextStartKey": {
           "type": "string",
           "description": "Present when more results exist; pass as startKey on the next request. With a time window this is a JSON cursor [updatedMs, recordId]."
+        },
+        "errors": {
+          "type": "array",
+          "description": "Stubs that listed but failed to hydrate. Omitted when empty.",
+          "items": {
+            "type": "object",
+            "required": ["recordId", "revisionId"],
+            "properties": {
+              "recordId": {
+                "type": "string"
+              },
+              "revisionId": {
+                "type": "string"
+              }
+            }
+          }
         }
       },
       "required": ["records"]

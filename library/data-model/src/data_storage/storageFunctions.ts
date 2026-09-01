@@ -51,6 +51,7 @@ import {
   hasUpdatedTimeFilter,
   queryRecordIdsByUpdated,
   recordUpdatedInWindow,
+  UpdatedTimeIndexError,
   UpdatedTimeFilter,
 } from './updatedTimeFilter';
 
@@ -644,6 +645,7 @@ export async function getRecordsWithRegex({
       filterDeleted,
     });
   } catch (error) {
+    if (error instanceof UpdatedTimeIndexError) throw error;
     console.debug('Failed to regex search for', projectId, regex);
     logError(error);
     return [];
@@ -905,6 +907,12 @@ export async function getSomeRecords(
       ...(lastId !== undefined ? {nextStartKey: lastId} : {}),
     };
   } catch (err) {
+    if (
+      hasUpdatedTimeFilter(updatedFilter) ||
+      err instanceof UpdatedTimeIndexError
+    ) {
+      throw err;
+    }
     console.log('failed to get some records', err);
     return {records: []};
   }

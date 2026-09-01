@@ -9,6 +9,20 @@ import {DatabaseInterface} from '../types';
 
 export const RECORD_BY_UPDATED_INDEX = 'index/recordByUpdated';
 
+/** Thrown when `index/recordByUpdated` is missing or the view query fails. */
+export class UpdatedTimeIndexError extends Error {
+  constructor(
+    message = 'The record last-updated index is missing or failed to query. Run migrate-with-keys so _design/index includes recordByUpdated.',
+    options?: {cause?: unknown}
+  ) {
+    super(message);
+    this.name = 'UpdatedTimeIndexError';
+    if (options?.cause !== undefined) {
+      (this as Error & {cause?: unknown}).cause = options.cause;
+    }
+  }
+}
+
 /** Exclusive epoch-ms window on record `updatedAt`. Either bound may be omitted. */
 export type UpdatedTimeFilter = {
   updatedAfter?: number;
@@ -133,7 +147,12 @@ export async function queryRecordIdsByUpdated({
     options.limit = requestedLimit + 1;
   }
 
-  const result = await dataDb.query(RECORD_BY_UPDATED_INDEX, options);
+  let result;
+  try {
+    result = await dataDb.query(RECORD_BY_UPDATED_INDEX, options);
+  } catch (err) {
+    throw new UpdatedTimeIndexError(undefined, {cause: err});
+  }
   const rows = result.rows.filter(row => Array.isArray(row.key));
 
   const pageRows =

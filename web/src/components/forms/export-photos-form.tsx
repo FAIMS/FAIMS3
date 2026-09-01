@@ -23,6 +23,7 @@ const ExportPhotosForm = () => {
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
   const [exportScope, setExportScope] = useState<ExportScope | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const timeRange = useExportTimeRange();
 
   if (!data) {
@@ -60,6 +61,16 @@ const ExportPhotosForm = () => {
           Authorization: `Bearer ${user.token}`,
         },
       });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: {message?: string};
+        } | null;
+        return {
+          message:
+            body?.error?.message ??
+            'Export failed. Please try again or contact support.',
+        };
+      }
       const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
         .url;
 
@@ -73,6 +84,7 @@ const ExportPhotosForm = () => {
    */
   const handleAllFormsSubmit = async () => {
     if (user) {
+      setSubmitError(null);
       const params = new URLSearchParams({format: 'zip'});
       timeRange.appendTo(params);
       const exportUrl = `${config.apiUrl}/api/notebooks/${projectId}/records/export?${params.toString()}`;
@@ -82,6 +94,17 @@ const ExportPhotosForm = () => {
           Authorization: `Bearer ${user.token}`,
         },
       });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: {message?: string};
+        } | null;
+        setSubmitError(
+          body?.error?.message ??
+            'Export failed. Please try again or contact support.'
+        );
+        return;
+      }
 
       const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
         .url;
@@ -160,6 +183,11 @@ const ExportPhotosForm = () => {
         >
           Download All Photos
         </button>
+        {submitError && (
+          <p className="min-w-0 max-w-full break-words text-sm text-destructive">
+            {submitError}
+          </p>
+        )}
       </div>
     );
   }

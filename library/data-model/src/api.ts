@@ -1208,10 +1208,17 @@ export type ListHydratedRecordsItem = z.infer<
   typeof ListHydratedRecordsItemSchema
 >;
 
+/** Failed hydrate on a list page (row omitted from `records`). */
+export const HydratedListHydrationErrorSchema = z.object({
+  recordId: z.string(),
+  revisionId: z.string(),
+});
+
 /** GET paginated hydrated records response */
 export const GetListHydratedRecordsResponseSchema = z.object({
   records: z.array(ListHydratedRecordsItemSchema),
   nextStartKey: z.string().optional(),
+  errors: z.array(HydratedListHydrationErrorSchema).optional(),
 });
 export type GetListHydratedRecordsResponse = z.infer<
   typeof GetListHydratedRecordsResponseSchema

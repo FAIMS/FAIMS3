@@ -61,6 +61,8 @@ import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
  * Changes are batched and saved after this delay (in milliseconds).
  */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
+/** Local Pouch writes should succeed; cap retries then show an error. */
+const FLUSH_SAVE_MAX_FAILED_ATTEMPTS = 3;
 
 /** Shorter debounce for responsive UI feedback */
 const VISIBILITY_DEBOUNCE_MS = 150;
@@ -271,7 +273,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   // Save Implementation
   // ---------------------------------------------------------------------------
-  const performSave = useCallback(async () => {
+  const performSave = useCallback(async (): Promise<boolean> => {
     attachmentSaveTrace('performSave:start', {
       pendingValues: pendingValuesRef.current,
       isSaving: isSavingRef.current,
@@ -323,11 +325,13 @@ export const EditableFormManager: React.FC<
       attachmentSaveTrace('performSave:complete', {
         revisionId: revisionToUpdate,
       });
+      return true;
     } catch (error) {
       pendingValuesRef.current = true;
       setHasPendingSave(true);
       attachmentSaveTrace('performSave:error', {error: String(error)});
       logError(new Error('Failed to update revision:'), {error});
+      return false;
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -417,22 +421,35 @@ export const EditableFormManager: React.FC<
     // `pending` alone is not enough: an overlapping save used to clear it
     // after a newer location change was already in memory.
     const shouldWriteCurrentValues =
-      pendingValuesRef.current ||
-      edited ||
-      contentSavedThisSessionRef.current;
+      pendingValuesRef.current || edited || contentSavedThisSessionRef.current;
+    let failedSaves = 0;
+    const saveOrCountFailure = async () => {
+      const ok = await performSaveRef.current();
+      if (!ok) failedSaves += 1;
+      return ok;
+    };
+
     if (shouldWriteCurrentValues) {
       attachmentSaveTrace('flushSave:awaiting-performSave', {
         pendingValues: pendingValuesRef.current,
         edited,
       });
-      await performSaveRef.current();
+      await saveOrCountFailure();
     }
 
     while (pendingValuesRef.current || isSavingRef.current) {
+      if (failedSaves >= FLUSH_SAVE_MAX_FAILED_ATTEMPTS) {
+        handleError(
+          'Could not save this record. Please try again. If this keeps happening, contact support.'
+        );
+        throw new Error(
+          `flushSave: local save failed after ${failedSaves} attempts`
+        );
+      }
       waitIterations += 1;
       if (pendingValuesRef.current && !isSavingRef.current) {
         attachmentSaveTrace('flushSave:draining-pending-after-save');
-        await performSaveRef.current();
+        await saveOrCountFailure();
         continue;
       }
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -440,7 +457,8 @@ export const EditableFormManager: React.FC<
 
     // Stamp record + revision on flush (nav / Finish) when this session wrote
     // data, or when persisted AVP/revision times are already ahead of the
-    // current stamps. Use the current head, not a possibly-stale working id.
+    // current stamps. On conflict, stamp uses the head with the latest
+    // updatedAt rather than throwing.
     try {
       await dataEngine.form.stampUpdatedAtIfNewer({
         recordId: props.recordId,
@@ -449,9 +467,22 @@ export const EditableFormManager: React.FC<
       contentSavedThisSessionRef.current = false;
     } catch (error) {
       logError(new Error('Failed to stamp updatedAt on flush:'), {error});
+      handleError(
+        'Saved the record but could not update its timestamp. Please try again.'
+      );
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to stamp updatedAt on flush');
     }
     attachmentSaveTrace('flushSave:complete', {waitIterations});
-  }, [debouncedSave, debugMode, dataEngine, props.recordId, edited]);
+  }, [
+    debouncedSave,
+    debugMode,
+    dataEngine,
+    props.recordId,
+    edited,
+    handleError,
+  ]);
 
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;
@@ -911,8 +942,8 @@ export const EditableFormManager: React.FC<
         try {
           await flushSave();
         } catch (err) {
-          // Best-effort flush — in-memory state is still good enough to check against.
           logWarn('[guardFinish] flushSave failed before issue check', {err});
+          return;
         }
 
         const progress = completion({
@@ -1163,6 +1194,7 @@ export const EditableFormManager: React.FC<
             await flushSave();
           } catch (err) {
             logWarn('[Finish anyway] flushSave failed', {err});
+            return;
           }
           if (fn) await fn();
         }}

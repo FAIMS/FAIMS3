@@ -84,6 +84,8 @@ GET /api/notebooks/:id/records/metadata?updatedAfter=1700000000000&updatedBefore
 
 When a time window is active, `nextStartKey` is a JSON cursor `[updatedMs, recordId]` rather than a bare record id.
 
+**Paging vs filters:** `limit` / `startKey` (and the time index, when a window is set) select a **database page first**. `formId`, permission checks, and `filterDeleted` run **after** that page. A response can therefore be `records: []` (or shorter than `limit`) while `nextStartKey` is still present — more matching rows may exist on later pages. Clients must keep requesting the next page while `nextStartKey` is set, even when the current page is empty. The server does **not** auto-advance through empty pages (that would turn a filtered list into an unbounded scan).
+
 **Legacy dump** **GET** `/api/notebooks/:id/records/` remains the unpaginated export-shaped dump and requires `EXPORT_PROJECT_DATA`. It accepts the same `updatedAfter` / `updatedBefore` exclusive-ms query parameters and returns only records in that window. Use `/records/metadata` for the lightweight listing and `/records/hydrated` for paged field values.
 
 **Export** **GET** `/api/notebooks/:id/records/export` accepts the same bounds (plus `format`, `viewID`, and full-export include flags). They are stored on the download JWT and applied when **GET** `/api/notebooks/download/:downloadToken` streams CSV, ZIP, GeoJSON, KML, GeoPackage, or a full ZIP.
@@ -140,7 +142,7 @@ Returns a permission-filtered, paginated list of records. Each item is the **met
 
 When either time bound is set, listing uses the time index and `nextStartKey` is a JSON cursor `[updatedMs, recordId]` (same as `/metadata`). A bare record-id cursor with a time bound yields an empty page. With neither bound, `startKey` is the existing non-time record-id cursor from `listMinimalRecordMetadata`.
 
-If one record fails to hydrate (corrupt AVP, missing revision, …), that item is **omitted** from `records` and the rest of the page is still returned (**200**). The cursor still advances from the metadata listing so the poller does not stall.
+If one record fails to hydrate (corrupt AVP, missing revision, …), that item is **omitted** from `records` and listed in optional `errors` as `{ recordId, revisionId }`. The rest of the page is still returned (**200**). The cursor still advances from the metadata listing so the poller does not stall. The same **page-then-filter** rule as `/metadata` applies: keep paging while `nextStartKey` is present.
 
 **Response** (200 OK):
 
@@ -173,11 +175,17 @@ If one record fails to hydrate (corrupt AVP, missing revision, …), that item i
       }
     }
   ],
-  "nextStartKey": "[1700000000000,\"rec-abc123-...\"]"
+  "nextStartKey": "[1700000000000,\"rec-abc123-...\"]",
+  "errors": [
+    {
+      "recordId": "rec-skipped-...",
+      "revisionId": "frev-skipped-..."
+    }
+  ]
 }
 ```
 
-`revisionId` is the stub/head revision (same as **GET** `/records/:recordId`).
+`revisionId` is the stub/head revision (same as **GET** `/records/:recordId`). `errors` is omitted when every listed stub hydrated.
 
 ---
 

@@ -1533,5 +1533,41 @@ describe('Form Operations', () => {
       expect(revision.updatedAt).not.toBe(revAfterFirst.updatedAt);
       expect(record.updatedAt).toBe(revision.updatedAt);
     });
+
+    test('stamps using the later of multiple heads on conflict', async () => {
+      const created = await engine.form.createRecord({
+        formId: 'A',
+        createdBy: 'user-1',
+      });
+      const olderUpdatedAt = created.record.updatedAt;
+
+      await new Promise(resolve => setTimeout(resolve, 15));
+
+      const child = await engine.form.createRevision({
+        recordId: created.record._id,
+        revisionId: created.revision._id,
+        createdBy: 'user-1',
+      });
+
+      const record = await engine.core.getRecord(created.record._id);
+      await engine.core.updateRecord({
+        ...record,
+        heads: [created.revision._id, child._id],
+        updatedAt: olderUpdatedAt,
+      });
+
+      await expect(
+        engine.form.getCurrentRevisionId({recordId: created.record._id})
+      ).rejects.toMatchObject({name: 'RecordConflictError'});
+
+      const result = await engine.form.stampUpdatedAtIfNewer({
+        recordId: created.record._id,
+      });
+      expect(result.stamped).toBe(true);
+      const stamped = await engine.core.getRecord(created.record._id);
+      expect(Date.parse(stamped.updatedAt)).toBeGreaterThan(
+        Date.parse(olderUpdatedAt)
+      );
+    });
   });
 });
