@@ -64,11 +64,23 @@ async function installExportIntercept() {
 }
 
 async function lastExportUrl(): Promise<string> {
+  await browser.waitUntil(
+    async () => {
+      const count = await browser.execute(() => {
+        const w = window as Window & {__exportCalls?: string[]};
+        return (w.__exportCalls ?? []).length;
+      });
+      return count > 0;
+    },
+    {
+      timeout: 10000,
+      timeoutMsg: 'Expected an intercepted /records/export request',
+    }
+  );
   const calls = await browser.execute(() => {
     const w = window as Window & {__exportCalls?: string[]};
     return w.__exportCalls ?? [];
   });
-  expect(calls.length).toBeGreaterThan(0);
   return calls[calls.length - 1];
 }
 
@@ -195,7 +207,9 @@ describe('Web — Project exports', () => {
     await waitForTestId('web-export-data-dialog');
     await byTestId('web-export-data-tabular').click();
     await waitForTestId('web-export-data-download');
-    const trigger = await $('button[role="combobox"]');
+    // Format is also a combobox (already defaulted to CSV). The required
+    // Form field must be selected or submit never fires.
+    const trigger = byTestId('web-export-data-form');
     await trigger.waitForClickable({timeout: 10000});
     await trigger.click();
     const option = await $('[role="option"]');

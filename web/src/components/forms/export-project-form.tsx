@@ -61,6 +61,7 @@ const ExportProjectForm = () => {
       name: 'form',
       label: 'Form',
       schema: z.string().min(1, 'Please select a form'),
+      testId: 'web-export-data-form',
       options: data?.uiSpecification.uiSpec.viewsets
         ? Object.keys(viewSets).map(name => ({
             label: viewSets[name].label || name,
