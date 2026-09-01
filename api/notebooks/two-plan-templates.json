@@ -134,6 +134,7 @@
         "planId": "site-survey",
         "planType": "Counted",
         "label": "Survey",
+        "description": "Walk the survey area and record each site you find.",
         "formType": "Site"
       },
       {

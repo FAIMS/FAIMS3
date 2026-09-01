@@ -670,9 +670,12 @@ export const createNotebookFromTemplate = async ({
     // parse it first to make sure it's valid according to the plan type's plan schema
     const planParseResult = planTypeDefinition.planSchema.safeParse({
       ...instantiatedPlan,
-      // The template owns both: `instantiatePlan` writes neither.
+      // The template owns these: `instantiatePlan` writes none of them.
       planId,
       label: planTemplate.label,
+      ...(planTemplate.description
+        ? {description: planTemplate.description}
+        : {}),
     });
     if (!planParseResult.success) {
       throw new Exceptions.InvalidRequestException(

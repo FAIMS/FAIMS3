@@ -310,6 +310,40 @@ describe('notebook creation from template with planTemplates', () => {
     ]);
   });
 
+  it("carries the plan template's description onto the plan", async () => {
+    const template = await createTemplateWithPlanTemplates({
+      planId: COUNTED_PLAN_TYPE,
+      planType: COUNTED_PLAN_TYPE,
+      label: 'Artefacts',
+      description: 'Bag and number every artefact from the trench.',
+      formType: 'artefact-form',
+    });
+
+    const notebookId = await requestAuthAndType(
+      request(app)
+        .post(NOTEBOOKS_API_BASE)
+        .send({
+          name: 'described plan notebook',
+          description: testNotebookDescription,
+          template_id: template._id,
+          planConfigs: {
+            [COUNTED_PLAN_TYPE]: {
+              numberRequired: 3,
+              allowExtraRecords: false,
+            },
+          },
+        } satisfies CreateNotebookFromTemplate)
+    )
+      .expect(200)
+      .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
+
+    const project = await getProjectById(notebookId);
+    expect(project.uiSpecification.plans?.[0]).toMatchObject({
+      label: 'Artefacts',
+      description: 'Bag and number every artefact from the trench.',
+    });
+  });
+
   it('rejects notebook creation when a plan template has no config', async () => {
     const template = await createTemplateWithPlanTemplates({
       planId: COUNTED_PLAN_TYPE,

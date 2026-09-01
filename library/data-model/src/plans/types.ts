@@ -42,6 +42,11 @@ export const PlanTemplateSchema = z
      * are not held apart by their whitespace.
      */
     label: z.string().trim().min(1),
+    /**
+     * Says what following this plan involves, where the app has room for more
+     * than a name. Optional: the label is what a plan must carry.
+     */
+    description: z.string().trim().min(1).optional(),
   })
   .passthrough();
 export type PlanTemplate = z.infer<typeof PlanTemplateSchema>;
@@ -94,6 +99,11 @@ export const PlanSchema = z
      * plan template at instantiation.
      */
     label: z.string().trim().min(1),
+    /**
+     * Says what following this plan involves, carried over from the plan
+     * template at instantiation as the label is.
+     */
+    description: z.string().trim().min(1).optional(),
   })
   .passthrough();
 export type Plan = z.infer<typeof PlanSchema>;
@@ -132,9 +142,9 @@ export type PlanTypeDefinition<
   configSchema: TConfigSchema;
   planSchema: TPlanSchema;
   /**
-   * Builds one notebook's plan from its template and config. The id and label
-   * are the caller's to add, from the plan template, so a new plan type has two
-   * fewer things to remember.
+   * Builds one notebook's plan from its template and config. The fields the
+   * base plan template carries are the caller's to add from it, so a new plan
+   * type has that much less to remember.
    */
   instantiatePlan: ({
     template,
@@ -142,7 +152,7 @@ export type PlanTypeDefinition<
   }: {
     template: z.infer<TTemplateSchema>;
     config: z.infer<TConfigSchema>;
-  }) => Omit<z.infer<TPlanSchema>, 'planId' | 'label'>;
+  }) => Omit<z.infer<TPlanSchema>, 'planId' | 'label' | 'description'>;
 };
 
 export type AnyPlanTypeDefinition = PlanTypeDefinition<any, any, any, any>;

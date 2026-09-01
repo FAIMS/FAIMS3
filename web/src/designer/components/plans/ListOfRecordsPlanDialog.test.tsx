@@ -14,7 +14,7 @@
 
 /**
  * @file Interaction tests for the List of Records plan dialog: its field picker
- * and the label every plan must carry.
+ * and the label and description every plan dialog authors.
  */
 
 import {LIST_OF_RECORDS_PLAN_TYPE, migrateNotebook} from '@faims3/data-model';
@@ -178,6 +178,30 @@ describe('ListOfRecordsPlanDialog', () => {
       true
     );
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  test('saves a description alongside the label', () => {
+    const {onSave} = renderDialog(['Identifier']);
+
+    fireEvent.change(screen.getByTestId('plan-description'), {
+      target: {value: '  Check each sample in against the field list.  '},
+    });
+    fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'Lab samples',
+        description: 'Check each sample in against the field list.',
+      })
+    );
+  });
+
+  test('saves no description where the author left it blank', () => {
+    const {onSave} = renderDialog(['Identifier']);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Save Plan'}));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.not.objectContaining({description: expect.anything()})
+    );
   });
 
   test('a field since deleted from the form is still shown, to be removed', () => {

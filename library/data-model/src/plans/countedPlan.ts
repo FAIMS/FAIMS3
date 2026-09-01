@@ -46,7 +46,7 @@ export const instantiateCountedPlan = ({
 }: {
   template: CountedPlanTemplate;
   config: CountedPlanTemplateConfig;
-}): Omit<CountedPlan, 'planId' | 'label'> => {
+}): Omit<CountedPlan, 'planId' | 'label' | 'description'> => {
   if (!countedPlanTemplateSchema.safeParse(template).success) {
     throw new Error('Invalid counted plan template');
   }

@@ -36,7 +36,7 @@ import {
   COUNTED_PLAN_TYPE,
   countedPlanTemplateSchema,
 } from '@faims3/data-model';
-import {PlanLabelField, usePlanLabel} from './PlanLabelField';
+import {PlanFields, usePlanFields} from './PlanFields';
 import {
   designerCancelButtonSx,
   designerDialogActionsSx,
@@ -65,7 +65,7 @@ export const CountedPlanDialog = ({
 
   const viewSets = uiSpec.viewsets;
 
-  const planLabel = usePlanLabel({open, initialTemplate, takenLabels});
+  const planFields = usePlanFields({open, initialTemplate, takenLabels});
   const [formType, setFormType] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
@@ -89,7 +89,7 @@ export const CountedPlanDialog = ({
   const handleSave = () => {
     const result = authoredCountedPlanTemplateSchema.safeParse({
       planType: COUNTED_PLAN_TYPE,
-      label: planLabel.label,
+      ...planFields.authored,
       formType,
     });
     if (!result.success) {
@@ -114,7 +114,7 @@ export const CountedPlanDialog = ({
       </DialogTitle>
       <DialogContent sx={{...designerDialogContentSx, pt: 4}}>
         <Box sx={{maxWidth: 740, width: '100%', mx: 'auto'}}>
-          <PlanLabelField state={planLabel} />
+          <PlanFields state={planFields} />
 
           <Box sx={{mt: 3}}>
             <SimpleFieldWrapper
@@ -153,7 +153,7 @@ export const CountedPlanDialog = ({
         </Button>
         <Button
           variant="contained"
-          disabled={!formType || !planLabel.canSave}
+          disabled={!formType || !planFields.canSave}
           onClick={handleSave}
         >
           Save Plan
