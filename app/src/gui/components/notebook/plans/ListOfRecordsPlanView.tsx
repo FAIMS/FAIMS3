@@ -97,6 +97,9 @@ export const ListOfRecordsPlanView = (props: NotebookViewComponentProps) => {
         {!plan.allowExtraRecords
           ? 'Do not allow extra records'
           : 'Extra records allowed'}
+        {/* A notebook with one plan never shows the chooser, so this is the
+        only place its description is read */}
+        {plan.description && <div>{plan.description}</div>}
       </Alert>
 
       <TabContext value={currentTab}>

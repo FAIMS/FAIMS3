@@ -60,7 +60,6 @@ const renderButtons = ({
         project={
           {projectId: 'p', serverId: 's', uiSpecificationId: 'u'} as Project
         }
-        recordLabel="Record"
         refreshList={vi.fn()}
         formTypes={formTypes}
         planReference={planReference}
@@ -79,6 +78,13 @@ describe('AddRecordButtons on a plan that shares its notebook', () => {
     expect(
       screen.getByTestId('Feature-app-record-add-button')
     ).toBeInTheDocument();
+  });
+
+  it('names the one button after the form it creates', () => {
+    renderButtons({formTypes: ['Site'], planReference: 'field'});
+    expect(screen.getByTestId('Site-app-record-add-button')).toHaveTextContent(
+      'Add new Site'
+    );
   });
 
   it('offers no form it was not given', () => {

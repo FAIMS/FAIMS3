@@ -165,6 +165,11 @@ export default function NotebookComponent({
       : 'Record';
 
   const visibleTypes = getVisibleTypes(uiSpecification);
+  // Forms to offer an add button for: those listed as visible, less any viewset
+  // that opts out of one.
+  const addableTypes = visibleTypes.filter(
+    type => viewsets[type]?.is_visible !== false
+  );
   const visibleMyRecords = records.myRecords.filter(r =>
     visibleTypes.includes(r.type)
   );
@@ -192,8 +197,7 @@ export default function NotebookComponent({
           <Box sx={{mb: 1.5}}>
             <AddRecordButtons
               project={project}
-              recordLabel={recordLabel}
-              formTypes={visibleTypes}
+              formTypes={addableTypes}
               refreshList={() => {
                 invalidateProjectRecordList({
                   client: queryClient,

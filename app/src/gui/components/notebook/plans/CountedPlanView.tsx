@@ -64,6 +64,9 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
           {!plan.allowExtraRecords
             ? 'Do not allow extra records'
             : 'Extra records allowed'}
+          {/* A notebook with one plan never shows the chooser, so this is the
+          only place its description is read */}
+          {plan.description && <div>{plan.description}</div>}
         </Alert>
       </div>
 
@@ -102,7 +105,6 @@ export const CountedPlanView = (props: NotebookViewComponentProps) => {
             <Box sx={{mb: 1.5}}>
               <AddRecordButtons
                 project={project}
-                recordLabel={recordLabel}
                 refreshList={actions.refreshRecordList}
                 formTypes={[plan.formType]}
                 planReference={planReference}

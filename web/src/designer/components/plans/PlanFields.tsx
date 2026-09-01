@@ -98,7 +98,7 @@ export const PlanFields = ({state}: {state: PlanFieldsState}) => (
     <Box sx={{mt: 3}}>
       <SimpleFieldWrapper
         heading="Description"
-        helperText="Says what following this plan involves, under its label on the chooser. Optional."
+        helperText="Says what following this plan involves, under the plan's label where the app shows it. Optional."
       >
         <TextField
           fullWidth

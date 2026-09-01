@@ -22,7 +22,6 @@ import {QRCodeButton} from '@faims3/forms';
 
 type AddRecordButtonsProps = {
   project: Project;
-  recordLabel: string;
   refreshList: () => void;
   /**
    * The forms to offer a button for, in the order to offer them. The caller
@@ -37,7 +36,6 @@ type AddRecordButtonsProps = {
 export default function AddRecordButtons({
   project: {projectId, serverId, uiSpecificationId},
   refreshList,
-  recordLabel,
   formTypes,
   planReference,
 }: AddRecordButtonsProps) {
@@ -58,6 +56,9 @@ export default function AddRecordButtons({
   }
   const showQRButton = uiSpec.settings.showQrCodeButton;
   const viewsets = uiSpec.viewsets;
+  // The one button names the form it creates. A caller may name a form the
+  // notebook no longer carries, so fall back to the form's own id.
+  const formLabel = (formType: string) => viewsets[formType]?.label || formType;
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -159,7 +160,7 @@ export default function AddRecordButtons({
               data-testid={`${formTypes[0]}-app-record-add-button`}
               onClick={handleNewRecord(formTypes[0])}
             >
-              Add new {recordLabel}
+              Add new {formLabel(formTypes[0])}
             </Button>
           ) : (
             formTypes.map((viewset_name: string) => (
@@ -178,7 +179,7 @@ export default function AddRecordButtons({
                 }}
                 onClick={handleNewRecord(viewset_name)}
               >
-                {viewsets[viewset_name].label || `New ${viewset_name}`}
+                {viewsets[viewset_name]?.label || `New ${viewset_name}`}
               </Button>
             ))
           )}
