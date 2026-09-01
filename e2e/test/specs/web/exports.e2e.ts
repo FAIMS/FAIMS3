@@ -4,7 +4,7 @@
  */
 import {loginWebPersona} from '../../helpers/auth.ts';
 import {captureStep} from '../../helpers/screenshot.ts';
-import {byTestId} from '../../helpers/selectors.ts';
+import {byTestId, setDateTimeLocal} from '../../helpers/selectors.ts';
 import {waitForTestId} from '../../helpers/wait.ts';
 import {getWebUrl} from '../../helpers/env.ts';
 
@@ -140,8 +140,8 @@ describe('Web — Project exports', () => {
     await byTestId('web-export-full-button').click();
     await waitForTestId('web-export-full-dialog');
     await enableTimeRange();
-    await byTestId('web-export-time-from').setValue(FROM_AFTER_TO);
-    await byTestId('web-export-time-to').setValue(FROM_LOCAL);
+    await setDateTimeLocal('web-export-time-from', FROM_AFTER_TO);
+    await setDateTimeLocal('web-export-time-to', FROM_LOCAL);
     const download = byTestId('web-export-full-download');
     await expect(download).toBeDisabled();
     await expect($('p*=From must be earlier than To.')).toBeDisplayed();
@@ -164,7 +164,7 @@ describe('Web — Project exports', () => {
     await byTestId('web-export-full-button').click();
     await waitForTestId('web-export-full-dialog');
     await enableTimeRange();
-    await byTestId('web-export-time-from').setValue(FROM_LOCAL);
+    await setDateTimeLocal('web-export-time-from', FROM_LOCAL);
     await installExportIntercept();
     const expectedAfter = await expectedAfterMs(FROM_LOCAL);
     await byTestId('web-export-full-download').click();
@@ -178,8 +178,8 @@ describe('Web — Project exports', () => {
     await byTestId('web-export-full-button').click();
     await waitForTestId('web-export-full-dialog');
     await enableTimeRange();
-    await byTestId('web-export-time-from').setValue(FROM_LOCAL);
-    await byTestId('web-export-time-to').setValue(TO_LOCAL);
+    await setDateTimeLocal('web-export-time-from', FROM_LOCAL);
+    await setDateTimeLocal('web-export-time-to', TO_LOCAL);
     await installExportIntercept();
     const expectedAfter = await expectedAfterMs(FROM_LOCAL);
     const expectedBefore = await expectedBeforeMs(TO_LOCAL);
@@ -202,8 +202,8 @@ describe('Web — Project exports', () => {
     await option.waitForClickable({timeout: 10000});
     await option.click();
     await enableTimeRange();
-    await byTestId('web-export-time-from').setValue(FROM_LOCAL);
-    await byTestId('web-export-time-to').setValue(TO_LOCAL);
+    await setDateTimeLocal('web-export-time-from', FROM_LOCAL);
+    await setDateTimeLocal('web-export-time-to', TO_LOCAL);
     await installExportIntercept();
     const expectedAfter = await expectedAfterMs(FROM_LOCAL);
     const expectedBefore = await expectedBeforeMs(TO_LOCAL);
@@ -221,7 +221,7 @@ describe('Web — Project exports', () => {
     await byTestId('web-export-photos-all').click();
     await waitForTestId('web-export-photos-download');
     await enableTimeRange();
-    await byTestId('web-export-time-to').setValue(TO_LOCAL);
+    await setDateTimeLocal('web-export-time-to', TO_LOCAL);
     await installExportIntercept();
     const expectedBefore = await expectedBeforeMs(TO_LOCAL);
     await byTestId('web-export-photos-download').click();
