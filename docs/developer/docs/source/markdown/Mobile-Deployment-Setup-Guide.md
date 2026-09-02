@@ -14,31 +14,34 @@ This guide covers the first-time setup and the workflow you can repeat for addit
 
 ## 1. Decide where to keep your local working config
 
-Keep a local working draft outside the tracked app source, but inside the repo tree for convenience.
+Keep a local working copy of your deployment configuration in the repo tree for convenience and as the source of truth for your deployments.
 
 Recommended pattern:
 
 ```text
 config/
-  mobile-local/
-    production/
-      build-config.json
-      build-secrets.json
-    nightly/
-      build-config.json
-      build-secrets.json
+  production/
+    build-config.json
+    build-secrets.json
+  nightly/
+    build-config.json
+    build-secrets.json
 ```
 
 Why this is a good place:
 
 - It is close to the repo root and easy to find.
 - It is clearly not part of the app build itself.
-- It is easy to exclude from git if you want a local-only scratch area.
-- It matches the eventual target structure in the private repo: `mobile/<environment>/...`
+- It is easy to exclude from git if you want to keep it private locally.
+- It serves as the source of truth for your deployment configuration.
+- It matches the target structure in the private repo: `mobile/<environment>/...`
 
-If you prefer, you can keep the local draft somewhere else entirely (for example in your home directory or in a separate working folder), but the repo-local `config/mobile-local/` approach is the easiest to understand and maintain.
+The `sync-deployment-config.sh` script treats the local `config/<environment>/`
+directory as the source of truth, so any changes you make here will be synced to
+the private repo.
 
-Add the folder to `.gitignore` if you do not want to commit the local draft files.
+The config folder has been added to `.gitignore` to prevent accidental commits
+of secrets to the app repository:
 
 ## 2. Decide on the environment slug
 
@@ -68,12 +71,12 @@ This keeps the workflow variable and the config repo structure aligned.
 
 ## 3. Create the local config files
 
-Begin with a local file for the environment you are setting up.
+Begin with local files for the environment you are setting up in the `config/` directory.
 
 Example layout:
 
 ```text
-config/mobile-local/production/
+config/production/
   build-config.json
   build-secrets.json
 ```
@@ -148,60 +151,87 @@ my-org/mobile-config
 
 This is the value used in the workflow, not the full HTTPS URL.
 
-## 6. Sync the local secret bundle into the private repo
+## 6. Sync the local config files into the private repo
 
-The helper script is designed for this exact purpose:
+The helper script is designed to manage both `build-config.json` and `build-secrets.json` files:
 
 ```bash
-./scripts/sync-deployment-config.sh <environment> <local_secrets_file> [options]
+./scripts/sync-deployment-config.sh push <environment> [options]
 ```
 
-Example:
+The script treats your local `config/<environment>/` directory as the source of truth.
+
+### First sync with a new repo URL:
 
 ```bash
-./scripts/sync-deployment-config.sh \
-  production \
-  config/mobile-local/production/build-secrets.json \
+./scripts/sync-deployment-config.sh push production \
+  --config_repo git@github.com:my-org/mobile-config.git
+```
+
+### Or, if the repo is already cloned locally:
+
+```bash
+./scripts/sync-deployment-config.sh push production \
+  --repo-path /path/to/mobile-config
+```
+
+### What the script does:
+
+1. Validates both local `build-config.json` and `build-secrets.json` exist and are valid JSON
+2. Connects to the private repo and fetches the latest version
+3. Compares your local files with the remote versions
+4. If files have changed:
+   - Encrypts `build-secrets.json` with SOPS
+   - Copies `build-config.json` to the remote repo
+   - Commits and pushes both files together
+5. Updates the local cache copies (`build-secrets.enc.json`)
+
+### Usage options:
+
+- `--branch <name>` — specify the branch to push to (default: `main`)
+- `--message <text>` — custom commit message (default: "update mobile config for <environment>")
+- `--force` — skip confirmation prompts
+
+### Example workflow:
+
+```bash
+# Edit your local files
+vim config/production/build-config.json
+vim config/production/build-secrets.json
+
+# Sync changes to the private repo (with confirmation prompt)
+./scripts/sync-deployment-config.sh push production \
+  --config_repo git@github.com:my-org/mobile-config.git
+
+# Or force-push without confirmation
+./scripts/sync-deployment-config.sh push production \
   --config_repo git@github.com:my-org/mobile-config.git \
-  --branch main \
-  --target mobile/production/build-secrets.enc.json
+  --force
 ```
 
-Or, if the repo is already cloned locally:
+### Important notes:
+
+- The script requires both `build-config.json` and `build-secrets.json` to exist in `config/<environment>/`
+- The repo must be available to `sops` via the expected key mechanism (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or local age config)
+- The script only pushes if at least one file has actually changed
+- Both files are committed together in a single commit
+
+## 7. Pulling remote config changes locally
+
+To pull the latest configuration from the private repo back into your local `config/` directory:
 
 ```bash
-./scripts/sync-deployment-config.sh \
-  production \
-  config/mobile-local/production/build-secrets.json \
-  --repo-path /path/to/mobile-config \
-  --branch main \
-  --target mobile/production/build-secrets.enc.json
+./scripts/sync-deployment-config.sh pull production \
+  --config_repo git@github.com:my-org/mobile-config.git
 ```
 
-What the script does:
+This will:
 
-- validates the local JSON file
-- ensures the target repo path is present
-- tries to decrypt the existing target if it exists
-- merges the new values with the existing encrypted file
-- re-encrypts the merged result with SOPS
-- commits and pushes the change to the selected branch
+1. Clone or update the private repo
+2. Decrypt `build-secrets.enc.json` to `build-secrets.json`
+3. Mirror both files into your local `config/production/` directory
 
-Important: the script expects the local file to be valid JSON and the repo to be available to `sops` via the expected key mechanism (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or local age config).
-
-## 7. Create the non-secret config file in the private repo
-
-The non-secret config file is not pushed by the helper script; it is part of the repository contents.
-
-Create:
-
-```text
-mobile/production/build-config.json
-```
-
-with the environment-specific values that should be versioned and reviewed.
-
-This file should reflect the final build configuration for that environment, while the `build-secrets.enc.json` file carries values that must stay encrypted.
+Use this command when you need to sync remote changes (for example, if another team member has pushed config updates).
 
 ## 8. Register the environment in GitHub Actions
 
@@ -238,14 +268,15 @@ config_repo/mobile/${MOBILE_CONFIG_ENVIRONMENT}/build-secrets.enc.json
 
 Before using a production config in a real release workflow, run through a minimal validation:
 
-1. Check the generated config directory exists in the private repo.
-2. Verify the JSON is valid.
-3. Ensure the repo is decryptable locally with your SOPS setup.
-4. Run the sync script once to publish the secret bundle.
-5. Confirm the workflow can read the files.
-6. Trigger the non-production workflow first if there is a test/nightly build path.
+1. Ensure both `config/production/build-config.json` and `config/production/build-secrets.json` exist locally.
+2. Verify both JSON files are valid by running: `jq empty config/production/*.json`
+3. Ensure the private repo is decryptable locally with your SOPS setup.
+4. Run the sync script to publish both files: `./scripts/sync-deployment-config.sh push production --config_repo <url>`
+5. Verify files exist in the private repo at `mobile/production/build-config.json` and `mobile/production/build-secrets.enc.json`
+6. Confirm the workflow can read the files.
+7. Trigger the non-production workflow first if there is a test/nightly build path.
 
-This is especially useful for the first run because it catches mismatched environment slugs, missing values, and secret layout mistakes before the production lane is used.
+This is especially useful for the first run because it catches mismatched environment slugs, missing values, secret layout mistakes, and JSON validation errors before the production lane is used.
 
 ## 10. Recommended first-time rollout plan
 
