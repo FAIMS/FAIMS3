@@ -27,7 +27,6 @@ import type {TileDbMigrationDetails} from './types';
 import {migrateV1ToV2, validateV2} from './versions/migrateV2';
 
 // Target tile database version.
-//
 // Used both as the IndexedDB version passed to indexedDB.open()
 // and as the target logical/data migration version.
 export const TILE_DB_TARGET_VERSIONS = 2;
