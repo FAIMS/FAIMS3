@@ -25,8 +25,8 @@
 
 import 'fake-indexeddb/auto';
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
+import {deleteDatabase, requestAsPromise} from '../../IDBUtils';
 import {OFFLINE_MAP_ID_PREFIX} from '../../tileStoreUtils';
-import {requestAsPromise} from '../idbUtils';
 import {
   migrateV1ToV2,
   TileSetV1,
@@ -36,7 +36,6 @@ import {
   validateV2,
 } from './migrateV2';
 import {
-  deleteTestDb,
   openDbForTest,
   readAll,
   runMigrationForTest,
@@ -136,7 +135,7 @@ describe('migrateV1ToV2', () => {
     db.close();
 
     // Remove the test database so every test starts with a clean v1 database.
-    await deleteTestDb(V2_MIGRATION_TEST_DB_NAME);
+    await deleteDatabase(V2_MIGRATION_TEST_DB_NAME);
   });
 
   test('migrates every @project/ tile-set id to a generated offline-map id', async () => {

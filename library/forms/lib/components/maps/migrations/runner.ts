@@ -23,13 +23,13 @@
  * Migration changes, validation, and version metadata therefore commit
  * atomically with the IndexedDB database upgrade.
  *
- * If a migration fails, the caller aborts the upgrade transaction. This rolls
- * back both the migration and metadata changes. A failure can be logged to the
+ * If a migration fails, the upgrade transaction is aborted. This rolls back
+ * both the migration and metadata changes. A failure can be logged to the
  * console, but cannot be persisted in the same transaction because an aborted
  * IndexedDB transaction saves none of its writes.
  */
 
-import {requestAsPromise} from './idbUtils';
+import {requestAsPromise} from '../IDBUtils';
 import {TILE_DB_MIGRATIONS, TILE_DB_TARGET_VERSIONS} from './migrations';
 import {
   TILE_DB_MIGRATION_STATE_KEY,
@@ -198,4 +198,39 @@ export async function runTileDbUpgradeMigrations(
   );
 
   await runner.run();
+}
+
+/**
+ * Run tile database migrations for the current IndexedDB upgrade.
+ *
+ * If migration or validation fails, notify the caller and abort the active
+ * versionchange transaction. Aborting rolls back all schema, data, validation,
+ * and migration metadata changes from the failed upgrade.
+ */
+export function handleTileDbUpgrade(
+  // Database being upgraded.
+  db: IDBDatabase,
+  // Active IndexedDB versionchange transaction.
+  transaction: IDBTransaction,
+  // Database version before this upgrade started.
+  oldDatabaseVersion: number,
+  // Called after a migration failure aborts the upgrade transaction.
+  onFailure: () => void
+): void {
+  runTileDbUpgradeMigrations(db, transaction, oldDatabaseVersion).catch(
+    error => {
+      console.error('[tiles_db] Database upgrade failed', error);
+      // The abort event is fired when an IndexedDB transaction is aborted.
+      // Only migration failures register this abort handler. Notify the caller
+      // once IndexedDB has aborted the failed upgrade transaction.
+      transaction.addEventListener('abort', onFailure, {once: true});
+
+      // Abort the upgrade so no partial migration changes are committed.
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already be aborting.
+      }
+    }
+  );
 }

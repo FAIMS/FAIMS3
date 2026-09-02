@@ -19,7 +19,7 @@
  * Shared migration test utility functions.
  */
 
-import {requestAsPromise} from '../idbUtils';
+import {requestAsPromise} from '../../IDBUtils';
 import type {TileDbMigrationFunction} from '../types';
 
 /**
@@ -111,19 +111,4 @@ export async function runMigrationForTest(
 
   // Wait for all migration and validation requests to finish.
   await completion;
-}
-
-/**
- * Delete a test database.
- */
-export async function deleteTestDb(
-  // Name of the temporary test database to delete.
-  dbName: string
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(dbName);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
 }

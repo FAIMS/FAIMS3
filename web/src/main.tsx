@@ -7,6 +7,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RouterProvider, createRouter} from '@tanstack/react-router';
 import {StrictMode, useEffect} from 'react';
 import ReactDOM from 'react-dom/client';
+import {toast} from 'sonner';
 import {config} from './constants';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {BreadcrumbProvider} from './context/breadcrumb-provider';
@@ -47,9 +48,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-/* Initialise offline Map database */
-initialiseMaps();
-
 /**
  * App component renders the main application layout.
  * It includes the main navigation and the main content.
@@ -63,6 +61,23 @@ function App() {
   useEffect(() => {
     document.title = config.websiteTitle ?? 'Control Centre';
     document.documentElement.className = getThemeClass();
+  }, []);
+
+  /* Initialise offline Map database */
+  useEffect(() => {
+    initialiseMaps()
+      .then(({databaseReset}) => {
+        if (databaseReset) {
+          toast.warning(
+            'An error occurred while upgrading your offline maps. ' +
+              'You may need to re-download your offline map regions.'
+          );
+        }
+      })
+      .catch(error => {
+        console.error('Failed to initialise offline maps', error);
+        toast.error('Failed to initialise offline maps.');
+      });
   }, []);
 
   /**

@@ -20,7 +20,7 @@
  */
 
 // Convert an IndexedDB request into a Promise so it can be awaited.
-export function requestAsPromise<T>(
+export async function requestAsPromise<T>(
   // IndexedDB request to wait for.
   request: IDBRequest<T>
 ): Promise<T> {
@@ -31,7 +31,7 @@ export function requestAsPromise<T>(
 }
 
 // Scan an object store with a cursor without loading all records into memory.
-export function scanStore(
+export async function scanStore(
   // Object store to scan.
   store: IDBObjectStore,
   // Function to run for each record found by the cursor.
@@ -59,6 +59,22 @@ export function scanStore(
       } catch (error) {
         reject(error);
       }
+    };
+  });
+}
+
+/**
+ * Delete an IndexedDB database.
+ */
+export async function deleteDatabase(dbName: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(dbName);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+
+    request.onblocked = () => {
+      reject(new Error(`Deleting IndexedDB database '${dbName}' was blocked`));
     };
   });
 }

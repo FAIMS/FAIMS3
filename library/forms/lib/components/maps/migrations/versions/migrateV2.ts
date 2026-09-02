@@ -25,7 +25,7 @@
 
 import {z} from 'zod';
 import {createOfflineMapId} from '../../tileStoreUtils';
-import {requestAsPromise, scanStore} from '../idbUtils';
+import {requestAsPromise, scanStore} from '../../IDBUtils';
 import type {TileDbMigrationFunction} from '../types';
 
 // Validate the fields required from stored tile records during migration.

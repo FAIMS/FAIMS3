@@ -35,9 +35,11 @@ import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
 import {IDBObjectStore} from './IDBObjectStore';
 import {
-  runTileDbUpgradeMigrations,
+  deleteDatabase,
+  handleTileDbUpgrade,
   TILE_DB_MIGRATION_STORE,
   TILE_DB_TARGET_VERSIONS,
+  TileDbMigrationError,
   TileDbMigrationState,
 } from './migrations';
 import {getMapStylesheet} from './styles';
@@ -92,6 +94,10 @@ const TILE_URL_MAP: {
   },
 };
 
+export type InitialiseTileDbResult = {
+  databaseReset: boolean;
+};
+
 // MapTileDatabase - a singleton class holding the tile database references
 // manages creation of the IndexedDB database and object stores.  Used by TileStoreBase
 // to access the stored tiles and tile-sets.
@@ -108,11 +114,7 @@ class MapTileDatabase {
   tileSetDB!: IDBObjectStore<StoredTileSet>;
   migrationDB!: IDBObjectStore<TileDbMigrationState>;
 
-  constructor() {
-    this.initDB().catch(error => {
-      console.error('Failed to initialise tile database', error);
-    });
-  }
+  constructor() {}
 
   static getInstance(): MapTileDatabase {
     if (!MapTileDatabase.#instance) {
@@ -121,13 +123,40 @@ class MapTileDatabase {
     return MapTileDatabase.#instance;
   }
 
-  // Initialise the database and the object stores that we'll rely on
-  // called from the constructor but could also be awaited by a client if
-  // they wanted to ensure that the db is ready
-  initDB(): Promise<void> {
+  // Initialise the database and object-store wrappers.
+  // Clients can await this to ensure the offline-map database is ready.
+  async initDB(): Promise<InitialiseTileDbResult> {
+    try {
+      await this.openDatabase();
+      return {
+        databaseReset: false,
+      };
+    } catch (error) {
+      // Only reset the offline-map database when migration specifically failed.
+      // Other IndexedDB errors are surfaced without wiping cached data
+      if (!(error instanceof TileDbMigrationError)) throw error;
+
+      console.warn(
+        '[tiles_db] Migration failed; resetting offline map database'
+      );
+      await this.resetDatabase();
+
+      return {
+        databaseReset: true,
+      };
+    }
+  }
+
+  // Open the offline map database and run any required upgrade migrations.
+  private openDatabase({
+    // Recreate the object store wrappers for the newly opened connection.
+    updateReference = false,
+  }: {
+    updateReference?: boolean;
+  } = {}): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Open the tile database at the expected database version.
-      // A higher version triggers onupgradeneeded so migrations can run.
+      // Open the tile database at the current application database version.
+      // Increasing the version triggers onupgradeneeded so migrations can run.
       const request = indexedDB.open(
         MapTileDatabase.DB_NAME,
         TILE_DB_TARGET_VERSIONS
@@ -136,44 +165,58 @@ class MapTileDatabase {
       request.onerror = () => reject(request.error);
       // fired on every run, call makeDatabases to initialise this object
       request.onsuccess = () => {
+        // Create wrappers for the successfully opened database connection.
         this.makeDatabases(request.result);
         resolve();
       };
+
       // Fired when the database is first created or its version increases.
-      // Create any required object stores and run database migrations here.
+      // Create required stores and run migrations in the upgrade transaction.
       request.onupgradeneeded = event => {
         const db = request.result;
-        // Get the versionchange transaction created by IndexedDB for this upgrade.
-        // Schema changes and migrations should use this same transaction.
+
+        // IndexedDB provides one versionchange transaction for the whole upgrade.
+        // Schema and data changes must use this transaction so they commit or
+        // roll back together.
         const transaction = request.transaction;
-        // The upgrade transaction should always be available in onupgradeneeded.
+
         if (!transaction) {
           throw new Error('Tile database upgrade transaction is unavailable');
         }
 
-        this.makeDatabases(db);
+        this.makeDatabases(db, updateReference);
+
         if (this.tileDB) this.tileDB.createObjectStore();
         if (this.tileSetDB) this.tileSetDB.createObjectStore();
         if (this.migrationDB) this.migrationDB.createObjectStore();
 
-        // Run the required database migrations for this version upgrade.
-        this.runDatabaseUpgrade(db, transaction, event.oldVersion);
+        // Run migrations inside the active versionchange transaction. If
+        // migration or validation fails, the transaction is aborted and this
+        // open request fails so initDB() can run the fallback recovery path.
+        handleTileDbUpgrade(db, transaction, event.oldVersion, () => {
+          reject(new TileDbMigrationError());
+        });
       };
     });
   }
 
   // Make the individual databases (object stores) that will store the individual
   // tile/tileSet records
-  makeDatabases(db: IDBDatabase) {
+  private makeDatabases(
+    // IndexedDB connection used by the object store wrappers.
+    db: IDBDatabase,
+    // Recreate wrappers so they reference the new database connection.
+    updateReference = false
+  ) {
     MapTileDatabase.db = db;
-    if (!this.tileDB) {
+    if (updateReference || !this.tileDB) {
       this.tileDB = new IDBObjectStore<StoredTile>(db, 'tiles', ['url']);
     }
-    if (!this.tileSetDB)
+    if (updateReference || !this.tileSetDB)
       this.tileSetDB = new IDBObjectStore<StoredTileSet>(db, 'tileSets', [
         'setName',
       ]);
-    if (!this.migrationDB) {
+    if (updateReference || !this.migrationDB) {
       this.migrationDB = new IDBObjectStore<TileDbMigrationState>(
         db,
         TILE_DB_MIGRATION_STORE,
@@ -182,31 +225,24 @@ class MapTileDatabase {
     }
   }
 
-  // Run any required data migrations using the active IndexedDB
-  // versionchange transaction so all upgrade changes commit together.
-  private runDatabaseUpgrade(
-    db: IDBDatabase,
-    transaction: IDBTransaction,
-    oldVersion: number
-  ): void {
-    // IndexedDB keeps the upgrade transaction active while these requests run.
-    void runTileDbUpgradeMigrations(db, transaction, oldVersion).catch(
-      error => {
-        console.error('[tiles_db] Database upgrade failed', error);
-        // Abort the whole upgrade so partial migration changes are rolled back.
-        try {
-          transaction.abort();
-        } catch {
-          // The transaction may already be aborting.
-        }
-      }
-    );
+  // Reset the offline-map database and reopen it at the current version.
+  private async resetDatabase(): Promise<void> {
+    // Close the old database connection before deleting the database.
+    MapTileDatabase.db?.close();
+    // Offline maps are recreatable cached data. Reset the database so the
+    // application can continue with a clean current-version database.
+    await deleteDatabase(MapTileDatabase.DB_NAME);
+    // A newly created database starts directly at the current version,
+    // so no historical data migration is required.
+    // Recreate the object-store wrappers so they reference the new database.
+    await this.openDatabase({updateReference: true});
   }
 }
 
-export const initialiseMaps = () => {
+export const initialiseMaps = async (): Promise<InitialiseTileDbResult> => {
   // initialise the tile store used for offline maps
-  MapTileDatabase.getInstance();
+  const database = MapTileDatabase.getInstance();
+  return database.initDB();
 };
 
 /**

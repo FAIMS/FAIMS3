@@ -63,7 +63,6 @@ export interface TileDbMigrationState {
 
 export interface TileDbMigrationContext {
   db: IDBDatabase;
-
   /**
    * The versionchange transaction created by IndexedDB for onupgradeneeded.
    *
@@ -89,4 +88,11 @@ export interface TileDbMigrationDetails {
   migrationFunction: TileDbMigrationFunction;
   /** Function that validates the data format introduced by this migration. */
   validateFunction: TileDbMigrationFunction;
+}
+
+export class TileDbMigrationError extends Error {
+  constructor() {
+    super('Tile database migration failed');
+    this.name = 'TileDbMigrationError';
+  }
 }
