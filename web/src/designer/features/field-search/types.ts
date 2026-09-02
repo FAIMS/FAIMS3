@@ -66,4 +66,7 @@ export type UseFieldSearchOptions = {
   limit?: number;
   /** Debounce delay before running fuzzy search (default 200ms). */
   debounceMs?: number;
+  /** Extra synthetic entries (e.g. parent/related references) appended after
+   * scope resolution. Not subject to scope or filters. */
+  extraEntries?: FieldSearchEntry[];
 };

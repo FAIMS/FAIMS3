@@ -396,10 +396,11 @@ export type ConditionRuleInputsProps = {
 export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
   const {rule, onChange, field, view, showLabels} = props;
 
-  const {allFields, fieldSearchScope} = useConditionRuleFieldContext({
-    field,
-    view,
-  });
+  const {allFields, fieldSearchScope, referenceEntries} =
+    useConditionRuleFieldContext({
+      field,
+      view,
+    });
 
   // Reference the operator input so the dropdown can match its width.
   const operatorControlRef = useRef<HTMLDivElement>(null);
@@ -466,6 +467,7 @@ export const ConditionRuleInputs = (props: ConditionRuleInputsProps) => {
           value={rule.field || null}
           onChange={fieldId => updateField(fieldId || '')}
           scope={fieldSearchScope}
+          extraEntries={referenceEntries}
           data-testid="field-input"
           label={showLabels ? 'Field' : undefined}
           placeholder="Field"

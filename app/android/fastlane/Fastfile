@@ -10,8 +10,9 @@
 #     https://docs.fastlane.tools/plugins/available-plugins
 #
 
-# Uncomment the line if you want fastlane to automatically update itself
-update_fastlane
+# Keep CI reproducible by using the Bundler-locked fastlane version.
+# Do not auto-update at runtime.
+# update_fastlane
 
 default_platform(:android)
 
