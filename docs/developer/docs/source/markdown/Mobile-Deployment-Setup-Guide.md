@@ -21,18 +21,28 @@ available via homebrew on MacOS).   To generate a key, use `age-keygen`:
 
 ```bash
 $ age-keygen -o key.txt
-Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+Public key: ageNNNNNNNNNNNN
 ```
 
 This will create `key.txt` that contains the public key printed above and the
 age key which you will use below (`SOPS_AGE_KEY`).  To use sop locally, you need
 to tell it where to find this file, set an environment variable `SOPS_AGE_KEY_FILE`
-to point to the location
-of this file.
+to point to the location of this file.
+
+You will also need to tell sops which public key to use for encryption. The
+easiest way to do this is to create a file `.sops.yaml` in the repository root which
+specifies that you want to use age to encrypt data and the age public key
+identity you want to use:
+
+```text
+creation_rules:
+  - age: ageNNNNNNNNNNNN
+```
 
 ## 2. Decide where to keep your local working config
 
-Keep a local working copy of your deployment configuration in the repo tree for convenience and as the source of truth for your deployments.
+Keep a local working copy of your deployment configuration in the repo tree for 
+convenience and as the source of truth for your deployments.
 
 Recommended pattern:
 

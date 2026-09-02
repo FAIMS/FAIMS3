@@ -14,3 +14,4 @@ __pycache__/
 .cursor
 # Ignore config files that might include secrets
 /config
+.sops.yaml
