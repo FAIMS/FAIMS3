@@ -1,6 +1,8 @@
 import {
+  buildConditionValues,
   CompiledUiSpecModel,
   currentlyVisibleMap,
+  RecordContext,
   UiSpecModel,
 } from '@faims3/data-model';
 import {useStore} from '@tanstack/react-form';
@@ -41,6 +43,8 @@ interface StaticFormProgressProps {
   data: FaimsFormData;
   uiSpec: CompiledUiSpecModel;
   formId: string;
+  /** Record context so conditions can see parent/related values. */
+  context?: RecordContext;
 }
 
 /**
@@ -48,7 +52,10 @@ interface StaticFormProgressProps {
  */
 export const StaticFormProgress: React.FC<StaticFormProgressProps> = props => {
   const visMap = currentlyVisibleMap({
-    values: formDataExtractor({fullData: props.data}),
+    values: buildConditionValues({
+      values: formDataExtractor({fullData: props.data}),
+      context: props.context,
+    }),
     uiSpec: props.uiSpec,
     viewsetId: props.formId,
   });

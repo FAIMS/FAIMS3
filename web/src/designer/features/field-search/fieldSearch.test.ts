@@ -143,4 +143,38 @@ describe('weightedFieldSearch', () => {
     const results = weightedFieldSearch(entries, 'field-b');
     expect(results[0]?.fieldId).toBe('field-b');
   });
+
+  test('lists synthetic reference entries alongside store fields for empty query', () => {
+    const parentEntry = {
+      ...buildFieldSearchEntry('field-a', allFields['field-a']),
+      fieldId: '_PARENT.Site-Name',
+      id: '_PARENT.Site-Name',
+      label: 'Parent › Site Name',
+      viewSetLabel: 'Parent record',
+      sectionLabel: '',
+    };
+    const entries = [
+      buildFieldSearchEntry('field-b', allFields['field-b']),
+      parentEntry,
+    ];
+    const results = weightedFieldSearch(entries, '');
+    expect(results.map(r => r.fieldId)).toContain('_PARENT.Site-Name');
+  });
+
+  test('matches synthetic reference entries by label', () => {
+    const relatedEntry = {
+      ...buildFieldSearchEntry('field-a', allFields['field-a']),
+      fieldId: 'Core-Calibration.Cutter-Mass-g',
+      id: 'Core-Calibration.Cutter-Mass-g',
+      label: 'Core Calibration › Cutter Mass g',
+      viewSetLabel: 'Linked record',
+      sectionLabel: '',
+    };
+    const entries = [
+      buildFieldSearchEntry('field-b', allFields['field-b']),
+      relatedEntry,
+    ];
+    const results = weightedFieldSearch(entries, 'cutter mass');
+    expect(results[0]?.fieldId).toBe('Core-Calibration.Cutter-Mass-g');
+  });
 });

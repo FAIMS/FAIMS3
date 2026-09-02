@@ -38,6 +38,7 @@ import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
 import {onChangeTemplatedFields} from './templatedFields';
 import {onChangeComputedFields} from './computedFields';
 import {
+  buildConditionValues,
   resolveParentValues,
   resolveRelatedValues,
   linkedRecordId,
@@ -169,7 +170,10 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
-      values: formDataExtractor({fullData: props.initialData ?? {}}),
+      values: buildConditionValues({
+        values: formDataExtractor({fullData: props.initialData ?? {}}),
+        context: buildContext(),
+      }),
       uiSpec: dataEngine.uiSpec,
       viewsetId: props.formId,
     })
@@ -254,12 +258,15 @@ export const EditableFormManager: React.FC<
   const updateVisibility = useCallback(() => {
     setVisibleMap(
       currentlyVisibleMap({
-        values: formDataExtractor({fullData: form.state.values}),
+        values: buildConditionValues({
+          values: formDataExtractor({fullData: form.state.values}),
+          context: buildContext(),
+        }),
         uiSpec: dataEngine.uiSpec,
         viewsetId: props.formId,
       })
     );
-  }, [dataEngine.uiSpec, props.formId]);
+  }, [dataEngine.uiSpec, props.formId, buildContext]);
 
   const debouncedUpdateVisibility = useMemo(
     () => debounce(updateVisibility, VISIBILITY_DEBOUNCE_MS),
@@ -499,7 +506,9 @@ export const EditableFormManager: React.FC<
         existingSchema: validationSchema.current,
         formId: props.formId,
         uiSpec: dataEngine.uiSpec,
-        data,
+        // Merge parent/related values so visibility-aware recompilation
+        // sees conditions on them.
+        data: buildConditionValues({values: data, context: buildContext()}),
         config: {visibleBehaviour: 'ignore'},
       });
 
@@ -625,6 +634,9 @@ export const EditableFormManager: React.FC<
         setHasPendingSave(true);
         debouncedSave();
       }
+      // Conditions may reference parent values directly - refresh visibility
+      // now that they are resolved.
+      updateVisibility();
     });
     return () => {
       cancelled = true;
