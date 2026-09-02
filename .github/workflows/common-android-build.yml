@@ -56,7 +56,7 @@ jobs:
           version: 3.13.3
 
       - name: Setup age (encryption tool used by sops)
-        uses: alessiodionisi/setup-age-action@v1
+        uses: alessiodionisi/setup-age-action@v1.4.0
         with:
           version: 1.3.2
 
