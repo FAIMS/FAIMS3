@@ -13,6 +13,7 @@ jobs:
     name: Deploying to Production (Individual Key)
     uses: ./.github/workflows/common-ios-build.yml
     with:
+      config_environment: production
       fastlane_lane: production_individual
       fastlane_step_name: Deploy iOS app to production with Fastlane (individual key, readonly match)
       enable_bugsnag_sourcemaps: true

@@ -13,6 +13,7 @@ jobs:
     name: Deploying to Testflight (Individual Key)
     uses: ./.github/workflows/common-ios-build.yml
     with:
+      config_environment: nightly
       fastlane_lane: closed_beta_testflight_individual
       fastlane_step_name: Deploy iOS Beta to TestFlight via Fastlane (individual key, readonly match)
       enable_bugsnag_sourcemaps: false

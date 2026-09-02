@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: ''
+      config_environment:
+        description: The configuration environment to use for the build.
+        required: true
+        type: string
     secrets:
       GIT_AUTHORIZATION:
         required: true
@@ -93,7 +97,7 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           set -euo pipefail
-          CONFIG_ENV="${{ vars.MOBILE_CONFIG_ENVIRONMENT }}"
+          CONFIG_ENV="${{ inputs.config_environment }}"
           BASE_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-config.json"
           SECRETS_CONFIG="config_repo/mobile/${CONFIG_ENV}/build-secrets.enc.json"
 

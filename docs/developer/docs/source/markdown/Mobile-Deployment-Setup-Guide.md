@@ -12,7 +12,25 @@ The model we are using is:
 
 This guide covers the first-time setup and the workflow you can repeat for additional environments.
 
-## 1. Decide where to keep your local working config
+## 1. Set up SOPS for secret encryption
+
+SOPS is used to manage encrypted secrets within the JSON configuration file.  We
+use the 'age' encryption scheme and you will need to have an encryption key
+in place to make this work.  You will need to install both `sops` and `age` (both
+available via homebrew on MacOS).   To generate a key, use `age-keygen`:
+
+```bash
+$ age-keygen -o key.txt
+Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+```
+
+This will create `key.txt` that contains the public key printed above and the
+age key which you will use below (`SOPS_AGE_KEY`).  To use sop locally, you need
+to tell it where to find this file, set an environment variable `SOPS_AGE_KEY_FILE`
+to point to the location
+of this file.
+
+## 2. Decide where to keep your local working config
 
 Keep a local working copy of your deployment configuration in the repo tree for convenience and as the source of truth for your deployments.
 
@@ -40,52 +58,26 @@ The `sync-deployment-config.sh` script treats the local `config/<environment>/`
 directory as the source of truth, so any changes you make here will be synced to
 the private repo.
 
+The names of the two sub-directories are used as 'environment slugs' in the workflows.
+`nightly` is used for nightly test builds, `production` is
+used for production builds.  You can keep different configurations in each set of
+build config files.
+
 The config folder has been added to `.gitignore` to prevent accidental commits
 of secrets to the app repository:
 
-## 2. Decide on the environment slug
+## 3. Configure the build
 
-The environment slug is the value in `mobile/<environment>/...` and is also used by the workflow variable `vars.MOBILE_CONFIG_ENVIRONMENT`.
-
-This should reflect deployment intent rather than a branch name.
-
-Recommended naming for initial setup:
-
-- `production` for production App Store / Play deployments
-- `nightly` for the nightly test build workflow
-- `testflight` if you want a separate TestFlight-specific config set
-- `staging` or `qa` for future non-production validation builds
-
-Recommended design rule:
-
-- one environment slug = one deployment target
-- one deployment target = one config folder + one secret bundle
-- use stable names; do not create one-off values for every workflow run
-
-For example:
-
-- `production` => production iOS + production Android builds
-- `nightly` => nightly test build flows
-
-This keeps the workflow variable and the config repo structure aligned.
-
-## 3. Create the local config files
-
-Begin with local files for the environment you are setting up in the `config/` directory.
-
-Example layout:
-
-```text
-config/production/
-  build-config.json
-  build-secrets.json
-```
+You need to create versions of build-config.json and build-secrets.json for each
+environment.
 
 ### build-config.json
 
 This is the non-secret config for that environment.
 
-Use the shared schema defined by `library/build-config/src/build-config.ts` and the sample structure in `library/build-config/config/mobile-secrets.sample.json` as your starting point.
+Use the shared schema defined by `library/build-config/src/build-config.ts` and
+the sample structure in `library/build-config/config/mobile-secrets.sample.json`
+as your starting point.
 
 Typical values include:
 
@@ -97,7 +89,8 @@ Typical values include:
 
 ### build-secrets.json
 
-This is the local working copy of the encrypted secret bundle. It will be merged into the private repo and then SOPS-encrypted.
+This is the local working copy of the encrypted secret bundle. It will be merged
+into the private repo and then SOPS-encrypted.
 
 It contains entries like:
 
@@ -108,11 +101,13 @@ It contains entries like:
 - BrowserStack credentials
 - any other secret values that should not sit in plain-text GitHub variables
 
-Do not commit this file to the app repo. It should only exist locally while you prepare and sync it to the private config repo.
+Do not commit this file to the app repo. It should only exist locally while you
+prepare and sync it to the private config repo.
 
 ## 4. Fill in the values
 
-Use the field map in [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md) as the authoritative reference for which JSON fields become which generated environment variables.
+Use the field map in [Mobile-Build-Config-Env-Mapping.md](Mobile-Build-Config-Env-Mapping.md)
+as the authoritative reference for which JSON fields become which generated environment variables.
 
 A good first pass is:
 
@@ -161,21 +156,21 @@ The helper script is designed to manage both `build-config.json` and `build-secr
 
 The script treats your local `config/<environment>/` directory as the source of truth.
 
-### First sync with a new repo URL:
+First sync with a new repo URL:
 
 ```bash
 ./scripts/sync-deployment-config.sh push production \
   --config_repo git@github.com:my-org/mobile-config.git
 ```
 
-### Or, if the repo is already cloned locally:
+Or, if the repo is already cloned locally:
 
 ```bash
 ./scripts/sync-deployment-config.sh push production \
   --repo-path /path/to/mobile-config
 ```
 
-### What the script does:
+### What the script does
 
 1. Validates both local `build-config.json` and `build-secrets.json` exist and are valid JSON
 2. Connects to the private repo and fetches the latest version
@@ -186,13 +181,14 @@ The script treats your local `config/<environment>/` directory as the source of 
    - Commits and pushes both files together
 5. Updates the local cache copies (`build-secrets.enc.json`)
 
-### Usage options:
+### Usage options
 
 - `--branch <name>` — specify the branch to push to (default: `main`)
-- `--message <text>` — custom commit message (default: "update mobile config for <environment>")
+- `--message <text>` — custom commit message (default: "update mobile config for
+  <environment>")
 - `--force` — skip confirmation prompts
 
-### Example workflow:
+### Example workflow
 
 ```bash
 # Edit your local files
@@ -209,7 +205,7 @@ vim config/production/build-secrets.json
   --force
 ```
 
-### Important notes:
+### Important notes
 
 - The script requires both `build-config.json` and `build-secrets.json` to exist in `config/<environment>/`
 - The repo must be available to `sops` via the expected key mechanism (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or local age config)
@@ -235,6 +231,9 @@ Use this command when you need to sync remote changes (for example, if another t
 
 ## 8. Register the environment in GitHub Actions
 
+Set the `SOPS_AGE_KEY` repository secret to your key value (find this in keys.txt
+generated earlier).
+
 Set the following repository variables for the workflow to discover the environment:
 
 - `APP_CONFIG_REPO_SLUG`
@@ -245,7 +244,6 @@ Example:
 
 ```text
 APP_CONFIG_REPO_SLUG = my-org/mobile-config
-MOBILE_CONFIG_ENVIRONMENT = production
 MOBILE_CONFIG_BRANCH = main
 ```
 
@@ -253,16 +251,17 @@ For nightly builds:
 
 ```text
 APP_CONFIG_REPO_SLUG = my-org/mobile-config
-MOBILE_CONFIG_ENVIRONMENT = nightly
 MOBILE_CONFIG_BRANCH = main
 ```
 
 The workflow will then read:
 
 ```text
-config_repo/mobile/${MOBILE_CONFIG_ENVIRONMENT}/build-config.json
-config_repo/mobile/${MOBILE_CONFIG_ENVIRONMENT}/build-secrets.enc.json
+config_repo/mobile/<environment>build-config.json
+config_repo/mobile/<environment>/build-secrets.enc.json
 ```
+
+and use these to generate the build environment.
 
 ## 9. Validate the first environment before full release
 
@@ -276,50 +275,6 @@ Before using a production config in a real release workflow, run through a minim
 6. Confirm the workflow can read the files.
 7. Trigger the non-production workflow first if there is a test/nightly build path.
 
-This is especially useful for the first run because it catches mismatched environment slugs, missing values, secret layout mistakes, and JSON validation errors before the production lane is used.
-
-## 10. Recommended first-time rollout plan
-
-For the first deployment, this is the safest sequence:
-
-1. Create `production` config and secret bundle.
-2. Validate Android `production` path.
-3. Validate iOS `production` path.
-4. Create `nightly` config bundle next.
-5. Run the nightly/test workflow once.
-6. Only then treat the production workflow as the main release path.
-
-This keeps the private repo stable and makes it clear which environment is assigned to which build lane.
-
-## 11. Suggested naming policy
-
-The environment name should match the deployment intent and workflow target, not the branch or a random local label.
-
-Good examples:
-
-- `production`
-- `nightly`
-- `testflight`
-- `staging`
-
-Avoid:
-
-- ad-hoc names like `fred-test-4`
-- names tied to a single engineer or machine
-- names that do not map to a workflow lane
-
-## 12. Final recommendation
-
-For the first pass, use:
-
-- `production` for production workflows
-- `nightly` for the nightly test build workflow
-
-This gives you a clean, predictable mapping between:
-
-- workflow target
-- GitHub variable `MOBILE_CONFIG_ENVIRONMENT`
-- repo path `mobile/<environment>/...`
-- secrets bundle in the private config repository
-
-You can add more environments later without changing the structure. The important part is to keep the naming stable and workflow-driven.
+This is especially useful for the first run because it catches mismatched
+environment slugs, missing values, secret layout mistakes, and JSON validation
+errors before the production lane is used.

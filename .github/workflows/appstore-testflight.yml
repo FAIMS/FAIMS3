@@ -29,6 +29,7 @@ jobs:
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     uses: ./.github/workflows/common-ios-build.yml
     with:
+      config_environment: nightly
       fastlane_lane: closed_beta_testflight
       fastlane_step_name: Deploy iOS Beta to TestFlight via Fastlane
       enable_bugsnag_sourcemaps: false

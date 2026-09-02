@@ -30,4 +30,5 @@ jobs:
     uses: ./.github/workflows/common-android-build.yml
     with:
       android_deploy_track: internal
+      config_environment: nightly
     secrets: inherit
