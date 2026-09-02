@@ -241,7 +241,12 @@ describe('migrateV1ToV2', () => {
 
     const completion = transactionAsPromise(transaction);
     // Validation should complete without finding any remaining legacy references.
-    await expect(validateV2(transaction)).resolves.toBeUndefined();
+    await expect(
+      validateV2({
+        db,
+        transaction,
+      })
+    ).resolves.toBeUndefined();
     // Wait for all validation requests in the transaction to finish.
     await completion;
   });

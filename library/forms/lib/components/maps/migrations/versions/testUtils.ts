@@ -98,15 +98,16 @@ export async function runMigrationForTest(
   // Object stores used by the migration.
   storeNames: string[],
   // Migration function being tested.
-  migration: TileDbMigrationFunction,
-  // Validator for the target migration version.
-  validate: (transaction: IDBTransaction) => Promise<void>
+  migrationFunction: TileDbMigrationFunction,
+  // Validation function for the target migration version.
+  validateFunction: TileDbMigrationFunction
 ): Promise<void> {
   const transaction = db.transaction(storeNames, 'readwrite');
   const completion = transactionAsPromise(transaction);
 
-  await migration({db, transaction});
-  await validate(transaction);
+  const migrationContext = {db, transaction};
+  await migrationFunction(migrationContext);
+  await validateFunction(migrationContext);
 
   // Wait for all migration and validation requests to finish.
   await completion;

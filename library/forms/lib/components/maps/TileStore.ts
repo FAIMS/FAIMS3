@@ -130,7 +130,7 @@ class MapTileDatabase {
       // A higher version triggers onupgradeneeded so migrations can run.
       const request = indexedDB.open(
         MapTileDatabase.DB_NAME,
-        TILE_DB_TARGET_VERSIONS.databaseVersion
+        TILE_DB_TARGET_VERSIONS
       );
 
       request.onerror = () => reject(request.error);

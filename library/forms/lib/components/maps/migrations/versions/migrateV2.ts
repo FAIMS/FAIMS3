@@ -164,7 +164,7 @@ export const migrateV1ToV2: TileDbMigrationFunction = async ({transaction}) => {
  * Kept separate from the migration so the runner can validate the completed
  * transformation before advancing the recorded logical/data version.
  */
-export async function validateV2(transaction: IDBTransaction): Promise<void> {
+export const validateV2: TileDbMigrationFunction = async ({transaction}) => {
   const tileSetStore = transaction.objectStore('tileSets');
   const tileStore = transaction.objectStore('tiles');
 
@@ -190,4 +190,4 @@ export async function validateV2(transaction: IDBTransaction): Promise<void> {
       );
     }
   });
-}
+};

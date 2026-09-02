@@ -87,17 +87,6 @@ export interface TileDbMigrationDetails {
   description: string;
   /** Function that performs the migration. */
   migrationFunction: TileDbMigrationFunction;
-}
-
-export interface TileDbTargetVersions {
-  /**
-   * IndexedDB database version used to trigger onupgradeneeded.
-   *
-   * Increment this whenever a new migration is added so IndexedDB runs
-   * onupgradeneeded and the migration can execute.
-   */
-  databaseVersion: number;
-
-  /** Migration version expected by the current application. */
-  targetMigrationVersion: number;
+  /** Function that validates the data format introduced by this migration. */
+  validateFunction: TileDbMigrationFunction;
 }

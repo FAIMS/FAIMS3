@@ -38,7 +38,6 @@ import {
   type TileDbMigrationLog,
   type TileDbMigrationState,
 } from './types';
-import {validateV2} from './versions/migrateV2';
 
 // Runs the migrations required to bring tiles_db to the target migration version.
 class TileDbMigrationRunner {
@@ -73,7 +72,7 @@ class TileDbMigrationRunner {
       // IndexedDB reports oldVersion as 0 when the database is first created.
       version:
         this.oldDatabaseVersion === 0
-          ? TILE_DB_TARGET_VERSIONS.targetMigrationVersion
+          ? TILE_DB_TARGET_VERSIONS
           : this.oldDatabaseVersion,
 
       status: 'healthy',
@@ -88,7 +87,7 @@ class TileDbMigrationRunner {
 
   // Find the sequential migrations needed to reach the target version.
   private identifyMigrations(currentVersion: number): TileDbMigrationDetails[] {
-    const targetVersion = TILE_DB_TARGET_VERSIONS.targetMigrationVersion;
+    const targetVersion = TILE_DB_TARGET_VERSIONS;
 
     // A migration version newer than this application cannot be safely downgraded.
     if (currentVersion > targetVersion) {
@@ -119,13 +118,6 @@ class TileDbMigrationRunner {
     return migrations;
   }
 
-  // Run validation for the data format introduced by the given version.
-  private async validateVersion(toVersion: number): Promise<void> {
-    if (toVersion === 2) {
-      await validateV2(this.transaction);
-    }
-  }
-
   // Run every required migration in order using the active upgrade transaction.
   async run(): Promise<void> {
     let state = await this.readOrCreateMigrationState();
@@ -141,14 +133,16 @@ class TileDbMigrationRunner {
       );
 
       try {
-        // Apply the data changes for this migration step.
-        await migration.migrationFunction({
+        const migrationContext = {
           db: this.db,
           transaction: this.transaction,
-        });
+        };
+
+        // Apply the data changes for this migration step.
+        await migration.migrationFunction(migrationContext);
 
         // Verify the migrated data before recording the new version.
-        await this.validateVersion(migration.to);
+        await migration.validateFunction(migrationContext);
 
         // Record the successful migration step.
         const logEntry: TileDbMigrationLog = {
