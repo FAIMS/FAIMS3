@@ -366,6 +366,81 @@ describe('compiling expressions', () => {
     expect(fn({tags: ['urgent ']})).toBe(false);
   });
 
+  it('compiles an is-one-of expression', () => {
+    const expr = {
+      operator: 'is-one-of',
+      field: 'rockType',
+      value: ['Igneous', 'Metamorphic'],
+    };
+    const fn = compileExpression(expr);
+    expect(fn({rockType: 'Igneous'})).toBe(true);
+    expect(fn({rockType: 'Metamorphic'})).toBe(true);
+    expect(fn({rockType: 'Sedimentary'})).toBe(false);
+    expect(fn({rockType: 'Igneous '})).toBe(true);
+    expect(fn({other: 'Igneous'})).toBe(false);
+    expect(fn({rockType: 123})).toBe(false);
+  });
+
+  it('is-one-of is false when the field is missing or the target list is empty', () => {
+    const missingField = compileExpression({
+      operator: 'is-one-of',
+      field: 'rockType',
+      value: ['Igneous'],
+    });
+    expect(missingField({price: 100})).toBe(false);
+
+    const emptyTargets = compileExpression({
+      operator: 'is-one-of',
+      field: 'rockType',
+      value: [],
+    });
+    expect(emptyTargets({rockType: 'Igneous'})).toBe(false);
+
+    const invalidTargets = compileExpression({
+      operator: 'is-one-of',
+      field: 'rockType',
+      value: 'Igneous',
+    });
+    expect(invalidTargets({rockType: 'Igneous'})).toBe(false);
+  });
+
+  it('compiles an is-not-one-of expression', () => {
+    const expr = {
+      operator: 'is-not-one-of',
+      field: 'rockType',
+      value: ['Igneous', 'Metamorphic'],
+    };
+    const fn = compileExpression(expr);
+    expect(fn({rockType: 'Igneous'})).toBe(false);
+    expect(fn({rockType: 'Metamorphic'})).toBe(false);
+    expect(fn({rockType: 'Sedimentary'})).toBe(true);
+    expect(fn({rockType: 'Igneous '})).toBe(false);
+    expect(fn({rockType: 123})).toBe(true);
+  });
+
+  it('is-not-one-of is true when the field is missing or the target list is empty', () => {
+    const missingField = compileExpression({
+      operator: 'is-not-one-of',
+      field: 'rockType',
+      value: ['Igneous'],
+    });
+    expect(missingField({price: 100})).toBe(true);
+
+    const emptyTargets = compileExpression({
+      operator: 'is-not-one-of',
+      field: 'rockType',
+      value: [],
+    });
+    expect(emptyTargets({rockType: 'Igneous'})).toBe(true);
+
+    const invalidTargets = compileExpression({
+      operator: 'is-not-one-of',
+      field: 'rockType',
+      value: 'Igneous',
+    });
+    expect(invalidTargets({rockType: 'Igneous'})).toBe(true);
+  });
+
   it('checks that string arrays are valid', () => {
     const shouldBeArrays = [['this', 'is'], [], ['single'], ['']];
     const shouldNotBeArrays = [
