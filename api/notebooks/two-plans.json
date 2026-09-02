@@ -125,7 +125,8 @@
       },
       "visible_types": ["Site", "Feature"],
       "settings": {
-        "showQrCodeButton": false
+        "showQrCodeButton": false,
+        "planChooserMarkdown": "## Start a visit\n\nPick the plan you are working to today."
       },
       "schemaVersion": "7.0"
     },

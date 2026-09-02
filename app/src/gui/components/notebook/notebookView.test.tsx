@@ -60,6 +60,7 @@ const uiSpecification = {
   views: {},
   fields: {},
   visible_types: [],
+  settings: {showQrCodeButton: false},
 };
 
 vi.mock('../../../context/store', () => ({

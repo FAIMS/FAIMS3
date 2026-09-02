@@ -54,6 +54,7 @@ export const InfoPanel = () => {
   const dispatch = useAppDispatch();
 
   const purposeRef = useRef<MDXEditorMethods>(null);
+  const planChooserRef = useRef<MDXEditorMethods>(null);
 
   const [customFieldName, setCustomFieldName] = useState('');
   const [customFieldValue, setCustomFieldValue] = useState('');
@@ -118,6 +119,26 @@ export const InfoPanel = () => {
             />
             <FormHelperText>
               Useful if your form includes a QR code field.
+            </FormHelperText>
+
+            <Typography variant="subtitle1" sx={{mt: 2}}>
+              Plan chooser text
+            </Typography>
+            <MdxEditor
+              initialMarkdown={settings.planChooserMarkdown ?? ''}
+              editorRef={planChooserRef}
+              handleChange={() =>
+                dispatch(
+                  settingsUpdated({
+                    planChooserMarkdown:
+                      planChooserRef.current?.getMarkdown() as string,
+                  })
+                )
+              }
+            />
+            <FormHelperText>
+              Shown above the plans where this {config.notebookName} offers a
+              choice of plan. Left empty, the app heads the choice itself.
             </FormHelperText>
           </Grid>
 

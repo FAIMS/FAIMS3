@@ -1,4 +1,5 @@
 import {RegisteredPlan} from '@faims3/data-model';
+import {RichTextContent} from '@faims3/forms';
 import {Box, Button, Stack, Typography} from '@mui/material';
 
 /**
@@ -7,12 +8,17 @@ import {Box, Button, Stack, Typography} from '@mui/material';
  * carrying its description where it has one. Choosing one enters it for the
  * rest of the visit, so the plan view owns the whole screen and any tabs inside
  * it are the plan's own.
+ *
+ * `heading` is the notebook's own markdown for the screen, where its author
+ * wrote one.
  */
 export const PlanChooser = ({
   plans,
+  heading,
   onSelect,
 }: {
   plans: RegisteredPlan[];
+  heading?: string;
   onSelect: (planId: string) => void;
 }) => (
   // Centred by a full-width flex parent: a Stack resets its children's
@@ -22,9 +28,15 @@ export const PlanChooser = ({
     data-testid="plan-chooser"
   >
     <Box sx={{width: '100%', maxWidth: 480}}>
-      <Typography variant="h6" component="h2" sx={{mb: 2}}>
-        Choose a plan
-      </Typography>
+      <Box sx={{mb: 2}} data-testid="plan-chooser-heading">
+        {heading ? (
+          <RichTextContent content={heading} />
+        ) : (
+          <Typography variant="h6" component="h2">
+            Choose a plan
+          </Typography>
+        )}
+      </Box>
       <Stack spacing={2}>
         {plans.map(plan => (
           <Button

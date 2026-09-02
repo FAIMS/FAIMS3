@@ -49,6 +49,27 @@ describe('PlanChooser', () => {
     ).toEqual(['Collect a record for every cell of the grid.']);
   });
 
+  it('heads the choice itself where the notebook says nothing', () => {
+    render(<PlanChooser plans={plans} onSelect={vi.fn()} />);
+    expect(screen.getByTestId('plan-chooser-heading')).toHaveTextContent(
+      'Choose a plan'
+    );
+  });
+
+  it('heads the choice with the markdown the notebook carries', () => {
+    render(
+      <PlanChooser
+        plans={plans}
+        heading={'## Pick a workflow\n\nOne per **visit**.'}
+        onSelect={vi.fn()}
+      />
+    );
+    const heading = screen.getByTestId('plan-chooser-heading');
+    expect(heading).not.toHaveTextContent('Choose a plan');
+    expect(heading.querySelector('h2')).toHaveTextContent('Pick a workflow');
+    expect(heading.querySelector('strong')).toHaveTextContent('visit');
+  });
+
   it('reports the chosen plan by id', async () => {
     const onSelect = vi.fn();
     render(<PlanChooser plans={plans} onSelect={onSelect} />);

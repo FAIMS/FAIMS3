@@ -291,6 +291,11 @@ export type CompiledUiSpecModel = z.infer<typeof CompiledUiSpecModelSchema>;
 export const NotebookSettingsSchema = z.object({
   /** When true, show “search by QR” on the record list for this survey. */
   showQrCodeButton: z.boolean(),
+  /**
+   * Markdown headed over the plan buttons, where a notebook offers a choice of
+   * plan. Absent, the chooser heads itself.
+   */
+  planChooserMarkdown: z.string().optional(),
 });
 export type NotebookSettings = z.infer<typeof NotebookSettingsSchema>;
 
