@@ -56,6 +56,13 @@ describe('PlanChooser', () => {
     );
   });
 
+  it('heads the choice itself where the notebook markdown is blank', () => {
+    render(<PlanChooser plans={plans} heading="  " onSelect={vi.fn()} />);
+    expect(screen.getByTestId('plan-chooser-heading')).toHaveTextContent(
+      'Choose a plan'
+    );
+  });
+
   it('heads the choice with the markdown the notebook carries', () => {
     render(
       <PlanChooser

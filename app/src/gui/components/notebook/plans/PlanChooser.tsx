@@ -29,7 +29,7 @@ export const PlanChooser = ({
   >
     <Box sx={{width: '100%', maxWidth: 480}}>
       <Box sx={{mb: 2}} data-testid="plan-chooser-heading">
-        {heading ? (
+        {heading?.trim() ? (
           <RichTextContent content={heading} />
         ) : (
           <Typography variant="h6" component="h2">
