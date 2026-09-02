@@ -103,10 +103,13 @@ jobs:
 
           if [[ -f "$SECRETS_CONFIG" ]]; then
             jq -s '.[0] * .[1]' "$BASE_CONFIG" <(sops --decrypt "$SECRETS_CONFIG") \
-              | pnpm generate-build-config --config - --platform ios >> "$GITHUB_ENV"
+              | pnpm generate-build-config --config - --platform android \
+              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
           else
-            pnpm generate-build-config --config "$BASE_CONFIG" --platform ios >> "$GITHUB_ENV"
+            pnpm generate-build-config --config "$BASE_CONFIG" --platform android \
+              | grep -E '^[A-Z0-9_]+=' >> "$GITHUB_ENV"
           fi
+
 
       - name: Use Python 3.10
         uses: actions/setup-python@v4
