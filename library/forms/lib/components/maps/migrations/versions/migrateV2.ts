@@ -25,22 +25,19 @@
 
 import {z} from 'zod';
 import {createOfflineMapId} from '../../tileStoreUtils';
-import type {StoredTile, StoredTileSet} from '../../tileStoreUtils';
+import {requestAsPromise, scanStore} from '../idbUtils';
 import type {TileDbMigrationFunction} from '../types';
-import {requestAsPromise} from '../idbUtils';
-
-// Prefix used by legacy project-associated tile-set IDs.
-const LEGACY_PROJECT_SET_PREFIX = '@project/';
 
 // Validate the fields required from stored tile records during migration.
-const StoredTileSchema = z.object({
+const TileV1Schema = z.object({
   url: z.string(),
   data: z.unknown(),
   sets: z.array(z.string()),
 });
+export type TileV1 = z.infer<typeof TileV1Schema>;
 
 // Validate the fields required from stored tile-set records during migration.
-const StoredTileSetSchema = z.object({
+const TileSetV1Schema = z.object({
   setName: z.string(),
   extent: z.array(z.number()).min(4),
   minZoom: z.number(),
@@ -53,49 +50,31 @@ const StoredTileSetSchema = z.object({
   label: z.string().optional(),
   offlineMapRegion: z.unknown().optional(),
 });
+export type TileSetV1 = z.infer<typeof TileSetV1Schema>;
 
-// Check whether a tile set uses the legacy `@project/:id` format.
-function isLegacyProjectSetName(setName: string): boolean {
-  return setName.startsWith(LEGACY_PROJECT_SET_PREFIX);
-}
+// V2 keeps the same stored record shapes as V1.
+// The v2 migration changes the data invariant rather than the schema:
+// legacy @project/... IDs are replaced with generated offline-map IDs.
+const TileV2Schema = TileV1Schema;
+export type TileV2 = z.infer<typeof TileV2Schema>;
 
-// Scan an object store with a cursor without loading all records into memory.
-function scanStore(
-  store: IDBObjectStore,
-  visit: (cursor: IDBCursorWithValue) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Open a cursor to iterate through the records in this object store.
-    const request = store.openCursor();
+const TileSetV2Schema = TileSetV1Schema;
+export type TileSetV2 = z.infer<typeof TileSetV2Schema>;
 
-    request.onerror = () =>
-      reject(request.error ?? new Error(`Failed to scan '${store.name}'`));
+// Prefix used by legacy project-associated tile-set IDs.
+const V1_LEGACY_PROJECT_SET_PREFIX = '@project/';
 
-    request.onsuccess = () => {
-      const cursor = request.result;
-
-      // A null cursor means there are no more records to scan.
-      if (!cursor) {
-        resolve();
-        return;
-      }
-
-      try {
-        visit(cursor);
-        cursor.continue();
-      } catch (error) {
-        reject(error);
-      }
-    };
-  });
+// Check whether a tile set uses the legacy v1 `@project/:id` format.
+function isV1LegacyProjectSetName(setName: string): boolean {
+  return setName.startsWith(V1_LEGACY_PROJECT_SET_PREFIX);
 }
 
 /**
  * Migrate all legacy `@project/...` identifiers using the active IndexedDB
  * versionchange transaction.
  *
- * Changing StoredTileSet.setName changes its IndexedDB primary key, so the old
- * record must be deleted and a new record inserted. StoredTile.sets is changed
+ * Changing TileSetV1.setName changes its IndexedDB primary key, so the old
+ * record must be deleted and a new record inserted. TileV1.sets is changed
  * in the same transaction because tile cleanup relies on those references.
  */
 export const migrateV1ToV2: TileDbMigrationFunction = async ({transaction}) => {
@@ -111,28 +90,28 @@ export const migrateV1ToV2: TileDbMigrationFunction = async ({transaction}) => {
   const idChanges = new Map<string, string>();
 
   for (const rawTileSet of rawTileSets) {
-    const parsed = StoredTileSetSchema.parse(rawTileSet);
+    const parsedTileSet = TileSetV1Schema.parse(rawTileSet);
 
     // non-legacy tile sets do not need migration.
-    if (!isLegacyProjectSetName(parsed.setName)) {
+    if (!isV1LegacyProjectSetName(parsedTileSet.setName)) {
       continue;
     }
 
-    const oldSetName = parsed.setName;
+    const oldSetName = parsedTileSet.setName;
     const newSetName = createOfflineMapId();
 
     // legacy project tile sets should already have a projectId, just check in case.
-    if (!parsed.projectId) {
+    if (!parsedTileSet.projectId) {
       console.error(
         `[tiles_db] Legacy tile set '${oldSetName}' is missing projectId`
       );
       throw new Error(`Legacy tile set '${oldSetName}' is missing projectId`);
     }
 
-    const migratedTileSet: StoredTileSet = {
-      ...(rawTileSet as StoredTileSet),
+    const migratedTileSet = {
+      ...parsedTileSet,
       setName: newSetName,
-    };
+    } satisfies TileSetV2;
 
     // Remember the new ID so storedTile.sets references can be updated later.
     idChanges.set(oldSetName, newSetName);
@@ -151,11 +130,11 @@ export const migrateV1ToV2: TileDbMigrationFunction = async ({transaction}) => {
   // Scan tiles individually to avoid loading the full blob cache into memory.
   await scanStore(tileStore, cursor => {
     const rawTile = cursor.value;
-    const parsedTile = StoredTileSchema.parse(rawTile);
+    const parsedTile = TileV1Schema.parse(rawTile);
 
     let changed = false;
 
-    // Replace any StoredTile.sets references that point to migrated tile sets.
+    // Replace any TileV1.sets references that point to migrated tile sets.
     const migratedSets = parsedTile.sets.map(setName => {
       const migratedId = idChanges.get(setName);
       if (migratedId) {
@@ -168,10 +147,10 @@ export const migrateV1ToV2: TileDbMigrationFunction = async ({transaction}) => {
 
     // Only write the tile when at least one set reference changed.
     if (changed) {
-      const migratedTile: StoredTile = {
-        ...(rawTile as StoredTile),
+      const migratedTile = {
+        ...parsedTile,
         sets: migratedSets,
-      };
+      } satisfies TileV2;
 
       cursor.update(migratedTile);
     }
@@ -189,11 +168,11 @@ export async function validateV2(transaction: IDBTransaction): Promise<void> {
   const tileSetStore = transaction.objectStore('tileSets');
   const tileStore = transaction.objectStore('tiles');
 
-  // Confirm no tileset primary keys still use the legacy naming format.
+  // Confirm no V2 tile-set IDs still use the legacy naming format.
   await scanStore(tileSetStore, cursor => {
-    const parsed = StoredTileSetSchema.parse(cursor.value);
+    const parsed = TileSetV2Schema.parse(cursor.value);
 
-    if (isLegacyProjectSetName(parsed.setName)) {
+    if (isV1LegacyProjectSetName(parsed.setName)) {
       throw new Error(
         `Legacy tile-set id remains after v2 migration: ${parsed.setName}`
       );
@@ -202,8 +181,8 @@ export async function validateV2(transaction: IDBTransaction): Promise<void> {
 
   // Confirm cached tiles no longer reference legacy tile-set IDs.
   await scanStore(tileStore, cursor => {
-    const parsed = StoredTileSchema.parse(cursor.value);
-    const legacyReference = parsed.sets.find(isLegacyProjectSetName);
+    const parsed = TileV2Schema.parse(cursor.value);
+    const legacyReference = parsed.sets.find(isV1LegacyProjectSetName);
 
     if (legacyReference) {
       throw new Error(

@@ -26,47 +26,24 @@
 import 'fake-indexeddb/auto';
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
 import {OFFLINE_MAP_ID_PREFIX} from '../../tileStoreUtils';
-import {migrateV1ToV2, validateV2} from './migrateV2';
 import {requestAsPromise} from '../idbUtils';
+import {
+  migrateV1ToV2,
+  TileSetV1,
+  TileSetV2,
+  TileV1,
+  TileV2,
+  validateV2,
+} from './migrateV2';
+import {
+  deleteTestDb,
+  openDbForTest,
+  readAll,
+  runMigrationForTest,
+  transactionAsPromise,
+} from './testUtils';
 
-const DB_NAME = 'tiles_db-migrate-v2-test';
-
-/**
- * Convert an IndexedDB transaction into a Promise so tests can wait for it
- * to complete or abort.
- */
-function transactionAsPromise(transaction: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-
-    transaction.onabort = () =>
-      reject(transaction.error ?? new Error('IndexedDB transaction aborted'));
-
-    transaction.onerror = () => {
-      // The transaction will abort after an unhandled request error.
-      console.error('IndexedDB transaction error', transaction.error);
-    };
-  });
-}
-
-/**
- * Create a v1 test database with the object stores used by the migration.
- */
-async function openV1Db(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-
-    request.onupgradeneeded = () => {
-      const db = request.result;
-
-      db.createObjectStore('tiles', {keyPath: ['url']});
-      db.createObjectStore('tileSets', {keyPath: ['setName']});
-    };
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
+const V2_MIGRATION_TEST_DB_NAME = 'tiles_db-v2-migration-test';
 
 /**
  * Seed the v1 database with legacy project tile sets, an existing non-legacy
@@ -88,7 +65,7 @@ async function seedV1(db: IDBDatabase): Promise<void> {
     created: new Date('2026-01-01T00:00:00Z'),
     tileKeys: [['tile-a']],
     projectId: 'project-a',
-  });
+  } satisfies TileSetV1);
 
   // Another legacy project tile set sharing a cached tile.
   tileSets.put({
@@ -101,7 +78,7 @@ async function seedV1(db: IDBDatabase): Promise<void> {
     created: new Date('2026-01-02T00:00:00Z'),
     tileKeys: [['shared-tile']],
     projectId: 'project-b',
-  });
+  } satisfies TileSetV1);
 
   // Existing non-legacy tile set should not be changed.
   tileSets.put({
@@ -114,54 +91,23 @@ async function seedV1(db: IDBDatabase): Promise<void> {
     created: new Date('2026-01-03T00:00:00Z'),
     tileKeys: [['shared-tile']],
     label: 'Keep me',
-  });
+  } satisfies TileSetV1);
 
   // Cached tile belonging only to project-a.
   tiles.put({
     url: 'tile-a',
     data: new Blob(['a']),
     sets: ['@project/project-a'],
-  });
+  } satisfies TileV1);
 
   // Cached tile shared by a legacy and non-legacy tile set.
   tiles.put({
     url: 'shared-tile',
     data: new Blob(['shared']),
     sets: ['@project/project-b', 'existing-map-id'],
-  });
+  } satisfies TileV1);
 
   await transactionAsPromise(transaction);
-}
-
-/**
- * Read all records from an object store.
- */
-async function readAll<T>(db: IDBDatabase, storeName: string): Promise<T[]> {
-  const transaction = db.transaction(storeName, 'readonly');
-
-  const result = await requestAsPromise(
-    transaction.objectStore(storeName).getAll()
-  );
-
-  await transactionAsPromise(transaction);
-
-  return result as T[];
-}
-
-/**
- * Run the migration and validation using one read/write transaction.
- *
- * Production runs this inside the IndexedDB versionchange transaction.
- * This helper uses a normal transaction to unit-test the migration logic.
- */
-async function runMigrationForTest(db: IDBDatabase): Promise<void> {
-  const transaction = db.transaction(['tiles', 'tileSets'], 'readwrite');
-  const completion = transactionAsPromise(transaction);
-
-  await migrateV1ToV2({db, transaction});
-  await validateV2(transaction);
-  // Wait for all validation requests in the transaction to finish.
-  await completion;
 }
 
 const PROJECT_A_OFFLINE_MAP_ID = '11111111-1111-4111-8111-111111111111';
@@ -176,7 +122,10 @@ describe('migrateV1ToV2', () => {
       .mockReturnValueOnce(PROJECT_A_OFFLINE_MAP_ID)
       .mockReturnValueOnce(PROJECT_B_OFFLINE_MAP_ID);
 
-    db = await openV1Db();
+    db = await openDbForTest(V2_MIGRATION_TEST_DB_NAME, 1, db => {
+      db.createObjectStore('tiles', {keyPath: ['url']});
+      db.createObjectStore('tileSets', {keyPath: ['setName']});
+    });
     await seedV1(db);
   });
 
@@ -187,18 +136,18 @@ describe('migrateV1ToV2', () => {
     db.close();
 
     // Remove the test database so every test starts with a clean v1 database.
-    await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.deleteDatabase(DB_NAME);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    await deleteTestDb(V2_MIGRATION_TEST_DB_NAME);
   });
 
   test('migrates every @project/ tile-set id to a generated offline-map id', async () => {
-    await runMigrationForTest(db);
+    await runMigrationForTest(
+      db,
+      ['tiles', 'tileSets'],
+      migrateV1ToV2,
+      validateV2
+    );
 
-    const tileSets = await readAll<any>(db, 'tileSets');
+    const tileSets = await readAll<TileSetV2>(db, 'tileSets');
 
     expect(tileSets.map(tileSet => tileSet.setName)).toEqual(
       expect.arrayContaining([
@@ -215,9 +164,14 @@ describe('migrateV1ToV2', () => {
   });
 
   test('preserves projectId on migrated project tile sets', async () => {
-    await runMigrationForTest(db);
+    await runMigrationForTest(
+      db,
+      ['tiles', 'tileSets'],
+      migrateV1ToV2,
+      validateV2
+    );
 
-    const tileSets = await readAll<any>(db, 'tileSets');
+    const tileSets = await readAll<TileSetV2>(db, 'tileSets');
 
     const projectA = tileSets.find(
       tileSet =>
@@ -231,42 +185,57 @@ describe('migrateV1ToV2', () => {
         `${OFFLINE_MAP_ID_PREFIX}${PROJECT_B_OFFLINE_MAP_ID}`
     );
 
-    expect(projectA.projectId).toBe('project-a');
-    expect(projectB.projectId).toBe('project-b');
+    expect(projectA?.projectId).toBe('project-a');
+    expect(projectB?.projectId).toBe('project-b');
   });
 
   test('rewrites tile membership references and preserves unrelated set ids', async () => {
-    await runMigrationForTest(db);
+    await runMigrationForTest(
+      db,
+      ['tiles', 'tileSets'],
+      migrateV1ToV2,
+      validateV2
+    );
 
-    const tiles = await readAll<any>(db, 'tiles');
+    const tiles = await readAll<TileV2>(db, 'tiles');
 
     const projectATile = tiles.find(tile => tile.url === 'tile-a');
     const sharedTile = tiles.find(tile => tile.url === 'shared-tile');
 
-    expect(projectATile.sets).toEqual([
+    expect(projectATile?.sets).toEqual([
       `${OFFLINE_MAP_ID_PREFIX}${PROJECT_A_OFFLINE_MAP_ID}`,
     ]);
 
-    expect(sharedTile.sets).toEqual([
+    expect(sharedTile?.sets).toEqual([
       `${OFFLINE_MAP_ID_PREFIX}${PROJECT_B_OFFLINE_MAP_ID}`,
       'existing-map-id',
     ]);
   });
 
   test('leaves non-legacy tile sets unchanged', async () => {
-    await runMigrationForTest(db);
+    await runMigrationForTest(
+      db,
+      ['tiles', 'tileSets'],
+      migrateV1ToV2,
+      validateV2
+    );
 
-    const tileSets = await readAll<any>(db, 'tileSets');
+    const tileSets = await readAll<TileSetV2>(db, 'tileSets');
 
     const existing = tileSets.find(
       tileSet => tileSet.setName === 'existing-map-id'
     );
 
-    expect(existing.label).toBe('Keep me');
+    expect(existing?.label).toBe('Keep me');
   });
 
   test('passes v2 validation after migration', async () => {
-    await runMigrationForTest(db);
+    await runMigrationForTest(
+      db,
+      ['tiles', 'tileSets'],
+      migrateV1ToV2,
+      validateV2
+    );
 
     const transaction = db.transaction(['tiles', 'tileSets'], 'readonly');
 
@@ -291,7 +260,7 @@ describe('migrateV1ToV2', () => {
         expectedTileCount: 0,
         created: new Date('2026-01-04T00:00:00Z'),
         tileKeys: [],
-      })
+      } satisfies TileSetV1)
     );
 
     await transactionAsPromise(seedTransaction);
