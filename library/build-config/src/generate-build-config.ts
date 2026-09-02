@@ -22,7 +22,7 @@ export interface GenerateBuildConfigArgs {
 }
 
 function readConfigJson(configArg: string, cwd = process.cwd()): unknown {
-  if (configArg === '-') {
+  if (configArg === 'true') {
     const stdin = fs.readFileSync(0, 'utf8').trim();
     if (!stdin) {
       throw new Error('No config JSON was provided on stdin.');
