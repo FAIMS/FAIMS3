@@ -222,10 +222,8 @@ registerCompiler('is-one-of', (expression: ConditionalExpression) => {
     const present = values[expression.field];
     if (typeof present !== 'string') return false;
 
-    const sanitized = sanitizeComparisonInput(present);
-    return targets.some(
-      target => sanitizeComparisonInput(target) === sanitized
-    );
+    // Strict match, same as equal — no trimming.
+    return targets.some(target => target === present);
   };
 });
 
@@ -246,10 +244,8 @@ registerCompiler('is-not-one-of', (expression: ConditionalExpression) => {
     const present = values[expression.field];
     if (typeof present !== 'string') return true;
 
-    const sanitized = sanitizeComparisonInput(present);
-    return !targets.some(
-      target => sanitizeComparisonInput(target) === sanitized
-    );
+    // Strict match, same as not-equal — no trimming.
+    return !targets.some(target => target === present);
   };
 });
 

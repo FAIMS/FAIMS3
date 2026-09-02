@@ -376,7 +376,8 @@ describe('compiling expressions', () => {
     expect(fn({rockType: 'Igneous'})).toBe(true);
     expect(fn({rockType: 'Metamorphic'})).toBe(true);
     expect(fn({rockType: 'Sedimentary'})).toBe(false);
-    expect(fn({rockType: 'Igneous '})).toBe(true);
+    // Strict === like equal — trailing whitespace does not match
+    expect(fn({rockType: 'Igneous '})).toBe(false);
     expect(fn({other: 'Igneous'})).toBe(false);
     expect(fn({rockType: 123})).toBe(false);
   });
@@ -414,7 +415,8 @@ describe('compiling expressions', () => {
     expect(fn({rockType: 'Igneous'})).toBe(false);
     expect(fn({rockType: 'Metamorphic'})).toBe(false);
     expect(fn({rockType: 'Sedimentary'})).toBe(true);
-    expect(fn({rockType: 'Igneous '})).toBe(false);
+    // Strict === like not-equal — trailing whitespace is a different value
+    expect(fn({rockType: 'Igneous '})).toBe(true);
     expect(fn({rockType: 123})).toBe(true);
   });
 
