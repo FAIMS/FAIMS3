@@ -14,10 +14,10 @@ This guide covers the first-time setup and the workflow you can repeat for addit
 
 ## 1. Set up SOPS for secret encryption
 
-SOPS is used to manage encrypted secrets within the JSON configuration file.  We
+SOPS is used to manage encrypted secrets within the JSON configuration file. We
 use the 'age' encryption scheme and you will need to have an encryption key
-in place to make this work.  You will need to install both `sops` and `age` (both
-available via homebrew on MacOS).   To generate a key, use `age-keygen`:
+in place to make this work. You will need to install both `sops` and `age` (both
+available via homebrew on MacOS). To generate a key, use `age-keygen`:
 
 ```bash
 $ age-keygen -o key.txt
@@ -25,7 +25,7 @@ Public key: ageNNNNNNNNNNNN
 ```
 
 This will create `key.txt` that contains the public key printed above and the
-age key which you will use below (`SOPS_AGE_KEY`).  To use sop locally, you need
+age key which you will use below (`SOPS_AGE_KEY`). To use sop locally, you need
 to tell it where to find this file, set an environment variable `SOPS_AGE_KEY_FILE`
 to point to the location of this file.
 
@@ -41,7 +41,7 @@ creation_rules:
 
 ## 2. Decide where to keep your local working config
 
-Keep a local working copy of your deployment configuration in the repo tree for 
+Keep a local working copy of your deployment configuration in the repo tree for
 convenience and as the source of truth for your deployments.
 
 Recommended pattern:
@@ -70,7 +70,7 @@ the private repo.
 
 The names of the two sub-directories are used as 'environment slugs' in the workflows.
 `nightly` is used for nightly test builds, `production` is
-used for production builds.  You can keep different configurations in each set of
+used for production builds. You can keep different configurations in each set of
 build config files.
 
 The config folder has been added to `.gitignore` to prevent accidental commits

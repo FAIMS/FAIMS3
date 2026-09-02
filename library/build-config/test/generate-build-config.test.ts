@@ -111,7 +111,8 @@ test('generator escapes multiline values for env-file compatibility', () => {
     mobile: {
       ...sampleConfig.mobile,
       ios: {
-        appleKeyContent: '\n-----BEGIN PRIVATE KEY-----\nABCDEF\n-----END PRIVATE KEY-----\n',
+        appleKeyContent:
+          '\n-----BEGIN PRIVATE KEY-----\nABCDEF\n-----END PRIVATE KEY-----\n',
       },
     },
   };
