@@ -10,12 +10,20 @@ import {cleanup, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as ROUTES from '../../../constants/routes';
+import {NotebookRouteProvider} from '../../../context/notebookRoute';
 import {Project} from '../../../context/slices/projectSlice';
 import {NotebookView} from './notebookView';
 
 const {navigate, routeParams, allRecords} = vi.hoisted(() => ({
   navigate: vi.fn(),
-  routeParams: {current: {} as {planId?: string; tab?: string}},
+  routeParams: {
+    current: {} as {
+      serverId?: string;
+      projectId?: string;
+      planId?: string;
+      tab?: string;
+    },
+  },
   allRecords: {
     current: [] as Array<{recordId: string; planReference?: string}>,
   },
@@ -133,10 +141,13 @@ const record = (recordId: string, planId?: string, reference?: string) => ({
 });
 
 const renderNotebook = (params: {planId?: string; tab?: string}) => {
-  routeParams.current = params;
+  // The notebook's own ids come from the route, as they do in the app
+  routeParams.current = {serverId: 'srv', projectId: 'proj', ...params};
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <NotebookView project={project} />
+      <NotebookRouteProvider>
+        <NotebookView project={project} />
+      </NotebookRouteProvider>
     </QueryClientProvider>
   );
 };

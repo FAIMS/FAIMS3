@@ -55,13 +55,13 @@ import {config, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getViewRecordRoute,
-  NOTEBOOK_FROM_RECORD_ROUTE,
   RecordRouteNotebook,
 } from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
+import {useNotebookRoute} from '../../context/notebookRoute';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {tryLocalGetDataDb} from '../../utils/database';
 import {NOTEBOOK_LIST_ROUTE} from '../../utils/remoteProjectRemoval';
@@ -476,13 +476,10 @@ const HistoryTabContent: React.FC<{
  * `enabled: canLoadRecord`; a `useEffect` redirects when the project disappears.
  */
 export const ViewRecordPage: React.FC = () => {
-  const {serverId, projectId, planId, tab, recordId} = useParams<{
-    serverId: string;
-    projectId: ProjectID;
-    planId?: string;
-    tab?: string;
-    recordId: RecordID;
-  }>();
+  const {recordId} = useParams<{recordId: RecordID}>();
+  // The notebook this record sits in, and the way back out of it.
+  const {notebook, notebookRoute} = useNotebookRoute();
+  const {serverId, projectId} = notebook;
 
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -638,16 +635,13 @@ export const ViewRecordPage: React.FC = () => {
 
   const isDeleted = Boolean(formData.context.revision.deleted);
 
-  // The plan and tab the record was opened from, which its own links keep
-  const notebook: RecordRouteNotebook = {serverId, projectId, planId, tab};
-
   return (
     <Stack spacing={2}>
       {/* Header */}
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
           {/* Back to record link */}
-          <BackButton link={NOTEBOOK_FROM_RECORD_ROUTE} />
+          <BackButton link={notebookRoute} />
           <Typography variant="h3" color={theme.palette.text.primary}>
             Viewing: {formLabel}
           </Typography>

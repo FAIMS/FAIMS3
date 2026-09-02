@@ -37,7 +37,8 @@ import {config} from '../../../buildconfig';
 import {useQueryClient} from '@tanstack/react-query';
 import {NotebookViewComponentProps} from './types';
 import {localGetDataDb} from '../../../utils/database';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNotebookRoute} from '../../../context/notebookRoute';
+import {useNavigate} from 'react-router-dom';
 import NotebookSettings from './settings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {Button} from '@mui/material';
@@ -147,23 +148,9 @@ function NotebookViewWithSpec({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const {planId, tab} = useParams<{planId?: string; tab?: string}>();
-
-  // Every move within a notebook replaces, plan and tab alike, so leaving one
-  // costs a single Back press. Change plan is the way back to the chooser.
-  const showPlanTab = useCallback(
-    (next: {planId?: string; tab?: string}) => {
-      navigate(
-        ROUTES.getNotebookRoute({
-          serverId: project.serverId,
-          projectId: project.projectId,
-          ...next,
-        }),
-        {replace: true}
-      );
-    },
-    [navigate, project.serverId, project.projectId]
-  );
+  // Change plan is the way back to the chooser.
+  const {notebook, showPlanTab} = useNotebookRoute();
+  const {planId, tab} = notebook;
 
   /**
    * Create a new record - function passed in to the view component to create new records,
@@ -206,10 +193,7 @@ function NotebookViewWithSpec({
         });
         navigate(
           ROUTES.getEditRecordRoute({
-            serverId: project.serverId,
-            projectId: project.projectId,
-            planId,
-            tab,
+            ...notebook,
             recordId: record._id,
             mode: 'new',
           })
@@ -232,10 +216,7 @@ function NotebookViewWithSpec({
       isAllowedToAddRecords,
       dataEngine,
       navigate,
-      project.serverId,
-      project.projectId,
-      planId,
-      tab,
+      notebook,
       dispatch,
     ]
   );
@@ -245,15 +226,12 @@ function NotebookViewWithSpec({
     (record: MinimalRecordMetadata) => {
       navigate(
         ROUTES.getViewRecordRoute({
-          serverId: project.serverId,
-          projectId: project.projectId,
-          planId,
-          tab,
+          ...notebook,
           recordId: record.recordId,
         })
       );
     },
-    [navigate, project.serverId, project.projectId, planId, tab]
+    [navigate, notebook]
   );
 
   // Every plan the notebook carries that has a view registered for it, and
@@ -350,7 +328,6 @@ function NotebookViewWithSpec({
         ),
         OverviewMap: () => (
           <OverviewMap
-            serverId={project.serverId}
             // The same records the plan's lists hold, so tapping a pin cannot
             // open a record a list says is not there
             records={{allRecords: planRecords}}

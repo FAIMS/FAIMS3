@@ -98,9 +98,6 @@ export function getNotebookRoute({
   );
 }
 
-/** One up from a record route: the notebook, on the tab it was opened from. */
-export const NOTEBOOK_FROM_RECORD_ROUTE = '..';
-
 /** The notebook a record link nests under: ids from the project, plan and tab from the route. */
 export type RecordRouteNotebook = {
   serverId: string;

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {cleanup} from '@testing-library/react';
 import {ThemeProvider} from '@mui/material/styles';
+import {NotebookRouteProvider} from '../../../context/notebookRoute';
 import {Project} from '../../../context/slices/projectSlice';
 import {theme} from '../../themes';
 import AddRecordButtons from './add_record_by_type';
@@ -56,14 +57,16 @@ const renderButtons = ({
 }) =>
   render(
     <ThemeProvider theme={theme}>
-      <AddRecordButtons
-        project={
-          {projectId: 'p', serverId: 's', uiSpecificationId: 'u'} as Project
-        }
-        refreshList={vi.fn()}
-        formTypes={formTypes}
-        planReference={planReference}
-      />
+      <NotebookRouteProvider>
+        <AddRecordButtons
+          project={
+            {projectId: 'p', serverId: 's', uiSpecificationId: 'u'} as Project
+          }
+          refreshList={vi.fn()}
+          formTypes={formTypes}
+          planReference={planReference}
+        />
+      </NotebookRouteProvider>
     </ThemeProvider>
   );
 

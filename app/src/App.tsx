@@ -40,6 +40,7 @@ import './App.css';
 import {config} from './buildconfig';
 import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
+import {NotebookRouteProvider} from './context/notebookRoute';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
@@ -161,7 +162,9 @@ const routes: RouteObject[] = [
         path: ROUTES.NOTEBOOK_ROUTE_PATH,
         element: (
           <TolerantPrivateRoute>
-            <Outlet />
+            <NotebookRouteProvider>
+              <Outlet />
+            </NotebookRouteProvider>
           </TolerantPrivateRoute>
         ),
         children: [

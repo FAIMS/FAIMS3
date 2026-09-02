@@ -336,7 +336,6 @@ export default function NotebookComponent({
 
         <TabPanel value={currentTab} tab={SHARED_TAB.map}>
           <OverviewMap
-            serverId={project.serverId}
             records={records}
             project_id={project.projectId}
             uiSpec={uiSpecification}
