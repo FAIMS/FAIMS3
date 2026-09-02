@@ -275,7 +275,6 @@ function buildEnvMap(
         ''
       ),
       MATCH_PASSWORD: coalesce(mobile.ios?.matchPassword, ''),
-      MATCH_GIT_URL: coalesce(mobile.ios?.matchGitUrl, ''),
       GIT_AUTHORIZATION: coalesce(mobile.ios?.gitAuthorization, ''),
       PROVISIONING_PROFILE_SPECIFIER: coalesce(
         mobile.ios?.provisioningProfileSpecifier,

@@ -13,4 +13,4 @@ __pycache__/
 *.py[cod]
 .cursor
 # Ignore config files that might include secrets
-./config
+/config

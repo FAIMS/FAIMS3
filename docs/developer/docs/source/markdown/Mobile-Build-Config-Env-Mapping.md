@@ -114,7 +114,6 @@ Notes:
 | `mobile.ios.appleId`                                                             | `FASTLANE_APPLE_ID`                            | `build-secrets.enc.json`                  |
 | `mobile.ios.appleApplicationSpecificPassword`                                    | `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` | `build-secrets.enc.json`                  |
 | `mobile.ios.matchPassword`                                                       | `MATCH_PASSWORD`                               | `build-secrets.enc.json`                  |
-| `mobile.ios.matchGitUrl`                                                         | `MATCH_GIT_URL`                                | optional in JSON                          |
 | `mobile.ios.gitAuthorization`                                                    | `GIT_AUTHORIZATION`                            | optional in JSON                          |
 | `mobile.ios.provisioningProfileSpecifier`                                        | `PROVISIONING_PROFILE_SPECIFIER`               | `build-config.json` or secrets            |
 | `mobile.ios.appleKeyId` (fallback `mobile.ios.appleIndividualKeyId`)             | `APPLE_KEY_ID`                                 | `build-secrets.enc.json`                  |
