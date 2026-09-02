@@ -94,7 +94,7 @@ function boolToEnv(value: unknown): string {
 
 function stringify(value: Value): string {
   if (typeof value === 'string') {
-    return value;
+    return value.replace(/\r?\n/g, '\\n');
   }
   if (typeof value === 'number' || typeof value === 'boolean') {
     return String(value);

@@ -105,6 +105,25 @@ test('generator falls back to iOS individual key values', () => {
   assert.match(output, /APPLE_KEY_CONTENT=ind-key-content/);
 });
 
+test('generator escapes multiline values for env-file compatibility', () => {
+  const config = {
+    ...sampleConfig,
+    mobile: {
+      ...sampleConfig.mobile,
+      ios: {
+        appleKeyContent: '\n-----BEGIN PRIVATE KEY-----\nABCDEF\n-----END PRIVATE KEY-----\n',
+      },
+    },
+  };
+
+  const output = generateEnv({config, platform: 'ios'});
+
+  assert.match(
+    output,
+    /APPLE_KEY_CONTENT=\\n-----BEGIN PRIVATE KEY-----\\nABCDEF\\n-----END PRIVATE KEY-----\\n/
+  );
+});
+
 test('validateBuildConfigCoverage catches missing env coverage', () => {
   const output = [
     'VITE_APP_NAME=Example',
