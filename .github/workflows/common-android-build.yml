@@ -50,10 +50,15 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
-      - name: Install sops
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sops
+      - name: Setup sops (encryption tool for managing secrets)
+        uses: nhedger/setup-sops@v2
+        with:
+          version: 3.13.3
+
+      - name: Setup age (encryption tool used by sops)
+        uses: alessiodionisi/setup-age-action@v1
+        with:
+          version: 1.3.2
 
       - name: Declare some variables
         shell: bash
